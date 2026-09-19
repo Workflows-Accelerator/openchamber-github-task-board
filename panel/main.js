@@ -2326,14 +2326,192 @@ ${issue.body}
       elBtnPreflightLaunch.textContent = "Launch Worktree & Agent";
     }
   }
+  var DEFAULT_TEMPLATES = {
+    bug: {
+      id: "bug",
+      name: "Bug Report",
+      description: "Investigate unexpected behavior, identify root cause, and draft fix subtasks",
+      promptInstructions: `### Problem Description
+[Detailed explanation of what went wrong, including error messages or unexpected behavior]
+
+### Steps to Reproduce
+1. [First step]
+2. [Second step]
+
+### Root Cause Analysis
+[Inspect the relevant codebase files and explain the underlying mechanism]
+
+### Actionable Fix Subtasks
+- [ ] Reproduce with an isolated test
+- [ ] Implement narrow surgical fix
+- [ ] Verify test suite passes
+- [ ] Verify regression resistance`
+    },
+    feature: {
+      id: "feature",
+      name: "Feature / Enhancement",
+      description: "Design and specify new functionality with architectural plan and subtasks",
+      promptInstructions: `### Goal & User Value
+[Why this feature is needed and what problem it solves]
+
+### Architectural & UI Design
+[Proposed technical architecture, component structure, or API changes]
+
+### Actionable Implementation Subtasks
+- [ ] Define interfaces and types
+- [ ] Implement core logic / components
+- [ ] Add unit and integration tests
+- [ ] Verify end-to-end user flow`
+    },
+    task: {
+      id: "task",
+      name: "Technical Debt / Refactor",
+      description: "Code cleanup, performance optimization, or architecture simplification",
+      promptInstructions: `### Motivation
+[Identify dead code, performance bottlenecks, or architectural complexity]
+
+### Scope of Refactoring
+[Specific files and modules to touch, and what must remain unchanged]
+
+### Actionable Checklist
+- [ ] Establish baseline test coverage
+- [ ] Perform behavior-preserving refactoring
+- [ ] Verify existing tests continue to pass without regressions`
+    }
+  };
+  function mergeTemplates(defaults, userCustomTemplates) {
+    if (!userCustomTemplates || typeof userCustomTemplates !== "object") {
+      return { ...defaults };
+    }
+    const result = { ...defaults };
+    for (const [key, val] of Object.entries(userCustomTemplates)) {
+      if (val && typeof val === "object" && val.promptInstructions) {
+        result[key] = {
+          ...result[key] || { id: key, name: key, description: "" },
+          ...val
+        };
+      }
+    }
+    return result;
+  }
+  function buildAgentIssuePrompt({
+    repo,
+    template,
+    userGoal,
+    contextHints
+  }) {
+    let prompt = `You are an expert engineer tasked with drafting and creating a new GitHub Issue for repository "${repo}".
+
+`;
+    prompt += `User Objective / Issue Goal:
+${userGoal.trim()}
+
+`;
+    if (contextHints && contextHints.trim()) {
+      prompt += `Additional Context & Guidance:
+${contextHints.trim()}
+
+`;
+    }
+    prompt += `Template Specification (${template.name}):
+`;
+    prompt += `Follow this exact structure and include actionable markdown subtasks (- [ ]):
+
+`;
+    prompt += `${template.promptInstructions.trim()}
+
+`;
+    prompt += `Agent Instructions:
+`;
+    prompt += `1. Inspect the relevant repository files in the project to gather accurate context, file paths, and function names.
+`;
+    prompt += `2. Structure the issue clearly with a concise title and the markdown body following the template above.
+`;
+    prompt += `3. Include an interactive checklist of subtasks with "- [ ]".
+`;
+    prompt += `4. Once you have drafted the complete issue, output the finalized issue so it can be committed to GitHub or create it via GitHub API.
+`;
+    return prompt;
+  }
+  var activeTemplates = { ...DEFAULT_TEMPLATES };
+  async function loadCustomTemplates() {
+    try {
+      const stored = await host.storage.get("custom_issue_templates");
+      activeTemplates = mergeTemplates(DEFAULT_TEMPLATES, stored);
+    } catch {
+      activeTemplates = { ...DEFAULT_TEMPLATES };
+    }
+    updateTemplateSelects();
+  }
   var elNewIssueModalBackdrop = document.getElementById("newIssueModalBackdrop");
   var elNewIssueRepoTarget = document.getElementById("newIssueRepoTarget");
+  var elTabNewIssueManual = document.getElementById("tabNewIssueManual");
+  var elTabNewIssueAI = document.getElementById("tabNewIssueAI");
+  var elTabNewIssueTemplates = document.getElementById("tabNewIssueTemplates");
+  var elPaneNewIssueManual = document.getElementById("paneNewIssueManual");
+  var elPaneNewIssueAI = document.getElementById("paneNewIssueAI");
+  var elPaneNewIssueTemplates = document.getElementById("paneNewIssueTemplates");
+  var elFootNewIssueManual = document.getElementById("footNewIssueManual");
+  var elFootNewIssueAI = document.getElementById("footNewIssueAI");
+  var elFootNewIssueTemplates = document.getElementById("footNewIssueTemplates");
   var elNewIssueTitleInput = document.getElementById("newIssueTitleInput");
   var elNewIssueBodyInput = document.getElementById("newIssueBodyInput");
   var elBtnNewIssueSubmit = document.getElementById("btnNewIssueSubmit");
   var elBtnNewIssueCancel = document.getElementById("btnNewIssueCancel");
   var elBtnNewIssueClose = document.getElementById("btnNewIssueClose");
   var elLinkOpenGithubNew = document.getElementById("linkOpenGithubNew");
+  var elAiTemplateSelect = document.getElementById("aiTemplateSelect");
+  var elBtnJumpToTemplateEditor = document.getElementById("btnJumpToTemplateEditor");
+  var elAiIssueGoalInput = document.getElementById("aiIssueGoalInput");
+  var elAiIssueContextInput = document.getElementById("aiIssueContextInput");
+  var elAiTemplatePreviewText = document.getElementById("aiTemplatePreviewText");
+  var elAiIssueWorktreeToggle = document.getElementById("aiIssueWorktreeToggle");
+  var elBtnNewIssueAICancel = document.getElementById("btnNewIssueAICancel");
+  var elBtnLaunchAISession = document.getElementById("btnLaunchAISession");
+  var elEditTemplateSelect = document.getElementById("editTemplateSelect");
+  var elEditTemplateNameInput = document.getElementById("editTemplateNameInput");
+  var elEditTemplateInstructionsTextarea = document.getElementById("editTemplateInstructionsTextarea");
+  var elBtnResetTemplateDefaults = document.getElementById("btnResetTemplateDefaults");
+  var elBtnCancelEditTemplate = document.getElementById("btnCancelEditTemplate");
+  var elBtnSaveTemplateChanges = document.getElementById("btnSaveTemplateChanges");
+  var currentNewIssueMode = "manual";
+  function switchNewIssueMode(mode) {
+    currentNewIssueMode = mode;
+    elTabNewIssueManual.classList.toggle("active", mode === "manual");
+    elTabNewIssueAI.classList.toggle("active", mode === "ai");
+    elTabNewIssueTemplates.classList.toggle("active", mode === "templates");
+    elPaneNewIssueManual.style.display = mode === "manual" ? "flex" : "none";
+    elPaneNewIssueAI.style.display = mode === "ai" ? "flex" : "none";
+    elPaneNewIssueTemplates.style.display = mode === "templates" ? "flex" : "none";
+    elFootNewIssueManual.style.display = mode === "manual" ? "flex" : "none";
+    elFootNewIssueAI.style.display = mode === "ai" ? "flex" : "none";
+    elFootNewIssueTemplates.style.display = mode === "templates" ? "flex" : "none";
+    if (mode === "ai") {
+      updateAiTemplatePreview();
+      setTimeout(() => elAiIssueGoalInput.focus(), 50);
+    } else if (mode === "manual") {
+      setTimeout(() => elNewIssueTitleInput.focus(), 50);
+    } else if (mode === "templates") {
+      loadSelectedTemplateForEdit();
+    }
+  }
+  function updateTemplateSelects() {
+    const optionsHtml = Object.values(activeTemplates).map((t) => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join("");
+    elAiTemplateSelect.innerHTML = optionsHtml;
+    elEditTemplateSelect.innerHTML = optionsHtml;
+    updateAiTemplatePreview();
+  }
+  function updateAiTemplatePreview() {
+    const tId = elAiTemplateSelect.value || "bug";
+    const t = activeTemplates[tId] || DEFAULT_TEMPLATES.bug;
+    elAiTemplatePreviewText.textContent = t.promptInstructions;
+  }
+  function loadSelectedTemplateForEdit() {
+    const tId = elEditTemplateSelect.value || "bug";
+    const t = activeTemplates[tId] || DEFAULT_TEMPLATES[tId] || DEFAULT_TEMPLATES.bug;
+    elEditTemplateNameInput.value = t.name;
+    elEditTemplateInstructionsTextarea.value = t.promptInstructions;
+  }
   function openNewIssueModal() {
     if (!currentRepo) {
       openRepoPopover();
@@ -2342,9 +2520,12 @@ ${issue.body}
     elNewIssueRepoTarget.textContent = currentRepo;
     elNewIssueTitleInput.value = "";
     elNewIssueBodyInput.value = "";
+    elAiIssueGoalInput.value = "";
+    elAiIssueContextInput.value = "";
     elLinkOpenGithubNew.href = `https://github.com/${currentRepo}/issues/new`;
+    void loadCustomTemplates();
+    switchNewIssueMode("manual");
     elNewIssueModalBackdrop.classList.add("active");
-    setTimeout(() => elNewIssueTitleInput.focus(), 50);
   }
   function closeNewIssueModal() {
     elNewIssueModalBackdrop.classList.remove("active");
@@ -2372,6 +2553,95 @@ ${issue.body}
     } finally {
       elBtnNewIssueSubmit.disabled = false;
       elBtnNewIssueSubmit.textContent = "Create Issue";
+    }
+  }
+  async function launchAiIssueSession() {
+    const goal = elAiIssueGoalInput.value.trim();
+    if (!goal) {
+      elAiIssueGoalInput.focus();
+      return;
+    }
+    const tId = elAiTemplateSelect.value || "bug";
+    const template = activeTemplates[tId] || DEFAULT_TEMPLATES.bug;
+    const contextHints = elAiIssueContextInput.value.trim();
+    const useWorktree = elAiIssueWorktreeToggle.checked;
+    const promptText = buildAgentIssuePrompt({
+      repo: currentRepo,
+      template,
+      userGoal: goal,
+      contextHints
+    });
+    elBtnLaunchAISession.disabled = true;
+    elBtnLaunchAISession.textContent = "Starting AI Session...";
+    try {
+      addLog(`Launching AI issue drafting session for "${goal}"...`);
+      const branchName = useWorktree ? `issue-draft-${slugify(goal)}` : void 0;
+      const res = await host.startSession({
+        projectId: currentProject?.id,
+        worktree: branchName ? { kind: "new", name: branchName } : false,
+        navigation: "open",
+        providerId: "github-task-board",
+        id: `draft-${Date.now()}`,
+        title: `Draft Issue: ${goal.slice(0, 60)}`,
+        url: `https://github.com/${currentRepo}/issues`,
+        text: promptText,
+        data: {
+          drafting: true,
+          repo: currentRepo,
+          templateId: template.id
+        }
+      });
+      closeNewIssueModal();
+      await host.toast({
+        kind: "success",
+        message: `Launched AI drafting session!`
+      });
+      if (res.sessionId) {
+        void host.openSession(res.sessionId);
+      }
+    } catch (err) {
+      addLog(`Failed to start AI session: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to start session: ${err.message}` });
+    } finally {
+      elBtnLaunchAISession.disabled = false;
+      elBtnLaunchAISession.textContent = "Launch AI Drafting Session";
+    }
+  }
+  async function saveTemplateChanges() {
+    const tId = elEditTemplateSelect.value || "bug";
+    const newName = elEditTemplateNameInput.value.trim() || tId;
+    const newInstructions = elEditTemplateInstructionsTextarea.value.trim();
+    if (!newInstructions) {
+      elEditTemplateInstructionsTextarea.focus();
+      return;
+    }
+    activeTemplates[tId] = {
+      ...activeTemplates[tId] || { id: tId, description: "" },
+      name: newName,
+      promptInstructions: newInstructions
+    };
+    try {
+      await host.storage.set("custom_issue_templates", activeTemplates);
+      updateTemplateSelects();
+      await host.toast({ kind: "success", message: `Saved custom template "${newName}"!` });
+      addLog(`Saved custom template "${newName}"`, "succ");
+      switchNewIssueMode("ai");
+    } catch (err) {
+      addLog(`Failed to save template: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to save template: ${err.message}` });
+    }
+  }
+  async function resetTemplateToDefault() {
+    const tId = elEditTemplateSelect.value || "bug";
+    if (DEFAULT_TEMPLATES[tId]) {
+      activeTemplates[tId] = { ...DEFAULT_TEMPLATES[tId] };
+      loadSelectedTemplateForEdit();
+      try {
+        await host.storage.set("custom_issue_templates", activeTemplates);
+        updateTemplateSelects();
+        await host.toast({ kind: "info", message: `Reset "${activeTemplates[tId].name}" to default.` });
+      } catch {
+      }
     }
   }
   function setupDragAndDrop() {
@@ -2446,6 +2716,32 @@ ${issue.body}
     elBtnNewIssueCancel.addEventListener("click", closeNewIssueModal);
     elBtnNewIssueSubmit.addEventListener("click", () => {
       void submitNewIssue();
+    });
+    elTabNewIssueManual.addEventListener("click", () => switchNewIssueMode("manual"));
+    elTabNewIssueAI.addEventListener("click", () => switchNewIssueMode("ai"));
+    elTabNewIssueTemplates.addEventListener("click", () => switchNewIssueMode("templates"));
+    elAiTemplateSelect.addEventListener("change", () => {
+      updateAiTemplatePreview();
+    });
+    elBtnJumpToTemplateEditor.addEventListener("click", () => {
+      elEditTemplateSelect.value = elAiTemplateSelect.value;
+      switchNewIssueMode("templates");
+    });
+    elBtnNewIssueAICancel.addEventListener("click", closeNewIssueModal);
+    elBtnLaunchAISession.addEventListener("click", () => {
+      void launchAiIssueSession();
+    });
+    elEditTemplateSelect.addEventListener("change", () => {
+      loadSelectedTemplateForEdit();
+    });
+    elBtnCancelEditTemplate.addEventListener("click", () => {
+      switchNewIssueMode("ai");
+    });
+    elBtnSaveTemplateChanges.addEventListener("click", () => {
+      void saveTemplateChanges();
+    });
+    elBtnResetTemplateDefaults.addEventListener("click", () => {
+      void resetTemplateToDefault();
     });
     elBtnLogsToggle.addEventListener("click", () => {
       elLogDrawer.classList.toggle("active");
