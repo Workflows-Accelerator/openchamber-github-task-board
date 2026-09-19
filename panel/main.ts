@@ -32,9 +32,18 @@ export interface SessionInfo {
   title: string;
   activity: string;
   outcome?: string | null;
-  worktree?: string | null;
+  worktree?: string | { name?: string; branch?: string; directory?: string; status?: string } | null;
   directory?: string | null;
   items?: Array<{ id?: string; providerId?: string; data?: any }>;
+}
+
+export function extractWorktreeName(wt: any): string {
+  if (!wt) return '';
+  if (typeof wt === 'string') return wt;
+  if (typeof wt === 'object') {
+    return wt.name || wt.branch || wt.directory || '';
+  }
+  return '';
 }
 
 export interface ProjectItem {
@@ -875,7 +884,8 @@ function getIssueSession(issue: Issue): SessionInfo | null {
     if (s.title && s.title.includes(`#${issue.number}`)) {
       return true;
     }
-    if (s.worktree && s.worktree.includes(`issue-${issue.number}`)) {
+    const wtName = extractWorktreeName(s.worktree);
+    if (wtName && wtName.includes(`issue-${issue.number}`)) {
       return true;
     }
     return false;
@@ -1016,11 +1026,12 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
   }
 
   // Worktree tag
-  const worktreeHtml = session?.worktree
+  const wtTag = extractWorktreeName(session?.worktree);
+  const worktreeHtml = wtTag
     ? `
       <div class="worktree-tag">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
-        <span>${escapeHtml(session.worktree)}</span>
+        <span>${escapeHtml(wtTag)}</span>
       </div>
     `
     : '';
@@ -1345,7 +1356,8 @@ function renderDrawer(issue: Issue): void {
       <span class="dot ${dotClass}"></span>
       <span>${label}</span>
     `;
-    elDrawerWorktreeName.textContent = session.worktree || 'Project Root';
+    const wtName = extractWorktreeName(session.worktree);
+    elDrawerWorktreeName.textContent = wtName || 'Project Root';
     elBtnDrawerJumpSession.style.display = 'inline-flex';
     elBtnDrawerJumpSession.onclick = () => {
       void host.openSession(session.id);

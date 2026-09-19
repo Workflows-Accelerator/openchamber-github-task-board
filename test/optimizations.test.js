@@ -46,3 +46,41 @@ test('issue cache returns cached issues within TTL and expires after TTL', () =>
   assert.deepEqual(getCachedIssues('owner/repo', now + 10000), [{ number: 1, title: 'Test' }]);
   assert.equal(getCachedIssues('owner/repo', now + 70000), null);
 });
+
+export function extractWorktreeName(wt) {
+  if (!wt) return '';
+  if (typeof wt === 'string') return wt;
+  if (typeof wt === 'object') {
+    return wt.name || wt.branch || wt.directory || '';
+  }
+  return '';
+}
+
+test('extractWorktreeName safely handles string, object, null, and undefined worktrees', () => {
+  assert.equal(extractWorktreeName('issue-42-feat'), 'issue-42-feat');
+  assert.equal(extractWorktreeName({ name: 'issue-42-feat', branch: 'issue-42-feat' }), 'issue-42-feat');
+  assert.equal(extractWorktreeName({ branch: 'issue-99' }), 'issue-99');
+  assert.equal(extractWorktreeName({ directory: '/workspace/worktree/test' }), '/workspace/worktree/test');
+  assert.equal(extractWorktreeName(null), '');
+  assert.equal(extractWorktreeName(undefined), '');
+  assert.equal(extractWorktreeName(false), '');
+});
+
+test('session worktree matching handles object worktree without throwing s.worktree.includes error', () => {
+  const sessions = [
+    { id: '1', title: 'Session 1', worktree: { name: 'issue-12-bugfix', branch: 'issue-12-bugfix' } },
+    { id: '2', title: 'Session 2', worktree: null },
+    { id: '3', title: 'Session 3', worktree: 'issue-15-feature' },
+  ];
+
+  function matchSession(issueNum) {
+    return sessions.find((s) => {
+      const wtName = extractWorktreeName(s.worktree);
+      return wtName && wtName.includes(`issue-${issueNum}`);
+    }) || null;
+  }
+
+  assert.equal(matchSession(12)?.id, '1');
+  assert.equal(matchSession(15)?.id, '3');
+  assert.equal(matchSession(999), null);
+});

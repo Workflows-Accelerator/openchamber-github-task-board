@@ -1,10 +1,10 @@
 "use strict";
 (() => {
-  // ../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
 
-  // ../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLBAR_CSS = `
 :root {
   --oc-scrollbar-thumb: color-mix(in srgb, var(--oc-muted, currentColor) 40%, transparent);
@@ -37,11 +37,11 @@
 }
 `;
 
-  // ../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
 
-  // ../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var GUEST_FILE_STAT_KINDS = ["file", "directory", "other", "missing"];
   var isStartSessionResult = (value) => Boolean(value && "sessionId" in value);
   var isPromptResult = (value) => Boolean(value && "sent" in value && !("sessionId" in value));
@@ -237,7 +237,7 @@
     return wire;
   };
 
-  // ../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var HostRequestError = class extends Error {
     code;
     constructor(code, message) {
@@ -880,7 +880,7 @@
     };
   };
 
-  // ../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -955,7 +955,7 @@
     }
   };
 
-  // ../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1157,7 +1157,15 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // ../extensions/github-task-board/panel/main.ts
+  // panel/main.ts
+  function extractWorktreeName(wt) {
+    if (!wt) return "";
+    if (typeof wt === "string") return wt;
+    if (typeof wt === "object") {
+      return wt.name || wt.branch || wt.directory || "";
+    }
+    return "";
+  }
   var logEntries = [];
   function addLog(msg, level = "info") {
     const d = /* @__PURE__ */ new Date();
@@ -1818,7 +1826,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       if (s.title && s.title.includes(`#${issue.number}`)) {
         return true;
       }
-      if (s.worktree && s.worktree.includes(`issue-${issue.number}`)) {
+      const wtName = extractWorktreeName(s.worktree);
+      if (wtName && wtName.includes(`issue-${issue.number}`)) {
         return true;
       }
       return false;
@@ -1921,10 +1930,11 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       </div>
     `;
     }
-    const worktreeHtml = session?.worktree ? `
+    const wtTag = extractWorktreeName(session?.worktree);
+    const worktreeHtml = wtTag ? `
       <div class="worktree-tag">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
-        <span>${escapeHtml(session.worktree)}</span>
+        <span>${escapeHtml(wtTag)}</span>
       </div>
     ` : "";
     const labelsHtml = issue.labels.filter((l) => !l.name.startsWith("status:")).map((l) => {
@@ -2166,7 +2176,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       <span class="dot ${dotClass}"></span>
       <span>${label}</span>
     `;
-      elDrawerWorktreeName.textContent = session.worktree || "Project Root";
+      const wtName = extractWorktreeName(session.worktree);
+      elDrawerWorktreeName.textContent = wtName || "Project Root";
       elBtnDrawerJumpSession.style.display = "inline-flex";
       elBtnDrawerJumpSession.onclick = () => {
         void host.openSession(session.id);
