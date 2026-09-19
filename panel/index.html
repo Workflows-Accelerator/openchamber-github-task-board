@@ -820,6 +820,47 @@
     .log-msg-error { color: var(--err); }
     .log-msg-succ { color: var(--succ); }
 
+    /* Segmented Mode Switch */
+    .mode-switch-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 8px 16px;
+      background: var(--surf-muted);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+    .mode-switch {
+      display: inline-flex;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      padding: 2px;
+      gap: 2px;
+      width: 100%;
+      max-width: 280px;
+    }
+    .mode-switch-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--fg-muted);
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: var(--rad-sm);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-align: center;
+    }
+    .mode-switch-btn:hover {
+      color: var(--fg);
+    }
+    .mode-switch-btn.active {
+      background: var(--surf);
+      color: var(--fg);
+      font-weight: 600;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
     /* Modal Backdrop */
     .modal-backdrop {
       position: fixed;
@@ -1188,32 +1229,73 @@
     </div>
   </div>
 
-  <!-- Quick Create Issue Modal -->
+  <!-- Create Issue Modal -->
   <div class="modal-backdrop" id="newIssueModalBackdrop">
     <div class="modal" style="width: 520px;">
       <div class="modal-head">
         <span id="newIssueModalTitle">Create GitHub Issue</span>
-        <button class="btn btn-icon btn-sm" id="btnNewIssueClose">
+        <button class="btn btn-icon btn-sm" id="btnNewIssueClose" type="button">
           <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></svg>
         </button>
       </div>
 
-      <!-- Segmented Mode Tabs (Manual is default) -->
-      <nav class="status-tabs" style="padding: 4px 12px; background: var(--surf-muted); border-bottom: 1px solid var(--border-subtle); gap: 4px;">
-        <button class="status-tab active" id="tabNewIssueManual">Manual</button>
-        <button class="status-tab" id="tabNewIssueAI">✨ AI Assisted</button>
-        <button class="status-tab" id="tabNewIssueTemplates">⚙️ Edit Templates</button>
-      </nav>
+      <!-- Segmented Mode Switch (AI Assisted is first and active by default) -->
+      <div class="mode-switch-wrap">
+        <div class="mode-switch">
+          <button class="mode-switch-btn active" id="btnSwitchAI" type="button">AI Assisted</button>
+          <button class="mode-switch-btn" id="btnSwitchManual" type="button">Manual</button>
+        </div>
+      </div>
 
       <div class="modal-body">
-        <!-- Target Repo Header for all tabs -->
-        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 8px;">
+        <!-- Target Repo Header -->
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-subtle); padding-bottom: 6px;">
           <span style="font-size: 11px; color: var(--fg-muted);">Target Repository</span>
           <span id="newIssueRepoTarget" style="font-family: var(--font-mono); font-size: 11px; color: var(--prim); font-weight: 500;"></span>
         </div>
 
-        <!-- Tab 1: Manual Mode (Default) -->
-        <div id="paneNewIssueManual" style="display: flex; flex-direction: column; gap: 12px;">
+        <!-- Mode 1: AI Assisted (Default & Single Input) -->
+        <div id="paneNewIssueAI" style="display: flex; flex-direction: column; gap: 10px;">
+          <div>
+            <label style="display: block; font-size: 11.5px; color: var(--fg-muted); margin-bottom: 4px;">Describe the task, bug, or feature to create:</label>
+            <textarea id="aiIssueInput" class="form-ctrl" style="width: 100%; height: 130px; resize: vertical; font-size: 12px; line-height: 1.5;" placeholder="Speak your mind freely. You can describe a single task or multiple issues at once. The AI agent will inspect the codebase, split distinct tasks if needed, and draft the issues with actionable subtask checklists..."></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <button class="btn btn-sm" id="btnTogglePromptConfig" type="button" style="font-size: 11px;">
+              <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1l1.79 3.626 4.004.582-2.897 2.824.684 3.988L12 10.125l-3.58 1.882.684-3.988L6.206 5.208l4.004-.582L12 1zm0 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
+              <span>Prompt Instructions</span>
+            </button>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <input type="checkbox" id="aiIssueWorktreeToggle" checked />
+              <label for="aiIssueWorktreeToggle" style="font-size: 11px; color: var(--fg-muted); cursor: pointer;">Isolate in Git worktree</label>
+            </div>
+          </div>
+
+          <!-- Collapsible Prompt Instructions Editor -->
+          <div id="aiPromptConfigPanel" class="panel-box" style="display: none; flex-direction: column; gap: 8px; background: var(--surf-muted);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 10px; font-size: 11px;">
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <input type="radio" name="promptScope" id="radioScopeRepo" value="repo" checked />
+                  <span>This Repository</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                  <input type="radio" name="promptScope" id="radioScopeGlobal" value="global" />
+                  <span>Global Default</span>
+                </label>
+              </div>
+              <button class="btn btn-sm" id="btnResetPromptToDefault" type="button" style="height: 18px; font-size: 10px; color: var(--warn);">Reset</button>
+            </div>
+            <textarea id="aiPromptTemplateTextarea" class="form-ctrl" style="width: 100%; height: 130px; font-family: var(--font-mono); font-size: 10.5px; line-height: 1.4; resize: vertical;"></textarea>
+            <div style="display: flex; justify-content: flex-end;">
+              <button class="btn btn-sm btn-primary" id="btnSavePromptConfig" type="button">Save Instructions</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mode 2: Manual (Secondary) -->
+        <div id="paneNewIssueManual" style="display: none; flex-direction: column; gap: 10px;">
           <div>
             <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Issue Title</label>
             <input type="text" id="newIssueTitleInput" class="form-ctrl" style="width: 100%;" placeholder="e.g. Fix button alignment in login modal" />
@@ -1223,86 +1305,26 @@
             <textarea id="newIssueBodyInput" class="form-ctrl" style="width: 100%; height: 130px; resize: vertical; font-size: 12px; font-family: var(--font-mono);" placeholder="Describe task or add checklist items:&#10;- [ ] Reproduce with test&#10;- [ ] Implement fix&#10;- [ ] Verify green"></textarea>
           </div>
         </div>
-
-        <!-- Tab 2: AI Assisted Mode -->
-        <div id="paneNewIssueAI" style="display: none; flex-direction: column; gap: 12px;">
-          <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <label style="font-size: 11px; color: var(--fg-muted);">Issue Template</label>
-              <button class="btn btn-sm" id="btnJumpToTemplateEditor" style="height: 18px; font-size: 10px;">Edit template</button>
-            </div>
-            <select class="form-ctrl" id="aiTemplateSelect" style="width: 100%;">
-              <option value="bug">Bug Report (Root cause + checklist)</option>
-              <option value="feature">Feature / Enhancement (Architecture + subtasks)</option>
-              <option value="task">Technical Debt / Refactor (Cleanup + verify)</option>
-            </select>
-          </div>
-          <div>
-            <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Issue Objective / Short Goal</label>
-            <input type="text" id="aiIssueGoalInput" class="form-ctrl" style="width: 100%;" placeholder="e.g. Add dark mode toggle to navigation and save preference" />
-          </div>
-          <div>
-            <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Additional Context & File Hints (Optional)</label>
-            <textarea id="aiIssueContextInput" class="form-ctrl" style="width: 100%; height: 50px; resize: vertical; font-size: 11.5px;" placeholder="e.g. Look at src/components/Header.tsx and theme store..."></textarea>
-          </div>
-          <div>
-            <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Template Instructions for the Agent</label>
-            <div class="panel-box" style="background: var(--bg); max-height: 80px; overflow-y: auto; padding: 6px 8px;">
-              <pre id="aiTemplatePreviewText" style="font-family: var(--font-mono); font-size: 10.5px; color: var(--fg-muted); white-space: pre-wrap; margin: 0;"></pre>
-            </div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 6px;">
-            <input type="checkbox" id="aiIssueWorktreeToggle" />
-            <label for="aiIssueWorktreeToggle" style="font-size: 11.5px; color: var(--fg-muted); cursor: pointer;">Create isolated git worktree branch for issue</label>
-          </div>
-        </div>
-
-        <!-- Tab 3: Template Editor Mode -->
-        <div id="paneNewIssueTemplates" style="display: none; flex-direction: column; gap: 12px;">
-          <div>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-              <label style="font-size: 11px; color: var(--fg-muted);">Template to Edit</label>
-              <button class="btn btn-sm" id="btnResetTemplateDefaults" style="height: 18px; font-size: 10px; color: var(--warn);">Reset to Default</button>
-            </div>
-            <select class="form-ctrl" id="editTemplateSelect" style="width: 100%;">
-              <option value="bug">Bug Report</option>
-              <option value="feature">Feature / Enhancement</option>
-              <option value="task">Technical Debt / Refactor</option>
-            </select>
-          </div>
-          <div>
-            <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Template Name</label>
-            <input type="text" id="editTemplateNameInput" class="form-ctrl" style="width: 100%;" />
-          </div>
-          <div>
-            <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Prompt & Subtask Instructions (Markdown)</label>
-            <textarea id="editTemplateInstructionsTextarea" class="form-ctrl" style="width: 100%; height: 140px; resize: vertical; font-family: var(--font-mono); font-size: 11px;"></textarea>
-          </div>
-        </div>
       </div>
 
-      <!-- Footers tailored to active tab -->
-      <div class="modal-foot" id="footNewIssueManual" style="justify-content: space-between;">
-        <a id="linkOpenGithubNew" href="#" target="_blank" style="font-size: 11px; color: var(--fg-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-          <span>Open on GitHub ↗</span>
-        </a>
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-sm" id="btnNewIssueCancel">Cancel</button>
-          <button class="btn btn-sm btn-primary" id="btnNewIssueSubmit">Create Issue</button>
-        </div>
-      </div>
-
-      <div class="modal-foot" id="footNewIssueAI" style="display: none; justify-content: flex-end; gap: 8px;">
-        <button class="btn btn-sm" id="btnNewIssueAICancel">Cancel</button>
-        <button class="btn btn-sm btn-primary" id="btnLaunchAISession">
+      <!-- Footer for AI mode -->
+      <div class="modal-foot" id="footNewIssueAI" style="display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="btn btn-sm" id="btnNewIssueAICancel" type="button">Cancel</button>
+        <button class="btn btn-sm btn-primary" id="btnLaunchAISession" type="button">
           <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19.376 12.416L8.777 19.482A.5.5 0 0 1 8 19.066V4.934a.5.5 0 0 1 .777-.416l10.599 7.066a.5.5 0 0 1 0 .832z"/></svg>
           <span>Launch AI Drafting Session</span>
         </button>
       </div>
 
-      <div class="modal-foot" id="footNewIssueTemplates" style="display: none; justify-content: flex-end; gap: 8px;">
-        <button class="btn btn-sm" id="btnCancelEditTemplate">Back to Issues</button>
-        <button class="btn btn-sm btn-primary" id="btnSaveTemplateChanges">Save Template Changes</button>
+      <!-- Footer for Manual mode -->
+      <div class="modal-foot" id="footNewIssueManual" style="display: none; justify-content: space-between;">
+        <a id="linkOpenGithubNew" href="#" target="_blank" style="font-size: 11px; color: var(--fg-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+          <span>Open on GitHub -></span>
+        </a>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-sm" id="btnNewIssueCancel" type="button">Cancel</button>
+          <button class="btn btn-sm btn-primary" id="btnNewIssueSubmit" type="button">Create Issue</button>
+        </div>
       </div>
     </div>
   </div>

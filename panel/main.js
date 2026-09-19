@@ -1576,7 +1576,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
               <span class="popover-item-title">${escapeHtml(p.name)}</span>
               ${isCurrentProject ? '<span class="status-pill" style="font-size: 9px; padding: 0 4px;">active</span>' : ""}
             </div>
-            ${isSelectedRepo ? '<span style="color: var(--succ); font-size: 11px;">\u2713 active</span>' : ""}
+            ${isSelectedRepo ? '<span style="color: var(--succ); font-size: 11px; font-weight: 500;">[active]</span>' : ""}
           </div>
           <span class="popover-item-sub">${repoName ? escapeHtml(repoName) : '<span style="color: var(--warn); font-style: italic;">No repo linked \u2022 click to link</span>'}</span>
         </div>
@@ -2326,191 +2326,115 @@ ${issue.body}
       elBtnPreflightLaunch.textContent = "Launch Worktree & Agent";
     }
   }
-  var DEFAULT_TEMPLATES = {
-    bug: {
-      id: "bug",
-      name: "Bug Report",
-      description: "Investigate unexpected behavior, identify root cause, and draft fix subtasks",
-      promptInstructions: `### Problem Description
-[Detailed explanation of what went wrong, including error messages or unexpected behavior]
+  var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
 
-### Steps to Reproduce
-1. [First step]
-2. [Second step]
+Input Objective / User Mind-Dump:
+{userInput}
 
-### Root Cause Analysis
-[Inspect the relevant codebase files and explain the underlying mechanism]
-
-### Actionable Fix Subtasks
-- [ ] Reproduce with an isolated test
-- [ ] Implement narrow surgical fix
-- [ ] Verify test suite passes
-- [ ] Verify regression resistance`
-    },
-    feature: {
-      id: "feature",
-      name: "Feature / Enhancement",
-      description: "Design and specify new functionality with architectural plan and subtasks",
-      promptInstructions: `### Goal & User Value
-[Why this feature is needed and what problem it solves]
-
-### Architectural & UI Design
-[Proposed technical architecture, component structure, or API changes]
-
-### Actionable Implementation Subtasks
-- [ ] Define interfaces and types
-- [ ] Implement core logic / components
-- [ ] Add unit and integration tests
-- [ ] Verify end-to-end user flow`
-    },
-    task: {
-      id: "task",
-      name: "Technical Debt / Refactor",
-      description: "Code cleanup, performance optimization, or architecture simplification",
-      promptInstructions: `### Motivation
-[Identify dead code, performance bottlenecks, or architectural complexity]
-
-### Scope of Refactoring
-[Specific files and modules to touch, and what must remain unchanged]
-
-### Actionable Checklist
-- [ ] Establish baseline test coverage
-- [ ] Perform behavior-preserving refactoring
-- [ ] Verify existing tests continue to pass without regressions`
-    }
-  };
-  function mergeTemplates(defaults, userCustomTemplates) {
-    if (!userCustomTemplates || typeof userCustomTemplates !== "object") {
-      return { ...defaults };
-    }
-    const result = { ...defaults };
-    for (const [key, val] of Object.entries(userCustomTemplates)) {
-      if (val && typeof val === "object" && val.promptInstructions) {
-        result[key] = {
-          ...result[key] || { id: key, name: key, description: "" },
-          ...val
-        };
-      }
-    }
-    return result;
-  }
-  function buildAgentIssuePrompt({
+Instructions for the Agent:
+1. Analyze the user's input. If the user described multiple independent tasks, bugs, or features, decompose them into distinct, well-scoped GitHub issues. If it describes a single topic, create one focused issue.
+2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture.
+3. Every generated issue must follow this exact structure tailored for the OpenChamber Task Board:
+   - Title: Conventional commit format (e.g. "feat(auth): add remember-me token refresh" or "fix(ui): prevent horizontal overflow in mobile table").
+   - Overview: Clear description of the problem, motivation, or user value.
+   - Files Impacted: List candidate file paths grounded in the codebase.
+   - Actionable Subtasks Checklist: Mandatory interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
+     - [ ] Reproduce with test / define contract
+     - [ ] Implement core changes
+     - [ ] Run test suite and verify green
+   - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
+   - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
+4. If a GitHub token or gh CLI is available in the environment, you can create the issues directly using the GitHub API. Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
+  function resolveAiIssuePrompt({
     repo,
-    template,
-    userGoal,
-    contextHints
+    userInput,
+    storedRepoPrompt,
+    storedGlobalPrompt
   }) {
-    let prompt = `You are an expert engineer tasked with drafting and creating a new GitHub Issue for repository "${repo}".
-
-`;
-    prompt += `User Objective / Issue Goal:
-${userGoal.trim()}
-
-`;
-    if (contextHints && contextHints.trim()) {
-      prompt += `Additional Context & Guidance:
-${contextHints.trim()}
-
-`;
-    }
-    prompt += `Template Specification (${template.name}):
-`;
-    prompt += `Follow this exact structure and include actionable markdown subtasks (- [ ]):
-
-`;
-    prompt += `${template.promptInstructions.trim()}
-
-`;
-    prompt += `Agent Instructions:
-`;
-    prompt += `1. Inspect the relevant repository files in the project to gather accurate context, file paths, and function names.
-`;
-    prompt += `2. Structure the issue clearly with a concise title and the markdown body following the template above.
-`;
-    prompt += `3. Include an interactive checklist of subtasks with "- [ ]".
-`;
-    prompt += `4. Once you have drafted the complete issue, output the finalized issue so it can be committed to GitHub or create it via GitHub API.
-`;
-    return prompt;
-  }
-  var activeTemplates = { ...DEFAULT_TEMPLATES };
-  async function loadCustomTemplates() {
-    try {
-      const stored = await host.storage.get("custom_issue_templates");
-      activeTemplates = mergeTemplates(DEFAULT_TEMPLATES, stored);
-    } catch {
-      activeTemplates = { ...DEFAULT_TEMPLATES };
-    }
-    updateTemplateSelects();
+    const template = storedRepoPrompt?.trim() || storedGlobalPrompt?.trim() || DEFAULT_AI_ISSUE_PROMPT;
+    return template.replace(/\{repo\}/g, repo).replace(/\{userInput\}/g, userInput.trim());
   }
   var elNewIssueModalBackdrop = document.getElementById("newIssueModalBackdrop");
   var elNewIssueRepoTarget = document.getElementById("newIssueRepoTarget");
-  var elTabNewIssueManual = document.getElementById("tabNewIssueManual");
-  var elTabNewIssueAI = document.getElementById("tabNewIssueAI");
-  var elTabNewIssueTemplates = document.getElementById("tabNewIssueTemplates");
-  var elPaneNewIssueManual = document.getElementById("paneNewIssueManual");
+  var elBtnSwitchAI = document.getElementById("btnSwitchAI");
+  var elBtnSwitchManual = document.getElementById("btnSwitchManual");
   var elPaneNewIssueAI = document.getElementById("paneNewIssueAI");
-  var elPaneNewIssueTemplates = document.getElementById("paneNewIssueTemplates");
-  var elFootNewIssueManual = document.getElementById("footNewIssueManual");
+  var elPaneNewIssueManual = document.getElementById("paneNewIssueManual");
   var elFootNewIssueAI = document.getElementById("footNewIssueAI");
-  var elFootNewIssueTemplates = document.getElementById("footNewIssueTemplates");
+  var elFootNewIssueManual = document.getElementById("footNewIssueManual");
+  var elAiIssueInput = document.getElementById("aiIssueInput");
+  var elBtnTogglePromptConfig = document.getElementById("btnTogglePromptConfig");
+  var elAiIssueWorktreeToggle = document.getElementById("aiIssueWorktreeToggle");
+  var elAiPromptConfigPanel = document.getElementById("aiPromptConfigPanel");
+  var elRadioScopeRepo = document.getElementById("radioScopeRepo");
+  var elRadioScopeGlobal = document.getElementById("radioScopeGlobal");
+  var elAiPromptTemplateTextarea = document.getElementById("aiPromptTemplateTextarea");
+  var elBtnResetPromptToDefault = document.getElementById("btnResetPromptToDefault");
+  var elBtnSavePromptConfig = document.getElementById("btnSavePromptConfig");
+  var elBtnNewIssueAICancel = document.getElementById("btnNewIssueAICancel");
+  var elBtnLaunchAISession = document.getElementById("btnLaunchAISession");
   var elNewIssueTitleInput = document.getElementById("newIssueTitleInput");
   var elNewIssueBodyInput = document.getElementById("newIssueBodyInput");
   var elBtnNewIssueSubmit = document.getElementById("btnNewIssueSubmit");
   var elBtnNewIssueCancel = document.getElementById("btnNewIssueCancel");
   var elBtnNewIssueClose = document.getElementById("btnNewIssueClose");
-  var elLinkOpenGithubNew = document.getElementById("linkOpenGithubNew");
-  var elAiTemplateSelect = document.getElementById("aiTemplateSelect");
-  var elBtnJumpToTemplateEditor = document.getElementById("btnJumpToTemplateEditor");
-  var elAiIssueGoalInput = document.getElementById("aiIssueGoalInput");
-  var elAiIssueContextInput = document.getElementById("aiIssueContextInput");
-  var elAiTemplatePreviewText = document.getElementById("aiTemplatePreviewText");
-  var elAiIssueWorktreeToggle = document.getElementById("aiIssueWorktreeToggle");
-  var elBtnNewIssueAICancel = document.getElementById("btnNewIssueAICancel");
-  var elBtnLaunchAISession = document.getElementById("btnLaunchAISession");
-  var elEditTemplateSelect = document.getElementById("editTemplateSelect");
-  var elEditTemplateNameInput = document.getElementById("editTemplateNameInput");
-  var elEditTemplateInstructionsTextarea = document.getElementById("editTemplateInstructionsTextarea");
-  var elBtnResetTemplateDefaults = document.getElementById("btnResetTemplateDefaults");
-  var elBtnCancelEditTemplate = document.getElementById("btnCancelEditTemplate");
-  var elBtnSaveTemplateChanges = document.getElementById("btnSaveTemplateChanges");
-  var currentNewIssueMode = "manual";
-  function switchNewIssueMode(mode) {
+  var currentNewIssueMode = "ai";
+  function setNewIssueMode(mode) {
     currentNewIssueMode = mode;
-    elTabNewIssueManual.classList.toggle("active", mode === "manual");
-    elTabNewIssueAI.classList.toggle("active", mode === "ai");
-    elTabNewIssueTemplates.classList.toggle("active", mode === "templates");
-    elPaneNewIssueManual.style.display = mode === "manual" ? "flex" : "none";
+    elBtnSwitchAI.classList.toggle("active", mode === "ai");
+    elBtnSwitchManual.classList.toggle("active", mode === "manual");
     elPaneNewIssueAI.style.display = mode === "ai" ? "flex" : "none";
-    elPaneNewIssueTemplates.style.display = mode === "templates" ? "flex" : "none";
-    elFootNewIssueManual.style.display = mode === "manual" ? "flex" : "none";
+    elPaneNewIssueManual.style.display = mode === "manual" ? "flex" : "none";
     elFootNewIssueAI.style.display = mode === "ai" ? "flex" : "none";
-    elFootNewIssueTemplates.style.display = mode === "templates" ? "flex" : "none";
+    elFootNewIssueManual.style.display = mode === "manual" ? "flex" : "none";
     if (mode === "ai") {
-      updateAiTemplatePreview();
-      setTimeout(() => elAiIssueGoalInput.focus(), 50);
-    } else if (mode === "manual") {
+      setTimeout(() => elAiIssueInput.focus(), 50);
+    } else {
       setTimeout(() => elNewIssueTitleInput.focus(), 50);
-    } else if (mode === "templates") {
-      loadSelectedTemplateForEdit();
     }
   }
-  function updateTemplateSelects() {
-    const optionsHtml = Object.values(activeTemplates).map((t) => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.name)}</option>`).join("");
-    elAiTemplateSelect.innerHTML = optionsHtml;
-    elEditTemplateSelect.innerHTML = optionsHtml;
-    updateAiTemplatePreview();
+  async function loadPromptConfigForEditor() {
+    const isRepoScope = elRadioScopeRepo.checked;
+    if (isRepoScope) {
+      const stored = await host.storage.get(`ai_issue_prompt_${currentRepo}`);
+      elAiPromptTemplateTextarea.value = typeof stored === "string" ? stored : DEFAULT_AI_ISSUE_PROMPT;
+    } else {
+      const stored = await host.storage.get("ai_issue_prompt_global");
+      elAiPromptTemplateTextarea.value = typeof stored === "string" ? stored : DEFAULT_AI_ISSUE_PROMPT;
+    }
   }
-  function updateAiTemplatePreview() {
-    const tId = elAiTemplateSelect.value || "bug";
-    const t = activeTemplates[tId] || DEFAULT_TEMPLATES.bug;
-    elAiTemplatePreviewText.textContent = t.promptInstructions;
+  async function savePromptConfig() {
+    const isRepoScope = elRadioScopeRepo.checked;
+    const text = elAiPromptTemplateTextarea.value.trim();
+    if (!text) return;
+    try {
+      if (isRepoScope) {
+        await host.storage.set(`ai_issue_prompt_${currentRepo}`, text);
+        addLog(`Saved prompt instructions for repo ${currentRepo}`, "succ");
+        await host.toast({ kind: "success", message: "Saved prompt instructions for this repository" });
+      } else {
+        await host.storage.set("ai_issue_prompt_global", text);
+        addLog("Saved global prompt instructions", "succ");
+        await host.toast({ kind: "success", message: "Saved global prompt instructions" });
+      }
+      elAiPromptConfigPanel.style.display = "none";
+    } catch (err) {
+      addLog(`Failed to save prompt config: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: "Failed to save prompt instructions" });
+    }
   }
-  function loadSelectedTemplateForEdit() {
-    const tId = elEditTemplateSelect.value || "bug";
-    const t = activeTemplates[tId] || DEFAULT_TEMPLATES[tId] || DEFAULT_TEMPLATES.bug;
-    elEditTemplateNameInput.value = t.name;
-    elEditTemplateInstructionsTextarea.value = t.promptInstructions;
+  async function resetPromptConfigToDefault() {
+    elAiPromptTemplateTextarea.value = DEFAULT_AI_ISSUE_PROMPT;
+    const isRepoScope = elRadioScopeRepo.checked;
+    try {
+      if (isRepoScope) {
+        await host.storage.delete(`ai_issue_prompt_${currentRepo}`);
+      } else {
+        await host.storage.delete("ai_issue_prompt_global");
+      }
+      await host.toast({ kind: "info", message: "Reset prompt instructions to default" });
+    } catch {
+    }
   }
   function openNewIssueModal() {
     if (!currentRepo) {
@@ -2520,12 +2444,11 @@ ${contextHints.trim()}
     elNewIssueRepoTarget.textContent = currentRepo;
     elNewIssueTitleInput.value = "";
     elNewIssueBodyInput.value = "";
-    elAiIssueGoalInput.value = "";
-    elAiIssueContextInput.value = "";
-    elLinkOpenGithubNew.href = `https://github.com/${currentRepo}/issues/new`;
-    void loadCustomTemplates();
-    switchNewIssueMode("manual");
+    elAiIssueInput.value = "";
+    elAiPromptConfigPanel.style.display = "none";
+    setNewIssueMode("ai");
     elNewIssueModalBackdrop.classList.add("active");
+    setTimeout(() => elAiIssueInput.focus(), 50);
   }
   function closeNewIssueModal() {
     elNewIssueModalBackdrop.classList.remove("active");
@@ -2543,7 +2466,7 @@ ${contextHints.trim()}
       addLog(`Creating issue in ${currentRepo}: "${title}"...`);
       const created = await githubRequest("POST", `/repos/${currentRepo}/issues`, { title, body });
       addLog(`Created issue #${created.number}: ${created.title}`, "succ");
-      await host.toast({ kind: "success", message: `Created #${created.number} on GitHub!` });
+      await host.toast({ kind: "success", message: `Created #${created.number} on GitHub` });
       closeNewIssueModal();
       issueCache.delete(currentRepo);
       void fetchIssues(true);
@@ -2556,45 +2479,44 @@ ${contextHints.trim()}
     }
   }
   async function launchAiIssueSession() {
-    const goal = elAiIssueGoalInput.value.trim();
-    if (!goal) {
-      elAiIssueGoalInput.focus();
+    const userInput = elAiIssueInput.value.trim();
+    if (!userInput) {
+      elAiIssueInput.focus();
       return;
     }
-    const tId = elAiTemplateSelect.value || "bug";
-    const template = activeTemplates[tId] || DEFAULT_TEMPLATES.bug;
-    const contextHints = elAiIssueContextInput.value.trim();
-    const useWorktree = elAiIssueWorktreeToggle.checked;
-    const promptText = buildAgentIssuePrompt({
+    const storedRepoPrompt = await host.storage.get(`ai_issue_prompt_${currentRepo}`);
+    const storedGlobalPrompt = await host.storage.get("ai_issue_prompt_global");
+    const promptText = resolveAiIssuePrompt({
       repo: currentRepo,
-      template,
-      userGoal: goal,
-      contextHints
+      userInput,
+      storedRepoPrompt: typeof storedRepoPrompt === "string" ? storedRepoPrompt : null,
+      storedGlobalPrompt: typeof storedGlobalPrompt === "string" ? storedGlobalPrompt : null
     });
+    const useWorktree = elAiIssueWorktreeToggle.checked;
+    const firstLine = userInput.split("\n")[0].replace(/[^a-zA-Z0-9\s-_]/g, "").trim().slice(0, 50);
+    const branchName = useWorktree ? `issue-draft-${slugify(firstLine || "task")}` : void 0;
     elBtnLaunchAISession.disabled = true;
     elBtnLaunchAISession.textContent = "Starting AI Session...";
     try {
-      addLog(`Launching AI issue drafting session for "${goal}"...`);
-      const branchName = useWorktree ? `issue-draft-${slugify(goal)}` : void 0;
+      addLog("Launching AI issue drafting session...");
       const res = await host.startSession({
         projectId: currentProject?.id,
         worktree: branchName ? { kind: "new", name: branchName } : false,
         navigation: "open",
         providerId: "github-task-board",
         id: `draft-${Date.now()}`,
-        title: `Draft Issue: ${goal.slice(0, 60)}`,
+        title: `Draft: ${firstLine || "GitHub Issues"}`,
         url: `https://github.com/${currentRepo}/issues`,
         text: promptText,
         data: {
           drafting: true,
-          repo: currentRepo,
-          templateId: template.id
+          repo: currentRepo
         }
       });
       closeNewIssueModal();
       await host.toast({
         kind: "success",
-        message: `Launched AI drafting session!`
+        message: "Launched AI drafting session"
       });
       if (res.sessionId) {
         void host.openSession(res.sessionId);
@@ -2605,43 +2527,6 @@ ${contextHints.trim()}
     } finally {
       elBtnLaunchAISession.disabled = false;
       elBtnLaunchAISession.textContent = "Launch AI Drafting Session";
-    }
-  }
-  async function saveTemplateChanges() {
-    const tId = elEditTemplateSelect.value || "bug";
-    const newName = elEditTemplateNameInput.value.trim() || tId;
-    const newInstructions = elEditTemplateInstructionsTextarea.value.trim();
-    if (!newInstructions) {
-      elEditTemplateInstructionsTextarea.focus();
-      return;
-    }
-    activeTemplates[tId] = {
-      ...activeTemplates[tId] || { id: tId, description: "" },
-      name: newName,
-      promptInstructions: newInstructions
-    };
-    try {
-      await host.storage.set("custom_issue_templates", activeTemplates);
-      updateTemplateSelects();
-      await host.toast({ kind: "success", message: `Saved custom template "${newName}"!` });
-      addLog(`Saved custom template "${newName}"`, "succ");
-      switchNewIssueMode("ai");
-    } catch (err) {
-      addLog(`Failed to save template: ${err.message}`, "error");
-      await host.toast({ kind: "error", message: `Failed to save template: ${err.message}` });
-    }
-  }
-  async function resetTemplateToDefault() {
-    const tId = elEditTemplateSelect.value || "bug";
-    if (DEFAULT_TEMPLATES[tId]) {
-      activeTemplates[tId] = { ...DEFAULT_TEMPLATES[tId] };
-      loadSelectedTemplateForEdit();
-      try {
-        await host.storage.set("custom_issue_templates", activeTemplates);
-        updateTemplateSelects();
-        await host.toast({ kind: "info", message: `Reset "${activeTemplates[tId].name}" to default.` });
-      } catch {
-      }
     }
   }
   function setupDragAndDrop() {
@@ -2717,31 +2602,32 @@ ${contextHints.trim()}
     elBtnNewIssueSubmit.addEventListener("click", () => {
       void submitNewIssue();
     });
-    elTabNewIssueManual.addEventListener("click", () => switchNewIssueMode("manual"));
-    elTabNewIssueAI.addEventListener("click", () => switchNewIssueMode("ai"));
-    elTabNewIssueTemplates.addEventListener("click", () => switchNewIssueMode("templates"));
-    elAiTemplateSelect.addEventListener("change", () => {
-      updateAiTemplatePreview();
-    });
-    elBtnJumpToTemplateEditor.addEventListener("click", () => {
-      elEditTemplateSelect.value = elAiTemplateSelect.value;
-      switchNewIssueMode("templates");
-    });
+    elBtnSwitchAI.addEventListener("click", () => setNewIssueMode("ai"));
+    elBtnSwitchManual.addEventListener("click", () => setNewIssueMode("manual"));
     elBtnNewIssueAICancel.addEventListener("click", closeNewIssueModal);
     elBtnLaunchAISession.addEventListener("click", () => {
       void launchAiIssueSession();
     });
-    elEditTemplateSelect.addEventListener("change", () => {
-      loadSelectedTemplateForEdit();
+    elBtnTogglePromptConfig.addEventListener("click", () => {
+      const isHidden = elAiPromptConfigPanel.style.display === "none";
+      if (isHidden) {
+        elAiPromptConfigPanel.style.display = "flex";
+        void loadPromptConfigForEditor();
+      } else {
+        elAiPromptConfigPanel.style.display = "none";
+      }
     });
-    elBtnCancelEditTemplate.addEventListener("click", () => {
-      switchNewIssueMode("ai");
+    elRadioScopeRepo.addEventListener("change", () => {
+      void loadPromptConfigForEditor();
     });
-    elBtnSaveTemplateChanges.addEventListener("click", () => {
-      void saveTemplateChanges();
+    elRadioScopeGlobal.addEventListener("change", () => {
+      void loadPromptConfigForEditor();
     });
-    elBtnResetTemplateDefaults.addEventListener("click", () => {
-      void resetTemplateToDefault();
+    elBtnSavePromptConfig.addEventListener("click", () => {
+      void savePromptConfig();
+    });
+    elBtnResetPromptToDefault.addEventListener("click", () => {
+      void resetPromptConfigToDefault();
     });
     elBtnLogsToggle.addEventListener("click", () => {
       elLogDrawer.classList.toggle("active");
