@@ -1348,44 +1348,80 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     }
     return null;
   }
+  var dirGitCache = /* @__PURE__ */ new Map();
+  var issueCache = /* @__PURE__ */ new Map();
+  var ISSUE_CACHE_TTL_MS = 6e4;
+  var unsubSessions = null;
+  var unsubWorktrees = null;
+  var activeWatchedProjectId = null;
+  async function watchActiveProject(projectId) {
+    if (activeWatchedProjectId === projectId) return;
+    activeWatchedProjectId = projectId;
+    if (unsubSessions) {
+      unsubSessions();
+      unsubSessions = null;
+    }
+    if (unsubWorktrees) {
+      unsubWorktrees();
+      unsubWorktrees = null;
+    }
+    try {
+      unsubSessions = await host.onSessions(projectId, (sessSnap) => {
+        sessions = sessSnap.sessions || [];
+        renderViews();
+        if (activeIssue) renderDrawer(activeIssue);
+      });
+      unsubWorktrees = await host.onWorktrees(projectId, (wtSnap) => {
+        worktrees = wtSnap.worktrees || [];
+      });
+    } catch (err) {
+      addLog(`Project watcher error on ${projectId}: ${err.message}`, "warn");
+    }
+  }
   async function inspectGitConfigInDir(dir) {
     const cleanDir = dir.replace(/\/+$/, "");
+    if (dirGitCache.has(cleanDir)) {
+      return dirGitCache.get(cleanDir);
+    }
+    let found = null;
     try {
       const res = await host.readFile(`${cleanDir}/.git/config`);
       if (res && res.content) {
-        const parsed = parseGitRemoteFromConfig(res.content);
-        if (parsed) return parsed;
+        found = parseGitRemoteFromConfig(res.content);
       }
     } catch {
     }
-    try {
-      const gitFileRes = await host.readFile(`${cleanDir}/.git`);
-      if (gitFileRes && gitFileRes.content) {
-        const match = gitFileRes.content.match(/^gitdir:\s*(.+)$/m);
-        if (match) {
-          const gitdir = match[1].trim();
-          const targetPath = gitdir.startsWith("/") ? gitdir : `${cleanDir}/${gitdir}`;
-          try {
-            const wtConfig = await host.readFile(`${targetPath}/config`);
-            if (wtConfig?.content) {
-              const parsed = parseGitRemoteFromConfig(wtConfig.content);
-              if (parsed) return parsed;
+    if (!found) {
+      try {
+        const gitFileRes = await host.readFile(`${cleanDir}/.git`);
+        if (gitFileRes && gitFileRes.content) {
+          const match = gitFileRes.content.match(/^gitdir:\s*(.+)$/m);
+          if (match) {
+            const gitdir = match[1].trim();
+            const targetPath = gitdir.startsWith("/") ? gitdir : `${cleanDir}/${gitdir}`;
+            try {
+              const wtConfig = await host.readFile(`${targetPath}/config`);
+              if (wtConfig?.content) {
+                found = parseGitRemoteFromConfig(wtConfig.content);
+              }
+            } catch {
             }
-          } catch {
-          }
-          try {
-            const parentConfig = await host.readFile(`${targetPath}/../../config`);
-            if (parentConfig?.content) {
-              const parsed = parseGitRemoteFromConfig(parentConfig.content);
-              if (parsed) return parsed;
+            if (!found) {
+              try {
+                const parentConfig = await host.readFile(`${targetPath}/../../config`);
+                if (parentConfig?.content) {
+                  found = parseGitRemoteFromConfig(parentConfig.content);
+                }
+              } catch {
+              }
             }
-          } catch {
           }
         }
+      } catch {
       }
-    } catch {
     }
-    return null;
+    dirGitCache.set(cleanDir, found);
+    return found;
   }
   async function discoverWorkspaceRepositories() {
     if (isDiscoveringRepos) return;
@@ -1395,26 +1431,29 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       const snap = await host.listProjects();
       const rawProjects = snap.projects || [];
       const uniqueProjects = Array.from(new Map(rawProjects.map((p) => [p.id, p])).values());
-      const projectItems = [];
-      for (const p of uniqueProjects) {
-        if (!p.directory) continue;
-        const detected = await inspectGitConfigInDir(p.directory);
-        const storedLink = await host.storage.get(`repo_${p.id}`);
-        const linkedRepo = typeof storedLink === "string" && storedLink.includes("/") ? storedLink.trim() : null;
-        projectItems.push({
-          id: p.id,
-          name: p.name || p.directory.split("/").pop() || p.id,
-          directory: p.directory,
-          gitRepo: detected,
-          linkedRepo: linkedRepo || (detected ? `${detected.owner}/${detected.repo}` : null)
-        });
-        if (detected) {
-          addLog(`Project "${p.name}" has Git repo: ${detected.owner}/${detected.repo}`, "succ");
+      const inspected = await Promise.all(
+        uniqueProjects.map(async (p) => {
+          if (!p.directory) return null;
+          const detected = await inspectGitConfigInDir(p.directory);
+          const storedLink = await host.storage.get(`repo_${p.id}`);
+          const linkedRepo = typeof storedLink === "string" && storedLink.includes("/") ? storedLink.trim() : null;
+          return {
+            id: p.id,
+            name: p.name || p.directory.split("/").pop() || p.id,
+            directory: p.directory,
+            gitRepo: detected,
+            linkedRepo: linkedRepo || (detected ? `${detected.owner}/${detected.repo}` : null)
+          };
+        })
+      );
+      allProjects = inspected.filter(Boolean);
+      allProjects.forEach((p) => {
+        if (p.gitRepo) {
+          addLog(`Project "${p.name}" has Git repo: ${p.gitRepo.owner}/${p.gitRepo.repo}`, "succ");
         } else {
           addLog(`Project "${p.name}" (${p.directory}) has no Git remote`, "info");
         }
-      }
-      allProjects = projectItems;
+      });
       renderRepoPopoverList();
       await autoResolveRepoForActiveContext();
     } catch (err) {
@@ -1424,17 +1463,19 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     }
   }
   async function autoResolveRepoForActiveContext() {
-    let targetProject = allProjects.find(
-      (p) => p.directory === currentDirectory || currentDirectory && currentDirectory.startsWith(p.directory + "/")
-    );
-    if (!targetProject && allProjects.length > 0) {
-      targetProject = allProjects.find((p) => p.directory === currentDirectory) || allProjects[0];
-    }
+    const sorted = [...allProjects].sort((a, b) => (b.directory?.length || 0) - (a.directory?.length || 0));
+    let targetProject = sorted.find((p) => {
+      if (!p.directory) return false;
+      const cleanP = p.directory.replace(/\/+$/, "");
+      const cleanT = currentDirectory.replace(/\/+$/, "");
+      return cleanP === cleanT || cleanT.startsWith(cleanP + "/");
+    }) || (allProjects.length > 0 ? allProjects[0] : null);
     currentProject = targetProject || null;
     if (!targetProject) {
       elTxtRepoLabel.textContent = "Select Repo";
       return;
     }
+    void watchActiveProject(targetProject.id);
     addLog(`Active conversation project: "${targetProject.name}" (${targetProject.directory})`);
     if (currentDirectory) {
       const dirRemote = await inspectGitConfigInDir(currentDirectory);
@@ -1660,19 +1701,26 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       void fetchIssues();
     }
   }
-  async function fetchIssues() {
+  async function fetchIssues(force = false) {
     if (!currentRepo) return;
+    if (!force && issueCache.has(currentRepo)) {
+      const cached = issueCache.get(currentRepo);
+      if (Date.now() - cached.timestamp < ISSUE_CACHE_TTL_MS) {
+        issues = cached.issues;
+        renderViews();
+        addLog(`Rendered ${issues.length} issues from cache for ${currentRepo}`);
+        return;
+      }
+    }
     isLoading = true;
     if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
     try {
       addLog(`Fetching issues for ${currentRepo}...`);
-      const rawIssues = await githubRequest("GET", `/repos/${currentRepo}/issues`, void 0, {
-        state: "all",
-        per_page: "100"
-      });
-      if (!Array.isArray(rawIssues)) {
-        throw new Error(rawIssues?.message || "Invalid response from GitHub API (expected issue array)");
-      }
+      const res = await githubRequest(
+        "GET",
+        `/search/issues?q=repo:${currentRepo}+is:issue&sort=updated&per_page=100`
+      );
+      const rawIssues = res.items || (Array.isArray(res) ? res : []);
       issues = rawIssues.filter((item) => !item.pull_request).map((item) => ({
         number: item.number,
         title: item.title,
@@ -1686,7 +1734,11 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
         created_at: item.created_at,
         subtasks: parseSubtasks(item.body || "")
       }));
-      addLog(`Loaded ${issues.length} issues successfully.`, "succ");
+      issueCache.set(currentRepo, {
+        timestamp: Date.now(),
+        issues
+      });
+      addLog(`Loaded ${issues.length} issues successfully for ${currentRepo}`, "succ");
       renderViews();
     } catch (err) {
       addLog(`Failed to fetch issues: ${err.message}`, "error");
@@ -2135,6 +2187,54 @@ ${issue.body}
       elBtnPreflightLaunch.textContent = "Launch Worktree & Agent";
     }
   }
+  var elNewIssueModalBackdrop = document.getElementById("newIssueModalBackdrop");
+  var elNewIssueRepoTarget = document.getElementById("newIssueRepoTarget");
+  var elNewIssueTitleInput = document.getElementById("newIssueTitleInput");
+  var elNewIssueBodyInput = document.getElementById("newIssueBodyInput");
+  var elBtnNewIssueSubmit = document.getElementById("btnNewIssueSubmit");
+  var elBtnNewIssueCancel = document.getElementById("btnNewIssueCancel");
+  var elBtnNewIssueClose = document.getElementById("btnNewIssueClose");
+  var elLinkOpenGithubNew = document.getElementById("linkOpenGithubNew");
+  function openNewIssueModal() {
+    if (!currentRepo) {
+      openRepoPopover();
+      return;
+    }
+    elNewIssueRepoTarget.textContent = currentRepo;
+    elNewIssueTitleInput.value = "";
+    elNewIssueBodyInput.value = "";
+    elLinkOpenGithubNew.href = `https://github.com/${currentRepo}/issues/new`;
+    elNewIssueModalBackdrop.classList.add("active");
+    setTimeout(() => elNewIssueTitleInput.focus(), 50);
+  }
+  function closeNewIssueModal() {
+    elNewIssueModalBackdrop.classList.remove("active");
+  }
+  async function submitNewIssue() {
+    const title = elNewIssueTitleInput.value.trim();
+    const body = elNewIssueBodyInput.value.trim();
+    if (!title) {
+      elNewIssueTitleInput.focus();
+      return;
+    }
+    elBtnNewIssueSubmit.disabled = true;
+    elBtnNewIssueSubmit.textContent = "Creating...";
+    try {
+      addLog(`Creating issue in ${currentRepo}: "${title}"...`);
+      const created = await githubRequest("POST", `/repos/${currentRepo}/issues`, { title, body });
+      addLog(`Created issue #${created.number}: ${created.title}`, "succ");
+      await host.toast({ kind: "success", message: `Created #${created.number} on GitHub!` });
+      closeNewIssueModal();
+      issueCache.delete(currentRepo);
+      void fetchIssues(true);
+    } catch (err) {
+      addLog(`Failed to create issue: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to create issue: ${err.message || "Unknown error"}` });
+    } finally {
+      elBtnNewIssueSubmit.disabled = false;
+      elBtnNewIssueSubmit.textContent = "Create Issue";
+    }
+  }
   function setupDragAndDrop() {
     Object.keys(kanbanCardContainers).forEach((colId) => {
       const container = kanbanCardContainers[colId];
@@ -2201,11 +2301,12 @@ ${issue.body}
       void discoverWorkspaceRepositories();
     });
     elBtnNewIssue.addEventListener("click", () => {
-      if (currentRepo) {
-        void host.openUrl(`https://github.com/${currentRepo}/issues/new`);
-      } else {
-        openRepoPopover();
-      }
+      openNewIssueModal();
+    });
+    elBtnNewIssueClose.addEventListener("click", closeNewIssueModal);
+    elBtnNewIssueCancel.addEventListener("click", closeNewIssueModal);
+    elBtnNewIssueSubmit.addEventListener("click", () => {
+      void submitNewIssue();
     });
     elBtnLogsToggle.addEventListener("click", () => {
       elLogDrawer.classList.toggle("active");
@@ -2280,25 +2381,6 @@ ${activeIssue.body}`.slice(0, 15e3)
       currentRepo = ctx.settings.repo.trim();
       elTxtRepoLabel.textContent = currentRepo.split("/")[1] || currentRepo;
       addLog(`Repo set from extension settings: ${currentRepo}`, "info");
-    }
-    try {
-      const projectsSnapshot = await host.listProjects();
-      if (projectsSnapshot.projects && projectsSnapshot.projects.length > 0) {
-        for (const p of projectsSnapshot.projects) {
-          await host.onSessions(p.id, (sessSnap) => {
-            const newSess = sessSnap.sessions || [];
-            sessions = Array.from(new Map([...sessions, ...newSess].map((s) => [s.id, s])).values());
-            renderViews();
-            if (activeIssue) renderDrawer(activeIssue);
-          });
-          await host.onWorktrees(p.id, (wtSnap) => {
-            const newWt = wtSnap.worktrees || [];
-            worktrees = Array.from(new Map([...worktrees, ...newWt].map((w) => [w.directory, w])).values());
-          });
-        }
-      }
-    } catch (err) {
-      addLog(`Failed to initialize project listeners: ${err.message}`, "warn");
     }
     await discoverWorkspaceRepositories();
   });
