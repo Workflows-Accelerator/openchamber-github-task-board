@@ -1225,6 +1225,13 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elDrawerGithubLink = document.getElementById("drawerGithubLink");
   var elDrawerIssueTitle = document.getElementById("drawerIssueTitle");
   var elDrawerStatusSelect = document.getElementById("drawerStatusSelect");
+  var elDrawerLabelsContainer = document.getElementById("drawerLabelsContainer");
+  var elBtnAddLabelToggle = document.getElementById("btnAddLabelToggle");
+  var elDrawerAddLabelRow = document.getElementById("drawerAddLabelRow");
+  var elInputNewTag = document.getElementById("inputNewTag");
+  var elRepoLabelsDatalist = document.getElementById("repoLabelsDatalist");
+  var elBtnConfirmAddLabel = document.getElementById("btnConfirmAddLabel");
+  var elBtnCancelAddLabel = document.getElementById("btnCancelAddLabel");
   var elDrawerAgentBadge = document.getElementById("drawerAgentBadge");
   var elDrawerWorktreeName = document.getElementById("drawerWorktreeName");
   var elBtnDrawerJumpSession = document.getElementById("btnDrawerJumpSession");
@@ -1233,7 +1240,16 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elDrawerChecklistContainer = document.getElementById("drawerChecklistContainer");
   var elInputAddSubtask = document.getElementById("inputAddSubtask");
   var elBtnAddSubtask = document.getElementById("btnAddSubtask");
-  var elDrawerIssueBody = document.getElementById("drawerIssueBody");
+  var elDrawerDescriptionViewBox = document.getElementById("drawerDescriptionViewBox");
+  var elDrawerDescriptionCollapsible = document.getElementById("drawerDescriptionCollapsible");
+  var elDrawerDescriptionContent = document.getElementById("drawerDescriptionContent");
+  var elDrawerDescriptionToggleRow = document.getElementById("drawerDescriptionToggleRow");
+  var elBtnToggleCollapse = document.getElementById("btnToggleCollapse");
+  var elDrawerDescriptionEditBox = document.getElementById("drawerDescriptionEditBox");
+  var elDrawerDescriptionTextarea = document.getElementById("drawerDescriptionTextarea");
+  var elBtnEditDescription = document.getElementById("btnEditDescription");
+  var elBtnSaveDescription = document.getElementById("btnSaveDescription");
+  var elBtnCancelDescription = document.getElementById("btnCancelDescription");
   var elDrawerCommentsContainer = document.getElementById("drawerCommentsContainer");
   var elCommentCountBadge = document.getElementById("commentCountBadge");
   var elBtnDrawerAttachComposer = document.getElementById("btnDrawerAttachComposer");
@@ -2014,6 +2030,115 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     elDrawerScrim.classList.remove("active");
     elTaskDrawer.classList.remove("active");
   }
+  function renderMarkdown(raw) {
+    if (!raw || typeof raw !== "string") return '<p style="color: var(--fg-muted); font-style: italic;">No description provided.</p>';
+    let html = raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang, code) => {
+      return `<pre class="md-code-block"><code class="language-${lang}">${code.trim()}</code></pre>`;
+    });
+    html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
+    html = html.replace(/^#### (.*$)/gim, '<h4 class="md-h4">$1</h4>');
+    html = html.replace(/^### (.*$)/gim, '<h3 class="md-h3">$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="md-h2">$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1 class="md-h1">$1</h1>');
+    html = html.replace(/^\> (.*$)/gim, '<blockquote class="md-quote">$1</blockquote>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="md-link">$1 \u2197</a>');
+    const paragraphs = html.split(/\n\n+/);
+    html = paragraphs.map((p) => {
+      const trimmed = p.trim();
+      if (!trimmed) return "";
+      if (trimmed.startsWith("<h") || trimmed.startsWith("<pre") || trimmed.startsWith("<blockquote")) {
+        return trimmed;
+      }
+      return `<p class="md-p">${trimmed.replace(/\n/g, "<br/>")}</p>`;
+    }).filter(Boolean).join("\n");
+    return html;
+  }
+  var repoLabelsCache = /* @__PURE__ */ new Map();
+  async function loadRepoLabels() {
+    if (!currentRepo) return;
+    if (repoLabelsCache.has(currentRepo)) {
+      populateLabelsDatalist(repoLabelsCache.get(currentRepo));
+      return;
+    }
+    try {
+      const list = await githubRequest("GET", `/repos/${currentRepo}/labels?per_page=100`);
+      if (Array.isArray(list)) {
+        repoLabelsCache.set(currentRepo, list);
+        populateLabelsDatalist(list);
+      }
+    } catch {
+    }
+  }
+  function populateLabelsDatalist(labels) {
+    elRepoLabelsDatalist.innerHTML = labels.map((l) => `<option value="${escapeHtml(l.name)}"></option>`).join("");
+  }
+  function renderDrawerLabels(issue) {
+    elDrawerLabelsContainer.innerHTML = "";
+    const nonStatusLabels = issue.labels.filter((l) => !l.name.startsWith("status:"));
+    if (nonStatusLabels.length === 0) {
+      elDrawerLabelsContainer.innerHTML = `<span style="font-size: 11px; color: var(--fg-faint); font-style: italic;">No labels</span>`;
+    } else {
+      nonStatusLabels.forEach((l) => {
+        const hex = sanitizeHexColor(l.color);
+        const bg2 = hex ? `${hex}18` : "var(--surf-muted)";
+        const fg2 = hex || "var(--fg-muted)";
+        const pill = document.createElement("span");
+        pill.className = "label-pill";
+        pill.style.background = bg2;
+        pill.style.color = fg2;
+        pill.style.border = `1px solid ${fg2}33`;
+        pill.innerHTML = `
+        <span>${escapeHtml(l.name)}</span>
+        <span class="label-pill-remove" title="Remove label">\xD7</span>
+      `;
+        pill.querySelector(".label-pill-remove")?.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await removeTagFromIssue(issue, l.name);
+        });
+        elDrawerLabelsContainer.appendChild(pill);
+      });
+    }
+  }
+  async function addTagToIssue(issue, tagName) {
+    const clean = tagName.trim();
+    if (!clean) return;
+    const currentNames = issue.labels.map((l) => l.name);
+    if (currentNames.some((n) => n.toLowerCase() === clean.toLowerCase())) return;
+    const newNames = [...currentNames, clean];
+    issue.labels.push({ name: clean });
+    renderDrawerLabels(issue);
+    renderViews();
+    try {
+      addLog(`Adding label "${clean}" to #${issue.number}...`);
+      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+        labels: newNames
+      });
+      await host.toast({ kind: "success", message: `Added label "${clean}" to #${issue.number}` });
+    } catch (err) {
+      addLog(`Failed to add label: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to add label: ${err.message}` });
+    }
+  }
+  async function removeTagFromIssue(issue, tagName) {
+    const target = tagName.trim().toLowerCase();
+    const newLabels = issue.labels.filter((l) => l.name.toLowerCase() !== target);
+    issue.labels = newLabels;
+    renderDrawerLabels(issue);
+    renderViews();
+    try {
+      addLog(`Removing label "${tagName}" from #${issue.number}...`);
+      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+        labels: newLabels.map((l) => l.name)
+      });
+      await host.toast({ kind: "info", message: `Removed label "${tagName}" from #${issue.number}` });
+    } catch (err) {
+      addLog(`Failed to remove label: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to remove label: ${err.message}` });
+    }
+  }
   function renderDrawer(issue) {
     elDrawerIssueNumber.textContent = `#${issue.number}`;
     elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : "";
@@ -2021,6 +2146,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     elDrawerIssueTitle.textContent = issue.title;
     const col = resolveIssueColumn(issue);
     elDrawerStatusSelect.value = col;
+    renderDrawerLabels(issue);
+    void loadRepoLabels();
     const session = getIssueSession(issue);
     if (session) {
       let dotClass = "dot-idle";
@@ -2053,7 +2180,19 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       elBtnDrawerJumpSession.style.display = "none";
     }
     renderChecklist(issue);
-    elDrawerIssueBody.textContent = issue.body || "No description provided.";
+    elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
+    elDrawerDescriptionViewBox.style.display = "block";
+    elDrawerDescriptionEditBox.style.display = "none";
+    requestAnimationFrame(() => {
+      if (elDrawerDescriptionContent.scrollHeight > 220) {
+        elDrawerDescriptionCollapsible.classList.remove("expanded");
+        elDrawerDescriptionToggleRow.style.display = "block";
+        elBtnToggleCollapse.textContent = "Show more";
+      } else {
+        elDrawerDescriptionCollapsible.classList.add("expanded");
+        elDrawerDescriptionToggleRow.style.display = "none";
+      }
+    });
     void loadComments(issue.number);
   }
   function renderChecklist(issue) {
@@ -2339,6 +2478,48 @@ ${issue.body}
         const targetCol = elDrawerStatusSelect.value;
         void updateIssueStatus(activeIssue, targetCol);
       }
+    });
+    elBtnEditDescription.addEventListener("click", () => {
+      if (!activeIssue) return;
+      elDrawerDescriptionTextarea.value = activeIssue.body || "";
+      elDrawerDescriptionViewBox.style.display = "none";
+      elDrawerDescriptionEditBox.style.display = "flex";
+      elDrawerDescriptionTextarea.focus();
+    });
+    elBtnCancelDescription.addEventListener("click", () => {
+      elDrawerDescriptionEditBox.style.display = "none";
+      elDrawerDescriptionViewBox.style.display = "block";
+    });
+    elBtnSaveDescription.addEventListener("click", async () => {
+      if (!activeIssue) return;
+      const newBody = elDrawerDescriptionTextarea.value;
+      elDrawerDescriptionEditBox.style.display = "none";
+      elDrawerDescriptionViewBox.style.display = "block";
+      await updateIssueBody(activeIssue, newBody);
+    });
+    elBtnToggleCollapse.addEventListener("click", () => {
+      const isExpanded = elDrawerDescriptionCollapsible.classList.toggle("expanded");
+      elBtnToggleCollapse.textContent = isExpanded ? "Show less" : "Show more";
+    });
+    elBtnAddLabelToggle.addEventListener("click", () => {
+      elDrawerAddLabelRow.style.display = "flex";
+      elInputNewTag.value = "";
+      elInputNewTag.focus();
+      void loadRepoLabels();
+    });
+    elBtnCancelAddLabel.addEventListener("click", () => {
+      elDrawerAddLabelRow.style.display = "none";
+    });
+    elBtnConfirmAddLabel.addEventListener("click", async () => {
+      if (activeIssue && elInputNewTag.value.trim()) {
+        const val = elInputNewTag.value.trim();
+        elDrawerAddLabelRow.style.display = "none";
+        await addTagToIssue(activeIssue, val);
+      }
+    });
+    elInputNewTag.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") elBtnConfirmAddLabel.click();
+      if (e.key === "Escape") elBtnCancelAddLabel.click();
     });
     elBtnAddSubtask.addEventListener("click", () => {
       if (activeIssue && elInputAddSubtask.value.trim()) {

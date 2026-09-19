@@ -560,6 +560,104 @@
       border: 1px solid var(--border);
       border-radius: var(--rad);
       padding: 12px;
+      position: relative;
+    }
+
+    /* Rendered Markdown Styling */
+    .md-rendered {
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: var(--fg);
+      user-select: text;
+    }
+    .md-h1, .md-h2, .md-h3, .md-h4 {
+      font-weight: 600;
+      color: var(--fg);
+      margin: 10px 0 4px 0;
+      line-height: 1.3;
+    }
+    .md-h1 { font-size: 15px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 3px; }
+    .md-h2 { font-size: 14px; border-bottom: 1px solid var(--border-subtle); padding-bottom: 2px; }
+    .md-h3 { font-size: 13px; }
+    .md-h4 { font-size: 12px; }
+    .md-p { margin-bottom: 8px; }
+    .md-inline-code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--surf-muted);
+      border: 1px solid var(--border-subtle);
+      padding: 1px 4px;
+      border-radius: 3px;
+      color: var(--prim);
+    }
+    .md-code-block {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      background: var(--surf-muted);
+      border: 1px solid var(--border);
+      border-radius: var(--rad-sm);
+      padding: 8px 10px;
+      margin: 8px 0;
+      overflow-x: auto;
+      line-height: 1.45;
+    }
+    .md-quote {
+      border-left: 3px solid var(--border);
+      padding-left: 10px;
+      color: var(--fg-muted);
+      font-style: italic;
+      margin: 6px 0;
+    }
+    .md-link {
+      color: var(--prim);
+      text-decoration: none;
+    }
+    .md-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Description Collapsible */
+    .desc-collapsible {
+      max-height: 220px;
+      overflow: hidden;
+      position: relative;
+    }
+    .desc-collapsible.expanded {
+      max-height: none;
+    }
+    .desc-fade {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 60px;
+      background: linear-gradient(to bottom, transparent, var(--surf));
+      pointer-events: none;
+    }
+    .desc-collapsible.expanded .desc-fade {
+      display: none;
+    }
+
+    /* Label Pills in Drawer */
+    .label-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 7px;
+      border-radius: 4px;
+      line-height: 1.4;
+    }
+    .label-pill-remove {
+      cursor: pointer;
+      font-size: 13px;
+      line-height: 1;
+      opacity: 0.7;
+      padding: 0 2px;
+    }
+    .label-pill-remove:hover {
+      opacity: 1;
     }
 
     /* Subtask Checklist */
@@ -948,6 +1046,22 @@
         </select>
       </div>
 
+      <!-- Labels & Tags Section -->
+      <div>
+        <div class="section-label">
+          <span>Labels & Tags</span>
+          <button class="btn btn-sm" id="btnAddLabelToggle" style="height: 18px; font-size: 10px;">+ Label</button>
+        </div>
+        <div id="drawerLabelsContainer" style="display: flex; flex-wrap: wrap; gap: 5px; min-height: 20px;"></div>
+        <!-- Add Label Input Row (hidden by default) -->
+        <div id="drawerAddLabelRow" style="display: none; gap: 6px; margin-top: 6px;">
+          <input type="text" id="inputNewTag" class="form-ctrl" style="flex: 1;" placeholder="Label name (e.g. bug, frontend)..." list="repoLabelsDatalist" />
+          <datalist id="repoLabelsDatalist"></datalist>
+          <button class="btn btn-sm btn-primary" id="btnConfirmAddLabel">Add</button>
+          <button class="btn btn-sm" id="btnCancelAddLabel">Cancel</button>
+        </div>
+      </div>
+
       <!-- Agent & Worktree Box -->
       <div>
         <div class="section-label">Agent & Worktree State</div>
@@ -987,11 +1101,31 @@
         </div>
       </div>
 
-      <!-- Description -->
+      <!-- Dual-Mode Description (View Markdown / Edit Raw) -->
       <div>
-        <div class="section-label">Description</div>
-        <div class="panel-box" id="drawerIssueBody" style="white-space: pre-wrap; font-size: 12.5px; line-height: 1.55; user-select: text;">
-          No description provided.
+        <div class="section-label">
+          <span>Description</span>
+          <button class="btn btn-sm" id="btnEditDescription" style="height: 18px; font-size: 10px;">Edit</button>
+        </div>
+
+        <!-- Mode 1: Markdown View (Collapsible) -->
+        <div id="drawerDescriptionViewBox" class="panel-box">
+          <div id="drawerDescriptionCollapsible" class="desc-collapsible">
+            <div id="drawerDescriptionContent" class="md-rendered"></div>
+            <div class="desc-fade" id="drawerDescriptionFade"></div>
+          </div>
+          <div id="drawerDescriptionToggleRow" style="display: none; margin-top: 8px; text-align: center; border-top: 1px solid var(--border-subtle); padding-top: 6px;">
+            <button class="btn btn-sm" id="btnToggleCollapse" style="font-size: 10.5px;">Show more</button>
+          </div>
+        </div>
+
+        <!-- Mode 2: Raw Text Edit Mode (hidden by default) -->
+        <div id="drawerDescriptionEditBox" style="display: none; flex-direction: column; gap: 8px;">
+          <textarea id="drawerDescriptionTextarea" class="form-ctrl" style="width: 100%; height: 180px; resize: vertical; font-family: var(--font-mono); font-size: 11.5px;"></textarea>
+          <div style="display: flex; justify-content: flex-end; gap: 6px;">
+            <button class="btn btn-sm" id="btnCancelDescription">Cancel</button>
+            <button class="btn btn-sm btn-primary" id="btnSaveDescription">Save</button>
+          </div>
         </div>
       </div>
 
