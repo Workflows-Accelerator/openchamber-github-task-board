@@ -1183,7 +1183,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var currentProject = null;
   var currentDirectory = "";
   var currentRepo = "";
-  var detectedRepos = [];
+  var allProjects = [];
+  var isDiscoveringRepos = false;
   var issues = [];
   var sessions = [];
   var worktrees = [];
@@ -1387,96 +1388,163 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return null;
   }
   async function discoverWorkspaceRepositories() {
-    addLog("Discovering repositories across OpenChamber projects...");
-    detectedRepos = [];
+    if (isDiscoveringRepos) return;
+    isDiscoveringRepos = true;
+    addLog("Scanning OpenChamber projects for Git repositories...");
     try {
       const snap = await host.listProjects();
-      if (snap.projects && snap.projects.length > 0) {
-        for (const p of snap.projects) {
-          if (!p.directory) continue;
-          const found = await inspectGitConfigInDir(p.directory);
-          if (found) {
-            detectedRepos.push({
-              owner: found.owner,
-              repo: found.repo,
-              projectName: p.name || p.directory.split("/").pop() || p.id,
-              directory: p.directory
-            });
-            addLog(`Found Git repo: ${found.owner}/${found.repo} in project "${p.name}" (${p.directory})`, "succ");
+      const rawProjects = snap.projects || [];
+      const uniqueProjects = Array.from(new Map(rawProjects.map((p) => [p.id, p])).values());
+      const projectItems = [];
+      for (const p of uniqueProjects) {
+        if (!p.directory) continue;
+        const detected = await inspectGitConfigInDir(p.directory);
+        const storedLink = await host.storage.get(`repo_${p.id}`);
+        const linkedRepo = typeof storedLink === "string" && storedLink.includes("/") ? storedLink.trim() : null;
+        projectItems.push({
+          id: p.id,
+          name: p.name || p.directory.split("/").pop() || p.id,
+          directory: p.directory,
+          gitRepo: detected,
+          linkedRepo: linkedRepo || (detected ? `${detected.owner}/${detected.repo}` : null)
+        });
+        if (detected) {
+          addLog(`Project "${p.name}" has Git repo: ${detected.owner}/${detected.repo}`, "succ");
+        } else {
+          addLog(`Project "${p.name}" (${p.directory}) has no Git remote`, "info");
+        }
+      }
+      allProjects = projectItems;
+      renderRepoPopoverList();
+      await autoResolveRepoForActiveContext();
+    } catch (err) {
+      addLog(`Project scan error: ${err.message}`, "warn");
+    } finally {
+      isDiscoveringRepos = false;
+    }
+  }
+  async function autoResolveRepoForActiveContext() {
+    let targetProject = allProjects.find(
+      (p) => p.directory === currentDirectory || currentDirectory && currentDirectory.startsWith(p.directory + "/")
+    );
+    if (!targetProject && allProjects.length > 0) {
+      targetProject = allProjects.find((p) => p.directory === currentDirectory) || allProjects[0];
+    }
+    currentProject = targetProject || null;
+    if (!targetProject) {
+      elTxtRepoLabel.textContent = "Select Repo";
+      return;
+    }
+    addLog(`Active conversation project: "${targetProject.name}" (${targetProject.directory})`);
+    if (currentDirectory) {
+      const dirRemote = await inspectGitConfigInDir(currentDirectory);
+      if (dirRemote) {
+        const full = `${dirRemote.owner}/${dirRemote.repo}`;
+        setRepository(full, `directory: ${targetProject.name}`);
+        return;
+      }
+    }
+    const storedLink = await host.storage.get(`repo_${targetProject.id}`);
+    if (typeof storedLink === "string" && storedLink.includes("/")) {
+      setRepository(storedLink.trim(), `stored-project-link: ${targetProject.name}`);
+      return;
+    }
+    if (targetProject.gitRepo) {
+      const full = `${targetProject.gitRepo.owner}/${targetProject.gitRepo.repo}`;
+      setRepository(full, `project-git: ${targetProject.name}`);
+      return;
+    }
+    if (sessions && sessions.length > 0) {
+      for (const sess of sessions) {
+        if (sess.items) {
+          for (const it of sess.items) {
+            if (it.url && it.url.includes("github.com/")) {
+              const m = it.url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+              if (m) {
+                setRepository(`${m[1]}/${m[2]}`, `session-item: ${sess.title}`);
+                return;
+              }
+            }
           }
         }
       }
-    } catch (err) {
-      addLog(`Project scan error: ${err.message}`, "warn");
     }
-    renderRepoPopoverList();
-    if (!currentRepo) {
-      const currentMatch = detectedRepos.find((r) => r.directory === currentDirectory);
-      if (currentMatch) {
-        setRepository(`${currentMatch.owner}/${currentMatch.repo}`, "current-project");
-        return;
-      }
-      const stored = await host.storage.get(`repo_${currentProject?.id}`);
-      if (typeof stored === "string" && stored.includes("/")) {
-        setRepository(stored.trim(), "project-storage");
-        return;
-      }
-      const globalStored = await host.storage.get("selected_repo");
-      if (typeof globalStored === "string" && globalStored.includes("/")) {
-        setRepository(globalStored.trim(), "global-storage");
-        return;
-      }
-      if (detectedRepos.length > 0) {
-        const best = detectedRepos[0];
-        setRepository(`${best.owner}/${best.repo}`, "workspace-detected");
-        return;
-      }
-      elTxtRepoLabel.textContent = "Select Repo";
-      showBanner("No GitHub repository detected. Click to choose or enter owner/repo.", "Select Repo", () => {
-        openRepoPopover();
-      });
-    }
+    elTxtRepoLabel.textContent = `${targetProject.name} (No Repo)`;
+    elTxtRepoLabel.title = `Project "${targetProject.name}" has no GitHub repository linked. Click to link.`;
+    const otherRepos = allProjects.filter((p) => p.linkedRepo || p.gitRepo);
+    const actionText = otherRepos.length > 0 ? `Project "${targetProject.name}" has no Git remote. Click to choose or link:` : `Project "${targetProject.name}" has no Git remote. Enter a repository:`;
+    showBanner(actionText, "Select Repo", () => {
+      openRepoPopover();
+    });
+    renderEmptyState(`No GitHub repository linked to project "${targetProject.name}". Click "Select Repo" above to link a repository.`);
   }
   function setRepository(repo, source) {
     currentRepo = repo;
     elTxtRepoLabel.textContent = repo.split("/")[1] || repo;
-    elTxtRepoLabel.title = `Target: ${repo} (via ${source})`;
-    addLog(`Switched active repository to ${repo} [${source}]`, "succ");
+    elTxtRepoLabel.title = `Project: ${currentProject?.name || "Workspace"} \u2022 Repo: ${repo} (via ${source})`;
+    addLog(`Switched repository to ${repo} [${source}]`, "succ");
     hideBanner();
     void host.storage.set("selected_repo", repo);
     if (currentProject) {
       void host.storage.set(`repo_${currentProject.id}`, repo);
+      currentProject.linkedRepo = repo;
     }
+    renderRepoPopoverList();
     void fetchIssues();
   }
   function renderRepoPopoverList() {
-    if (detectedRepos.length === 0) {
+    if (allProjects.length === 0) {
       elDetectedReposList.innerHTML = `
       <div style="padding: 10px; color: var(--fg-faint); font-size: 11px;">
-        No Git remotes found in registered workspace projects. Enter custom repo below.
+        No workspace projects found. Enter custom repo below.
       </div>
     `;
       return;
     }
-    elDetectedReposList.innerHTML = detectedRepos.map((r) => {
-      const full = `${r.owner}/${r.repo}`;
-      const isSelected = full === currentRepo;
+    elDetectedReposList.innerHTML = allProjects.map((p) => {
+      const isCurrentProject = p.id === currentProject?.id;
+      const repoName = p.linkedRepo || (p.gitRepo ? `${p.gitRepo.owner}/${p.gitRepo.repo}` : null);
+      const isSelectedRepo = repoName && repoName === currentRepo;
       return `
-        <div class="popover-item" data-repo="${escapeHtml(full)}">
+        <div class="popover-item" data-project-id="${escapeHtml(p.id)}" data-repo="${escapeHtml(repoName || "")}">
           <div style="display: flex; justify-content: space-between; align-items: center;">
-            <span class="popover-item-title">${escapeHtml(r.projectName)}</span>
-            ${isSelected ? '<span style="color: var(--succ); font-size: 11px;">\u2713 active</span>' : ""}
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span class="popover-item-title">${escapeHtml(p.name)}</span>
+              ${isCurrentProject ? '<span class="status-pill" style="font-size: 9px; padding: 0 4px;">active</span>' : ""}
+            </div>
+            ${isSelectedRepo ? '<span style="color: var(--succ); font-size: 11px;">\u2713 active</span>' : ""}
           </div>
-          <span class="popover-item-sub">${escapeHtml(full)}</span>
+          <span class="popover-item-sub">${repoName ? escapeHtml(repoName) : '<span style="color: var(--warn); font-style: italic;">No repo linked \u2022 click to link</span>'}</span>
         </div>
       `;
     }).join("");
     elDetectedReposList.querySelectorAll(".popover-item").forEach((item) => {
-      item.addEventListener("click", () => {
+      item.addEventListener("click", async () => {
+        const projId = item.getAttribute("data-project-id");
         const repo = item.getAttribute("data-repo");
+        const proj = allProjects.find((p) => p.id === projId);
         if (repo) {
-          setRepository(repo, "user-selection");
+          if (currentProject) {
+            await host.storage.set(`repo_${currentProject.id}`, repo);
+            currentProject.linkedRepo = repo;
+          }
+          setRepository(repo, `selected from ${proj?.name || "project"}`);
           closeRepoPopover();
+        } else {
+          const entered = window.prompt(`Enter GitHub repository (owner/repo) to link to project "${proj?.name || "project"}":`);
+          if (entered && entered.includes("/")) {
+            const clean = entered.trim();
+            if (proj) {
+              proj.linkedRepo = clean;
+              await host.storage.set(`repo_${proj.id}`, clean);
+            }
+            if (currentProject && currentProject.id === proj?.id) {
+              setRepository(clean, `linked-to-${proj?.name}`);
+            } else {
+              renderRepoPopoverList();
+            }
+            closeRepoPopover();
+          }
         }
       });
     });
@@ -2174,16 +2242,16 @@ ${activeIssue.body}`.slice(0, 15e3)
     try {
       const projectsSnapshot = await host.listProjects();
       if (projectsSnapshot.projects && projectsSnapshot.projects.length > 0) {
-        currentProject = projectsSnapshot.projects.find((p) => p.directory === ctx.directory) || projectsSnapshot.projects[0];
-        addLog(`Selected active project "${currentProject.name}" (${currentProject.id})`);
-        if (currentProject) {
-          await host.onSessions(currentProject.id, (sessSnap) => {
-            sessions = sessSnap.sessions || [];
+        for (const p of projectsSnapshot.projects) {
+          await host.onSessions(p.id, (sessSnap) => {
+            const newSess = sessSnap.sessions || [];
+            sessions = Array.from(new Map([...sessions, ...newSess].map((s) => [s.id, s])).values());
             renderViews();
             if (activeIssue) renderDrawer(activeIssue);
           });
-          await host.onWorktrees(currentProject.id, (wtSnap) => {
-            worktrees = wtSnap.worktrees || [];
+          await host.onWorktrees(p.id, (wtSnap) => {
+            const newWt = wtSnap.worktrees || [];
+            worktrees = Array.from(new Map([...worktrees, ...newWt].map((w) => [w.directory, w])).values());
           });
         }
       }
@@ -2196,15 +2264,17 @@ ${activeIssue.body}`.slice(0, 15e3)
     addLog(`Directory changed: ${dir}`);
     currentDirectory = dir || "";
     if (dir) {
-      const found = await inspectGitConfigInDir(dir);
-      if (found) {
-        setRepository(`${found.owner}/${found.repo}`, "active-directory-change");
-      }
+      await autoResolveRepoForActiveContext();
     }
   });
-  host.onSession((sess) => {
+  host.onSession(async (sess) => {
     if (sess) {
       addLog(`Active session: "${sess.title}" (${sess.id})`);
+      const matched = sessions.find((s) => s.id === sess.id);
+      if (matched && matched.directory && matched.directory !== currentDirectory) {
+        currentDirectory = matched.directory;
+        await autoResolveRepoForActiveContext();
+      }
     }
   });
   initEvents();

@@ -18,7 +18,7 @@
       "panel": {
         "id": "github-task-board",
         "name": "Task Board",
-        "icon": "kanban-view",
+        "icon": "icon.svg",
         "entry": "panel/index.html"
       },
       "page": true,
