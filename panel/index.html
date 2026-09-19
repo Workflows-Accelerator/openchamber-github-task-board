@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Board</title>
+  <style>
+    /* OpenChamber Design System Token Mappings */
+    :root {
+      --bg: var(--oc-bg, var(--surface-background, #0f1012));
+      --surf: var(--oc-elevated, var(--surface-elevated, #16181b));
+      --surf-muted: var(--oc-muted-surface, var(--surface-muted, #1c1f24));
+      --surf-subtle: var(--oc-subtle, var(--surface-subtle, #23272e));
+      --surf-hover: var(--oc-hover, var(--interactive-hover, #2a2f38));
+      --border: var(--oc-border, var(--interactive-border, rgba(255, 255, 255, 0.08)));
+      --border-subtle: rgba(255, 255, 255, 0.05);
+      --fg: var(--oc-fg, var(--surface-foreground, #f0f2f5));
+      --fg-muted: var(--oc-muted, var(--surface-muted-foreground, #8c929d));
+      --fg-faint: #5a606d;
+      --prim: var(--oc-primary, var(--primary, #3b82f6));
+      --prim-fg: var(--oc-primary-fg, var(--primary-foreground, #ffffff));
+      --prim-subtle: rgba(59, 130, 246, 0.12);
+      --succ: var(--oc-success, var(--status-success, #10b981));
+      --succ-subtle: rgba(16, 185, 129, 0.12);
+      --warn: var(--oc-warning, var(--status-warning, #f59e0b));
+      --warn-subtle: rgba(245, 158, 11, 0.12);
+      --err: var(--oc-error, var(--status-error, #ef4444));
+      --rad: var(--oc-radius, var(--radius, 6px));
+      --rad-sm: calc(var(--rad) - 2px);
+      --rad-lg: calc(var(--rad) + 4px);
+      --font-sans: var(--oc-font, var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif));
+      --font-mono: var(--oc-mono, var(--font-mono, ui-monospace, "SFMono-Regular", Menlo, monospace));
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      line-height: 1.45;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* SVG Icon Helpers */
+    .icon {
+      width: 14px;
+      height: 14px;
+      display: inline-block;
+      vertical-align: middle;
+      fill: currentColor;
+      flex-shrink: 0;
+    }
+    .icon-sm { width: 12px; height: 12px; }
+    .icon-lg { width: 16px; height: 16px; }
+
+    /* Top Action Bar (Compact, fits seamlessly in sidebar panel) */
+    header.toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+      flex-shrink: 0;
+      min-height: 38px;
+    }
+
+    .toolbar-left, .toolbar-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* Repo Selector Dropdown Trigger */
+    .repo-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      padding: 4px 8px;
+      color: var(--fg);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      max-width: 180px;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .repo-btn:hover {
+      background: var(--surf-hover);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+    .repo-label {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--fg);
+    }
+
+    /* Common Button Styles */
+    .btn {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      padding: 4px 9px;
+      color: var(--fg);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+      height: 26px;
+    }
+    .btn:hover {
+      background: var(--surf-hover);
+      border-color: rgba(255, 255, 255, 0.15);
+      color: var(--fg);
+    }
+    .btn-icon {
+      padding: 4px 6px;
+      width: 26px;
+      justify-content: center;
+    }
+    .btn-primary {
+      background: var(--prim);
+      color: var(--prim-fg);
+      border-color: var(--prim);
+    }
+    .btn-primary:hover {
+      opacity: 0.92;
+    }
+    .btn-sm {
+      height: 22px;
+      padding: 2px 7px;
+      font-size: 11px;
+    }
+
+    /* Compact Search Input */
+    .search-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .search-icon {
+      position: absolute;
+      left: 7px;
+      color: var(--fg-muted);
+      pointer-events: none;
+    }
+    .search-input {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      padding: 3px 8px 3px 24px;
+      color: var(--fg);
+      font-size: 12px;
+      width: 110px;
+      height: 26px;
+      outline: none;
+      transition: width 0.2s ease, border-color 0.15s ease;
+    }
+    .search-input:focus {
+      width: 150px;
+      border-color: var(--prim);
+    }
+
+    /* Segmented Tab Bar (Active in panel mode / narrow width) */
+    nav.status-tabs {
+      display: flex;
+      align-items: center;
+      padding: 4px 8px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+      gap: 4px;
+      flex-shrink: 0;
+      scrollbar-width: none;
+    }
+    nav.status-tabs::-webkit-scrollbar { display: none; }
+
+    .status-tab {
+      background: transparent;
+      border: none;
+      border-radius: var(--rad-sm);
+      padding: 4px 8px;
+      color: var(--fg-muted);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .status-tab:hover {
+      background: var(--surf);
+      color: var(--fg);
+    }
+    .status-tab.active {
+      background: var(--surf-subtle);
+      color: var(--fg);
+      font-weight: 600;
+    }
+    .status-pill {
+      font-size: 10px;
+      padding: 1px 5px;
+      border-radius: 10px;
+      background: var(--surf);
+      color: var(--fg-muted);
+    }
+    .status-tab.active .status-pill {
+      background: var(--surf-hover);
+      color: var(--fg);
+    }
+
+    /* Banner / Alert */
+    .banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: var(--prim-subtle);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .banner-text {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--fg);
+    }
+
+    /* Content Area */
+    .view-container {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      position: relative;
+    }
+
+    /* Mode 1: Full-Width List View (Used in narrow sidebar) */
+    .list-view {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Mode 2: Multi-Column Kanban View (Used in wide page mode) */
+    .kanban-view {
+      flex: 1;
+      display: none;
+      gap: 12px;
+      padding: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+    }
+
+    /* Switch between List and Kanban when container >= 680px or data-layout="kanban" */
+    body[data-layout="kanban"] .status-tabs { display: none; }
+    body[data-layout="kanban"] .list-view { display: none; }
+    body[data-layout="kanban"] .kanban-view { display: flex; }
+
+    .kanban-col {
+      flex: 1;
+      min-width: 250px;
+      max-width: 340px;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      display: flex;
+      flex-direction: column;
+      max-height: 100%;
+    }
+
+    .kanban-col-header {
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: var(--fg-muted);
+    }
+
+    .kanban-cards {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 40px;
+    }
+    .kanban-cards.drag-over {
+      background: var(--prim-subtle);
+      border: 1.5px dashed var(--prim);
+      border-radius: var(--rad);
+    }
+
+    /* Card Item (Clean OpenChamber design) */
+    .card {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      padding: 9px 11px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      transition: border-color 0.15s ease, background 0.15s ease;
+      position: relative;
+    }
+    .card:hover {
+      background: var(--surf-muted);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    .card.dragging {
+      opacity: 0.35;
+    }
+
+    .card-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11px;
+    }
+
+    .card-id-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .card-id {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--fg-muted);
+      font-weight: 600;
+    }
+
+    .card-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--fg);
+      line-height: 1.4;
+      word-break: break-word;
+    }
+
+    .card-labels {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+
+    .badge {
+      font-size: 10px;
+      font-weight: 500;
+      padding: 1px 6px;
+      border-radius: 4px;
+      line-height: 1.4;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--fg-muted);
+      padding-top: 5px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    /* Live Agent Pulsing Dot */
+    .agent-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 10.5px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      background: var(--surf-subtle);
+      color: var(--fg-muted);
+    }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+    .dot-running {
+      background: var(--succ);
+      box-shadow: 0 0 5px var(--succ);
+      animation: pulse 1.5s infinite;
+    }
+    .dot-waiting {
+      background: var(--warn);
+      box-shadow: 0 0 5px var(--warn);
+      animation: pulse 1.2s infinite;
+    }
+    .dot-idle {
+      background: var(--fg-faint);
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.9); opacity: 0.8; }
+      50% { transform: scale(1.2); opacity: 1; }
+      100% { transform: scale(0.9); opacity: 0.8; }
+    }
+
+    .worktree-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--prim);
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+
+    /* Subtask Micro Progress */
+    .subtask-prog {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      color: var(--fg-muted);
+    }
+    .micro-bar {
+      width: 36px;
+      height: 3px;
+      background: var(--surf-subtle);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .micro-fill {
+      height: 100%;
+      background: var(--succ);
+      width: 0%;
+    }
+
+    /* Slide-Over Drawer */
+    .drawer-scrim {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      backdrop-filter: blur(2px);
+      z-index: 90;
+      display: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+    }
+    .drawer-scrim.active {
+      display: block;
+      opacity: 1;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: -620px;
+      width: 540px;
+      max-width: 100vw;
+      height: 100vh;
+      background: var(--bg);
+      border-left: 1px solid var(--border);
+      z-index: 100;
+      box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      transition: right 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .drawer.active {
+      right: 0;
+    }
+
+    .drawer-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--surf);
+    }
+
+    .drawer-head-info {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .drawer-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--fg-muted);
+    }
+
+    .drawer-heading {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--fg);
+      line-height: 1.35;
+    }
+
+    .drawer-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--fg-muted);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .panel-box {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      padding: 12px;
+    }
+
+    /* Subtask Checklist */
+    .check-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 6px 9px;
+      background: var(--surf-muted);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--rad-sm);
+      font-size: 12.5px;
+      user-select: text;
+    }
+    .check-item.done {
+      color: var(--fg-muted);
+      text-decoration: line-through;
+    }
+    .check-item input[type="checkbox"] {
+      margin-top: 3px;
+      cursor: pointer;
+    }
+
+    .add-task-row {
+      display: flex;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .form-ctrl {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--rad-sm);
+      padding: 5px 8px;
+      color: var(--fg);
+      font-size: 12px;
+      outline: none;
+      font-family: inherit;
+    }
+    .form-ctrl:focus {
+      border-color: var(--prim);
+    }
+
+    .drawer-foot {
+      padding: 10px 16px;
+      border-top: 1px solid var(--border);
+      background: var(--surf);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    /* Repo Picker Popover */
+    .popover {
+      position: absolute;
+      top: 42px;
+      left: 10px;
+      width: 280px;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 150;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .popover.active { display: flex; }
+    .popover-head {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border-subtle);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .popover-list {
+      max-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+    .popover-item {
+      padding: 7px 10px;
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background 0.15s ease;
+    }
+    .popover-item:hover {
+      background: var(--surf-hover);
+    }
+    .popover-item-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--fg);
+    }
+    .popover-item-sub {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--fg-muted);
+    }
+    .popover-custom {
+      padding: 8px 10px;
+      display: flex;
+      gap: 6px;
+      background: var(--bg);
+    }
+
+    /* Diagnostics / Log Drawer */
+    .log-drawer {
+      position: fixed;
+      bottom: -300px;
+      left: 0;
+      right: 0;
+      height: 240px;
+      background: var(--surf);
+      border-top: 1px solid var(--border);
+      z-index: 120;
+      box-shadow: 0 -8px 24px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      transition: bottom 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .log-drawer.active { bottom: 0; }
+    .log-drawer-head {
+      padding: 6px 12px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+    }
+    .log-stream {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.5;
+      user-select: text;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .log-line { display: flex; gap: 8px; }
+    .log-time { color: var(--fg-faint); flex-shrink: 0; }
+    .log-msg-info { color: var(--fg); }
+    .log-msg-warn { color: var(--warn); }
+    .log-msg-error { color: var(--err); }
+    .log-msg-succ { color: var(--succ); }
+
+    /* Modal Backdrop */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(2px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.active { display: flex; }
+    .modal {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad-lg);
+      width: 460px;
+      max-width: 100%;
+      box-shadow: 0 16px 36px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-head {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .modal-body {
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .modal-foot {
+      padding: 10px 16px;
+      background: var(--bg);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    /* Empty State */
+    .empty-box {
+      padding: 30px 16px;
+      text-align: center;
+      color: var(--fg-muted);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin: auto;
+    }
+    .empty-box svg {
+      color: var(--fg-faint);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Toolbar -->
+  <header class="toolbar">
+    <div class="toolbar-left">
+      <!-- Repo Dropdown Trigger -->
+      <button class="repo-btn" id="btnRepoSelect" title="Select or switch target repository">
+        <!-- Git Branch Icon -->
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
+        <span class="repo-label" id="txtRepoLabel">Detecting repo...</span>
+        <!-- Down Chevron Icon -->
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 13.172l4.95-4.95 1.414 1.414L12 16 5.636 9.636 7.05 8.222z"/></svg>
+      </button>
+    </div>
+
+    <div class="toolbar-right">
+      <!-- Search -->
+      <div class="search-wrap">
+        <svg class="icon icon-sm search-icon" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+        <input type="text" id="searchInput" class="search-input" placeholder="Search..." />
+      </div>
+
+      <!-- Layout Toggle (List vs Kanban) -->
+      <button class="btn btn-icon" id="btnLayoutToggle" title="Toggle Board / List View">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>
+      </button>
+
+      <!-- Refresh -->
+      <button class="btn btn-icon" id="btnRefresh" title="Refresh Issues & Sessions">
+        <svg class="icon" id="iconRefresh" viewBox="0 0 24 24"><path d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
+      </button>
+
+      <!-- New Issue Button -->
+      <button class="btn" id="btnNewIssue" title="Create New GitHub Issue">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+        <span>Issue</span>
+      </button>
+
+      <!-- Logs / Diagnostics Toggle -->
+      <button class="btn btn-icon" id="btnLogsToggle" title="Diagnostics & Logs">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v14h16V5H4zm3 3h2v2H7V8zm0 4h10v2H7v-2zm0 4h7v2H7v-2zm4-8h6v2h-6V8z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Repo Selector Popover -->
+  <div class="popover" id="repoPopover">
+    <div class="popover-head">Detected Repositories</div>
+    <div class="popover-list" id="detectedReposList">
+      <div style="padding: 10px; color: var(--fg-faint); font-size: 11px;">Scanning workspace projects...</div>
+    </div>
+    <div class="popover-head" style="border-top: 1px solid var(--border-subtle);">Custom Repository</div>
+    <div class="popover-custom">
+      <input type="text" id="inputCustomRepo" class="form-ctrl" style="flex: 1;" placeholder="owner/repo" />
+      <button class="btn btn-sm btn-primary" id="btnSaveCustomRepo">Set</button>
+    </div>
+  </div>
+
+  <!-- Status / Info Banner -->
+  <div id="boardBanner" class="banner" style="display: none;">
+    <div class="banner-text" id="boardBannerText"></div>
+    <div id="boardBannerActions"></div>
+  </div>
+
+  <!-- Responsive Segmented Tab Bar (Visible in narrow panel / list mode) -->
+  <nav class="status-tabs" id="statusTabBar">
+    <button class="status-tab active" data-tab="all">All <span class="status-pill" id="tabCountAll">0</span></button>
+    <button class="status-tab" data-tab="backlog">Backlog <span class="status-pill" id="tabCountBacklog">0</span></button>
+    <button class="status-tab" data-tab="todo">To Do <span class="status-pill" id="tabCountTodo">0</span></button>
+    <button class="status-tab" data-tab="in-progress">In Progress <span class="status-pill" id="tabCountProgress">0</span></button>
+    <button class="status-tab" data-tab="in-review">In Review <span class="status-pill" id="tabCountReview">0</span></button>
+    <button class="status-tab" data-tab="done">Done <span class="status-pill" id="tabCountDone">0</span></button>
+  </nav>
+
+  <!-- Main View Container -->
+  <div class="view-container">
+
+    <!-- Mode 1: Responsive List View (Vertical stack for panel) -->
+    <main class="list-view" id="listViewContainer"></main>
+
+    <!-- Mode 2: Multi-Column Kanban View (Wide canvas for page mode) -->
+    <main class="kanban-view" id="kanbanViewContainer">
+      <!-- Backlog -->
+      <div class="kanban-col" data-column="backlog">
+        <div class="kanban-col-header">
+          <span>Backlog</span>
+          <span class="status-pill" id="kCountBacklog">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsBacklog" data-status="backlog"></div>
+      </div>
+      <!-- To Do -->
+      <div class="kanban-col" data-column="todo">
+        <div class="kanban-col-header">
+          <span>To Do</span>
+          <span class="status-pill" id="kCountTodo">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsTodo" data-status="todo"></div>
+      </div>
+      <!-- In Progress -->
+      <div class="kanban-col" data-column="in-progress">
+        <div class="kanban-col-header">
+          <span>In Progress</span>
+          <span class="status-pill" id="kCountProgress">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsProgress" data-status="in-progress"></div>
+      </div>
+      <!-- In Review -->
+      <div class="kanban-col" data-column="in-review">
+        <div class="kanban-col-header">
+          <span>In Review</span>
+          <span class="status-pill" id="kCountReview">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsReview" data-status="in-review"></div>
+      </div>
+      <!-- Done -->
+      <div class="kanban-col" data-column="done">
+        <div class="kanban-col-header">
+          <span>Done</span>
+          <span class="status-pill" id="kCountDone">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsDone" data-status="done"></div>
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Slide-Over Drawer Scrim -->
+  <div class="drawer-scrim" id="drawerScrim"></div>
+
+  <!-- Slide-Over Inspection Drawer -->
+  <aside class="drawer" id="taskDrawer">
+    <div class="drawer-head">
+      <div class="drawer-head-info">
+        <div class="drawer-meta">
+          <span id="drawerIssueNumber" style="font-family: var(--font-mono); font-weight: 600;">#0</span>
+          <span id="drawerIssueAuthor">author</span>
+          <a id="drawerGithubLink" href="#" target="_blank" style="color: var(--prim); text-decoration: none; display: inline-flex; align-items: center; gap: 3px;">
+            <span>GitHub</span>
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 6v2H5v11h11v-5h2v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6zm11-3v8h-2V6.413l-7.293 7.294-1.414-1.414L17.586 5H13V3h8z"/></svg>
+          </a>
+        </div>
+        <h2 class="drawer-heading" id="drawerIssueTitle">Issue Title</h2>
+      </div>
+      <button class="btn btn-icon" id="btnDrawerClose" title="Close Drawer">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></svg>
+      </button>
+    </div>
+
+    <div class="drawer-scroll">
+      <!-- Status Picker -->
+      <div>
+        <div class="section-label">Workflow Status</div>
+        <select class="form-ctrl" id="drawerStatusSelect" style="width: 100%;">
+          <option value="backlog">Backlog</option>
+          <option value="todo">To Do</option>
+          <option value="in-progress">In Progress</option>
+          <option value="in-review">In Review</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+
+      <!-- Agent & Worktree Box -->
+      <div>
+        <div class="section-label">Agent & Worktree State</div>
+        <div class="panel-box" id="drawerSessionCard">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+            <span style="color: var(--fg-muted); font-size: 12px;">Live Activity:</span>
+            <div id="drawerAgentBadge" class="agent-pill">
+              <span class="dot dot-idle"></span>
+              <span>No session active</span>
+            </div>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="color: var(--fg-muted); font-size: 12px;">Worktree Branch:</span>
+            <span id="drawerWorktreeName" class="worktree-tag">None</span>
+          </div>
+          <div id="drawerSessionActions" style="margin-top: 10px; display: flex; gap: 8px;">
+            <button class="btn btn-sm btn-primary" id="btnDrawerJumpSession" style="display: none;">
+              Teleport to Chat Session ↗
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtasks & Checklist -->
+      <div>
+        <div class="section-label">
+          <span>Subtasks Checklist</span>
+          <span id="checklistProgressText" style="font-family: var(--font-mono); font-size: 11px;">0 / 0</span>
+        </div>
+        <div style="height: 3px; background: var(--surf-subtle); border-radius: 2px; overflow: hidden; margin-bottom: 8px;">
+          <div id="checklistProgressFill" style="height: 100%; background: var(--succ); width: 0%; transition: width 0.2s ease;"></div>
+        </div>
+        <div class="check-list" id="drawerChecklistContainer"></div>
+        <div class="add-task-row">
+          <input type="text" id="inputAddSubtask" class="form-ctrl" style="flex: 1;" placeholder="Add new checklist subtask..." />
+          <button class="btn btn-sm" id="btnAddSubtask">Add</button>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div>
+        <div class="section-label">Description</div>
+        <div class="panel-box" id="drawerIssueBody" style="white-space: pre-wrap; font-size: 12.5px; line-height: 1.55; user-select: text;">
+          No description provided.
+        </div>
+      </div>
+
+      <!-- Comments Timeline -->
+      <div>
+        <div class="section-label">
+          <span>Comments & Activity</span>
+          <span id="commentCountBadge" class="status-pill">0</span>
+        </div>
+        <div class="check-list" id="drawerCommentsContainer">
+          <div style="color: var(--fg-faint); font-size: 12px;">No comments yet.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="drawer-foot">
+      <button class="btn btn-sm" id="btnDrawerAttachComposer" title="Attach issue chip to active prompt">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.828 7.757l-5.656 5.657a1 1 0 1 0 1.414 1.414l5.657-5.656A3 3 0 1 0 12 4.929l-5.657 5.657a5 5 0 1 0 7.071 7.07l5.657-5.656-1.414-1.414-5.657 5.656a3 3 0 1 1-4.243-4.242l5.657-5.656a1 1 0 0 1 1.414 1.414z"/></svg>
+        <span>Attach Chip</span>
+      </button>
+      <button class="btn btn-sm btn-primary" id="btnDrawerOpenPreflight">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19.376 12.416L8.777 19.482A.5.5 0 0 1 8 19.066V4.934a.5.5 0 0 1 .777-.416l10.599 7.066a.5.5 0 0 1 0 .832z"/></svg>
+        <span>Launch Agent Worktree</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Pre-Flight Worktree Config Modal -->
+  <div class="modal-backdrop" id="preflightModalBackdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <span id="modalPreflightTitle">Launch Agent Worktree</span>
+        <button class="btn btn-icon btn-sm" id="btnPreflightClose">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div>
+          <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Branch Name</label>
+          <input type="text" id="preflightBranchInput" class="form-ctrl" style="width: 100%;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Base Branch</label>
+          <input type="text" id="preflightBaseBranchInput" class="form-ctrl" style="width: 100%;" value="main" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Agent Prompt Brief</label>
+          <textarea id="preflightPromptInput" class="form-ctrl" style="width: 100%; height: 90px; resize: vertical; font-family: var(--font-mono); font-size: 11px;"></textarea>
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <input type="checkbox" id="preflightMoveInProgress" checked />
+          <label for="preflightMoveInProgress" style="font-size: 11.5px; cursor: pointer; color: var(--fg-muted);">Move to "In Progress" label automatically</label>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="btn btn-sm" id="btnPreflightCancel">Cancel</button>
+        <button class="btn btn-sm btn-primary" id="btnPreflightLaunch">Launch Worktree & Agent</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- In-App Diagnostics / Log Drawer -->
+  <aside class="log-drawer" id="logDrawer">
+    <div class="log-drawer-head">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span>Diagnostics & Activity Logs</span>
+        <button class="btn btn-sm" id="btnCopyLogs" style="height: 18px; font-size: 10px;">Copy</button>
+        <button class="btn btn-sm" id="btnClearLogs" style="height: 18px; font-size: 10px;">Clear</button>
+      </div>
+      <button class="btn btn-icon btn-sm" id="btnLogDrawerClose">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></svg>
+      </button>
+    </div>
+    <div class="log-stream" id="logStream"></div>
+  </aside>
+
+  <script src="./main.js"></script>
+</body>
+</html>

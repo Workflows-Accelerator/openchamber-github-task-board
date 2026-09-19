@@ -1,0 +1,49 @@
+{
+  "name": "openchamber-github-task-board",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Live Linear / Trello style Kanban board for GitHub Issues with attached OpenChamber sessions and git worktrees",
+  "openchamber": {
+    "apiVersion": 1,
+    "engines": {
+      "openchamber": ">=1.22.0"
+    },
+    "capabilities": [
+      "sessions",
+      "prompt",
+      "files",
+      "filesystem"
+    ],
+    "contributes": {
+      "panel": {
+        "id": "github-task-board",
+        "name": "Task Board",
+        "icon": "kanban-view",
+        "entry": "panel/index.html"
+      },
+      "page": true,
+      "attach": true,
+      "filesystem": [
+        "/workspace/**"
+      ],
+      "integration": {
+        "name": "GitHub",
+        "description": "Syncs tasks, checklists, and discussions with GitHub Issues",
+        "token": {
+          "apiOrigin": "https://api.github.com",
+          "scheme": "bearer",
+          "account": {
+            "path": "/user",
+            "name": "login"
+          }
+        },
+        "settings": [
+          {
+            "id": "repo",
+            "label": "Repository (owner/repo)"
+          }
+        ]
+      }
+    }
+  }
+}
