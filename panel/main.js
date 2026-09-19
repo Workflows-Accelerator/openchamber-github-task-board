@@ -1440,18 +1440,20 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       const dirRemote = await inspectGitConfigInDir(currentDirectory);
       if (dirRemote) {
         const full = `${dirRemote.owner}/${dirRemote.repo}`;
+        targetProject.gitRepo = dirRemote;
+        targetProject.linkedRepo = full;
         setRepository(full, `directory: ${targetProject.name}`);
         return;
       }
     }
-    const storedLink = await host.storage.get(`repo_${targetProject.id}`);
-    if (typeof storedLink === "string" && storedLink.includes("/")) {
-      setRepository(storedLink.trim(), `stored-project-link: ${targetProject.name}`);
-      return;
-    }
     if (targetProject.gitRepo) {
       const full = `${targetProject.gitRepo.owner}/${targetProject.gitRepo.repo}`;
       setRepository(full, `project-git: ${targetProject.name}`);
+      return;
+    }
+    const storedLink = await host.storage.get(`repo_${targetProject.id}`);
+    if (typeof storedLink === "string" && storedLink.includes("/")) {
+      setRepository(storedLink.trim(), `stored-project-link: ${targetProject.name}`);
       return;
     }
     if (sessions && sessions.length > 0) {
@@ -1478,7 +1480,10 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     });
     renderEmptyState(`No GitHub repository linked to project "${targetProject.name}". Click "Select Repo" above to link a repository.`);
   }
-  function setRepository(repo, source) {
+  function setRepository(repo, source, force = false) {
+    if (!force && currentRepo === repo) {
+      return;
+    }
     currentRepo = repo;
     elTxtRepoLabel.textContent = repo.split("/")[1] || repo;
     elTxtRepoLabel.title = `Project: ${currentProject?.name || "Workspace"} \u2022 Repo: ${repo} (via ${source})`;
@@ -1489,7 +1494,9 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       void host.storage.set(`repo_${currentProject.id}`, repo);
       currentProject.linkedRepo = repo;
     }
-    renderRepoPopoverList();
+    if (!elRepoPopover.classList.contains("active")) {
+      renderRepoPopoverList();
+    }
     void fetchIssues();
   }
   function renderRepoPopoverList() {
@@ -1555,8 +1562,62 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   function closeRepoPopover() {
     elRepoPopover.classList.remove("active");
   }
+  var workspaceGitToken = null;
+  async function getWorkspaceGitToken() {
+    if (workspaceGitToken) return workspaceGitToken;
+    try {
+      const creds = await host.readFile("/workspace/.git-credentials");
+      if (creds && creds.content) {
+        const match = creds.content.match(/https:\/\/(?:[^:]+?:)?(gh[pousr]_[A-Za-z0-9_]+)@github\.com/) || creds.content.match(/gh[pousr]_[A-Za-z0-9_]+/);
+        if (match) {
+          workspaceGitToken = match[1] || match[0];
+          addLog("Loaded authenticated GitHub PAT from workspace credentials", "succ");
+          return workspaceGitToken;
+        }
+      }
+    } catch {
+    }
+    try {
+      const cfg = await host.readFile("/workspace/.gitconfig");
+      if (cfg && cfg.content) {
+        const match = cfg.content.match(/gh[pousr]_[A-Za-z0-9_]+/);
+        if (match) {
+          workspaceGitToken = match[0];
+          return workspaceGitToken;
+        }
+      }
+    } catch {
+    }
+    return null;
+  }
   async function githubRequest(method, path, body, query) {
     addLog(`API ${method} ${path}`);
+    const pat = await getWorkspaceGitToken() || await host.storage.get("custom_github_token");
+    if (pat && typeof pat === "string") {
+      try {
+        const url = new URL(path, "https://api.github.com/");
+        if (query) {
+          Object.entries(query).forEach(([k, v2]) => url.searchParams.set(k, v2));
+        }
+        const directRes = await fetch(url.toString(), {
+          method,
+          headers: {
+            "Accept": "application/vnd.github.v3+json",
+            "Authorization": `Bearer ${pat.trim()}`,
+            ...body ? { "Content-Type": "application/json" } : {}
+          },
+          body: body ? JSON.stringify(body) : void 0
+        });
+        if (directRes.ok) {
+          addLog(`API ${method} ${path} -> ${directRes.status} OK (via workspace PAT)`, "succ");
+          hideBanner();
+          return directRes.json();
+        }
+        addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, "warn");
+      } catch (err) {
+        addLog(`Direct PAT fetch failed (${err.message}), falling back to host proxy...`, "warn");
+      }
+    }
     try {
       const res = await host.request({
         method,
@@ -1570,9 +1631,9 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
         return typeof res.body === "string" ? JSON.parse(res.body) : res.body;
       }
       if (res.status === 401 || res.status === 403) {
-        addLog(`API auth error HTTP ${res.status}: check Settings -> Integrations`, "error");
+        addLog(`API auth error HTTP ${res.status}: OAuth access restricted or missing`, "error");
         showBanner(
-          "GitHub authentication required. Please connect in Settings \u2192 Integrations or enter a token.",
+          "GitHub authentication required. Please connect in Settings \u2192 Integrations or enter a Personal Access Token.",
           "Enter Token",
           promptCustomToken
         );
@@ -1580,28 +1641,6 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       }
       throw new Error(`GitHub API error: ${res.status}`);
     } catch (err) {
-      const customToken = await host.storage.get("custom_github_token");
-      if (typeof customToken === "string" && customToken.trim()) {
-        addLog("Retrying API request using custom token...", "info");
-        const url = new URL(path, "https://api.github.com/");
-        if (query) {
-          Object.entries(query).forEach(([k, v2]) => url.searchParams.set(k, v2));
-        }
-        const directRes = await fetch(url.toString(), {
-          method,
-          headers: {
-            "Accept": "application/vnd.github.v3+json",
-            "Authorization": `Bearer ${customToken.trim()}`,
-            ...body ? { "Content-Type": "application/json" } : {}
-          },
-          body: body ? JSON.stringify(body) : void 0
-        });
-        if (directRes.ok) {
-          addLog(`Direct API ${method} ${path} -> 200 OK`, "succ");
-          hideBanner();
-          return directRes.json();
-        }
-      }
       addLog(`GitHub request failed: ${err.message}`, "error");
       if (err.message && (err.message.includes("NO_INTEGRATION") || err.message.includes("DISCONNECTED"))) {
         showBanner(
@@ -1631,6 +1670,9 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
         state: "all",
         per_page: "100"
       });
+      if (!Array.isArray(rawIssues)) {
+        throw new Error(rawIssues?.message || "Invalid response from GitHub API (expected issue array)");
+      }
       issues = rawIssues.filter((item) => !item.pull_request).map((item) => ({
         number: item.number,
         title: item.title,

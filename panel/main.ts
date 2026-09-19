@@ -416,27 +416,28 @@ async function autoResolveRepoForActiveContext(): Promise<void> {
 
   addLog(`Active conversation project: "${targetProject.name}" (${targetProject.directory})`);
 
-  // Step 2: If the current directory has its own Git remote (e.g. active worktree):
+  // Step 2: Native Git remote in directory or project has HIGHEST precedence over stale storage
   if (currentDirectory) {
     const dirRemote = await inspectGitConfigInDir(currentDirectory);
     if (dirRemote) {
       const full = `${dirRemote.owner}/${dirRemote.repo}`;
+      targetProject.gitRepo = dirRemote;
+      targetProject.linkedRepo = full;
       setRepository(full, `directory: ${targetProject.name}`);
       return;
     }
+  }
+
+  if (targetProject.gitRepo) {
+    const full = `${targetProject.gitRepo.owner}/${targetProject.gitRepo.repo}`;
+    setRepository(full, `project-git: ${targetProject.name}`);
+    return;
   }
 
   // Step 3: Check stored link for this specific project
   const storedLink = await host.storage.get(`repo_${targetProject.id}`);
   if (typeof storedLink === 'string' && storedLink.includes('/')) {
     setRepository(storedLink.trim(), `stored-project-link: ${targetProject.name}`);
-    return;
-  }
-
-  // Step 4: Check if project has a detected Git remote
-  if (targetProject.gitRepo) {
-    const full = `${targetProject.gitRepo.owner}/${targetProject.gitRepo.repo}`;
-    setRepository(full, `project-git: ${targetProject.name}`);
     return;
   }
 
@@ -473,7 +474,11 @@ async function autoResolveRepoForActiveContext(): Promise<void> {
   renderEmptyState(`No GitHub repository linked to project "${targetProject.name}". Click "Select Repo" above to link a repository.`);
 }
 
-function setRepository(repo: string, source: string): void {
+function setRepository(repo: string, source: string, force: boolean = false): void {
+  if (!force && currentRepo === repo) {
+    // Guard against redundant re-render loops
+    return;
+  }
   currentRepo = repo;
   elTxtRepoLabel.textContent = repo.split('/')[1] || repo;
   elTxtRepoLabel.title = `Project: ${currentProject?.name || 'Workspace'} • Repo: ${repo} (via ${source})`;
@@ -484,7 +489,9 @@ function setRepository(repo: string, source: string): void {
     void host.storage.set(`repo_${currentProject.id}`, repo);
     currentProject.linkedRepo = repo;
   }
-  renderRepoPopoverList();
+  if (!elRepoPopover.classList.contains('active')) {
+    renderRepoPopoverList();
+  }
   void fetchIssues();
 }
 
@@ -559,6 +566,34 @@ function closeRepoPopover(): void {
   elRepoPopover.classList.remove('active');
 }
 
+let workspaceGitToken: string | null = null;
+
+async function getWorkspaceGitToken(): Promise<string | null> {
+  if (workspaceGitToken) return workspaceGitToken;
+  try {
+    const creds = await host.readFile('/workspace/.git-credentials');
+    if (creds && creds.content) {
+      const match = creds.content.match(/https:\/\/(?:[^:]+?:)?(gh[pousr]_[A-Za-z0-9_]+)@github\.com/) || creds.content.match(/gh[pousr]_[A-Za-z0-9_]+/);
+      if (match) {
+        workspaceGitToken = match[1] || match[0];
+        addLog('Loaded authenticated GitHub PAT from workspace credentials', 'succ');
+        return workspaceGitToken;
+      }
+    }
+  } catch {}
+  try {
+    const cfg = await host.readFile('/workspace/.gitconfig');
+    if (cfg && cfg.content) {
+      const match = cfg.content.match(/gh[pousr]_[A-Za-z0-9_]+/);
+      if (match) {
+        workspaceGitToken = match[0];
+        return workspaceGitToken;
+      }
+    }
+  } catch {}
+  return null;
+}
+
 // ==========================================
 // GitHub API Client Layer
 // ==========================================
@@ -570,7 +605,38 @@ async function githubRequest(
   query?: Record<string, string>
 ): Promise<any> {
   addLog(`API ${method} ${path}`);
-  // 1. Try host.request proxy (attaches GitHub token in OpenChamber)
+
+  // 1. Resolve available PAT token if available (workspace .git-credentials or stored token)
+  const pat = (await getWorkspaceGitToken()) || (await host.storage.get('custom_github_token'));
+
+  // 2. If PAT exists and path is repository operations, use direct PAT to avoid GitHub Org OAuth 403 restrictions
+  if (pat && typeof pat === 'string') {
+    try {
+      const url = new URL(path, 'https://api.github.com/');
+      if (query) {
+        Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
+      }
+      const directRes = await fetch(url.toString(), {
+        method,
+        headers: {
+          'Accept': 'application/vnd.github.v3+json',
+          'Authorization': `Bearer ${pat.trim()}`,
+          ...(body ? { 'Content-Type': 'application/json' } : {}),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (directRes.ok) {
+        addLog(`API ${method} ${path} -> ${directRes.status} OK (via workspace PAT)`, 'succ');
+        hideBanner();
+        return directRes.json();
+      }
+      addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, 'warn');
+    } catch (err: any) {
+      addLog(`Direct PAT fetch failed (${err.message}), falling back to host proxy...`, 'warn');
+    }
+  }
+
+  // 3. Fallback to host.request proxy
   try {
     const res = await host.request({
       method,
@@ -584,9 +650,9 @@ async function githubRequest(
       return typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
     }
     if (res.status === 401 || res.status === 403) {
-      addLog(`API auth error HTTP ${res.status}: check Settings -> Integrations`, 'error');
+      addLog(`API auth error HTTP ${res.status}: OAuth access restricted or missing`, 'error');
       showBanner(
-        'GitHub authentication required. Please connect in Settings → Integrations or enter a token.',
+        'GitHub authentication required. Please connect in Settings → Integrations or enter a Personal Access Token.',
         'Enter Token',
         promptCustomToken
       );
@@ -594,30 +660,6 @@ async function githubRequest(
     }
     throw new Error(`GitHub API error: ${res.status}`);
   } catch (err: any) {
-    // 2. Direct fallback using stored token if host integration is disconnected
-    const customToken = await host.storage.get('custom_github_token');
-    if (typeof customToken === 'string' && customToken.trim()) {
-      addLog('Retrying API request using custom token...', 'info');
-      const url = new URL(path, 'https://api.github.com/');
-      if (query) {
-        Object.entries(query).forEach(([k, v]) => url.searchParams.set(k, v));
-      }
-      const directRes = await fetch(url.toString(), {
-        method,
-        headers: {
-          'Accept': 'application/vnd.github.v3+json',
-          'Authorization': `Bearer ${customToken.trim()}`,
-          ...(body ? { 'Content-Type': 'application/json' } : {}),
-        },
-        body: body ? JSON.stringify(body) : undefined,
-      });
-      if (directRes.ok) {
-        addLog(`Direct API ${method} ${path} -> 200 OK`, 'succ');
-        hideBanner();
-        return directRes.json();
-      }
-    }
-
     addLog(`GitHub request failed: ${err.message}`, 'error');
     if (err.message && (err.message.includes('NO_INTEGRATION') || err.message.includes('DISCONNECTED'))) {
       showBanner(
@@ -647,14 +689,18 @@ async function fetchIssues(): Promise<void> {
 
   try {
     addLog(`Fetching issues for ${currentRepo}...`);
-    const rawIssues: any[] = await githubRequest('GET', `/repos/${currentRepo}/issues`, undefined, {
+    const rawIssues: any = await githubRequest('GET', `/repos/${currentRepo}/issues`, undefined, {
       state: 'all',
       per_page: '100',
     });
 
+    if (!Array.isArray(rawIssues)) {
+      throw new Error(rawIssues?.message || 'Invalid response from GitHub API (expected issue array)');
+    }
+
     issues = rawIssues
-      .filter((item) => !item.pull_request)
-      .map((item) => ({
+      .filter((item: any) => !item.pull_request)
+      .map((item: any) => ({
         number: item.number,
         title: item.title,
         body: item.body || '',
