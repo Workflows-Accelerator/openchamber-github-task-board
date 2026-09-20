@@ -1199,10 +1199,29 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var activeIssue = null;
   var searchQuery = "";
   var activeTab = "all";
+  var userSelectedTab = false;
+  var showArchivedOnly = false;
+  var currentSort = "newest";
+  var filterPriority = "all";
+  var filterTag = "all";
+  var isFilterBarOpen = false;
   var userLayoutPreference = "auto";
   var isWideScreen = false;
   var draggedIssueNumber = null;
   var isLoading = false;
+  function selectTab(tabId) {
+    activeTab = tabId;
+    const bar = document.getElementById("statusTabBar");
+    if (bar) {
+      bar.querySelectorAll(".status-tab").forEach((tab) => {
+        if (tab.getAttribute("data-tab") === tabId) {
+          tab.classList.add("active");
+        } else {
+          tab.classList.remove("active");
+        }
+      });
+    }
+  }
   var elBtnRepoSelect = document.getElementById("btnRepoSelect");
   var elTxtRepoLabel = document.getElementById("txtRepoLabel");
   var elRepoPopover = document.getElementById("repoPopover");
@@ -1215,6 +1234,12 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elIconRefresh = document.getElementById("iconRefresh");
   var elBtnNewIssue = document.getElementById("btnNewIssue");
   var elBtnLogsToggle = document.getElementById("btnLogsToggle");
+  var elBtnFilterToggle = document.getElementById("btnFilterToggle");
+  var elFilterBar = document.getElementById("filterBar");
+  var elSelectSort = document.getElementById("selectSort");
+  var elSelectFilterPriority = document.getElementById("selectFilterPriority");
+  var elSelectFilterTag = document.getElementById("selectFilterTag");
+  var elBtnResetFilters = document.getElementById("btnResetFilters");
   var elStatusTabBar = document.getElementById("statusTabBar");
   var elListViewContainer = document.getElementById("listViewContainer");
   var elKanbanViewContainer = document.getElementById("kanbanViewContainer");
@@ -1231,6 +1256,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elDrawerIssueNumber = document.getElementById("drawerIssueNumber");
   var elDrawerIssueAuthor = document.getElementById("drawerIssueAuthor");
   var elDrawerGithubLink = document.getElementById("drawerGithubLink");
+  var elBtnDrawerToggleClose = document.getElementById("btnDrawerToggleClose");
   var elDrawerIssueTitle = document.getElementById("drawerIssueTitle");
   var elDrawerStatusSelect = document.getElementById("drawerStatusSelect");
   var elDrawerLabelsContainer = document.getElementById("drawerLabelsContainer");
@@ -1261,9 +1287,17 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elDrawerCommentsContainer = document.getElementById("drawerCommentsContainer");
   var elCommentCountBadge = document.getElementById("commentCountBadge");
   var elBtnDrawerAttachComposer = document.getElementById("btnDrawerAttachComposer");
+  var elBtnDrawerArchive = document.getElementById("btnDrawerArchive");
+  var elTxtDrawerArchive = document.getElementById("txtDrawerArchive");
   var elBtnDrawerOpenPreflight = document.getElementById("btnDrawerOpenPreflight");
   var elPreflightBackdrop = document.getElementById("preflightModalBackdrop");
   var elModalPreflightTitle = document.getElementById("modalPreflightTitle");
+  var elPreflightWorktreeToggle = document.getElementById("preflightWorktreeToggle");
+  var elPreflightWorktreeSection = document.getElementById("preflightWorktreeSection");
+  var elRadioWorktreeTag = document.getElementById("radioWorktreeTag");
+  var elRadioWorktreeIssue = document.getElementById("radioWorktreeIssue");
+  var elPreflightTagPreview = document.getElementById("preflightTagPreview");
+  var elPreflightIssuePreview = document.getElementById("preflightIssuePreview");
   var elPreflightBranchInput = document.getElementById("preflightBranchInput");
   var elPreflightBaseBranchInput = document.getElementById("preflightBaseBranchInput");
   var elPreflightPromptInput = document.getElementById("preflightPromptInput");
@@ -1391,9 +1425,18 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     }
     try {
       unsubSessions = await host.onSessions(projectId, (sessSnap) => {
+        const prevSessions = sessions;
         sessions = sessSnap.sessions || [];
         renderViews();
         if (activeIssue) renderDrawer(activeIssue);
+        const becameIdle = sessions.some((s) => {
+          const prev = prevSessions.find((p) => p.id === s.id);
+          return s.activity === "idle" && (!prev || prev.activity !== "idle");
+        });
+        if (becameIdle && currentRepo) {
+          issueCache.delete(currentRepo);
+          void fetchIssues(true);
+        }
       });
       unsubWorktrees = await host.onWorktrees(projectId, (wtSnap) => {
         worktrees = wtSnap.worktrees || [];
@@ -1549,6 +1592,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     if (!force && currentRepo === repo) {
       return;
     }
+    userSelectedTab = false;
     currentRepo = repo;
     elTxtRepoLabel.textContent = repo.split("/")[1] || repo;
     elTxtRepoLabel.title = `Project: ${currentProject?.name || "Workspace"} \u2022 Repo: ${repo} (via ${source})`;
@@ -1731,6 +1775,9 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       const cached = issueCache.get(currentRepo);
       if (Date.now() - cached.timestamp < ISSUE_CACHE_TTL_MS) {
         issues = cached.issues;
+        if (!userSelectedTab) {
+          selectTab(resolveDefaultTab(issues));
+        }
         renderViews();
         addLog(`Rendered ${issues.length} issues from cache for ${currentRepo}`);
         return;
@@ -1763,6 +1810,9 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
         issues
       });
       addLog(`Loaded ${issues.length} issues successfully for ${currentRepo}`, "succ");
+      if (!userSelectedTab) {
+        selectTab(resolveDefaultTab(issues));
+      }
       renderViews();
     } catch (err) {
       addLog(`Failed to fetch issues: ${err.message}`, "error");
@@ -1790,6 +1840,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     }
   }
   async function updateIssueStatus(issue, targetColumn) {
+    const prevLabels = [...issue.labels];
+    const prevState = issue.state;
     const currentLabels = issue.labels.map((l) => l.name);
     const filteredLabels = currentLabels.filter((name) => !name.startsWith("status:"));
     let newState = "open";
@@ -1801,6 +1853,9 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     }
     issue.state = newState;
     issue.labels = filteredLabels.map((name) => ({ name }));
+    if (currentRepo) {
+      issueCache.delete(currentRepo);
+    }
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue);
@@ -1813,10 +1868,205 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       await host.toast({ kind: "success", message: `Moved #${issue.number} to ${targetColumn}` });
       addLog(`Moved #${issue.number} to ${targetColumn}`, "succ");
     } catch (err) {
+      issue.state = prevState;
+      issue.labels = prevLabels;
+      renderViews();
+      if (activeIssue && activeIssue.number === issue.number) {
+        renderDrawer(issue);
+      }
       addLog(`Failed to move #${issue.number}: ${err.message}`, "error");
       await host.toast({ kind: "error", message: `Failed to move #${issue.number}` });
     }
   }
+  function buildIssueAttachPayload(issue) {
+    const numStr = String(issue.number);
+    const title = `#${issue.number} ${issue.title || ""}`.slice(0, 150);
+    const url = (issue.html_url || "").slice(0, 1e3);
+    const text = `Context from GitHub Issue #${issue.number}: ${issue.title || ""}
+
+${issue.body || ""}`.slice(0, 15e3);
+    return {
+      providerId: "github-task-board",
+      id: numStr,
+      title,
+      url,
+      text,
+      ...issue.user?.login ? { author: String(issue.user.login) } : {},
+      data: {
+        issueNumber: issue.number
+      }
+    };
+  }
+  function isIssueClosed(issue) {
+    if (!issue) return false;
+    if (typeof issue.state === "string" && issue.state.toLowerCase() === "closed") {
+      return true;
+    }
+    if (issue.state_reason === "completed") {
+      return true;
+    }
+    const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labelNames.includes("status:done") || labelNames.includes("status:closed") || labelNames.includes("closed") || labelNames.includes("done")) {
+      return true;
+    }
+    return false;
+  }
+  function isIssueArchived(issue) {
+    if (!issue || !issue.labels) return false;
+    return issue.labels.some((l) => {
+      const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+      return name === "archived" || name === "archive" || name === "status:archived";
+    });
+  }
+  function getNextColumn(current) {
+    switch (current) {
+      case "backlog":
+        return "todo";
+      case "todo":
+        return "in-progress";
+      case "in-progress":
+        return "in-review";
+      case "in-review":
+        return "done";
+      case "done":
+        return "todo";
+      default:
+        return "todo";
+    }
+  }
+  function getNextColumnAction(current) {
+    switch (current) {
+      case "backlog":
+        return { label: "To Do", target: "todo", icon: "\u2192" };
+      case "todo":
+        return { label: "In Progress", target: "in-progress", icon: "\u25B6" };
+      case "in-progress":
+        return { label: "In Review", target: "in-review", icon: "\u2192" };
+      case "in-review":
+        return { label: "Done", target: "done", icon: "\u2713" };
+      case "done":
+        return { label: "Reopen", target: "todo", icon: "\u21BA" };
+      default:
+        return { label: "Next", target: "todo", icon: "\u2192" };
+    }
+  }
+  async function toggleArchiveIssue(issue) {
+    const isArch = isIssueArchived(issue);
+    const prevLabels = [...issue.labels];
+    const prevState = issue.state;
+    const currentNames = issue.labels.map((l) => typeof l === "string" ? l : l.name || "");
+    const clean = currentNames.filter((n) => !["archived", "archive", "status:archived"].includes(n.toLowerCase()));
+    let newState = issue.state;
+    let targetCategory = "todo";
+    if (!isArch) {
+      const currentCategory = resolveIssueColumn(issue) || "todo";
+      if (!clean.some((n) => n.startsWith("status:"))) {
+        clean.push(`status:${currentCategory}`);
+      }
+      clean.push("archived");
+      newState = "closed";
+      targetCategory = currentCategory;
+    } else {
+      const statusLabel = clean.find((n) => n.startsWith("status:"));
+      if (statusLabel) {
+        targetCategory = statusLabel.replace("status:", "").trim() || "todo";
+      } else {
+        targetCategory = "todo";
+        clean.push("status:todo");
+      }
+      newState = targetCategory === "done" ? "closed" : "open";
+    }
+    issue.state = newState;
+    issue.labels = clean.map((name) => ({ name }));
+    if (currentRepo) {
+      issueCache.delete(currentRepo);
+    }
+    renderViews();
+    if (activeIssue && activeIssue.number === issue.number) {
+      renderDrawer(issue);
+    }
+    try {
+      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+        state: newState,
+        labels: clean
+      });
+      await host.toast({
+        kind: isArch ? "info" : "success",
+        message: isArch ? `Unarchived #${issue.number} back to ${targetCategory}` : `Archived #${issue.number}`
+      });
+      addLog(isArch ? `Unarchived #${issue.number} back to ${targetCategory}` : `Archived #${issue.number}`, "succ");
+    } catch (err) {
+      issue.state = prevState;
+      issue.labels = prevLabels;
+      renderViews();
+      if (activeIssue && activeIssue.number === issue.number) {
+        renderDrawer(issue);
+      }
+      addLog(`Failed to update archive state: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to archive #${issue.number}: ${err.message}` });
+    }
+  }
+
+  function getIssuePriority(issue) {
+    if (!issue || !issue.labels) return null;
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+      if (name === "priority:critical") return "critical";
+      if (name === "priority:important") return "important";
+      if (name === "priority:useful") return "useful";
+      if (name === "priority:optional") return "optional";
+    }
+    return null;
+  }
+
+  function getIssueComplexity(issue) {
+    if (!issue || !issue.labels) return null;
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+      if (name === "complexity:xl") return "XL";
+      if (name === "complexity:l") return "L";
+      if (name === "complexity:m") return "M";
+      if (name === "complexity:s") return "S";
+      if (name === "complexity:xs") return "XS";
+    }
+    return null;
+  }
+
+  var PRIORITY_WEIGHTS = { critical: 4, important: 3, useful: 2, optional: 1 };
+  var COMPLEXITY_WEIGHTS = { XL: 5, L: 4, M: 3, S: 2, XS: 1 };
+
+  function sortIssuesList(list, sortKey) {
+    const copy = [...list];
+    switch (sortKey) {
+      case "newest":
+        return copy.sort((a, b) => b.number - a.number);
+      case "oldest":
+        return copy.sort((a, b) => a.number - b.number);
+      case "priority":
+        return copy.sort((a, b) => {
+          const pA = PRIORITY_WEIGHTS[getIssuePriority(a) || ""] || 0;
+          const pB = PRIORITY_WEIGHTS[getIssuePriority(b) || ""] || 0;
+          return pB !== pA ? pB - pA : b.number - a.number;
+        });
+      case "complexity":
+        return copy.sort((a, b) => {
+          const cA = COMPLEXITY_WEIGHTS[getIssueComplexity(a) || ""] || 0;
+          const cB = COMPLEXITY_WEIGHTS[getIssueComplexity(b) || ""] || 0;
+          return cB !== cA ? cB - cA : b.number - a.number;
+        });
+      case "subtasks":
+        return copy.sort((a, b) => {
+          const remA = (a.subtasks || []).filter((s) => !s.completed).length;
+          const remB = (b.subtasks || []).filter((s) => !s.completed).length;
+          return remB !== remA ? remB - remA : b.number - a.number;
+        });
+      case "title":
+        return copy.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+      default:
+        return copy;
+    }
+  }
+
   function getIssueSession(issue) {
     const issueNumStr = String(issue.number);
     const match = sessions.find((s) => {
@@ -1835,20 +2085,52 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return match || null;
   }
   function resolveIssueColumn(issue) {
-    if (issue.state === "closed") {
+    if (isIssueClosed(issue)) {
       return "done";
     }
-    const labelNames = issue.labels.map((l) => l.name.toLowerCase());
+    const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
     if (labelNames.includes("status:done")) return "done";
     if (labelNames.includes("status:in-review")) return "in-review";
-    if (labelNames.includes("status:in-progress")) return "in-progress";
-    if (labelNames.includes("status:todo")) return "todo";
-    if (labelNames.includes("status:backlog")) return "backlog";
     const session = getIssueSession(issue);
-    if (session && (session.activity === "running" || session.activity.startsWith("waiting"))) {
+    if (labelNames.includes("status:in-progress")) {
+      if (session && session.activity === "idle") {
+        return "in-review";
+      }
       return "in-progress";
     }
-    return "backlog";
+    if (labelNames.includes("status:todo")) {
+      if (session && (session.activity === "running" || session.activity.startsWith("waiting"))) {
+        return "in-progress";
+      }
+      return "todo";
+    }
+    if (labelNames.includes("status:backlog")) {
+      if (session && (session.activity === "running" || session.activity.startsWith("waiting"))) {
+        return "in-progress";
+      }
+      return "backlog";
+    }
+    if (session) {
+      if (session.activity === "running" || session.activity.startsWith("waiting")) {
+        return "in-progress";
+      }
+      if (session.activity === "idle") {
+        return "in-review";
+      }
+    }
+    return null;
+  }
+  function resolveDefaultTab(issues2) {
+    if (!issues2 || issues2.length === 0) return "all";
+    const hasReview = issues2.some((i) => resolveIssueColumn(i) === "in-review");
+    if (hasReview) return "in-review";
+    const hasProgress = issues2.some((i) => resolveIssueColumn(i) === "in-progress");
+    if (hasProgress) return "in-progress";
+    const hasTodo = issues2.some((i) => resolveIssueColumn(i) === "todo");
+    if (hasTodo) return "todo";
+    const hasBacklog = issues2.some((i) => resolveIssueColumn(i) === "backlog");
+    if (hasBacklog) return "backlog";
+    return "all";
   }
   function updateBadgeCounts() {
     const counts = {
@@ -1858,11 +2140,14 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       "in-review": 0,
       "done": 0
     };
-    issues.forEach((issue) => {
+    const visibleIssues = issues.filter((issue) => showArchivedOnly ? isIssueArchived(issue) : !isIssueArchived(issue));
+    visibleIssues.forEach((issue) => {
       const col = resolveIssueColumn(issue);
-      counts[col]++;
+      if (col && counts[col] !== void 0) {
+        counts[col]++;
+      }
     });
-    const total = issues.length;
+    const total = visibleIssues.length;
     const setTxt = (id, val) => {
       const el2 = document.getElementById(id);
       if (el2) el2.textContent = String(val);
@@ -1889,15 +2174,113 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       kanbanCardContainers[col].innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
     });
   }
+  function renderArchiveView(archivedIssues) {
+    elListViewContainer.innerHTML = "";
+    const banner = document.createElement("div");
+    banner.className = "archive-header-banner";
+    banner.innerHTML = `
+      <div class="archive-title-wrap">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
+        <span>Archived Issues (${archivedIssues.length})</span>
+      </div>
+      <button class="btn btn-sm btn-secondary" id="btnExitArchive">Exit Archive</button>
+    `;
+    const btnExit = banner.querySelector("#btnExitArchive");
+    if (btnExit) {
+      btnExit.addEventListener("click", () => {
+        showArchivedOnly = false;
+        const btn = document.getElementById("btnArchiveToggle");
+        if (btn) btn.classList.remove("active");
+        renderViews();
+      });
+    }
+    elListViewContainer.appendChild(banner);
+    if (archivedIssues.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "empty-box";
+      empty.innerHTML = `
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
+        <span>No archived issues in this repository.</span>
+      `;
+      elListViewContainer.appendChild(empty);
+      return;
+    }
+    archivedIssues.forEach((issue) => {
+      const card = buildCardElement(issue, false);
+      elListViewContainer.appendChild(card);
+    });
+  }
   function renderViews() {
     updateBadgeCounts();
+    if (elSelectFilterTag) {
+      const existingTags = /* @__PURE__ */ new Set();
+      issues.forEach((i) => {
+        (i.labels || []).forEach((l) => {
+          const name = typeof l === "string" ? l : l.name || "";
+          if (
+            name &&
+            !name.startsWith("status:") &&
+            !name.startsWith("priority:") &&
+            !name.startsWith("complexity:") &&
+            name.toLowerCase() !== "archived" &&
+            name.toLowerCase() !== "archive"
+          ) {
+            existingTags.add(name);
+          }
+        });
+      });
+      const currentVal = elSelectFilterTag.value;
+      const sortedTags = Array.from(existingTags).sort();
+      let optionsHtml = `<option value="all"${filterTag === "all" ? " selected" : ""}>All Tags</option>`;
+      sortedTags.forEach((t) => {
+        optionsHtml += `<option value="${escapeHtml(t)}"${filterTag === t ? " selected" : ""}>${escapeHtml(t)}</option>`;
+      });
+      elSelectFilterTag.innerHTML = optionsHtml;
+      if (sortedTags.includes(currentVal)) {
+        elSelectFilterTag.value = currentVal;
+      }
+    }
+    const hasActiveFilters = filterPriority !== "all" || filterTag !== "all" || currentSort !== "newest";
+    if (elBtnResetFilters) {
+      elBtnResetFilters.style.display = hasActiveFilters ? "inline-flex" : "none";
+    }
+    if (elBtnFilterToggle) {
+      elBtnFilterToggle.classList.toggle("active", hasActiveFilters || isFilterBarOpen);
+    }
     const q = searchQuery.toLowerCase().trim();
     const filtered = issues.filter((issue) => {
+      const isArch = isIssueArchived(issue);
+      if (showArchivedOnly ? !isArch : isArch) return false;
+      if (filterPriority !== "all") {
+        const p = getIssuePriority(issue);
+        if (p !== filterPriority) return false;
+      }
+      if (filterTag !== "all") {
+        const hasTag = (issue.labels || []).some((l) => {
+          const name = typeof l === "string" ? l : l.name || "";
+          return name === filterTag;
+        });
+        if (!hasTag) return false;
+      }
       if (!q) return true;
-      return issue.title.toLowerCase().includes(q) || String(issue.number).includes(q) || issue.labels.some((l) => l.name.toLowerCase().includes(q));
+      return issue.title.toLowerCase().includes(q) || String(issue.number).includes(q) || issue.labels.some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase().includes(q));
     });
-    renderListView(filtered);
-    renderKanbanView(filtered);
+    const sorted = sortIssuesList(filtered, currentSort);
+    if (showArchivedOnly) {
+      document.body.removeAttribute("data-layout");
+      if (elStatusTabBar) elStatusTabBar.style.display = "none";
+      if (elKanbanViewContainer) elKanbanViewContainer.style.display = "none";
+      if (elListViewContainer) {
+        elListViewContainer.style.display = "flex";
+        renderArchiveView(sorted);
+      }
+      return;
+    }
+    if (elStatusTabBar) elStatusTabBar.style.display = "";
+    if (elKanbanViewContainer) elKanbanViewContainer.style.display = "";
+    if (elListViewContainer) elListViewContainer.style.display = "";
+    renderListView(sorted);
+    renderKanbanView(sorted);
     applyLayoutMode();
   }
   function buildCardElement(issue, inKanban) {
@@ -1949,23 +2332,99 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
         <div class="micro-bar"><div class="micro-fill" style="width: ${pct}%;"></div></div>
       </div>
     ` : "<span></span>";
+    const col = resolveIssueColumn(issue);
+    const nextAction = col ? getNextColumnAction(col) : { label: "To Do", target: "todo", icon: "\u2192" };
+    const isArch = isIssueArchived(issue);
+    let archiveCategoryBadge = "";
+    if (isArch) {
+      const statusLabel = (issue.labels || []).find((l) => (typeof l === "string" ? l : l.name || "").startsWith("status:"));
+      const rawCat = statusLabel ? (typeof statusLabel === "string" ? statusLabel : statusLabel.name || "").replace("status:", "") : "";
+      const catLabel = rawCat === "in-progress" ? "In Progress" : rawCat === "in-review" ? "In Review" : rawCat === "done" ? "Done" : rawCat === "backlog" ? "Backlog" : "To Do";
+      archiveCategoryBadge = `<span class="archive-from-badge">From: ${escapeHtml(catLabel)}</span>`;
+    }
+    const nextStageButtonHtml = !inKanban && !showArchivedOnly ? `
+      <button class="card-btn-next" data-issue="${issue.number}" data-target="${nextAction.target}" title="Move to ${nextAction.label}">
+        <span>${nextAction.icon}</span>
+        <span>${nextAction.label}</span>
+      </button>
+    ` : "";
+    const archiveButtonHtml = showArchivedOnly ? `
+      <button class="btn btn-sm card-btn-archive is-archived" data-issue="${issue.number}" title="Unarchive issue (Restore to original category)">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+        <span>Unarchive</span>
+      </button>
+    ` : (!inKanban ? `
+      <button class="card-btn-archive ${isArch ? "is-archived" : ""}" data-issue="${issue.number}" title="${isArch ? "Unarchive issue" : "Archive issue"}">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
+      </button>
+    ` : "");
+    const attachButtonHtml = `
+    <button class="card-btn-attach" data-issue="${issue.number}" title="Attach issue chip to active prompt">
+      <svg class="icon icon-sm icon-paperclip" viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5V6h-2v9.5a3.5 3.5 0 0 0 7 0V5a4.5 4.5 0 0 0-9 0v12.5c0 3.31 2.69 6 6 6s6-2.69 6-6V6h-2z"/></svg>
+      <svg class="icon icon-sm icon-check" style="display: none;" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    </button>
+  `;
     card.innerHTML = `
     <div class="card-meta">
       <div class="card-id-wrap">
         <span class="card-id">#${issue.number}</span>
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ""}
+        ${archiveCategoryBadge}
       </div>
-      ${agentBadgeHtml}
+      <div style="display: flex; align-items: center; gap: 5px;">
+        ${nextStageButtonHtml}
+        ${archiveButtonHtml}
+        ${agentBadgeHtml}
+      </div>
     </div>
     <div class="card-title">${escapeHtml(issue.title)}</div>
     ${labelsHtml ? `<div class="card-labels">${labelsHtml}</div>` : ""}
     <div class="card-footer">
       ${subtaskHtml}
-      <div style="display: flex; align-items: center; gap: 8px;">
+      <div style="display: flex; align-items: center; gap: 6px;">
         ${worktreeHtml}
+        ${attachButtonHtml}
       </div>
     </div>
   `;
+    const btnAttach = card.querySelector(".card-btn-attach");
+    if (btnAttach) {
+      btnAttach.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        try {
+          const payload = buildIssueAttachPayload(issue);
+          await host.attach(payload);
+          btnAttach.classList.add("attached");
+          await host.toast({ kind: "success", message: `Attached #${issue.number} to composer chip` });
+          setTimeout(() => {
+            btnAttach.classList.remove("attached");
+          }, 1500);
+        } catch (err) {
+          addLog(`Failed to attach issue #${issue.number}: ${err.message}`, "error");
+          await host.toast({ kind: "error", message: `Failed to attach: ${err.message || "Unknown error"}` });
+        }
+      });
+    }
+    const btnNext = card.querySelector(".card-btn-next");
+    if (btnNext) {
+      btnNext.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const target = btnNext.getAttribute("data-target");
+        if (target) {
+          await updateIssueStatus(issue, target);
+        }
+      });
+    }
+    const btnArchive = card.querySelector(".card-btn-archive");
+    if (btnArchive) {
+      btnArchive.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        await toggleArchiveIssue(issue);
+      });
+    }
     card.addEventListener("click", (e) => {
       if (e.target.closest("button, a, select")) return;
       openDrawer(issue);
@@ -2009,6 +2468,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     });
     filteredIssues.forEach((issue) => {
       const col = resolveIssueColumn(issue);
+      if (!col) return;
       const container = kanbanCardContainers[col];
       if (!container) return;
       const card = buildCardElement(issue, true);
@@ -2155,7 +2615,23 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     elDrawerGithubLink.href = issue.html_url;
     elDrawerIssueTitle.textContent = issue.title;
     const col = resolveIssueColumn(issue);
-    elDrawerStatusSelect.value = col;
+    elDrawerStatusSelect.value = col || "none";
+    if (elBtnDrawerArchive && elTxtDrawerArchive) {
+      const isArch = isIssueArchived(issue);
+      elTxtDrawerArchive.textContent = isArch ? "Unarchive" : "Archive";
+      elBtnDrawerArchive.classList.toggle("active", isArch);
+      elBtnDrawerArchive.title = isArch ? "Unarchive issue" : "Archive issue";
+      elBtnDrawerArchive.onclick = () => {
+        void toggleArchiveIssue(issue);
+      };
+    }
+    if (elBtnDrawerToggleClose) {
+      const isClosed = isIssueClosed(issue);
+      elBtnDrawerToggleClose.textContent = isClosed ? "Reopen Issue" : "Close Issue";
+      elBtnDrawerToggleClose.onclick = () => {
+        void updateIssueStatus(issue, isClosed ? "todo" : "done");
+      };
+    }
     renderDrawerLabels(issue);
     void loadRepoLabels();
     const session = getIssueSession(issue);
@@ -2264,31 +2740,81 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
     }
   }
-  function openPreflightModal(issue) {
-    const branchSlug = slugify(issue.title);
-    elModalPreflightTitle.textContent = `Launch Agent Worktree on #${issue.number}`;
-    elPreflightBranchInput.value = `issue-${issue.number}-${branchSlug}`;
-    elPreflightBaseBranchInput.value = "main";
-    let brief = `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}
-
-`;
-    if (issue.body) {
-      brief += `### Description:
-${issue.body}
-
-`;
+  function getIssuePrimaryTag(issue) {
+    if (!issue || !issue.labels) return "task";
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (
+        name &&
+        !name.startsWith("status:") &&
+        !name.startsWith("priority:") &&
+        !name.startsWith("complexity:") &&
+        !name.startsWith("theme:") &&
+        !["archived", "archive"].includes(name.toLowerCase())
+      ) {
+        return name;
+      }
     }
-    if (issue.subtasks.length > 0) {
-      brief += `### Subtasks Checklist:
-`;
-      issue.subtasks.forEach((s) => {
-        brief += `- [${s.completed ? "x" : " "}] ${s.text}
-`;
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name.startsWith("theme:")) {
+        return name.replace("theme:", "");
+      }
+    }
+    return "task";
+  }
+  function buildWorktreeBranchName(options) {
+    if (options.mode === "tag") {
+      const tag = options.customTag || getIssuePrimaryTag(options.issue);
+      return `worktree-tag-${slugify(tag || "task")}`.slice(0, 80);
+    }
+    const branchSlug = slugify(options.issue.title || "task");
+    return `issue-${options.issue.number}-${branchSlug}`.slice(0, 80);
+  }
+  function updatePreflightBrief() {
+    if (!activeIssue) return;
+    const useWt = elPreflightWorktreeToggle.checked;
+    let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}\n\n`;
+    if (activeIssue.body) {
+      brief += `### Description:\n${activeIssue.body}\n\n`;
+    }
+    if (activeIssue.subtasks.length > 0) {
+      brief += `### Subtasks Checklist:\n`;
+      activeIssue.subtasks.forEach((s) => {
+        brief += `- [${s.completed ? "x" : " "}] ${s.text}\n`;
       });
       brief += "\n";
     }
-    brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
+    if (useWt) {
+      brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
+    } else {
+      brief += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
+    }
     elPreflightPromptInput.value = brief;
+  }
+  function syncPreflightBranchInput() {
+    if (!activeIssue) return;
+    const isTagMode = elRadioWorktreeTag.checked;
+    const branchName = buildWorktreeBranchName({
+      issue: activeIssue,
+      mode: isTagMode ? "tag" : "issue"
+    });
+    elPreflightBranchInput.value = branchName;
+  }
+  function openPreflightModal(issue) {
+    activeIssue = issue;
+    elModalPreflightTitle.textContent = `Start Agent Task on #${issue.number}`;
+    elPreflightWorktreeToggle.checked = false;
+    elPreflightWorktreeSection.style.display = "none";
+    elRadioWorktreeIssue.checked = true;
+    const tagBranch = buildWorktreeBranchName({ issue, mode: "tag" });
+    const issueBranch = buildWorktreeBranchName({ issue, mode: "issue" });
+    elPreflightTagPreview.textContent = tagBranch;
+    elPreflightIssuePreview.textContent = issueBranch;
+    elPreflightBranchInput.value = issueBranch;
+    elPreflightBaseBranchInput.value = "main";
+    elBtnPreflightLaunch.textContent = "Start Agent Session (Current Workspace)";
+    updatePreflightBrief();
     elPreflightBackdrop.classList.add("active");
   }
   function closePreflightModal() {
@@ -2296,18 +2822,20 @@ ${issue.body}
   }
   async function launchAgentSession() {
     if (!activeIssue || !currentProject) return;
+    const useWorktree = elPreflightWorktreeToggle.checked;
     const rawBranch = elPreflightBranchInput.value.trim();
-    const cleanBranch = rawBranch.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80);
-    const baseBranch = elPreflightBaseBranchInput.value.trim() || void 0;
+    const cleanBranch = useWorktree ? rawBranch.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
+    const baseBranch = useWorktree ? elPreflightBaseBranchInput.value.trim() || void 0 : void 0;
     const promptText = elPreflightPromptInput.value.trim().slice(0, 15e3);
     const autoMove = elPreflightMoveInProgress.checked;
     elBtnPreflightLaunch.disabled = true;
     elBtnPreflightLaunch.textContent = "Provisioning...";
     try {
-      addLog(`Starting session with worktree "${cleanBranch}" on project ${currentProject.id}...`);
+      const targetDesc = useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : "workspace";
+      addLog(`Starting session in ${targetDesc} on project ${currentProject.id}...`);
       const res = await host.startSession({
         projectId: currentProject.id,
-        worktree: cleanBranch ? { kind: "new", name: cleanBranch, baseBranch } : false,
+        worktree: useWorktree && cleanBranch ? { kind: "new", name: cleanBranch, baseBranch } : false,
         providerId: "github-task-board",
         id: String(activeIssue.number),
         title: `#${activeIssue.number} ${activeIssue.title}`.slice(0, 150),
@@ -2315,7 +2843,7 @@ ${issue.body}
         text: promptText,
         data: {
           issueNumber: activeIssue.number,
-          branch: cleanBranch
+          ...useWorktree && cleanBranch ? { branch: cleanBranch } : {}
         }
       });
       closePreflightModal();
@@ -2324,7 +2852,7 @@ ${issue.body}
       }
       await host.toast({
         kind: "success",
-        message: `Launched worktree "${cleanBranch}" and agent session!`
+        message: `Launched agent session in ${targetDesc}!`
       });
       if (res.sessionId) {
         void host.openSession(res.sessionId);
@@ -2334,7 +2862,7 @@ ${issue.body}
       await host.toast({ kind: "error", message: `Failed to launch agent: ${err.message || "Unknown error"}` });
     } finally {
       elBtnPreflightLaunch.disabled = false;
-      elBtnPreflightLaunch.textContent = "Launch Worktree & Agent";
+      elBtnPreflightLaunch.textContent = elPreflightWorktreeToggle.checked ? "Launch Worktree & Agent" : "Start Agent Session (Current Workspace)";
     }
   }
   var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
@@ -2475,7 +3003,11 @@ Instructions for the Agent:
     elBtnNewIssueSubmit.textContent = "Creating...";
     try {
       addLog(`Creating issue in ${currentRepo}: "${title}"...`);
-      const created = await githubRequest("POST", `/repos/${currentRepo}/issues`, { title, body });
+      const created = await githubRequest("POST", `/repos/${currentRepo}/issues`, {
+        title,
+        body,
+        labels: ["status:todo"]
+      });
       addLog(`Created issue #${created.number}: ${created.title}`, "succ");
       await host.toast({ kind: "success", message: `Created #${created.number} on GitHub` });
       closeNewIssueModal();
@@ -2605,6 +3137,55 @@ Instructions for the Agent:
       void fetchIssues();
       void discoverWorkspaceRepositories();
     });
+    const elBtnArchiveToggle = document.getElementById("btnArchiveToggle");
+    if (elBtnArchiveToggle) {
+      elBtnArchiveToggle.addEventListener("click", () => {
+        showArchivedOnly = !showArchivedOnly;
+        elBtnArchiveToggle.classList.toggle("active", showArchivedOnly);
+        elBtnArchiveToggle.title = showArchivedOnly ? "Viewing Archived (Click to show active issues)" : "Toggle Archived Issues View";
+        renderViews();
+        void host.toast({
+          kind: "info",
+          message: showArchivedOnly ? "Viewing archived issues" : "Viewing active issues"
+        });
+      });
+    }
+    if (elBtnFilterToggle && elFilterBar) {
+      elBtnFilterToggle.addEventListener("click", () => {
+        isFilterBarOpen = !isFilterBarOpen;
+        elFilterBar.style.display = isFilterBarOpen ? "flex" : "none";
+        elBtnFilterToggle.classList.toggle("active", isFilterBarOpen || filterPriority !== "all" || filterTag !== "all" || currentSort !== "newest");
+      });
+    }
+    if (elSelectSort) {
+      elSelectSort.addEventListener("change", () => {
+        currentSort = elSelectSort.value;
+        renderViews();
+      });
+    }
+    if (elSelectFilterPriority) {
+      elSelectFilterPriority.addEventListener("change", () => {
+        filterPriority = elSelectFilterPriority.value;
+        renderViews();
+      });
+    }
+    if (elSelectFilterTag) {
+      elSelectFilterTag.addEventListener("change", () => {
+        filterTag = elSelectFilterTag.value;
+        renderViews();
+      });
+    }
+    if (elBtnResetFilters) {
+      elBtnResetFilters.addEventListener("click", () => {
+        currentSort = "newest";
+        filterPriority = "all";
+        filterTag = "all";
+        if (elSelectSort) elSelectSort.value = "newest";
+        if (elSelectFilterPriority) elSelectFilterPriority.value = "all";
+        if (elSelectFilterTag) elSelectFilterTag.value = "all";
+        renderViews();
+      });
+    }
     elBtnNewIssue.addEventListener("click", () => {
       openNewIssueModal();
     });
@@ -2658,9 +3239,9 @@ Instructions for the Agent:
     });
     elStatusTabBar.querySelectorAll(".status-tab").forEach((tab) => {
       tab.addEventListener("click", () => {
-        elStatusTabBar.querySelectorAll(".status-tab").forEach((t) => t.classList.remove("active"));
-        tab.classList.add("active");
-        activeTab = tab.getAttribute("data-tab") || "all";
+        userSelectedTab = true;
+        const targetTab = tab.getAttribute("data-tab") || "all";
+        selectTab(targetTab);
         renderListView(issues);
       });
     });
@@ -2668,8 +3249,22 @@ Instructions for the Agent:
     elDrawerScrim.addEventListener("click", closeDrawer);
     elDrawerStatusSelect.addEventListener("change", () => {
       if (activeIssue) {
-        const targetCol = elDrawerStatusSelect.value;
-        void updateIssueStatus(activeIssue, targetCol);
+        const val = elDrawerStatusSelect.value;
+        if (val === "none") {
+          const filteredLabels = activeIssue.labels
+            .map((l) => typeof l === "string" ? l : l.name || "")
+            .filter((name) => !name.startsWith("status:"));
+          activeIssue.labels = filteredLabels.map((name) => ({ name }));
+          if (currentRepo) issueCache.delete(currentRepo);
+          renderViews();
+          renderDrawer(activeIssue);
+          void githubRequest("PATCH", `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+            labels: filteredLabels
+          });
+        } else {
+          const targetCol = val;
+          void updateIssueStatus(activeIssue, targetCol);
+        }
       }
     });
     elBtnEditDescription.addEventListener("click", () => {
@@ -2726,16 +3321,13 @@ Instructions for the Agent:
     });
     elBtnDrawerAttachComposer.addEventListener("click", async () => {
       if (!activeIssue) return;
-      await host.attach({
-        providerId: "github-task-board",
-        id: String(activeIssue.number),
-        title: `#${activeIssue.number} ${activeIssue.title}`.slice(0, 150),
-        url: activeIssue.html_url.slice(0, 1e3),
-        text: `Context from GitHub Issue #${activeIssue.number}: ${activeIssue.title}
-
-${activeIssue.body}`.slice(0, 15e3)
-      });
-      await host.toast({ kind: "success", message: `Attached #${activeIssue.number} to composer chip` });
+      try {
+        const payload = buildIssueAttachPayload(activeIssue);
+        await host.attach(payload);
+        await host.toast({ kind: "success", message: `Attached #${activeIssue.number} to composer chip` });
+      } catch (err) {
+        await host.toast({ kind: "error", message: `Failed to attach: ${err.message || "Unknown error"}` });
+      }
     });
     elBtnDrawerOpenPreflight.addEventListener("click", () => {
       if (activeIssue) openPreflightModal(activeIssue);
@@ -2745,6 +3337,24 @@ ${activeIssue.body}`.slice(0, 15e3)
     elBtnPreflightLaunch.addEventListener("click", () => {
       void launchAgentSession();
     });
+    if (elPreflightWorktreeToggle) {
+      elPreflightWorktreeToggle.addEventListener("change", () => {
+        const isChecked = elPreflightWorktreeToggle.checked;
+        elPreflightWorktreeSection.style.display = isChecked ? "flex" : "none";
+        elBtnPreflightLaunch.textContent = isChecked ? "Launch Worktree & Agent" : "Start Agent Session (Current Workspace)";
+        updatePreflightBrief();
+      });
+    }
+    if (elRadioWorktreeTag) {
+      elRadioWorktreeTag.addEventListener("change", () => {
+        syncPreflightBranchInput();
+      });
+    }
+    if (elRadioWorktreeIssue) {
+      elRadioWorktreeIssue.addEventListener("change", () => {
+        syncPreflightBranchInput();
+      });
+    }
     setupDragAndDrop();
   }
   host.onReady(async (ctx) => {

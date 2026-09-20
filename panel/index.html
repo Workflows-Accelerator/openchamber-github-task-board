@@ -401,6 +401,171 @@
       border-top: 1px solid var(--border-subtle);
     }
 
+    /* Quick Attach to Composer Button */
+    .card-btn-attach {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background: var(--surf-muted);
+      color: var(--fg-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      opacity: 0.65;
+    }
+    .card:hover .card-btn-attach {
+      opacity: 1;
+    }
+    .card-btn-attach:hover {
+      background: var(--surf-elevated);
+      color: var(--fg);
+      border-color: var(--border-default);
+    }
+    .card-btn-attach.attached {
+      opacity: 1;
+      background: color-mix(in srgb, var(--succ) 18%, transparent);
+      color: var(--succ);
+      border-color: var(--succ);
+    }
+    .card-btn-attach.attached .icon-paperclip {
+      display: none;
+    }
+    .card-btn-attach.attached .icon-check {
+      display: inline-block !important;
+    }
+
+    /* 1-Click Next Category Button */
+    .card-btn-next {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-family: inherit;
+      font-size: 10.5px;
+      font-weight: 500;
+      color: var(--fg-muted);
+      background: var(--surf-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 4px;
+      padding: 1px 7px;
+      height: 20px;
+      cursor: pointer;
+      outline: none;
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .card-btn-next:hover {
+      background: var(--surf-elevated);
+      color: var(--prim);
+      border-color: var(--prim);
+    }
+    .card-btn-next:active {
+      transform: scale(0.96);
+    }
+    body[data-layout="kanban"] .card-btn-next {
+      display: none;
+    }
+
+    /* 1-Click Archive Button */
+    .card-btn-archive {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      padding: 0;
+      border-radius: 4px;
+      border: 1px solid var(--border-subtle);
+      background: var(--surf-subtle);
+      color: var(--fg-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+      opacity: 0.65;
+    }
+    .card:hover .card-btn-archive {
+      opacity: 1;
+    }
+    .card-btn-archive:hover {
+      background: var(--surf-elevated);
+      color: var(--fg);
+      border-color: var(--border-default);
+    }
+    .card-btn-archive.is-archived {
+      background: color-mix(in srgb, var(--warn) 18%, transparent);
+      color: var(--warn);
+      border-color: var(--warn);
+      opacity: 1;
+    }
+    body[data-layout="kanban"] .card-btn-archive {
+      display: none;
+    }
+
+    #btnArchiveToggle.active {
+      background: var(--surf-elevated);
+      color: var(--warn);
+      border-color: var(--warn);
+    }
+    #btnFilterToggle.active {
+      background: var(--surf-elevated);
+      color: var(--prim);
+      border-color: var(--prim);
+    }
+
+    /* Filter & Sort Bar */
+    .filter-bar {
+      display: flex;
+      align-items: center;
+      padding: 5px 10px;
+      gap: 10px;
+      background: var(--surf-subtle);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      flex-wrap: wrap;
+    }
+    .filter-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--fg-muted);
+    }
+    .select-sm {
+      height: 24px;
+      padding: 2px 6px;
+      font-size: 11px;
+      background: var(--surf);
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: var(--rad-sm);
+    }
+    .archive-header-banner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--surf-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      margin-bottom: 8px;
+    }
+    .archive-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      color: var(--fg);
+    }
+    .archive-from-badge {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: var(--rad-sm);
+      background: var(--surf-muted);
+      color: var(--fg-muted);
+      border: 1px solid var(--border);
+    }
+
     /* Live Agent Pulsing Dot */
     .agent-pill {
       display: inline-flex;
@@ -948,6 +1113,11 @@
         <input type="text" id="searchInput" class="search-input" placeholder="Search..." />
       </div>
 
+      <!-- Filter & Sort Toggle -->
+      <button class="btn btn-icon" id="btnFilterToggle" title="Toggle Filter & Sort">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+      </button>
+
       <!-- Layout Toggle (List vs Kanban) -->
       <button class="btn btn-icon" id="btnLayoutToggle" title="Toggle Board / List View">
         <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>
@@ -956,6 +1126,11 @@
       <!-- Refresh -->
       <button class="btn btn-icon" id="btnRefresh" title="Refresh Issues & Sessions">
         <svg class="icon" id="iconRefresh" viewBox="0 0 24 24"><path d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
+      </button>
+
+      <!-- Archive Toggle -->
+      <button class="btn btn-icon" id="btnArchiveToggle" title="Toggle Archived Issues View">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
       </button>
 
       <!-- New Issue Button -->
@@ -970,6 +1145,38 @@
       </button>
     </div>
   </header>
+
+  <!-- Filter & Sort Bar -->
+  <div class="filter-bar" id="filterBar" style="display: none;">
+    <div class="filter-item">
+      <label for="selectSort">Sort:</label>
+      <select id="selectSort" class="form-ctrl select-sm">
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="priority">Priority</option>
+        <option value="complexity">Complexity</option>
+        <option value="subtasks">Subtasks</option>
+        <option value="title">Title</option>
+      </select>
+    </div>
+    <div class="filter-item">
+      <label for="selectFilterPriority">Priority:</label>
+      <select id="selectFilterPriority" class="form-ctrl select-sm">
+        <option value="all">All Priorities</option>
+        <option value="critical">Critical</option>
+        <option value="important">Important</option>
+        <option value="useful">Useful</option>
+        <option value="optional">Optional</option>
+      </select>
+    </div>
+    <div class="filter-item">
+      <label for="selectFilterTag">Tag:</label>
+      <select id="selectFilterTag" class="form-ctrl select-sm">
+        <option value="all">All Tags</option>
+      </select>
+    </div>
+    <button class="btn btn-sm" id="btnResetFilters" style="display: none;">Reset</button>
+  </div>
 
   <!-- Repo Selector Popover -->
   <div class="popover" id="repoPopover">
@@ -1066,6 +1273,7 @@
             <span>GitHub</span>
             <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M10 6v2H5v11h11v-5h2v6a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h6zm11-3v8h-2V6.413l-7.293 7.294-1.414-1.414L17.586 5H13V3h8z"/></svg>
           </a>
+          <button class="btn btn-sm" id="btnDrawerToggleClose" style="height: 19px; font-size: 10.5px; padding: 0 6px; margin-left: auto;">Close Issue</button>
         </div>
         <h2 class="drawer-heading" id="drawerIssueTitle">Issue Title</h2>
       </div>
@@ -1079,6 +1287,7 @@
       <div>
         <div class="section-label">Workflow Status</div>
         <select class="form-ctrl" id="drawerStatusSelect" style="width: 100%;">
+          <option value="none">Uncategorized (All View Only)</option>
           <option value="backlog">Backlog</option>
           <option value="todo">To Do</option>
           <option value="in-progress">In Progress</option>
@@ -1184,13 +1393,17 @@
 
     <!-- Drawer Footer -->
     <div class="drawer-foot">
+      <button class="btn btn-sm" id="btnDrawerArchive" title="Archive / Unarchive issue">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
+        <span id="txtDrawerArchive">Archive</span>
+      </button>
       <button class="btn btn-sm" id="btnDrawerAttachComposer" title="Attach issue chip to active prompt">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14.828 7.757l-5.656 5.657a1 1 0 1 0 1.414 1.414l5.657-5.656A3 3 0 1 0 12 4.929l-5.657 5.657a5 5 0 1 0 7.071 7.07l5.657-5.656-1.414-1.414-5.657 5.656a3 3 0 1 1-4.243-4.242l5.657-5.656a1 1 0 0 1 1.414 1.414z"/></svg>
         <span>Attach Chip</span>
       </button>
       <button class="btn btn-sm btn-primary" id="btnDrawerOpenPreflight">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19.376 12.416L8.777 19.482A.5.5 0 0 1 8 19.066V4.934a.5.5 0 0 1 .777-.416l10.599 7.066a.5.5 0 0 1 0 .832z"/></svg>
-        <span>Launch Agent Worktree</span>
+        <span>Start Agent Task</span>
       </button>
     </div>
   </aside>
@@ -1199,20 +1412,43 @@
   <div class="modal-backdrop" id="preflightModalBackdrop">
     <div class="modal">
       <div class="modal-head">
-        <span id="modalPreflightTitle">Launch Agent Worktree</span>
+        <span id="modalPreflightTitle">Start Agent Task</span>
         <button class="btn btn-icon btn-sm" id="btnPreflightClose">
           <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></svg>
         </button>
       </div>
       <div class="modal-body">
-        <div>
-          <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Branch Name</label>
-          <input type="text" id="preflightBranchInput" class="form-ctrl" style="width: 100%;" />
+        <!-- Worktree Opt-in Toggle (Off by default) -->
+        <div style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--surf-subtle); border-radius: var(--rad); border: 1px solid var(--border);">
+          <input type="checkbox" id="preflightWorktreeToggle" />
+          <label for="preflightWorktreeToggle" style="font-size: 11.5px; font-weight: 500; cursor: pointer; color: var(--fg); user-select: none;">Create isolated git worktree <span style="font-size: 10px; color: var(--fg-muted); font-weight: normal;">(Default: current workspace)</span></label>
         </div>
-        <div>
-          <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Base Branch</label>
-          <input type="text" id="preflightBaseBranchInput" class="form-ctrl" style="width: 100%;" value="main" />
+
+        <!-- Worktree Scope & Branch Config (Hidden when toggle is unchecked) -->
+        <div id="preflightWorktreeSection" style="display: none; flex-direction: column; gap: 8px; padding: 8px 10px; background: var(--surf); border-radius: var(--rad); border: 1px solid var(--border-subtle);">
+          <div>
+            <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Worktree Scope</label>
+            <div style="display: flex; gap: 14px; font-size: 11.5px;">
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="radio" name="preflightWorktreeScope" id="radioWorktreeTag" value="tag" />
+                <span>Tag-based (<span id="preflightTagPreview" style="font-family: var(--font-mono); font-size: 10.5px; color: var(--prim);">worktree-tag-...</span>)</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                <input type="radio" name="preflightWorktreeScope" id="radioWorktreeIssue" value="issue" checked />
+                <span>Issue-based (<span id="preflightIssuePreview" style="font-family: var(--font-mono); font-size: 10.5px; color: var(--prim);">issue-...</span>)</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Worktree Branch Name</label>
+            <input type="text" id="preflightBranchInput" class="form-ctrl" style="width: 100%; font-family: var(--font-mono); font-size: 11px;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Base Branch</label>
+            <input type="text" id="preflightBaseBranchInput" class="form-ctrl" style="width: 100%; font-family: var(--font-mono); font-size: 11px;" value="main" />
+          </div>
         </div>
+
         <div>
           <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Agent Prompt Brief</label>
           <textarea id="preflightPromptInput" class="form-ctrl" style="width: 100%; height: 90px; resize: vertical; font-family: var(--font-mono); font-size: 11px;"></textarea>
@@ -1224,7 +1460,7 @@
       </div>
       <div class="modal-foot">
         <button class="btn btn-sm" id="btnPreflightCancel">Cancel</button>
-        <button class="btn btn-sm btn-primary" id="btnPreflightLaunch">Launch Worktree & Agent</button>
+        <button class="btn btn-sm btn-primary" id="btnPreflightLaunch">Start Agent Session (Current Workspace)</button>
       </div>
     </div>
   </div>
