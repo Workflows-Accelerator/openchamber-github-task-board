@@ -520,36 +520,43 @@
       height: 100%;
       pointer-events: none;
       z-index: 2;
+      overflow: visible;
     }
 
     .graph-edge {
       fill: none;
-      stroke-width: 2;
       transition: stroke 0.15s ease, stroke-width 0.15s ease;
       cursor: pointer;
       pointer-events: stroke;
     }
     .graph-edge:hover {
-      stroke: var(--prim) !important;
+      stroke: var(--prim, #3b82f6) !important;
       stroke-width: 3.5 !important;
+      opacity: 1 !important;
     }
     .graph-edge-open {
-      stroke: rgba(255, 255, 255, 0.28);
+      stroke: var(--oc-border-strong, var(--fg-muted, #64748b));
+      stroke-width: 2;
+      opacity: 0.75;
     }
     .graph-edge-frontier {
-      stroke: var(--succ);
-      stroke-width: 2.4;
+      stroke: var(--succ, #10b981);
+      stroke-width: 2.5;
+      opacity: 0.95;
     }
     .graph-edge-closed {
-      stroke: rgba(255, 255, 255, 0.1);
+      stroke: var(--fg-faint, #94a3b8);
+      stroke-width: 1.5;
       stroke-dasharray: 4 3;
+      opacity: 0.45;
     }
     .graph-edge-crosstheme {
-      stroke: var(--warn);
-      stroke-width: 2;
+      stroke: var(--warn, #f59e0b);
+      stroke-width: 2.2;
+      opacity: 0.9;
     }
     .graph-edge-drag {
-      stroke: var(--prim);
+      stroke: var(--prim, #3b82f6);
       stroke-width: 2.5;
       stroke-dasharray: 6 4;
       animation: graphDash 1s linear infinite;
@@ -774,15 +781,15 @@
     .graph-port-out {
       bottom: -9px;
     }
-    .graph-port-out::after {
-      content: "↓";
-      font-size: 10px;
-      font-weight: 800;
-      color: var(--fg-muted);
-      line-height: 1;
+    .graph-port svg {
+      width: 10px;
+      height: 10px;
+      fill: var(--fg-muted);
+      pointer-events: none;
+      transition: fill 0.15s ease;
     }
-    .graph-port:hover::after {
-      color: #fff;
+    .graph-port:hover svg {
+      fill: #fff;
     }
     .graph-card.drop-target-active {
       outline: 2px dashed var(--prim);
@@ -2298,9 +2305,18 @@
             <span>Show Done</span>
           </label>
           <div class="graph-stats" id="graphStats">
-            <span class="status-pill status-pill-frontier" id="graphStatFrontier" title="Unblocked actionable tasks">⚡ 0 Ready</span>
-            <span class="status-pill status-pill-blocked" id="graphStatBlocked" title="Tasks waiting on blockers">🔒 0 Blocked</span>
-            <span class="status-pill" id="graphStatDone" title="Completed tasks">✓ 0 Done</span>
+            <span class="status-pill status-pill-frontier" id="graphStatFrontier" title="Unblocked actionable tasks">
+              <svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              <span id="txtGraphStatFrontier">0 Ready</span>
+            </span>
+            <span class="status-pill status-pill-blocked" id="graphStatBlocked" title="Tasks waiting on blockers">
+              <svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+              <span id="txtGraphStatBlocked">0 Blocked</span>
+            </span>
+            <span class="status-pill" id="graphStatDone" title="Completed tasks">
+              <svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              <span id="txtGraphStatDone">0 Done</span>
+            </span>
           </div>
         </div>
       </div>
@@ -2309,19 +2325,19 @@
           <svg class="graph-svg-overlay" id="graphSvgOverlay" aria-hidden="true">
             <defs>
               <marker id="wf-arrow-open" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(255, 255, 255, 0.4)" />
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#64748b" />
               </marker>
               <marker id="wf-arrow-frontier" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--succ)" />
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#10b981" />
               </marker>
               <marker id="wf-arrow-closed" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(255, 255, 255, 0.15)" />
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#94a3b8" />
               </marker>
               <marker id="wf-arrow-crosstheme" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--warn)" />
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f59e0b" />
               </marker>
               <marker id="wf-arrow-drag" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--prim)" />
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#3b82f6" />
               </marker>
             </defs>
             <g id="graphEdgesLayer"></g>

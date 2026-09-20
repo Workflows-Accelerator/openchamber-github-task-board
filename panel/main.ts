@@ -191,6 +191,9 @@ const elChkGraphShowDone = document.getElementById('chkGraphShowDone') as HTMLIn
 const elGraphStatFrontier = document.getElementById('graphStatFrontier') as HTMLSpanElement | null;
 const elGraphStatBlocked = document.getElementById('graphStatBlocked') as HTMLSpanElement | null;
 const elGraphStatDone = document.getElementById('graphStatDone') as HTMLSpanElement | null;
+const txtGraphStatFrontier = document.getElementById('txtGraphStatFrontier') as HTMLSpanElement | null;
+const txtGraphStatBlocked = document.getElementById('txtGraphStatBlocked') as HTMLSpanElement | null;
+const txtGraphStatDone = document.getElementById('txtGraphStatDone') as HTMLSpanElement | null;
 const elGraphCanvasContainer = document.getElementById('graphCanvasContainer') as HTMLDivElement | null;
 const elGraphCanvas = document.getElementById('graphCanvas') as HTMLDivElement | null;
 const elGraphSvgOverlay = document.getElementById('graphSvgOverlay') as unknown as SVGSVGElement | null;
@@ -2330,12 +2333,12 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
 
   let blockersHtml = '';
   if (node.isBlocked && node.openBlockers.length > 0) {
-    blockersHtml = `<span class="graph-badge-blocked" title="Blocked by #${node.openBlockers.join(', #')}">🔒 #${node.openBlockers.join(', #')}</span>`;
+    blockersHtml = `<span class="graph-badge-blocked" title="Blocked by #${node.openBlockers.join(', #')}"><svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg> #${node.openBlockers.join(', #')}</span>`;
   }
 
   let impactHtml = '';
   if (node.downstreamImpact > 0) {
-    impactHtml = `<span class="graph-badge-impact" title="Unblocks ${node.downstreamImpact} downstream tasks">⚡ ${node.downstreamImpact} waiting</span>`;
+    impactHtml = `<span class="graph-badge-impact" title="Unblocks ${node.downstreamImpact} downstream tasks"><svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> ${node.downstreamImpact} waiting</span>`;
   }
 
   let subtaskHtml = '';
@@ -2345,7 +2348,9 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
 
   card.innerHTML = `
     ${frontierFlagHtml}
-    <div class="graph-port graph-port-in" data-port="in" data-issue="${node.issue.number}" title="Drop arrow here to make #${node.issue.number} depend on another task"></div>
+    <div class="graph-port graph-port-in" data-port="in" data-issue="${node.issue.number}" title="Drop arrow here to make #${node.issue.number} depend on another task">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+    </div>
     <div class="graph-card-head">
       <input type="checkbox" class="graph-card-check" ${node.isDone ? 'checked' : ''} title="Mark done / todo" />
       <span class="graph-card-num">#${node.issue.number}</span>
@@ -2359,7 +2364,9 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
       ${subtaskHtml}
       <button class="graph-card-add-dep-btn" data-add-dep="${node.issue.number}" title="Add a blocker to #${node.issue.number}">+ Blocker</button>
     </div>
-    <div class="graph-port graph-port-out" data-port="out" data-issue="${node.issue.number}" title="Drag arrow to another task to make it depend on #${node.issue.number}"></div>
+    <div class="graph-port graph-port-out" data-port="out" data-issue="${node.issue.number}" title="Drag arrow to another task to make it depend on #${node.issue.number}">
+      <svg viewBox="0 0 24 24"><path d="M12 16l-6-6h12l-6 6z"/></svg>
+    </div>
   `;
 
   const chk = card.querySelector<HTMLInputElement>('.graph-card-check');
@@ -2408,8 +2415,19 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
 }
 
 function drawGraphEdges(graph: DependencyGraph): void {
-  if (!elGraphEdgesLayer || !elGraphCanvas) return;
+  if (!elGraphEdgesLayer || !elGraphCanvas || !elGraphSvgOverlay) return;
   elGraphEdgesLayer.innerHTML = '';
+
+  // Ensure the SVG overlay spans the full canvas content (not just the viewport)
+  const canvasW = Math.max(elGraphCanvas.scrollWidth, elGraphCanvas.clientWidth, elGraphCanvas.offsetWidth);
+  const canvasH = Math.max(elGraphCanvas.scrollHeight, elGraphCanvas.clientHeight, elGraphCanvas.offsetHeight);
+  if (canvasW === 0 || canvasH === 0) {
+    requestAnimationFrame(() => drawGraphEdges(graph));
+    return;
+  }
+  elGraphSvgOverlay.setAttribute('width', String(canvasW));
+  elGraphSvgOverlay.setAttribute('height', String(canvasH));
+  elGraphSvgOverlay.setAttribute('viewBox', `0 0 ${canvasW} ${canvasH}`);
 
   const canvasRect = elGraphCanvas.getBoundingClientRect();
   const cardElements = new Map<number, HTMLElement>();
@@ -2470,22 +2488,32 @@ function drawCurrentGraphEdges(): void {
   drawGraphEdges(currentGraph);
 }
 
+let graphResizeObserver: ResizeObserver | null = null;
+
+function observeGraphResize(): void {
+  if (elGraphCanvasContainer && 'ResizeObserver' in window) {
+    if (graphResizeObserver) graphResizeObserver.disconnect();
+    graphResizeObserver = new ResizeObserver(() => {
+      drawCurrentGraphEdges();
+    });
+    graphResizeObserver.observe(elGraphCanvasContainer);
+  }
+}
+
 function renderGraphView(filteredIssues: Issue[]): void {
   if (!elGraphViewContainer || !elGraphLayers) return;
 
   const graph = buildDependencyGraph(filteredIssues);
   currentGraph = graph;
 
-  if (elGraphStatFrontier) {
-    elGraphStatFrontier.textContent = `⚡ ${graph.frontierNodes.length} Ready`;
-  }
-  if (elGraphStatBlocked) {
+  if (txtGraphStatFrontier) txtGraphStatFrontier.textContent = `${graph.frontierNodes.length} Ready`;
+  if (txtGraphStatBlocked) {
     const blockedCount = Array.from(graph.nodes.values()).filter((n) => n.isBlocked).length;
-    elGraphStatBlocked.textContent = `🔒 ${blockedCount} Blocked`;
+    txtGraphStatBlocked.textContent = `${blockedCount} Blocked`;
   }
-  if (elGraphStatDone) {
+  if (txtGraphStatDone) {
     const doneCount = Array.from(graph.nodes.values()).filter((n) => n.isDone).length;
-    elGraphStatDone.textContent = `✓ ${doneCount} Done`;
+    txtGraphStatDone.textContent = `${doneCount} Done`;
   }
 
   if (elGraphThemePills) {
@@ -2590,8 +2618,13 @@ function renderGraphView(filteredIssues: Issue[]): void {
     elGraphLayers.appendChild(rowEl);
   });
 
+  observeGraphResize();
+
+  // Draw after two frames: the first lets the browser lay out the freshly
+  // appended cards, the second covers late font/image reflow on slow panes.
   requestAnimationFrame(() => {
     drawCurrentGraphEdges();
+    requestAnimationFrame(() => drawCurrentGraphEdges());
   });
 }
 
