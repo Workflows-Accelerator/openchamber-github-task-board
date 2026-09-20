@@ -108,7 +108,7 @@ let showArchivedOnly: boolean = false;
 let currentSort: 'newest' | 'oldest' | 'priority' | 'complexity' | 'subtasks' | 'title' = 'newest';
 let filterPriority: string = 'all';
 let filterTag: string = 'all';
-let currentGroupBy: 'status' | 'priority' | 'tag' = 'status';
+let currentGroupBy: 'theme' | 'priority' | 'none' | 'status' | 'tag' = 'theme';
 let isFilterBarOpen: boolean = false;
 let selectedIssueNumbers = new Set<number>();
 let userLayoutPreference: 'auto' | 'list' | 'kanban' = 'auto';
@@ -1140,7 +1140,33 @@ export interface IssueGroup {
   issues: Issue[];
 }
 
-export function groupIssuesBy(issuesList: Issue[], groupBy: 'status' | 'priority' | 'tag'): IssueGroup[] {
+export function getIssueTheme(issue: Issue): string {
+  if (!issue || !issue.labels || issue.labels.length === 0) return 'No Theme';
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l.name || '').trim();
+    if (name.toLowerCase().startsWith('theme:')) {
+      const themeName = name.slice(6).trim();
+      if (themeName) return themeName;
+    }
+  }
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l.name || '').trim();
+    const lower = name.toLowerCase();
+    if (
+      name &&
+      !lower.startsWith('status:') &&
+      !lower.startsWith('priority:') &&
+      !lower.startsWith('complexity:') &&
+      !lower.startsWith('theme:') &&
+      !['archived', 'archive'].includes(lower)
+    ) {
+      return name;
+    }
+  }
+  return 'No Theme';
+}
+
+export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[] {
   if (groupBy === 'priority') {
     const groups: IssueGroup[] = [
       { id: 'critical', title: 'Critical', issues: [] },
@@ -1157,19 +1183,23 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: 'status' | 'priority
     return groups;
   }
 
-  if (groupBy === 'tag') {
-    const tagMap = new Map<string, IssueGroup>();
+  if (groupBy === 'theme' || groupBy === 'tag') {
+    const themeMap = new Map<string, IssueGroup>();
     for (const issue of issuesList) {
-      const tag = getIssuePrimaryTag(issue);
-      if (!tagMap.has(tag)) {
-        tagMap.set(tag, { id: tag, title: tag, issues: [] });
+      const theme = getIssueTheme(issue);
+      if (!themeMap.has(theme)) {
+        themeMap.set(theme, { id: theme, title: theme, issues: [] });
       }
-      tagMap.get(tag)!.issues.push(issue);
+      themeMap.get(theme)!.issues.push(issue);
     }
-    if (tagMap.size === 0) {
-      tagMap.set('general', { id: 'general', title: 'General Tasks', issues: issuesList });
+    if (themeMap.size === 0) {
+      themeMap.set('No Theme', { id: 'No Theme', title: 'No Theme', issues: [] });
     }
-    return Array.from(tagMap.values());
+    return Array.from(themeMap.values());
+  }
+
+  if (groupBy === 'none') {
+    return [{ id: 'all', title: 'All Items', issues: issuesList }];
   }
 
   // Default: status
@@ -1810,27 +1840,27 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
 function renderListView(filteredIssues: Issue[]): void {
   elListViewContainer.innerHTML = '';
 
-  if (currentGroupBy === 'status') {
-    const listItems = activeTab === 'all'
-      ? filteredIssues
-      : filteredIssues.filter((i) => resolveIssueColumn(i) === activeTab);
+  const listItems = activeTab === 'all'
+    ? filteredIssues
+    : filteredIssues.filter((i) => resolveIssueColumn(i) === activeTab);
 
-    if (listItems.length === 0) {
-      elListViewContainer.innerHTML = `
-        <div class="empty-box">
-          <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
-          <span>No issues match this view</span>
-        </div>
-      `;
-      return;
-    }
+  if (listItems.length === 0) {
+    elListViewContainer.innerHTML = `
+      <div class="empty-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+        <span>No issues match this view</span>
+      </div>
+    `;
+    return;
+  }
 
+  if (currentGroupBy === 'none') {
     listItems.forEach((issue) => {
       const card = buildCardElement(issue, false);
       elListViewContainer.appendChild(card);
     });
   } else {
-    const groups = groupIssuesBy(filteredIssues, currentGroupBy);
+    const groups = groupIssuesBy(listItems, currentGroupBy);
     let totalRendered = 0;
 
     groups.forEach((grp) => {
@@ -1864,18 +1894,25 @@ function renderListView(filteredIssues: Issue[]): void {
 
 function renderKanbanView(filteredIssues: Issue[]): void {
   elKanbanViewContainer.innerHTML = '';
-  const groups = groupIssuesBy(filteredIssues, currentGroupBy);
+  const columns: Array<{ id: ColumnId; title: string }> = [
+    { id: 'backlog', title: 'Backlog' },
+    { id: 'todo', title: 'To Do' },
+    { id: 'in-progress', title: 'In Progress' },
+    { id: 'in-review', title: 'In Review' },
+    { id: 'done', title: 'Done' },
+  ];
 
-  groups.forEach((grp) => {
+  columns.forEach((col) => {
+    const colIssues = filteredIssues.filter((i) => resolveIssueColumn(i) === col.id);
     const colEl = document.createElement('div');
     colEl.className = 'kanban-col';
-    colEl.dataset.column = grp.id;
+    colEl.dataset.column = col.id;
     colEl.innerHTML = `
       <div class="kanban-col-header">
-        <span>${escapeHtml(grp.title)}</span>
-        <span class="status-pill">${grp.issues.length}</span>
+        <span>${escapeHtml(col.title)}</span>
+        <span class="status-pill">${colIssues.length}</span>
       </div>
-      <div class="kanban-cards" data-column="${escapeHtml(grp.id)}"></div>
+      <div class="kanban-cards" data-column="${escapeHtml(col.id)}"></div>
     `;
 
     const cardsContainer = colEl.querySelector('.kanban-cards') as HTMLDivElement;
@@ -1897,10 +1934,13 @@ function renderKanbanView(filteredIssues: Issue[]): void {
       const issue = issues.find((i) => i.number === issueNum);
       if (!issue) return;
 
-      if (currentGroupBy === 'status') {
-        await updateIssueStatus(issue, grp.id as ColumnId);
-      } else if (currentGroupBy === 'priority') {
-        const updatedLabels = updatePriorityLabels(issue.labels, grp.id);
+      const subEl = (e.target as HTMLElement)?.closest?.('.kanban-subgroup') as HTMLElement | null;
+      const subgroupId = subEl?.dataset?.subgroupId;
+
+      await updateIssueStatus(issue, col.id);
+
+      if (currentGroupBy === 'priority' && subgroupId && subgroupId !== 'none') {
+        const updatedLabels = updatePriorityLabels(issue.labels, subgroupId);
         issue.labels = updatedLabels.map((name) => ({ name }));
         if (currentRepo) issueCache.delete(currentRepo);
         renderViews();
@@ -1908,15 +1948,37 @@ function renderKanbanView(filteredIssues: Issue[]): void {
           await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
             labels: updatedLabels,
           });
-          await host.toast({ kind: 'info', message: `Moved #${issue.number} to priority ${grp.title}` });
         } catch {}
       }
     });
 
-    grp.issues.forEach((issue) => {
-      const card = buildCardElement(issue, true);
-      cardsContainer.appendChild(card);
-    });
+    if (currentGroupBy === 'none' || currentGroupBy === 'status') {
+      colIssues.forEach((issue) => {
+        const card = buildCardElement(issue, true);
+        cardsContainer.appendChild(card);
+      });
+    } else {
+      const subGroups = groupIssuesBy(colIssues, currentGroupBy);
+      subGroups.forEach((subGrp) => {
+        if (subGrp.issues.length === 0) return;
+        const subGroupEl = document.createElement('div');
+        subGroupEl.className = 'kanban-subgroup';
+        subGroupEl.dataset.subgroupId = subGrp.id;
+        subGroupEl.innerHTML = `
+          <div class="kanban-subgroup-header">
+            <span class="kanban-subgroup-title">${escapeHtml(subGrp.title)}</span>
+            <span class="kanban-subgroup-count">${subGrp.issues.length}</span>
+          </div>
+          <div class="kanban-subgroup-cards"></div>
+        `;
+        const subCardsContainer = subGroupEl.querySelector('.kanban-subgroup-cards') as HTMLDivElement;
+        subGrp.issues.forEach((issue) => {
+          const card = buildCardElement(issue, true);
+          subCardsContainer.appendChild(card);
+        });
+        cardsContainer.appendChild(subGroupEl);
+      });
+    }
 
     elKanbanViewContainer.appendChild(colEl);
   });
@@ -3259,7 +3321,9 @@ function initEvents(): void {
       currentSort = 'newest';
       filterPriority = 'all';
       filterTag = 'all';
+      currentGroupBy = 'theme';
       if (elSelectSort) elSelectSort.value = 'newest';
+      if (elSelectGroupBy) elSelectGroupBy.value = 'theme';
       if (elSelectFilterPriority) elSelectFilterPriority.value = 'all';
       if (elSelectFilterTag) elSelectFilterTag.value = 'all';
       renderViews();

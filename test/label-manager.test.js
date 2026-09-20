@@ -147,6 +147,32 @@ export function updatePriorityLabels(currentLabels, newPriority) {
   return cleanExisting;
 }
 
+export function getIssueTheme(issue) {
+  if (!issue || !issue.labels || issue.labels.length === 0) return 'No Theme';
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l.name || '').trim();
+    if (name.toLowerCase().startsWith('theme:')) {
+      const themeName = name.slice(6).trim();
+      if (themeName) return themeName;
+    }
+  }
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l.name || '').trim();
+    const lower = name.toLowerCase();
+    if (
+      name &&
+      !lower.startsWith('status:') &&
+      !lower.startsWith('priority:') &&
+      !lower.startsWith('complexity:') &&
+      !lower.startsWith('theme:') &&
+      !['archived', 'archive'].includes(lower)
+    ) {
+      return name;
+    }
+  }
+  return 'No Theme';
+}
+
 export function groupIssuesBy(issuesList, groupBy) {
   if (groupBy === 'priority') {
     const groups = [
@@ -162,6 +188,21 @@ export function groupIssuesBy(issuesList, groupBy) {
       map.get(p)?.issues.push(issue);
     }
     return groups;
+  }
+
+  if (groupBy === 'theme' || groupBy === 'tag') {
+    const map = new Map();
+    for (const issue of issuesList) {
+      const theme = getIssueTheme(issue);
+      if (!map.has(theme)) {
+        map.set(theme, { id: theme, title: theme, issues: [] });
+      }
+      map.get(theme).issues.push(issue);
+    }
+    if (map.size === 0) {
+      map.set('No Theme', { id: 'No Theme', title: 'No Theme', issues: [] });
+    }
+    return Array.from(map.values());
   }
 
   // Default: groupBy === 'status'
@@ -210,4 +251,25 @@ test('groupIssuesBy groups issues correctly by priority', () => {
   assert.equal(groups[4].id, 'none');
   assert.equal(groups[4].issues.length, 1);
   assert.equal(groups[4].issues[0].number, 3);
+});
+
+test('getIssueTheme and groupIssuesBy group by theme with tag fallback', () => {
+  const issues = [
+    { number: 1, title: 'Auth Bug', labels: [{ name: 'theme:authentication' }, { name: 'priority:critical' }] },
+    { number: 2, title: 'UI Alignment', labels: [{ name: 'frontend' }] },
+    { number: 3, title: 'General Task', labels: [{ name: 'priority:useful' }] },
+  ];
+
+  assert.equal(getIssueTheme(issues[0]), 'authentication');
+  assert.equal(getIssueTheme(issues[1]), 'frontend');
+  assert.equal(getIssueTheme(issues[2]), 'No Theme');
+
+  const groups = groupIssuesBy(issues, 'theme');
+  assert.equal(groups.length, 3);
+  assert.equal(groups[0].id, 'authentication');
+  assert.equal(groups[0].issues[0].number, 1);
+  assert.equal(groups[1].id, 'frontend');
+  assert.equal(groups[1].issues[0].number, 2);
+  assert.equal(groups[2].id, 'No Theme');
+  assert.equal(groups[2].issues[0].number, 3);
 });

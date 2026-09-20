@@ -324,6 +324,45 @@
       border-radius: var(--rad);
     }
 
+    .kanban-subgroup {
+      margin-bottom: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .kanban-subgroup-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 3px 6px;
+      background: color-mix(in srgb, var(--surf) 70%, transparent);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--rad-sm);
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--fg-muted);
+      user-select: none;
+    }
+    .kanban-subgroup-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .kanban-subgroup-count {
+      font-size: 9.5px;
+      font-weight: 500;
+      background: var(--surf-muted);
+      color: var(--fg-muted);
+      padding: 0 5px;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+    }
+    .kanban-subgroup-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
     /* Card Item (Clean OpenChamber design) */
     .card {
       background: var(--surf);
@@ -1302,9 +1341,9 @@
     <div class="filter-item">
       <label for="selectGroupBy">Group by:</label>
       <select id="selectGroupBy" class="form-ctrl select-sm">
-        <option value="status" selected>Status (Kanban)</option>
+        <option value="theme" selected>Theme</option>
         <option value="priority">Priority</option>
-        <option value="tag">Tag / Theme</option>
+        <option value="none">None</option>
       </select>
     </div>
     <div class="filter-item">
