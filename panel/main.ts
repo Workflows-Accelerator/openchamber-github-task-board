@@ -115,6 +115,23 @@ let userLayoutPreference: 'auto' | 'list' | 'kanban' = 'auto';
 let isWideScreen: boolean = false;
 let draggedIssueNumber: number | null = null;
 let isLoading: boolean = false;
+let collapsedGroupKeys = new Set<string>();
+
+export function toggleGroupCollapse(key: string): boolean {
+  if (collapsedGroupKeys.has(key)) {
+    collapsedGroupKeys.delete(key);
+  } else {
+    collapsedGroupKeys.add(key);
+  }
+  if (host?.storage) {
+    void host.storage.set('collapsed_groups', Array.from(collapsedGroupKeys));
+  }
+  return collapsedGroupKeys.has(key);
+}
+
+export function isGroupCollapsed(key: string): boolean {
+  return collapsedGroupKeys.has(key);
+}
 
 export function selectTab(tabId: TabId): void {
   activeTab = tabId;
@@ -1884,18 +1901,45 @@ function renderListView(filteredIssues: Issue[]): void {
       if (grp.issues.length === 0) return;
       totalRendered += grp.issues.length;
 
-      const header = document.createElement('div');
-      header.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 6px 4px 4px 4px; font-size: 11px; font-weight: 600; color: var(--fg-muted); border-bottom: 1px solid var(--border-subtle); margin-top: 4px;';
-      header.innerHTML = `
-        <span>${escapeHtml(grp.title)}</span>
-        <span class="status-pill">${grp.issues.length}</span>
-      `;
-      elListViewContainer.appendChild(header);
+      const groupKey = `list:${grp.id}`;
+      const isCollapsed = isGroupCollapsed(groupKey);
 
+      const groupEl = document.createElement('div');
+      groupEl.className = `list-group ${isCollapsed ? 'is-collapsed' : ''}`;
+      groupEl.dataset.groupId = grp.id;
+      groupEl.dataset.groupKey = groupKey;
+      groupEl.innerHTML = `
+        <div class="list-group-header" role="button" tabindex="0" title="Click to collapse / expand group">
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+            <svg class="list-group-chevron icon icon-sm" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+            <span>${escapeHtml(grp.title)}</span>
+          </div>
+          <span class="status-pill">${grp.issues.length}</span>
+        </div>
+        <div class="list-group-cards"></div>
+      `;
+
+      const headerEl = groupEl.querySelector('.list-group-header') as HTMLElement;
+      const toggleCollapse = (e: Event) => {
+        e.stopPropagation();
+        const collapsed = toggleGroupCollapse(groupKey);
+        groupEl.classList.toggle('is-collapsed', collapsed);
+      };
+      headerEl.addEventListener('click', toggleCollapse);
+      headerEl.addEventListener('keydown', (e: KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleCollapse(e);
+        }
+      });
+
+      const listCardsContainer = groupEl.querySelector('.list-group-cards') as HTMLDivElement;
       grp.issues.forEach((issue) => {
         const card = buildCardElement(issue, false);
-        elListViewContainer.appendChild(card);
+        listCardsContainer.appendChild(card);
       });
+
+      elListViewContainer.appendChild(groupEl);
     });
 
     if (totalRendered === 0) {
@@ -1978,16 +2022,38 @@ function renderKanbanView(filteredIssues: Issue[]): void {
       const subGroups = groupIssuesBy(colIssues, currentGroupBy);
       subGroups.forEach((subGrp) => {
         if (subGrp.issues.length === 0) return;
+        const groupKey = `kanban:${col.id}:${subGrp.id}`;
+        const isCollapsed = isGroupCollapsed(groupKey);
+
         const subGroupEl = document.createElement('div');
-        subGroupEl.className = 'kanban-subgroup';
+        subGroupEl.className = `kanban-subgroup ${isCollapsed ? 'is-collapsed' : ''}`;
         subGroupEl.dataset.subgroupId = subGrp.id;
+        subGroupEl.dataset.groupKey = groupKey;
         subGroupEl.innerHTML = `
-          <div class="kanban-subgroup-header">
-            <span class="kanban-subgroup-title">${escapeHtml(subGrp.title)}</span>
+          <div class="kanban-subgroup-header" role="button" tabindex="0" title="Click to collapse / expand group">
+            <div style="display: flex; align-items: center; gap: 5px; min-width: 0;">
+              <svg class="kanban-subgroup-chevron icon icon-sm" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              <span class="kanban-subgroup-title">${escapeHtml(subGrp.title)}</span>
+            </div>
             <span class="kanban-subgroup-count">${subGrp.issues.length}</span>
           </div>
           <div class="kanban-subgroup-cards"></div>
         `;
+
+        const headerEl = subGroupEl.querySelector('.kanban-subgroup-header') as HTMLElement;
+        const toggleCollapse = (e: Event) => {
+          e.stopPropagation();
+          const collapsed = toggleGroupCollapse(groupKey);
+          subGroupEl.classList.toggle('is-collapsed', collapsed);
+        };
+        headerEl.addEventListener('click', toggleCollapse);
+        headerEl.addEventListener('keydown', (e: KeyboardEvent) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleCollapse(e);
+          }
+        });
+
         const subCardsContainer = subGroupEl.querySelector('.kanban-subgroup-cards') as HTMLDivElement;
         subGrp.issues.forEach((issue) => {
           const card = buildCardElement(issue, true);
@@ -3474,6 +3540,17 @@ export function initAllCustomDropdowns(root: ParentNode = document): void {
 function initEvents(): void {
   // Initialize custom styled dropdowns replacing cut-off HTML selects
   initAllCustomDropdowns();
+
+  // Load persisted collapsed group state
+  if (host?.storage) {
+    void host.storage.get<string[]>('collapsed_groups').then((stored) => {
+      if (Array.isArray(stored)) {
+        stored.forEach((k) => collapsedGroupKeys.add(k));
+        renderViews();
+      }
+    });
+  }
+
   // Repo dropdown toggle
   elBtnRepoSelect.addEventListener('click', (e) => {
     e.stopPropagation();

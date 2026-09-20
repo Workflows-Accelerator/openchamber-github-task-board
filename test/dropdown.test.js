@@ -88,3 +88,48 @@ test('createDropdownState synchronizes when select value changes externally', ()
   assert.equal(mockSelect.value, 'newest');
   assert.equal(changeFired, true);
 });
+
+export function createGroupCollapseManager(initialKeys = []) {
+  const collapsed = new Set(initialKeys);
+  return {
+    isCollapsed(key) {
+      return collapsed.has(key);
+    },
+    toggle(key) {
+      if (collapsed.has(key)) {
+        collapsed.delete(key);
+        return false;
+      } else {
+        collapsed.add(key);
+        return true;
+      }
+    },
+    setCollapsed(key, shouldCollapse) {
+      if (shouldCollapse) {
+        collapsed.add(key);
+      } else {
+        collapsed.delete(key);
+      }
+    },
+    toArray() {
+      return Array.from(collapsed);
+    }
+  };
+}
+
+test('createGroupCollapseManager toggles and persists collapsed group keys', () => {
+  const manager = createGroupCollapseManager(['kanban:todo:auth']);
+  assert.equal(manager.isCollapsed('kanban:todo:auth'), true);
+  assert.equal(manager.isCollapsed('kanban:todo:ui'), false);
+
+  // Toggle existing: expands
+  const isNowCollapsed1 = manager.toggle('kanban:todo:auth');
+  assert.equal(isNowCollapsed1, false);
+  assert.equal(manager.isCollapsed('kanban:todo:auth'), false);
+
+  // Toggle new: collapses
+  const isNowCollapsed2 = manager.toggle('list:frontend');
+  assert.equal(isNowCollapsed2, true);
+  assert.equal(manager.isCollapsed('list:frontend'), true);
+  assert.deepEqual(manager.toArray(), ['list:frontend']);
+});

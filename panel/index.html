@@ -334,7 +334,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 3px 6px;
+      padding: 4px 6px;
       background: color-mix(in srgb, var(--surf) 70%, transparent);
       border: 1px solid var(--border-subtle);
       border-radius: var(--rad-sm);
@@ -342,6 +342,27 @@
       font-weight: 600;
       color: var(--fg-muted);
       user-select: none;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .kanban-subgroup-header:hover {
+      background: var(--surf-muted);
+      border-color: var(--border);
+      color: var(--fg);
+    }
+    .kanban-subgroup-chevron {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+      fill: currentColor;
+      transition: transform 0.18s ease;
+      display: inline-block;
+    }
+    .kanban-subgroup.is-collapsed .kanban-subgroup-chevron {
+      transform: rotate(-90deg);
+    }
+    .kanban-subgroup.is-collapsed .kanban-subgroup-cards {
+      display: none;
     }
     .kanban-subgroup-title {
       overflow: hidden;
@@ -358,6 +379,51 @@
       border: 1px solid var(--border-subtle);
     }
     .kanban-subgroup-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* List View Groups (Collapsible) */
+    .list-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .list-group-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--fg-muted);
+      border-bottom: 1px solid var(--border-subtle);
+      cursor: pointer;
+      user-select: none;
+      border-radius: var(--rad-sm);
+      transition: background 0.15s ease, color 0.15s ease;
+    }
+    .list-group-header:hover {
+      background: var(--surf-subtle);
+      color: var(--fg);
+    }
+    .list-group-chevron {
+      width: 12px;
+      height: 12px;
+      flex-shrink: 0;
+      fill: currentColor;
+      transition: transform 0.18s ease;
+      display: inline-block;
+    }
+    .list-group.is-collapsed .list-group-chevron {
+      transform: rotate(-90deg);
+    }
+    .list-group.is-collapsed .list-group-cards {
+      display: none;
+    }
+    .list-group-cards {
       display: flex;
       flex-direction: column;
       gap: 6px;
