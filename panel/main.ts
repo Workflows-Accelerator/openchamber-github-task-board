@@ -25,6 +25,7 @@ export interface Issue {
   comments?: number;
   created_at: string;
   subtasks: Subtask[];
+  openQuestions?: Subtask[];
 }
 
 export interface SessionInfo {
@@ -302,16 +303,69 @@ function hideBanner(): void {
 // ==========================================
 
 const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
+const questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
+const headingRegex = /^#{1,4}\s+/;
+const explicitQuestionPrefixRegex = /^(\s*(?:\?|[-*+]\s*\[\s*[?xX ]\s*\]|\d+\.)\s*(?:\?|Q:|Question:)\s*)(.+)$/i;
 
-function parseSubtasks(body: string): Subtask[] {
+export function parseOpenQuestions(body: string): Subtask[] {
   if (!body) return [];
   const lines = body.split('\n');
-  const subtasks: Subtask[] = [];
+  const questions: Subtask[] = [];
+  let inQuestionsSection = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
+    if (headingRegex.test(line)) {
+      inQuestionsSection = questionsSectionRegex.test(line);
+      continue;
+    }
+    if (inQuestionsSection) {
+      const match = line.match(checklistRegex);
+      if (match) {
+        questions.push({
+          id: `question-${i}`,
+          lineIndex: i,
+          completed: match[2].toLowerCase() === 'x',
+          text: match[4].trim(),
+          rawLine: line,
+        });
+      }
+    } else {
+      const match = line.match(checklistRegex);
+      if (match && /^\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
+        questions.push({
+          id: `question-${i}`,
+          lineIndex: i,
+          completed: match[2].toLowerCase() === 'x',
+          text: match[4].replace(/^(?:\?|Q:|Question:)\s*/i, '').trim(),
+          rawLine: line,
+        });
+      }
+    }
+  }
+  return questions;
+}
+
+export function parseSubtasks(body: string): Subtask[] {
+  if (!body) return [];
+  const lines = body.split('\n');
+  const subtasks: Subtask[] = [];
+  let inQuestionsSection = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (headingRegex.test(line)) {
+      inQuestionsSection = questionsSectionRegex.test(line);
+      continue;
+    }
+    if (inQuestionsSection) {
+      continue;
+    }
     const match = line.match(checklistRegex);
     if (match) {
+      if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
+        continue;
+      }
       subtasks.push({
         id: `task-${i}`,
         lineIndex: i,
@@ -324,7 +378,7 @@ function parseSubtasks(body: string): Subtask[] {
   return subtasks;
 }
 
-function updateSubtaskInMarkdown(body: string, lineIndex: number, completed: boolean): string {
+export function updateSubtaskInMarkdown(body: string, lineIndex: number, completed: boolean): string {
   const lines = body.split('\n');
   if (lineIndex >= 0 && lineIndex < lines.length) {
     const match = lines[lineIndex].match(checklistRegex);
@@ -336,11 +390,65 @@ function updateSubtaskInMarkdown(body: string, lineIndex: number, completed: boo
   return lines.join('\n');
 }
 
-function appendSubtaskToMarkdown(body: string, text: string): string {
+export function updateOpenQuestionInMarkdown(body: string, lineIndex: number, completed: boolean): string {
+  return updateSubtaskInMarkdown(body, lineIndex, completed);
+}
+
+export function appendSubtaskToMarkdown(body: string, text: string): string {
   const cleanText = text.trim();
   if (!cleanText) return body;
   const suffix = `\n- [ ] ${cleanText}`;
   return body ? `${body.trimEnd()}${suffix}` : `- [ ] ${cleanText}`;
+}
+
+export function appendOpenQuestionToMarkdown(body: string, text: string): string {
+  const cleanText = text.trim();
+  if (!cleanText) return body;
+  if (!body) {
+    return `### Open Questions:\n- [ ] ${cleanText}`;
+  }
+  const lines = body.split('\n');
+  let qHeaderIndex = -1;
+  let nextHeaderIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (questionsSectionRegex.test(lines[i])) {
+      qHeaderIndex = i;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (headingRegex.test(lines[j])) {
+          nextHeaderIndex = j;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  if (qHeaderIndex !== -1) {
+    if (nextHeaderIndex !== -1) {
+      lines.splice(nextHeaderIndex, 0, `- [ ] ${cleanText}`);
+      return lines.join('\n');
+    } else {
+      return `${body.trimEnd()}\n- [ ] ${cleanText}`;
+    }
+  }
+  return `${body.trimEnd()}\n\n### Open Questions:\n- [ ] ${cleanText}`;
+}
+
+export function serializeDraftQuestions(body: string, questionTexts: string[]): string {
+  const cleanBody = (body || '').trim();
+  const cleanQuestions = (questionTexts || [])
+    .map((t) => (typeof t === 'string' ? t.trim() : ''))
+    .filter(Boolean);
+  if (cleanQuestions.length === 0) return cleanBody;
+  const questionsBlock = cleanQuestions.map((q) => `- [ ] ${q}`).join('\n');
+  if (!cleanBody) {
+    return `### Open Questions:\n\n${questionsBlock}`;
+  }
+  if (questionsSectionRegex.test(cleanBody)) {
+    return `${cleanBody}\n${questionsBlock}`;
+  }
+  return `${cleanBody}\n\n### Open Questions:\n\n${questionsBlock}`;
 }
 
 function slugify(text: string): string {
@@ -888,6 +996,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
         comments: item.comments || 0,
         created_at: item.created_at,
         subtasks: parseSubtasks(item.body || ''),
+        openQuestions: parseOpenQuestions(item.body || ''),
       }));
 
     // Cache results
@@ -913,6 +1022,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
 async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   issue.body = newBody;
   issue.subtasks = parseSubtasks(newBody);
+  issue.openQuestions = parseOpenQuestions(newBody);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
     renderDrawer(issue);
@@ -922,7 +1032,7 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
     await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
       body: newBody,
     });
-    await host.toast({ kind: 'info', message: `Updated subtasks on #${issue.number}` });
+    await host.toast({ kind: 'info', message: `Updated issue #${issue.number}` });
   } catch (err: any) {
     addLog(`Failed to sync body: ${err.message}`, 'error');
     await host.toast({ kind: 'error', message: `Failed to update #${issue.number} on GitHub` });
@@ -3123,10 +3233,14 @@ export function serializeDraftSubtasks(body: string, subtaskTexts: string[]): st
   return `${cleanBody}\n\n### Actionable Subtasks Checklist:\n\n${checklistBlock}`;
 }
 
-export function isVagueIdea(issue: { title?: string; body?: string; subtasks?: any[]; labels?: any[] }): boolean {
+export function isVagueIdea(issue: { title?: string; body?: string; subtasks?: any[]; openQuestions?: any[]; labels?: any[] }): boolean {
   if (!issue) return true;
   const labels = (issue.labels || []).map((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase());
   if (labels.includes('status:needs-alignment')) {
+    return true;
+  }
+  const openQuestions = issue.openQuestions || [];
+  if (openQuestions.some((q: any) => !q.completed)) {
     return true;
   }
   const subtaskCount = (issue.subtasks || []).length;

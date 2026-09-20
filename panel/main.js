@@ -1360,14 +1360,64 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     if (elBanner) elBanner.style.display = "none";
   }
   var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
+  var questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
+  var headingRegex = /^#{1,4}\s+/;
+  function parseOpenQuestions(body) {
+    if (!body) return [];
+    const lines = body.split("\n");
+    const questions = [];
+    let inQuestionsSection = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (headingRegex.test(line)) {
+        inQuestionsSection = questionsSectionRegex.test(line);
+        continue;
+      }
+      if (inQuestionsSection) {
+        const match = line.match(checklistRegex);
+        if (match) {
+          questions.push({
+            id: `question-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === "x",
+            text: match[4].trim(),
+            rawLine: line
+          });
+        }
+      } else {
+        const match = line.match(checklistRegex);
+        if (match && /^\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
+          questions.push({
+            id: `question-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === "x",
+            text: match[4].replace(/^(?:\?|Q:|Question:)\s*/i, "").trim(),
+            rawLine: line
+          });
+        }
+      }
+    }
+    return questions;
+  }
   function parseSubtasks(body) {
     if (!body) return [];
     const lines = body.split("\n");
     const subtasks = [];
+    let inQuestionsSection = false;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      if (headingRegex.test(line)) {
+        inQuestionsSection = questionsSectionRegex.test(line);
+        continue;
+      }
+      if (inQuestionsSection) {
+        continue;
+      }
       const match = line.match(checklistRegex);
       if (match) {
+        if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
+          continue;
+        }
         subtasks.push({
           id: `task-${i}`,
           lineIndex: i,
@@ -1390,12 +1440,70 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     }
     return lines.join("\n");
   }
+  function updateOpenQuestionInMarkdown(body, lineIndex, completed) {
+    return updateSubtaskInMarkdown(body, lineIndex, completed);
+  }
   function appendSubtaskToMarkdown(body, text) {
     const cleanText = text.trim();
     if (!cleanText) return body;
     const suffix = `
 - [ ] ${cleanText}`;
     return body ? `${body.trimEnd()}${suffix}` : `- [ ] ${cleanText}`;
+  }
+  function appendOpenQuestionToMarkdown(body, text) {
+    const cleanText = text.trim();
+    if (!cleanText) return body;
+    if (!body) {
+      return `### Open Questions:
+- [ ] ${cleanText}`;
+    }
+    const lines = body.split("\n");
+    let qHeaderIndex = -1;
+    let nextHeaderIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (questionsSectionRegex.test(lines[i])) {
+        qHeaderIndex = i;
+        for (let j = i + 1; j < lines.length; j++) {
+          if (headingRegex.test(lines[j])) {
+            nextHeaderIndex = j;
+            break;
+          }
+        }
+        break;
+      }
+    }
+    if (qHeaderIndex !== -1) {
+      if (nextHeaderIndex !== -1) {
+        lines.splice(nextHeaderIndex, 0, `- [ ] ${cleanText}`);
+        return lines.join("\n");
+      } else {
+        return `${body.trimEnd()}
+- [ ] ${cleanText}`;
+      }
+    }
+    return `${body.trimEnd()}
+
+### Open Questions:
+- [ ] ${cleanText}`;
+  }
+  function serializeDraftQuestions(body, questionTexts) {
+    const cleanBody = (body || "").trim();
+    const cleanQuestions = (questionTexts || []).map((t) => typeof t === "string" ? t.trim() : "").filter(Boolean);
+    if (cleanQuestions.length === 0) return cleanBody;
+    const questionsBlock = cleanQuestions.map((q) => `- [ ] ${q}`).join("\n");
+    if (!cleanBody) {
+      return `### Open Questions:
+
+${questionsBlock}`;
+    }
+    if (questionsSectionRegex.test(cleanBody)) {
+      return `${cleanBody}\n${questionsBlock}`;
+    }
+    return `${cleanBody}
+
+### Open Questions:
+
+${questionsBlock}`;
   }
   function slugify(text) {
     return text.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 30);
@@ -1834,7 +1942,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
         assignees: item.assignees || [],
         comments: item.comments || 0,
         created_at: item.created_at,
-        subtasks: parseSubtasks(item.body || "")
+        subtasks: parseSubtasks(item.body || ""),
+        openQuestions: parseOpenQuestions(item.body || "")
       }));
       issueCache.set(currentRepo, {
         timestamp: Date.now(),
@@ -1856,6 +1965,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   async function updateIssueBody(issue, newBody) {
     issue.body = newBody;
     issue.subtasks = parseSubtasks(newBody);
+    issue.openQuestions = parseOpenQuestions(newBody);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue);
@@ -1864,7 +1974,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
         body: newBody
       });
-      await host.toast({ kind: "info", message: `Updated subtasks on #${issue.number}` });
+      await host.toast({ kind: "info", message: `Updated issue #${issue.number}` });
     } catch (err) {
       addLog(`Failed to sync body: ${err.message}`, "error");
       await host.toast({ kind: "error", message: `Failed to update #${issue.number} on GitHub` });
@@ -3677,6 +3787,10 @@ Instructions for the Agent:
     if (!issue) return true;
     const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
     if (labels.includes("status:needs-alignment")) {
+      return true;
+    }
+    const openQuestions = issue.openQuestions || [];
+    if (openQuestions.some((q) => !q.completed)) {
       return true;
     }
     const subtaskCount = (issue.subtasks || []).length;
