@@ -1267,6 +1267,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elBtnDrawerToggleClose = document.getElementById("btnDrawerToggleClose");
   var elDrawerIssueTitle = document.getElementById("drawerIssueTitle");
   var elDrawerStatusSelect = document.getElementById("drawerStatusSelect");
+  var elDrawerComplexitySelect = document.getElementById("drawerComplexitySelect");
+  var elDrawerAlignmentWarning = document.getElementById("drawerAlignmentWarning");
   var elDrawerLabelsContainer = document.getElementById("drawerLabelsContainer");
   var elBtnAddLabelToggle = document.getElementById("btnAddLabelToggle");
   var elDrawerAddLabelRow = document.getElementById("drawerAddLabelRow");
@@ -1294,6 +1296,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elBtnCancelDescription = document.getElementById("btnCancelDescription");
   var elDrawerCommentsContainer = document.getElementById("drawerCommentsContainer");
   var elCommentCountBadge = document.getElementById("commentCountBadge");
+  var elDrawerRelatedIssuesContainer = document.getElementById("drawerRelatedIssuesContainer");
+  var elRelatedIssuesCountBadge = document.getElementById("relatedIssuesCountBadge");
   var elBtnDrawerAttachComposer = document.getElementById("btnDrawerAttachComposer");
   var elBtnDrawerArchive = document.getElementById("btnDrawerArchive");
   var elTxtDrawerArchive = document.getElementById("txtDrawerArchive");
@@ -2642,6 +2646,12 @@ ${issue.body || ""}`.slice(0, 15e3);
     elDrawerIssueTitle.textContent = issue.title;
     const col = resolveIssueColumn(issue);
     elDrawerStatusSelect.value = col || "none";
+    if (elDrawerComplexitySelect) {
+      elDrawerComplexitySelect.value = getIssueComplexity(issue) || "none";
+    }
+    if (elDrawerAlignmentWarning) {
+      elDrawerAlignmentWarning.style.display = isVagueIdea(issue) ? "flex" : "none";
+    }
     if (elBtnDrawerArchive && elTxtDrawerArchive) {
       const isArch = isIssueArchived(issue);
       elTxtDrawerArchive.textContent = isArch ? "Unarchive" : "Archive";
@@ -2707,6 +2717,7 @@ ${issue.body || ""}`.slice(0, 15e3);
       }
     });
     void loadComments(issue.number);
+    renderRelatedIssues(issue);
   }
   function renderChecklist(issue) {
     const total = issue.subtasks.length;
@@ -2765,6 +2776,65 @@ ${issue.body || ""}`.slice(0, 15e3);
     } catch {
       elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
     }
+  }
+  function findRelatedIssues(targetIssue, allIssues, limit = 4) {
+    if (!targetIssue || !allIssues) return [];
+    const targetNum = targetIssue.number;
+    const targetLabels = new Set(
+      (targetIssue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase()).filter((n) => !n.startsWith("status:") && n !== "archived")
+    );
+    const targetWords = new Set(
+      (targetIssue.title || "").toLowerCase().split(/[^a-z0-9_-]+/).filter((w) => w.length > 3)
+    );
+    const scored = [];
+    for (const other of allIssues) {
+      if (other.number === targetNum) continue;
+      let score = 0;
+      const otherLabels = (other.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+      for (const l of otherLabels) {
+        if (targetLabels.has(l)) score += 3;
+      }
+      const otherText = `${other.title || ""} ${other.body || ""}`;
+      if (otherText.includes(`#${targetNum}`)) score += 5;
+      const targetText = `${targetIssue.title || ""} ${targetIssue.body || ""}`;
+      if (targetText.includes(`#${other.number}`)) score += 5;
+      const otherWords = (other.title || "").toLowerCase().split(/[^a-z0-9_-]+/);
+      for (const w of otherWords) {
+        if (w.length > 3 && targetWords.has(w)) score += 1;
+      }
+      if (score > 0) {
+        scored.push({ issue: other, score });
+      }
+    }
+    scored.sort((a, b) => b.score - a.score || b.issue.number - a.issue.number);
+    return scored.slice(0, limit).map((s) => s.issue);
+  }
+  function renderRelatedIssues(issue) {
+    if (!elDrawerRelatedIssuesContainer || !elRelatedIssuesCountBadge) return;
+    const related = findRelatedIssues(issue, issues, 4);
+    elRelatedIssuesCountBadge.textContent = String(related.length);
+    elDrawerRelatedIssuesContainer.innerHTML = "";
+    if (related.length === 0) {
+      elDrawerRelatedIssuesContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 11.5px; padding: 2px 0;">No related issues found.</div>';
+      return;
+    }
+    related.forEach((other) => {
+      const item = document.createElement("div");
+      item.className = "related-issue-card";
+      const otherComp = getIssueComplexity(other);
+      const compHtml = otherComp ? `<span class="badge badge-complexity badge-complexity-${otherComp.toLowerCase()}">${otherComp}</span>` : "";
+      item.innerHTML = `
+        <div class="related-issue-title" title="${escapeHtml(other.title)}">#${other.number} ${escapeHtml(other.title)}</div>
+        <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+          ${compHtml}
+          <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn(other) || "all"}</span>
+        </div>
+      `;
+      item.addEventListener("click", () => {
+        openDrawer(other);
+      });
+      elDrawerRelatedIssuesContainer.appendChild(item);
+    });
   }
   function getIssuePrimaryTag(issue) {
     if (!issue || !issue.labels) return "task";
@@ -3068,10 +3138,16 @@ Instructions for the Agent:
   var elBtnNewIssueAICancel = document.getElementById("btnNewIssueAICancel");
   var elBtnLaunchAISession = document.getElementById("btnLaunchAISession");
   var elNewIssueTitleInput = document.getElementById("newIssueTitleInput");
+  var elNewIssueComplexitySelect = document.getElementById("newIssueComplexitySelect");
   var elNewIssueBodyInput = document.getElementById("newIssueBodyInput");
+  var elNewIssueSubtasksList = document.getElementById("newIssueSubtasksList");
+  var elInputNewIssueDraftSubtask = document.getElementById("inputNewIssueDraftSubtask");
+  var elBtnAddNewIssueDraftSubtask = document.getElementById("btnAddNewIssueDraftSubtask");
+  var elDraftSubtasksCountBadge = document.getElementById("draftSubtasksCountBadge");
   var elBtnNewIssueSubmit = document.getElementById("btnNewIssueSubmit");
   var elBtnNewIssueCancel = document.getElementById("btnNewIssueCancel");
   var elBtnNewIssueClose = document.getElementById("btnNewIssueClose");
+  var draftSubtasks = [];
   var currentNewIssueMode = "ai";
   function setNewIssueMode(mode) {
     currentNewIssueMode = mode;
@@ -3130,6 +3206,75 @@ Instructions for the Agent:
     } catch {
     }
   }
+  function serializeDraftSubtasks(body, subtaskTexts) {
+    const cleanBody = (body || "").trim();
+    const cleanTasks = (subtaskTexts || []).map((t) => typeof t === "string" ? t.trim() : "").filter(Boolean);
+    if (cleanTasks.length === 0) {
+      return cleanBody;
+    }
+    const checklistBlock = cleanTasks.map((t) => `- [ ] ${t}`).join("\n");
+    if (!cleanBody) {
+      return `### Actionable Subtasks Checklist:\n\n${checklistBlock}`;
+    }
+    if (cleanBody.includes("### Actionable Subtasks Checklist:")) {
+      return `${cleanBody}\n${checklistBlock}`;
+    }
+    return `${cleanBody}\n\n### Actionable Subtasks Checklist:\n\n${checklistBlock}`;
+  }
+  function isVagueIdea(issue) {
+    if (!issue) return true;
+    const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labels.includes("status:needs-alignment")) {
+      return true;
+    }
+    const subtaskCount = (issue.subtasks || []).length;
+    const bodyText = (issue.body || "").trim();
+    const wordCount = bodyText ? bodyText.split(/\s+/).length : 0;
+    return subtaskCount === 0 && wordCount < 20;
+  }
+  function updateComplexityLabel(currentLabels, newComplexity) {
+    const cleanExisting = currentLabels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.toLowerCase().startsWith("complexity:"));
+    if (newComplexity && typeof newComplexity === "string" && newComplexity.trim().toLowerCase() !== "none") {
+      cleanExisting.push(`complexity:${newComplexity.trim().toUpperCase()}`);
+    }
+    return cleanExisting;
+  }
+  function renderDraftSubtasks() {
+    if (!elNewIssueSubtasksList) return;
+    elNewIssueSubtasksList.innerHTML = "";
+    if (elDraftSubtasksCountBadge) {
+      elDraftSubtasksCountBadge.textContent = `${draftSubtasks.length} ${draftSubtasks.length === 1 ? "step" : "steps"}`;
+    }
+    if (draftSubtasks.length === 0) {
+      elNewIssueSubtasksList.innerHTML = `<div style="color: var(--fg-faint); font-size: 11px; padding: 2px 0;">No subtasks added yet.</div>`;
+      return;
+    }
+    draftSubtasks.forEach((task, idx) => {
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.justifyContent = "space-between";
+      row.style.padding = "3px 6px";
+      row.style.background = "var(--surf-subtle)";
+      row.style.borderRadius = "var(--rad-sm)";
+      row.style.fontSize = "11.5px";
+      row.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono);">${idx + 1}.</span>
+          <span style="color: var(--fg);">${escapeHtml(task)}</span>
+        </div>
+        <button class="btn btn-icon btn-sm btn-del-draft-task" type="button" style="width: 18px; height: 18px; font-size: 11px; padding: 0;" title="Remove step">\u2715</button>
+      `;
+      const btnDel = row.querySelector(".btn-del-draft-task");
+      if (btnDel) {
+        btnDel.addEventListener("click", () => {
+          draftSubtasks.splice(idx, 1);
+          renderDraftSubtasks();
+        });
+      }
+      elNewIssueSubtasksList.appendChild(row);
+    });
+  }
   function openNewIssueModal() {
     if (!currentRepo) {
       openRepoPopover();
@@ -3138,6 +3283,10 @@ Instructions for the Agent:
     elNewIssueRepoTarget.textContent = currentRepo;
     elNewIssueTitleInput.value = "";
     elNewIssueBodyInput.value = "";
+    if (elNewIssueComplexitySelect) elNewIssueComplexitySelect.value = "M";
+    draftSubtasks = [];
+    renderDraftSubtasks();
+    if (elInputNewIssueDraftSubtask) elInputNewIssueDraftSubtask.value = "";
     elAiIssueInput.value = "";
     elAiPromptConfigPanel.style.display = "none";
     setNewIssueMode("ai");
@@ -3149,10 +3298,19 @@ Instructions for the Agent:
   }
   async function submitNewIssue() {
     const title = elNewIssueTitleInput.value.trim();
-    const body = elNewIssueBodyInput.value.trim();
+    const rawBody = elNewIssueBodyInput.value.trim();
     if (!title) {
       elNewIssueTitleInput.focus();
       return;
+    }
+    const body = serializeDraftSubtasks(rawBody, draftSubtasks);
+    const initialLabels = ["status:todo"];
+    const complexity = elNewIssueComplexitySelect ? elNewIssueComplexitySelect.value : "none";
+    if (complexity && complexity !== "none") {
+      initialLabels.push(`complexity:${complexity.toUpperCase()}`);
+    }
+    if (isVagueIdea({ title, body, subtasks: draftSubtasks.map((t) => ({ text: t })), labels: [] })) {
+      initialLabels.push("status:needs-alignment");
     }
     elBtnNewIssueSubmit.disabled = true;
     elBtnNewIssueSubmit.textContent = "Creating...";
@@ -3161,7 +3319,7 @@ Instructions for the Agent:
       const created = await githubRequest("POST", `/repos/${currentRepo}/issues`, {
         title,
         body,
-        labels: ["status:todo"]
+        labels: initialLabels
       });
       addLog(`Created issue #${created.number}: ${created.title}`, "succ");
       await host.toast({ kind: "success", message: `Created #${created.number} on GitHub` });
@@ -3422,6 +3580,41 @@ Instructions for the Agent:
         }
       }
     });
+    if (elDrawerComplexitySelect) {
+      elDrawerComplexitySelect.addEventListener("change", async () => {
+        if (!activeIssue || !currentRepo) return;
+        const val = elDrawerComplexitySelect.value;
+        const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
+        activeIssue.labels = updatedLabels.map((name) => ({ name }));
+        if (currentRepo) issueCache.delete(currentRepo);
+        renderDrawer(activeIssue);
+        renderViews();
+        try {
+          await githubRequest("PATCH", `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+            labels: updatedLabels
+          });
+          await host.toast({ kind: "info", message: `Updated complexity on #${activeIssue.number} to ${val}` });
+        } catch (err) {
+          addLog(`Failed to update complexity: ${err.message}`, "error");
+        }
+      });
+    }
+    if (elBtnAddNewIssueDraftSubtask && elInputNewIssueDraftSubtask) {
+      const addDraftStep = () => {
+        const text = elInputNewIssueDraftSubtask.value.trim();
+        if (!text) return;
+        draftSubtasks.push(text);
+        elInputNewIssueDraftSubtask.value = "";
+        renderDraftSubtasks();
+      };
+      elBtnAddNewIssueDraftSubtask.addEventListener("click", addDraftStep);
+      elInputNewIssueDraftSubtask.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addDraftStep();
+        }
+      });
+    }
     elBtnEditDescription.addEventListener("click", () => {
       if (!activeIssue) return;
       elDrawerDescriptionTextarea.value = activeIssue.body || "";

@@ -187,6 +187,8 @@ const elDrawerGithubLink = document.getElementById('drawerGithubLink') as HTMLAn
 const elBtnDrawerToggleClose = document.getElementById('btnDrawerToggleClose') as HTMLButtonElement | null;
 const elDrawerIssueTitle = document.getElementById('drawerIssueTitle') as HTMLHeadingElement;
 const elDrawerStatusSelect = document.getElementById('drawerStatusSelect') as HTMLSelectElement;
+const elDrawerComplexitySelect = document.getElementById('drawerComplexitySelect') as HTMLSelectElement | null;
+const elDrawerAlignmentWarning = document.getElementById('drawerAlignmentWarning') as HTMLDivElement | null;
 const elDrawerLabelsContainer = document.getElementById('drawerLabelsContainer') as HTMLDivElement;
 const elBtnAddLabelToggle = document.getElementById('btnAddLabelToggle') as HTMLButtonElement;
 const elDrawerAddLabelRow = document.getElementById('drawerAddLabelRow') as HTMLDivElement;
@@ -218,6 +220,8 @@ const elBtnCancelDescription = document.getElementById('btnCancelDescription') a
 
 const elDrawerCommentsContainer = document.getElementById('drawerCommentsContainer') as HTMLDivElement;
 const elCommentCountBadge = document.getElementById('commentCountBadge') as HTMLSpanElement;
+const elDrawerRelatedIssuesContainer = document.getElementById('drawerRelatedIssuesContainer') as HTMLDivElement | null;
+const elRelatedIssuesCountBadge = document.getElementById('relatedIssuesCountBadge') as HTMLSpanElement | null;
 const elBtnDrawerAttachComposer = document.getElementById('btnDrawerAttachComposer') as HTMLButtonElement;
 const elBtnDrawerArchive = document.getElementById('btnDrawerArchive') as HTMLButtonElement | null;
 const elTxtDrawerArchive = document.getElementById('txtDrawerArchive') as HTMLSpanElement | null;
@@ -1541,6 +1545,17 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
     archiveCategoryBadge = `<span class="archive-from-badge">From: ${escapeHtml(catLabel)}</span>`;
   }
 
+  // Complexity & Alignment badges
+  const complexity = getIssueComplexity(issue);
+  const complexityHtml = complexity
+    ? `<span class="badge badge-complexity badge-complexity-${complexity.toLowerCase()}">${complexity}</span>`
+    : '';
+
+  const vague = isVagueIdea(issue);
+  const vagueBadgeHtml = vague
+    ? `<span class="badge badge-vague" title="Sparse task needing alignment">Needs Alignment</span>`
+    : '';
+
   const nextStageButtonHtml = !inKanban && !showArchivedOnly
     ? `
       <button class="card-btn-next" data-issue="${issue.number}" data-target="${nextAction.target}" title="Move to ${nextAction.label}">
@@ -1577,6 +1592,8 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
       <div class="card-id-wrap">
         <input type="checkbox" class="card-checkbox" data-issue="${issue.number}" ${isSelected ? 'checked' : ''} title="Select issue for batch actions" />
         <span class="card-id">#${issue.number}</span>
+        ${complexityHtml}
+        ${vagueBadgeHtml}
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ''}
         ${archiveCategoryBadge}
       </div>
@@ -1907,6 +1924,14 @@ function renderDrawer(issue: Issue): void {
   const col = resolveIssueColumn(issue);
   elDrawerStatusSelect.value = col || 'none';
 
+  if (elDrawerComplexitySelect) {
+    elDrawerComplexitySelect.value = getIssueComplexity(issue) || 'none';
+  }
+
+  if (elDrawerAlignmentWarning) {
+    elDrawerAlignmentWarning.style.display = isVagueIdea(issue) ? 'flex' : 'none';
+  }
+
   if (elBtnDrawerArchive && elTxtDrawerArchive) {
     const isArch = isIssueArchived(issue);
     elTxtDrawerArchive.textContent = isArch ? 'Unarchive' : 'Archive';
@@ -1983,6 +2008,7 @@ function renderDrawer(issue: Issue): void {
   });
 
   void loadComments(issue.number);
+  renderRelatedIssues(issue);
 }
 
 function renderChecklist(issue: Issue): void {
@@ -2054,6 +2080,80 @@ async function loadComments(issueNumber: number): Promise<void> {
   } catch {
     elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
   }
+}
+
+export function findRelatedIssues(targetIssue: Issue, allIssues: Issue[], limit = 4): Issue[] {
+  if (!targetIssue || !allIssues) return [];
+  const targetNum = targetIssue.number;
+  const targetLabels = new Set(
+    (targetIssue.labels || [])
+      .map((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase())
+      .filter((n) => !n.startsWith('status:') && n !== 'archived')
+  );
+  const targetWords = new Set(
+    (targetIssue.title || '')
+      .toLowerCase()
+      .split(/[^a-z0-9_-]+/)
+      .filter((w) => w.length > 3)
+  );
+
+  const scored: Array<{ issue: Issue; score: number }> = [];
+  for (const other of allIssues) {
+    if (other.number === targetNum) continue;
+
+    let score = 0;
+    const otherLabels = (other.labels || []).map((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase());
+    for (const l of otherLabels) {
+      if (targetLabels.has(l)) score += 3;
+    }
+
+    const otherText = `${other.title || ''} ${other.body || ''}`;
+    if (otherText.includes(`#${targetNum}`)) score += 5;
+    const targetText = `${targetIssue.title || ''} ${targetIssue.body || ''}`;
+    if (targetText.includes(`#${other.number}`)) score += 5;
+
+    const otherWords = (other.title || '').toLowerCase().split(/[^a-z0-9_-]+/);
+    for (const w of otherWords) {
+      if (w.length > 3 && targetWords.has(w)) score += 1;
+    }
+
+    if (score > 0) {
+      scored.push({ issue: other, score });
+    }
+  }
+
+  scored.sort((a, b) => b.score - a.score || b.issue.number - a.issue.number);
+  return scored.slice(0, limit).map((s) => s.issue);
+}
+
+function renderRelatedIssues(issue: Issue): void {
+  if (!elDrawerRelatedIssuesContainer || !elRelatedIssuesCountBadge) return;
+  const related = findRelatedIssues(issue, issues, 4);
+  elRelatedIssuesCountBadge.textContent = String(related.length);
+  elDrawerRelatedIssuesContainer.innerHTML = '';
+
+  if (related.length === 0) {
+    elDrawerRelatedIssuesContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 11.5px; padding: 2px 0;">No related issues found.</div>';
+    return;
+  }
+
+  related.forEach((other) => {
+    const item = document.createElement('div');
+    item.className = 'related-issue-card';
+    const otherComp = getIssueComplexity(other);
+    const compHtml = otherComp ? `<span class="badge badge-complexity badge-complexity-${otherComp.toLowerCase()}">${otherComp}</span>` : '';
+    item.innerHTML = `
+      <div class="related-issue-title" title="${escapeHtml(other.title)}">#${other.number} ${escapeHtml(other.title)}</div>
+      <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+        ${compHtml}
+        <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn(other) || 'all'}</span>
+      </div>
+    `;
+    item.addEventListener('click', () => {
+      openDrawer(other);
+    });
+    elDrawerRelatedIssuesContainer.appendChild(item);
+  });
 }
 
 // ==========================================
@@ -2431,10 +2531,17 @@ const elBtnLaunchAISession = document.getElementById('btnLaunchAISession') as HT
 
 // Manual Mode elements
 const elNewIssueTitleInput = document.getElementById('newIssueTitleInput') as HTMLInputElement;
+const elNewIssueComplexitySelect = document.getElementById('newIssueComplexitySelect') as HTMLSelectElement | null;
 const elNewIssueBodyInput = document.getElementById('newIssueBodyInput') as HTMLTextAreaElement;
+const elNewIssueSubtasksList = document.getElementById('newIssueSubtasksList') as HTMLDivElement | null;
+const elInputNewIssueDraftSubtask = document.getElementById('inputNewIssueDraftSubtask') as HTMLInputElement | null;
+const elBtnAddNewIssueDraftSubtask = document.getElementById('btnAddNewIssueDraftSubtask') as HTMLButtonElement | null;
+const elDraftSubtasksCountBadge = document.getElementById('draftSubtasksCountBadge') as HTMLSpanElement | null;
 const elBtnNewIssueSubmit = document.getElementById('btnNewIssueSubmit') as HTMLButtonElement;
 const elBtnNewIssueCancel = document.getElementById('btnNewIssueCancel') as HTMLButtonElement;
 const elBtnNewIssueClose = document.getElementById('btnNewIssueClose') as HTMLButtonElement;
+
+let draftSubtasks: string[] = [];
 
 type NewIssueMode = 'ai' | 'manual';
 let currentNewIssueMode: NewIssueMode = 'ai';
@@ -2504,6 +2611,91 @@ async function resetPromptConfigToDefault(): Promise<void> {
   } catch {}
 }
 
+export function serializeDraftSubtasks(body: string, subtaskTexts: string[]): string {
+  const cleanBody = (body || '').trim();
+  const cleanTasks = (subtaskTexts || [])
+    .map((t) => (typeof t === 'string' ? t.trim() : ''))
+    .filter(Boolean);
+
+  if (cleanTasks.length === 0) {
+    return cleanBody;
+  }
+
+  const checklistBlock = cleanTasks.map((t) => `- [ ] ${t}`).join('\n');
+  if (!cleanBody) {
+    return `### Actionable Subtasks Checklist:\n\n${checklistBlock}`;
+  }
+  if (cleanBody.includes('### Actionable Subtasks Checklist:')) {
+    return `${cleanBody}\n${checklistBlock}`;
+  }
+  return `${cleanBody}\n\n### Actionable Subtasks Checklist:\n\n${checklistBlock}`;
+}
+
+export function isVagueIdea(issue: { title?: string; body?: string; subtasks?: any[]; labels?: any[] }): boolean {
+  if (!issue) return true;
+  const labels = (issue.labels || []).map((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase());
+  if (labels.includes('status:needs-alignment')) {
+    return true;
+  }
+  const subtaskCount = (issue.subtasks || []).length;
+  const bodyText = (issue.body || '').trim();
+  const wordCount = bodyText ? bodyText.split(/\s+/).length : 0;
+  return subtaskCount === 0 && wordCount < 20;
+}
+
+export function updateComplexityLabel(currentLabels: any[], newComplexity: string | null): string[] {
+  const cleanExisting = currentLabels
+    .map((l) => (typeof l === 'string' ? l : l.name || ''))
+    .filter((name) => !name.toLowerCase().startsWith('complexity:'));
+
+  if (newComplexity && typeof newComplexity === 'string' && newComplexity.trim().toLowerCase() !== 'none') {
+    cleanExisting.push(`complexity:${newComplexity.trim().toUpperCase()}`);
+  }
+  return cleanExisting;
+}
+
+function renderDraftSubtasks(): void {
+  if (!elNewIssueSubtasksList) return;
+  elNewIssueSubtasksList.innerHTML = '';
+  if (elDraftSubtasksCountBadge) {
+    elDraftSubtasksCountBadge.textContent = `${draftSubtasks.length} ${draftSubtasks.length === 1 ? 'step' : 'steps'}`;
+  }
+
+  if (draftSubtasks.length === 0) {
+    elNewIssueSubtasksList.innerHTML = `<div style="color: var(--fg-faint); font-size: 11px; padding: 2px 0;">No subtasks added yet.</div>`;
+    return;
+  }
+
+  draftSubtasks.forEach((task, idx) => {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.justifyContent = 'space-between';
+    row.style.padding = '3px 6px';
+    row.style.background = 'var(--surf-subtle)';
+    row.style.borderRadius = 'var(--rad-sm)';
+    row.style.fontSize = '11.5px';
+
+    row.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono);">${idx + 1}.</span>
+        <span style="color: var(--fg);">${escapeHtml(task)}</span>
+      </div>
+      <button class="btn btn-icon btn-sm btn-del-draft-task" type="button" style="width: 18px; height: 18px; font-size: 11px; padding: 0;" title="Remove step">✕</button>
+    `;
+
+    const btnDel = row.querySelector('.btn-del-draft-task') as HTMLButtonElement | null;
+    if (btnDel) {
+      btnDel.addEventListener('click', () => {
+        draftSubtasks.splice(idx, 1);
+        renderDraftSubtasks();
+      });
+    }
+
+    elNewIssueSubtasksList.appendChild(row);
+  });
+}
+
 function openNewIssueModal(): void {
   if (!currentRepo) {
     openRepoPopover();
@@ -2512,6 +2704,10 @@ function openNewIssueModal(): void {
   elNewIssueRepoTarget.textContent = currentRepo;
   elNewIssueTitleInput.value = '';
   elNewIssueBodyInput.value = '';
+  if (elNewIssueComplexitySelect) elNewIssueComplexitySelect.value = 'M';
+  draftSubtasks = [];
+  renderDraftSubtasks();
+  if (elInputNewIssueDraftSubtask) elInputNewIssueDraftSubtask.value = '';
   elAiIssueInput.value = '';
   elAiPromptConfigPanel.style.display = 'none';
 
@@ -2526,11 +2722,23 @@ function closeNewIssueModal(): void {
 
 async function submitNewIssue(): Promise<void> {
   const title = elNewIssueTitleInput.value.trim();
-  const body = elNewIssueBodyInput.value.trim();
+  const rawBody = elNewIssueBodyInput.value.trim();
   if (!title) {
     elNewIssueTitleInput.focus();
     return;
   }
+  const body = serializeDraftSubtasks(rawBody, draftSubtasks);
+  const initialLabels = ['status:todo'];
+  const complexity = elNewIssueComplexitySelect ? elNewIssueComplexitySelect.value : 'none';
+  if (complexity && complexity !== 'none') {
+    initialLabels.push(`complexity:${complexity.toUpperCase()}`);
+  }
+
+  // Alignment reflex: auto-flag vague idea if description is sparse and subtasks are empty
+  if (isVagueIdea({ title, body, subtasks: draftSubtasks.map((t) => ({ text: t })), labels: [] })) {
+    initialLabels.push('status:needs-alignment');
+  }
+
   elBtnNewIssueSubmit.disabled = true;
   elBtnNewIssueSubmit.textContent = 'Creating...';
   try {
@@ -2538,7 +2746,7 @@ async function submitNewIssue(): Promise<void> {
     const created: any = await githubRequest('POST', `/repos/${currentRepo}/issues`, {
       title,
       body,
-      labels: ['status:todo'],
+      labels: initialLabels,
     });
     addLog(`Created issue #${created.number}: ${created.title}`, 'succ');
     await host.toast({ kind: 'success', message: `Created #${created.number} on GitHub` });
@@ -2862,6 +3070,44 @@ function initEvents(): void {
       }
     }
   });
+
+  if (elDrawerComplexitySelect) {
+    elDrawerComplexitySelect.addEventListener('change', async () => {
+      if (!activeIssue || !currentRepo) return;
+      const val = elDrawerComplexitySelect.value;
+      const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
+      activeIssue.labels = updatedLabels.map((name) => ({ name }));
+      if (currentRepo) issueCache.delete(currentRepo);
+      renderDrawer(activeIssue);
+      renderViews();
+      try {
+        await githubRequest('PATCH', `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+          labels: updatedLabels,
+        });
+        await host.toast({ kind: 'info', message: `Updated complexity on #${activeIssue.number} to ${val}` });
+      } catch (err: any) {
+        addLog(`Failed to update complexity: ${err.message}`, 'error');
+      }
+    });
+  }
+
+  // Draft subtask adding in creator modal
+  if (elBtnAddNewIssueDraftSubtask && elInputNewIssueDraftSubtask) {
+    const addDraftStep = () => {
+      const text = elInputNewIssueDraftSubtask.value.trim();
+      if (!text) return;
+      draftSubtasks.push(text);
+      elInputNewIssueDraftSubtask.value = '';
+      renderDraftSubtasks();
+    };
+    elBtnAddNewIssueDraftSubtask.addEventListener('click', addDraftStep);
+    elInputNewIssueDraftSubtask.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addDraftStep();
+      }
+    });
+  }
 
   // Description Edit & Collapse events
   elBtnEditDescription.addEventListener('click', () => {
