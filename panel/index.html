@@ -2675,7 +2675,7 @@
 
   <!-- Scratch Pad Modal -->
   <div class="modal-backdrop" id="scratchpadModalBackdrop">
-    <div class="modal" style="width: 640px; max-width: 95vw;">
+    <div class="modal" style="width: 680px; max-width: 95vw; height: 82vh; max-height: 720px; display: flex; flex-direction: column;">
       <div class="modal-head">
         <div style="display: flex; align-items: center; gap: 8px;">
           <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
@@ -2693,7 +2693,7 @@
         </div>
       </div>
 
-      <div class="modal-body" style="gap: 8px;">
+      <div class="modal-body" style="gap: 8px; flex: 1; min-height: 0; display: flex; flex-direction: column;">
         <!-- Quick Template Insertion Row -->
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <span style="font-size: 11px; color: var(--fg-muted); font-weight: 500;">Quick add:</span>
@@ -2724,7 +2724,7 @@
         </div>
 
         <!-- Main Textarea -->
-        <textarea id="scratchpadTextarea" class="form-ctrl" style="width: 100%; height: 240px; resize: vertical; font-size: 12px; line-height: 1.55; font-family: var(--font-mono);" placeholder="Dump all your ideas, thoughts, feature specs, and bug notes here freely across themes...
+        <textarea id="scratchpadTextarea" class="form-ctrl" style="width: 100%; flex: 1; min-height: 320px; resize: vertical; font-size: 12px; line-height: 1.55; font-family: var(--font-mono);" placeholder="Dump all your ideas, thoughts, feature specs, and bug notes here freely across themes...
 
 ## [Theme: Authentication]
 - [ ] Implement JWT refresh tokens
