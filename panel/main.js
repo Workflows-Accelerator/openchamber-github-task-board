@@ -3226,6 +3226,9 @@ ${issue.body || ""}`.slice(0, 15e3);
     const card = document.createElement("div");
     card.className = "graph-card";
     card.dataset.issueNumber = String(node.issue.number);
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `Issue #${node.issue.number}: ${node.issue.title}`);
     if (node.isDone) card.classList.add("graph-card-done");
     if (node.isFrontier) card.classList.add("graph-card-frontier");
     if (node.isBlocked) card.classList.add("graph-card-blocked");
@@ -3291,6 +3294,16 @@ ${issue.body || ""}`.slice(0, 15e3);
         return;
       }
       openDrawer(node.issue);
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        const target = e.target;
+        if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn")) {
+          return;
+        }
+        e.preventDefault();
+        openDrawer(node.issue);
+      }
     });
     const outPort = card.querySelector(".graph-port-out");
     if (outPort) {
@@ -3368,30 +3381,48 @@ ${issue.body || ""}`.slice(0, 15e3);
     }
     if (elGraphThemePills) {
       elGraphThemePills.innerHTML = "";
-      const allChip = document.createElement("div");
-      allChip.className = `graph-theme-chip ${graphSelectedTheme === "all" ? "active" : ""}`;
-      allChip.innerHTML = `<span>All Themes</span><span style="font-size: 9.5px; opacity: 0.7;">(${filteredIssues.length})</span>`;
-      allChip.addEventListener("click", () => {
-        graphSelectedTheme = "all";
+    const allChip = document.createElement("div");
+    allChip.className = `graph-theme-chip ${graphSelectedTheme === "all" ? "active" : ""}`;
+    allChip.setAttribute("tabindex", "0");
+    allChip.setAttribute("role", "button");
+    allChip.setAttribute("aria-label", `Filter by All Themes (${filteredIssues.length} issues)`);
+    allChip.innerHTML = `<span>All Themes</span><span style="font-size: 9.5px; opacity: 0.7;">(${filteredIssues.length})</span>`;
+    allChip.addEventListener("click", () => {
+      graphSelectedTheme = "all";
+      renderViews();
+    });
+    allChip.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        allChip.click();
+      }
+    });
+    elGraphThemePills.appendChild(allChip);
+    graph.themes.forEach((theme) => {
+      const themeCount = graph.themeNodes.get(theme)?.length || 0;
+      const chip = document.createElement("div");
+      chip.className = `graph-theme-chip ${graphSelectedTheme === theme ? "active" : ""}`;
+      chip.setAttribute("tabindex", "0");
+      chip.setAttribute("role", "button");
+      chip.setAttribute("aria-label", `Filter by theme ${theme} (${themeCount} issues)`);
+      const dotCol = getThemeColor(theme);
+      chip.innerHTML = `
+        <span class="graph-theme-dot" style="--dot-color: ${dotCol};"></span>
+        <span>${escapeHtml(theme)}</span>
+        <span style="font-size: 9.5px; opacity: 0.7;">(${themeCount})</span>
+      `;
+      chip.addEventListener("click", () => {
+        graphSelectedTheme = theme;
         renderViews();
       });
-      elGraphThemePills.appendChild(allChip);
-      graph.themes.forEach((theme) => {
-        const themeCount = graph.themeNodes.get(theme)?.length || 0;
-        const chip = document.createElement("div");
-        chip.className = `graph-theme-chip ${graphSelectedTheme === theme ? "active" : ""}`;
-        const dotCol = getThemeColor(theme);
-        chip.innerHTML = `
-          <span class="graph-theme-dot" style="--dot-color: ${dotCol};"></span>
-          <span>${escapeHtml(theme)}</span>
-          <span style="font-size: 9.5px; opacity: 0.7;">(${themeCount})</span>
-        `;
-        chip.addEventListener("click", () => {
-          graphSelectedTheme = theme;
-          renderViews();
-        });
-        elGraphThemePills.appendChild(chip);
+      chip.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          chip.click();
+        }
       });
+      elGraphThemePills.appendChild(chip);
+    });
     }
     const visibleNumbers = new Set();
     for (const node of graph.nodes.values()) {
