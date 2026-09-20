@@ -1539,6 +1539,37 @@ function renderViews(): void {
   applyLayoutMode();
 }
 
+export function getIssueDescriptionPreview(body: string | null | undefined): string {
+  if (!body || typeof body !== 'string') return '';
+  const lines = body.split(/\r?\n/);
+  const GENERIC_HEADERS = /^(overview|description|context|summary|details|background|goal|problem|about)$/i;
+  let fallback = '';
+  for (let rawLine of lines) {
+    let line = rawLine.trim();
+    if (!line) continue;
+    if (line.startsWith('```') || line.startsWith('~~~')) continue;
+    const isHeading = line.startsWith('#');
+    line = line.replace(/^#+\s*/, '');
+    line = line.replace(/^>\s*/, '');
+    line = line.replace(/^[-*+]\s*\[[ xX]\]\s*/, '');
+    line = line.replace(/^[-*+]\s+/, '');
+    line = line.replace(/^\d+\.\s+/, '');
+    line = line.replace(/(\*\*|__)(.*?)\1/g, '$2');
+    line = line.replace(/(\*|_)(.*?)\1/g, '$2');
+    line = line.replace(/`([^`]+)`/g, '$1');
+    line = line.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    line = line.replace(/<[^>]*>/g, '');
+    line = line.trim();
+    if (!line) continue;
+    if (isHeading && GENERIC_HEADERS.test(line)) {
+      if (!fallback) fallback = line;
+      continue;
+    }
+    return line;
+  }
+  return fallback;
+}
+
 function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
   const session = getIssueSession(issue);
   const card = document.createElement('div');
@@ -1629,9 +1660,14 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
     ? `<span class="badge badge-complexity badge-complexity-${complexity.toLowerCase()}">${complexity}</span>`
     : '';
 
-  const vague = isVagueIdea(issue);
+    const vague = isVagueIdea(issue);
   const vagueBadgeHtml = vague
     ? `<span class="badge badge-vague" title="Sparse task needing alignment">Needs Alignment</span>`
+    : '';
+
+  const descPreview = getIssueDescriptionPreview(issue.body);
+  const descHtml = descPreview
+    ? `<div class="card-desc" title="${escapeHtml(descPreview)}">${escapeHtml(descPreview)}</div>`
     : '';
 
   const nextStageButtonHtml = !inKanban && !showArchivedOnly
@@ -1683,6 +1719,7 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
       </div>
     </div>
     <div class="card-title">${escapeHtml(issue.title)}</div>
+    ${descHtml}
     ${labelsHtml ? `<div class="card-labels">${labelsHtml}</div>` : ''}
     <div class="card-footer">
       ${subtaskHtml}

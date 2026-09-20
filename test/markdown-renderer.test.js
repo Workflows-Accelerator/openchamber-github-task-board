@@ -52,6 +52,37 @@ export function renderMarkdown(raw) {
   return html;
 }
 
+export function getIssueDescriptionPreview(body) {
+  if (!body || typeof body !== 'string') return '';
+  const lines = body.split(/\r?\n/);
+  const GENERIC_HEADERS = /^(overview|description|context|summary|details|background|goal|problem|about)$/i;
+  let fallback = '';
+  for (let rawLine of lines) {
+    let line = rawLine.trim();
+    if (!line) continue;
+    if (line.startsWith('```') || line.startsWith('~~~')) continue;
+    const isHeading = line.startsWith('#');
+    line = line.replace(/^#+\s*/, '');
+    line = line.replace(/^>\s*/, '');
+    line = line.replace(/^[-*+]\s*\[[ xX]\]\s*/, '');
+    line = line.replace(/^[-*+]\s+/, '');
+    line = line.replace(/^\d+\.\s+/, '');
+    line = line.replace(/(\*\*|__)(.*?)\1/g, '$2');
+    line = line.replace(/(\*|_)(.*?)\1/g, '$2');
+    line = line.replace(/`([^`]+)`/g, '$1');
+    line = line.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
+    line = line.replace(/<[^>]*>/g, '');
+    line = line.trim();
+    if (!line) continue;
+    if (isHeading && GENERIC_HEADERS.test(line)) {
+      if (!fallback) fallback = line;
+      continue;
+    }
+    return line;
+  }
+  return fallback;
+}
+
 test('renderMarkdown converts headings, bold, code, and links properly', () => {
   const md = `# Title\n\nThis is **bold** and *italic* with \`inline code\`.\n\n[OpenChamber](https://openchamber.dev)`;
   const rendered = renderMarkdown(md);
@@ -68,4 +99,21 @@ test('renderMarkdown escapes raw script tags to prevent XSS', () => {
   const rendered = renderMarkdown(malicious);
   assert.ok(!rendered.includes('<script>'));
   assert.ok(rendered.includes('&lt;script&gt;'));
+});
+
+test('getIssueDescriptionPreview extracts clean 1-line summary skipping generic headers', () => {
+  assert.equal(getIssueDescriptionPreview(''), '');
+  assert.equal(getIssueDescriptionPreview(null), '');
+
+  const mdWithHeading = `## Overview\nWe need to fix dropdown clipping on Linux browsers.\nMore details here.`;
+  assert.equal(getIssueDescriptionPreview(mdWithHeading), 'We need to fix dropdown clipping on Linux browsers.');
+
+  const mdWithChecklist = `- [ ] Check dropdown rendering\n- [x] Fix line height`;
+  assert.equal(getIssueDescriptionPreview(mdWithChecklist), 'Check dropdown rendering');
+
+  const mdWithFormatting = `**Critical:** Please check [docs](https://example.com) for \`api\` details.`;
+  assert.equal(getIssueDescriptionPreview(mdWithFormatting), 'Critical: Please check docs for api details.');
+
+  const mdHeadingOnly = `### Standalone feature requirement`;
+  assert.equal(getIssueDescriptionPreview(mdHeadingOnly), 'Standalone feature requirement');
 });
