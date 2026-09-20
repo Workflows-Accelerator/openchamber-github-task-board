@@ -3,6 +3,15 @@
   "version": "1.0.0",
   "type": "module",
   "description": "Live Linear / Trello style Kanban board for GitHub Issues with attached OpenChamber sessions and git worktrees",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Workflows-Accelerator/openchamber-github-task-board.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues"
+  },
+  "homepage": "https://github.com/Workflows-Accelerator/openchamber-github-task-board#readme",
   "scripts": {
     "build": "esbuild panel/main.ts --bundle --format=iife --target=chrome100 --tree-shaking=false --outfile=panel/main.js",
     "typecheck": "tsc --noEmit",
