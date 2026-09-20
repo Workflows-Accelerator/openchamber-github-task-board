@@ -1205,6 +1205,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var filterPriority = "all";
   var filterTag = "all";
   var isFilterBarOpen = false;
+  var selectedIssueNumbers = /* @__PURE__ */ new Set();
   var userLayoutPreference = "auto";
   var isWideScreen = false;
   var draggedIssueNumber = null;
@@ -1239,7 +1240,14 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elSelectSort = document.getElementById("selectSort");
   var elSelectFilterPriority = document.getElementById("selectFilterPriority");
   var elSelectFilterTag = document.getElementById("selectFilterTag");
+  var elBtnStartTagIssues = document.getElementById("btnStartTagIssues");
   var elBtnResetFilters = document.getElementById("btnResetFilters");
+  var elBatchActionBar = document.getElementById("batchActionBar");
+  var elBatchCountBadge = document.getElementById("batchCountBadge");
+  var elBtnBatchPackage = document.getElementById("btnBatchPackage");
+  var elBtnBatchStart = document.getElementById("btnBatchStart");
+  var elBtnBatchAttach = document.getElementById("btnBatchAttach");
+  var elBtnBatchDeselect = document.getElementById("btnBatchDeselect");
   var elStatusTabBar = document.getElementById("statusTabBar");
   var elListViewContainer = document.getElementById("listViewContainer");
   var elKanbanViewContainer = document.getElementById("kanbanViewContainer");
@@ -2247,6 +2255,14 @@ ${issue.body || ""}`.slice(0, 15e3);
     if (elBtnFilterToggle) {
       elBtnFilterToggle.classList.toggle("active", hasActiveFilters || isFilterBarOpen);
     }
+    if (elBtnStartTagIssues) {
+      if (filterTag !== "all") {
+        elBtnStartTagIssues.style.display = "inline-flex";
+        elBtnStartTagIssues.textContent = `Select All with "${filterTag}"`;
+      } else {
+        elBtnStartTagIssues.style.display = "none";
+      }
+    }
     const q = searchQuery.toLowerCase().trim();
     const filtered = issues.filter((issue) => {
       const isArch = isIssueArchived(issue);
@@ -2281,12 +2297,14 @@ ${issue.body || ""}`.slice(0, 15e3);
     if (elListViewContainer) elListViewContainer.style.display = "";
     renderListView(sorted);
     renderKanbanView(sorted);
+    updateBatchBar();
     applyLayoutMode();
   }
   function buildCardElement(issue, inKanban) {
     const session = getIssueSession(issue);
     const card = document.createElement("div");
-    card.className = "card";
+    const isSelected = selectedIssueNumbers.has(issue.number);
+    card.className = `card ${isSelected ? "is-selected" : ""}`;
     card.draggable = inKanban;
     card.dataset.issueNumber = String(issue.number);
     const totalSubtasks = issue.subtasks.length;
@@ -2367,6 +2385,7 @@ ${issue.body || ""}`.slice(0, 15e3);
     card.innerHTML = `
     <div class="card-meta">
       <div class="card-id-wrap">
+        <input type="checkbox" class="card-checkbox" data-issue="${issue.number}" ${isSelected ? "checked" : ""} title="Select issue for batch actions" />
         <span class="card-id">#${issue.number}</span>
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ""}
         ${archiveCategoryBadge}
@@ -2387,6 +2406,13 @@ ${issue.body || ""}`.slice(0, 15e3);
       </div>
     </div>
   `;
+    const cbSelect = card.querySelector(".card-checkbox");
+    if (cbSelect) {
+      cbSelect.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleIssueSelection(issue.number);
+      });
+    }
     const btnAttach = card.querySelector(".card-btn-attach");
     if (btnAttach) {
       btnAttach.addEventListener("click", async (e) => {
@@ -2864,6 +2890,135 @@ ${issue.body || ""}`.slice(0, 15e3);
       elBtnPreflightLaunch.disabled = false;
       elBtnPreflightLaunch.textContent = elPreflightWorktreeToggle.checked ? "Launch Worktree & Agent" : "Start Agent Session (Current Workspace)";
     }
+  }
+  function buildConsolidatedIssuePrompt(selectedIssues) {
+    if (!selectedIssues || selectedIssues.length === 0) return "";
+    const issueNumbers = selectedIssues.map((i) => `#${i.number}`).join(", ");
+    let prompt = `You are assigned to work on multiple packaged GitHub Issues: ${issueNumbers}\n\n`;
+    prompt += `### Packaged Tasks Summary (${selectedIssues.length} items):\n`;
+    selectedIssues.forEach((issue) => {
+      prompt += `- Issue #${issue.number}: ${issue.title}\n`;
+    });
+    prompt += "\n---\n\n";
+    selectedIssues.forEach((issue, idx) => {
+      prompt += `## Task ${idx + 1} of ${selectedIssues.length}: #${issue.number} ${issue.title}\n\n`;
+      if (issue.body) {
+        prompt += `### Overview & Context:\n${issue.body.trim()}\n\n`;
+      }
+      if (issue.subtasks && issue.subtasks.length > 0) {
+        prompt += `### Actionable Subtasks Checklist:\n`;
+        issue.subtasks.forEach((s) => {
+          prompt += `- [${s.completed ? "x" : " "}] ${s.text}\n`;
+        });
+        prompt += "\n";
+      }
+      prompt += "---\n\n";
+    });
+    prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
+    return prompt;
+  }
+  function updateBatchBar() {
+    const count = selectedIssueNumbers.size;
+    if (count > 0) {
+      document.body.classList.add("selection-active");
+      if (elBatchActionBar) elBatchActionBar.style.display = "flex";
+      if (elBatchCountBadge) elBatchCountBadge.textContent = `${count} selected`;
+    } else {
+      document.body.classList.remove("selection-active");
+      if (elBatchActionBar) elBatchActionBar.style.display = "none";
+    }
+    document.querySelectorAll(".card").forEach((cardEl) => {
+      const num = Number(cardEl.dataset.issueNumber);
+      const isSelected = selectedIssueNumbers.has(num);
+      cardEl.classList.toggle("is-selected", isSelected);
+      const cb = cardEl.querySelector(".card-checkbox");
+      if (cb) cb.checked = isSelected;
+    });
+  }
+  function clearSelection() {
+    selectedIssueNumbers.clear();
+    updateBatchBar();
+  }
+  function toggleIssueSelection(issueNumber) {
+    if (selectedIssueNumbers.has(issueNumber)) {
+      selectedIssueNumbers.delete(issueNumber);
+    } else {
+      selectedIssueNumbers.add(issueNumber);
+    }
+    updateBatchBar();
+  }
+  async function launchPackagedSession() {
+    const selected = issues.filter((i) => selectedIssueNumbers.has(i.number));
+    if (selected.length === 0 || !currentProject) return;
+    const promptText = buildConsolidatedIssuePrompt(selected);
+    const title = `Packaged Tasks (${selected.length}): ${selected.map((i) => `#${i.number}`).join(", ")}`.slice(0, 150);
+    try {
+      addLog(`Launching packaged session for ${selected.length} issues...`);
+      const res = await host.startSession({
+        projectId: currentProject.id,
+        worktree: false,
+        providerId: "github-task-board",
+        id: `package-${Date.now()}`,
+        title,
+        text: promptText,
+        data: {
+          packaged: true,
+          issueNumbers: selected.map((i) => i.number)
+        }
+      });
+      clearSelection();
+      await host.toast({
+        kind: "success",
+        message: `Launched packaged session with ${selected.length} issues!`
+      });
+      if (res.sessionId) {
+        void host.openSession(res.sessionId);
+      }
+    } catch (err) {
+      addLog(`Failed to start packaged session: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to package issues: ${err.message || "Unknown error"}` });
+    }
+  }
+  async function launchBatchSeparateSessions() {
+    const selected = issues.filter((i) => selectedIssueNumbers.has(i.number));
+    if (selected.length === 0 || !currentProject) return;
+    clearSelection();
+    await host.toast({ kind: "info", message: `Launching ${selected.length} agent sessions...` });
+    let successCount = 0;
+    for (const issue of selected) {
+      try {
+        const payload = {
+          projectId: currentProject.id,
+          worktree: false,
+          providerId: "github-task-board",
+          id: String(issue.number),
+          title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
+          url: (issue.html_url || "").slice(0, 1e3),
+          text: `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}\n\n${issue.body ? `### Description:\n${issue.body}\n\n` : ""}Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`,
+          data: {
+            issueNumber: issue.number
+          }
+        };
+        await host.startSession(payload);
+        void updateIssueStatus(issue, "in-progress");
+        successCount++;
+      } catch (err) {
+        addLog(`Failed to start session for #${issue.number}: ${err.message}`, "error");
+      }
+    }
+    await host.toast({ kind: "success", message: `Successfully launched ${successCount} of ${selected.length} sessions.` });
+  }
+  async function attachSelectedIssues() {
+    const selected = issues.filter((i) => selectedIssueNumbers.has(i.number));
+    if (selected.length === 0) return;
+    for (const issue of selected) {
+      try {
+        const payload = buildIssueAttachPayload(issue);
+        await host.attach(payload);
+      } catch {}
+    }
+    clearSelection();
+    await host.toast({ kind: "success", message: `Attached ${selected.length} issue chips to composer` });
   }
   var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
 
@@ -3353,6 +3508,37 @@ Instructions for the Agent:
     if (elRadioWorktreeIssue) {
       elRadioWorktreeIssue.addEventListener("change", () => {
         syncPreflightBranchInput();
+      });
+    }
+    if (elBtnBatchPackage) {
+      elBtnBatchPackage.addEventListener("click", () => {
+        void launchPackagedSession();
+      });
+    }
+    if (elBtnBatchStart) {
+      elBtnBatchStart.addEventListener("click", () => {
+        void launchBatchSeparateSessions();
+      });
+    }
+    if (elBtnBatchAttach) {
+      elBtnBatchAttach.addEventListener("click", () => {
+        void attachSelectedIssues();
+      });
+    }
+    if (elBtnBatchDeselect) {
+      elBtnBatchDeselect.addEventListener("click", () => {
+        clearSelection();
+      });
+    }
+    if (elBtnStartTagIssues) {
+      elBtnStartTagIssues.addEventListener("click", () => {
+        if (filterTag === "all") return;
+        const taggedIssues = issues.filter((i) =>
+          (i.labels || []).some((l) => (typeof l === "string" ? l : l.name || "") === filterTag)
+        );
+        taggedIssues.forEach((i) => selectedIssueNumbers.add(i.number));
+        updateBatchBar();
+        void host.toast({ kind: "info", message: `Selected ${taggedIssues.length} issues with tag "${filterTag}"` });
       });
     }
     setupDragAndDrop();

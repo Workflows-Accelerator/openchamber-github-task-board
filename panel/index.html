@@ -566,6 +566,58 @@
       border: 1px solid var(--border);
     }
 
+    /* Card Selection & Checkbox */
+    .card.is-selected {
+      border-color: var(--prim);
+      background: color-mix(in srgb, var(--prim) 7%, var(--surf));
+    }
+    .card-checkbox {
+      width: 14px;
+      height: 14px;
+      cursor: pointer;
+      accent-color: var(--prim);
+      margin: 0;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      flex-shrink: 0;
+    }
+    .card:hover .card-checkbox,
+    .card.is-selected .card-checkbox,
+    body.selection-active .card-checkbox {
+      opacity: 1;
+    }
+
+    /* Floating Batch Action Bar */
+    .batch-bar {
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surf-elevated);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+      z-index: 1000;
+      animation: batchSlideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes batchSlideUp {
+      from { transform: translate(-50%, 20px); opacity: 0; }
+      to { transform: translate(-50%, 0); opacity: 1; }
+    }
+    .batch-badge {
+      font-size: 11px;
+      font-weight: 600;
+      background: var(--prim-subtle);
+      color: var(--prim);
+      padding: 2px 8px;
+      border-radius: 12px;
+      white-space: nowrap;
+    }
+
     /* Live Agent Pulsing Dot */
     .agent-pill {
       display: inline-flex;
@@ -1175,6 +1227,7 @@
         <option value="all">All Tags</option>
       </select>
     </div>
+    <button class="btn btn-sm btn-primary" id="btnStartTagIssues" style="display: none;" title="Start all filtered issues with this tag">Start Tag Issues</button>
     <button class="btn btn-sm" id="btnResetFilters" style="display: none;">Reset</button>
   </div>
 
@@ -1407,6 +1460,23 @@
       </button>
     </div>
   </aside>
+
+  <!-- Floating Batch Action Bar -->
+  <div class="batch-bar" id="batchActionBar" style="display: none;">
+    <span class="batch-badge" id="batchCountBadge">0 selected</span>
+    <button class="btn btn-sm btn-primary" id="btnBatchPackage" title="Combine all selected issues into a single unified agent session">
+      <span>Package (1 Session)</span>
+    </button>
+    <button class="btn btn-sm" id="btnBatchStart" title="Launch separate agent sessions for each selected issue">
+      <span>Batch Start</span>
+    </button>
+    <button class="btn btn-sm" id="btnBatchAttach" title="Attach all selected issue chips to composer">
+      <span>Attach to Chat</span>
+    </button>
+    <button class="btn btn-sm" id="btnBatchDeselect" title="Clear selection">
+      <span>Clear</span>
+    </button>
+  </div>
 
   <!-- Pre-Flight Worktree Config Modal -->
   <div class="modal-backdrop" id="preflightModalBackdrop">

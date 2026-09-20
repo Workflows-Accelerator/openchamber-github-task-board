@@ -677,4 +677,60 @@ test('buildLaunchSessionPayload defaults to worktree: false (workspace-first)', 
   assert.equal(payloadWorktree.data.branch, 'worktree-tag-frontend');
 });
 
+export function buildConsolidatedIssuePrompt(issues) {
+  if (!issues || issues.length === 0) return '';
+  const issueNumbers = issues.map((i) => `#${i.number}`).join(', ');
+  let prompt = `You are assigned to work on multiple packaged GitHub Issues: ${issueNumbers}\n\n`;
+  prompt += `### Packaged Tasks Summary (${issues.length} items):\n`;
+  issues.forEach((issue) => {
+    prompt += `- Issue #${issue.number}: ${issue.title}\n`;
+  });
+  prompt += '\n---\n\n';
+
+  issues.forEach((issue, idx) => {
+    prompt += `## Task ${idx + 1} of ${issues.length}: #${issue.number} ${issue.title}\n\n`;
+    if (issue.body) {
+      prompt += `### Overview & Context:\n${issue.body.trim()}\n\n`;
+    }
+    if (issue.subtasks && issue.subtasks.length > 0) {
+      prompt += `### Actionable Subtasks Checklist:\n`;
+      issue.subtasks.forEach((s) => {
+        prompt += `- [${s.completed ? 'x' : ' '}] ${s.text}\n`;
+      });
+      prompt += '\n';
+    }
+    prompt += '---\n\n';
+  });
+
+  prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
+  return prompt;
+}
+
+test('buildConsolidatedIssuePrompt consolidates multiple issues into structured brief', () => {
+  const issues = [
+    {
+      number: 8,
+      title: 'Attach chip directly from card',
+      body: 'Allow clicking attach button on cards directly.',
+      subtasks: [{ text: 'Add button', completed: true }, { text: 'Wire handler', completed: false }],
+    },
+    {
+      number: 9,
+      title: 'Task priority management',
+      body: 'Standardize priority labels and add grouping.',
+      subtasks: [{ text: 'Add priority dropdown', completed: false }],
+    },
+  ];
+
+  const result = buildConsolidatedIssuePrompt(issues);
+  assert.ok(result.includes('multiple packaged GitHub Issues: #8, #9'));
+  assert.ok(result.includes('### Packaged Tasks Summary (2 items):'));
+  assert.ok(result.includes('## Task 1 of 2: #8 Attach chip directly from card'));
+  assert.ok(result.includes('- [x] Add button'));
+  assert.ok(result.includes('- [ ] Wire handler'));
+  assert.ok(result.includes('## Task 2 of 2: #9 Task priority management'));
+  assert.ok(result.includes('- [ ] Add priority dropdown'));
+  assert.ok(result.includes('Please inspect the codebase, address all packaged issues'));
+});
+
 
