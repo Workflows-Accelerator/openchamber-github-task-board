@@ -332,10 +332,464 @@
       overflow-y: hidden;
     }
 
-    /* Switch between List and Kanban when container >= 680px or data-layout="kanban" */
+    /* Switch between List, Kanban, and Graph when data-layout is set */
     body[data-layout="kanban"] .status-tabs { display: none; }
     body[data-layout="kanban"] .list-view { display: none; }
     body[data-layout="kanban"] .kanban-view { display: flex; }
+    body[data-layout="kanban"] .graph-view { display: none; }
+
+    /* Mode 3: Dependency Graph Waterfall View */
+    .graph-view {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      background: var(--bg);
+      position: relative;
+    }
+
+    body[data-layout="graph"] .status-tabs { display: none; }
+    body[data-layout="graph"] .list-view { display: none; }
+    body[data-layout="graph"] .kanban-view { display: none; }
+    body[data-layout="graph"] .graph-view { display: flex; }
+
+    /* Graph Toolbar & Controls */
+    .graph-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 12px;
+      background: var(--surf);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      flex-wrap: wrap;
+    }
+
+    .graph-theme-pills {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      overflow-x: auto;
+      scrollbar-width: none;
+      min-width: 0;
+      flex: 1;
+    }
+    .graph-theme-pills::-webkit-scrollbar { display: none; }
+
+    .graph-theme-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 9px;
+      background: var(--surf-subtle);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--fg-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .graph-theme-chip:hover {
+      background: var(--surf-hover);
+      color: var(--fg);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    .graph-theme-chip.active {
+      background: var(--prim-subtle);
+      border-color: var(--prim);
+      color: var(--fg);
+      font-weight: 600;
+    }
+    .graph-theme-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--dot-color, var(--prim));
+    }
+
+    .graph-controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .graph-toggle-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--fg-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .graph-toggle-label input { cursor: pointer; }
+
+    .graph-stats {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-pill-frontier {
+      background: var(--succ-subtle) !important;
+      color: var(--succ) !important;
+      border: 1px solid rgba(16, 185, 129, 0.3) !important;
+      font-weight: 600;
+    }
+    .status-pill-blocked {
+      background: var(--warn-subtle) !important;
+      color: var(--warn) !important;
+      border: 1px solid rgba(245, 158, 11, 0.3) !important;
+    }
+
+    /* Graph Canvas Area */
+    .graph-canvas-container {
+      flex: 1;
+      position: relative;
+      overflow: auto;
+      min-width: 0;
+      min-height: 0;
+      background-image: radial-gradient(var(--border) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    .graph-canvas {
+      position: relative;
+      min-width: 100%;
+      min-height: 100%;
+      padding: 32px 24px 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-sizing: border-box;
+    }
+
+    /* SVG Edges Overlay */
+    .graph-svg-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 2;
+    }
+
+    .graph-edge {
+      fill: none;
+      stroke-width: 2;
+      transition: stroke 0.15s ease, stroke-width 0.15s ease;
+      cursor: pointer;
+      pointer-events: stroke;
+    }
+    .graph-edge:hover {
+      stroke: var(--prim) !important;
+      stroke-width: 3.5 !important;
+    }
+    .graph-edge-open {
+      stroke: rgba(255, 255, 255, 0.28);
+    }
+    .graph-edge-frontier {
+      stroke: var(--succ);
+      stroke-width: 2.4;
+    }
+    .graph-edge-closed {
+      stroke: rgba(255, 255, 255, 0.1);
+      stroke-dasharray: 4 3;
+    }
+    .graph-edge-crosstheme {
+      stroke: var(--warn);
+      stroke-width: 2;
+    }
+    .graph-edge-drag {
+      stroke: var(--prim);
+      stroke-width: 2.5;
+      stroke-dasharray: 6 4;
+      animation: graphDash 1s linear infinite;
+    }
+    @keyframes graphDash {
+      to { stroke-dashoffset: -20; }
+    }
+
+    /* Waterfall Layers */
+    .graph-layers {
+      display: flex;
+      flex-direction: column;
+      gap: 56px;
+      width: 100%;
+      position: relative;
+      z-index: 3;
+      align-items: center;
+    }
+
+    .graph-layer-row {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      gap: 14px;
+      position: relative;
+    }
+
+    .graph-layer-header {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 12px;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      color: var(--fg-muted);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+    }
+    .graph-layer-header-num {
+      background: var(--surf-muted);
+      padding: 1px 6px;
+      border-radius: 8px;
+      color: var(--fg);
+    }
+
+    .graph-layer-cards {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 24px;
+      max-width: 100%;
+    }
+
+    /* Graph Card */
+    .graph-card {
+      width: 240px;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-left: 3.5px solid var(--card-theme-color, var(--border));
+      border-radius: var(--rad);
+      padding: 9px 11px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+      user-select: none;
+    }
+    .graph-card:hover {
+      border-color: var(--prim);
+      border-left-color: var(--card-theme-color, var(--prim));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+    }
+    .graph-card.graph-card-frontier {
+      border-color: var(--succ);
+      box-shadow: 0 0 0 1px var(--succ), 0 0 16px rgba(16, 185, 129, 0.22);
+    }
+    .graph-card.graph-card-done {
+      opacity: 0.55;
+      background: var(--surf-muted);
+    }
+    .graph-card.graph-card-done .graph-card-title {
+      text-decoration: line-through;
+      color: var(--fg-muted);
+    }
+    .graph-card.graph-card-blocked {
+      border-style: dashed;
+      border-left-style: solid;
+    }
+
+    .graph-frontier-flag {
+      position: absolute;
+      top: -8px;
+      right: 10px;
+      z-index: 4;
+      font-size: 8.5px;
+      font-weight: 800;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      background: var(--succ);
+      color: #ffffff;
+      border-radius: 4px;
+      padding: 1.5px 6px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+    .graph-card-head {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .graph-card-check {
+      cursor: pointer;
+      accent-color: var(--succ);
+    }
+    .graph-card-num {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--fg-muted);
+    }
+    .graph-card-theme {
+      font-size: 9.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: var(--surf-subtle);
+      color: var(--card-theme-color, var(--fg-muted));
+      max-width: 80px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .graph-card-priority {
+      margin-left: auto;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    .graph-card-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--fg);
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      word-break: break-word;
+    }
+
+    .graph-card-meta {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 2px;
+      font-size: 10px;
+    }
+    .graph-badge-blocked {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--warn-subtle);
+      color: var(--warn);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+    .graph-badge-impact {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: var(--prim-subtle);
+      color: var(--prim);
+      padding: 1px 5px;
+      border-radius: 3px;
+      font-weight: 600;
+    }
+    .graph-badge-subtasks {
+      margin-left: auto;
+      color: var(--fg-faint);
+    }
+
+    /* Connector Ports */
+    .graph-port {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--surf);
+      border: 2px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: crosshair;
+      z-index: 5;
+      transition: all 0.15s ease;
+    }
+    .graph-port:hover {
+      background: var(--prim);
+      border-color: #fff;
+      transform: translateX(-50%) scale(1.2);
+    }
+    .graph-port-in {
+      top: -9px;
+    }
+    .graph-port-out {
+      bottom: -9px;
+    }
+    .graph-port-out::after {
+      content: "↓";
+      font-size: 10px;
+      font-weight: 800;
+      color: var(--fg-muted);
+      line-height: 1;
+    }
+    .graph-port:hover::after {
+      color: #fff;
+    }
+    .graph-card.drop-target-active {
+      outline: 2px dashed var(--prim);
+      outline-offset: 3px;
+    }
+
+    /* Edge Tooltip and Quick Blocker Picker */
+    .graph-edge-hint {
+      position: absolute;
+      background: var(--surf-elevated, #20242b);
+      border: 1px solid var(--border);
+      color: var(--fg);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      z-index: 10;
+      pointer-events: auto;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .graph-edge-remove-btn {
+      background: var(--err);
+      color: #fff;
+      border: none;
+      border-radius: 3px;
+      padding: 1px 5px;
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .graph-card-add-dep-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: transparent;
+      border: 1px dashed var(--border);
+      border-radius: 3px;
+      color: var(--fg-muted);
+      padding: 1px 5px;
+      font-size: 9.5px;
+      cursor: pointer;
+    }
+    .graph-card-add-dep-btn:hover {
+      background: var(--surf-subtle);
+      color: var(--fg);
+      border-color: var(--prim);
+    }
 
     .kanban-col {
       flex: 1;
@@ -1602,6 +2056,11 @@
         <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>
       </button>
 
+      <!-- Dependency Graph Toggle (Inline on wide screen) -->
+      <button class="btn btn-icon toolbar-btn-optional" id="btnGraphToggle" title="Dependency Waterfall Graph">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>
+      </button>
+
       <!-- Archive Toggle (Inline on wide screen) -->
       <button class="btn btn-icon toolbar-btn-optional" id="btnArchiveToggle" title="Toggle Archived Issues View">
         <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
@@ -1634,6 +2093,10 @@
             <div class="popover-item" id="menuItemToggleLayout" role="menuitem" tabindex="0">
               <span class="popover-item-title" id="txtMenuLayout">Board / List View</span>
               <span class="popover-item-sub">Switch Kanban & List</span>
+            </div>
+            <div class="popover-item" id="menuItemToggleGraph" role="menuitem" tabindex="0">
+              <span class="popover-item-title" id="txtMenuGraph">Dependency Graph</span>
+              <span class="popover-item-sub">Waterfall tasks & dependencies</span>
             </div>
             <div class="popover-item" id="menuItemToggleArchive" role="menuitem" tabindex="0">
               <span class="popover-item-title" id="txtMenuArchive">Archived Issues</span>
@@ -1770,6 +2233,50 @@
           <span class="status-pill" id="kCountDone">0</span>
         </div>
         <div class="kanban-cards" id="kCardsDone" data-status="done"></div>
+      </div>
+    </main>
+
+    <!-- Mode 3: Dependency Graph Waterfall View -->
+    <main class="graph-view" id="graphViewContainer">
+      <div class="graph-topbar" id="graphTopbar">
+        <div class="graph-theme-pills" id="graphThemePills"></div>
+        <div class="graph-controls">
+          <label class="graph-toggle-label">
+            <input type="checkbox" id="chkGraphShowDone" checked />
+            <span>Show Done</span>
+          </label>
+          <div class="graph-stats" id="graphStats">
+            <span class="status-pill status-pill-frontier" id="graphStatFrontier" title="Unblocked actionable tasks">⚡ 0 Ready</span>
+            <span class="status-pill status-pill-blocked" id="graphStatBlocked" title="Tasks waiting on blockers">🔒 0 Blocked</span>
+            <span class="status-pill" id="graphStatDone" title="Completed tasks">✓ 0 Done</span>
+          </div>
+        </div>
+      </div>
+      <div class="graph-canvas-container" id="graphCanvasContainer">
+        <div class="graph-canvas" id="graphCanvas">
+          <svg class="graph-svg-overlay" id="graphSvgOverlay" aria-hidden="true">
+            <defs>
+              <marker id="wf-arrow-open" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(255, 255, 255, 0.4)" />
+              </marker>
+              <marker id="wf-arrow-frontier" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--succ)" />
+              </marker>
+              <marker id="wf-arrow-closed" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(255, 255, 255, 0.15)" />
+              </marker>
+              <marker id="wf-arrow-crosstheme" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--warn)" />
+              </marker>
+              <marker id="wf-arrow-drag" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="var(--prim)" />
+              </marker>
+            </defs>
+            <g id="graphEdgesLayer"></g>
+            <g id="graphDragLayer"></g>
+          </svg>
+          <div class="graph-layers" id="graphLayers"></div>
+        </div>
       </div>
     </main>
 
@@ -1949,6 +2456,34 @@
         </div>
         <div class="check-list" id="drawerCommentsContainer">
           <div style="color: var(--fg-faint); font-size: 12px;">No comments yet.</div>
+        </div>
+      </div>
+
+      <!-- Dependencies Section -->
+      <div>
+        <div class="section-label">
+          <span>Dependencies</span>
+          <span id="drawerDepsCountBadge" class="status-pill">0</span>
+        </div>
+        <div id="drawerDependenciesContainer" style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="drawer-dep-block">
+            <div style="font-size: 11px; font-weight: 600; color: var(--fg-muted); margin-bottom: 4px;">Blocked by:</div>
+            <div id="drawerBlockedByList" style="display: flex; flex-wrap: wrap; gap: 5px; min-height: 20px;">
+              <span style="color: var(--fg-faint); font-size: 11px;">None</span>
+            </div>
+          </div>
+          <div class="drawer-dep-block">
+            <div style="font-size: 11px; font-weight: 600; color: var(--fg-muted); margin-bottom: 4px;">Blocks (Waiting):</div>
+            <div id="drawerBlocksList" style="display: flex; flex-wrap: wrap; gap: 5px; min-height: 20px;">
+              <span style="color: var(--fg-faint); font-size: 11px;">None</span>
+            </div>
+          </div>
+          <div style="display: flex; gap: 6px; margin-top: 4px;">
+            <select id="selectAddBlocker" class="form-ctrl select-sm" style="flex: 1;">
+              <option value="">+ Add blocker / dependency...</option>
+            </select>
+            <button class="btn btn-sm btn-primary" id="btnAddBlockerConfirm" style="display: none;">Add</button>
+          </div>
         </div>
       </div>
 

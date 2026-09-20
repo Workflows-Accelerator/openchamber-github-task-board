@@ -6,6 +6,8 @@ import {
   removeDependencyFromMarkdown,
   extractIssueReferences,
   buildDependencyGraph,
+  calculateEdgePath,
+  detectCycle,
 } from '../panel/core.ts';
 
 test('parseIssueDependencies extracts blocker numbers from various standard formats', () => {
@@ -175,3 +177,72 @@ test('buildDependencyGraph handles circular dependencies safely without infinite
   assert.equal(graph.layers.length, 1);
   assert.equal(graph.layers[0].length, 2);
 });
+
+test('calculateEdgePath generates valid SVG cubic bezier path coordinates', () => {
+  const sourceRect = { left: 100, top: 50, right: 300, bottom: 150, width: 200, height: 100 };
+  const targetRect = { left: 200, top: 300, right: 400, bottom: 400, width: 200, height: 100 };
+  const canvasRect = { left: 50, top: 20 };
+
+  const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
+  // Source bottom center: x = 100 + 100 - 50 = 150, y = 150 - 20 = 130
+  // Target top center: x = 200 + 100 - 50 = 250, y = 300 - 20 = 280
+  assert.equal(pathData.x1, 150);
+  assert.equal(pathData.y1, 130);
+  assert.equal(pathData.x2, 250);
+  assert.equal(pathData.y2, 280);
+  assert.match(pathData.d, /^M 150 130 C/);
+  assert.match(pathData.d, /250 280$/);
+});
+
+test('detectCycle detects when adding a dependency would introduce a cycle', () => {
+  const issues = [
+    { number: 1, title: 'A', body: '', state: 'open', labels: [] },
+    { number: 2, title: 'B', body: 'Blocked by #1', state: 'open', labels: [] },
+    { number: 3, title: 'C', body: 'Blocked by #2', state: 'open', labels: [] },
+  ];
+
+  // If we try to make Issue 1 blocked by Issue 3 (blocker = 3, target = 1):
+  // Since 3 is already blocked by 2 which is blocked by 1, making 1 blocked by 3 creates a cycle 1 -> 3 -> 2 -> 1!
+  assert.equal(detectCycle(issues, 3, 1), true);
+
+  // Normal valid dependency: making 3 also blocked by 1 (no cycle)
+  assert.equal(detectCycle(issues, 1, 3), false);
+
+  // Self dependency is a cycle
+  assert.equal(detectCycle(issues, 1, 1), true);
+});
+
+test('buildDependencyGraph clusters by theme and ranks themes by task count', () => {
+  const issues = [
+    { number: 1, title: 'Auth API', body: '', state: 'open', labels: [{ name: 'theme:auth' }] },
+    { number: 2, title: 'Auth UI', body: 'Blocked by #1', state: 'open', labels: [{ name: 'theme:auth' }] },
+    { number: 3, title: 'Billing Setup', body: '', state: 'open', labels: [{ name: 'theme:billing' }] },
+    { number: 4, title: 'Docs', body: '', state: 'open', labels: [] },
+  ];
+
+  const graph = buildDependencyGraph(issues);
+  assert.deepEqual(graph.themes, ['auth', 'billing', 'No Theme']);
+  assert.equal(graph.themeNodes.get('auth').length, 2);
+  assert.equal(graph.themeNodes.get('billing').length, 1);
+  assert.equal(graph.themeNodes.get('No Theme').length, 1);
+});
+
+test('add and remove dependency round-trip preserves other markdown content', () => {
+  const initial = '## Overview\nImplement feature.\n\n### Tasks\n- [ ] write test';
+  const withDep = addDependencyToMarkdown(initial, 42);
+  assert.ok(withDep.includes('Blocked by #42'));
+  assert.ok(withDep.includes('## Overview'));
+  assert.ok(withDep.includes('- [ ] write test'));
+
+  const withSecondDep = addDependencyToMarkdown(withDep, 88);
+  assert.ok(withSecondDep.includes('#42, #88') || withSecondDep.includes('#42') && withSecondDep.includes('#88'));
+
+  const removedFirst = removeDependencyFromMarkdown(withSecondDep, 42);
+  assert.ok(!removedFirst.includes('#42'));
+  assert.ok(removedFirst.includes('#88'));
+
+  const removedAll = removeDependencyFromMarkdown(removedFirst, 88);
+  assert.equal(removedAll, initial);
+});
+
+

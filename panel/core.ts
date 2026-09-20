@@ -869,3 +869,53 @@ export function buildDependencyGraph(issues: Issue[]): DependencyGraph {
     frontierNodes,
   };
 }
+
+export interface RectLike {
+  left: number;
+  top: number;
+  right?: number;
+  bottom?: number;
+  width?: number;
+  height?: number;
+}
+
+export function calculateEdgePath(
+  sourceRect: RectLike,
+  targetRect: RectLike,
+  canvasRect: { left: number; top: number }
+): { d: string; x1: number; y1: number; x2: number; y2: number } {
+  const sWidth = sourceRect.width ?? (sourceRect.right !== undefined ? sourceRect.right - sourceRect.left : 0);
+  const sHeight = sourceRect.height ?? (sourceRect.bottom !== undefined ? sourceRect.bottom - sourceRect.top : 0);
+  const tWidth = targetRect.width ?? (targetRect.right !== undefined ? targetRect.right - targetRect.left : 0);
+
+  const x1 = Math.round(sourceRect.left + sWidth / 2 - canvasRect.left);
+  const y1 = Math.round((sourceRect.bottom !== undefined ? sourceRect.bottom : sourceRect.top + sHeight) - canvasRect.top);
+  const x2 = Math.round(targetRect.left + tWidth / 2 - canvasRect.left);
+  const y2 = Math.round(targetRect.top - canvasRect.top);
+
+  const dy = y2 - y1;
+  const curvature = Math.max(30, Math.abs(dy) * 0.5);
+
+  const d = `M ${x1} ${y1} C ${x1} ${y1 + curvature}, ${x2} ${y2 - curvature}, ${x2} ${y2}`;
+  return { d, x1, y1, x2, y2 };
+}
+
+export function detectCycle(issues: Issue[], newBlockerNum: number, targetNum: number): boolean {
+  if (newBlockerNum === targetNum) return true;
+  const blockerMap = new Map<number, number[]>();
+  for (const issue of issues) {
+    blockerMap.set(issue.number, parseIssueDependencies(issue.body));
+  }
+
+  const visited = new Set<number>();
+  const queue = [...(blockerMap.get(newBlockerNum) || [])];
+  while (queue.length > 0) {
+    const curr = queue.shift()!;
+    if (curr === targetNum) return true;
+    if (visited.has(curr)) continue;
+    visited.add(curr);
+    queue.push(...(blockerMap.get(curr) || []));
+  }
+  return false;
+}
+

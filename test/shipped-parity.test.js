@@ -49,7 +49,7 @@ const JS_FUNCS = [
   'resolveAiIssuePrompt', 'resolveAiAlignmentPrompt', 'buildIssueAttachPayload',
   'buildMultiIssueAttachPayload', 'buildConsolidatedIssuePrompt', 'serializeDraftSubtasks',
   'parseIssueDependencies', 'addDependencyToMarkdown', 'removeDependencyFromMarkdown',
-  'extractIssueReferences', 'buildDependencyGraph',
+  'extractIssueReferences', 'buildDependencyGraph', 'calculateEdgePath', 'detectCycle',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -67,7 +67,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 29);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 31);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
