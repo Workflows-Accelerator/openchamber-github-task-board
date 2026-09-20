@@ -777,8 +777,9 @@ async function githubRequest(
     if (res.status >= 200 && res.status < 300) {
       addLog(`API ${method} ${path} -> ${res.status}`, 'succ');
       hideBanner();
-      if (res.headers) {
-        const rem = res.headers['x-ratelimit-remaining'];
+      const resHeaders = (res as any).headers;
+      if (resHeaders) {
+        const rem = resHeaders['x-ratelimit-remaining'];
         if (rem) lastRateLimitRemaining = parseInt(rem, 10);
       }
       return typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
@@ -830,7 +831,7 @@ async function streamRemainingPages(repo: string, storageKey: string, startPage:
       issues = mergeIssuePages(issues, nextIssues);
       issueCache.set(repo, { timestamp: Date.now(), issues });
       if (host?.storage) {
-        void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+        void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any);
       }
       renderViews();
       addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
@@ -865,7 +866,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
   // 2. Instant persistent storage check (0ms UI latency on fresh reload)
   if (!force && issues.length === 0 && host?.storage) {
     try {
-      const stored = await host.storage.get(storageKey);
+      const stored = (await host.storage.get(storageKey)) as any;
       if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
         issues = stored.issues;
         issueCache.set(currentRepo, { timestamp: stored.timestamp || Date.now(), issues });
@@ -900,7 +901,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       issues,
     });
     if (host?.storage) {
-      void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+      void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any);
     }
 
     addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, 'succ');
@@ -918,7 +919,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     if (issues.length > 0) {
       // Never break: keep showing cached issues!
       if (host?.toast) {
-        void host.toast({ kind: 'warning', message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
+        void host.toast({ kind: 'info', message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
       }
     } else {
       renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || 'Check GitHub integration tokens'}`);

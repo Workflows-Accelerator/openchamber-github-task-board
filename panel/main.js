@@ -4157,8 +4157,9 @@ Blocked by ${blockerRef}`;
       if (res.status >= 200 && res.status < 300) {
         addLog(`API ${method} ${path} -> ${res.status}`, "succ");
         hideBanner();
-        if (res.headers) {
-          const rem = res.headers["x-ratelimit-remaining"];
+        const resHeaders = res.headers;
+        if (resHeaders) {
+          const rem = resHeaders["x-ratelimit-remaining"];
           if (rem) lastRateLimitRemaining = parseInt(rem, 10);
         }
         return typeof res.body === "string" ? JSON.parse(res.body) : res.body;
@@ -4278,7 +4279,7 @@ Blocked by ${blockerRef}`;
       addLog(`Failed to fetch fresh issues: ${err.message}`, "error");
       if (issues.length > 0) {
         if (host?.toast) {
-          void host.toast({ kind: "warning", message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
+          void host.toast({ kind: "info", message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
         }
       } else {
         renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || "Check GitHub integration tokens"}`);
