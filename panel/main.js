@@ -1609,6 +1609,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     }
     userSelectedTab = false;
     currentRepo = repo;
+    clearSelection();
     elTxtRepoLabel.textContent = repo.split("/")[1] || repo;
     elTxtRepoLabel.title = `Project: ${currentProject?.name || "Workspace"} \u2022 Repo: ${repo} (via ${source})`;
     addLog(`Switched repository to ${repo} [${source}]`, "succ");
@@ -2237,10 +2238,12 @@ ${issue.body || ""}`.slice(0, 15e3);
     void host.setBadge(blockedCount > 0 ? blockedCount : null);
   }
   function renderEmptyState(message) {
-    elListViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
-    Object.keys(kanbanCardContainers).forEach((col) => {
-      kanbanCardContainers[col].innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
-    });
+    if (elListViewContainer) {
+      elListViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+    }
+    if (elKanbanViewContainer) {
+      elKanbanViewContainer.innerHTML = `<div class="empty-box" style="margin: auto;">${escapeHtml(message)}</div>`;
+    }
   }
   function renderArchiveView(archivedIssues) {
     elListViewContainer.innerHTML = "";
@@ -2521,7 +2524,7 @@ ${issue.body || ""}`.slice(0, 15e3);
       });
     }
     card.addEventListener("click", (e) => {
-      if (e.target.closest("button, a, select")) return;
+      if (e.target.closest("button, a, select, input")) return;
       openDrawer(issue);
     });
     if (inKanban) {
@@ -2542,20 +2545,48 @@ ${issue.body || ""}`.slice(0, 15e3);
   }
   function renderListView(filteredIssues) {
     elListViewContainer.innerHTML = "";
-    const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn(i) === activeTab);
-    if (listItems.length === 0) {
-      elListViewContainer.innerHTML = `
-      <div class="empty-box">
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
-        <span>No issues match this view</span>
-      </div>
-    `;
-      return;
+    if (currentGroupBy === "status") {
+      const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn(i) === activeTab);
+      if (listItems.length === 0) {
+        elListViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+          <span>No issues match this view</span>
+        </div>
+      `;
+        return;
+      }
+      listItems.forEach((issue) => {
+        const card = buildCardElement(issue, false);
+        elListViewContainer.appendChild(card);
+      });
+    } else {
+      const groups = groupIssuesBy(filteredIssues, currentGroupBy);
+      let totalRendered = 0;
+      groups.forEach((grp) => {
+        if (grp.issues.length === 0) return;
+        totalRendered += grp.issues.length;
+        const header = document.createElement("div");
+        header.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 6px 4px 4px 4px; font-size: 11px; font-weight: 600; color: var(--fg-muted); border-bottom: 1px solid var(--border-subtle); margin-top: 4px;";
+        header.innerHTML = `
+          <span>${escapeHtml(grp.title)}</span>
+          <span class="status-pill">${grp.issues.length}</span>
+        `;
+        elListViewContainer.appendChild(header);
+        grp.issues.forEach((issue) => {
+          const card = buildCardElement(issue, false);
+          elListViewContainer.appendChild(card);
+        });
+      });
+      if (totalRendered === 0) {
+        elListViewContainer.innerHTML = `
+          <div class="empty-box">
+            <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+            <span>No issues match this view</span>
+          </div>
+        `;
+      }
     }
-    listItems.forEach((issue) => {
-      const card = buildCardElement(issue, false);
-      elListViewContainer.appendChild(card);
-    });
   }
   function renderKanbanView(filteredIssues) {
     elKanbanViewContainer.innerHTML = "";
@@ -2611,6 +2642,10 @@ ${issue.body || ""}`.slice(0, 15e3);
     });
   }
   function applyLayoutMode() {
+    if (showArchivedOnly) {
+      document.body.removeAttribute("data-layout");
+      return;
+    }
     isWideScreen = window.innerWidth >= 680;
     let useKanban = false;
     if (userLayoutPreference === "kanban") useKanban = true;
@@ -3145,6 +3180,9 @@ ${issue.body || ""}`.slice(0, 15e3);
         }
       });
       clearSelection();
+      selected.forEach((issue) => {
+        void updateIssueStatus(issue, "in-progress");
+      });
       await host.toast({
         kind: "success",
         message: `Launched packaged session with ${selected.length} issues!`
