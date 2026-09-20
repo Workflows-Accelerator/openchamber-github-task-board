@@ -35,7 +35,7 @@ export interface SessionInfo {
   outcome?: string | null;
   worktree?: string | { name?: string; branch?: string; directory?: string; status?: string } | null;
   directory?: string | null;
-  items?: Array<{ id?: string; providerId?: string; data?: any }>;
+  items?: Array<{ id?: string; providerId?: string; data?: any; url?: string }>;
 }
 
 export function extractWorktreeName(wt: any): string {
@@ -2983,6 +2983,7 @@ async function launchPackagedSession(): Promise<void> {
       providerId: 'github-task-board',
       id: `package-${Date.now()}`,
       title,
+      url: selected[0]?.html_url || (currentRepo ? `https://github.com/${currentRepo}/issues` : ''),
       text: promptText,
       data: {
         packaged: true,
@@ -3636,7 +3637,7 @@ async function launchScratchpadAlignmentSession(): Promise<void> {
   const firstLine = text.split('\n')[0].replace(/[^a-zA-Z0-9\s-_]/g, '').trim().slice(0, 45);
   try {
     addLog(`Launching AI alignment & clarification session for scratch pad...`);
-    const res = await host.startSession({
+    const res = await (host.startSession as any)({
       projectId: currentProject?.id,
       worktree: false,
       model: activeModel !== 'default' ? activeModel : undefined,
@@ -3694,7 +3695,7 @@ async function launchScratchpadDirectSession(): Promise<void> {
   const firstLine = text.split('\n')[0].replace(/[^a-zA-Z0-9\s-_]/g, '').trim().slice(0, 45);
   try {
     addLog(`Launching AI issue drafting session directly from scratch pad...`);
-    const res = await host.startSession({
+    const res = await (host.startSession as any)({
       projectId: currentProject?.id,
       worktree: false,
       model: activeModel !== 'default' ? activeModel : undefined,
@@ -3846,7 +3847,7 @@ async function launchAiIssueSession(): Promise<void> {
   try {
     const modelDesc = activeModel === 'default' ? 'auto' : activeModel;
     addLog(`Launching AI issue drafting session (model: ${modelDesc})...`);
-    const res = await host.startSession({
+    const res = await (host.startSession as any)({
       projectId: currentProject?.id,
       worktree: false, // Issue drafting is administrative; no worktree churn
       model: activeModel !== 'default' ? activeModel : undefined,
@@ -4172,9 +4173,9 @@ function initEvents(): void {
 
   // Load persisted collapsed group state
   if (host?.storage) {
-    void host.storage.get<string[]>('collapsed_groups').then((stored) => {
+    void host.storage.get('collapsed_groups').then((stored: any) => {
       if (Array.isArray(stored)) {
-        stored.forEach((k) => collapsedGroupKeys.add(k));
+        stored.forEach((k: string) => collapsedGroupKeys.add(k));
         renderViews();
       }
     });
