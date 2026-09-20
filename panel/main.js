@@ -4080,20 +4080,15 @@ Instructions for the Alignment Session:
   }
   function handleScratchpadInput() {
     if (!elScratchpadTextarea) return;
-    const text = elScratchpadTextarea.value;
-    updateScratchpadStats(text);
     setScratchpadSaveStatus("Saving...");
-    try {
-      localStorage.setItem(getScratchpadLocalKey(), text);
-    } catch {}
     clearTimeout(scratchpadSaveTimer);
-    scratchpadSaveTimer = setTimeout(async () => {
+    scratchpadSaveTimer = setTimeout(() => {
+      const text = elScratchpadTextarea?.value ?? "";
+      updateScratchpadStats(text);
       try {
-        await host.storage.set(getScratchpadStorageKey(), text);
-        setScratchpadSaveStatus("Saved");
-      } catch {
-        setScratchpadSaveStatus("Saved");
-      }
+        localStorage.setItem(getScratchpadLocalKey(), text);
+      } catch {}
+      void host.storage.set(getScratchpadStorageKey(), text).then(() => setScratchpadSaveStatus("Saved")).catch(() => setScratchpadSaveStatus("Saved"));
     }, 300);
   }
   function insertIntoScratchpad(snippet) {
@@ -4296,12 +4291,22 @@ Instructions for the Alignment Session:
       elAiIssueInput.value = val;
     }
   }
+  let draftSaveTimer = null;
   function saveDraftAiInput(text) {
     const key = currentRepo ? `ai_draft_input_${currentRepo}` : "ai_draft_input_global";
+    const localKey = `openchamber_ai_draft_${currentRepo || "global"}`;
     try {
-      localStorage.setItem(`openchamber_ai_draft_${currentRepo || "global"}`, text);
+      if (text) localStorage.setItem(localKey, text);
+      else localStorage.removeItem(localKey);
     } catch {}
-    void host.storage.set(key, text);
+    clearTimeout(draftSaveTimer);
+    if (!text) {
+      void host.storage.delete(key).catch(() => {});
+      return;
+    }
+    draftSaveTimer = setTimeout(() => {
+      void host.storage.set(key, text).catch(() => {});
+    }, 300);
   }
   async function openNewIssueModal() {
     if (!currentRepo) {

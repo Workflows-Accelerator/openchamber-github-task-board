@@ -3158,21 +3158,20 @@ function updateScratchpadStats(text: string): void {
 
 function handleScratchpadInput(): void {
   if (!elScratchpadTextarea) return;
-  const text = elScratchpadTextarea.value;
-  updateScratchpadStats(text);
+  // Show the pending state at once, but batch the re-parse and both writes so a
+  // fast typist does not trigger a stats recompute and a storage round-trip per keystroke.
   setScratchpadSaveStatus('Saving...');
-  try {
-    localStorage.setItem(getScratchpadLocalKey(), text);
-  } catch {}
-
   clearTimeout(scratchpadSaveTimer);
-  scratchpadSaveTimer = setTimeout(async () => {
+  scratchpadSaveTimer = setTimeout(() => {
+    const text = elScratchpadTextarea?.value ?? '';
+    updateScratchpadStats(text);
     try {
-      await host.storage.set(getScratchpadStorageKey(), text);
-      setScratchpadSaveStatus('Saved');
-    } catch {
-      setScratchpadSaveStatus('Saved');
-    }
+      localStorage.setItem(getScratchpadLocalKey(), text);
+    } catch {}
+    void host.storage
+      .set(getScratchpadStorageKey(), text)
+      .then(() => setScratchpadSaveStatus('Saved'))
+      .catch(() => setScratchpadSaveStatus('Saved'));
   }, 300);
 }
 
@@ -3394,12 +3393,23 @@ async function loadDraftAiInput(): Promise<void> {
   }
 }
 
+let draftSaveTimer: any = null;
 function saveDraftAiInput(text: string): void {
   const key = currentRepo ? `ai_draft_input_${currentRepo}` : 'ai_draft_input_global';
+  const localKey = `openchamber_ai_draft_${currentRepo || 'global'}`;
   try {
-    localStorage.setItem(`openchamber_ai_draft_${currentRepo || 'global'}`, text);
+    if (text) localStorage.setItem(localKey, text);
+    else localStorage.removeItem(localKey);
   } catch {}
-  void host.storage.set(key, text);
+  clearTimeout(draftSaveTimer);
+  if (!text) {
+    // Clearing must be immediate so a relaunch cannot resurrect a stale draft.
+    void host.storage.delete(key).catch(() => {});
+    return;
+  }
+  draftSaveTimer = setTimeout(() => {
+    void host.storage.set(key, text).catch(() => {});
+  }, 300);
 }
 
 async function openNewIssueModal(): Promise<void> {
