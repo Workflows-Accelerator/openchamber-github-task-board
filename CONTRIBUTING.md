@@ -101,6 +101,21 @@ The core algorithms reside in `panel/core.ts` (tested by unit tests) and are bun
 
 ---
 
+## Releasing & Version Bumping
+
+OpenChamber enables users to update installed extensions directly inside the application whenever a new version is published. In-app update detection is driven by the `version` field in `package.json`.
+
+When preparing a release:
+1. **Bump `version` in `package.json`** following [Semantic Versioning](https://semver.org/):
+   - **Patch (`1.0.1`)**: Backwards-compatible bug fixes and small tweaks.
+   - **Minor (`1.1.0`)**: New features, substantial performance optimizations, or UI additions.
+   - **Major (`2.0.0`)**: Breaking contract changes or architectural shifts.
+2. **Rebuild & test**: Run `npm run build && npm run typecheck && npm test`.
+3. **Commit & push**: Commit the version bump (e.g. `chore(release): bump version to 1.1.0`) and push to the repository.
+4. OpenChamber will automatically surface the update in the extensions manager for all users.
+
+---
+
 ## Pull Request Checklist
 
 Before submitting your PR, confirm the following:
@@ -109,6 +124,7 @@ Before submitting your PR, confirm the following:
 - [ ] `npm test` passes all tests (including parity and regression suites).
 - [ ] `npm run build` was executed, and `panel/main.js` reflects the latest `panel/*.ts` changes.
 - [ ] Commit messages follow the Conventional Commits specification.
+- [ ] `package.json` version is bumped if this change should trigger an in-app extension update.
 - [ ] No extraneous files, commented-out debug code, or secrets are included in the diff.
 
 Thank you for helping build an exceptional developer experience for OpenChamber!
