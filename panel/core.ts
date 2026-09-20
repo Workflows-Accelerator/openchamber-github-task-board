@@ -963,7 +963,7 @@ export function buildSessionIndex(sessions: any[]): Map<number, any> {
       }
     }
     if (typeof s.title === 'string') {
-      const matches = s.title.matchAll(/#(\d+)\b/g);
+      const matches = s.title.matchAll(/#(\d+)(?=[^0-9]|$)/g);
       for (const m of matches) {
         register(parseInt(m[1], 10), s);
       }
@@ -971,7 +971,7 @@ export function buildSessionIndex(sessions: any[]): Map<number, any> {
     const wt = s.worktree;
     const wtStr = typeof wt === 'string' ? wt : (wt?.name || wt?.branch || wt?.directory || '');
     if (wtStr) {
-      const wtMatches = wtStr.matchAll(/\bissue-(\d+)\b/g);
+      const wtMatches = wtStr.matchAll(/(?:^|[^a-zA-Z0-9])issue-(\d+)(?=[^0-9]|$)/gi);
       for (const m of wtMatches) {
         register(parseInt(m[1], 10), s);
       }

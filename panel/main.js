@@ -3547,7 +3547,7 @@ Blocked by ${blockerRef}`;
         }
       }
       if (typeof s.title === "string") {
-        const matches = s.title.matchAll(/#(\d+)\b/g);
+        const matches = s.title.matchAll(/#(\d+)(?=[^0-9]|$)/g);
         for (const m of matches) {
           register(parseInt(m[1], 10), s);
         }
@@ -3555,7 +3555,7 @@ Blocked by ${blockerRef}`;
       const wt = s.worktree;
       const wtStr = typeof wt === "string" ? wt : wt?.name || wt?.branch || wt?.directory || "";
       if (wtStr) {
-        const wtMatches = wtStr.matchAll(/\bissue-(\d+)\b/g);
+        const wtMatches = wtStr.matchAll(/(?:^|[^a-zA-Z0-9])issue-(\d+)(?=[^0-9]|$)/gi);
         for (const m of wtMatches) {
           register(parseInt(m[1], 10), s);
         }
@@ -3647,6 +3647,7 @@ Blocked by ${blockerRef}`;
   var isLoading = false;
   var currentRenderedLayout = null;
   var lastRateLimitRemaining = null;
+  var activeStreamEpoch = 0;
   var collapsedGroupKeys = /* @__PURE__ */ new Set();
   function toggleGroupCollapse(key) {
     if (collapsedGroupKeys.has(key)) {
@@ -3843,6 +3844,8 @@ Blocked by ${blockerRef}`;
       unsubWorktrees();
       unsubWorktrees = null;
     }
+    sessions = [];
+    sessionIndex = /* @__PURE__ */ new Map();
     try {
       unsubSessions = await host.onSessions(projectId, (sessSnap) => {
         const prevSessions = sessions;
@@ -4015,6 +4018,8 @@ Blocked by ${blockerRef}`;
     }
     userSelectedTab = false;
     currentRepo = repo;
+    issues = [];
+    showAllDoneIssues = false;
     clearSelection();
     elTxtRepoLabel.textContent = repo.split("/")[1] || repo;
     elTxtRepoLabel.title = `Project: ${currentProject?.name || "Workspace"} \u2022 Repo: ${repo} (via ${source})`;
@@ -4194,16 +4199,16 @@ Blocked by ${blockerRef}`;
       void fetchIssues();
     }
   }
-  async function streamRemainingPages(repo, storageKey, startPage) {
+  async function streamRemainingPages(repo, storageKey, startPage, epoch) {
     let page = startPage;
     const MAX_PAGES = 10;
-    while (page <= MAX_PAGES && currentRepo === repo) {
+    while (page <= MAX_PAGES && currentRepo === repo && activeStreamEpoch === epoch) {
       try {
         const nextRaw = await githubRequest("GET", `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
         const nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
-        if (nextItems.length === 0) break;
+        if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
         const nextIssues = normalizeGithubIssues(nextItems);
-        if (currentRepo !== repo) break;
+        if (currentRepo !== repo || activeStreamEpoch !== epoch) break;
         issues = mergeIssuePages(issues, nextIssues);
         issueCache.set(repo, { timestamp: Date.now(), issues });
         if (host?.storage) {
@@ -4222,6 +4227,7 @@ Blocked by ${blockerRef}`;
   async function fetchIssues(force = false) {
     if (!currentRepo) return;
     const storageKey = `cached_issues_${currentRepo}`;
+    const streamEpoch = ++activeStreamEpoch;
     if (!force && issueCache.has(currentRepo)) {
       const cached = issueCache.get(currentRepo);
       if (Date.now() - cached.timestamp < ISSUE_CACHE_TTL_MS) {
@@ -4273,7 +4279,7 @@ Blocked by ${blockerRef}`;
       }
       renderViews();
       if (page1Items.length >= 100) {
-        void streamRemainingPages(currentRepo, storageKey, 2);
+        void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch);
       }
     } catch (err) {
       addLog(`Failed to fetch fresh issues: ${err.message}`, "error");
@@ -5044,7 +5050,7 @@ Blocked by ${blockerRef}`;
       });
       let displayIssues = colIssues;
       let doneRemaining = 0;
-      if (col.id === "done") {
+      if (col.id === "done" && !searchQuery.trim()) {
         const scoped = scopeDoneIssues(colIssues, 25, showAllDoneIssues);
         displayIssues = scoped.visible;
         doneRemaining = scoped.remaining;

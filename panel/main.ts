@@ -127,6 +127,7 @@ let draggedIssueNumber: number | null = null;
 let isLoading: boolean = false;
 let currentRenderedLayout: 'list' | 'kanban' | 'graph' | null = null;
 let lastRateLimitRemaining: number | null = null;
+let activeStreamEpoch = 0;
 let collapsedGroupKeys = new Set<string>();
 
 export function toggleGroupCollapse(key: string): boolean {
@@ -394,6 +395,8 @@ async function watchActiveProject(projectId: string): Promise<void> {
     unsubWorktrees();
     unsubWorktrees = null;
   }
+  sessions = [];
+  sessionIndex = new Map();
 
   try {
     unsubSessions = await host.onSessions(projectId, (sessSnap) => {
@@ -611,6 +614,8 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
   }
   userSelectedTab = false;
   currentRepo = repo;
+  issues = [];
+  showAllDoneIssues = false;
   clearSelection();
   elTxtRepoLabel.textContent = repo.split('/')[1] || repo;
   elTxtRepoLabel.title = `Project: ${currentProject?.name || 'Workspace'} • Repo: ${repo} (via ${source})`;
@@ -816,17 +821,17 @@ async function promptCustomToken(): Promise<void> {
   }
 }
 
-async function streamRemainingPages(repo: string, storageKey: string, startPage: number): Promise<void> {
+async function streamRemainingPages(repo: string, storageKey: string, startPage: number, epoch: number): Promise<void> {
   let page = startPage;
   const MAX_PAGES = 10; // Supports up to 1,000 issues while keeping memory bounded
-  while (page <= MAX_PAGES && currentRepo === repo) {
+  while (page <= MAX_PAGES && currentRepo === repo && activeStreamEpoch === epoch) {
     try {
       const nextRaw = await githubRequest('GET', `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
       const nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
-      if (nextItems.length === 0) break;
+      if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
 
       const nextIssues = normalizeGithubIssues(nextItems);
-      if (currentRepo !== repo) break;
+      if (currentRepo !== repo || activeStreamEpoch !== epoch) break;
 
       issues = mergeIssuePages(issues, nextIssues);
       issueCache.set(repo, { timestamp: Date.now(), issues });
@@ -848,6 +853,7 @@ async function streamRemainingPages(repo: string, storageKey: string, startPage:
 async function fetchIssues(force: boolean = false): Promise<void> {
   if (!currentRepo) return;
   const storageKey = `cached_issues_${currentRepo}`;
+  const streamEpoch = ++activeStreamEpoch;
 
   // 1. Instant in-memory cache check (0ms UI latency)
   if (!force && issueCache.has(currentRepo)) {
@@ -912,7 +918,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
 
     // Background streaming for remaining pages if 100 items returned
     if (page1Items.length >= 100) {
-      void streamRemainingPages(currentRepo, storageKey, 2);
+      void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch);
     }
   } catch (err: any) {
     addLog(`Failed to fetch fresh issues: ${err.message}`, 'error');
@@ -1886,7 +1892,7 @@ function renderKanbanView(filteredIssues: Issue[]): void {
 
     let displayIssues = colIssues;
     let doneRemaining = 0;
-    if (col.id === 'done') {
+    if (col.id === 'done' && !searchQuery.trim()) {
       const scoped = scopeDoneIssues(colIssues, 25, showAllDoneIssues);
       displayIssues = scoped.visible;
       doneRemaining = scoped.remaining;

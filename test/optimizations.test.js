@@ -101,6 +101,7 @@ test('buildSessionIndex maps sessions to issue numbers with O(1) lookups and pri
     { id: 's2', title: 'Running Task #12', activity: 'running', worktree: 'issue-12-bugfix' },
     { id: 's3', title: 'Session with items', activity: 'idle', items: [{ id: '42' }, { data: { issueNumbers: [50, 51] } }] },
     { id: 's4', title: 'Multiple #100 and #101', activity: 'idle' },
+    { id: 's5', title: 'feat(#77_auth): login flow', activity: 'idle', worktree: 'user/issue-77_auth' },
   ];
 
   const index = buildSessionIndex(sessions);
@@ -109,6 +110,7 @@ test('buildSessionIndex maps sessions to issue numbers with O(1) lookups and pri
   assert.equal(index.get(42)?.id, 's3');
   assert.equal(index.get(50)?.id, 's3');
   assert.equal(index.get(51)?.id, 's3');
+  assert.equal(index.get(77)?.id, 's5');
   assert.equal(index.get(100)?.id, 's4');
   assert.equal(index.get(101)?.id, 's4');
   assert.equal(index.get(999), undefined);
