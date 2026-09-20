@@ -1928,6 +1928,59 @@ ${issue.body || ""}`.slice(0, 15e3);
       }
     };
   }
+  function buildMultiIssueAttachPayload(issues2, repo = "") {
+    if (!issues2 || issues2.length === 0) {
+      return {
+        providerId: "github-task-board",
+        id: "bundle-empty",
+        title: "No Issues Selected",
+        url: repo ? `https://github.com/${repo}/issues` : "",
+        text: "No issues attached.",
+        data: { issueNumbers: [], count: 0, isMulti: true }
+      };
+    }
+    if (issues2.length === 1) {
+      return buildIssueAttachPayload(issues2[0]);
+    }
+    const numbers = issues2.map((i) => i.number);
+    const id = `bundle-${numbers.join("-")}`.slice(0, 120);
+    const titlesPreview = issues2.map((i) => `#${i.number}`).join(", ");
+    const title = `[${issues2.length} Issues] ${titlesPreview}`.slice(0, 150);
+    const primaryUrl = (issues2[0]?.html_url || (repo ? `https://github.com/${repo}/issues` : "")).slice(0, 1e3);
+
+    let text = `## Attached GitHub Issues (${issues2.length} items)\n`;
+    if (repo) text += `Repository: ${repo}\n\n`;
+
+    issues2.forEach((issue) => {
+      text += `### Issue #${issue.number}: ${issue.title || "Untitled"}\n`;
+      if (issue.html_url) text += `Link: ${issue.html_url}\n`;
+      const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "")).filter(Boolean);
+      if (labelNames.length > 0) text += `Labels: ${labelNames.join(", ")}\n`;
+      if (issue.subtasks && issue.subtasks.length > 0) {
+        text += `Subtasks:\n`;
+        issue.subtasks.forEach((s) => {
+          text += `- [${s.completed ? "x" : " "}] ${s.text}\n`;
+        });
+      }
+      if (issue.body) {
+        text += `\nDescription:\n${issue.body.trim()}\n`;
+      }
+      text += `\n---\n\n`;
+    });
+
+    return {
+      providerId: "github-task-board",
+      id,
+      title,
+      url: primaryUrl,
+      text: text.slice(0, 15e3),
+      data: {
+        issueNumbers: numbers,
+        count: issues2.length,
+        isMulti: true
+      }
+    };
+  }
   function isIssueClosed(issue) {
     if (!issue) return false;
     if (typeof issue.state === "string" && issue.state.toLowerCase() === "closed") {
@@ -3403,14 +3456,29 @@ ${issue.body || ""}`.slice(0, 15e3);
   async function attachSelectedIssues() {
     const selected = issues.filter((i) => selectedIssueNumbers.has(i.number));
     if (selected.length === 0) return;
-    for (const issue of selected) {
-      try {
-        const payload = buildIssueAttachPayload(issue);
-        await host.attach(payload);
-      } catch {}
+    try {
+      const payload = selected.length === 1
+        ? buildIssueAttachPayload(selected[0])
+        : buildMultiIssueAttachPayload(selected, currentRepo);
+      await host.attach(payload);
+
+      if (selected.length > 1 && typeof host.compose === "function") {
+        try {
+          await host.compose({ text: `Focusing on issues: ${selected.map((i) => `#${i.number}`).join(", ")}` });
+        } catch {}
+      }
+
+      clearSelection();
+      await host.toast({
+        kind: "success",
+        message: selected.length === 1
+          ? `Attached issue #${selected[0].number} to composer`
+          : `Attached ${selected.length} issues in consolidated chip to composer`
+      });
+    } catch (err) {
+      addLog(`Failed to attach selected issues: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to attach: ${err?.message || "Unknown error"}` });
     }
-    clearSelection();
-    await host.toast({ kind: "success", message: `Attached ${selected.length} issue chips to composer` });
   }
   var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
 

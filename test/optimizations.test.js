@@ -103,6 +103,60 @@ export function buildIssueAttachPayload(issue) {
   };
 }
 
+export function buildMultiIssueAttachPayload(issues, repo = '') {
+  if (!issues || issues.length === 0) {
+    return {
+      providerId: 'github-task-board',
+      id: 'bundle-empty',
+      title: 'No Issues Selected',
+      url: repo ? `https://github.com/${repo}/issues` : '',
+      text: 'No issues attached.',
+      data: { issueNumbers: [], count: 0, isMulti: true },
+    };
+  }
+  if (issues.length === 1) {
+    return buildIssueAttachPayload(issues[0]);
+  }
+  const numbers = issues.map((i) => i.number);
+  const id = `bundle-${numbers.join('-')}`.slice(0, 120);
+  const titlesPreview = issues.map((i) => `#${i.number}`).join(', ');
+  const title = `[${issues.length} Issues] ${titlesPreview}`.slice(0, 150);
+  const primaryUrl = (issues[0]?.html_url || (repo ? `https://github.com/${repo}/issues` : '')).slice(0, 1000);
+
+  let text = `## Attached GitHub Issues (${issues.length} items)\n`;
+  if (repo) text += `Repository: ${repo}\n\n`;
+
+  issues.forEach((issue) => {
+    text += `### Issue #${issue.number}: ${issue.title || 'Untitled'}\n`;
+    if (issue.html_url) text += `Link: ${issue.html_url}\n`;
+    const labelNames = (issue.labels || []).map((l) => (typeof l === 'string' ? l : l.name || '')).filter(Boolean);
+    if (labelNames.length > 0) text += `Labels: ${labelNames.join(', ')}\n`;
+    if (issue.subtasks && issue.subtasks.length > 0) {
+      text += `Subtasks:\n`;
+      issue.subtasks.forEach((s) => {
+        text += `- [${s.completed ? 'x' : ' '}] ${s.text}\n`;
+      });
+    }
+    if (issue.body) {
+      text += `\nDescription:\n${issue.body.trim()}\n`;
+    }
+    text += `\n---\n\n`;
+  });
+
+  return {
+    providerId: 'github-task-board',
+    id,
+    title,
+    url: primaryUrl,
+    text: text.slice(0, 15000),
+    data: {
+      issueNumbers: numbers,
+      count: issues.length,
+      isMulti: true,
+    },
+  };
+}
+
 test('buildIssueAttachPayload constructs valid OpenChamber attach payload', () => {
   const issue = {
     number: 8,
@@ -121,6 +175,39 @@ test('buildIssueAttachPayload constructs valid OpenChamber attach payload', () =
   assert.ok(payload.text.includes('Details about the attach chip'));
   assert.equal(payload.author, 'octocat');
   assert.deepEqual(payload.data, { issueNumber: 8 });
+});
+
+test('buildMultiIssueAttachPayload consolidates multiple issues into a single rich chip payload', () => {
+  const issues = [
+    {
+      number: 10,
+      title: 'First issue',
+      body: 'Body for ten',
+      html_url: 'https://github.com/owner/repo/issues/10',
+      labels: [{ name: 'priority:high' }],
+    },
+    {
+      number: 25,
+      title: 'Second issue',
+      body: 'Body for twenty five',
+      html_url: 'https://github.com/owner/repo/issues/25',
+      labels: [{ name: 'theme:auth' }],
+    },
+  ];
+
+  const payload = buildMultiIssueAttachPayload(issues, 'owner/repo');
+  assert.equal(payload.providerId, 'github-task-board');
+  assert.equal(payload.id, 'bundle-10-25');
+  assert.ok(payload.title.includes('2 Issues'));
+  assert.ok(payload.title.includes('#10'));
+  assert.ok(payload.title.includes('#25'));
+  assert.ok(payload.text.includes('Attached GitHub Issues (2 items)'));
+  assert.ok(payload.text.includes('Issue #10: First issue'));
+  assert.ok(payload.text.includes('Issue #25: Second issue'));
+  assert.ok(payload.text.includes('Body for ten'));
+  assert.ok(payload.text.includes('Body for twenty five'));
+  assert.deepEqual(payload.data.issueNumbers, [10, 25]);
+  assert.equal(payload.data.isMulti, true);
 });
 
 export function isIssueClosed(issue) {
