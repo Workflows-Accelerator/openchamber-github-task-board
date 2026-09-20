@@ -4936,6 +4936,21 @@ Blocked by ${blockerRef}`;
     elBtnViewKanban?.setAttribute("aria-checked", mode === "kanban" ? "true" : "false");
     elBtnViewGraph?.classList.toggle("active", mode === "graph");
     elBtnViewGraph?.setAttribute("aria-checked", mode === "graph" ? "true" : "false");
+    if (elBtnLayoutToggle) {
+      if (mode === "list") {
+        elBtnLayoutToggle.title = "View: List (click to switch to Board)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: List (click to switch to Board)");
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>';
+      } else if (mode === "kanban") {
+        elBtnLayoutToggle.title = "View: Board (click to switch to Graph)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: Board (click to switch to Graph)");
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>';
+      } else {
+        elBtnLayoutToggle.title = "View: Graph (click to switch to List)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: Graph (click to switch to List)");
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>';
+      }
+    }
   }
   function applyLayoutMode() {
     if (showArchivedOnly) {
@@ -6740,6 +6755,10 @@ ${issue.body}
         const cur = document.body.getAttribute("data-layout");
         userLayoutPreference = cur === "kanban" ? "graph" : cur === "graph" ? "list" : "kanban";
         applyLayoutMode();
+        if (host?.toast) {
+          const name = userLayoutPreference === "kanban" ? "Board" : userLayoutPreference === "graph" ? "Graph" : "List";
+          void host.toast({ kind: "info", message: `Switched to ${name} view` });
+        }
       });
     }
     if (elBtnGraphToggle) {

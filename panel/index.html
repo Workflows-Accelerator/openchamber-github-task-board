@@ -127,6 +127,9 @@
     .toolbar-right .toolbar-btn-optional {
       display: none;
     }
+    .toolbar-right .btn-cycle-views {
+      display: inline-flex;
+    }
     .toolbar-right .more-menu-wrapper {
       display: inline-flex;
       position: relative;
@@ -137,6 +140,9 @@
     @media (min-width: 660px) {
       .toolbar-right .toolbar-btn-optional {
         display: inline-flex;
+      }
+      .toolbar-right .btn-cycle-views {
+        display: none !important;
       }
       .toolbar-right .more-menu-wrapper {
         display: none;
@@ -2144,6 +2150,11 @@
           <span class="view-mode-label">Graph</span>
         </button>
       </div>
+
+      <!-- Single Button to cycle views in sidebar mode -->
+      <button class="btn btn-icon btn-cycle-views" id="btnLayoutToggle" title="View: List (click to switch to Board)" aria-label="Cycle view mode">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+      </button>
 
       <!-- Archive Toggle (Inline on wide screen) -->
       <button class="btn btn-icon toolbar-btn-optional" id="btnArchiveToggle" title="Toggle Archived Issues View">
