@@ -733,4 +733,73 @@ test('buildConsolidatedIssuePrompt consolidates multiple issues into structured 
   assert.ok(result.includes('Please inspect the codebase, address all packaged issues'));
 });
 
+const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
+
+export function updateSubtaskInMarkdown(body, lineIndex, completed) {
+  const lines = body.split('\n');
+  if (lineIndex >= 0 && lineIndex < lines.length) {
+    const match = lines[lineIndex].match(checklistRegex);
+    if (match) {
+      const mark = completed ? 'x' : ' ';
+      lines[lineIndex] = `${match[1]}${mark}${match[3]}${match[4]}`;
+    }
+  }
+  return lines.join('\n');
+}
+
+test('verify Task Board live sync flow: detection, checklist update, and session attachment', () => {
+  // 1. Verify issue detection across columns
+  const rawIssue = {
+    number: 2,
+    title: 'test(board): verify task board live sync with GitHub Issues',
+    body: 'Automated test issue.\n\n### Subtasks\n- [ ] Verify issue detection\n- [ ] Test checklist toggle\n- [ ] Verify agent worktree launch',
+    state: 'open',
+    labels: [{ name: 'status:todo' }],
+  };
+  assert.equal(resolveIssueColumn(rawIssue, []), 'todo');
+
+  // 2. Test subtask checklist toggle syncs markdown body
+  // Line index 3 corresponds to "- [ ] Verify issue detection"
+  const lines = rawIssue.body.split('\n');
+  const targetIdx = lines.findIndex((l) => l.includes('Verify issue detection'));
+  assert.ok(targetIdx >= 0);
+  const updatedBody = updateSubtaskInMarkdown(rawIssue.body, targetIdx, true);
+  assert.ok(updatedBody.includes('- [x] Verify issue detection'));
+
+  // 3. Verify session launch updates status to in-progress
+  const runningSession = [{ id: 'sess-2', title: '#2 test(board)', activity: 'running' }];
+  assert.equal(resolveIssueColumn(rawIssue, runningSession), 'in-progress');
+
+  // 4. Verify completed session transitions to in-review
+  const idleSession = [{ id: 'sess-2', title: '#2 test(board)', activity: 'idle' }];
+  const inProgressIssue = { ...rawIssue, labels: [{ name: 'status:in-progress' }] };
+  assert.equal(resolveIssueColumn(inProgressIssue, idleSession), 'in-review');
+
+  // 5. Verify closing issue moves to done
+  const closedIssue = { ...rawIssue, state: 'closed' };
+  assert.equal(resolveIssueColumn(closedIssue, idleSession), 'done');
+});
+
+export function validateBranchSlug(branchName) {
+  return /^(issue-\d+-[a-z0-9_-]+|worktree-tag-[a-z0-9_-]+)$/.test(branchName);
+}
+
+export function validateSessionTitle(sessionTitle) {
+  return /^#\d+:?\s+.+$/.test(sessionTitle) || /^Packaged Tasks \(\d+\):.+$/.test(sessionTitle);
+}
+
+test('validateBranchSlug and validateSessionTitle enforce standardized triage conventions', () => {
+  // Valid branch slugs
+  assert.equal(validateBranchSlug('issue-5-session-naming'), true);
+  assert.equal(validateBranchSlug('worktree-tag-voice-supervisor'), true);
+  assert.equal(validateBranchSlug('worktree-tag-frontend'), true);
+  assert.equal(validateBranchSlug('arbitrary-branch'), false);
+
+  // Valid session display titles
+  assert.equal(validateSessionTitle('#5: Clean session and branch naming'), true);
+  assert.equal(validateSessionTitle('#5 Clean session and branch naming'), true);
+  assert.equal(validateSessionTitle('Packaged Tasks (2): #8, #9'), true);
+  assert.equal(validateSessionTitle('random title'), false);
+});
+
 
