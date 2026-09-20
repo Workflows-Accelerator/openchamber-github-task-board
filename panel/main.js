@@ -3931,6 +3931,288 @@ Instructions for the Alignment Session:
     }
     return `${cleanBody}\n\n### Actionable Subtasks Checklist:\n\n${checklistBlock}`;
   }
+  var DEPENDENCY_LINE_REGEX = /(?:^|\n)\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*([^\n]+)/gi;
+  function parseIssueDependencies(body) {
+    if (!body || typeof body !== "string") return [];
+    const numbers = new Set();
+    const matches = body.matchAll(DEPENDENCY_LINE_REGEX);
+    for (const match of matches) {
+      const text = match[1] || "";
+      const numMatches = text.matchAll(/#(\d+)/g);
+      for (const nm of numMatches) {
+        const n = parseInt(nm[1], 10);
+        if (Number.isFinite(n) && n > 0) {
+          numbers.add(n);
+        }
+      }
+    }
+    return Array.from(numbers).sort((a, b) => a - b);
+  }
+  function addDependencyToMarkdown(body, blockerNumber) {
+    const blockerRef = `#${blockerNumber}`;
+    const existingBlockers = parseIssueDependencies(body);
+    if (existingBlockers.includes(blockerNumber)) {
+      return body || "";
+    }
+    const raw = (body || "").trim();
+    if (!raw) {
+      return `Blocked by ${blockerRef}`;
+    }
+    const lines = raw.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on)(?:\s*:)?\s*/i.test(line)) {
+        lines[i] = `${line.trimEnd()}, ${blockerRef}`;
+        return lines.join("\n");
+      }
+    }
+    return `${raw}\n\nBlocked by ${blockerRef}`;
+  }
+  function removeDependencyFromMarkdown(body, blockerNumber) {
+    if (!body || typeof body !== "string") return "";
+    const blockerRef = `#${blockerNumber}`;
+    if (!body.includes(blockerRef)) return body;
+    const lines = body.split("\n");
+    const newLines = [];
+    for (const line of lines) {
+      if (/^\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*/i.test(line)) {
+        if (line.includes(blockerRef)) {
+          const currentNums = Array.from(line.matchAll(/#(\d+)/g))
+            .map((m) => parseInt(m[1], 10))
+            .filter((n) => n !== blockerNumber);
+          if (currentNums.length > 0) {
+            const prefixMatch = line.match(/^(\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*)/i);
+            const prefix = prefixMatch ? prefixMatch[1] : "Blocked by ";
+            newLines.push(`${prefix}${currentNums.map((n) => `#${n}`).join(", ")}`);
+          }
+          continue;
+        }
+      }
+      newLines.push(line);
+    }
+    return newLines.join("\n").trim();
+  }
+  function extractIssueReferences(body, selfNumber) {
+    if (!body || typeof body !== "string") return [];
+    const numbers = new Set();
+    const matches = body.matchAll(/#(\d+)/g);
+    for (const m of matches) {
+      const n = parseInt(m[1], 10);
+      if (Number.isFinite(n) && n > 0 && n !== selfNumber) {
+        numbers.add(n);
+      }
+    }
+    return Array.from(numbers).sort((a, b) => a - b);
+  }
+  function buildDependencyGraph(issuesList) {
+    const nodes = new Map();
+    const byNumber = new Map();
+    for (const issue of issuesList) {
+      byNumber.set(issue.number, issue);
+    }
+    for (const issue of issuesList) {
+      const isDone =
+        issue.state === "closed" ||
+        (issue.labels || []).some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase() === "status:done");
+      const blockers = parseIssueDependencies(issue.body);
+      const openBlockers = blockers.filter((num) => {
+        const target = byNumber.get(num);
+        if (!target) return true;
+        return (
+          target.state !== "closed" &&
+          !(target.labels || []).some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase() === "status:done")
+        );
+      });
+      const isFrontier = !isDone && openBlockers.length === 0;
+      const isBlocked = !isDone && openBlockers.length > 0;
+      let priority = "normal";
+      for (const l of issue.labels || []) {
+        const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+        if (name.startsWith("priority:")) {
+          priority = name.slice(9);
+          break;
+        }
+      }
+      nodes.set(issue.number, {
+        issue,
+        blockers,
+        openBlockers,
+        dependents: [],
+        openDependents: [],
+        downstreamImpact: 0,
+        isDone,
+        isFrontier,
+        isBlocked,
+        layer: 0,
+        theme: getIssueTheme(issue),
+        priority,
+      });
+    }
+    for (const node of nodes.values()) {
+      for (const blockerNum of node.blockers) {
+        const blockerNode = nodes.get(blockerNum);
+        if (blockerNode) {
+          blockerNode.dependents.push(node.issue.number);
+          if (!node.isDone) {
+            blockerNode.openDependents.push(node.issue.number);
+          }
+        }
+      }
+    }
+    for (const node of nodes.values()) {
+      if (node.isDone) {
+        node.downstreamImpact = 0;
+        continue;
+      }
+      const seen = new Set([node.issue.number]);
+      const queue = [...node.openDependents];
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        if (seen.has(curr)) continue;
+        seen.add(curr);
+        const currNode = nodes.get(curr);
+        if (currNode) {
+          queue.push(...currNode.openDependents);
+        }
+      }
+      node.downstreamImpact = seen.size - 1;
+    }
+    const openNodeNumbers = Array.from(nodes.values())
+      .filter((n) => !n.isDone)
+      .map((n) => n.issue.number);
+    const indices = new Map();
+    const lowLinks = new Map();
+    const stack = [];
+    const onStack = new Set();
+    const componentOf = new Map();
+    const components = [];
+    let nextIndex = 0;
+    const visit = (num) => {
+      const idx = nextIndex++;
+      indices.set(num, idx);
+      lowLinks.set(num, idx);
+      stack.push(num);
+      onStack.add(num);
+      const node = nodes.get(num);
+      const activeBlockers = (node?.openBlockers || []).filter((b) => nodes.has(b) && !nodes.get(b).isDone);
+      for (const blocker of activeBlockers) {
+        if (!indices.has(blocker)) {
+          visit(blocker);
+          lowLinks.set(num, Math.min(lowLinks.get(num), lowLinks.get(blocker)));
+        } else if (onStack.has(blocker)) {
+          lowLinks.set(num, Math.min(lowLinks.get(num), indices.get(blocker)));
+        }
+      }
+      if (lowLinks.get(num) === idx) {
+        const component = [];
+        while (stack.length > 0) {
+          const member = stack.pop();
+          onStack.delete(member);
+          componentOf.set(member, components.length);
+          component.push(member);
+          if (member === num) break;
+        }
+        components.push(component);
+      }
+    };
+    for (const num of openNodeNumbers) {
+      if (!indices.has(num)) {
+        visit(num);
+      }
+    }
+    const memoLayer = new Map();
+    const layerOfComponent = (compIdx) => {
+      const cached = memoLayer.get(compIdx);
+      if (cached !== undefined) return cached;
+      let maxBlockerLayer = -1;
+      for (const member of components[compIdx]) {
+        const memberNode = nodes.get(member);
+        if (!memberNode) continue;
+        for (const blocker of memberNode.openBlockers) {
+          const blockerComp = componentOf.get(blocker);
+          if (blockerComp !== undefined && blockerComp !== compIdx) {
+            maxBlockerLayer = Math.max(maxBlockerLayer, layerOfComponent(blockerComp));
+          }
+        }
+      }
+      const layer = maxBlockerLayer + 1;
+      memoLayer.set(compIdx, layer);
+      return layer;
+    };
+    for (const node of nodes.values()) {
+      if (node.isDone) {
+        node.layer = 0;
+      } else {
+        const comp = componentOf.get(node.issue.number);
+        node.layer = comp !== undefined ? layerOfComponent(comp) : 0;
+      }
+    }
+    let maxLayer = 0;
+    for (const node of nodes.values()) {
+      if (node.layer > maxLayer) maxLayer = node.layer;
+    }
+    const layers = Array.from({ length: maxLayer + 1 }, () => []);
+    for (const node of nodes.values()) {
+      layers[node.layer].push(node);
+    }
+    const pos = new Map();
+    layers[0].sort((a, b) => {
+      if (a.isDone !== b.isDone) return a.isDone ? 1 : -1;
+      if (a.isFrontier !== b.isFrontier) return a.isFrontier ? -1 : 1;
+      return b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number;
+    });
+    layers[0].forEach((n, idx) => pos.set(n.issue.number, idx));
+    for (let l = 1; l < layers.length; l++) {
+      const layer = layers[l];
+      const key = (n) => {
+        const blockerPositions = n.blockers.map((b) => pos.get(b)).filter((p) => p !== undefined);
+        return blockerPositions.length > 0
+          ? blockerPositions.reduce((acc, p) => acc + p, 0) / blockerPositions.length
+          : n.issue.number;
+      };
+      layer.sort((a, b) => key(a) - key(b) || b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number);
+      layer.forEach((n, idx) => pos.set(n.issue.number, idx));
+    }
+    const edges = [];
+    const themeNodes = new Map();
+    const frontierNodes = [];
+    for (const node of nodes.values()) {
+      if (node.isFrontier) {
+        frontierNodes.push(node);
+      }
+      let list = themeNodes.get(node.theme);
+      if (!list) {
+        list = [];
+        themeNodes.set(node.theme, list);
+      }
+      list.push(node);
+      for (const blockerNum of node.blockers) {
+        const blockerNode = nodes.get(blockerNum);
+        const isCrossTheme = blockerNode ? blockerNode.theme !== node.theme : false;
+        const isClosed = node.isDone || (blockerNode ? blockerNode.isDone : false);
+        edges.push({
+          from: blockerNum,
+          to: node.issue.number,
+          isCrossTheme,
+          isClosed,
+          isFrontier: node.isFrontier,
+        });
+      }
+    }
+    const themes = Array.from(themeNodes.keys()).sort((a, b) => {
+      if (a === "No Theme") return 1;
+      if (b === "No Theme") return -1;
+      return (themeNodes.get(b)?.length || 0) - (themeNodes.get(a)?.length || 0);
+    });
+    return {
+      nodes,
+      layers,
+      edges,
+      themes,
+      themeNodes,
+      frontierNodes,
+    };
+  }
   function isVagueIdea(issue) {
     if (!issue) return true;
     const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());

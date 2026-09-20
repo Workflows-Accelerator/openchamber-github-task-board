@@ -48,8 +48,10 @@ const JS_FUNCS = [
   'isVagueIdea', 'formatQuestionBadge', 'getIssueTheme', 'extractTaskThemes', 'parseScratchPadThemes',
   'resolveAiIssuePrompt', 'resolveAiAlignmentPrompt', 'buildIssueAttachPayload',
   'buildMultiIssueAttachPayload', 'buildConsolidatedIssuePrompt', 'serializeDraftSubtasks',
+  'parseIssueDependencies', 'addDependencyToMarkdown', 'removeDependencyFromMarkdown',
+  'extractIssueReferences', 'buildDependencyGraph',
 ];
-const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT'];
+const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
 function extract(marker) {
   const idx = MAIN_JS.indexOf(marker);
@@ -65,7 +67,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 23);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 29);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -157,4 +159,29 @@ test('attach payloads: shipped == core', () => {
   assert.deepEqual(Shipped.buildMultiIssueAttachPayload([], 'o/r'), Core.buildMultiIssueAttachPayload([], 'o/r'));
   assert.deepEqual(Shipped.buildMultiIssueAttachPayload([one], 'o/r'), Core.buildMultiIssueAttachPayload([one], 'o/r'));
   assert.deepEqual(Shipped.buildConsolidatedIssuePrompt(many), Core.buildConsolidatedIssuePrompt(many));
+});
+
+test('dependency helpers: shipped == core', () => {
+  const cases = [
+    'Blocked by #1, #2',
+    'Depends on #42\nBlocked by #5',
+    '- [ ] Requires: #100',
+    'No dependencies here',
+    '',
+  ];
+  for (const c of cases) {
+    assert.deepEqual(Shipped.parseIssueDependencies(c), Core.parseIssueDependencies(c), 'parseIssueDependencies: ' + c);
+    assert.equal(Shipped.addDependencyToMarkdown(c, 99), Core.addDependencyToMarkdown(c, 99));
+    assert.equal(Shipped.removeDependencyFromMarkdown(c, 1), Core.removeDependencyFromMarkdown(c, 1));
+    assert.deepEqual(Shipped.extractIssueReferences(c, 5), Core.extractIssueReferences(c, 5));
+  }
+  const testIssues = [
+    { number: 1, title: 'A', body: 'Blocked by #2', state: 'open', labels: [{ name: 'theme:core' }] },
+    { number: 2, title: 'B', body: '', state: 'open', labels: [{ name: 'theme:ui' }] },
+  ];
+  const sGraph = Shipped.buildDependencyGraph(testIssues);
+  const cGraph = Core.buildDependencyGraph(testIssues);
+  assert.equal(sGraph.layers.length, cGraph.layers.length);
+  assert.equal(sGraph.edges.length, cGraph.edges.length);
+  assert.deepEqual(Array.from(sGraph.nodes.keys()), Array.from(cGraph.nodes.keys()));
 });
