@@ -4307,7 +4307,7 @@ Instructions for the Alignment Session:
     } catch {}
     void host.storage.set(key, text);
   }
-  function openNewIssueModal() {
+  async function openNewIssueModal() {
     if (!currentRepo) {
       openRepoPopover();
       return;
@@ -4319,7 +4319,7 @@ Instructions for the Alignment Session:
     draftSubtasks = [];
     renderDraftSubtasks();
     if (elInputNewIssueDraftSubtask) elInputNewIssueDraftSubtask.value = "";
-    void loadDraftAiInput();
+    await loadDraftAiInput();
     elAiPromptConfigPanel.style.display = "none";
     setNewIssueMode("ai");
     void updateActiveModelBadge();
@@ -4800,7 +4800,7 @@ Instructions for the Alignment Session:
       });
     }
     elBtnNewIssue.addEventListener("click", () => {
-      openNewIssueModal();
+      void openNewIssueModal();
     });
     elBtnNewIssueClose.addEventListener("click", closeNewIssueModal);
     elBtnNewIssueCancel.addEventListener("click", closeNewIssueModal);
@@ -4915,10 +4915,10 @@ Instructions for the Alignment Session:
       });
     }
     if (elBtnScratchpadCopyToCreator) {
-      elBtnScratchpadCopyToCreator.addEventListener("click", () => {
+      elBtnScratchpadCopyToCreator.addEventListener("click", async () => {
         const text = elScratchpadTextarea?.value.trim() || "";
         closeScratchpadModal();
-        openNewIssueModal();
+        await openNewIssueModal();
         if (text && elAiIssueInput) {
           elAiIssueInput.value = text;
           saveDraftAiInput(text);

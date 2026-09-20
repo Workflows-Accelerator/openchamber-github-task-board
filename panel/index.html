@@ -113,27 +113,29 @@
       color: var(--fg);
     }
 
-    /* Toolbar Responsive & More Menu */
-    .toolbar-btn-optional {
+    /* Toolbar Responsive & More Menu
+       NOTE: selectors are scoped with .toolbar-right so they outrank the plain
+       .btn display rule regardless of source order. */
+    .toolbar-right .toolbar-btn-optional {
       display: none;
     }
-    .more-menu-wrapper {
+    .toolbar-right .more-menu-wrapper {
       display: inline-flex;
       position: relative;
     }
-    .btn-label-issue {
+    .toolbar-right .btn-label-issue {
       display: inline;
     }
     @media (min-width: 660px) {
-      .toolbar-btn-optional {
+      .toolbar-right .toolbar-btn-optional {
         display: inline-flex;
       }
-      .more-menu-wrapper {
+      .toolbar-right .more-menu-wrapper {
         display: none;
       }
     }
     @media (max-width: 420px) {
-      .btn-label-issue {
+      .toolbar-right .btn-label-issue {
         display: none;
       }
       .search-input {
@@ -186,6 +188,12 @@
     }
     .btn-primary:hover {
       opacity: 0.92;
+      /* keep the primary look on hover: this selector ties `.btn:hover` on
+         specificity (0,2,0) and wins by source order, but without these
+         declarations the generic .btn:hover would turn the button grey. */
+      background: var(--prim);
+      color: var(--prim-fg);
+      border-color: var(--prim);
     }
     .btn-sm {
       height: 22px;

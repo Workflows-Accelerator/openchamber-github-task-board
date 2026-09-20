@@ -3838,7 +3838,7 @@ function saveDraftAiInput(text: string): void {
   void host.storage.set(key, text);
 }
 
-function openNewIssueModal(): void {
+async function openNewIssueModal(): Promise<void> {
   if (!currentRepo) {
     openRepoPopover();
     return;
@@ -3850,7 +3850,9 @@ function openNewIssueModal(): void {
   draftSubtasks = [];
   renderDraftSubtasks();
   if (elInputNewIssueDraftSubtask) elInputNewIssueDraftSubtask.value = '';
-  void loadDraftAiInput();
+  // Await the persisted draft BEFORE callers may prefill the textarea, so a
+  // late-resolving load cannot clobber a value they just set.
+  await loadDraftAiInput();
   elAiPromptConfigPanel.style.display = 'none';
 
   setNewIssueMode('ai'); // AI Assisted is the first and default!
@@ -4445,7 +4447,7 @@ function initEvents(): void {
 
   // New Issue Modal & Mode Tabs
   elBtnNewIssue.addEventListener('click', () => {
-    openNewIssueModal();
+    void openNewIssueModal();
   });
 
   elBtnNewIssueClose.addEventListener('click', closeNewIssueModal);
@@ -4576,10 +4578,10 @@ function initEvents(): void {
     });
   }
   if (elBtnScratchpadCopyToCreator) {
-    elBtnScratchpadCopyToCreator.addEventListener('click', () => {
+    elBtnScratchpadCopyToCreator.addEventListener('click', async () => {
       const text = elScratchpadTextarea?.value.trim() || '';
       closeScratchpadModal();
-      openNewIssueModal();
+      await openNewIssueModal();
       if (text && elAiIssueInput) {
         elAiIssueInput.value = text;
         saveDraftAiInput(text);
