@@ -71,3 +71,32 @@ test('resolveAiIssuePrompt falls back to default prompt when neither is configur
   assert.ok(resolved.includes('Actionable Subtasks Checklist'));
   assert.equal(containsEmoji(resolved), false);
 });
+
+export function resolveAiDraftingModel({ storedRepoModel, storedGlobalModel, defaultModel = 'default' }) {
+  if (storedRepoModel && typeof storedRepoModel === 'string' && storedRepoModel.trim() && storedRepoModel.trim() !== 'default') {
+    return storedRepoModel.trim();
+  }
+  if (storedGlobalModel && typeof storedGlobalModel === 'string' && storedGlobalModel.trim() && storedGlobalModel.trim() !== 'default') {
+    return storedGlobalModel.trim();
+  }
+  return defaultModel;
+}
+
+test('resolveAiDraftingModel prioritizes repository model over global and default', () => {
+  assert.equal(
+    resolveAiDraftingModel({ storedRepoModel: 'claude-3-7-sonnet', storedGlobalModel: 'gemini-2.5-flash' }),
+    'claude-3-7-sonnet'
+  );
+  assert.equal(
+    resolveAiDraftingModel({ storedRepoModel: null, storedGlobalModel: 'gemini-2.5-flash' }),
+    'gemini-2.5-flash'
+  );
+  assert.equal(
+    resolveAiDraftingModel({ storedRepoModel: 'default', storedGlobalModel: 'gemini-2.5-flash' }),
+    'gemini-2.5-flash'
+  );
+  assert.equal(
+    resolveAiDraftingModel({ storedRepoModel: null, storedGlobalModel: null, defaultModel: 'default' }),
+    'default'
+  );
+});

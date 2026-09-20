@@ -2644,7 +2644,9 @@ const elFootNewIssueManual = document.getElementById('footNewIssueManual') as HT
 // AI Mode elements (Single input!)
 const elAiIssueInput = document.getElementById('aiIssueInput') as HTMLTextAreaElement;
 const elBtnTogglePromptConfig = document.getElementById('btnTogglePromptConfig') as HTMLButtonElement;
-const elAiIssueWorktreeToggle = document.getElementById('aiIssueWorktreeToggle') as HTMLInputElement;
+const elAiActiveModelBadge = document.getElementById('aiActiveModelBadge') as HTMLSpanElement | null;
+const elSelectAiModel = document.getElementById('selectAiModel') as HTMLSelectElement | null;
+const elInputCustomAiModel = document.getElementById('inputCustomAiModel') as HTMLInputElement | null;
 const elAiPromptConfigPanel = document.getElementById('aiPromptConfigPanel') as HTMLDivElement;
 const elRadioScopeRepo = document.getElementById('radioScopeRepo') as HTMLInputElement;
 const elRadioScopeGlobal = document.getElementById('radioScopeGlobal') as HTMLInputElement;
@@ -2690,49 +2692,121 @@ function setNewIssueMode(mode: NewIssueMode): void {
   }
 }
 
+export function resolveAiDraftingModel({
+  storedRepoModel,
+  storedGlobalModel,
+  defaultModel = 'default',
+}: {
+  storedRepoModel?: string | null;
+  storedGlobalModel?: string | null;
+  defaultModel?: string;
+}): string {
+  if (storedRepoModel && typeof storedRepoModel === 'string' && storedRepoModel.trim() && storedRepoModel.trim() !== 'default') {
+    return storedRepoModel.trim();
+  }
+  if (storedGlobalModel && typeof storedGlobalModel === 'string' && storedGlobalModel.trim() && storedGlobalModel.trim() !== 'default') {
+    return storedGlobalModel.trim();
+  }
+  return defaultModel;
+}
+
+function setModelEditorValue(modelValue: string): void {
+  if (!elSelectAiModel) return;
+  const standardOptions = ['default', 'gemini-2.5-flash', 'gemini-2.5-pro', 'claude-3-7-sonnet', 'gpt-4.1'];
+  if (standardOptions.includes(modelValue)) {
+    elSelectAiModel.value = modelValue;
+    if (elInputCustomAiModel) elInputCustomAiModel.style.display = 'none';
+  } else {
+    elSelectAiModel.value = 'custom';
+    if (elInputCustomAiModel) {
+      elInputCustomAiModel.value = modelValue;
+      elInputCustomAiModel.style.display = 'block';
+    }
+  }
+}
+
+function getSelectedModelFromEditor(): string {
+  if (!elSelectAiModel) return 'default';
+  if (elSelectAiModel.value === 'custom') {
+    return elInputCustomAiModel?.value.trim() || 'default';
+  }
+  return elSelectAiModel.value;
+}
+
+async function updateActiveModelBadge(): Promise<void> {
+  if (!elAiActiveModelBadge) return;
+  const storedRepoModel = currentRepo ? await host.storage.get(`ai_issue_model_${currentRepo}`) : null;
+  const storedGlobalModel = await host.storage.get('ai_issue_model_global');
+  const activeModel = resolveAiDraftingModel({
+    storedRepoModel: typeof storedRepoModel === 'string' ? storedRepoModel : null,
+    storedGlobalModel: typeof storedGlobalModel === 'string' ? storedGlobalModel : null,
+  });
+  elAiActiveModelBadge.textContent = activeModel === 'default' ? 'Auto' : activeModel;
+}
+
 async function loadPromptConfigForEditor(): Promise<void> {
   const isRepoScope = elRadioScopeRepo.checked;
   if (isRepoScope) {
-    const stored = await host.storage.get(`ai_issue_prompt_${currentRepo}`);
-    elAiPromptTemplateTextarea.value = typeof stored === 'string' ? stored : DEFAULT_AI_ISSUE_PROMPT;
+    const storedPrompt = await host.storage.get(`ai_issue_prompt_${currentRepo}`);
+    elAiPromptTemplateTextarea.value = typeof storedPrompt === 'string' ? storedPrompt : DEFAULT_AI_ISSUE_PROMPT;
+    const storedModel = await host.storage.get(`ai_issue_model_${currentRepo}`);
+    setModelEditorValue(typeof storedModel === 'string' ? storedModel : 'default');
   } else {
-    const stored = await host.storage.get('ai_issue_prompt_global');
-    elAiPromptTemplateTextarea.value = typeof stored === 'string' ? stored : DEFAULT_AI_ISSUE_PROMPT;
+    const storedPrompt = await host.storage.get('ai_issue_prompt_global');
+    elAiPromptTemplateTextarea.value = typeof storedPrompt === 'string' ? storedPrompt : DEFAULT_AI_ISSUE_PROMPT;
+    const storedModel = await host.storage.get('ai_issue_model_global');
+    setModelEditorValue(typeof storedModel === 'string' ? storedModel : 'default');
   }
 }
 
 async function savePromptConfig(): Promise<void> {
   const isRepoScope = elRadioScopeRepo.checked;
   const text = elAiPromptTemplateTextarea.value.trim();
+  const chosenModel = getSelectedModelFromEditor();
   if (!text) return;
 
   try {
     if (isRepoScope) {
       await host.storage.set(`ai_issue_prompt_${currentRepo}`, text);
-      addLog(`Saved prompt instructions for repo ${currentRepo}`, 'succ');
-      await host.toast({ kind: 'success', message: 'Saved prompt instructions for this repository' });
+      if (chosenModel && chosenModel !== 'default') {
+        await host.storage.set(`ai_issue_model_${currentRepo}`, chosenModel);
+      } else {
+        await host.storage.delete(`ai_issue_model_${currentRepo}`);
+      }
+      addLog(`Saved prompt & model settings for repo ${currentRepo}`, 'succ');
+      await host.toast({ kind: 'success', message: 'Saved settings for this repository' });
     } else {
       await host.storage.set('ai_issue_prompt_global', text);
-      addLog('Saved global prompt instructions', 'succ');
-      await host.toast({ kind: 'success', message: 'Saved global prompt instructions' });
+      if (chosenModel && chosenModel !== 'default') {
+        await host.storage.set('ai_issue_model_global', chosenModel);
+      } else {
+        await host.storage.delete('ai_issue_model_global');
+      }
+      addLog('Saved global prompt & model settings', 'succ');
+      await host.toast({ kind: 'success', message: 'Saved global settings' });
     }
+    await updateActiveModelBadge();
     elAiPromptConfigPanel.style.display = 'none';
   } catch (err: any) {
     addLog(`Failed to save prompt config: ${err.message}`, 'error');
-    await host.toast({ kind: 'error', message: 'Failed to save prompt instructions' });
+    await host.toast({ kind: 'error', message: 'Failed to save settings' });
   }
 }
 
 async function resetPromptConfigToDefault(): Promise<void> {
   elAiPromptTemplateTextarea.value = DEFAULT_AI_ISSUE_PROMPT;
+  setModelEditorValue('default');
   const isRepoScope = elRadioScopeRepo.checked;
   try {
     if (isRepoScope) {
       await host.storage.delete(`ai_issue_prompt_${currentRepo}`);
+      await host.storage.delete(`ai_issue_model_${currentRepo}`);
     } else {
       await host.storage.delete('ai_issue_prompt_global');
+      await host.storage.delete('ai_issue_model_global');
     }
-    await host.toast({ kind: 'info', message: 'Reset prompt instructions to default' });
+    await updateActiveModelBadge();
+    await host.toast({ kind: 'info', message: 'Reset prompt & model to default' });
   } catch {}
 }
 
@@ -2837,6 +2911,7 @@ function openNewIssueModal(): void {
   elAiPromptConfigPanel.style.display = 'none';
 
   setNewIssueMode('ai'); // AI Assisted is the first and default!
+  void updateActiveModelBadge();
   elNewIssueModalBackdrop.classList.add('active');
   setTimeout(() => elAiIssueInput.focus(), 50);
 }
@@ -2905,18 +2980,25 @@ async function launchAiIssueSession(): Promise<void> {
     storedGlobalPrompt: typeof storedGlobalPrompt === 'string' ? storedGlobalPrompt : null,
   });
 
-  const useWorktree = elAiIssueWorktreeToggle.checked;
+  const storedRepoModel = await host.storage.get(`ai_issue_model_${currentRepo}`);
+  const storedGlobalModel = await host.storage.get('ai_issue_model_global');
+  const activeModel = resolveAiDraftingModel({
+    storedRepoModel: typeof storedRepoModel === 'string' ? storedRepoModel : null,
+    storedGlobalModel: typeof storedGlobalModel === 'string' ? storedGlobalModel : null,
+  });
+
   const firstLine = userInput.split('\n')[0].replace(/[^a-zA-Z0-9\s-_]/g, '').trim().slice(0, 50);
-  const branchName = useWorktree ? `issue-draft-${slugify(firstLine || 'task')}` : undefined;
 
   elBtnLaunchAISession.disabled = true;
   elBtnLaunchAISession.textContent = 'Starting AI Session...';
 
   try {
-    addLog('Launching AI issue drafting session...');
+    const modelDesc = activeModel === 'default' ? 'auto' : activeModel;
+    addLog(`Launching AI issue drafting session (model: ${modelDesc})...`);
     const res = await host.startSession({
       projectId: currentProject?.id,
-      worktree: branchName ? { kind: 'new', name: branchName } : false,
+      worktree: false, // Issue drafting is administrative; no worktree churn
+      model: activeModel !== 'default' ? activeModel : undefined,
       navigation: 'open',
       providerId: 'github-task-board',
       id: `draft-${Date.now()}`,
@@ -2926,6 +3008,7 @@ async function launchAiIssueSession(): Promise<void> {
       data: {
         drafting: true,
         repo: currentRepo,
+        ...(activeModel !== 'default' ? { model: activeModel } : {}),
       },
     });
 
@@ -3149,6 +3232,15 @@ function initEvents(): void {
   elBtnResetPromptToDefault.addEventListener('click', () => {
     void resetPromptConfigToDefault();
   });
+
+  if (elSelectAiModel && elInputCustomAiModel) {
+    elSelectAiModel.addEventListener('change', () => {
+      elInputCustomAiModel.style.display = elSelectAiModel.value === 'custom' ? 'block' : 'none';
+      if (elSelectAiModel.value === 'custom') {
+        elInputCustomAiModel.focus();
+      }
+    });
+  }
 
   // Logs toggle
   elBtnLogsToggle.addEventListener('click', () => {

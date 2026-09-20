@@ -1703,15 +1703,15 @@
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <button class="btn btn-sm" id="btnTogglePromptConfig" type="button" style="font-size: 11px;">
               <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 1l1.79 3.626 4.004.582-2.897 2.824.684 3.988L12 10.125l-3.58 1.882.684-3.988L6.206 5.208l4.004-.582L12 1zm0 7a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 2a2 2 0 1 1 0 4 2 2 0 0 1 0-4z"/></svg>
-              <span>Prompt Instructions</span>
+              <span>Prompt & Model</span>
             </button>
             <div style="display: flex; align-items: center; gap: 6px;">
-              <input type="checkbox" id="aiIssueWorktreeToggle" checked />
-              <label for="aiIssueWorktreeToggle" style="font-size: 11px; color: var(--fg-muted); cursor: pointer;">Isolate in Git worktree</label>
+              <span style="font-size: 11px; color: var(--fg-muted);">Model:</span>
+              <span id="aiActiveModelBadge" class="status-pill" style="font-family: var(--font-mono); font-size: 10px; color: var(--prim); max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">Auto</span>
             </div>
           </div>
 
-          <!-- Collapsible Prompt Instructions Editor -->
+          <!-- Collapsible Prompt Instructions & Model Config -->
           <div id="aiPromptConfigPanel" class="panel-box" style="display: none; flex-direction: column; gap: 8px; background: var(--surf-muted);">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div style="display: flex; align-items: center; gap: 10px; font-size: 11px;">
@@ -1726,9 +1726,25 @@
               </div>
               <button class="btn btn-sm" id="btnResetPromptToDefault" type="button" style="height: 18px; font-size: 10px; color: var(--warn);">Reset</button>
             </div>
-            <textarea id="aiPromptTemplateTextarea" class="form-ctrl" style="width: 100%; height: 130px; font-family: var(--font-mono); font-size: 10.5px; line-height: 1.4; resize: vertical;"></textarea>
+
+            <!-- Model Selection Row -->
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <label for="selectAiModel" style="font-size: 11px; color: var(--fg-muted); flex-shrink: 0;">AI Model:</label>
+              <select id="selectAiModel" class="form-ctrl select-sm" style="flex: 1; font-family: var(--font-mono); font-size: 11px;">
+                <option value="default">Default (OpenCode Auto)</option>
+                <option value="gemini-2.5-flash">Google Gemini 2.5 Flash</option>
+                <option value="gemini-2.5-pro">Google Gemini 2.5 Pro</option>
+                <option value="claude-3-7-sonnet">Anthropic Claude 3.7 Sonnet</option>
+                <option value="gpt-4.1">OpenAI GPT-4.1</option>
+                <option value="custom">Custom model ID...</option>
+              </select>
+              <input type="text" id="inputCustomAiModel" class="form-ctrl select-sm" style="flex: 1; display: none; font-family: var(--font-mono); font-size: 11px;" placeholder="provider/model-id" />
+            </div>
+
+            <label style="font-size: 11px; color: var(--fg-muted); margin-top: 4px;">Prompt Instructions Template:</label>
+            <textarea id="aiPromptTemplateTextarea" class="form-ctrl" style="width: 100%; height: 110px; font-family: var(--font-mono); font-size: 10.5px; line-height: 1.4; resize: vertical;"></textarea>
             <div style="display: flex; justify-content: flex-end;">
-              <button class="btn btn-sm btn-primary" id="btnSavePromptConfig" type="button">Save Instructions</button>
+              <button class="btn btn-sm btn-primary" id="btnSavePromptConfig" type="button">Save Settings</button>
             </div>
           </div>
         </div>
