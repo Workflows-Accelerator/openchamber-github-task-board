@@ -3110,6 +3110,98 @@ export function resolveAiIssuePrompt({
     .replace(/\{userInput\}/g, userInput.trim());
 }
 
+export const DEFAULT_AI_ALIGNMENT_PROMPT = `You are a principal engineer and architect conducting a deep technical alignment session for repository "{repo}".
+
+User Scratch Pad / Multi-Theme Mind-Dump:
+{userInput}
+
+Instructions for the Alignment Session:
+1. Review every theme, idea, feature, and bug in the user's scratch pad.
+2. Ground yourself by inspecting project architecture, existing modules, conventions, and configuration files in this workspace.
+3. Your primary goal is ALIGNMENT before issue creation:
+   - For each distinct theme, identify unstated assumptions, ambiguities, technical tradeoffs, and potential edge cases.
+   - Formulate probing, concise questions that need clarification (e.g. data modeling decisions, auth boundaries, UX state handling, error recovery).
+   - Propose 2-3 architectural approaches or solutions for tricky decisions with pros/cons and a clear recommendation.
+4. Interact directly with the user to align on answers.
+5. Once aligned on each theme, synthesize the finalized decisions into clean, well-scoped GitHub issues containing:
+   - Title in Conventional Commit format
+   - Impacted files and architectural plan
+   - Actionable Subtasks Checklist (- [ ])
+   - Open Questions (- [ ] / - [x])
+   - Suggested worktree branch slug`;
+
+export function resolveAiAlignmentPrompt({
+  repo,
+  userInput,
+  storedPrompt,
+}: {
+  repo: string;
+  userInput: string;
+  storedPrompt?: string | null;
+}): string {
+  const template = storedPrompt?.trim() || DEFAULT_AI_ALIGNMENT_PROMPT;
+  return template.replace(/\{repo\}/g, repo || '').replace(/\{userInput\}/g, (userInput || '').trim());
+}
+
+export function parseScratchPadThemes(text: string) {
+  if (!text || typeof text !== 'string') {
+    return { themes: [], totalIdeas: 0, totalQuestions: 0 };
+  }
+
+  const lines = text.split('\n');
+  const themes: Array<{ name: string; lines: string[] }> = [];
+  let currentTheme = { name: 'General Ideas', lines: [] as string[] };
+  let hasExplicitHeader = false;
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const headingMatch = trimmed.match(/^#{1,3}\s+(?:\[Theme:\s*)?([^\]\n]+)\]?/i);
+    if (headingMatch) {
+      if (currentTheme.lines.length > 0 || hasExplicitHeader) {
+        themes.push(currentTheme);
+      }
+      hasExplicitHeader = true;
+      currentTheme = {
+        name: headingMatch[1].trim(),
+        lines: [],
+      };
+      continue;
+    }
+    currentTheme.lines.push(line);
+  }
+
+  if (currentTheme.lines.length > 0 || hasExplicitHeader) {
+    themes.push(currentTheme);
+  }
+
+  const activeThemes = themes.filter((t) => t.lines.some((l) => l.trim().length > 0) || t.name !== 'General Ideas');
+
+  let totalIdeas = 0;
+  let totalQuestions = 0;
+
+  const analyzed = activeThemes.map((t) => {
+    const content = t.lines.join('\n').trim();
+    const ideaLines = t.lines.filter((l) => /^\s*(?:[-*+]|\d+\.)(?:\s*\[[ xX]?\])?\s+(?!\?|Q:|Question:)/i.test(l));
+    const questionLines = t.lines.filter((l) => /(?:\?|\bQ:|\bQuestion:|\?\s*\[)/i.test(l));
+    const ideasCount = ideaLines.length || (content ? 1 : 0);
+    const questionsCount = questionLines.length;
+    totalIdeas += ideasCount;
+    totalQuestions += questionsCount;
+    return {
+      name: t.name,
+      content,
+      ideasCount,
+      questionsCount,
+    };
+  });
+
+  return {
+    themes: analyzed,
+    totalIdeas,
+    totalQuestions,
+  };
+}
+
 // Modal elements
 const elNewIssueModalBackdrop = document.getElementById('newIssueModalBackdrop') as HTMLDivElement;
 const elNewIssueRepoTarget = document.getElementById('newIssueRepoTarget') as HTMLDivElement;
@@ -3136,6 +3228,24 @@ const elBtnResetPromptToDefault = document.getElementById('btnResetPromptToDefau
 const elBtnSavePromptConfig = document.getElementById('btnSavePromptConfig') as HTMLButtonElement;
 const elBtnNewIssueAICancel = document.getElementById('btnNewIssueAICancel') as HTMLButtonElement;
 const elBtnLaunchAISession = document.getElementById('btnLaunchAISession') as HTMLButtonElement;
+const elBtnImportFromScratchpad = document.getElementById('btnImportFromScratchpad') as HTMLButtonElement | null;
+
+// Scratch Pad Elements
+const elBtnOpenScratchpad = document.getElementById('btnOpenScratchpad') as HTMLButtonElement | null;
+const elScratchpadModalBackdrop = document.getElementById('scratchpadModalBackdrop') as HTMLDivElement | null;
+const elScratchpadRepoBadge = document.getElementById('scratchpadRepoBadge') as HTMLSpanElement | null;
+const elScratchpadSaveIndicator = document.getElementById('scratchpadSaveIndicator') as HTMLSpanElement | null;
+const elBtnScratchpadClose = document.getElementById('btnScratchpadClose') as HTMLButtonElement | null;
+const elBtnScratchpadAddTheme = document.getElementById('btnScratchpadAddTheme') as HTMLButtonElement | null;
+const elBtnScratchpadAddFeature = document.getElementById('btnScratchpadAddFeature') as HTMLButtonElement | null;
+const elBtnScratchpadAddBug = document.getElementById('btnScratchpadAddBug') as HTMLButtonElement | null;
+const elBtnScratchpadAddQuestion = document.getElementById('btnScratchpadAddQuestion') as HTMLButtonElement | null;
+const elScratchpadStatsBadge = document.getElementById('scratchpadStatsBadge') as HTMLSpanElement | null;
+const elScratchpadTextarea = document.getElementById('scratchpadTextarea') as HTMLTextAreaElement | null;
+const elBtnScratchpadClear = document.getElementById('btnScratchpadClear') as HTMLButtonElement | null;
+const elBtnScratchpadCopyToCreator = document.getElementById('btnScratchpadCopyToCreator') as HTMLButtonElement | null;
+const elBtnScratchpadDirectDraft = document.getElementById('btnScratchpadDirectDraft') as HTMLButtonElement | null;
+const elBtnScratchpadAlignAI = document.getElementById('btnScratchpadAlignAI') as HTMLButtonElement | null;
 
 // Manual Mode elements
 const elNewIssueTitleInput = document.getElementById('newIssueTitleInput') as HTMLInputElement;
@@ -3380,6 +3490,262 @@ function renderDraftSubtasks(): void {
   });
 }
 
+// ==========================================
+// Scratch Pad Logic & AI Alignment
+// ==========================================
+
+let scratchpadSaveTimer: any = null;
+
+function getScratchpadStorageKey(): string {
+  return currentRepo ? `scratchpad_${currentRepo}` : 'scratchpad_global';
+}
+
+function getScratchpadLocalKey(): string {
+  return `openchamber_scratchpad_${currentRepo || 'global'}`;
+}
+
+export async function loadScratchpadContent(): Promise<string> {
+  const storageKey = getScratchpadStorageKey();
+  let text = '';
+  try {
+    const stored = await host.storage.get(storageKey);
+    if (typeof stored === 'string') {
+      text = stored;
+    }
+  } catch {}
+  if (!text) {
+    try {
+      text = localStorage.getItem(getScratchpadLocalKey()) || '';
+    } catch {}
+  }
+  if (elScratchpadTextarea) {
+    elScratchpadTextarea.value = text;
+  }
+  updateScratchpadStats(text);
+  setScratchpadSaveStatus('Saved');
+  return text;
+}
+
+function setScratchpadSaveStatus(status: 'Saved' | 'Saving...'): void {
+  if (!elScratchpadSaveIndicator) return;
+  if (status === 'Saving...') {
+    elScratchpadSaveIndicator.style.color = 'var(--fg-muted)';
+    elScratchpadSaveIndicator.innerHTML = `<span>Saving...</span>`;
+  } else {
+    elScratchpadSaveIndicator.style.color = 'var(--succ)';
+    elScratchpadSaveIndicator.innerHTML = `
+      <svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 11px; height: 11px; fill: currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      <span>Saved</span>
+    `;
+  }
+}
+
+function updateScratchpadStats(text: string): void {
+  if (!elScratchpadStatsBadge) return;
+  const { themes, totalIdeas, totalQuestions } = parseScratchPadThemes(text);
+  const themeWord = themes.length === 1 ? 'theme' : 'themes';
+  const ideaWord = totalIdeas === 1 ? 'idea' : 'ideas';
+  let stats = `${themes.length} ${themeWord}, ${totalIdeas} ${ideaWord}`;
+  if (totalQuestions > 0) {
+    const qWord = totalQuestions === 1 ? 'question' : 'questions';
+    stats += `, ${totalQuestions} ${qWord}`;
+  }
+  elScratchpadStatsBadge.textContent = stats;
+}
+
+function handleScratchpadInput(): void {
+  if (!elScratchpadTextarea) return;
+  const text = elScratchpadTextarea.value;
+  updateScratchpadStats(text);
+  setScratchpadSaveStatus('Saving...');
+  try {
+    localStorage.setItem(getScratchpadLocalKey(), text);
+  } catch {}
+
+  clearTimeout(scratchpadSaveTimer);
+  scratchpadSaveTimer = setTimeout(async () => {
+    try {
+      await host.storage.set(getScratchpadStorageKey(), text);
+      setScratchpadSaveStatus('Saved');
+    } catch {
+      setScratchpadSaveStatus('Saved');
+    }
+  }, 300);
+}
+
+function insertIntoScratchpad(snippet: string): void {
+  if (!elScratchpadTextarea) return;
+  const ta = elScratchpadTextarea;
+  const start = ta.selectionStart || 0;
+  const end = ta.selectionEnd || 0;
+  const before = ta.value.substring(0, start);
+  const after = ta.value.substring(end);
+  const prefix = before && !before.endsWith('\n') ? '\n' : '';
+  ta.value = `${before}${prefix}${snippet}${after}`;
+  ta.selectionStart = ta.selectionEnd = start + prefix.length + snippet.length;
+  ta.focus();
+  handleScratchpadInput();
+}
+
+async function openScratchpadModal(): Promise<void> {
+  if (elScratchpadRepoBadge) {
+    elScratchpadRepoBadge.textContent = currentRepo || 'Global';
+  }
+  await loadScratchpadContent();
+  if (elScratchpadModalBackdrop) {
+    elScratchpadModalBackdrop.classList.add('active');
+  }
+  if (elScratchpadTextarea) {
+    setTimeout(() => elScratchpadTextarea?.focus(), 50);
+  }
+}
+
+function closeScratchpadModal(): void {
+  if (elScratchpadModalBackdrop) {
+    elScratchpadModalBackdrop.classList.remove('active');
+  }
+}
+
+async function launchScratchpadAlignmentSession(): Promise<void> {
+  const text = elScratchpadTextarea?.value.trim() || '';
+  if (!text) {
+    if (elScratchpadTextarea) elScratchpadTextarea.focus();
+    await host.toast({ kind: 'info', message: 'Add some ideas to the scratch pad first' });
+    return;
+  }
+  if (!currentRepo) {
+    openRepoPopover();
+    return;
+  }
+
+  const storedRepoPrompt = await host.storage.get(`ai_alignment_prompt_${currentRepo}`);
+  const storedGlobalPrompt = await host.storage.get('ai_alignment_prompt_global');
+  const promptText = resolveAiAlignmentPrompt({
+    repo: currentRepo,
+    userInput: text,
+    storedPrompt: typeof storedRepoPrompt === 'string' ? storedRepoPrompt : (typeof storedGlobalPrompt === 'string' ? storedGlobalPrompt : null),
+  });
+
+  const storedRepoModel = await host.storage.get(`ai_issue_model_${currentRepo}`);
+  const storedGlobalModel = await host.storage.get('ai_issue_model_global');
+  const activeModel = resolveAiDraftingModel({
+    storedRepoModel: typeof storedRepoModel === 'string' ? storedRepoModel : null,
+    storedGlobalModel: typeof storedGlobalModel === 'string' ? storedGlobalModel : null,
+  });
+
+  const firstLine = text.split('\n')[0].replace(/[^a-zA-Z0-9\s-_]/g, '').trim().slice(0, 45);
+  try {
+    addLog(`Launching AI alignment & clarification session for scratch pad...`);
+    const res = await host.startSession({
+      projectId: currentProject?.id,
+      worktree: false,
+      model: activeModel !== 'default' ? activeModel : undefined,
+      navigation: 'open',
+      providerId: 'github-task-board',
+      id: `align-${Date.now()}`,
+      title: `Align: ${firstLine || 'Ideas & Themes'}`,
+      url: `https://github.com/${currentRepo}/issues`,
+      text: promptText,
+      data: {
+        alignment: true,
+        repo: currentRepo,
+        ...activeModel !== 'default' ? { model: activeModel } : {},
+      },
+    });
+    closeScratchpadModal();
+    await host.toast({ kind: 'success', message: 'Launched interactive AI alignment session' });
+    if (res.sessionId) {
+      void host.openSession(res.sessionId);
+    }
+  } catch (err: any) {
+    addLog(`Failed to start alignment session: ${err.message}`, 'error');
+    await host.toast({ kind: 'error', message: `Failed to start session: ${err?.message || 'Unknown error'}` });
+  }
+}
+
+async function launchScratchpadDirectSession(): Promise<void> {
+  const text = elScratchpadTextarea?.value.trim() || '';
+  if (!text) {
+    if (elScratchpadTextarea) elScratchpadTextarea.focus();
+    await host.toast({ kind: 'info', message: 'Add some ideas to the scratch pad first' });
+    return;
+  }
+  if (!currentRepo) {
+    openRepoPopover();
+    return;
+  }
+
+  const storedRepoPrompt = await host.storage.get(`ai_issue_prompt_${currentRepo}`);
+  const storedGlobalPrompt = await host.storage.get('ai_issue_prompt_global');
+  const promptText = resolveAiIssuePrompt({
+    repo: currentRepo,
+    userInput: text,
+    storedRepoPrompt: typeof storedRepoPrompt === 'string' ? storedRepoPrompt : null,
+    storedGlobalPrompt: typeof storedGlobalPrompt === 'string' ? storedGlobalPrompt : null,
+  });
+
+  const storedRepoModel = await host.storage.get(`ai_issue_model_${currentRepo}`);
+  const storedGlobalModel = await host.storage.get('ai_issue_model_global');
+  const activeModel = resolveAiDraftingModel({
+    storedRepoModel: typeof storedRepoModel === 'string' ? storedRepoModel : null,
+    storedGlobalModel: typeof storedGlobalModel === 'string' ? storedGlobalModel : null,
+  });
+
+  const firstLine = text.split('\n')[0].replace(/[^a-zA-Z0-9\s-_]/g, '').trim().slice(0, 45);
+  try {
+    addLog(`Launching AI issue drafting session directly from scratch pad...`);
+    const res = await host.startSession({
+      projectId: currentProject?.id,
+      worktree: false,
+      model: activeModel !== 'default' ? activeModel : undefined,
+      navigation: 'open',
+      providerId: 'github-task-board',
+      id: `draft-${Date.now()}`,
+      title: `Draft: ${firstLine || 'GitHub Issues'}`,
+      url: `https://github.com/${currentRepo}/issues`,
+      text: promptText,
+      data: {
+        drafting: true,
+        repo: currentRepo,
+        ...activeModel !== 'default' ? { model: activeModel } : {},
+      },
+    });
+    closeScratchpadModal();
+    await host.toast({ kind: 'success', message: 'Launched AI drafting session' });
+    if (res.sessionId) {
+      void host.openSession(res.sessionId);
+    }
+  } catch (err: any) {
+    addLog(`Failed to start AI session: ${err.message}`, 'error');
+    await host.toast({ kind: 'error', message: `Failed to start session: ${err?.message || 'Unknown error'}` });
+  }
+}
+
+async function loadDraftAiInput(): Promise<void> {
+  const key = currentRepo ? `ai_draft_input_${currentRepo}` : 'ai_draft_input_global';
+  let val = '';
+  try {
+    const stored = await host.storage.get(key);
+    if (typeof stored === 'string') val = stored;
+  } catch {}
+  if (!val) {
+    try {
+      val = localStorage.getItem(`openchamber_ai_draft_${currentRepo || 'global'}`) || '';
+    } catch {}
+  }
+  if (elAiIssueInput && val) {
+    elAiIssueInput.value = val;
+  }
+}
+
+function saveDraftAiInput(text: string): void {
+  const key = currentRepo ? `ai_draft_input_${currentRepo}` : 'ai_draft_input_global';
+  try {
+    localStorage.setItem(`openchamber_ai_draft_${currentRepo || 'global'}`, text);
+  } catch {}
+  void host.storage.set(key, text);
+}
+
 function openNewIssueModal(): void {
   if (!currentRepo) {
     openRepoPopover();
@@ -3392,7 +3758,7 @@ function openNewIssueModal(): void {
   draftSubtasks = [];
   renderDraftSubtasks();
   if (elInputNewIssueDraftSubtask) elInputNewIssueDraftSubtask.value = '';
-  elAiIssueInput.value = '';
+  void loadDraftAiInput();
   elAiPromptConfigPanel.style.display = 'none';
 
   setNewIssueMode('ai'); // AI Assisted is the first and default!
@@ -3498,6 +3864,8 @@ async function launchAiIssueSession(): Promise<void> {
     });
 
     closeNewIssueModal();
+    saveDraftAiInput('');
+    if (elAiIssueInput) elAiIssueInput.value = '';
     await host.toast({
       kind: 'success',
       message: 'Launched AI drafting session',
@@ -3978,6 +4346,81 @@ function initEvents(): void {
   elBtnResetPromptToDefault.addEventListener('click', () => {
     void resetPromptConfigToDefault();
   });
+
+  // Scratch Pad Event Wiring
+  if (elBtnOpenScratchpad) {
+    elBtnOpenScratchpad.addEventListener('click', () => {
+      void openScratchpadModal();
+    });
+  }
+  if (elBtnScratchpadClose) {
+    elBtnScratchpadClose.addEventListener('click', closeScratchpadModal);
+  }
+  if (elScratchpadModalBackdrop) {
+    elScratchpadModalBackdrop.addEventListener('click', (e) => {
+      if (e.target === elScratchpadModalBackdrop) closeScratchpadModal();
+    });
+  }
+  if (elScratchpadTextarea) {
+    elScratchpadTextarea.addEventListener('input', handleScratchpadInput);
+  }
+  if (elBtnScratchpadAddTheme) {
+    elBtnScratchpadAddTheme.addEventListener('click', () => insertIntoScratchpad('## [Theme: New Topic]\n- [ ] '));
+  }
+  if (elBtnScratchpadAddFeature) {
+    elBtnScratchpadAddFeature.addEventListener('click', () => insertIntoScratchpad('- [ ] Feature: '));
+  }
+  if (elBtnScratchpadAddBug) {
+    elBtnScratchpadAddBug.addEventListener('click', () => insertIntoScratchpad('- [ ] Bug: '));
+  }
+  if (elBtnScratchpadAddQuestion) {
+    elBtnScratchpadAddQuestion.addEventListener('click', () => insertIntoScratchpad('  - ? '));
+  }
+  if (elBtnScratchpadClear) {
+    elBtnScratchpadClear.addEventListener('click', async () => {
+      if (elScratchpadTextarea) elScratchpadTextarea.value = '';
+      handleScratchpadInput();
+      await host.toast({ kind: 'info', message: 'Scratch pad cleared' });
+    });
+  }
+  if (elBtnScratchpadCopyToCreator) {
+    elBtnScratchpadCopyToCreator.addEventListener('click', () => {
+      const text = elScratchpadTextarea?.value.trim() || '';
+      closeScratchpadModal();
+      openNewIssueModal();
+      if (text && elAiIssueInput) {
+        elAiIssueInput.value = text;
+        saveDraftAiInput(text);
+      }
+    });
+  }
+  if (elBtnScratchpadAlignAI) {
+    elBtnScratchpadAlignAI.addEventListener('click', () => {
+      void launchScratchpadAlignmentSession();
+    });
+  }
+  if (elBtnScratchpadDirectDraft) {
+    elBtnScratchpadDirectDraft.addEventListener('click', () => {
+      void launchScratchpadDirectSession();
+    });
+  }
+  if (elAiIssueInput) {
+    elAiIssueInput.addEventListener('input', () => {
+      saveDraftAiInput(elAiIssueInput.value);
+    });
+  }
+  if (elBtnImportFromScratchpad) {
+    elBtnImportFromScratchpad.addEventListener('click', async () => {
+      const text = await loadScratchpadContent();
+      if (text && elAiIssueInput) {
+        elAiIssueInput.value = text;
+        saveDraftAiInput(text);
+        await host.toast({ kind: 'info', message: 'Loaded ideas from Scratch Pad' });
+      } else {
+        await host.toast({ kind: 'info', message: 'Scratch Pad is empty' });
+      }
+    });
+  }
 
   if (elSelectAiModel && elInputCustomAiModel) {
     elSelectAiModel.addEventListener('change', () => {

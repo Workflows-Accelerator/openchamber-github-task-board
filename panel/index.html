@@ -1554,6 +1554,12 @@
         <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
       </button>
 
+      <!-- Scratch Pad Button -->
+      <button class="btn" id="btnOpenScratchpad" title="Open persistent Ideas Scratch Pad">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        <span>Scratch Pad</span>
+      </button>
+
       <!-- New Issue Button -->
       <button class="btn" id="btnNewIssue" title="Create New GitHub Issue">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
@@ -1967,6 +1973,72 @@
     </div>
   </div>
 
+  <!-- Scratch Pad Modal -->
+  <div class="modal-backdrop" id="scratchpadModalBackdrop">
+    <div class="modal" style="width: 640px; max-width: 95vw;">
+      <div class="modal-head">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+          <span>Ideas Scratch Pad</span>
+          <span id="scratchpadRepoBadge" class="status-pill" style="font-family: var(--font-mono); font-size: 10px;"></span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="scratchpadSaveIndicator" style="font-size: 11px; color: var(--succ); display: flex; align-items: center; gap: 4px;">
+            <svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 11px; height: 11px; fill: currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+            <span>Saved</span>
+          </span>
+          <button class="btn btn-icon btn-sm" id="btnScratchpadClose" type="button">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="modal-body" style="gap: 8px;">
+        <!-- Quick Template Insertion Row -->
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+          <span style="font-size: 11px; color: var(--fg-muted); font-weight: 500;">Quick add:</span>
+          <button class="btn btn-sm" id="btnScratchpadAddTheme" type="button" style="font-size: 10.5px; height: 22px; padding: 0 7px;">+ Theme</button>
+          <button class="btn btn-sm" id="btnScratchpadAddFeature" type="button" style="font-size: 10.5px; height: 22px; padding: 0 7px;">+ Feature Idea</button>
+          <button class="btn btn-sm" id="btnScratchpadAddBug" type="button" style="font-size: 10.5px; height: 22px; padding: 0 7px;">+ Bug Report</button>
+          <button class="btn btn-sm" id="btnScratchpadAddQuestion" type="button" style="font-size: 10.5px; height: 22px; padding: 0 7px;">+ Open Question</button>
+          <div style="flex: 1;"></div>
+          <span id="scratchpadStatsBadge" style="font-size: 11px; color: var(--fg-muted);">0 themes, 0 ideas</span>
+        </div>
+
+        <!-- Main Textarea -->
+        <textarea id="scratchpadTextarea" class="form-ctrl" style="width: 100%; height: 240px; resize: vertical; font-size: 12px; line-height: 1.55; font-family: var(--font-mono);" placeholder="Dump all your ideas, thoughts, feature specs, and bug notes here freely across themes...
+
+## [Theme: Authentication]
+- [ ] Implement JWT refresh tokens
+- ? Should we support passkeys or TOTP first?
+
+## [Theme: UI & Styling]
+- [ ] Dark mode toggle
+- [ ] Collapse empty columns on small screens
+
+Auto-saved continuously. When ready, click 'Align & Clarify with AI' so the agent explores questions with you before creating issues!"></textarea>
+
+        <!-- Hints / Alignment info -->
+        <div style="font-size: 11px; color: var(--fg-muted); line-height: 1.4; display: flex; align-items: center; gap: 5px;">
+          <svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 12px; height: 12px; fill: var(--prim); flex-shrink: 0;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+          <span>Ideas stay saved permanently even if exited. AI resolution will ask questions and align across themes before creating issues.</span>
+        </div>
+      </div>
+
+      <div class="modal-foot" style="justify-content: space-between;">
+        <button class="btn btn-sm" id="btnScratchpadClear" type="button" style="color: var(--err);">Clear</button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button class="btn btn-sm" id="btnScratchpadCopyToCreator" type="button" title="Send text to Create Issue modal">Open in Creator</button>
+          <button class="btn btn-sm" id="btnScratchpadDirectDraft" type="button" title="Skip alignment questions and draft issues immediately">Directly Draft</button>
+          <button class="btn btn-sm btn-primary" id="btnScratchpadAlignAI" type="button" style="display: flex; align-items: center; gap: 5px;" title="Have AI ask clarifying questions and align on specifications first">
+            <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
+            <span>Align & Clarify with AI</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Create Issue Modal -->
   <div class="modal-backdrop" id="newIssueModalBackdrop">
     <div class="modal" style="width: 520px;">
@@ -1995,7 +2067,10 @@
         <!-- Mode 1: AI Assisted (Default & Single Input) -->
         <div id="paneNewIssueAI" style="display: flex; flex-direction: column; gap: 10px;">
           <div>
-            <label style="display: block; font-size: 11.5px; color: var(--fg-muted); margin-bottom: 4px;">Describe the task, bug, or feature to create:</label>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+              <label style="font-size: 11.5px; color: var(--fg-muted);">Describe the task, bug, or feature to create:</label>
+              <button class="btn btn-sm" id="btnImportFromScratchpad" type="button" style="font-size: 10px; height: 19px; padding: 0 6px;" title="Load ideas from your persistent Scratch Pad">From Scratch Pad</button>
+            </div>
             <textarea id="aiIssueInput" class="form-ctrl" style="width: 100%; height: 130px; resize: vertical; font-size: 12px; line-height: 1.5;" placeholder="Speak your mind freely. You can describe a single task or multiple issues at once. The AI agent will inspect the codebase, split distinct tasks if needed, and draft the issues with actionable subtask checklists..."></textarea>
           </div>
 
