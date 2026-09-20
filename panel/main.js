@@ -4141,6 +4141,9 @@ Instructions for the Alignment Session:
       row.style.cursor = "pointer";
       row.style.fontSize = "11.5px";
       row.style.gap = "8px";
+      row.setAttribute("role", "button");
+      row.setAttribute("tabindex", "0");
+      row.setAttribute("aria-label", `Insert theme ${theme} (${count} ${count === 1 ? "task" : "tasks"})`);
       row.innerHTML = `
       <span style="color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(theme)}</span>
       <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono); flex-shrink: 0;">${count} ${count === 1 ? "task" : "tasks"}</span>
@@ -4154,6 +4157,12 @@ Instructions for the Alignment Session:
         row.style.borderColor = "var(--border-subtle)";
       });
       row.addEventListener("click", () => insertScratchpadTheme(theme));
+      row.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          insertScratchpadTheme(theme);
+        }
+      });
       elScratchpadThemeList.appendChild(row);
     });
   }
@@ -4176,6 +4185,7 @@ Instructions for the Alignment Session:
     if (elScratchpadThemePopover) {
       elScratchpadThemePopover.style.display = "none";
     }
+    elBtnScratchpadAddTheme?.setAttribute("aria-expanded", "false");
   }
   async function launchScratchpadAlignmentSession() {
     const text = elScratchpadTextarea?.value.trim() || "";
@@ -4716,18 +4726,39 @@ Instructions for the Alignment Session:
     if (elBtnArchiveToggle) {
       elBtnArchiveToggle.addEventListener("click", toggleArchiveView);
     }
-    const closeMoreMenu = () => {
-      if (elMoreMenuPopover) elMoreMenuPopover.style.display = "none";
+    const setMoreMenuOpen = (open) => {
+      if (!elMoreMenuPopover) return;
+      elMoreMenuPopover.style.display = open ? "flex" : "none";
+      elBtnMoreMenu?.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) {
+        const first = elMoreMenuPopover.querySelector('[role="menuitem"]');
+        first?.focus();
+      } else {
+        elBtnMoreMenu?.focus();
+      }
     };
+    const closeMoreMenu = () => setMoreMenuOpen(false);
     if (elBtnMoreMenu && elMoreMenuPopover) {
       elBtnMoreMenu.addEventListener("click", (e) => {
         e.stopPropagation();
-        const isHidden = elMoreMenuPopover.style.display === "none";
-        elMoreMenuPopover.style.display = isHidden ? "flex" : "none";
+        setMoreMenuOpen(elMoreMenuPopover.style.display === "none");
       });
       document.addEventListener("click", (e) => {
         if (elMoreMenuPopover.style.display !== "none" && !elMoreMenuPopover.contains(e.target) && !elBtnMoreMenu.contains(e.target)) {
           closeMoreMenu();
+        }
+      });
+      elMoreMenuPopover.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          closeMoreMenu();
+          return;
+        }
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const item = e.target.closest('[role="menuitem"]');
+        if (item && item.querySelector(".popover-item-title")) {
+          e.preventDefault();
+          item.click();
         }
       });
     }
@@ -4851,25 +4882,35 @@ Instructions for the Alignment Session:
       elScratchpadTextarea.addEventListener("input", handleScratchpadInput);
     }
     if (elBtnScratchpadAddTheme) {
+      const setThemePickerOpen = (open) => {
+        if (!elScratchpadThemePopover) return;
+        elScratchpadThemePopover.style.display = open ? "flex" : "none";
+        elBtnScratchpadAddTheme?.setAttribute("aria-expanded", open ? "true" : "false");
+      };
       elBtnScratchpadAddTheme.addEventListener("click", (e) => {
         e.stopPropagation();
-        if (elScratchpadThemePopover) {
-          const isHidden = elScratchpadThemePopover.style.display === "none";
-          if (isHidden) {
-            elScratchpadThemePopover.style.display = "flex";
-            if (elScratchpadThemeSearch) elScratchpadThemeSearch.value = "";
-            renderScratchpadThemeList("");
-            elScratchpadThemeSearch?.focus();
-          } else {
-            elScratchpadThemePopover.style.display = "none";
-          }
+        if (!elScratchpadThemePopover) return;
+        if (elScratchpadThemePopover.style.display === "none") {
+          setThemePickerOpen(true);
+          if (elScratchpadThemeSearch) elScratchpadThemeSearch.value = "";
+          renderScratchpadThemeList("");
+          elScratchpadThemeSearch?.focus();
+        } else {
+          setThemePickerOpen(false);
         }
       });
-    }
-    if (elBtnScratchpadThemeClose) {
-      elBtnScratchpadThemeClose.addEventListener("click", () => {
-        if (elScratchpadThemePopover) elScratchpadThemePopover.style.display = "none";
-      });
+      if (elScratchpadThemePopover) {
+        elScratchpadThemePopover.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            setThemePickerOpen(false);
+            elBtnScratchpadAddTheme.focus();
+          }
+        });
+      }
+      if (elBtnScratchpadThemeClose) {
+        elBtnScratchpadThemeClose.addEventListener("click", () => setThemePickerOpen(false));
+      }
     }
     if (elScratchpadThemeSearch) {
       elScratchpadThemeSearch.addEventListener("input", () => {

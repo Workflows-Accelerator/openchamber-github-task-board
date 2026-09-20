@@ -81,6 +81,8 @@
       display: flex;
       align-items: center;
       gap: 6px;
+      /* allow the row to shrink instead of overflowing the panel at ~320px */
+      min-width: 0;
     }
 
     /* Repo Selector Dropdown Trigger */
@@ -97,6 +99,7 @@
       font-weight: 500;
       cursor: pointer;
       max-width: 150px;
+      min-width: 0;
       transition: background 0.15s ease, border-color 0.15s ease;
       flex-shrink: 1;
     }
@@ -206,6 +209,7 @@
       position: relative;
       display: flex;
       align-items: center;
+      min-width: 0;
     }
     .search-icon {
       position: absolute;
@@ -221,6 +225,7 @@
       color: var(--fg);
       font-size: 12px;
       width: 110px;
+      min-width: 0;
       height: 26px;
       outline: none;
       transition: width 0.2s ease, border-color 0.15s ease;
@@ -1620,25 +1625,25 @@
 
       <!-- More Options Popover Menu (Sidebar mode) -->
       <div class="more-menu-wrapper">
-        <button class="btn btn-icon" id="btnMoreMenu" title="More Views & Diagnostics">
+        <button class="btn btn-icon" id="btnMoreMenu" title="More Views & Diagnostics" aria-haspopup="menu" aria-expanded="false" aria-controls="moreMenuPopover" aria-label="More views and diagnostics">
           <svg class="icon" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
         </button>
-        <div class="popover more-popover" id="moreMenuPopover" style="position: absolute; top: 32px; right: 0; left: auto; width: 190px; z-index: 150; display: none;">
+        <div class="popover more-popover" id="moreMenuPopover" role="menu" aria-label="Views and diagnostics" style="position: absolute; top: 32px; right: 0; left: auto; width: 190px; z-index: 150; display: none;">
           <div class="popover-head">Views & Diagnostics</div>
           <div class="popover-list">
-            <div class="popover-item" id="menuItemToggleLayout">
+            <div class="popover-item" id="menuItemToggleLayout" role="menuitem" tabindex="0">
               <span class="popover-item-title" id="txtMenuLayout">Board / List View</span>
               <span class="popover-item-sub">Switch Kanban & List</span>
             </div>
-            <div class="popover-item" id="menuItemToggleArchive">
+            <div class="popover-item" id="menuItemToggleArchive" role="menuitem" tabindex="0">
               <span class="popover-item-title" id="txtMenuArchive">Archived Issues</span>
               <span class="popover-item-sub">Toggle archived tasks</span>
             </div>
-            <div class="popover-item" id="menuItemRefresh">
+            <div class="popover-item" id="menuItemRefresh" role="menuitem" tabindex="0">
               <span class="popover-item-title">Refresh Tasks</span>
               <span class="popover-item-sub">Sync issues & sessions</span>
             </div>
-            <div class="popover-item" id="menuItemLogs">
+            <div class="popover-item" id="menuItemLogs" role="menuitem" tabindex="0">
               <span class="popover-item-title">Diagnostics & Logs</span>
               <span class="popover-item-sub">Inspect extension logs</span>
             </div>
@@ -2072,7 +2077,7 @@
         <!-- Quick Template Insertion Row -->
         <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
           <span style="font-size: 11px; color: var(--fg-muted); font-weight: 500;">Quick add:</span>
-          <button class="btn btn-sm" id="btnScratchpadAddTheme" type="button" style="font-size: 10.5px; height: 22px; padding: 0 7px;">+ Theme</button>
+          <button class="btn btn-sm" id="btnScratchpadAddTheme" type="button" style="font-size: 10.5px; height: 22px; padding: 0 7px;" aria-haspopup="dialog" aria-expanded="false" aria-controls="scratchpadThemePopover">+ Theme</button>
           <button class="btn btn-sm" id="btnScratchpadAddFeature" type="button" style="font-size: 10.5px; height: 22px; padding: 0 7px;">+ Feature Idea</button>
           <button class="btn btn-sm" id="btnScratchpadAddBug" type="button" style="font-size: 10.5px; height: 22px; padding: 0 7px;">+ Bug Report</button>
           <button class="btn btn-sm" id="btnScratchpadAddQuestion" type="button" style="font-size: 10.5px; height: 22px; padding: 0 7px;">+ Open Question</button>
@@ -2081,7 +2086,7 @@
         </div>
 
         <!-- Theme Picker Popover (anchored below Quick add) -->
-        <div id="scratchpadThemePopover" class="panel-box" style="display: none; flex-direction: column; gap: 6px; padding: 8px; background: var(--surf-muted);">
+        <div id="scratchpadThemePopover" class="panel-box" role="dialog" aria-label="Insert existing theme from tasks" style="display: none; flex-direction: column; gap: 6px; padding: 8px; background: var(--surf-muted);">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <span style="font-size: 11px; font-weight: 600; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.5px;">Insert Existing Theme from Tasks</span>
             <button class="btn btn-icon btn-sm" id="btnScratchpadThemeClose" type="button" style="width: 20px; height: 20px;">
