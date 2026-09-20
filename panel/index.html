@@ -98,10 +98,15 @@
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
-      max-width: 150px;
+      max-width: 260px;
       min-width: 0;
       transition: background 0.15s ease, border-color 0.15s ease;
       flex-shrink: 1;
+    }
+    @media (min-width: 768px) {
+      .repo-btn {
+        max-width: 340px;
+      }
     }
     .repo-btn:hover {
       background: var(--surf-hover);
@@ -145,7 +150,7 @@
         width: 70px;
       }
       .repo-btn {
-        max-width: 110px;
+        max-width: 130px;
       }
     }
     @media (max-width: 330px) {
@@ -153,7 +158,7 @@
         width: 50px;
       }
       .repo-btn {
-        max-width: 80px;
+        max-width: 85px;
       }
     }
 
@@ -1888,6 +1893,13 @@
       display: none;
       flex-direction: column;
       overflow: hidden;
+    }
+    #repoPopover {
+      width: 380px;
+      max-width: calc(100vw - 20px);
+    }
+    #repoPopover .popover-list {
+      max-height: 280px;
     }
     .popover.active { display: flex; }
     .popover-head {
