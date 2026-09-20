@@ -123,3 +123,91 @@ test('findRelatedIssues ranks issues by shared tags, mentions, and keyword overl
   assert.equal(related[0].number, 4);
   assert.equal(related[1].number, 11);
 });
+
+export function getIssuePriority(issue) {
+  if (!issue || !issue.labels) return null;
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l.name || '').toLowerCase();
+    if (name === 'priority:critical') return 'critical';
+    if (name === 'priority:important') return 'important';
+    if (name === 'priority:useful') return 'useful';
+    if (name === 'priority:optional') return 'optional';
+  }
+  return null;
+}
+
+export function updatePriorityLabels(currentLabels, newPriority) {
+  const cleanExisting = currentLabels
+    .map((l) => (typeof l === 'string' ? l : l.name || ''))
+    .filter((name) => !name.toLowerCase().startsWith('priority:'));
+
+  if (newPriority && typeof newPriority === 'string' && newPriority.trim().toLowerCase() !== 'none') {
+    cleanExisting.push(`priority:${newPriority.trim().toLowerCase()}`);
+  }
+  return cleanExisting;
+}
+
+export function groupIssuesBy(issuesList, groupBy) {
+  if (groupBy === 'priority') {
+    const groups = [
+      { id: 'critical', title: 'Critical', issues: [] },
+      { id: 'important', title: 'Important', issues: [] },
+      { id: 'useful', title: 'Useful', issues: [] },
+      { id: 'optional', title: 'Optional', issues: [] },
+      { id: 'none', title: 'No Priority', issues: [] },
+    ];
+    const map = new Map(groups.map((g) => [g.id, g]));
+    for (const issue of issuesList) {
+      const p = getIssuePriority(issue) || 'none';
+      map.get(p)?.issues.push(issue);
+    }
+    return groups;
+  }
+
+  // Default: groupBy === 'status'
+  const groups = [
+    { id: 'backlog', title: 'Backlog', issues: [] },
+    { id: 'todo', title: 'To Do', issues: [] },
+    { id: 'in-progress', title: 'In Progress', issues: [] },
+    { id: 'in-review', title: 'In Review', issues: [] },
+    { id: 'done', title: 'Done', issues: [] },
+  ];
+  const map = new Map(groups.map((g) => [g.id, g]));
+  for (const issue of issuesList) {
+    const statusLabel = (issue.labels || []).find((l) => (typeof l === 'string' ? l : l.name || '').startsWith('status:'));
+    const col = statusLabel ? (typeof statusLabel === 'string' ? statusLabel : statusLabel.name || '').replace('status:', '') : 'backlog';
+    if (map.has(col)) {
+      map.get(col)?.issues.push(issue);
+    }
+  }
+  return groups;
+}
+
+test('updatePriorityLabels replaces or removes priority labels', () => {
+  const initial = ['status:todo', 'priority:useful', 'theme:voice-supervisor'];
+  // Change to critical
+  const toCritical = updatePriorityLabels(initial, 'critical');
+  assert.deepEqual(toCritical, ['status:todo', 'theme:voice-supervisor', 'priority:critical']);
+  // Remove priority with 'none'
+  const cleared = updatePriorityLabels(toCritical, 'none');
+  assert.deepEqual(cleared, ['status:todo', 'theme:voice-supervisor']);
+});
+
+test('groupIssuesBy groups issues correctly by priority', () => {
+  const issues = [
+    { number: 1, title: 'Bug A', labels: [{ name: 'priority:critical' }] },
+    { number: 2, title: 'Bug B', labels: [{ name: 'priority:important' }] },
+    { number: 3, title: 'Bug C', labels: [] },
+  ];
+  const groups = groupIssuesBy(issues, 'priority');
+  assert.equal(groups[0].id, 'critical');
+  assert.equal(groups[0].issues.length, 1);
+  assert.equal(groups[0].issues[0].number, 1);
+
+  assert.equal(groups[1].id, 'important');
+  assert.equal(groups[1].issues.length, 1);
+
+  assert.equal(groups[4].id, 'none');
+  assert.equal(groups[4].issues.length, 1);
+  assert.equal(groups[4].issues[0].number, 3);
+});

@@ -108,6 +108,7 @@ let showArchivedOnly: boolean = false;
 let currentSort: 'newest' | 'oldest' | 'priority' | 'complexity' | 'subtasks' | 'title' = 'newest';
 let filterPriority: string = 'all';
 let filterTag: string = 'all';
+let currentGroupBy: 'status' | 'priority' | 'tag' = 'status';
 let isFilterBarOpen: boolean = false;
 let selectedIssueNumbers = new Set<number>();
 let userLayoutPreference: 'auto' | 'list' | 'kanban' = 'auto';
@@ -151,6 +152,7 @@ const elBtnLogsToggle = document.getElementById('btnLogsToggle') as HTMLButtonEl
 const elBtnFilterToggle = document.getElementById('btnFilterToggle') as HTMLButtonElement | null;
 const elFilterBar = document.getElementById('filterBar') as HTMLDivElement | null;
 const elSelectSort = document.getElementById('selectSort') as HTMLSelectElement | null;
+const elSelectGroupBy = document.getElementById('selectGroupBy') as HTMLSelectElement | null;
 const elSelectFilterPriority = document.getElementById('selectFilterPriority') as HTMLSelectElement | null;
 const elSelectFilterTag = document.getElementById('selectFilterTag') as HTMLSelectElement | null;
 const elBtnStartTagIssues = document.getElementById('btnStartTagIssues') as HTMLButtonElement | null;
@@ -186,6 +188,7 @@ const elDrawerIssueAuthor = document.getElementById('drawerIssueAuthor') as HTML
 const elDrawerGithubLink = document.getElementById('drawerGithubLink') as HTMLAnchorElement;
 const elBtnDrawerToggleClose = document.getElementById('btnDrawerToggleClose') as HTMLButtonElement | null;
 const elDrawerIssueTitle = document.getElementById('drawerIssueTitle') as HTMLHeadingElement;
+const elDrawerPrioritySelect = document.getElementById('drawerPrioritySelect') as HTMLSelectElement | null;
 const elDrawerStatusSelect = document.getElementById('drawerStatusSelect') as HTMLSelectElement;
 const elDrawerComplexitySelect = document.getElementById('drawerComplexitySelect') as HTMLSelectElement | null;
 const elDrawerAlignmentWarning = document.getElementById('drawerAlignmentWarning') as HTMLDivElement | null;
@@ -1119,6 +1122,73 @@ export function getIssuePriority(issue: Issue): string | null {
   return null;
 }
 
+export function updatePriorityLabels(currentLabels: any[], newPriority: string | null): string[] {
+  const cleanExisting = currentLabels
+    .map((l) => (typeof l === 'string' ? l : l.name || ''))
+    .filter((name) => !name.toLowerCase().startsWith('priority:'));
+
+  if (newPriority && typeof newPriority === 'string' && newPriority.trim().toLowerCase() !== 'none') {
+    cleanExisting.push(`priority:${newPriority.trim().toLowerCase()}`);
+  }
+  return cleanExisting;
+}
+
+export interface IssueGroup {
+  id: string;
+  title: string;
+  issues: Issue[];
+}
+
+export function groupIssuesBy(issuesList: Issue[], groupBy: 'status' | 'priority' | 'tag'): IssueGroup[] {
+  if (groupBy === 'priority') {
+    const groups: IssueGroup[] = [
+      { id: 'critical', title: 'Critical', issues: [] },
+      { id: 'important', title: 'Important', issues: [] },
+      { id: 'useful', title: 'Useful', issues: [] },
+      { id: 'optional', title: 'Optional', issues: [] },
+      { id: 'none', title: 'No Priority', issues: [] },
+    ];
+    const map = new Map(groups.map((g) => [g.id, g]));
+    for (const issue of issuesList) {
+      const p = getIssuePriority(issue) || 'none';
+      map.get(p)?.issues.push(issue);
+    }
+    return groups;
+  }
+
+  if (groupBy === 'tag') {
+    const tagMap = new Map<string, IssueGroup>();
+    for (const issue of issuesList) {
+      const tag = getIssuePrimaryTag(issue);
+      if (!tagMap.has(tag)) {
+        tagMap.set(tag, { id: tag, title: tag, issues: [] });
+      }
+      tagMap.get(tag)!.issues.push(issue);
+    }
+    if (tagMap.size === 0) {
+      tagMap.set('general', { id: 'general', title: 'General Tasks', issues: issuesList });
+    }
+    return Array.from(tagMap.values());
+  }
+
+  // Default: status
+  const groups: IssueGroup[] = [
+    { id: 'backlog', title: 'Backlog', issues: [] },
+    { id: 'todo', title: 'To Do', issues: [] },
+    { id: 'in-progress', title: 'In Progress', issues: [] },
+    { id: 'in-review', title: 'In Review', issues: [] },
+    { id: 'done', title: 'Done', issues: [] },
+  ];
+  const map = new Map(groups.map((g) => [g.id, g]));
+  for (const issue of issuesList) {
+    const col = resolveIssueColumn(issue);
+    if (col && map.has(col)) {
+      map.get(col)!.issues.push(issue);
+    }
+  }
+  return groups;
+}
+
 export function getIssueComplexity(issue: Issue): string | null {
   if (!issue || !issue.labels) return null;
   for (const l of issue.labels) {
@@ -1545,7 +1615,12 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
     archiveCategoryBadge = `<span class="archive-from-badge">From: ${escapeHtml(catLabel)}</span>`;
   }
 
-  // Complexity & Alignment badges
+  // Priority, Complexity & Alignment badges
+  const priority = getIssuePriority(issue);
+  const priorityHtml = priority
+    ? `<span class="badge badge-priority badge-priority-${priority}">${priority}</span>`
+    : '';
+
   const complexity = getIssueComplexity(issue);
   const complexityHtml = complexity
     ? `<span class="badge badge-complexity badge-complexity-${complexity.toLowerCase()}">${complexity}</span>`
@@ -1592,6 +1667,7 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
       <div class="card-id-wrap">
         <input type="checkbox" class="card-checkbox" data-issue="${issue.number}" ${isSelected ? 'checked' : ''} title="Select issue for batch actions" />
         <span class="card-id">#${issue.number}</span>
+        ${priorityHtml}
         ${complexityHtml}
         ${vagueBadgeHtml}
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ''}
@@ -1715,17 +1791,62 @@ function renderListView(filteredIssues: Issue[]): void {
 }
 
 function renderKanbanView(filteredIssues: Issue[]): void {
-  (Object.keys(kanbanCardContainers) as ColumnId[]).forEach((col) => {
-    kanbanCardContainers[col].innerHTML = '';
-  });
+  elKanbanViewContainer.innerHTML = '';
+  const groups = groupIssuesBy(filteredIssues, currentGroupBy);
 
-  filteredIssues.forEach((issue) => {
-    const col = resolveIssueColumn(issue);
-    const container = kanbanCardContainers[col];
-    if (!container) return;
+  groups.forEach((grp) => {
+    const colEl = document.createElement('div');
+    colEl.className = 'kanban-col';
+    colEl.dataset.column = grp.id;
+    colEl.innerHTML = `
+      <div class="kanban-col-header">
+        <span>${escapeHtml(grp.title)}</span>
+        <span class="status-pill">${grp.issues.length}</span>
+      </div>
+      <div class="kanban-cards" data-column="${escapeHtml(grp.id)}"></div>
+    `;
 
-    const card = buildCardElement(issue, true);
-    container.appendChild(card);
+    const cardsContainer = colEl.querySelector('.kanban-cards') as HTMLDivElement;
+
+    // Drag-over and drop handlers on column
+    cardsContainer.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      cardsContainer.classList.add('drag-over');
+    });
+    cardsContainer.addEventListener('dragleave', () => {
+      cardsContainer.classList.remove('drag-over');
+    });
+    cardsContainer.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      cardsContainer.classList.remove('drag-over');
+      const issueNum = draggedIssueNumber || Number(e.dataTransfer?.getData('text/plain'));
+      if (!issueNum) return;
+      const issue = issues.find((i) => i.number === issueNum);
+      if (!issue) return;
+
+      if (currentGroupBy === 'status') {
+        await updateIssueStatus(issue, grp.id as ColumnId);
+      } else if (currentGroupBy === 'priority') {
+        const updatedLabels = updatePriorityLabels(issue.labels, grp.id);
+        issue.labels = updatedLabels.map((name) => ({ name }));
+        if (currentRepo) issueCache.delete(currentRepo);
+        renderViews();
+        try {
+          await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
+            labels: updatedLabels,
+          });
+          await host.toast({ kind: 'info', message: `Moved #${issue.number} to priority ${grp.title}` });
+        } catch {}
+      }
+    });
+
+    grp.issues.forEach((issue) => {
+      const card = buildCardElement(issue, true);
+      cardsContainer.appendChild(card);
+    });
+
+    elKanbanViewContainer.appendChild(colEl);
   });
 }
 
@@ -1923,6 +2044,10 @@ function renderDrawer(issue: Issue): void {
 
   const col = resolveIssueColumn(issue);
   elDrawerStatusSelect.value = col || 'none';
+
+  if (elDrawerPrioritySelect) {
+    elDrawerPrioritySelect.value = getIssuePriority(issue) || 'none';
+  }
 
   if (elDrawerComplexitySelect) {
     elDrawerComplexitySelect.value = getIssueComplexity(issue) || 'none';
@@ -2946,6 +3071,13 @@ function initEvents(): void {
     });
   }
 
+  if (elSelectGroupBy) {
+    elSelectGroupBy.addEventListener('change', () => {
+      currentGroupBy = elSelectGroupBy.value as any;
+      renderViews();
+    });
+  }
+
   if (elSelectFilterPriority) {
     elSelectFilterPriority.addEventListener('change', () => {
       filterPriority = elSelectFilterPriority.value;
@@ -3049,6 +3181,26 @@ function initEvents(): void {
   // Drawer events
   elBtnDrawerClose.addEventListener('click', closeDrawer);
   elDrawerScrim.addEventListener('click', closeDrawer);
+
+  if (elDrawerPrioritySelect) {
+    elDrawerPrioritySelect.addEventListener('change', async () => {
+      if (!activeIssue || !currentRepo) return;
+      const val = elDrawerPrioritySelect.value;
+      const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
+      activeIssue.labels = updatedLabels.map((name) => ({ name }));
+      if (currentRepo) issueCache.delete(currentRepo);
+      renderDrawer(activeIssue);
+      renderViews();
+      try {
+        await githubRequest('PATCH', `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+          labels: updatedLabels,
+        });
+        await host.toast({ kind: 'info', message: `Updated priority on #${activeIssue.number} to ${val}` });
+      } catch (err: any) {
+        addLog(`Failed to update priority: ${err.message}`, 'error');
+      }
+    });
+  }
 
   elDrawerStatusSelect.addEventListener('change', () => {
     if (activeIssue) {

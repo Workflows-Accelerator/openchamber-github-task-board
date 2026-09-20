@@ -710,6 +710,39 @@
       border: 1px solid var(--warn);
     }
 
+    /* Priority Badges on Cards */
+    .badge-priority {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      font-size: 9.5px;
+      padding: 0 5px;
+      border-radius: 3px;
+      line-height: 1.4;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .badge-priority-critical {
+      background: color-mix(in srgb, #e74c3c 18%, transparent);
+      color: #e74c3c;
+      border: 1px solid #e74c3c;
+    }
+    .badge-priority-important {
+      background: color-mix(in srgb, #e67e22 18%, transparent);
+      color: #e67e22;
+      border: 1px solid #e67e22;
+    }
+    .badge-priority-useful {
+      background: color-mix(in srgb, #f1c40f 18%, transparent);
+      color: #d4ac0d;
+      border: 1px solid #f1c40f;
+    }
+    .badge-priority-optional {
+      background: color-mix(in srgb, #3498db 18%, transparent);
+      color: #3498db;
+      border: 1px solid #3498db;
+    }
+
     /* Related Issue Cards in Drawer */
     .related-issue-card {
       display: flex;
@@ -1254,6 +1287,14 @@
   <!-- Filter & Sort Bar -->
   <div class="filter-bar" id="filterBar" style="display: none;">
     <div class="filter-item">
+      <label for="selectGroupBy">Group by:</label>
+      <select id="selectGroupBy" class="form-ctrl select-sm">
+        <option value="status" selected>Status (Kanban)</option>
+        <option value="priority">Priority</option>
+        <option value="tag">Tag / Theme</option>
+      </select>
+    </div>
+    <div class="filter-item">
       <label for="selectSort">Sort:</label>
       <select id="selectSort" class="form-ctrl select-sm">
         <option value="newest">Newest</option>
@@ -1394,6 +1435,18 @@
     </div>
 
     <div class="drawer-scroll">
+      <!-- Priority Picker -->
+      <div>
+        <div class="section-label">Priority</div>
+        <select class="form-ctrl" id="drawerPrioritySelect" style="width: 100%;">
+          <option value="none">No Priority</option>
+          <option value="critical">Critical (P0 - Blocker)</option>
+          <option value="important">Important (P1 - High)</option>
+          <option value="useful">Useful (P2 - Normal)</option>
+          <option value="optional">Optional (P3 - Low)</option>
+        </select>
+      </div>
+
       <!-- Status Picker -->
       <div>
         <div class="section-label">Workflow Status</div>

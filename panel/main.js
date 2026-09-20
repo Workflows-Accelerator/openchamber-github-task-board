@@ -1204,6 +1204,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var currentSort = "newest";
   var filterPriority = "all";
   var filterTag = "all";
+  var currentGroupBy = "status";
   var isFilterBarOpen = false;
   var selectedIssueNumbers = /* @__PURE__ */ new Set();
   var userLayoutPreference = "auto";
@@ -1238,6 +1239,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elBtnFilterToggle = document.getElementById("btnFilterToggle");
   var elFilterBar = document.getElementById("filterBar");
   var elSelectSort = document.getElementById("selectSort");
+  var elSelectGroupBy = document.getElementById("selectGroupBy");
   var elSelectFilterPriority = document.getElementById("selectFilterPriority");
   var elSelectFilterTag = document.getElementById("selectFilterTag");
   var elBtnStartTagIssues = document.getElementById("btnStartTagIssues");
@@ -1266,6 +1268,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elDrawerGithubLink = document.getElementById("drawerGithubLink");
   var elBtnDrawerToggleClose = document.getElementById("btnDrawerToggleClose");
   var elDrawerIssueTitle = document.getElementById("drawerIssueTitle");
+  var elDrawerPrioritySelect = document.getElementById("drawerPrioritySelect");
   var elDrawerStatusSelect = document.getElementById("drawerStatusSelect");
   var elDrawerComplexitySelect = document.getElementById("drawerComplexitySelect");
   var elDrawerAlignmentWarning = document.getElementById("drawerAlignmentWarning");
@@ -2030,6 +2033,59 @@ ${issue.body || ""}`.slice(0, 15e3);
     }
     return null;
   }
+  function updatePriorityLabels(currentLabels, newPriority) {
+    const cleanExisting = currentLabels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.toLowerCase().startsWith("priority:"));
+    if (newPriority && typeof newPriority === "string" && newPriority.trim().toLowerCase() !== "none") {
+      cleanExisting.push(`priority:${newPriority.trim().toLowerCase()}`);
+    }
+    return cleanExisting;
+  }
+  function groupIssuesBy(issuesList, groupBy) {
+    if (groupBy === "priority") {
+      const groups = [
+        { id: "critical", title: "Critical", issues: [] },
+        { id: "important", title: "Important", issues: [] },
+        { id: "useful", title: "Useful", issues: [] },
+        { id: "optional", title: "Optional", issues: [] },
+        { id: "none", title: "No Priority", issues: [] }
+      ];
+      const map = new Map(groups.map((g) => [g.id, g]));
+      for (const issue of issuesList) {
+        const p = getIssuePriority(issue) || "none";
+        map.get(p)?.issues.push(issue);
+      }
+      return groups;
+    }
+    if (groupBy === "tag") {
+      const tagMap = /* @__PURE__ */ new Map();
+      for (const issue of issuesList) {
+        const tag = getIssuePrimaryTag(issue);
+        if (!tagMap.has(tag)) {
+          tagMap.set(tag, { id: tag, title: tag, issues: [] });
+        }
+        tagMap.get(tag).issues.push(issue);
+      }
+      if (tagMap.size === 0) {
+        tagMap.set("general", { id: "general", title: "General Tasks", issues: issuesList });
+      }
+      return Array.from(tagMap.values());
+    }
+    const groups2 = [
+      { id: "backlog", title: "Backlog", issues: [] },
+      { id: "todo", title: "To Do", issues: [] },
+      { id: "in-progress", title: "In Progress", issues: [] },
+      { id: "in-review", title: "In Review", issues: [] },
+      { id: "done", title: "Done", issues: [] }
+    ];
+    const map2 = new Map(groups2.map((g) => [g.id, g]));
+    for (const issue of issuesList) {
+      const col = resolveIssueColumn(issue);
+      if (col && map2.has(col)) {
+        map2.get(col).issues.push(issue);
+      }
+    }
+    return groups2;
+  }
 
   function getIssueComplexity(issue) {
     if (!issue || !issue.labels) return null;
@@ -2364,6 +2420,12 @@ ${issue.body || ""}`.slice(0, 15e3);
       const catLabel = rawCat === "in-progress" ? "In Progress" : rawCat === "in-review" ? "In Review" : rawCat === "done" ? "Done" : rawCat === "backlog" ? "Backlog" : "To Do";
       archiveCategoryBadge = `<span class="archive-from-badge">From: ${escapeHtml(catLabel)}</span>`;
     }
+    const priority = getIssuePriority(issue);
+    const priorityHtml = priority ? `<span class="badge badge-priority badge-priority-${priority}">${priority}</span>` : "";
+    const complexity = getIssueComplexity(issue);
+    const complexityHtml = complexity ? `<span class="badge badge-complexity badge-complexity-${complexity.toLowerCase()}">${complexity}</span>` : "";
+    const vague = isVagueIdea(issue);
+    const vagueBadgeHtml = vague ? `<span class="badge badge-vague" title="Sparse task needing alignment">Needs Alignment</span>` : "";
     const nextStageButtonHtml = !inKanban && !showArchivedOnly ? `
       <button class="card-btn-next" data-issue="${issue.number}" data-target="${nextAction.target}" title="Move to ${nextAction.label}">
         <span>${nextAction.icon}</span>
@@ -2391,6 +2453,9 @@ ${issue.body || ""}`.slice(0, 15e3);
       <div class="card-id-wrap">
         <input type="checkbox" class="card-checkbox" data-issue="${issue.number}" ${isSelected ? "checked" : ""} title="Select issue for batch actions" />
         <span class="card-id">#${issue.number}</span>
+        ${priorityHtml}
+        ${complexityHtml}
+        ${vagueBadgeHtml}
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ""}
         ${archiveCategoryBadge}
       </div>
@@ -2493,16 +2558,56 @@ ${issue.body || ""}`.slice(0, 15e3);
     });
   }
   function renderKanbanView(filteredIssues) {
-    Object.keys(kanbanCardContainers).forEach((col) => {
-      kanbanCardContainers[col].innerHTML = "";
-    });
-    filteredIssues.forEach((issue) => {
-      const col = resolveIssueColumn(issue);
-      if (!col) return;
-      const container = kanbanCardContainers[col];
-      if (!container) return;
-      const card = buildCardElement(issue, true);
-      container.appendChild(card);
+    elKanbanViewContainer.innerHTML = "";
+    const groups = groupIssuesBy(filteredIssues, currentGroupBy);
+    groups.forEach((grp) => {
+      const colEl = document.createElement("div");
+      colEl.className = "kanban-col";
+      colEl.dataset.column = grp.id;
+      colEl.innerHTML = `
+        <div class="kanban-col-header">
+          <span>${escapeHtml(grp.title)}</span>
+          <span class="status-pill">${grp.issues.length}</span>
+        </div>
+        <div class="kanban-cards" data-column="${escapeHtml(grp.id)}"></div>
+      `;
+      const cardsContainer = colEl.querySelector(".kanban-cards");
+      cardsContainer.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        cardsContainer.classList.add("drag-over");
+      });
+      cardsContainer.addEventListener("dragleave", () => {
+        cardsContainer.classList.remove("drag-over");
+      });
+      cardsContainer.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        cardsContainer.classList.remove("drag-over");
+        const issueNum = draggedIssueNumber || Number(e.dataTransfer?.getData("text/plain"));
+        if (!issueNum) return;
+        const issue = issues.find((i) => i.number === issueNum);
+        if (!issue) return;
+        if (currentGroupBy === "status") {
+          await updateIssueStatus(issue, grp.id);
+        } else if (currentGroupBy === "priority") {
+          const updatedLabels = updatePriorityLabels(issue.labels, grp.id);
+          issue.labels = updatedLabels.map((name) => ({ name }));
+          if (currentRepo) issueCache.delete(currentRepo);
+          renderViews();
+          try {
+            await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+              labels: updatedLabels
+            });
+            await host.toast({ kind: "info", message: `Moved #${issue.number} to priority ${grp.title}` });
+          } catch {
+          }
+        }
+      });
+      grp.issues.forEach((issue) => {
+        const card = buildCardElement(issue, true);
+        cardsContainer.appendChild(card);
+      });
+      elKanbanViewContainer.appendChild(colEl);
     });
   }
   function applyLayoutMode() {
@@ -2646,6 +2751,9 @@ ${issue.body || ""}`.slice(0, 15e3);
     elDrawerIssueTitle.textContent = issue.title;
     const col = resolveIssueColumn(issue);
     elDrawerStatusSelect.value = col || "none";
+    if (elDrawerPrioritySelect) {
+      elDrawerPrioritySelect.value = getIssuePriority(issue) || "none";
+    }
     if (elDrawerComplexitySelect) {
       elDrawerComplexitySelect.value = getIssueComplexity(issue) || "none";
     }
@@ -3476,6 +3584,12 @@ Instructions for the Agent:
         renderViews();
       });
     }
+    if (elSelectGroupBy) {
+      elSelectGroupBy.addEventListener("change", () => {
+        currentGroupBy = elSelectGroupBy.value;
+        renderViews();
+      });
+    }
     if (elSelectFilterPriority) {
       elSelectFilterPriority.addEventListener("change", () => {
         filterPriority = elSelectFilterPriority.value;
@@ -3560,6 +3674,25 @@ Instructions for the Agent:
     });
     elBtnDrawerClose.addEventListener("click", closeDrawer);
     elDrawerScrim.addEventListener("click", closeDrawer);
+    if (elDrawerPrioritySelect) {
+      elDrawerPrioritySelect.addEventListener("change", async () => {
+        if (!activeIssue || !currentRepo) return;
+        const val = elDrawerPrioritySelect.value;
+        const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
+        activeIssue.labels = updatedLabels.map((name) => ({ name }));
+        if (currentRepo) issueCache.delete(currentRepo);
+        renderDrawer(activeIssue);
+        renderViews();
+        try {
+          await githubRequest("PATCH", `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+            labels: updatedLabels
+          });
+          await host.toast({ kind: "info", message: `Updated priority on #${activeIssue.number} to ${val}` });
+        } catch (err) {
+          addLog(`Failed to update priority: ${err.message}`, "error");
+        }
+      });
+    }
     elDrawerStatusSelect.addEventListener("change", () => {
       if (activeIssue) {
         const val = elDrawerStatusSelect.value;
