@@ -82,7 +82,9 @@ import {
   buildDependencyGraph,
   calculateEdgePath,
   detectCycle,
+  buildSessionIndex,
 } from './core.js';
+export { buildSessionIndex };
 
 // ==========================================
 // State Store
@@ -97,6 +99,7 @@ let allProjects: ProjectItem[] = [];
 let isDiscoveringRepos: boolean = false;
 let issues: Issue[] = [];
 let sessions: SessionInfo[] = [];
+let sessionIndex: Map<number, SessionInfo> = new Map();
 let worktrees: any[] = [];
 let activeIssue: Issue | null = null;
 let searchQuery: string = '';
@@ -390,6 +393,7 @@ async function watchActiveProject(projectId: string): Promise<void> {
     unsubSessions = await host.onSessions(projectId, (sessSnap) => {
       const prevSessions = sessions;
       sessions = (sessSnap.sessions as any[]) || [];
+      sessionIndex = buildSessionIndex(sessions);
       renderViews();
       if (activeIssue) renderDrawer(activeIssue);
 
@@ -1130,21 +1134,8 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[
 // ==========================================
 
 function getIssueSession(issue: Issue): SessionInfo | null {
-  const issueNumStr = String(issue.number);
-  const match = sessions.find((s) => {
-    if (s.items && s.items.some((it) => it.id === issueNumStr || it.data?.issueNumber === issue.number)) {
-      return true;
-    }
-    if (s.title && s.title.includes(`#${issue.number}`)) {
-      return true;
-    }
-    const wtName = extractWorktreeName(s.worktree);
-    if (wtName && wtName.includes(`issue-${issue.number}`)) {
-      return true;
-    }
-    return false;
-  });
-  return match || null;
+  if (!issue) return null;
+  return sessionIndex.get(issue.number) || null;
 }
 
 export function resolveIssueColumn(issue: Issue): ColumnId | null {

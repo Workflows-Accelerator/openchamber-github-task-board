@@ -50,6 +50,7 @@ const JS_FUNCS = [
   'buildMultiIssueAttachPayload', 'buildConsolidatedIssuePrompt', 'serializeDraftSubtasks',
   'parseIssueDependencies', 'addDependencyToMarkdown', 'removeDependencyFromMarkdown',
   'extractIssueReferences', 'buildDependencyGraph', 'calculateEdgePath', 'detectCycle',
+  'buildSessionIndex',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -67,7 +68,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 31);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 32);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -184,4 +185,15 @@ test('dependency helpers: shipped == core', () => {
   assert.equal(sGraph.layers.length, cGraph.layers.length);
   assert.equal(sGraph.edges.length, cGraph.edges.length);
   assert.deepEqual(Array.from(sGraph.nodes.keys()), Array.from(cGraph.nodes.keys()));
+});
+
+test('session index: shipped == core', () => {
+  const dummySessions = [
+    { id: '1', title: 'Task #10', activity: 'idle', items: [{ id: '10' }] },
+    { id: '2', title: 'Fix bug', activity: 'running', worktree: 'issue-20-fix' },
+  ];
+  const sIdx = Shipped.buildSessionIndex(dummySessions);
+  const cIdx = Core.buildSessionIndex(dummySessions);
+  assert.equal(sIdx.get(10)?.id, cIdx.get(10)?.id);
+  assert.equal(sIdx.get(20)?.id, cIdx.get(20)?.id);
 });

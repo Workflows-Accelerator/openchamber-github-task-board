@@ -3506,6 +3506,63 @@ Blocked by ${blockerRef}`;
     }
     return false;
   }
+  function buildSessionIndex(sessions2) {
+    const index = /* @__PURE__ */ new Map();
+    if (!sessions2 || !Array.isArray(sessions2)) return index;
+    const activityPriority = (act) => {
+      if (act === "running") return 4;
+      if (act === "waiting-permission" || act === "waiting-question") return 3;
+      if (act === "idle") return 2;
+      return 1;
+    };
+    const register = (issueNum, session) => {
+      if (!Number.isFinite(issueNum) || issueNum <= 0) return;
+      const existing = index.get(issueNum);
+      if (!existing) {
+        index.set(issueNum, session);
+      } else {
+        const existingPrio = activityPriority(existing.activity || "");
+        const newPrio = activityPriority(session.activity || "");
+        if (newPrio > existingPrio) {
+          index.set(issueNum, session);
+        }
+      }
+    };
+    for (const s of sessions2) {
+      if (!s) continue;
+      if (Array.isArray(s.items)) {
+        for (const item of s.items) {
+          if (!item) continue;
+          if (item.id && /^\d+$/.test(item.id)) {
+            register(parseInt(item.id, 10), s);
+          }
+          if (item.data?.issueNumber) {
+            register(parseInt(item.data.issueNumber, 10), s);
+          }
+          if (Array.isArray(item.data?.issueNumbers)) {
+            for (const n of item.data.issueNumbers) {
+              register(parseInt(n, 10), s);
+            }
+          }
+        }
+      }
+      if (typeof s.title === "string") {
+        const matches = s.title.matchAll(/#(\d+)\b/g);
+        for (const m of matches) {
+          register(parseInt(m[1], 10), s);
+        }
+      }
+      const wt = s.worktree;
+      const wtStr = typeof wt === "string" ? wt : wt?.name || wt?.branch || wt?.directory || "";
+      if (wtStr) {
+        const wtMatches = wtStr.matchAll(/\bissue-(\d+)\b/g);
+        for (const m of wtMatches) {
+          register(parseInt(m[1], 10), s);
+        }
+      }
+    }
+    return index;
+  }
 
   // panel/main.ts
   var host = connectHost();
@@ -3516,6 +3573,7 @@ Blocked by ${blockerRef}`;
   var isDiscoveringRepos = false;
   var issues = [];
   var sessions = [];
+  var sessionIndex = /* @__PURE__ */ new Map();
   var worktrees = [];
   var activeIssue = null;
   var searchQuery = "";
@@ -3737,6 +3795,7 @@ Blocked by ${blockerRef}`;
       unsubSessions = await host.onSessions(projectId, (sessSnap) => {
         const prevSessions = sessions;
         sessions = sessSnap.sessions || [];
+        sessionIndex = buildSessionIndex(sessions);
         renderViews();
         if (activeIssue) renderDrawer(activeIssue);
         const becameIdle = sessions.some((s) => {
@@ -4348,21 +4407,8 @@ Blocked by ${blockerRef}`;
     return groups;
   }
   function getIssueSession(issue) {
-    const issueNumStr = String(issue.number);
-    const match = sessions.find((s) => {
-      if (s.items && s.items.some((it) => it.id === issueNumStr || it.data?.issueNumber === issue.number)) {
-        return true;
-      }
-      if (s.title && s.title.includes(`#${issue.number}`)) {
-        return true;
-      }
-      const wtName = extractWorktreeName(s.worktree);
-      if (wtName && wtName.includes(`issue-${issue.number}`)) {
-        return true;
-      }
-      return false;
-    });
-    return match || null;
+    if (!issue) return null;
+    return sessionIndex.get(issue.number) || null;
   }
   function resolveIssueColumn(issue) {
     if (isIssueClosed(issue)) {

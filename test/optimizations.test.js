@@ -5,6 +5,7 @@ import {
   buildMultiIssueAttachPayload,
   buildConsolidatedIssuePrompt,
   updateSubtaskInMarkdown,
+  buildSessionIndex,
 } from '../panel/core.ts';
 
 export function matchProjectByDirectory(projects, targetDir) {
@@ -89,6 +90,25 @@ test('session worktree matching handles object worktree without throwing s.workt
   assert.equal(matchSession(12)?.id, '1');
   assert.equal(matchSession(15)?.id, '3');
   assert.equal(matchSession(999), null);
+});
+
+test('buildSessionIndex maps sessions to issue numbers with O(1) lookups and priority handling', () => {
+  const sessions = [
+    { id: 's1', title: 'Task #12 bugfix', activity: 'idle', worktree: { name: 'issue-12-bugfix' } },
+    { id: 's2', title: 'Running Task #12', activity: 'running', worktree: 'issue-12-bugfix' },
+    { id: 's3', title: 'Session with items', activity: 'idle', items: [{ id: '42' }, { data: { issueNumbers: [50, 51] } }] },
+    { id: 's4', title: 'Multiple #100 and #101', activity: 'idle' },
+  ];
+
+  const index = buildSessionIndex(sessions);
+  // Running session s2 should override idle session s1 for issue 12
+  assert.equal(index.get(12)?.id, 's2');
+  assert.equal(index.get(42)?.id, 's3');
+  assert.equal(index.get(50)?.id, 's3');
+  assert.equal(index.get(51)?.id, 's3');
+  assert.equal(index.get(100)?.id, 's4');
+  assert.equal(index.get(101)?.id, 's4');
+  assert.equal(index.get(999), undefined);
 });
 
 test('buildIssueAttachPayload constructs valid OpenChamber attach payload', () => {

@@ -919,3 +919,66 @@ export function detectCycle(issues: Issue[], newBlockerNum: number, targetNum: n
   return false;
 }
 
+export function buildSessionIndex(sessions: any[]): Map<number, any> {
+  const index = new Map<number, any>();
+  if (!sessions || !Array.isArray(sessions)) return index;
+
+  const activityPriority = (act: string): number => {
+    if (act === 'running') return 4;
+    if (act === 'waiting-permission' || act === 'waiting-question') return 3;
+    if (act === 'idle') return 2;
+    return 1;
+  };
+
+  const register = (issueNum: number, session: any) => {
+    if (!Number.isFinite(issueNum) || issueNum <= 0) return;
+    const existing = index.get(issueNum);
+    if (!existing) {
+      index.set(issueNum, session);
+    } else {
+      const existingPrio = activityPriority(existing.activity || '');
+      const newPrio = activityPriority(session.activity || '');
+      if (newPrio > existingPrio) {
+        index.set(issueNum, session);
+      }
+    }
+  };
+
+  for (const s of sessions) {
+    if (!s) continue;
+    if (Array.isArray(s.items)) {
+      for (const item of s.items) {
+        if (!item) continue;
+        if (item.id && /^\d+$/.test(item.id)) {
+          register(parseInt(item.id, 10), s);
+        }
+        if (item.data?.issueNumber) {
+          register(parseInt(item.data.issueNumber, 10), s);
+        }
+        if (Array.isArray(item.data?.issueNumbers)) {
+          for (const n of item.data.issueNumbers) {
+            register(parseInt(n, 10), s);
+          }
+        }
+      }
+    }
+    if (typeof s.title === 'string') {
+      const matches = s.title.matchAll(/#(\d+)\b/g);
+      for (const m of matches) {
+        register(parseInt(m[1], 10), s);
+      }
+    }
+    const wt = s.worktree;
+    const wtStr = typeof wt === 'string' ? wt : (wt?.name || wt?.branch || wt?.directory || '');
+    if (wtStr) {
+      const wtMatches = wtStr.matchAll(/\bissue-(\d+)\b/g);
+      for (const m of wtMatches) {
+        register(parseInt(m[1], 10), s);
+      }
+    }
+  }
+
+  return index;
+}
+
+
