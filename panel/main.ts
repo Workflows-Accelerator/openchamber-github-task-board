@@ -227,6 +227,12 @@ const elDrawerChecklistContainer = document.getElementById('drawerChecklistConta
 const elInputAddSubtask = document.getElementById('inputAddSubtask') as HTMLInputElement;
 const elBtnAddSubtask = document.getElementById('btnAddSubtask') as HTMLButtonElement;
 
+// Open questions elements
+const elQuestionsProgressText = document.getElementById('questionsProgressText') as HTMLSpanElement | null;
+const elDrawerQuestionsContainer = document.getElementById('drawerQuestionsContainer') as HTMLDivElement | null;
+const elInputAddQuestion = document.getElementById('inputAddQuestion') as HTMLInputElement | null;
+const elBtnAddQuestion = document.getElementById('btnAddQuestion') as HTMLButtonElement | null;
+
 // Dual-mode description elements
 const elDrawerDescriptionViewBox = document.getElementById('drawerDescriptionViewBox') as HTMLDivElement;
 const elDrawerDescriptionCollapsible = document.getElementById('drawerDescriptionCollapsible') as HTMLDivElement;
@@ -1893,6 +1899,9 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
     ? `<span class="badge badge-vague" title="Sparse task needing alignment">Needs Alignment</span>`
     : '';
 
+  const questionBadgeInfo = formatQuestionBadge(issue.openQuestions);
+  const questionsBadgeHtml = questionBadgeInfo.html;
+
   const descPreview = getIssueDescriptionPreview(issue.body);
   const descHtml = descPreview
     ? `<div class="card-desc" title="${escapeHtml(descPreview)}">${escapeHtml(descPreview)}</div>`
@@ -1950,7 +1959,10 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
     ${descHtml}
     ${labelsHtml ? `<div class="card-labels">${labelsHtml}</div>` : ''}
     <div class="card-footer">
-      ${subtaskHtml}
+      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+        ${subtaskHtml}
+        ${questionsBadgeHtml}
+      </div>
       <div style="display: flex; align-items: center; gap: 6px;">
         ${worktreeHtml}
         ${attachButtonHtml}
@@ -2501,6 +2513,9 @@ function renderDrawer(issue: Issue): void {
   // Render subtasks checklist
   renderChecklist(issue);
 
+  // Render open questions
+  renderQuestions(issue);
+
   // Render Markdown Description (View Mode)
   elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
   elDrawerDescriptionViewBox.style.display = 'block';
@@ -2558,6 +2573,69 @@ function renderChecklist(issue: Issue): void {
     itemEl.appendChild(cb);
     itemEl.appendChild(span);
     elDrawerChecklistContainer.appendChild(itemEl);
+  });
+}
+
+export function formatQuestionBadge(openQuestions?: Subtask[]) {
+  const list = openQuestions || [];
+  const total = list.length;
+  if (total === 0) {
+    return { total: 0, resolved: 0, open: 0, label: '', className: '', html: '' };
+  }
+  const resolved = list.filter((q) => q.completed).length;
+  const open = total - resolved;
+  const isOpen = open > 0;
+  const label = isOpen ? `${open} open` : `${total} Qs resolved`;
+  const className = isOpen ? 'questions-prog is-open' : 'questions-prog is-resolved';
+  const icon = isOpen
+    ? `<svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>`
+    : `<svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+  const html = `<div class="${className}" title="${open} open, ${resolved} resolved">${icon}<span>${label}</span></div>`;
+  return { total, resolved, open, label, className, html };
+}
+
+function renderQuestions(issue: Issue): void {
+  if (!elDrawerQuestionsContainer || !elQuestionsProgressText) return;
+  const questions = issue.openQuestions || [];
+  const total = questions.length;
+  const resolved = questions.filter((q) => q.completed).length;
+  const open = total - resolved;
+
+  if (total === 0) {
+    elQuestionsProgressText.textContent = '0 open';
+    elQuestionsProgressText.style.color = 'var(--fg-muted)';
+    elDrawerQuestionsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No open questions. Add one below to align on specifications.
+      </div>
+    `;
+    return;
+  }
+
+  elQuestionsProgressText.textContent = `${open} open (${resolved} resolved)`;
+  elQuestionsProgressText.style.color = open > 0 ? 'var(--warn)' : 'var(--succ)';
+
+  elDrawerQuestionsContainer.innerHTML = '';
+  questions.forEach((question) => {
+    const itemEl = document.createElement('div');
+    itemEl.className = `check-item ${question.completed ? 'done' : ''}`;
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = question.completed;
+    cb.title = question.completed ? 'Mark question as open' : 'Mark question as resolved/answered';
+
+    const span = document.createElement('span');
+    span.textContent = question.text;
+
+    cb.addEventListener('change', () => {
+      const updatedBody = updateOpenQuestionInMarkdown(issue.body, question.lineIndex, cb.checked);
+      void updateIssueBody(issue, updatedBody);
+    });
+
+    itemEl.appendChild(cb);
+    itemEl.appendChild(span);
+    elDrawerQuestionsContainer.appendChild(itemEl);
   });
 }
 
@@ -4084,6 +4162,20 @@ function initEvents(): void {
   elInputAddSubtask.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') elBtnAddSubtask.click();
   });
+
+  if (elBtnAddQuestion && elInputAddQuestion) {
+    elBtnAddQuestion.addEventListener('click', () => {
+      if (activeIssue && elInputAddQuestion.value.trim()) {
+        const newBody = appendOpenQuestionToMarkdown(activeIssue.body, elInputAddQuestion.value);
+        elInputAddQuestion.value = '';
+        void updateIssueBody(activeIssue, newBody);
+      }
+    });
+
+    elInputAddQuestion.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') elBtnAddQuestion.click();
+    });
+  }
 
   elBtnDrawerAttachComposer.addEventListener('click', async () => {
     if (!activeIssue) return;

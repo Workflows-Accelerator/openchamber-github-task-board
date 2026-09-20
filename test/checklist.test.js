@@ -337,3 +337,44 @@ test('isVagueIdea flags issues with unresolved open questions even if long descr
   };
   assert.equal(isVagueIdea(issueWithResolvedQuestions), false);
 });
+
+export function formatQuestionBadge(openQuestions) {
+  const list = openQuestions || [];
+  const total = list.length;
+  if (total === 0) {
+    return { total: 0, resolved: 0, open: 0, label: '', className: '', html: '' };
+  }
+  const resolved = list.filter((q) => q.completed).length;
+  const open = total - resolved;
+  const isOpen = open > 0;
+  const label = isOpen ? `${open} open` : `${total} Qs resolved`;
+  const className = isOpen ? 'questions-prog is-open' : 'questions-prog is-resolved';
+  const html = `<div class="${className}" title="${open} open, ${resolved} resolved"><span>${label}</span></div>`;
+  return { total, resolved, open, label, className, html };
+}
+
+test('formatQuestionBadge generates accurate badge states for open vs resolved questions', () => {
+  assert.equal(formatQuestionBadge([]).html, '');
+
+  const mixed = [
+    { text: 'Q1', completed: true },
+    { text: 'Q2', completed: false },
+    { text: 'Q3', completed: false },
+  ];
+  const mixedBadge = formatQuestionBadge(mixed);
+  assert.equal(mixedBadge.total, 3);
+  assert.equal(mixedBadge.open, 2);
+  assert.equal(mixedBadge.resolved, 1);
+  assert.equal(mixedBadge.label, '2 open');
+  assert.ok(mixedBadge.html.includes('is-open'));
+
+  const allResolved = [
+    { text: 'Q1', completed: true },
+    { text: 'Q2', completed: true },
+  ];
+  const resolvedBadge = formatQuestionBadge(allResolved);
+  assert.equal(resolvedBadge.open, 0);
+  assert.equal(resolvedBadge.resolved, 2);
+  assert.equal(resolvedBadge.label, '2 Qs resolved');
+  assert.ok(resolvedBadge.html.includes('is-resolved'));
+});
