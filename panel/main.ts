@@ -2265,6 +2265,7 @@ function drawGraphEdges(graph: DependencyGraph): void {
   elGraphSvgOverlay.setAttribute('height', String(canvasH));
   elGraphSvgOverlay.setAttribute('viewBox', `0 0 ${canvasW} ${canvasH}`);
 
+  // 1. Batch READ phase: Read canvas and all card positions in a single layout pass
   const canvasRect = elGraphCanvas.getBoundingClientRect();
   const cardElements = new Map<number, HTMLElement>();
   elGraphCanvas.querySelectorAll<HTMLElement>('.graph-card').forEach((card) => {
@@ -2272,13 +2273,18 @@ function drawGraphEdges(graph: DependencyGraph): void {
     if (num > 0) cardElements.set(num, card);
   });
 
-  for (const edge of graph.edges) {
-    const sourceEl = cardElements.get(edge.from);
-    const targetEl = cardElements.get(edge.to);
-    if (!sourceEl || !targetEl) continue;
+  const cardRects = new Map<number, DOMRect>();
+  cardElements.forEach((card, num) => {
+    cardRects.set(num, card.getBoundingClientRect());
+  });
 
-    const sourceRect = sourceEl.getBoundingClientRect();
-    const targetRect = targetEl.getBoundingClientRect();
+  // 2. Batch WRITE phase: Build SVG paths in fragment to prevent layout thrashing
+  const edgeFragment = document.createDocumentFragment();
+
+  for (const edge of graph.edges) {
+    const sourceRect = cardRects.get(edge.from);
+    const targetRect = cardRects.get(edge.to);
+    if (!sourceRect || !targetRect) continue;
 
     const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
 
@@ -2314,8 +2320,10 @@ function drawGraphEdges(graph: DependencyGraph): void {
     titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to remove dependency)`;
     path.appendChild(titleEl);
 
-    elGraphEdgesLayer.appendChild(path);
+    edgeFragment.appendChild(path);
   }
+
+  elGraphEdgesLayer.appendChild(edgeFragment);
 }
 
 function drawCurrentGraphEdges(): void {

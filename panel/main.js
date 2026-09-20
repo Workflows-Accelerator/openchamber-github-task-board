@@ -5334,12 +5334,15 @@ Blocked by ${blockerRef}`;
       const num = parseInt(card.dataset.issueNumber || "0", 10);
       if (num > 0) cardElements.set(num, card);
     });
+    const cardRects = /* @__PURE__ */ new Map();
+    cardElements.forEach((card, num) => {
+      cardRects.set(num, card.getBoundingClientRect());
+    });
+    const edgeFragment = document.createDocumentFragment();
     for (const edge of graph.edges) {
-      const sourceEl = cardElements.get(edge.from);
-      const targetEl = cardElements.get(edge.to);
-      if (!sourceEl || !targetEl) continue;
-      const sourceRect = sourceEl.getBoundingClientRect();
-      const targetRect = targetEl.getBoundingClientRect();
+      const sourceRect = cardRects.get(edge.from);
+      const targetRect = cardRects.get(edge.to);
+      if (!sourceRect || !targetRect) continue;
       const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", pathData.d);
@@ -5368,8 +5371,9 @@ Blocked by ${blockerRef}`;
       const titleEl = document.createElementNS("http://www.w3.org/2000/svg", "title");
       titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to remove dependency)`;
       path.appendChild(titleEl);
-      elGraphEdgesLayer.appendChild(path);
+      edgeFragment.appendChild(path);
     }
+    elGraphEdgesLayer.appendChild(edgeFragment);
   }
   function drawCurrentGraphEdges() {
     if (!currentGraph || !elGraphEdgesLayer || !elGraphCanvas) return;
