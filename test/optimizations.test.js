@@ -6,6 +6,7 @@ import {
   buildConsolidatedIssuePrompt,
   updateSubtaskInMarkdown,
   buildSessionIndex,
+  scopeDoneIssues,
 } from '../panel/core.ts';
 
 export function matchProjectByDirectory(projects, targetDir) {
@@ -109,6 +110,24 @@ test('buildSessionIndex maps sessions to issue numbers with O(1) lookups and pri
   assert.equal(index.get(100)?.id, 's4');
   assert.equal(index.get(101)?.id, 's4');
   assert.equal(index.get(999), undefined);
+});
+
+test('scopeDoneIssues caps initial completed issues when large and reveals all on opt-in', () => {
+  const dummyDone = Array.from({ length: 60 }, (_, i) => ({ number: i + 1, title: `Done task ${i + 1}` }));
+
+  const scoped = scopeDoneIssues(dummyDone, 25, false);
+  assert.equal(scoped.visible.length, 25);
+  assert.equal(scoped.total, 60);
+  assert.equal(scoped.remaining, 35);
+
+  const all = scopeDoneIssues(dummyDone, 25, true);
+  assert.equal(all.visible.length, 60);
+  assert.equal(all.total, 60);
+  assert.equal(all.remaining, 0);
+
+  const underLimit = scopeDoneIssues(dummyDone.slice(0, 10), 25, false);
+  assert.equal(underLimit.visible.length, 10);
+  assert.equal(underLimit.remaining, 0);
 });
 
 test('buildIssueAttachPayload constructs valid OpenChamber attach payload', () => {

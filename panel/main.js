@@ -3563,6 +3563,20 @@ Blocked by ${blockerRef}`;
     }
     return index;
   }
+  function scopeDoneIssues(doneIssues, limit = 25, showAll = false) {
+    if (!doneIssues || !Array.isArray(doneIssues)) {
+      return { visible: [], total: 0, remaining: 0 };
+    }
+    const total = doneIssues.length;
+    if (showAll || total <= limit) {
+      return { visible: doneIssues, total, remaining: 0 };
+    }
+    return {
+      visible: doneIssues.slice(0, limit),
+      total,
+      remaining: total - limit
+    };
+  }
 
   // panel/main.ts
   var host = connectHost();
@@ -3580,6 +3594,7 @@ Blocked by ${blockerRef}`;
   var activeTab = "all";
   var userSelectedTab = false;
   var showArchivedOnly = false;
+  var showAllDoneIssues = false;
   var currentSort = "newest";
   var filterPriority = "all";
   var filterTag = "all";
@@ -4856,8 +4871,8 @@ Blocked by ${blockerRef}`;
         const headerEl = groupEl.querySelector(".list-group-header");
         const toggleCollapse = (e) => {
           e.stopPropagation();
-          const collapsed = toggleGroupCollapse(groupKey);
-          groupEl.classList.toggle("is-collapsed", collapsed);
+          toggleGroupCollapse(groupKey);
+          renderViews();
         };
         headerEl.addEventListener("click", toggleCollapse);
         headerEl.addEventListener("keydown", (e) => {
@@ -4866,13 +4881,15 @@ Blocked by ${blockerRef}`;
             toggleCollapse(e);
           }
         });
-        const listCardsContainer = groupEl.querySelector(".list-group-cards");
-        const cardsFragment = document.createDocumentFragment();
-        grp.issues.forEach((issue) => {
-          const card = buildCardElement(issue, false);
-          cardsFragment.appendChild(card);
-        });
-        listCardsContainer.appendChild(cardsFragment);
+        if (!isCollapsed) {
+          const listCardsContainer = groupEl.querySelector(".list-group-cards");
+          const cardsFragment = document.createDocumentFragment();
+          grp.issues.forEach((issue) => {
+            const card = buildCardElement(issue, false);
+            cardsFragment.appendChild(card);
+          });
+          listCardsContainer.appendChild(cardsFragment);
+        }
         fragment.appendChild(groupEl);
       });
       if (totalRendered === 0) {
@@ -4941,15 +4958,22 @@ Blocked by ${blockerRef}`;
           }
         }
       });
+      let displayIssues = colIssues;
+      let doneRemaining = 0;
+      if (col.id === "done") {
+        const scoped = scopeDoneIssues(colIssues, 25, showAllDoneIssues);
+        displayIssues = scoped.visible;
+        doneRemaining = scoped.remaining;
+      }
       if (currentGroupBy === "none" || currentGroupBy === "status") {
         const cardsFragment = document.createDocumentFragment();
-        colIssues.forEach((issue) => {
+        displayIssues.forEach((issue) => {
           const card = buildCardElement(issue, true);
           cardsFragment.appendChild(card);
         });
         cardsContainer.appendChild(cardsFragment);
       } else {
-        const subGroups = groupIssuesBy(colIssues, currentGroupBy);
+        const subGroups = groupIssuesBy(displayIssues, currentGroupBy);
         const subFragment = document.createDocumentFragment();
         subGroups.forEach((subGrp) => {
           if (subGrp.issues.length === 0) return;
@@ -4972,8 +4996,8 @@ Blocked by ${blockerRef}`;
           const headerEl = subGroupEl.querySelector(".kanban-subgroup-header");
           const toggleCollapse = (e) => {
             e.stopPropagation();
-            const collapsed = toggleGroupCollapse(groupKey);
-            subGroupEl.classList.toggle("is-collapsed", collapsed);
+            toggleGroupCollapse(groupKey);
+            renderViews();
           };
           headerEl.addEventListener("click", toggleCollapse);
           headerEl.addEventListener("keydown", (e) => {
@@ -4982,16 +5006,29 @@ Blocked by ${blockerRef}`;
               toggleCollapse(e);
             }
           });
-          const subCardsContainer = subGroupEl.querySelector(".kanban-subgroup-cards");
-          const subCardsFragment = document.createDocumentFragment();
-          subGrp.issues.forEach((issue) => {
-            const card = buildCardElement(issue, true);
-            subCardsFragment.appendChild(card);
-          });
-          subCardsContainer.appendChild(subCardsFragment);
+          if (!isCollapsed) {
+            const subCardsContainer = subGroupEl.querySelector(".kanban-subgroup-cards");
+            const subCardsFragment = document.createDocumentFragment();
+            subGrp.issues.forEach((issue) => {
+              const card = buildCardElement(issue, true);
+              subCardsFragment.appendChild(card);
+            });
+            subCardsContainer.appendChild(subCardsFragment);
+          }
           subFragment.appendChild(subGroupEl);
         });
         cardsContainer.appendChild(subFragment);
+      }
+      if (col.id === "done" && doneRemaining > 0) {
+        const showMoreBtn = document.createElement("div");
+        showMoreBtn.className = "kanban-show-more-btn";
+        showMoreBtn.style.cssText = "padding: 8px 10px; text-align: center; font-size: 11px; color: var(--prim); cursor: pointer; background: var(--surf-muted); border-radius: var(--rad); margin-top: 6px; border: 1px dashed var(--border); font-weight: 500;";
+        showMoreBtn.textContent = `Show all ${colIssues.length} Done (+${doneRemaining} more)`;
+        showMoreBtn.addEventListener("click", () => {
+          showAllDoneIssues = true;
+          renderViews();
+        });
+        cardsContainer.appendChild(showMoreBtn);
       }
       kanbanFragment.appendChild(colEl);
     });

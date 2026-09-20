@@ -981,4 +981,24 @@ export function buildSessionIndex(sessions: any[]): Map<number, any> {
   return index;
 }
 
+export function scopeDoneIssues(
+  doneIssues: any[],
+  limit: number = 25,
+  showAll: boolean = false
+): { visible: any[]; total: number; remaining: number } {
+  if (!doneIssues || !Array.isArray(doneIssues)) {
+    return { visible: [], total: 0, remaining: 0 };
+  }
+  const total = doneIssues.length;
+  if (showAll || total <= limit) {
+    return { visible: doneIssues, total, remaining: 0 };
+  }
+  return {
+    visible: doneIssues.slice(0, limit),
+    total,
+    remaining: total - limit,
+  };
+}
+
+
 

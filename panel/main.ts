@@ -83,8 +83,9 @@ import {
   calculateEdgePath,
   detectCycle,
   buildSessionIndex,
+  scopeDoneIssues,
 } from './core.js';
-export { buildSessionIndex };
+export { buildSessionIndex, scopeDoneIssues };
 
 // ==========================================
 // State Store
@@ -106,6 +107,7 @@ let searchQuery: string = '';
 let activeTab: TabId = 'all';
 let userSelectedTab: boolean = false;
 let showArchivedOnly: boolean = false;
+let showAllDoneIssues: boolean = false;
 let currentSort: 'newest' | 'oldest' | 'priority' | 'complexity' | 'subtasks' | 'title' = 'newest';
 let filterPriority: string = 'all';
 let filterTag: string = 'all';
@@ -1726,8 +1728,8 @@ function renderListView(filteredIssues: Issue[]): void {
       const headerEl = groupEl.querySelector('.list-group-header') as HTMLElement;
       const toggleCollapse = (e: Event) => {
         e.stopPropagation();
-        const collapsed = toggleGroupCollapse(groupKey);
-        groupEl.classList.toggle('is-collapsed', collapsed);
+        toggleGroupCollapse(groupKey);
+        renderViews();
       };
       headerEl.addEventListener('click', toggleCollapse);
       headerEl.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -1737,13 +1739,16 @@ function renderListView(filteredIssues: Issue[]): void {
         }
       });
 
-      const listCardsContainer = groupEl.querySelector('.list-group-cards') as HTMLDivElement;
-      const cardsFragment = document.createDocumentFragment();
-      grp.issues.forEach((issue) => {
-        const card = buildCardElement(issue, false);
-        cardsFragment.appendChild(card);
-      });
-      listCardsContainer.appendChild(cardsFragment);
+      // Lazy rendering: only construct cards if group is expanded
+      if (!isCollapsed) {
+        const listCardsContainer = groupEl.querySelector('.list-group-cards') as HTMLDivElement;
+        const cardsFragment = document.createDocumentFragment();
+        grp.issues.forEach((issue) => {
+          const card = buildCardElement(issue, false);
+          cardsFragment.appendChild(card);
+        });
+        listCardsContainer.appendChild(cardsFragment);
+      }
 
       fragment.appendChild(groupEl);
     });
@@ -1822,15 +1827,23 @@ function renderKanbanView(filteredIssues: Issue[]): void {
       }
     });
 
+    let displayIssues = colIssues;
+    let doneRemaining = 0;
+    if (col.id === 'done') {
+      const scoped = scopeDoneIssues(colIssues, 25, showAllDoneIssues);
+      displayIssues = scoped.visible;
+      doneRemaining = scoped.remaining;
+    }
+
     if (currentGroupBy === 'none' || currentGroupBy === 'status') {
       const cardsFragment = document.createDocumentFragment();
-      colIssues.forEach((issue) => {
+      displayIssues.forEach((issue) => {
         const card = buildCardElement(issue, true);
         cardsFragment.appendChild(card);
       });
       cardsContainer.appendChild(cardsFragment);
     } else {
-      const subGroups = groupIssuesBy(colIssues, currentGroupBy);
+      const subGroups = groupIssuesBy(displayIssues, currentGroupBy);
       const subFragment = document.createDocumentFragment();
       subGroups.forEach((subGrp) => {
         if (subGrp.issues.length === 0) return;
@@ -1855,8 +1868,8 @@ function renderKanbanView(filteredIssues: Issue[]): void {
         const headerEl = subGroupEl.querySelector('.kanban-subgroup-header') as HTMLElement;
         const toggleCollapse = (e: Event) => {
           e.stopPropagation();
-          const collapsed = toggleGroupCollapse(groupKey);
-          subGroupEl.classList.toggle('is-collapsed', collapsed);
+          toggleGroupCollapse(groupKey);
+          renderViews();
         };
         headerEl.addEventListener('click', toggleCollapse);
         headerEl.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -1866,16 +1879,31 @@ function renderKanbanView(filteredIssues: Issue[]): void {
           }
         });
 
-        const subCardsContainer = subGroupEl.querySelector('.kanban-subgroup-cards') as HTMLDivElement;
-        const subCardsFragment = document.createDocumentFragment();
-        subGrp.issues.forEach((issue) => {
-          const card = buildCardElement(issue, true);
-          subCardsFragment.appendChild(card);
-        });
-        subCardsContainer.appendChild(subCardsFragment);
+        // Lazy rendering: only construct cards if subgroup is expanded
+        if (!isCollapsed) {
+          const subCardsContainer = subGroupEl.querySelector('.kanban-subgroup-cards') as HTMLDivElement;
+          const subCardsFragment = document.createDocumentFragment();
+          subGrp.issues.forEach((issue) => {
+            const card = buildCardElement(issue, true);
+            subCardsFragment.appendChild(card);
+          });
+          subCardsContainer.appendChild(subCardsFragment);
+        }
         subFragment.appendChild(subGroupEl);
       });
       cardsContainer.appendChild(subFragment);
+    }
+
+    if (col.id === 'done' && doneRemaining > 0) {
+      const showMoreBtn = document.createElement('div');
+      showMoreBtn.className = 'kanban-show-more-btn';
+      showMoreBtn.style.cssText = 'padding: 8px 10px; text-align: center; font-size: 11px; color: var(--prim); cursor: pointer; background: var(--surf-muted); border-radius: var(--rad); margin-top: 6px; border: 1px dashed var(--border); font-weight: 500;';
+      showMoreBtn.textContent = `Show all ${colIssues.length} Done (+${doneRemaining} more)`;
+      showMoreBtn.addEventListener('click', () => {
+        showAllDoneIssues = true;
+        renderViews();
+      });
+      cardsContainer.appendChild(showMoreBtn);
     }
 
     kanbanFragment.appendChild(colEl);

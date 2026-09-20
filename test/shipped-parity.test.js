@@ -51,6 +51,7 @@ const JS_FUNCS = [
   'parseIssueDependencies', 'addDependencyToMarkdown', 'removeDependencyFromMarkdown',
   'extractIssueReferences', 'buildDependencyGraph', 'calculateEdgePath', 'detectCycle',
   'buildSessionIndex',
+  'scopeDoneIssues',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -68,7 +69,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 32);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 33);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -196,4 +197,10 @@ test('session index: shipped == core', () => {
   const cIdx = Core.buildSessionIndex(dummySessions);
   assert.equal(sIdx.get(10)?.id, cIdx.get(10)?.id);
   assert.equal(sIdx.get(20)?.id, cIdx.get(20)?.id);
+});
+
+test('scopeDoneIssues: shipped == core', () => {
+  const dummy = [{ number: 1 }, { number: 2 }, { number: 3 }];
+  assert.deepEqual(Shipped.scopeDoneIssues(dummy, 2, false), Core.scopeDoneIssues(dummy, 2, false));
+  assert.deepEqual(Shipped.scopeDoneIssues(dummy, 2, true), Core.scopeDoneIssues(dummy, 2, true));
 });
