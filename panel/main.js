@@ -1253,6 +1253,9 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elSearchInput = document.getElementById("searchInput");
   var elBtnLayoutToggle = document.getElementById("btnLayoutToggle");
   var elBtnGraphToggle = document.getElementById("btnGraphToggle");
+  var elBtnViewList = document.getElementById("btnViewList");
+  var elBtnViewKanban = document.getElementById("btnViewKanban");
+  var elBtnViewGraph = document.getElementById("btnViewGraph");
   var elMenuItemToggleGraph = document.getElementById("menuItemToggleGraph");
   var elTxtMenuGraph = document.getElementById("txtMenuGraph");
 
@@ -3031,6 +3034,14 @@ ${issue.body || ""}`.slice(0, 15e3);
       elKanbanViewContainer.appendChild(colEl);
     });
   }
+  function updateViewModeButtons(mode) {
+    elBtnViewList?.classList.toggle("active", mode === "list");
+    elBtnViewList?.setAttribute("aria-checked", mode === "list" ? "true" : "false");
+    elBtnViewKanban?.classList.toggle("active", mode === "kanban");
+    elBtnViewKanban?.setAttribute("aria-checked", mode === "kanban" ? "true" : "false");
+    elBtnViewGraph?.classList.toggle("active", mode === "graph");
+    elBtnViewGraph?.setAttribute("aria-checked", mode === "graph" ? "true" : "false");
+  }
   function applyLayoutMode() {
     if (showArchivedOnly) {
       document.body.removeAttribute("data-layout");
@@ -3039,26 +3050,22 @@ ${issue.body || ""}`.slice(0, 15e3);
     isWideScreen = window.innerWidth >= 680;
     if (userLayoutPreference === "graph") {
       document.body.setAttribute("data-layout", "graph");
-      if (elBtnLayoutToggle) elBtnLayoutToggle.title = "Switch to List View";
-      if (elBtnGraphToggle) elBtnGraphToggle.classList.add("active");
+      updateViewModeButtons("graph");
       drawCurrentGraphEdges();
     } else if (userLayoutPreference === "kanban") {
       document.body.setAttribute("data-layout", "kanban");
-      if (elBtnLayoutToggle) elBtnLayoutToggle.title = "Switch to Dependency Graph View";
-      if (elBtnGraphToggle) elBtnGraphToggle.classList.remove("active");
+      updateViewModeButtons("kanban");
     } else if (userLayoutPreference === "list") {
       document.body.removeAttribute("data-layout");
-      if (elBtnLayoutToggle) elBtnLayoutToggle.title = "Switch to Kanban View";
-      if (elBtnGraphToggle) elBtnGraphToggle.classList.remove("active");
+      updateViewModeButtons("list");
     } else {
       if (isWideScreen) {
         document.body.setAttribute("data-layout", "kanban");
-        if (elBtnLayoutToggle) elBtnLayoutToggle.title = "Switch to Dependency Graph View";
+        updateViewModeButtons("kanban");
       } else {
         document.body.removeAttribute("data-layout");
-        if (elBtnLayoutToggle) elBtnLayoutToggle.title = "Switch to Kanban View";
+        updateViewModeButtons("list");
       }
-      if (elBtnGraphToggle) elBtnGraphToggle.classList.remove("active");
     }
   }
   var THEME_PALETTE = [
@@ -5525,25 +5532,45 @@ Instructions for the Alignment Session:
       searchQuery = e.target.value;
       renderViews();
     });
-    const toggleLayoutMode = () => {
-      const cur = document.body.getAttribute("data-layout");
-      if (cur === "kanban") {
-        userLayoutPreference = "graph";
-      } else if (cur === "graph") {
-        userLayoutPreference = "list";
-      } else {
-        userLayoutPreference = "kanban";
-      }
+    elBtnViewList?.addEventListener("click", () => {
+      userLayoutPreference = "list";
       applyLayoutMode();
-    };
-    elBtnLayoutToggle.addEventListener("click", toggleLayoutMode);
+    });
+    elBtnViewKanban?.addEventListener("click", () => {
+      userLayoutPreference = "kanban";
+      applyLayoutMode();
+    });
+    elBtnViewGraph?.addEventListener("click", () => {
+      userLayoutPreference = "graph";
+      applyLayoutMode();
+    });
+
+    document.getElementById("menuItemViewList")?.addEventListener("click", () => {
+      userLayoutPreference = "list";
+      applyLayoutMode();
+      closeMoreMenu();
+    });
+    document.getElementById("menuItemViewBoard")?.addEventListener("click", () => {
+      userLayoutPreference = "kanban";
+      applyLayoutMode();
+      closeMoreMenu();
+    });
+    document.getElementById("menuItemViewGraph")?.addEventListener("click", () => {
+      userLayoutPreference = "graph";
+      applyLayoutMode();
+      closeMoreMenu();
+    });
+
+    if (elBtnLayoutToggle) {
+      elBtnLayoutToggle.addEventListener("click", () => {
+        const cur = document.body.getAttribute("data-layout");
+        userLayoutPreference = cur === "kanban" ? "graph" : cur === "graph" ? "list" : "kanban";
+        applyLayoutMode();
+      });
+    }
     if (elBtnGraphToggle) {
       elBtnGraphToggle.addEventListener("click", () => {
-        if (document.body.getAttribute("data-layout") === "graph") {
-          userLayoutPreference = isWideScreen ? "kanban" : "list";
-        } else {
-          userLayoutPreference = "graph";
-        }
+        userLayoutPreference = document.body.getAttribute("data-layout") === "graph" ? (isWideScreen ? "kanban" : "list") : "graph";
         applyLayoutMode();
       });
     }

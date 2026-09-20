@@ -177,8 +177,11 @@ const elInputCustomRepo = document.getElementById('inputCustomRepo') as HTMLInpu
 const elBtnSaveCustomRepo = document.getElementById('btnSaveCustomRepo') as HTMLButtonElement;
 
 const elSearchInput = document.getElementById('searchInput') as HTMLInputElement;
-const elBtnLayoutToggle = document.getElementById('btnLayoutToggle') as HTMLButtonElement;
+const elBtnLayoutToggle = document.getElementById('btnLayoutToggle') as HTMLButtonElement | null;
 const elBtnGraphToggle = document.getElementById('btnGraphToggle') as HTMLButtonElement | null;
+const elBtnViewList = document.getElementById('btnViewList') as HTMLButtonElement | null;
+const elBtnViewKanban = document.getElementById('btnViewKanban') as HTMLButtonElement | null;
+const elBtnViewGraph = document.getElementById('btnViewGraph') as HTMLButtonElement | null;
 const elMenuItemToggleGraph = document.getElementById('menuItemToggleGraph') as HTMLDivElement | null;
 const elTxtMenuGraph = document.getElementById('txtMenuGraph') as HTMLSpanElement | null;
 
@@ -2068,6 +2071,17 @@ function renderKanbanView(filteredIssues: Issue[]): void {
   });
 }
 
+function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph'): void {
+  elBtnViewList?.classList.toggle('active', mode === 'list');
+  elBtnViewList?.setAttribute('aria-checked', mode === 'list' ? 'true' : 'false');
+
+  elBtnViewKanban?.classList.toggle('active', mode === 'kanban');
+  elBtnViewKanban?.setAttribute('aria-checked', mode === 'kanban' ? 'true' : 'false');
+
+  elBtnViewGraph?.classList.toggle('active', mode === 'graph');
+  elBtnViewGraph?.setAttribute('aria-checked', mode === 'graph' ? 'true' : 'false');
+}
+
 function applyLayoutMode(): void {
   if (showArchivedOnly) {
     document.body.removeAttribute('data-layout');
@@ -2077,26 +2091,22 @@ function applyLayoutMode(): void {
 
   if (userLayoutPreference === 'graph') {
     document.body.setAttribute('data-layout', 'graph');
-    if (elBtnLayoutToggle) elBtnLayoutToggle.title = 'Switch to List View';
-    if (elBtnGraphToggle) elBtnGraphToggle.classList.add('active');
+    updateViewModeButtons('graph');
     drawCurrentGraphEdges();
   } else if (userLayoutPreference === 'kanban') {
     document.body.setAttribute('data-layout', 'kanban');
-    if (elBtnLayoutToggle) elBtnLayoutToggle.title = 'Switch to Dependency Graph View';
-    if (elBtnGraphToggle) elBtnGraphToggle.classList.remove('active');
+    updateViewModeButtons('kanban');
   } else if (userLayoutPreference === 'list') {
     document.body.removeAttribute('data-layout');
-    if (elBtnLayoutToggle) elBtnLayoutToggle.title = 'Switch to Kanban View';
-    if (elBtnGraphToggle) elBtnGraphToggle.classList.remove('active');
+    updateViewModeButtons('list');
   } else {
     if (isWideScreen) {
       document.body.setAttribute('data-layout', 'kanban');
-      if (elBtnLayoutToggle) elBtnLayoutToggle.title = 'Switch to Dependency Graph View';
+      updateViewModeButtons('kanban');
     } else {
       document.body.removeAttribute('data-layout');
-      if (elBtnLayoutToggle) elBtnLayoutToggle.title = 'Switch to Kanban View';
+      updateViewModeButtons('list');
     }
-    if (elBtnGraphToggle) elBtnGraphToggle.classList.remove('active');
   }
 }
 
@@ -4495,27 +4505,48 @@ function initEvents(): void {
     renderViews();
   });
 
-  // Layout toggle (List <-> Kanban <-> Graph)
-  const toggleLayoutMode = () => {
-    const cur = document.body.getAttribute('data-layout');
-    if (cur === 'kanban') {
-      userLayoutPreference = 'graph';
-    } else if (cur === 'graph') {
-      userLayoutPreference = 'list';
-    } else {
-      userLayoutPreference = 'kanban';
-    }
+  // 3-Way View Switcher (List / Board / Graph)
+  elBtnViewList?.addEventListener('click', () => {
+    userLayoutPreference = 'list';
     applyLayoutMode();
-  };
-  elBtnLayoutToggle.addEventListener('click', toggleLayoutMode);
+  });
+  elBtnViewKanban?.addEventListener('click', () => {
+    userLayoutPreference = 'kanban';
+    applyLayoutMode();
+  });
+  elBtnViewGraph?.addEventListener('click', () => {
+    userLayoutPreference = 'graph';
+    applyLayoutMode();
+  });
+
+  // More menu direct view items
+  document.getElementById('menuItemViewList')?.addEventListener('click', () => {
+    userLayoutPreference = 'list';
+    applyLayoutMode();
+    closeMoreMenu();
+  });
+  document.getElementById('menuItemViewBoard')?.addEventListener('click', () => {
+    userLayoutPreference = 'kanban';
+    applyLayoutMode();
+    closeMoreMenu();
+  });
+  document.getElementById('menuItemViewGraph')?.addEventListener('click', () => {
+    userLayoutPreference = 'graph';
+    applyLayoutMode();
+    closeMoreMenu();
+  });
+
+  if (elBtnLayoutToggle) {
+    elBtnLayoutToggle.addEventListener('click', () => {
+      const cur = document.body.getAttribute('data-layout');
+      userLayoutPreference = cur === 'kanban' ? 'graph' : cur === 'graph' ? 'list' : 'kanban';
+      applyLayoutMode();
+    });
+  }
 
   if (elBtnGraphToggle) {
     elBtnGraphToggle.addEventListener('click', () => {
-      if (document.body.getAttribute('data-layout') === 'graph') {
-        userLayoutPreference = isWideScreen ? 'kanban' : 'list';
-      } else {
-        userLayoutPreference = 'graph';
-      }
+      userLayoutPreference = document.body.getAttribute('data-layout') === 'graph' ? (isWideScreen ? 'kanban' : 'list') : 'graph';
       applyLayoutMode();
     });
   }

@@ -332,6 +332,48 @@
       overflow-y: hidden;
     }
 
+    /* 3-Way View Switcher Segmented Control */
+    .view-mode-group {
+      display: inline-flex;
+      align-items: center;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      padding: 2px;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+    .view-mode-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 8px;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: var(--rad-sm);
+      color: var(--fg-muted);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+    .view-mode-btn:hover {
+      color: var(--fg);
+      background: var(--surf-hover);
+    }
+    .view-mode-btn.active {
+      background: var(--surf-subtle);
+      color: var(--fg);
+      font-weight: 600;
+      border-color: var(--border);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+    }
+    @media (max-width: 500px) {
+      .view-mode-label { display: none; }
+      .view-mode-btn { padding: 3px 6px; }
+    }
+
     /* Switch between List, Kanban, and Graph when data-layout is set */
     body[data-layout="kanban"] .status-tabs { display: none; }
     body[data-layout="kanban"] .list-view { display: none; }
@@ -2051,15 +2093,21 @@
         <svg class="icon" id="iconRefresh" viewBox="0 0 24 24"><path d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
       </button>
 
-      <!-- Layout Toggle (Inline on wide screen) -->
-      <button class="btn btn-icon toolbar-btn-optional" id="btnLayoutToggle" title="Toggle Board / List View">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>
-      </button>
-
-      <!-- Dependency Graph Toggle (Inline on wide screen) -->
-      <button class="btn btn-icon toolbar-btn-optional" id="btnGraphToggle" title="Dependency Waterfall Graph">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>
-      </button>
+      <!-- 3-Way Segmented View Switcher (List / Board / Graph) -->
+      <div class="view-mode-group toolbar-btn-optional" id="viewModeGroup" role="radiogroup" aria-label="View Layout">
+        <button class="view-mode-btn active" data-mode="list" id="btnViewList" title="List View" role="radio" aria-checked="true">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+          <span class="view-mode-label">List</span>
+        </button>
+        <button class="view-mode-btn" data-mode="kanban" id="btnViewKanban" title="Board View (Kanban)" role="radio" aria-checked="false">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>
+          <span class="view-mode-label">Board</span>
+        </button>
+        <button class="view-mode-btn" data-mode="graph" id="btnViewGraph" title="Waterfall Dependency Graph" role="radio" aria-checked="false">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>
+          <span class="view-mode-label">Graph</span>
+        </button>
+      </div>
 
       <!-- Archive Toggle (Inline on wide screen) -->
       <button class="btn btn-icon toolbar-btn-optional" id="btnArchiveToggle" title="Toggle Archived Issues View">
@@ -2090,13 +2138,17 @@
         <div class="popover more-popover" id="moreMenuPopover" role="menu" aria-label="Views and diagnostics" style="position: absolute; top: 32px; right: 0; left: auto; width: 190px; z-index: 150; display: none;">
           <div class="popover-head">Views & Diagnostics</div>
           <div class="popover-list">
-            <div class="popover-item" id="menuItemToggleLayout" role="menuitem" tabindex="0">
-              <span class="popover-item-title" id="txtMenuLayout">Board / List View</span>
-              <span class="popover-item-sub">Switch Kanban & List</span>
+            <div class="popover-item" id="menuItemViewList" role="menuitem" tabindex="0">
+              <span class="popover-item-title">List View</span>
+              <span class="popover-item-sub">Vertical tasks list</span>
             </div>
-            <div class="popover-item" id="menuItemToggleGraph" role="menuitem" tabindex="0">
-              <span class="popover-item-title" id="txtMenuGraph">Dependency Graph</span>
-              <span class="popover-item-sub">Waterfall tasks & dependencies</span>
+            <div class="popover-item" id="menuItemViewBoard" role="menuitem" tabindex="0">
+              <span class="popover-item-title">Board View</span>
+              <span class="popover-item-sub">Kanban status columns</span>
+            </div>
+            <div class="popover-item" id="menuItemViewGraph" role="menuitem" tabindex="0">
+              <span class="popover-item-title">Dependency Graph</span>
+              <span class="popover-item-sub">Waterfall dependency flow</span>
             </div>
             <div class="popover-item" id="menuItemToggleArchive" role="menuitem" tabindex="0">
               <span class="popover-item-title" id="txtMenuArchive">Archived Issues</span>
