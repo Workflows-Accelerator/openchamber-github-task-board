@@ -84,8 +84,10 @@ import {
   detectCycle,
   buildSessionIndex,
   scopeDoneIssues,
+  normalizeGithubIssues,
+  mergeIssuePages,
 } from './core.js';
-export { buildSessionIndex, scopeDoneIssues };
+export { buildSessionIndex, scopeDoneIssues, normalizeGithubIssues, mergeIssuePages };
 
 // ==========================================
 // State Store
@@ -124,6 +126,7 @@ let isWideScreen: boolean = false;
 let draggedIssueNumber: number | null = null;
 let isLoading: boolean = false;
 let currentRenderedLayout: 'list' | 'kanban' | 'graph' | null = null;
+let lastRateLimitRemaining: number | null = null;
 let collapsedGroupKeys = new Set<string>();
 
 export function toggleGroupCollapse(key: string): boolean {
@@ -753,6 +756,8 @@ async function githubRequest(
       if (directRes.ok) {
         addLog(`API ${method} ${path} -> ${directRes.status} OK (via workspace PAT)`, 'succ');
         hideBanner();
+        const rem = directRes.headers.get('x-ratelimit-remaining');
+        if (rem !== null) lastRateLimitRemaining = parseInt(rem, 10);
         return directRes.json();
       }
       addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, 'warn');
@@ -772,6 +777,10 @@ async function githubRequest(
     if (res.status >= 200 && res.status < 300) {
       addLog(`API ${method} ${path} -> ${res.status}`, 'succ');
       hideBanner();
+      if (res.headers) {
+        const rem = res.headers['x-ratelimit-remaining'];
+        if (rem) lastRateLimitRemaining = parseInt(rem, 10);
+      }
       return typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
     }
     if (res.status === 401 || res.status === 403) {
@@ -806,10 +815,40 @@ async function promptCustomToken(): Promise<void> {
   }
 }
 
+async function streamRemainingPages(repo: string, storageKey: string, startPage: number): Promise<void> {
+  let page = startPage;
+  const MAX_PAGES = 10; // Supports up to 1,000 issues while keeping memory bounded
+  while (page <= MAX_PAGES && currentRepo === repo) {
+    try {
+      const nextRaw = await githubRequest('GET', `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
+      const nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
+      if (nextItems.length === 0) break;
+
+      const nextIssues = normalizeGithubIssues(nextItems);
+      if (currentRepo !== repo) break;
+
+      issues = mergeIssuePages(issues, nextIssues);
+      issueCache.set(repo, { timestamp: Date.now(), issues });
+      if (host?.storage) {
+        void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+      }
+      renderViews();
+      addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
+
+      if (nextItems.length < 100) break;
+      page++;
+    } catch (err: any) {
+      addLog(`Background streaming stopped at page ${page}: ${err.message}`, 'warn');
+      break;
+    }
+  }
+}
+
 async function fetchIssues(force: boolean = false): Promise<void> {
   if (!currentRepo) return;
+  const storageKey = `cached_issues_${currentRepo}`;
 
-  // 1. Instant cache check (0ms UI latency)
+  // 1. Instant in-memory cache check (0ms UI latency)
   if (!force && issueCache.has(currentRepo)) {
     const cached = issueCache.get(currentRepo)!;
     if (Date.now() - cached.timestamp < ISSUE_CACHE_TTL_MS) {
@@ -818,9 +857,25 @@ async function fetchIssues(force: boolean = false): Promise<void> {
         selectTab(resolveDefaultTab(issues));
       }
       renderViews();
-      addLog(`Rendered ${issues.length} issues from cache for ${currentRepo}`);
+      addLog(`Rendered ${issues.length} issues from memory cache for ${currentRepo}`);
       return;
     }
+  }
+
+  // 2. Instant persistent storage check (0ms UI latency on fresh reload)
+  if (!force && issues.length === 0 && host?.storage) {
+    try {
+      const stored = await host.storage.get(storageKey);
+      if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
+        issues = stored.issues;
+        issueCache.set(currentRepo, { timestamp: stored.timestamp || Date.now(), issues });
+        if (!userSelectedTab) {
+          selectTab(resolveDefaultTab(issues));
+        }
+        renderViews();
+        addLog(`Instantly rendered ${issues.length} issues from persistent storage for ${currentRepo}`);
+      }
+    } catch {}
   }
 
   isLoading = true;
@@ -828,45 +883,46 @@ async function fetchIssues(force: boolean = false): Promise<void> {
 
   try {
     addLog(`Fetching issues for ${currentRepo}...`);
-    // Query search API with is:issue to exclude pull requests and return real issues
-    const res: any = await githubRequest(
+    // Page 1: Standard core issues endpoint (5,000 req/hr rate limit pool)
+    const page1Raw = await githubRequest(
       'GET',
-      `/search/issues?q=repo:${currentRepo}+is:issue&sort=updated&per_page=100`
+      `/repos/${currentRepo}/issues?state=all&per_page=100&page=1`
     );
 
-    const rawIssues = res.items || (Array.isArray(res) ? res : []);
+    const page1Items = Array.isArray(page1Raw) ? page1Raw : (page1Raw?.items || []);
+    const page1Issues = normalizeGithubIssues(page1Items);
 
-    issues = rawIssues
-      .filter((item: any) => !item.pull_request)
-      .map((item: any) => ({
-        number: item.number,
-        title: item.title,
-        body: item.body || '',
-        state: item.state,
-        html_url: item.html_url,
-        labels: item.labels || [],
-        user: item.user,
-        assignees: item.assignees || [],
-        comments: item.comments || 0,
-        created_at: item.created_at,
-        subtasks: parseSubtasks(item.body || ''),
-        openQuestions: parseOpenQuestions(item.body || ''),
-      }));
+    issues = page1Issues;
 
-    // Cache results
+    // Cache results in memory and persistent storage
     issueCache.set(currentRepo, {
       timestamp: Date.now(),
       issues,
     });
+    if (host?.storage) {
+      void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+    }
 
-    addLog(`Loaded ${issues.length} issues successfully for ${currentRepo}`, 'succ');
+    addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, 'succ');
     if (!userSelectedTab) {
       selectTab(resolveDefaultTab(issues));
     }
     renderViews();
+
+    // Background streaming for remaining pages if 100 items returned
+    if (page1Items.length >= 100) {
+      void streamRemainingPages(currentRepo, storageKey, 2);
+    }
   } catch (err: any) {
-    addLog(`Failed to fetch issues: ${err.message}`, 'error');
-    renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || 'Check GitHub integration tokens'}`);
+    addLog(`Failed to fetch fresh issues: ${err.message}`, 'error');
+    if (issues.length > 0) {
+      // Never break: keep showing cached issues!
+      if (host?.toast) {
+        void host.toast({ kind: 'warning', message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
+      }
+    } else {
+      renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || 'Check GitHub integration tokens'}`);
+    }
   } finally {
     isLoading = false;
     if (elIconRefresh) elIconRefresh.style.animation = '';

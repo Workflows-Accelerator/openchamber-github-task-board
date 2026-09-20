@@ -3577,6 +3577,41 @@ Blocked by ${blockerRef}`;
       remaining: total - limit
     };
   }
+  function normalizeGithubIssues(rawItems) {
+    if (!rawItems || !Array.isArray(rawItems)) return [];
+    return rawItems.filter((item) => item && !item.pull_request).map((item) => ({
+      number: item.number,
+      title: item.title || "",
+      body: item.body || "",
+      state: item.state || "open",
+      html_url: item.html_url || "",
+      labels: item.labels || [],
+      user: item.user,
+      assignees: item.assignees || [],
+      comments: item.comments || 0,
+      created_at: item.created_at || "",
+      subtasks: parseSubtasks(item.body || ""),
+      openQuestions: parseOpenQuestions(item.body || "")
+    }));
+  }
+  function mergeIssuePages(existing, incoming) {
+    const map = /* @__PURE__ */ new Map();
+    if (Array.isArray(existing)) {
+      for (const issue of existing) {
+        if (issue && Number.isFinite(issue.number)) {
+          map.set(issue.number, issue);
+        }
+      }
+    }
+    if (Array.isArray(incoming)) {
+      for (const issue of incoming) {
+        if (issue && Number.isFinite(issue.number)) {
+          map.set(issue.number, issue);
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.number - a.number);
+  }
 
   // panel/main.ts
   var host = connectHost();
@@ -3611,6 +3646,7 @@ Blocked by ${blockerRef}`;
   var draggedIssueNumber = null;
   var isLoading = false;
   var currentRenderedLayout = null;
+  var lastRateLimitRemaining = null;
   var collapsedGroupKeys = /* @__PURE__ */ new Set();
   function toggleGroupCollapse(key) {
     if (collapsedGroupKeys.has(key)) {
@@ -4102,6 +4138,8 @@ Blocked by ${blockerRef}`;
         if (directRes.ok) {
           addLog(`API ${method} ${path} -> ${directRes.status} OK (via workspace PAT)`, "succ");
           hideBanner();
+          const rem = directRes.headers.get("x-ratelimit-remaining");
+          if (rem !== null) lastRateLimitRemaining = parseInt(rem, 10);
           return directRes.json();
         }
         addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, "warn");
@@ -4119,6 +4157,10 @@ Blocked by ${blockerRef}`;
       if (res.status >= 200 && res.status < 300) {
         addLog(`API ${method} ${path} -> ${res.status}`, "succ");
         hideBanner();
+        if (res.headers) {
+          const rem = res.headers["x-ratelimit-remaining"];
+          if (rem) lastRateLimitRemaining = parseInt(rem, 10);
+        }
         return typeof res.body === "string" ? JSON.parse(res.body) : res.body;
       }
       if (res.status === 401 || res.status === 403) {
@@ -4151,8 +4193,34 @@ Blocked by ${blockerRef}`;
       void fetchIssues();
     }
   }
+  async function streamRemainingPages(repo, storageKey, startPage) {
+    let page = startPage;
+    const MAX_PAGES = 10;
+    while (page <= MAX_PAGES && currentRepo === repo) {
+      try {
+        const nextRaw = await githubRequest("GET", `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
+        const nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
+        if (nextItems.length === 0) break;
+        const nextIssues = normalizeGithubIssues(nextItems);
+        if (currentRepo !== repo) break;
+        issues = mergeIssuePages(issues, nextIssues);
+        issueCache.set(repo, { timestamp: Date.now(), issues });
+        if (host?.storage) {
+          void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+        }
+        renderViews();
+        addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
+        if (nextItems.length < 100) break;
+        page++;
+      } catch (err) {
+        addLog(`Background streaming stopped at page ${page}: ${err.message}`, "warn");
+        break;
+      }
+    }
+  }
   async function fetchIssues(force = false) {
     if (!currentRepo) return;
+    const storageKey = `cached_issues_${currentRepo}`;
     if (!force && issueCache.has(currentRepo)) {
       const cached = issueCache.get(currentRepo);
       if (Date.now() - cached.timestamp < ISSUE_CACHE_TTL_MS) {
@@ -4161,45 +4229,60 @@ Blocked by ${blockerRef}`;
           selectTab(resolveDefaultTab(issues));
         }
         renderViews();
-        addLog(`Rendered ${issues.length} issues from cache for ${currentRepo}`);
+        addLog(`Rendered ${issues.length} issues from memory cache for ${currentRepo}`);
         return;
+      }
+    }
+    if (!force && issues.length === 0 && host?.storage) {
+      try {
+        const stored = await host.storage.get(storageKey);
+        if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
+          issues = stored.issues;
+          issueCache.set(currentRepo, { timestamp: stored.timestamp || Date.now(), issues });
+          if (!userSelectedTab) {
+            selectTab(resolveDefaultTab(issues));
+          }
+          renderViews();
+          addLog(`Instantly rendered ${issues.length} issues from persistent storage for ${currentRepo}`);
+        }
+      } catch {
       }
     }
     isLoading = true;
     if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
     try {
       addLog(`Fetching issues for ${currentRepo}...`);
-      const res = await githubRequest(
+      const page1Raw = await githubRequest(
         "GET",
-        `/search/issues?q=repo:${currentRepo}+is:issue&sort=updated&per_page=100`
+        `/repos/${currentRepo}/issues?state=all&per_page=100&page=1`
       );
-      const rawIssues = res.items || (Array.isArray(res) ? res : []);
-      issues = rawIssues.filter((item) => !item.pull_request).map((item) => ({
-        number: item.number,
-        title: item.title,
-        body: item.body || "",
-        state: item.state,
-        html_url: item.html_url,
-        labels: item.labels || [],
-        user: item.user,
-        assignees: item.assignees || [],
-        comments: item.comments || 0,
-        created_at: item.created_at,
-        subtasks: parseSubtasks(item.body || ""),
-        openQuestions: parseOpenQuestions(item.body || "")
-      }));
+      const page1Items = Array.isArray(page1Raw) ? page1Raw : page1Raw?.items || [];
+      const page1Issues = normalizeGithubIssues(page1Items);
+      issues = page1Issues;
       issueCache.set(currentRepo, {
         timestamp: Date.now(),
         issues
       });
-      addLog(`Loaded ${issues.length} issues successfully for ${currentRepo}`, "succ");
+      if (host?.storage) {
+        void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+      }
+      addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, "succ");
       if (!userSelectedTab) {
         selectTab(resolveDefaultTab(issues));
       }
       renderViews();
+      if (page1Items.length >= 100) {
+        void streamRemainingPages(currentRepo, storageKey, 2);
+      }
     } catch (err) {
-      addLog(`Failed to fetch issues: ${err.message}`, "error");
-      renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || "Check GitHub integration tokens"}`);
+      addLog(`Failed to fetch fresh issues: ${err.message}`, "error");
+      if (issues.length > 0) {
+        if (host?.toast) {
+          void host.toast({ kind: "warning", message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
+        }
+      } else {
+        renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || "Check GitHub integration tokens"}`);
+      }
     } finally {
       isLoading = false;
       if (elIconRefresh) elIconRefresh.style.animation = "";

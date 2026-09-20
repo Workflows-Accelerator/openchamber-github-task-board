@@ -7,6 +7,8 @@ import {
   updateSubtaskInMarkdown,
   buildSessionIndex,
   scopeDoneIssues,
+  mergeIssuePages,
+  normalizeGithubIssues,
 } from '../panel/core.ts';
 
 export function matchProjectByDirectory(projects, targetDir) {
@@ -128,6 +130,38 @@ test('scopeDoneIssues caps initial completed issues when large and reveals all o
   const underLimit = scopeDoneIssues(dummyDone.slice(0, 10), 25, false);
   assert.equal(underLimit.visible.length, 10);
   assert.equal(underLimit.remaining, 0);
+});
+
+test('normalizeGithubIssues filters out pull requests and extracts subtasks and questions', () => {
+  const rawApiItems = [
+    { number: 1, title: 'Bug report', body: '### Tasks\n- [ ] Task 1', state: 'open' },
+    { number: 2, title: 'PR title', body: 'Fixes #1', state: 'open', pull_request: { url: 'https://...' } },
+    { number: 3, title: 'Feature', body: '### Open Questions:\n- [ ] Which auth?', state: 'open' },
+  ];
+
+  const normalized = normalizeGithubIssues(rawApiItems);
+  assert.equal(normalized.length, 2);
+  assert.equal(normalized[0].number, 1);
+  assert.equal(normalized[0].subtasks.length, 1);
+  assert.equal(normalized[1].number, 3);
+  assert.equal(normalized[1].openQuestions.length, 1);
+});
+
+test('mergeIssuePages merges multi-page issue batches replacing stale duplicates', () => {
+  const page1 = [
+    { number: 200, title: 'Page 1 task A', state: 'open', labels: [] },
+    { number: 150, title: 'Page 1 task B old', state: 'open', labels: [] },
+  ];
+  const page2 = [
+    { number: 150, title: 'Page 1 task B updated', state: 'closed', labels: [] },
+    { number: 100, title: 'Page 2 task C', state: 'open', labels: [] },
+  ];
+
+  const merged = mergeIssuePages(page1, page2);
+  assert.equal(merged.length, 3);
+  assert.deepEqual(merged.map((i) => i.number), [200, 150, 100]);
+  // Duplicate 150 from page2 (newer page/fetch) should replace stale duplicate
+  assert.equal(merged.find((i) => i.number === 150)?.title, 'Page 1 task B updated');
 });
 
 test('buildIssueAttachPayload constructs valid OpenChamber attach payload', () => {

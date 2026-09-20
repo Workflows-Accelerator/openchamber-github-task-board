@@ -52,6 +52,8 @@ const JS_FUNCS = [
   'extractIssueReferences', 'buildDependencyGraph', 'calculateEdgePath', 'detectCycle',
   'buildSessionIndex',
   'scopeDoneIssues',
+  'normalizeGithubIssues',
+  'mergeIssuePages',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -69,7 +71,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 33);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 35);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -203,4 +205,15 @@ test('scopeDoneIssues: shipped == core', () => {
   const dummy = [{ number: 1 }, { number: 2 }, { number: 3 }];
   assert.deepEqual(Shipped.scopeDoneIssues(dummy, 2, false), Core.scopeDoneIssues(dummy, 2, false));
   assert.deepEqual(Shipped.scopeDoneIssues(dummy, 2, true), Core.scopeDoneIssues(dummy, 2, true));
+});
+
+test('normalizeGithubIssues and mergeIssuePages: shipped == core', () => {
+  const raw = [
+    { number: 1, title: 'Bug', body: '- [ ] task', state: 'open' },
+    { number: 2, title: 'PR', pull_request: {} },
+  ];
+  assert.deepEqual(Shipped.normalizeGithubIssues(raw), Core.normalizeGithubIssues(raw));
+  const p1 = [{ number: 10, title: 'A' }];
+  const p2 = [{ number: 10, title: 'A updated' }, { number: 5, title: 'B' }];
+  assert.deepEqual(Shipped.mergeIssuePages(p1, p2), Core.mergeIssuePages(p1, p2));
 });

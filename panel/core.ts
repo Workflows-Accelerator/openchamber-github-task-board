@@ -1000,5 +1000,45 @@ export function scopeDoneIssues(
   };
 }
 
+export function normalizeGithubIssues(rawItems: any[]): Issue[] {
+  if (!rawItems || !Array.isArray(rawItems)) return [];
+  return rawItems
+    .filter((item: any) => item && !item.pull_request)
+    .map((item: any) => ({
+      number: item.number,
+      title: item.title || '',
+      body: item.body || '',
+      state: item.state || 'open',
+      html_url: item.html_url || '',
+      labels: item.labels || [],
+      user: item.user,
+      assignees: item.assignees || [],
+      comments: item.comments || 0,
+      created_at: item.created_at || '',
+      subtasks: parseSubtasks(item.body || ''),
+      openQuestions: parseOpenQuestions(item.body || ''),
+    }));
+}
+
+export function mergeIssuePages(existing: Issue[], incoming: Issue[]): Issue[] {
+  const map = new Map<number, Issue>();
+  if (Array.isArray(existing)) {
+    for (const issue of existing) {
+      if (issue && Number.isFinite(issue.number)) {
+        map.set(issue.number, issue);
+      }
+    }
+  }
+  if (Array.isArray(incoming)) {
+    for (const issue of incoming) {
+      if (issue && Number.isFinite(issue.number)) {
+        map.set(issue.number, issue);
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => b.number - a.number);
+}
+
+
 
 
