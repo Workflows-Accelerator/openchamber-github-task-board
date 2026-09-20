@@ -3681,6 +3681,7 @@ Instructions for the Agent:
      - [ ] Reproduce with test / define contract
      - [ ] Implement core changes
      - [ ] Run test suite and verify green
+   - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
    - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
 4. If a GitHub token or gh CLI is available in the environment, you can create the issues directly using the GitHub API. Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
@@ -3826,10 +3827,15 @@ Instructions for the Alignment Session:
   var elInputNewIssueDraftSubtask = document.getElementById("inputNewIssueDraftSubtask");
   var elBtnAddNewIssueDraftSubtask = document.getElementById("btnAddNewIssueDraftSubtask");
   var elDraftSubtasksCountBadge = document.getElementById("draftSubtasksCountBadge");
+  var elNewIssueQuestionsList = document.getElementById("newIssueQuestionsList");
+  var elInputNewIssueDraftQuestion = document.getElementById("inputNewIssueDraftQuestion");
+  var elBtnAddNewIssueDraftQuestion = document.getElementById("btnAddNewIssueDraftQuestion");
+  var elDraftQuestionsCountBadge = document.getElementById("draftQuestionsCountBadge");
   var elBtnNewIssueSubmit = document.getElementById("btnNewIssueSubmit");
   var elBtnNewIssueCancel = document.getElementById("btnNewIssueCancel");
   var elBtnNewIssueClose = document.getElementById("btnNewIssueClose");
   var draftSubtasks = [];
+  var draftQuestions = [];
   var currentNewIssueMode = "ai";
   function setNewIssueMode(mode) {
     currentNewIssueMode = mode;
@@ -3981,6 +3987,42 @@ Instructions for the Alignment Session:
         });
       }
       elNewIssueSubtasksList.appendChild(row);
+    });
+  }
+  function renderDraftQuestions() {
+    if (!elNewIssueQuestionsList) return;
+    elNewIssueQuestionsList.innerHTML = "";
+    if (elDraftQuestionsCountBadge) {
+      elDraftQuestionsCountBadge.textContent = `${draftQuestions.length} open`;
+    }
+    if (draftQuestions.length === 0) {
+      elNewIssueQuestionsList.innerHTML = `<div style="color: var(--fg-faint); font-size: 11px; padding: 2px 0;">No open questions added yet.</div>`;
+      return;
+    }
+    draftQuestions.forEach((question, idx) => {
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.justifyContent = "space-between";
+      row.style.padding = "3px 6px";
+      row.style.background = "var(--surf-subtle)";
+      row.style.borderRadius = "var(--rad-sm)";
+      row.style.fontSize = "11.5px";
+      row.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+          <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono);">Q${idx + 1}.</span>
+          <span style="color: var(--fg);">${escapeHtml(question)}</span>
+        </div>
+        <button class="btn btn-icon btn-sm btn-del-draft-question" type="button" style="width: 18px; height: 18px; font-size: 11px; padding: 0;" title="Remove question">\u2715</button>
+      `;
+      const btnDel = row.querySelector(".btn-del-draft-question");
+      if (btnDel) {
+        btnDel.addEventListener("click", () => {
+          draftQuestions.splice(idx, 1);
+          renderDraftQuestions();
+        });
+      }
+      elNewIssueQuestionsList.appendChild(row);
     });
   }
   let scratchpadSaveTimer = null;
@@ -4273,6 +4315,9 @@ Instructions for the Alignment Session:
     draftSubtasks = [];
     renderDraftSubtasks();
     if (elInputNewIssueDraftSubtask) elInputNewIssueDraftSubtask.value = "";
+    draftQuestions = [];
+    renderDraftQuestions();
+    if (elInputNewIssueDraftQuestion) elInputNewIssueDraftQuestion.value = "";
     await loadDraftAiInput();
     elAiPromptConfigPanel.style.display = "none";
     setNewIssueMode("ai");
@@ -4289,13 +4334,14 @@ Instructions for the Alignment Session:
       elNewIssueTitleInput.focus();
       return;
     }
-    const body = serializeDraftSubtasks(rawBody, draftSubtasks);
+    const body = serializeDraftQuestions(serializeDraftSubtasks(rawBody, draftSubtasks), draftQuestions);
     const initialLabels = ["status:todo"];
     const complexity = elNewIssueComplexitySelect ? elNewIssueComplexitySelect.value : "none";
     if (complexity && complexity !== "none") {
       initialLabels.push(`complexity:${complexity.toUpperCase()}`);
     }
-    if (isVagueIdea({ title, body, subtasks: draftSubtasks.map((t) => ({ text: t })), labels: [] })) {
+    const draftOpenQuestions = draftQuestions.map((q) => ({ text: q, completed: false }));
+    if (isVagueIdea({ title, body, subtasks: draftSubtasks.map((t) => ({ text: t })), openQuestions: draftOpenQuestions, labels: [] })) {
       initialLabels.push("status:needs-alignment");
     }
     elBtnNewIssueSubmit.disabled = true;
@@ -5024,6 +5070,22 @@ Instructions for the Alignment Session:
         if (e.key === "Enter") {
           e.preventDefault();
           addDraftStep();
+        }
+      });
+    }
+    if (elBtnAddNewIssueDraftQuestion && elInputNewIssueDraftQuestion) {
+      const addDraftQuestion = () => {
+        const text = elInputNewIssueDraftQuestion.value.trim();
+        if (!text) return;
+        draftQuestions.push(text);
+        elInputNewIssueDraftQuestion.value = "";
+        renderDraftQuestions();
+      };
+      elBtnAddNewIssueDraftQuestion.addEventListener("click", addDraftQuestion);
+      elInputNewIssueDraftQuestion.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addDraftQuestion();
         }
       });
     }

@@ -188,3 +188,21 @@ test('formatQuestionBadge generates accurate badge states for open vs resolved q
   assert.equal(resolvedBadge.label, '2 Qs resolved');
   assert.ok(resolvedBadge.html.includes('is-resolved'));
 });
+
+test('drafting prompt asks for a parseable Open Questions section', async () => {
+  const { DEFAULT_AI_ISSUE_PROMPT, parseOpenQuestions } = await import('../panel/core.ts');
+  assert.ok(DEFAULT_AI_ISSUE_PROMPT.includes('### Open Questions:'));
+  // the wording the model is told to emit must round-trip through the parser
+  const emitted = '### Open Questions:\n- [ ] Which database?\n- [ ] Auth model?';
+  assert.equal(parseOpenQuestions(emitted).length, 2);
+});
+
+test('serializeDraftQuestions output round-trips back through parseOpenQuestions', async () => {
+  const { serializeDraftQuestions, parseOpenQuestions } = await import('../panel/core.ts');
+  const body = serializeDraftQuestions(serializeDraftQuestions('Overview text.', ['First?', 'Second?']), []);
+  const parsed = parseOpenQuestions(body);
+  assert.equal(parsed.length, 2);
+  assert.equal(parsed[0].text, 'First?');
+  assert.equal(parsed[1].text, 'Second?');
+  assert.equal(parsed.every((q) => q.completed === false), true);
+});

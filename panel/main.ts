@@ -2893,11 +2893,16 @@ const elNewIssueSubtasksList = document.getElementById('newIssueSubtasksList') a
 const elInputNewIssueDraftSubtask = document.getElementById('inputNewIssueDraftSubtask') as HTMLInputElement | null;
 const elBtnAddNewIssueDraftSubtask = document.getElementById('btnAddNewIssueDraftSubtask') as HTMLButtonElement | null;
 const elDraftSubtasksCountBadge = document.getElementById('draftSubtasksCountBadge') as HTMLSpanElement | null;
+const elNewIssueQuestionsList = document.getElementById('newIssueQuestionsList') as HTMLDivElement | null;
+const elInputNewIssueDraftQuestion = document.getElementById('inputNewIssueDraftQuestion') as HTMLInputElement | null;
+const elBtnAddNewIssueDraftQuestion = document.getElementById('btnAddNewIssueDraftQuestion') as HTMLButtonElement | null;
+const elDraftQuestionsCountBadge = document.getElementById('draftQuestionsCountBadge') as HTMLSpanElement | null;
 const elBtnNewIssueSubmit = document.getElementById('btnNewIssueSubmit') as HTMLButtonElement;
 const elBtnNewIssueCancel = document.getElementById('btnNewIssueCancel') as HTMLButtonElement;
 const elBtnNewIssueClose = document.getElementById('btnNewIssueClose') as HTMLButtonElement;
 
 let draftSubtasks: string[] = [];
+let draftQuestions: string[] = [];
 
 type NewIssueMode = 'ai' | 'manual';
 let currentNewIssueMode: NewIssueMode = 'ai';
@@ -3043,6 +3048,48 @@ function renderDraftSubtasks(): void {
     }
 
     elNewIssueSubtasksList.appendChild(row);
+  });
+}
+
+function renderDraftQuestions(): void {
+  if (!elNewIssueQuestionsList) return;
+  elNewIssueQuestionsList.innerHTML = '';
+  if (elDraftQuestionsCountBadge) {
+    elDraftQuestionsCountBadge.textContent = `${draftQuestions.length} open`;
+  }
+
+  if (draftQuestions.length === 0) {
+    elNewIssueQuestionsList.innerHTML = `<div style="color: var(--fg-faint); font-size: 11px; padding: 2px 0;">No open questions added yet.</div>`;
+    return;
+  }
+
+  draftQuestions.forEach((question, idx) => {
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.justifyContent = 'space-between';
+    row.style.padding = '3px 6px';
+    row.style.background = 'var(--surf-subtle)';
+    row.style.borderRadius = 'var(--rad-sm)';
+    row.style.fontSize = '11.5px';
+
+    row.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono);">Q${idx + 1}.</span>
+        <span style="color: var(--fg);">${escapeHtml(question)}</span>
+      </div>
+      <button class="btn btn-icon btn-sm btn-del-draft-question" type="button" style="width: 18px; height: 18px; font-size: 11px; padding: 0;" title="Remove question">✕</button>
+    `;
+
+    const btnDel = row.querySelector('.btn-del-draft-question') as HTMLButtonElement | null;
+    if (btnDel) {
+      btnDel.addEventListener('click', () => {
+        draftQuestions.splice(idx, 1);
+        renderDraftQuestions();
+      });
+    }
+
+    elNewIssueQuestionsList.appendChild(row);
   });
 }
 
@@ -3367,6 +3414,9 @@ async function openNewIssueModal(): Promise<void> {
   draftSubtasks = [];
   renderDraftSubtasks();
   if (elInputNewIssueDraftSubtask) elInputNewIssueDraftSubtask.value = '';
+  draftQuestions = [];
+  renderDraftQuestions();
+  if (elInputNewIssueDraftQuestion) elInputNewIssueDraftQuestion.value = '';
   // Await the persisted draft BEFORE callers may prefill the textarea, so a
   // late-resolving load cannot clobber a value they just set.
   await loadDraftAiInput();
@@ -3388,15 +3438,17 @@ async function submitNewIssue(): Promise<void> {
     elNewIssueTitleInput.focus();
     return;
   }
-  const body = serializeDraftSubtasks(rawBody, draftSubtasks);
+  const body = serializeDraftQuestions(serializeDraftSubtasks(rawBody, draftSubtasks), draftQuestions);
   const initialLabels = ['status:todo'];
   const complexity = elNewIssueComplexitySelect ? elNewIssueComplexitySelect.value : 'none';
   if (complexity && complexity !== 'none') {
     initialLabels.push(`complexity:${complexity.toUpperCase()}`);
   }
 
-  // Alignment reflex: auto-flag vague idea if description is sparse and subtasks are empty
-  if (isVagueIdea({ title, body, subtasks: draftSubtasks.map((t) => ({ text: t })), labels: [] })) {
+  // Alignment reflex: auto-flag vague idea if description is sparse and there are no subtasks,
+  // or if any open question is still unresolved.
+  const draftOpenQuestions = draftQuestions.map((q) => ({ text: q, completed: false }));
+  if (isVagueIdea({ title, body, subtasks: draftSubtasks.map((t) => ({ text: t })), openQuestions: draftOpenQuestions, labels: [] })) {
     initialLabels.push('status:needs-alignment');
   }
 
@@ -4261,6 +4313,23 @@ function initEvents(): void {
       if (e.key === 'Enter') {
         e.preventDefault();
         addDraftStep();
+      }
+    });
+  }
+
+  if (elBtnAddNewIssueDraftQuestion && elInputNewIssueDraftQuestion) {
+    const addDraftQuestion = () => {
+      const text = elInputNewIssueDraftQuestion.value.trim();
+      if (!text) return;
+      draftQuestions.push(text);
+      elInputNewIssueDraftQuestion.value = '';
+      renderDraftQuestions();
+    };
+    elBtnAddNewIssueDraftQuestion.addEventListener('click', addDraftQuestion);
+    elInputNewIssueDraftQuestion.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addDraftQuestion();
       }
     });
   }

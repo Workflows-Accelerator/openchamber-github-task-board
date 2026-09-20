@@ -2246,6 +2246,19 @@ Auto-saved continuously. When ready, click 'Align & Clarify with AI' so the agen
               <button class="btn btn-sm" id="btnAddNewIssueDraftSubtask" type="button">Add Step</button>
             </div>
           </div>
+
+          <!-- Interactive Open Question Drafter -->
+          <div style="background: var(--surf); border: 1px solid var(--border-subtle); border-radius: var(--rad); padding: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label style="font-size: 11px; color: var(--fg-muted);">Draft Open Questions</label>
+              <span id="draftQuestionsCountBadge" class="status-pill">0 open</span>
+            </div>
+            <div id="newIssueQuestionsList" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px;"></div>
+            <div style="display: flex; gap: 6px;">
+              <input type="text" id="inputNewIssueDraftQuestion" class="form-ctrl" style="flex: 1; font-size: 11.5px;" placeholder="Add unresolved question to align on..." />
+              <button class="btn btn-sm" id="btnAddNewIssueDraftQuestion" type="button">Add Q</button>
+            </div>
+          </div>
         </div>
       </div>
 
