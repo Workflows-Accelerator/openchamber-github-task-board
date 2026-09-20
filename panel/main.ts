@@ -1,6 +1,59 @@
 import { connectHost } from '@openchamber/sdk';
 import { applyHostReady } from '@openchamber/sdk/ui';
-import type { Subtask, Issue, DependencyGraph, DependencyNode, DependencyEdge } from './core.js';
+import { setupCustomDropdown, initAllCustomDropdowns } from './dropdown.js';
+import { escapeHtml, slugify, sanitizeHexColor, addLog, logEntries } from './utils.js';
+import { renderMarkdown, getIssueDescriptionPreview } from './markdown.js';
+import {
+  isSystemLabel,
+  filterDisplayLabels,
+  getIssuePriority,
+  updatePriorityLabels,
+  getIssueComplexity,
+  updateComplexityLabel,
+  sortIssuesList,
+  findRelatedIssues,
+} from './labels.js';
+import {
+  parseGitHubRemoteUrl,
+  parseGitRemoteFromConfig,
+  extractGitHubTokenFromCredentials,
+} from './git.js';
+
+export {
+  escapeHtml,
+  slugify,
+  sanitizeHexColor,
+  addLog,
+  renderMarkdown,
+  getIssueDescriptionPreview,
+  isSystemLabel,
+  filterDisplayLabels,
+  getIssuePriority,
+  updatePriorityLabels,
+  getIssueComplexity,
+  updateComplexityLabel,
+  sortIssuesList,
+  findRelatedIssues,
+  parseGitHubRemoteUrl,
+  parseGitRemoteFromConfig,
+  extractGitHubTokenFromCredentials,
+};
+import type {
+  Subtask,
+  Issue,
+  DependencyGraph,
+  DependencyNode,
+  DependencyEdge,
+  SessionInfo,
+  ProjectItem,
+  ColumnId,
+  TabId,
+  IssueGroup,
+  NewIssueMode,
+} from './types.js';
+import { extractWorktreeName } from './types.js';
+export type { SessionInfo, ProjectItem, ColumnId, TabId, IssueGroup, NewIssueMode };
+export { extractWorktreeName };
 import {
   parseOpenQuestions,
   parseSubtasks,
@@ -30,74 +83,6 @@ import {
   calculateEdgePath,
   detectCycle,
 } from './core.js';
-
-
-// ==========================================
-// Types & Interfaces
-// ==========================================
-
-
-
-
-
-export interface SessionInfo {
-  id: string;
-  title: string;
-  activity: string;
-  outcome?: string | null;
-  worktree?: string | { name?: string; branch?: string; directory?: string; status?: string } | null;
-  directory?: string | null;
-  items?: Array<{ id?: string; providerId?: string; data?: any; url?: string }>;
-}
-
-export function extractWorktreeName(wt: any): string {
-  if (!wt) return '';
-  if (typeof wt === 'string') return wt;
-  if (typeof wt === 'object') {
-    return wt.name || wt.branch || wt.directory || '';
-  }
-  return '';
-}
-
-export interface ProjectItem {
-  id: string;
-  name: string;
-  directory: string;
-  gitRepo: { owner: string; repo: string } | null;
-  linkedRepo: string | null;
-}
-
-type ColumnId = 'backlog' | 'todo' | 'in-progress' | 'in-review' | 'done';
-type TabId = 'all' | ColumnId;
-
-// ==========================================
-// In-App Diagnostic Logger
-// ==========================================
-
-const logEntries: Array<{ time: string; msg: string; level: 'info' | 'warn' | 'error' | 'succ' }> = [];
-
-function addLog(msg: string, level: 'info' | 'warn' | 'error' | 'succ' = 'info'): void {
-  const d = new Date();
-  const timeStr = d.toTimeString().split(' ')[0] + '.' + String(d.getMilliseconds()).padStart(3, '0');
-  logEntries.push({ time: timeStr, msg, level });
-  if (logEntries.length > 200) logEntries.shift();
-
-  if (level === 'error') console.error(`[TaskBoard] ${msg}`);
-  else if (level === 'warn') console.warn(`[TaskBoard] ${msg}`);
-  else console.log(`[TaskBoard] ${msg}`);
-
-  const streamEl = document.getElementById('logStream');
-  if (streamEl) {
-    const line = document.createElement('div');
-    line.className = 'log-line';
-    line.innerHTML = `
-      <span class="log-time">${timeStr}</span>
-      <span class="log-msg-${level}">${escapeHtml(msg)}</span>
-    `;
-    streamEl.appendChild(line);
-    streamEl.scrollTop = streamEl.scrollHeight;
-  }
-}
 
 // ==========================================
 // State Store
@@ -201,6 +186,7 @@ const elGraphEdgesLayer = document.getElementById('graphEdgesLayer') as unknown 
 const elGraphDragLayer = document.getElementById('graphDragLayer') as unknown as SVGGElement | null;
 const elGraphLayers = document.getElementById('graphLayers') as HTMLDivElement | null;
 
+const elDrawerDependenciesContainer = document.getElementById('drawerDependenciesContainer') as HTMLDivElement | null;
 const elDrawerDepsCountBadge = document.getElementById('drawerDepsCountBadge') as HTMLSpanElement | null;
 const elDrawerBlockedByList = document.getElementById('drawerBlockedByList') as HTMLDivElement | null;
 const elDrawerBlocksList = document.getElementById('drawerBlocksList') as HTMLDivElement | null;
@@ -373,66 +359,9 @@ function hideBanner(): void {
 
 
 
-function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .trim()
-    .replace(/[\s_-]+/g, '-')
-    .slice(0, 30);
-}
-
-function sanitizeHexColor(color?: string): string | null {
-  if (!color) return null;
-  const clean = color.trim().replace(/^#/, '');
-  if (/^[0-9a-fA-F]{3,8}$/.test(clean)) {
-    return `#${clean}`;
-  }
-  return null;
-}
-
-function escapeHtml(str: string): string {
-  return (str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 // ==========================================
 // Git Remote & Repo Parser
 // ==========================================
-
-export function parseGitHubRemoteUrl(raw: string): { owner: string; repo: string } | null {
-  if (!raw || typeof raw !== 'string') return null;
-  const val = raw.trim();
-
-  // SCP format: git@github.com:OWNER/REPO.git
-  const scpMatch = val.match(/^(?:git@|ssh:\/\/git@)github\.com[:/]([^\s/]+)\/([^\s/.]+?)(\.git)?$/);
-  if (scpMatch) return { owner: scpMatch[1], repo: scpMatch[2] };
-
-  // HTTPS or standard URL format
-  try {
-    const url = new URL(val);
-    if (url.hostname === 'github.com') {
-      const parts = url.pathname.replace(/^\/+|\.git$/g, '').split('/');
-      if (parts.length >= 2 && parts[0] && parts[1]) {
-        return { owner: parts[0], repo: parts[1] };
-      }
-    }
-  } catch {}
-  return null;
-}
-
-export function parseGitRemoteFromConfig(configContent: string): { owner: string; repo: string } | null {
-  if (!configContent || typeof configContent !== 'string') return null;
-  const match = configContent.match(/\[remote\s+["\w-]+\][^\[]*?url\s*=\s*([^\r\n]+)/);
-  if (match) {
-    return parseGitHubRemoteUrl(match[1]);
-  }
-  return null;
-}
 
 // Caching stores
 const dirGitCache = new Map<string, { owner: string; repo: string } | null>();
@@ -765,23 +694,19 @@ async function getWorkspaceGitToken(): Promise<string | null> {
   if (workspaceGitToken) return workspaceGitToken;
   try {
     const creds = await host.readFile('/workspace/.git-credentials');
-    if (creds && creds.content) {
-      const match = creds.content.match(/https:\/\/(?:[^:]+?:)?(gh[pousr]_[A-Za-z0-9_]+)@github\.com/) || creds.content.match(/gh[pousr]_[A-Za-z0-9_]+/);
-      if (match) {
-        workspaceGitToken = match[1] || match[0];
-        addLog('Loaded authenticated GitHub PAT from workspace credentials', 'succ');
-        return workspaceGitToken;
-      }
+    const token = extractGitHubTokenFromCredentials(creds?.content);
+    if (token) {
+      workspaceGitToken = token;
+      addLog('Loaded authenticated GitHub PAT from workspace credentials', 'succ');
+      return workspaceGitToken;
     }
   } catch {}
   try {
     const cfg = await host.readFile('/workspace/.gitconfig');
-    if (cfg && cfg.content) {
-      const match = cfg.content.match(/gh[pousr]_[A-Za-z0-9_]+/);
-      if (match) {
-        workspaceGitToken = match[0];
-        return workspaceGitToken;
-      }
+    const token = extractGitHubTokenFromCredentials(cfg?.content);
+    if (token) {
+      workspaceGitToken = token;
+      return workspaceGitToken;
     }
   } catch {}
   return null;
@@ -1146,39 +1071,6 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
 // Priority, Complexity & Sorting Helpers
 // ==========================================
 
-export function getIssuePriority(issue: Issue): string | null {
-  if (!issue || !issue.labels) return null;
-  for (const l of issue.labels) {
-    const name = (typeof l === 'string' ? l : l.name || '').toLowerCase();
-    if (name === 'priority:critical') return 'critical';
-    if (name === 'priority:important') return 'important';
-    if (name === 'priority:useful') return 'useful';
-    if (name === 'priority:optional') return 'optional';
-  }
-  return null;
-}
-
-export function updatePriorityLabels(currentLabels: any[], newPriority: string | null): string[] {
-  const cleanExisting = currentLabels
-    .map((l) => (typeof l === 'string' ? l : l.name || ''))
-    .filter((name) => !name.toLowerCase().startsWith('priority:'));
-
-  if (newPriority && typeof newPriority === 'string' && newPriority.trim().toLowerCase() !== 'none') {
-    cleanExisting.push(`priority:${newPriority.trim().toLowerCase()}`);
-  }
-  return cleanExisting;
-}
-
-export interface IssueGroup {
-  id: string;
-  title: string;
-  issues: Issue[];
-}
-
-
-
-
-
 export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[] {
   if (groupBy === 'priority') {
     const groups: IssueGroup[] = [
@@ -1231,54 +1123,6 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[
     }
   }
   return groups;
-}
-
-export function getIssueComplexity(issue: Issue): string | null {
-  if (!issue || !issue.labels) return null;
-  for (const l of issue.labels) {
-    const name = (typeof l === 'string' ? l : l.name || '').toLowerCase();
-    if (name === 'complexity:xl') return 'XL';
-    if (name === 'complexity:l') return 'L';
-    if (name === 'complexity:m') return 'M';
-    if (name === 'complexity:s') return 'S';
-    if (name === 'complexity:xs') return 'XS';
-  }
-  return null;
-}
-
-const PRIORITY_WEIGHTS: Record<string, number> = { critical: 4, important: 3, useful: 2, optional: 1 };
-const COMPLEXITY_WEIGHTS: Record<string, number> = { XL: 5, L: 4, M: 3, S: 2, XS: 1 };
-
-export function sortIssuesList(list: Issue[], sortKey: string): Issue[] {
-  const copy = [...list];
-  switch (sortKey) {
-    case 'newest':
-      return copy.sort((a, b) => b.number - a.number);
-    case 'oldest':
-      return copy.sort((a, b) => a.number - b.number);
-    case 'priority':
-      return copy.sort((a, b) => {
-        const pA = PRIORITY_WEIGHTS[getIssuePriority(a) || ''] || 0;
-        const pB = PRIORITY_WEIGHTS[getIssuePriority(b) || ''] || 0;
-        return pB !== pA ? pB - pA : b.number - a.number;
-      });
-    case 'complexity':
-      return copy.sort((a, b) => {
-        const cA = COMPLEXITY_WEIGHTS[getIssueComplexity(a) || ''] || 0;
-        const cB = COMPLEXITY_WEIGHTS[getIssueComplexity(b) || ''] || 0;
-        return cB !== cA ? cB - cA : b.number - a.number;
-      });
-    case 'subtasks':
-      return copy.sort((a, b) => {
-        const remA = a.subtasks.filter((s) => !s.completed).length;
-        const remB = b.subtasks.filter((s) => !s.completed).length;
-        return remB !== remA ? remB - remA : b.number - a.number;
-      });
-    case 'title':
-      return copy.sort((a, b) => (a.title || '').localeCompare(b.title || ''));
-    default:
-      return copy;
-  }
 }
 
 // ==========================================
@@ -1585,55 +1429,6 @@ function renderViews(): void {
 
   // Auto layout check
   applyLayoutMode();
-}
-
-export function getIssueDescriptionPreview(body: string | null | undefined): string {
-  if (!body || typeof body !== 'string') return '';
-  const lines = body.split(/\r?\n/);
-  const GENERIC_HEADERS = /^(overview|description|context|summary|details|background|goal|problem|about)$/i;
-  let fallback = '';
-  for (let rawLine of lines) {
-    let line = rawLine.trim();
-    if (!line) continue;
-    if (line.startsWith('```') || line.startsWith('~~~')) continue;
-    const isHeading = line.startsWith('#');
-    line = line.replace(/^#+\s*/, '');
-    line = line.replace(/^>\s*/, '');
-    line = line.replace(/^[-*+]\s*\[[ xX]\]\s*/, '');
-    line = line.replace(/^[-*+]\s+/, '');
-    line = line.replace(/^\d+\.\s+/, '');
-    line = line.replace(/(\*\*|__)(.*?)\1/g, '$2');
-    line = line.replace(/(\*|_)(.*?)\1/g, '$2');
-    line = line.replace(/`([^`]+)`/g, '$1');
-    line = line.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1');
-    line = line.replace(/<[^>]*>/g, '');
-    line = line.trim();
-    if (!line) continue;
-    if (isHeading && GENERIC_HEADERS.test(line)) {
-      if (!fallback) fallback = line;
-      continue;
-    }
-    return line;
-  }
-  return fallback;
-}
-
-export function isSystemLabel(labelName: string): boolean {
-  if (!labelName || typeof labelName !== 'string') return false;
-  const lower = labelName.trim().toLowerCase();
-  return (
-    lower.startsWith('status:') ||
-    lower.startsWith('priority:') ||
-    lower.startsWith('complexity:') ||
-    lower.startsWith('theme:') ||
-    lower === 'archived' ||
-    lower === 'archive'
-  );
-}
-
-export function filterDisplayLabels(labels: Array<{ name: string; color?: string }>): Array<{ name: string; color?: string }> {
-  if (!labels || !Array.isArray(labels)) return [];
-  return labels.filter((l) => !isSystemLabel(typeof l === 'string' ? l : l.name || ''));
 }
 
 function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
@@ -2135,7 +1930,7 @@ async function handleAddDependency(targetNum: number, blockerNum: number): Promi
   if (targetNum === blockerNum) return;
   if (detectCycle(issues, blockerNum, targetNum)) {
     if (host?.toast) {
-      await host.toast({ kind: 'warn', message: `Cannot link #${targetNum} -> #${blockerNum}: creates circular dependency` });
+      await host.toast({ kind: 'error', message: `Cannot link #${targetNum} -> #${blockerNum}: creates circular dependency` });
     }
     return;
   }
@@ -2723,56 +2518,6 @@ function closeDrawer(): void {
 // Markdown Renderer & Label Helpers
 // ==========================================
 
-export function renderMarkdown(raw: string): string {
-  if (!raw || typeof raw !== 'string') return '<p style="color: var(--fg-muted); font-style: italic;">No description provided.</p>';
-
-  let html = raw
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-
-  // Code blocks
-  html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang, code) => {
-    return `<pre class="md-code-block"><code class="language-${lang}">${code.trim()}</code></pre>`;
-  });
-
-  // Inline code
-  html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
-
-  // Headings
-  html = html.replace(/^#### (.*$)/gim, '<h4 class="md-h4">$1</h4>');
-  html = html.replace(/^### (.*$)/gim, '<h3 class="md-h3">$1</h3>');
-  html = html.replace(/^## (.*$)/gim, '<h2 class="md-h2">$1</h2>');
-  html = html.replace(/^# (.*$)/gim, '<h1 class="md-h1">$1</h1>');
-
-  // Blockquotes
-  html = html.replace(/^\> (.*$)/gim, '<blockquote class="md-quote">$1</blockquote>');
-
-  // Bold & Italic
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
-
-  // Links
-  html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="md-link">$1 ↗</a>');
-
-  // Paragraphs
-  const paragraphs = html.split(/\n\n+/);
-  html = paragraphs
-    .map((p) => {
-      const trimmed = p.trim();
-      if (!trimmed) return '';
-      if (trimmed.startsWith('<h') || trimmed.startsWith('<pre') || trimmed.startsWith('<blockquote')) {
-        return trimmed;
-      }
-      return `<p class="md-p">${trimmed.replace(/\n/g, '<br/>')}</p>`;
-    })
-    .filter(Boolean)
-    .join('\n');
-
-  return html;
-}
-
 let repoLabelsCache = new Map<string, Array<{ name: string; color?: string }>>();
 
 async function loadRepoLabels(): Promise<void> {
@@ -3091,50 +2836,6 @@ async function loadComments(issueNumber: number): Promise<void> {
   } catch {
     elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
   }
-}
-
-export function findRelatedIssues(targetIssue: Issue, allIssues: Issue[], limit = 4): Issue[] {
-  if (!targetIssue || !allIssues) return [];
-  const targetNum = targetIssue.number;
-  const targetLabels = new Set(
-    (targetIssue.labels || [])
-      .map((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase())
-      .filter((n) => !n.startsWith('status:') && n !== 'archived')
-  );
-  const targetWords = new Set(
-    (targetIssue.title || '')
-      .toLowerCase()
-      .split(/[^a-z0-9_-]+/)
-      .filter((w) => w.length > 3)
-  );
-
-  const scored: Array<{ issue: Issue; score: number }> = [];
-  for (const other of allIssues) {
-    if (other.number === targetNum) continue;
-
-    let score = 0;
-    const otherLabels = (other.labels || []).map((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase());
-    for (const l of otherLabels) {
-      if (targetLabels.has(l)) score += 3;
-    }
-
-    const otherText = `${other.title || ''} ${other.body || ''}`;
-    if (otherText.includes(`#${targetNum}`)) score += 5;
-    const targetText = `${targetIssue.title || ''} ${targetIssue.body || ''}`;
-    if (targetText.includes(`#${other.number}`)) score += 5;
-
-    const otherWords = (other.title || '').toLowerCase().split(/[^a-z0-9_-]+/);
-    for (const w of otherWords) {
-      if (w.length > 3 && targetWords.has(w)) score += 1;
-    }
-
-    if (score > 0) {
-      scored.push({ issue: other, score });
-    }
-  }
-
-  scored.sort((a, b) => b.score - a.score || b.issue.number - a.issue.number);
-  return scored.slice(0, limit).map((s) => s.issue);
 }
 
 function renderRelatedIssues(issue: Issue): void {
@@ -3546,7 +3247,6 @@ const elBtnScratchpadThemeAdd = document.getElementById('btnScratchpadThemeAdd')
 // Toolbar More Menu Elements
 const elBtnMoreMenu = document.getElementById('btnMoreMenu') as HTMLButtonElement | null;
 const elMoreMenuPopover = document.getElementById('moreMenuPopover') as HTMLDivElement | null;
-const elMenuItemToggleLayout = document.getElementById('menuItemToggleLayout') as HTMLDivElement | null;
 const elMenuItemToggleArchive = document.getElementById('menuItemToggleArchive') as HTMLDivElement | null;
 const elMenuItemRefresh = document.getElementById('menuItemRefresh') as HTMLDivElement | null;
 const elMenuItemLogs = document.getElementById('menuItemLogs') as HTMLDivElement | null;
@@ -3570,7 +3270,6 @@ const elBtnNewIssueClose = document.getElementById('btnNewIssueClose') as HTMLBu
 let draftSubtasks: string[] = [];
 let draftQuestions: string[] = [];
 
-type NewIssueMode = 'ai' | 'manual';
 let currentNewIssueMode: NewIssueMode = 'ai';
 
 function setNewIssueMode(mode: NewIssueMode): void {
@@ -3658,21 +3357,6 @@ async function resetPromptConfigToDefault(): Promise<void> {
     }
     await host.toast({ kind: 'info', message: 'Reset prompts to default' });
   } catch {}
-}
-
-
-
-
-
-export function updateComplexityLabel(currentLabels: any[], newComplexity: string | null): string[] {
-  const cleanExisting = currentLabels
-    .map((l) => (typeof l === 'string' ? l : l.name || ''))
-    .filter((name) => !name.toLowerCase().startsWith('complexity:'));
-
-  if (newComplexity && typeof newComplexity === 'string' && newComplexity.trim().toLowerCase() !== 'none') {
-    cleanExisting.push(`complexity:${newComplexity.trim().toUpperCase()}`);
-  }
-  return cleanExisting;
 }
 
 function renderDraftSubtasks(): void {
@@ -4244,251 +3928,8 @@ function setupDragAndDrop(): void {
   });
 }
 
-// ==========================================
-// Custom UI Dropdown Component
-// ==========================================
+export { setupCustomDropdown, initAllCustomDropdowns };
 
-export function setupCustomDropdown(selectEl: HTMLSelectElement): {
-  wrapper: HTMLElement;
-  trigger: HTMLButtonElement;
-  menu: HTMLElement;
-  sync: () => void;
-  destroy: () => void;
-} | null {
-  if (!selectEl || selectEl.dataset.customDropdownInitialized === 'true') {
-    return null;
-  }
-  selectEl.dataset.customDropdownInitialized = 'true';
-
-  // 1. Hide the native select
-  selectEl.style.display = 'none';
-
-  // 2. Create wrapper
-  const wrapper = document.createElement('div');
-  wrapper.className = 'custom-dropdown';
-  if (selectEl.classList.contains('select-sm')) {
-    wrapper.classList.add('size-sm');
-  }
-  if (selectEl.style.width === '100%') {
-    wrapper.classList.add('size-full');
-  }
-  if (selectEl.style.flex) {
-    wrapper.style.flex = selectEl.style.flex;
-  }
-  wrapper.dataset.selectId = selectEl.id || '';
-
-  // 3. Create trigger button
-  const trigger = document.createElement('button');
-  trigger.type = 'button';
-  trigger.className = 'custom-dropdown-trigger';
-  trigger.setAttribute('aria-haspopup', 'listbox');
-  trigger.setAttribute('aria-expanded', 'false');
-
-  const labelSpan = document.createElement('span');
-  labelSpan.className = 'custom-dropdown-label';
-
-  const arrowSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  arrowSvg.setAttribute('class', 'custom-dropdown-arrow icon icon-sm');
-  arrowSvg.setAttribute('viewBox', '0 0 24 24');
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', 'M7 10l5 5 5-5z');
-  arrowSvg.appendChild(path);
-
-  trigger.appendChild(labelSpan);
-  trigger.appendChild(arrowSvg);
-  wrapper.appendChild(trigger);
-
-  // 4. Create floating menu
-  const menu = document.createElement('div');
-  menu.className = 'custom-dropdown-menu';
-  menu.setAttribute('role', 'listbox');
-  document.body.appendChild(menu);
-
-  function syncOptions(): void {
-    menu.innerHTML = '';
-    const opts = Array.from(selectEl.options);
-    opts.forEach((opt) => {
-      const item = document.createElement('div');
-      item.className = 'custom-dropdown-item';
-      item.setAttribute('role', 'option');
-      item.dataset.value = opt.value;
-      if (opt.value === selectEl.value) {
-        item.classList.add('is-selected');
-        item.setAttribute('aria-selected', 'true');
-      }
-
-      const textSpan = document.createElement('span');
-      textSpan.className = 'custom-dropdown-item-text';
-      textSpan.textContent = opt.textContent || opt.value;
-
-      const checkSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-      checkSvg.setAttribute('class', 'custom-dropdown-check icon icon-sm');
-      checkSvg.setAttribute('viewBox', '0 0 24 24');
-      const checkPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-      checkPath.setAttribute('d', 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z');
-      checkSvg.appendChild(checkPath);
-
-      item.appendChild(textSpan);
-      item.appendChild(checkSvg);
-
-      item.addEventListener('click', (e) => {
-        e.stopPropagation();
-        selectOption(opt.value);
-      });
-
-      menu.appendChild(item);
-    });
-  }
-
-  function syncLabel(): void {
-    const selectedOpt = selectEl.options[selectEl.selectedIndex];
-    labelSpan.textContent = selectedOpt ? (selectedOpt.textContent || selectedOpt.value) : selectEl.value;
-    menu.querySelectorAll('.custom-dropdown-item').forEach((it) => {
-      const isSel = (it as HTMLElement).dataset.value === selectEl.value;
-      it.classList.toggle('is-selected', isSel);
-      it.setAttribute('aria-selected', isSel ? 'true' : 'false');
-    });
-  }
-
-  function openMenu(): void {
-    document.querySelectorAll('.custom-dropdown-menu.is-open').forEach((m) => {
-      if (m !== menu) {
-        m.classList.remove('is-open');
-      }
-    });
-    document.querySelectorAll('.custom-dropdown-trigger.is-open').forEach((t) => {
-      if (t !== trigger) {
-        t.classList.remove('is-open');
-        t.setAttribute('aria-expanded', 'false');
-      }
-    });
-
-    syncOptions();
-    syncLabel();
-
-    menu.classList.add('is-open');
-    trigger.classList.add('is-open');
-    trigger.setAttribute('aria-expanded', 'true');
-
-    const rect = trigger.getBoundingClientRect();
-    const menuHeight = menu.offsetHeight || 160;
-    const menuWidth = Math.max(rect.width, menu.offsetWidth || 130);
-
-    let top = rect.bottom + 4;
-    if (top + menuHeight > window.innerHeight - 8 && rect.top - menuHeight - 4 > 8) {
-      top = rect.top - menuHeight - 4;
-    }
-
-    let left = rect.left;
-    if (left + menuWidth > window.innerWidth - 8) {
-      left = window.innerWidth - menuWidth - 8;
-    }
-    if (left < 8) left = 8;
-
-    menu.style.top = `${top}px`;
-    menu.style.left = `${left}px`;
-    menu.style.minWidth = `${rect.width}px`;
-  }
-
-  function closeMenu(): void {
-    menu.classList.remove('is-open');
-    trigger.classList.remove('is-open');
-    trigger.setAttribute('aria-expanded', 'false');
-  }
-
-  function selectOption(val: string): void {
-    if (selectEl.value !== val) {
-      selectEl.value = val;
-      selectEl.dispatchEvent(new Event('change', { bubbles: true }));
-      selectEl.dispatchEvent(new Event('input', { bubbles: true }));
-    }
-    syncLabel();
-    closeMenu();
-    trigger.focus();
-  }
-
-  trigger.addEventListener('click', (e) => {
-    e.stopPropagation();
-    if (menu.classList.contains('is-open')) {
-      closeMenu();
-    } else {
-      openMenu();
-    }
-  });
-
-  trigger.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      if (!menu.classList.contains('is-open')) {
-        openMenu();
-      }
-      const firstItem = menu.querySelector('.custom-dropdown-item') as HTMLElement | null;
-      firstItem?.focus();
-    } else if (e.key === 'Escape') {
-      closeMenu();
-    }
-  });
-
-  const proto = HTMLSelectElement.prototype;
-  const originalDescriptor = Object.getOwnPropertyDescriptor(proto, 'value');
-  if (originalDescriptor) {
-    Object.defineProperty(selectEl, 'value', {
-      get() {
-        return originalDescriptor.get?.call(this);
-      },
-      set(newVal) {
-        originalDescriptor.set?.call(this, newVal);
-        syncLabel();
-      },
-      configurable: true,
-    });
-  }
-
-  selectEl.addEventListener('change', syncLabel);
-
-  const observer = new MutationObserver(() => {
-    syncOptions();
-    syncLabel();
-  });
-  observer.observe(selectEl, { childList: true, subtree: true, attributes: true });
-
-  document.addEventListener('click', (e) => {
-    if (!wrapper.contains(e.target as Node) && !menu.contains(e.target as Node)) {
-      closeMenu();
-    }
-  });
-
-  window.addEventListener('resize', closeMenu);
-
-  syncOptions();
-  syncLabel();
-
-  selectEl.parentNode?.insertBefore(wrapper, selectEl.nextSibling);
-
-  return {
-    wrapper,
-    trigger,
-    menu,
-    sync: () => {
-      syncOptions();
-      syncLabel();
-    },
-    destroy: () => {
-      observer.disconnect();
-      menu.remove();
-      wrapper.remove();
-      selectEl.style.display = '';
-      delete selectEl.dataset.customDropdownInitialized;
-    },
-  };
-}
-
-export function initAllCustomDropdowns(root: ParentNode = document): void {
-  const selects = root.querySelectorAll('select.form-ctrl, select.select-sm');
-  selects.forEach((s) => {
-    setupCustomDropdown(s as HTMLSelectElement);
-  });
-}
 
 // ==========================================
 // Event Wiring & Bootstrapping
@@ -4681,12 +4122,6 @@ function initEvents(): void {
         e.preventDefault();
         item.click();
       }
-    });
-  }
-  if (elMenuItemToggleLayout) {
-    elMenuItemToggleLayout.addEventListener('click', () => {
-      toggleLayoutMode();
-      closeMoreMenu();
     });
   }
   if (elMenuItemToggleArchive) {

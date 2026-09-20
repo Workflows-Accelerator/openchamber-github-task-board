@@ -3,6 +3,7 @@
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
+  var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLBAR_CSS = `
@@ -40,11 +41,23 @@
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
+  var GUEST_STORAGE_TOTAL_BYTES = 2097152;
+  var GUEST_STORAGE_KEYS_MAX = 2e3;
 
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
+  var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
+  var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
   var GUEST_FILE_STAT_KINDS = ["file", "directory", "other", "missing"];
   var isStartSessionResult = (value) => Boolean(value && "sessionId" in value);
   var isPromptResult = (value) => Boolean(value && "sent" in value && !("sessionId" in value));
+  var EMPTY_GUEST_CONNECTION = {
+    connected: false,
+    account: ""
+  };
+  var isGuestMessageItem = (item) => item !== null && item.kind === "message";
+  var isGuestSessionItem = (item) => item !== null && item.kind === "session";
+  var isGuestAttachItem = (item) => item !== null && item.kind !== "message" && item.kind !== "session";
   var GUEST_TOAST_MAX = 500;
   var GUEST_CLIPBOARD_TEXT_MAX = 32e3;
   var GUEST_COMPOSE_TEXT_MAX = 16e3;
@@ -55,14 +68,24 @@
   var GUEST_ATTACH_AUTHOR_MAX = 80;
   var GUEST_ATTACH_BRANCH_MAX = 200;
   var GUEST_ATTACH_DATA_MAX = 16e3;
+  var GUEST_ACCOUNT_MAX = 200;
+  var GUEST_SESSION_MODEL_MAX = 200;
+  var GUEST_SESSION_AGENT_MAX = 80;
+  var GUEST_SETTING_VALUE_MAX = 2e3;
   var GUEST_REQUEST_PATH_MAX = 2e3;
+  var GUEST_REQUEST_BODY_MAX = 64e3;
+  var GUEST_REQUEST_RESPONSE_MAX = 256e3;
   var GUEST_REQUEST_TIMEOUT_MS = 2e4;
   var GUEST_FILE_PATH_MAX = 1024;
   var GUEST_FILE_CONTENT_MAX = 2e6;
+  var GUEST_FILE_LIST_MAX = 2e3;
   var GUEST_GENERATE_PROMPT_MAX = 64e3;
   var GUEST_GENERATE_SYSTEM_MAX = 8e3;
   var GUEST_GENERATE_OUTPUT_TOKENS_MAX = 4e3;
+  var GUEST_GENERATE_TEXT_MAX = 256e3;
   var GUEST_GENERATE_TIMEOUT_MS = 9e4;
+  var GUEST_ITEM_MESSAGE_TEXT_MAX = 2e5;
+  var GUEST_ITEM_SESSION_MAX = 2e6;
   var GUEST_BADGE_MAX = 999;
   var GUEST_RESOLVE_ERROR_MAX = 500;
   var HOST_REQUEST_ERROR_CODES = [
@@ -163,7 +186,10 @@
       return null;
     return Math.min(GUEST_BADGE_MAX, Math.max(0, Math.round(count)));
   };
+  var guestFileScope = (path) => path.startsWith("/") || path === "~" || path.startsWith("~/") ? "filesystem" : "project";
   var isGuestFilePath = (value) => value.length > 0 && value.length <= GUEST_FILE_PATH_MAX && !value.includes("\0") && !value.includes("\\");
+  var ATTACH_PROVIDER_ID = /^[a-z][a-z0-9-]*$/;
+  var SETTING_KEY = /^[a-z][a-z0-9-]*$/;
   var isGuestRequestPath = (value) => {
     if (!value.startsWith("/") || value.includes("\0") || value.includes("\\") || value.includes("://")) {
       return false;
@@ -955,6 +981,64 @@
     }
   };
 
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  var STYLE_ID = "oc-sdk-ui-style";
+  var clearNode = (node) => {
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
+  };
+  var ensureStyle = (css) => {
+    const existing = document.getElementById(STYLE_ID);
+    if (existing instanceof HTMLStyleElement) {
+      if (existing.textContent !== css) {
+        existing.textContent = css;
+      }
+      return;
+    }
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = css;
+    document.head.appendChild(style);
+  };
+  var el = (tag, className) => {
+    const node = document.createElement(tag);
+    if (className) {
+      node.className = className;
+    }
+    return node;
+  };
+  var button = (className) => {
+    const node = el("button", className);
+    node.type = "button";
+    return node;
+  };
+  var setText = (node, text) => {
+    const next = text ?? "";
+    if (node.textContent !== next) {
+      node.textContent = next;
+    }
+  };
+  var setAttr = (node, name, value) => {
+    if (value === void 0 || value === null || value === "") {
+      node.removeAttribute(name);
+    } else if (node.getAttribute(name) !== value) {
+      node.setAttribute(name, value);
+    }
+  };
+  var onOutsideClick = (node, handler) => {
+    const listener = (event) => {
+      if (event.target instanceof Node && node.contains(event.target)) {
+        return;
+      }
+      handler();
+    };
+    document.addEventListener("pointerdown", listener, true);
+    return () => {
+      document.removeEventListener("pointerdown", listener, true);
+    };
+  };
+
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
@@ -1157,14 +1241,1273 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // panel/main.ts
-  function extractWorktreeName(wt) {
-    if (!wt) return "";
-    if (typeof wt === "string") return wt;
-    if (typeof wt === "object") {
-      return wt.name || wt.branch || wt.directory || "";
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  var ring = () => {
+    const spinner = document.createElement("span");
+    spinner.className = "oc-sdk-spinner-ring";
+    spinner.setAttribute("aria-hidden", "true");
+    return spinner;
+  };
+  var mountButton = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = button("oc-sdk oc-sdk-btn");
+    const spinner = ring();
+    const label = document.createElement("span");
+    node.append(label);
+    root.append(node);
+    const paint = () => {
+      node.dataset.variant = props.variant ?? "default";
+      node.dataset.size = props.size ?? "default";
+      node.disabled = Boolean(props.disabled) || Boolean(props.loading);
+      node.dataset.loading = props.loading ? "true" : "false";
+      node.setAttribute("aria-busy", props.loading ? "true" : "false");
+      if (props.loading && spinner.parentNode !== node) {
+        node.prepend(spinner);
+      } else if (!props.loading && spinner.parentNode === node) {
+        spinner.remove();
+      }
+      setText(label, props.label);
+    };
+    const onClick = () => {
+      if (props.disabled || props.loading) {
+        return;
+      }
+      props.onClick();
+    };
+    node.addEventListener("click", onClick);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.removeEventListener("click", onClick);
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  var mountTextField = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const field = el("label", "oc-sdk oc-sdk-field");
+    const caption = el("span", "oc-sdk-field-label");
+    const input = props.multiline ? el("textarea", "oc-sdk-input") : el("input", "oc-sdk-input");
+    const note = el("span", "oc-sdk-field-note");
+    field.append(caption, input, note);
+    root.append(field);
+    const paint = () => {
+      setText(caption, props.label);
+      caption.hidden = !props.label;
+      if (input instanceof HTMLInputElement) {
+        input.type = props.password ? "password" : "text";
+      } else {
+        input.rows = props.rows ?? 3;
+      }
+      if (input.value !== props.value) {
+        input.value = props.value;
+      }
+      input.disabled = Boolean(props.disabled);
+      setAttr(input, "placeholder", props.placeholder);
+      input.dataset.mono = props.mono ? "true" : "false";
+      const invalid = Boolean(props.error);
+      field.dataset.invalid = invalid ? "true" : "false";
+      input.setAttribute("aria-invalid", invalid ? "true" : "false");
+      const text = props.error ?? props.helper ?? "";
+      setText(note, text);
+      note.hidden = text === "";
+    };
+    const onInput = () => {
+      props.onChange(input.value);
+    };
+    input.addEventListener("input", onInput);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        input.removeEventListener("input", onInput);
+        field.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  var ICON_PATH = {
+    search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
+    chevron: "M12 13.172l4.95-4.95 1.414 1.414L12 16 5.636 9.636 7.05 8.222z",
+    check: "M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z",
+    close: "M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"
+  };
+  var icon = (name, size, className) => {
+    const node = document.createElementNS(SVG_NS, "svg");
+    node.setAttribute("viewBox", "0 0 24 24");
+    node.setAttribute("width", String(size));
+    node.setAttribute("height", String(size));
+    node.setAttribute("aria-hidden", "true");
+    node.setAttribute("fill", "currentColor");
+    if (className) {
+      node.setAttribute("class", className);
     }
-    return "";
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", ICON_PATH[name]);
+    node.append(path);
+    return node;
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  var mountSearchField = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const wrap = el("div", "oc-sdk oc-sdk-search");
+    const input = el("input", "oc-sdk-input");
+    input.type = "text";
+    input.spellcheck = false;
+    input.autocomplete = "off";
+    input.setAttribute("role", "searchbox");
+    const clear = button("oc-sdk-search-clear");
+    clear.append(icon("close", 14));
+    clear.tabIndex = -1;
+    wrap.append(icon("search", 16, "oc-sdk-search-icon"), input, clear);
+    root.append(wrap);
+    const paint = () => {
+      const placeholder = props.placeholder ?? "Search";
+      setAttr(input, "placeholder", placeholder);
+      input.setAttribute("aria-label", props.label ?? placeholder);
+      clear.setAttribute("aria-label", "Clear search");
+      if (input.value !== props.value) {
+        input.value = props.value;
+      }
+      wrap.dataset.active = props.value.trim() === "" ? "false" : "true";
+    };
+    const clearValue = () => {
+      if (props.value !== "") {
+        props.onChange("");
+      }
+      input.focus();
+    };
+    const onInput = () => {
+      props.onChange(input.value);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === "Escape" && input.value !== "") {
+        event.preventDefault();
+        clearValue();
+      }
+    };
+    input.addEventListener("input", onInput);
+    input.addEventListener("keydown", onKeyDown);
+    clear.addEventListener("click", clearValue);
+    paint();
+    if (props.autofocus) {
+      input.focus();
+    }
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        input.removeEventListener("input", onInput);
+        input.removeEventListener("keydown", onKeyDown);
+        clear.removeEventListener("click", clearValue);
+        wrap.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  var navigationKey = (event, axis = "vertical") => {
+    const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
+    if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
+      return "next";
+    if (event.key === previous || event.ctrlKey && event.key.toLowerCase() === "p")
+      return "previous";
+    if (event.key === "Home")
+      return "first";
+    if (event.key === "End")
+      return "last";
+    return null;
+  };
+  var moveListSelection = (items, currentId, key) => {
+    const enabled = items.filter((item) => !item.disabled);
+    if (enabled.length === 0) {
+      return null;
+    }
+    const first = enabled[0];
+    const last = enabled[enabled.length - 1];
+    if (key === "first" || !first || !last) {
+      return first?.id ?? null;
+    }
+    if (key === "last") {
+      return last.id;
+    }
+    const index = enabled.findIndex((item) => item.id === currentId);
+    if (index === -1) {
+      return key === "next" ? first.id : last.id;
+    }
+    const target = enabled[Math.min(enabled.length - 1, Math.max(0, index + (key === "next" ? 1 : -1)))];
+    return target?.id ?? null;
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  var optionId = (uid, id) => `${uid}-${id ?? ""}`;
+  var createOption = (uid, role, spec, on) => {
+    const node = button("oc-sdk-option");
+    node.id = optionId(uid, spec.id);
+    node.setAttribute("role", role);
+    node.tabIndex = -1;
+    node.disabled = Boolean(spec.disabled);
+    if (role === "option") {
+      node.setAttribute("aria-selected", spec.selected ? "true" : "false");
+    }
+    node.dataset.destructive = spec.destructive ? "true" : "false";
+    const label = el("span", "oc-sdk-option-label");
+    label.textContent = spec.label;
+    node.append(label);
+    if (spec.hint) {
+      const hint = el("span", "oc-sdk-option-hint");
+      hint.textContent = spec.hint;
+      node.append(hint);
+    }
+    node.addEventListener("pointerenter", on.hover);
+    node.addEventListener("click", on.pick);
+    return node;
+  };
+  var highlightOption = (container, focusOwner, uid, id) => {
+    const target = optionId(uid, id);
+    for (const child of Array.from(container.children)) {
+      if (child instanceof HTMLElement && child.classList.contains("oc-sdk-option")) {
+        child.dataset.active = child.id === target ? "true" : "false";
+      }
+    }
+    setAttr(focusOwner, "aria-activedescendant", id ? target : null);
+    container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  var placePopup = (popup, trigger) => {
+    const rect = trigger.getBoundingClientRect();
+    popup.style.minWidth = `${Math.round(rect.width)}px`;
+    popup.style.left = `${Math.round(rect.left)}px`;
+    popup.style.top = `${Math.round(rect.bottom + 4)}px`;
+    const height = popup.offsetHeight;
+    const roomBelow = window.innerHeight - rect.bottom - 8;
+    if (height > roomBelow && rect.top - 8 > roomBelow) {
+      popup.style.top = `${Math.max(8, Math.round(rect.top - 4 - height))}px`;
+    }
+    const overflow = rect.left + popup.offsetWidth - window.innerWidth + 8;
+    if (overflow > 0) {
+      popup.style.left = `${Math.max(8, Math.round(rect.left - overflow))}px`;
+    }
+  };
+  var openPopup = (host2, trigger, popup, close) => {
+    host2.append(popup);
+    placePopup(popup, trigger);
+    const stopOutside = onOutsideClick(host2, close);
+    const onResize = () => {
+      close();
+    };
+    const onScroll = (event) => {
+      if (event.target instanceof Node && popup.contains(event.target)) {
+        return;
+      }
+      close();
+    };
+    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      stopOutside();
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll, true);
+      popup.remove();
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  var filterSelectOptions = (options, query) => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) {
+      return [...options];
+    }
+    return options.filter((option) => option.label.toLowerCase().includes(needle) || option.id.toLowerCase().includes(needle));
+  };
+  var selectCount = 0;
+  var mountSelect = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const uid = `oc-sdk-select-${selectCount += 1}`;
+    const wrap = el("div", "oc-sdk oc-sdk-select");
+    const caption = el("span", "oc-sdk-field-label");
+    caption.id = `${uid}-label`;
+    const trigger = button("oc-sdk-trigger");
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-labelledby", caption.id);
+    const value = el("span", "oc-sdk-trigger-value");
+    trigger.append(value, icon("chevron", 14, "oc-sdk-trigger-chevron"));
+    wrap.append(caption, trigger);
+    root.append(wrap);
+    let query = "";
+    let activeId = null;
+    let closePopup = null;
+    const popup = el("div", "oc-sdk oc-sdk-popup");
+    const searchSlot = el("div", "oc-sdk-popup-search");
+    const search = el("input", "oc-sdk-input");
+    search.type = "text";
+    search.autocomplete = "off";
+    searchSlot.append(search);
+    const listbox = el("div");
+    listbox.setAttribute("role", "listbox");
+    listbox.tabIndex = -1;
+    popup.append(listbox);
+    const visible = () => filterSelectOptions(props.options, props.searchable ? query : "");
+    const focusOwner = () => props.searchable ? search : listbox;
+    const setActive = (id) => {
+      activeId = id;
+      highlightOption(listbox, focusOwner(), uid, id);
+    };
+    const paintOptions = () => {
+      clearNode(listbox);
+      const options = visible();
+      if (options.length === 0) {
+        const empty = el("div", "oc-sdk-popup-empty");
+        empty.textContent = "No matches";
+        listbox.append(empty);
+      }
+      for (const option of options) {
+        listbox.append(createOption(uid, "option", { ...option, selected: option.id === props.value }, {
+          hover: () => setActive(option.id),
+          pick: () => pick(option.id)
+        }));
+      }
+      setActive(options.some((option) => option.id === activeId) ? activeId : options[0]?.id ?? null);
+    };
+    const close = () => {
+      const dispose = closePopup;
+      closePopup = null;
+      dispose?.();
+      query = "";
+      search.value = "";
+      trigger.setAttribute("aria-expanded", "false");
+    };
+    const open = () => {
+      if (closePopup || props.disabled) {
+        return;
+      }
+      activeId = props.value;
+      search.placeholder = props.searchPlaceholder ?? "Search";
+      if (props.searchable)
+        popup.prepend(searchSlot);
+      else
+        searchSlot.remove();
+      paintOptions();
+      closePopup = openPopup(wrap, trigger, popup, close);
+      trigger.setAttribute("aria-expanded", "true");
+      focusOwner().focus();
+    };
+    const pick = (id) => {
+      close();
+      trigger.focus();
+      if (id !== props.value)
+        props.onChange(id);
+    };
+    const onTriggerClick = () => {
+      if (closePopup)
+        close();
+      else
+        open();
+    };
+    const onTriggerKey = (event) => {
+      if (!closePopup && navigationKey(event)) {
+        event.preventDefault();
+        open();
+      }
+    };
+    const onPopupKey = (event) => {
+      const step = navigationKey(event);
+      if (step) {
+        event.preventDefault();
+        setActive(moveListSelection(visible(), activeId, step));
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        if (activeId)
+          pick(activeId);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        trigger.focus();
+      } else if (props.searchable && event.target !== search && event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
+        search.focus();
+      }
+    };
+    const onSearchInput = () => {
+      query = search.value;
+      paintOptions();
+    };
+    const onFocusOut = (event) => {
+      if (closePopup && !(event.relatedTarget instanceof Node && wrap.contains(event.relatedTarget)))
+        close();
+    };
+    const paint = () => {
+      setText(caption, props.label);
+      caption.hidden = !props.label;
+      const current = props.options.find((option) => option.id === props.value);
+      setText(value, current?.label ?? props.placeholder ?? "Select");
+      value.dataset.empty = current ? "false" : "true";
+      trigger.disabled = Boolean(props.disabled);
+      if (closePopup)
+        paintOptions();
+    };
+    trigger.addEventListener("click", onTriggerClick);
+    trigger.addEventListener("keydown", onTriggerKey);
+    popup.addEventListener("keydown", onPopupKey);
+    search.addEventListener("input", onSearchInput);
+    wrap.addEventListener("focusout", onFocusOut);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        close();
+        trigger.removeEventListener("click", onTriggerClick);
+        trigger.removeEventListener("keydown", onTriggerKey);
+        popup.removeEventListener("keydown", onPopupKey);
+        search.removeEventListener("input", onSearchInput);
+        wrap.removeEventListener("focusout", onFocusOut);
+        wrap.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  var mountToggle = (root, initial, role) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = button("oc-sdk oc-sdk-check");
+    node.setAttribute("role", role);
+    const control = el("span", role === "switch" ? "oc-sdk-check-thumb" : "oc-sdk-check-box");
+    if (role === "checkbox") {
+      control.append(icon("check", 12));
+    }
+    const text = el("span", "oc-sdk-check-text");
+    const label = el("span", "oc-sdk-check-label");
+    const description = el("span", "oc-sdk-check-desc");
+    text.append(label, description);
+    node.append(control, text);
+    root.append(node);
+    const paint = () => {
+      node.setAttribute("aria-checked", props.checked ? "true" : "false");
+      node.disabled = Boolean(props.disabled);
+      setText(label, props.label);
+      setText(description, props.description);
+      description.hidden = !props.description;
+    };
+    const onClick = () => {
+      if (!props.disabled) {
+        props.onChange(!props.checked);
+      }
+    };
+    node.addEventListener("click", onClick);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.removeEventListener("click", onClick);
+        node.remove();
+      }
+    };
+  };
+  var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
+  var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  var mountTabs = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const track = el("div", "oc-sdk oc-sdk-tabs");
+    track.setAttribute("role", "tablist");
+    root.append(track);
+    const paint = () => {
+      clearNode(track);
+      track.dataset.track = props.trackBackground ? "true" : "false";
+      for (const item of props.items) {
+        const tab = button("oc-sdk-tab");
+        tab.setAttribute("role", "tab");
+        const active2 = item.id === props.activeId;
+        tab.setAttribute("aria-selected", active2 ? "true" : "false");
+        tab.tabIndex = active2 ? 0 : -1;
+        tab.dataset.id = item.id;
+        const label = el("span");
+        label.textContent = item.label;
+        tab.append(label);
+        if (item.count !== void 0) {
+          const count = el("span", "oc-sdk-tab-count");
+          count.textContent = String(item.count);
+          tab.append(count);
+        }
+        tab.addEventListener("click", () => {
+          if (item.id !== props.activeId)
+            props.onChange(item.id);
+        });
+        track.append(tab);
+      }
+    };
+    const onKeyDown = (event) => {
+      const step = navigationKey(event, "horizontal");
+      if (!step) {
+        return;
+      }
+      const next = moveListSelection(props.items, props.activeId, step);
+      if (next && next !== props.activeId) {
+        event.preventDefault();
+        props.onChange(next);
+        const tab = track.querySelector(`[data-id="${CSS.escape(next)}"]`);
+        if (tab instanceof HTMLElement)
+          tab.focus();
+      }
+    };
+    track.addEventListener("keydown", onKeyDown);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        track.removeEventListener("keydown", onKeyDown);
+        track.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  var applyTone = (node, tone2) => {
+    setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
+  };
+  var mountBadge = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("span", "oc-sdk oc-sdk-badge");
+    root.append(node);
+    const paint = () => {
+      setText(node, props.label);
+      applyTone(node, props.tone);
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  var listCount = 0;
+  var mountList = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const uid = `oc-sdk-list-${listCount += 1}`;
+    const list = el("div", "oc-sdk oc-sdk-list");
+    list.setAttribute("role", "listbox");
+    list.tabIndex = 0;
+    root.append(list);
+    let activeId = null;
+    const rowId = (id) => `${uid}-${id}`;
+    const setActive = (id) => {
+      activeId = id;
+      for (const row of Array.from(list.children)) {
+        if (row instanceof HTMLElement) {
+          row.dataset.active = row.id === rowId(id ?? "") ? "true" : "false";
+        }
+      }
+      setAttr(list, "aria-activedescendant", id ? rowId(id) : null);
+      list.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
+    };
+    const span = (className, text) => {
+      const node = el("span", className);
+      node.textContent = text;
+      return node;
+    };
+    const paint = () => {
+      clearNode(list);
+      setAttr(list, "aria-label", props.ariaLabel);
+      if (props.items.length === 0) {
+        list.append(span("oc-sdk-list-empty", props.emptyText ?? "Nothing here"));
+        setActive(null);
+        return;
+      }
+      for (const item of props.items) {
+        const row = button("oc-sdk-row");
+        row.id = rowId(item.id);
+        row.setAttribute("role", "option");
+        row.setAttribute("aria-selected", item.id === props.selectedId ? "true" : "false");
+        row.disabled = Boolean(item.disabled);
+        row.tabIndex = -1;
+        if (item.leading)
+          row.append(span("oc-sdk-row-lead", item.leading));
+        const main = el("span", "oc-sdk-row-main");
+        main.append(span("oc-sdk-row-title", item.title));
+        if (item.subtitle)
+          main.append(span("oc-sdk-row-sub", item.subtitle));
+        row.append(main);
+        if (item.badge) {
+          const badge = span("oc-sdk-badge", item.badge.label);
+          applyTone(badge, item.badge.tone);
+          row.append(badge);
+        }
+        if (item.meta)
+          row.append(span("oc-sdk-row-meta", item.meta));
+        row.addEventListener("click", () => props.onSelect(item.id));
+        list.append(row);
+      }
+      const stillThere = props.items.some((item) => item.id === activeId && !item.disabled);
+      setActive(stillThere ? activeId : props.selectedId ?? null);
+    };
+    const onKeyDown = (event) => {
+      const step = navigationKey(event);
+      if (step) {
+        event.preventDefault();
+        setActive(moveListSelection(props.items, activeId, step));
+        return;
+      }
+      if ((event.key === "Enter" || event.key === " ") && activeId) {
+        event.preventDefault();
+        props.onSelect(activeId);
+      }
+    };
+    list.addEventListener("keydown", onKeyDown);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        list.removeEventListener("keydown", onKeyDown);
+        list.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  var mountEmpty = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const shell = el("div", "oc-sdk oc-sdk-empty");
+    const title = el("h2", "oc-sdk-empty-title");
+    const body = el("p", "oc-sdk-empty-body");
+    const slot = el("div", "oc-sdk-empty-action");
+    shell.append(title, body, slot);
+    root.append(shell);
+    let action = null;
+    const paint = () => {
+      setText(title, props.title);
+      setText(body, props.body);
+      body.hidden = !props.body;
+      slot.hidden = !props.action;
+      if (!props.action) {
+        action?.dispose();
+        action = null;
+        return;
+      }
+      const next = { label: props.action.label, onClick: props.action.onClick };
+      if (action) {
+        action.update(next);
+      } else {
+        action = mountButton(slot, { ...next, variant: "outline", size: "sm" });
+      }
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        action?.dispose();
+        action = null;
+        shell.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  var mountSpinner = (root, initial = {}) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("span", "oc-sdk oc-sdk-spinner");
+    node.setAttribute("role", "status");
+    const ring2 = el("span", "oc-sdk-spinner-ring");
+    ring2.setAttribute("aria-hidden", "true");
+    const label = el("span");
+    node.append(ring2, label);
+    root.append(node);
+    const paint = () => {
+      node.dataset.size = props.size ?? "default";
+      setText(label, props.label);
+      label.hidden = !props.label;
+      node.setAttribute("aria-label", props.label ?? "Loading");
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  var mountBanner = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("div", "oc-sdk oc-sdk-banner");
+    const text = el("div", "oc-sdk-banner-text");
+    const title = el("div", "oc-sdk-banner-title");
+    const body = el("div", "oc-sdk-banner-body");
+    const slot = el("div", "oc-sdk-banner-action");
+    text.append(title, body);
+    node.append(text, slot);
+    root.append(node);
+    let action = null;
+    const paint = () => {
+      node.dataset.tone = props.tone;
+      node.setAttribute("role", props.tone === "error" || props.tone === "warning" ? "alert" : "status");
+      setText(title, props.title);
+      setText(body, props.body);
+      body.hidden = !props.body;
+      slot.hidden = !props.action;
+      if (!props.action) {
+        action?.dispose();
+        action = null;
+        return;
+      }
+      const next = { label: props.action.label, onClick: props.action.onClick };
+      if (action) {
+        action.update(next);
+      } else {
+        action = mountButton(slot, { ...next, variant: "outline", size: "xs" });
+      }
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        action?.dispose();
+        action = null;
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  var mountSeparator = (root, initial = {}) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("div", "oc-sdk oc-sdk-separator");
+    node.setAttribute("role", "separator");
+    const label = el("span");
+    node.append(label);
+    root.append(node);
+    const paint = () => {
+      setText(label, props.label);
+      label.hidden = !props.label;
+      node.dataset.labeled = props.label ? "true" : "false";
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
+  var mountProgress = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("div", "oc-sdk oc-sdk-progress");
+    const caption = el("div", "oc-sdk-progress-label");
+    const label = el("span");
+    const percent = el("span");
+    caption.append(label, percent);
+    const track = el("div", "oc-sdk-progress-track");
+    track.setAttribute("role", "progressbar");
+    track.setAttribute("aria-valuemin", "0");
+    track.setAttribute("aria-valuemax", "100");
+    const fill = el("div", "oc-sdk-progress-fill");
+    track.append(fill);
+    node.append(caption, track);
+    root.append(node);
+    const paint = () => {
+      const value = clampProgress(props.value);
+      applyTone(fill, props.tone);
+      fill.style.transform = `scaleX(${value / 100})`;
+      track.setAttribute("aria-valuenow", String(value));
+      if (props.label)
+        track.setAttribute("aria-label", props.label);
+      else
+        track.removeAttribute("aria-label");
+      setText(label, props.label);
+      setText(percent, `${value}%`);
+      caption.hidden = !props.label;
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  var actions = (items) => items.filter((item) => !("separator" in item));
+  var menuCount = 0;
+  var mountMenu = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const uid = `oc-sdk-menu-${menuCount += 1}`;
+    const wrap = el("div", "oc-sdk oc-sdk-menu");
+    root.append(wrap);
+    const popup = el("div", "oc-sdk oc-sdk-popup");
+    popup.setAttribute("role", "menu");
+    popup.tabIndex = -1;
+    let closePopup = null;
+    let activeId = null;
+    const trigger = mountButton(wrap, {
+      label: props.label,
+      variant: props.variant,
+      size: props.size,
+      onClick: () => {
+        if (closePopup)
+          close();
+        else
+          open();
+      }
+    });
+    const triggerNode = wrap.querySelector("button");
+    triggerNode?.setAttribute("aria-haspopup", "menu");
+    const setActive = (id) => {
+      activeId = id;
+      highlightOption(popup, popup, uid, id);
+    };
+    const paintItems = () => {
+      clearNode(popup);
+      for (const item of props.items) {
+        if ("separator" in item) {
+          const line = el("div", "oc-sdk-separator");
+          line.dataset.labeled = "false";
+          popup.append(line);
+          continue;
+        }
+        popup.append(createOption(uid, "menuitem", item, {
+          hover: () => setActive(item.id),
+          pick: () => pick(item.id)
+        }));
+      }
+      setActive(actions(props.items).some((item) => item.id === activeId) ? activeId : null);
+    };
+    const close = () => {
+      const dispose = closePopup;
+      closePopup = null;
+      dispose?.();
+      activeId = null;
+      triggerNode?.setAttribute("aria-expanded", "false");
+    };
+    const open = () => {
+      if (closePopup || !triggerNode) {
+        return;
+      }
+      paintItems();
+      closePopup = openPopup(wrap, triggerNode, popup, close);
+      triggerNode.setAttribute("aria-expanded", "true");
+      popup.focus();
+    };
+    const pick = (id) => {
+      close();
+      triggerNode?.focus();
+      props.onSelect(id);
+    };
+    const onPopupKey = (event) => {
+      const step = navigationKey(event);
+      if (step) {
+        event.preventDefault();
+        setActive(moveListSelection(actions(props.items), activeId, step));
+      } else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        if (activeId)
+          pick(activeId);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        triggerNode?.focus();
+      }
+    };
+    const onFocusOut = (event) => {
+      if (closePopup && !(event.relatedTarget instanceof Node && wrap.contains(event.relatedTarget)))
+        close();
+    };
+    popup.addEventListener("keydown", onPopupKey);
+    wrap.addEventListener("focusout", onFocusOut);
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        trigger.update({ label: props.label, variant: props.variant, size: props.size });
+        if (closePopup)
+          paintItems();
+      },
+      dispose: () => {
+        close();
+        popup.removeEventListener("keydown", onPopupKey);
+        wrap.removeEventListener("focusout", onFocusOut);
+        trigger.dispose();
+        wrap.remove();
+      }
+    };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
+  var isHttpUrl = (value) => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+  var splitTextMedia = (text) => {
+    const parts = [];
+    let last = 0;
+    for (const match of text.matchAll(MARKDOWN_TOKEN)) {
+      const index = match.index ?? 0;
+      if (index > last) {
+        parts.push({ kind: "text", text: text.slice(last, index) });
+      }
+      const marker = match[1] ?? "";
+      const label = (match[2] ?? "").trim();
+      const href = match[3] ?? "";
+      if (!isHttpUrl(href)) {
+        parts.push({ kind: "text", text: match[0] });
+      } else if (marker === "!") {
+        parts.push({ kind: "image", src: href, alt: label });
+      } else {
+        parts.push({ kind: "link", href, label: label || href });
+      }
+      last = index + match[0].length;
+    }
+    if (last < text.length) {
+      parts.push({ kind: "text", text: text.slice(last) });
+    }
+    return parts;
+  };
+  var mountText = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("div", "oc-sdk oc-sdk-text");
+    root.append(node);
+    const onClick = (event) => {
+      if (!(event.target instanceof HTMLAnchorElement) || !props.onOpenUrl) {
+        return;
+      }
+      event.preventDefault();
+      props.onOpenUrl(event.target.href);
+    };
+    const paint = () => {
+      clearNode(node);
+      for (const part of splitTextMedia(props.text)) {
+        if (part.kind === "text") {
+          node.append(document.createTextNode(part.text));
+        } else if (part.kind === "link") {
+          const link = el("a");
+          link.href = part.href;
+          link.rel = "noopener noreferrer";
+          link.target = "_blank";
+          link.textContent = part.label;
+          node.append(link);
+        } else {
+          const img = el("img");
+          img.src = part.src;
+          img.alt = part.alt;
+          img.loading = "lazy";
+          img.referrerPolicy = "no-referrer";
+          node.append(img);
+        }
+      }
+    };
+    node.addEventListener("click", onClick);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.removeEventListener("click", onClick);
+        node.remove();
+      }
+    };
+  };
+
+  // panel/dropdown.ts
+  function setupCustomDropdown(selectEl) {
+    if (!selectEl || selectEl.dataset.customDropdownInitialized === "true") {
+      return null;
+    }
+    selectEl.dataset.customDropdownInitialized = "true";
+    selectEl.style.display = "none";
+    const wrapper = document.createElement("div");
+    wrapper.className = "custom-dropdown";
+    if (selectEl.classList.contains("select-sm")) {
+      wrapper.classList.add("size-sm");
+    }
+    if (selectEl.style.width === "100%") {
+      wrapper.classList.add("size-full");
+    }
+    if (selectEl.style.flex) {
+      wrapper.style.flex = selectEl.style.flex;
+    }
+    wrapper.dataset.selectId = selectEl.id || "";
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "custom-dropdown-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "custom-dropdown-label";
+    const arrowSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    arrowSvg.setAttribute("class", "custom-dropdown-arrow icon icon-sm");
+    arrowSvg.setAttribute("viewBox", "0 0 24 24");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M7 10l5 5 5-5z");
+    arrowSvg.appendChild(path);
+    trigger.appendChild(labelSpan);
+    trigger.appendChild(arrowSvg);
+    wrapper.appendChild(trigger);
+    const menu = document.createElement("div");
+    menu.className = "custom-dropdown-menu";
+    menu.setAttribute("role", "listbox");
+    let activeIndex = -1;
+    function syncOptions() {
+      menu.innerHTML = "";
+      const options = Array.from(selectEl.options);
+      options.forEach((opt, idx) => {
+        const item = document.createElement("div");
+        item.className = "custom-dropdown-item";
+        item.setAttribute("role", "option");
+        item.setAttribute("data-value", opt.value);
+        item.setAttribute("data-index", String(idx));
+        item.setAttribute("aria-selected", opt.selected ? "true" : "false");
+        if (opt.selected) {
+          item.classList.add("is-selected");
+          activeIndex = idx;
+        }
+        const text = document.createElement("span");
+        text.className = "custom-dropdown-item-text";
+        text.textContent = opt.text;
+        const checkSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        checkSvg.setAttribute("class", "custom-dropdown-check icon icon-sm");
+        checkSvg.setAttribute("viewBox", "0 0 24 24");
+        const checkPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        checkPath.setAttribute("d", "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z");
+        checkSvg.appendChild(checkPath);
+        item.appendChild(text);
+        item.appendChild(checkSvg);
+        item.addEventListener("click", (e) => {
+          e.stopPropagation();
+          selectOption(opt.value);
+        });
+        menu.appendChild(item);
+      });
+    }
+    function syncLabel() {
+      const selected = selectEl.options[selectEl.selectedIndex];
+      labelSpan.textContent = selected ? selected.text : "";
+      const items = Array.from(menu.children);
+      items.forEach((item, idx) => {
+        const isSel = idx === selectEl.selectedIndex;
+        item.classList.toggle("is-selected", isSel);
+        item.setAttribute("aria-selected", isSel ? "true" : "false");
+      });
+    }
+    function positionMenu() {
+      const rect = trigger.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const minWidth = Math.max(rect.width, 130);
+      menu.style.minWidth = `${minWidth}px`;
+      menu.style.left = `${Math.min(rect.left, window.innerWidth - minWidth - 10)}px`;
+      if (spaceBelow < 180 && spaceAbove > spaceBelow) {
+        menu.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+        menu.style.top = "auto";
+      } else {
+        menu.style.top = `${rect.bottom + 4}px`;
+        menu.style.bottom = "auto";
+      }
+    }
+    function openMenu() {
+      if (menu.classList.contains("is-open")) return;
+      document.querySelectorAll(".custom-dropdown-menu.is-open").forEach((m) => {
+        m.classList.remove("is-open");
+      });
+      document.querySelectorAll(".custom-dropdown-trigger.is-open").forEach((t) => {
+        t.classList.remove("is-open");
+        t.setAttribute("aria-expanded", "false");
+      });
+      if (!document.body.contains(menu)) {
+        document.body.appendChild(menu);
+      }
+      positionMenu();
+      menu.classList.add("is-open");
+      trigger.classList.add("is-open");
+      trigger.setAttribute("aria-expanded", "true");
+      const selectedItem = menu.querySelector(".custom-dropdown-item.is-selected");
+      if (selectedItem) {
+        selectedItem.scrollIntoView({ block: "nearest" });
+      }
+    }
+    function closeMenu() {
+      menu.classList.remove("is-open");
+      trigger.classList.remove("is-open");
+      trigger.setAttribute("aria-expanded", "false");
+    }
+    function selectOption(val) {
+      if (selectEl.value !== val) {
+        selectEl.value = val;
+        selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      syncLabel();
+      closeMenu();
+      trigger.focus();
+    }
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (menu.classList.contains("is-open")) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+    trigger.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openMenu();
+      } else if (e.key === "Escape") {
+        closeMenu();
+      }
+    });
+    menu.addEventListener("keydown", (e) => {
+      const items = Array.from(menu.querySelectorAll(".custom-dropdown-item"));
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        activeIndex = (activeIndex + 1) % items.length;
+        items[activeIndex]?.focus();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        activeIndex = (activeIndex - 1 + items.length) % items.length;
+        items[activeIndex]?.focus();
+      } else if (e.key === "Escape") {
+        closeMenu();
+        trigger.focus();
+      }
+    });
+    const proto = HTMLSelectElement.prototype;
+    const originalDescriptor = Object.getOwnPropertyDescriptor(proto, "value");
+    if (originalDescriptor) {
+      Object.defineProperty(selectEl, "value", {
+        get() {
+          return originalDescriptor.get?.call(this);
+        },
+        set(newVal) {
+          originalDescriptor.set?.call(this, newVal);
+          syncLabel();
+        },
+        configurable: true
+      });
+    }
+    selectEl.addEventListener("change", syncLabel);
+    const observer = new MutationObserver(() => {
+      syncOptions();
+      syncLabel();
+    });
+    observer.observe(selectEl, { childList: true, subtree: true, attributes: true });
+    document.addEventListener("click", (e) => {
+      if (!wrapper.contains(e.target) && !menu.contains(e.target)) {
+        closeMenu();
+      }
+    });
+    window.addEventListener("resize", closeMenu);
+    syncOptions();
+    syncLabel();
+    selectEl.parentNode?.insertBefore(wrapper, selectEl.nextSibling);
+    return {
+      wrapper,
+      trigger,
+      menu,
+      sync: () => {
+        syncOptions();
+        syncLabel();
+      },
+      destroy: () => {
+        observer.disconnect();
+        menu.remove();
+        wrapper.remove();
+        selectEl.style.display = "";
+        delete selectEl.dataset.customDropdownInitialized;
+      }
+    };
+  }
+  function initAllCustomDropdowns(root = document) {
+    const selects = root.querySelectorAll("select.form-ctrl, select.select-sm");
+    selects.forEach((s) => {
+      setupCustomDropdown(s);
+    });
+  }
+
+  // panel/utils.ts
+  function escapeHtml(str) {
+    return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function slugify(text) {
+    return text.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 30);
+  }
+  function sanitizeHexColor(color) {
+    if (!color) return null;
+    const clean = color.trim().replace(/^#/, "");
+    if (/^[0-9a-fA-F]{3,8}$/.test(clean)) {
+      return `#${clean}`;
+    }
+    return null;
   }
   var logEntries = [];
   function addLog(msg, level = "info") {
@@ -1175,229 +2518,236 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     if (level === "error") console.error(`[TaskBoard] ${msg}`);
     else if (level === "warn") console.warn(`[TaskBoard] ${msg}`);
     else console.log(`[TaskBoard] ${msg}`);
-    const streamEl = document.getElementById("logStream");
-    if (streamEl) {
-      const line = document.createElement("div");
-      line.className = "log-line";
-      line.innerHTML = `
-      <span class="log-time">${timeStr}</span>
-      <span class="log-msg-${level}">${escapeHtml(msg)}</span>
-    `;
-      streamEl.appendChild(line);
-      streamEl.scrollTop = streamEl.scrollHeight;
+    if (typeof document !== "undefined") {
+      const streamEl = document.getElementById("logStream");
+      if (streamEl) {
+        const line = document.createElement("div");
+        line.className = "log-line";
+        line.innerHTML = `
+        <span class="log-time">${timeStr}</span>
+        <span class="log-msg-${level}">${escapeHtml(msg)}</span>
+      `;
+        streamEl.appendChild(line);
+        streamEl.scrollTop = streamEl.scrollHeight;
+      }
     }
   }
-  var host = connectHost();
-  var currentProject = null;
-  var currentDirectory = "";
-  var currentRepo = "";
-  var allProjects = [];
-  var isDiscoveringRepos = false;
-  var issues = [];
-  var sessions = [];
-  var worktrees = [];
-  var activeIssue = null;
-  var searchQuery = "";
-  var activeTab = "all";
-  var userSelectedTab = false;
-  var showArchivedOnly = false;
-  var currentSort = "newest";
-  var filterPriority = "all";
-  var filterTag = "all";
-  var currentGroupBy = "theme";
-  var isFilterBarOpen = false;
-  var selectedIssueNumbers = /* @__PURE__ */ new Set();
-  var userLayoutPreference = "auto";
-  var graphSelectedTheme = "all";
-  var graphShowDone = true;
-  var isDraggingEdge = false;
-  var dragSourceNum = null;
-  var currentGraph = null;
-  var graphResizeObserver = null;
-  var isWideScreen = false;
-  var draggedIssueNumber = null;
-  var isLoading = false;
-  var collapsedGroupKeys = /* @__PURE__ */ new Set();
-  function toggleGroupCollapse(key) {
-    if (collapsedGroupKeys.has(key)) {
-      collapsedGroupKeys.delete(key);
-    } else {
-      collapsedGroupKeys.add(key);
-    }
-    if (typeof host !== "undefined" && host?.storage) {
-      void host.storage.set("collapsed_groups", Array.from(collapsedGroupKeys));
-    }
-    return collapsedGroupKeys.has(key);
+
+  // panel/markdown.ts
+  function renderMarkdown(raw) {
+    if (!raw || typeof raw !== "string") return '<p style="color: var(--fg-muted); font-style: italic;">No description provided.</p>';
+    let html = raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang, code) => {
+      return `<pre class="md-code-block"><code class="language-${lang}">${code.trim()}</code></pre>`;
+    });
+    html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
+    html = html.replace(/^#### (.*$)/gim, '<h4 class="md-h4">$1</h4>');
+    html = html.replace(/^### (.*$)/gim, '<h3 class="md-h3">$1</h3>');
+    html = html.replace(/^## (.*$)/gim, '<h2 class="md-h2">$1</h2>');
+    html = html.replace(/^# (.*$)/gim, '<h1 class="md-h1">$1</h1>');
+    html = html.replace(/^\> (.*$)/gim, '<blockquote class="md-quote">$1</blockquote>');
+    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="md-link">$1 \u2197</a>');
+    const paragraphs = html.split(/\n\n+/);
+    html = paragraphs.map((p) => {
+      const trimmed = p.trim();
+      if (!trimmed) return "";
+      if (trimmed.startsWith("<h") || trimmed.startsWith("<pre") || trimmed.startsWith("<blockquote")) {
+        return trimmed;
+      }
+      return `<p class="md-p">${trimmed.replace(/\n/g, "<br/>")}</p>`;
+    }).filter(Boolean).join("\n");
+    return html;
   }
-  function isGroupCollapsed(key) {
-    return collapsedGroupKeys.has(key);
+  function getIssueDescriptionPreview(body) {
+    if (!body || typeof body !== "string") return "";
+    const lines = body.split(/\r?\n/);
+    const GENERIC_HEADERS = /^(overview|description|context|summary|details|background|goal|problem|about)$/i;
+    let fallback = "";
+    for (let rawLine of lines) {
+      let line = rawLine.trim();
+      if (!line) continue;
+      if (line.startsWith("```") || line.startsWith("~~~")) continue;
+      const isHeading = line.startsWith("#");
+      line = line.replace(/^#+\s*/, "");
+      line = line.replace(/^>\s*/, "");
+      line = line.replace(/^[-*+]\s*\[[ xX]\]\s*/, "");
+      line = line.replace(/^[-*+]\s+/, "");
+      line = line.replace(/^\d+\.\s+/, "");
+      line = line.replace(/(\*\*|__)(.*?)\1/g, "$2");
+      line = line.replace(/(\*|_)(.*?)\1/g, "$2");
+      line = line.replace(/`([^`]+)`/g, "$1");
+      line = line.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+      line = line.replace(/<[^>]*>/g, "");
+      line = line.trim();
+      if (!line) continue;
+      if (isHeading && GENERIC_HEADERS.test(line)) {
+        if (!fallback) fallback = line;
+        continue;
+      }
+      return line;
+    }
+    return fallback;
   }
-  function selectTab(tabId) {
-    activeTab = tabId;
-    const bar = document.getElementById("statusTabBar");
-    if (bar) {
-      bar.querySelectorAll(".status-tab").forEach((tab) => {
-        if (tab.getAttribute("data-tab") === tabId) {
-          tab.classList.add("active");
-        } else {
-          tab.classList.remove("active");
+
+  // panel/labels.ts
+  function isSystemLabel(labelName) {
+    if (!labelName || typeof labelName !== "string") return false;
+    const lower = labelName.trim().toLowerCase();
+    return lower.startsWith("status:") || lower.startsWith("priority:") || lower.startsWith("complexity:") || lower.startsWith("theme:") || lower === "archived" || lower === "archive";
+  }
+  function filterDisplayLabels(labels) {
+    if (!labels || !Array.isArray(labels)) return [];
+    return labels.filter((l) => !isSystemLabel(typeof l === "string" ? l : l.name || ""));
+  }
+  function getIssuePriority(issue) {
+    if (!issue || !issue.labels) return null;
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+      if (name === "priority:critical") return "critical";
+      if (name === "priority:important") return "important";
+      if (name === "priority:useful") return "useful";
+      if (name === "priority:optional") return "optional";
+    }
+    return null;
+  }
+  function updatePriorityLabels(currentLabels, newPriority) {
+    const cleanExisting = currentLabels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.toLowerCase().startsWith("priority:"));
+    if (newPriority && typeof newPriority === "string" && newPriority.trim().toLowerCase() !== "none") {
+      cleanExisting.push(`priority:${newPriority.trim().toLowerCase()}`);
+    }
+    return cleanExisting;
+  }
+  function getIssueComplexity(issue) {
+    if (!issue || !issue.labels) return null;
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+      if (name === "complexity:xl") return "XL";
+      if (name === "complexity:l") return "L";
+      if (name === "complexity:m") return "M";
+      if (name === "complexity:s") return "S";
+      if (name === "complexity:xs") return "XS";
+    }
+    return null;
+  }
+  function updateComplexityLabel(currentLabels, newComplexity) {
+    const cleanExisting = currentLabels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.toLowerCase().startsWith("complexity:"));
+    if (newComplexity && typeof newComplexity === "string" && newComplexity.trim().toLowerCase() !== "none") {
+      cleanExisting.push(`complexity:${newComplexity.trim().toUpperCase()}`);
+    }
+    return cleanExisting;
+  }
+  var PRIORITY_WEIGHTS = { critical: 4, important: 3, useful: 2, optional: 1 };
+  var COMPLEXITY_WEIGHTS = { XL: 5, L: 4, M: 3, S: 2, XS: 1 };
+  function sortIssuesList(list, sortKey) {
+    const copy = [...list];
+    switch (sortKey) {
+      case "newest":
+        return copy.sort((a, b) => b.number - a.number);
+      case "oldest":
+        return copy.sort((a, b) => a.number - b.number);
+      case "priority":
+        return copy.sort((a, b) => {
+          const pA = PRIORITY_WEIGHTS[getIssuePriority(a) || ""] || 0;
+          const pB = PRIORITY_WEIGHTS[getIssuePriority(b) || ""] || 0;
+          return pB !== pA ? pB - pA : b.number - a.number;
+        });
+      case "complexity":
+        return copy.sort((a, b) => {
+          const cA = COMPLEXITY_WEIGHTS[getIssueComplexity(a) || ""] || 0;
+          const cB = COMPLEXITY_WEIGHTS[getIssueComplexity(b) || ""] || 0;
+          return cB !== cA ? cB - cA : b.number - a.number;
+        });
+      case "subtasks":
+        return copy.sort((a, b) => {
+          const remA = a.subtasks.filter((s) => !s.completed).length;
+          const remB = b.subtasks.filter((s) => !s.completed).length;
+          return remB !== remA ? remB - remA : b.number - a.number;
+        });
+      case "title":
+        return copy.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+      default:
+        return copy;
+    }
+  }
+  function findRelatedIssues(targetIssue, allIssues, limit = 4) {
+    if (!targetIssue || !allIssues) return [];
+    const targetNum = targetIssue.number;
+    const targetLabels = new Set(
+      (targetIssue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase()).filter((n) => !n.startsWith("status:") && n !== "archived")
+    );
+    const targetWords = new Set(
+      (targetIssue.title || "").toLowerCase().split(/[^a-z0-9_-]+/).filter((w) => w.length > 3)
+    );
+    const scored = [];
+    for (const other of allIssues) {
+      if (other.number === targetNum) continue;
+      let score = 0;
+      const otherLabels = (other.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+      for (const l of otherLabels) {
+        if (targetLabels.has(l)) score += 3;
+      }
+      const otherText = `${other.title || ""} ${other.body || ""}`;
+      if (otherText.includes(`#${targetNum}`)) score += 5;
+      const targetText = `${targetIssue.title || ""} ${targetIssue.body || ""}`;
+      if (targetText.includes(`#${other.number}`)) score += 5;
+      const otherWords = (other.title || "").toLowerCase().split(/[^a-z0-9_-]+/);
+      for (const w of otherWords) {
+        if (w.length > 3 && targetWords.has(w)) score += 1;
+      }
+      if (score > 0) {
+        scored.push({ issue: other, score });
+      }
+    }
+    return scored.sort((a, b) => b.score - a.score || b.issue.number - a.issue.number).slice(0, limit).map((s) => s.issue);
+  }
+
+  // panel/git.ts
+  function parseGitHubRemoteUrl(raw) {
+    if (!raw || typeof raw !== "string") return null;
+    const val = raw.trim();
+    const scpMatch = val.match(/^(?:git@|ssh:\/\/git@)github\.com[:/]([^\s/]+)\/([^\s/.]+?)(\.git)?$/);
+    if (scpMatch) return { owner: scpMatch[1], repo: scpMatch[2] };
+    try {
+      const url = new URL(val);
+      if (url.hostname === "github.com") {
+        const parts = url.pathname.replace(/^\/+|\.git$/g, "").split("/");
+        if (parts.length >= 2 && parts[0] && parts[1]) {
+          return { owner: parts[0], repo: parts[1] };
         }
-      });
+      }
+    } catch {
     }
+    return null;
   }
-  var elBtnRepoSelect = document.getElementById("btnRepoSelect");
-  var elTxtRepoLabel = document.getElementById("txtRepoLabel");
-  var elRepoPopover = document.getElementById("repoPopover");
-  var elDetectedReposList = document.getElementById("detectedReposList");
-  var elInputCustomRepo = document.getElementById("inputCustomRepo");
-  var elBtnSaveCustomRepo = document.getElementById("btnSaveCustomRepo");
-  var elSearchInput = document.getElementById("searchInput");
-  var elBtnLayoutToggle = document.getElementById("btnLayoutToggle");
-  var elBtnGraphToggle = document.getElementById("btnGraphToggle");
-  var elBtnViewList = document.getElementById("btnViewList");
-  var elBtnViewKanban = document.getElementById("btnViewKanban");
-  var elBtnViewGraph = document.getElementById("btnViewGraph");
-  var elMenuItemToggleGraph = document.getElementById("menuItemToggleGraph");
-  var elTxtMenuGraph = document.getElementById("txtMenuGraph");
-
-  var elGraphViewContainer = document.getElementById("graphViewContainer");
-  var elGraphThemePills = document.getElementById("graphThemePills");
-  var elChkGraphShowDone = document.getElementById("chkGraphShowDone");
-  var elGraphStatFrontier = document.getElementById("graphStatFrontier");
-  var elGraphStatBlocked = document.getElementById("graphStatBlocked");
-  var elGraphStatDone = document.getElementById("graphStatDone");
-  var txtGraphStatFrontier = document.getElementById("txtGraphStatFrontier");
-  var txtGraphStatBlocked = document.getElementById("txtGraphStatBlocked");
-  var txtGraphStatDone = document.getElementById("txtGraphStatDone");
-  var elGraphCanvasContainer = document.getElementById("graphCanvasContainer");
-  var elGraphCanvas = document.getElementById("graphCanvas");
-  var elGraphSvgOverlay = document.getElementById("graphSvgOverlay");
-  var elGraphEdgesLayer = document.getElementById("graphEdgesLayer");
-  var elGraphDragLayer = document.getElementById("graphDragLayer");
-  var elGraphLayers = document.getElementById("graphLayers");
-
-  var elDrawerDepsCountBadge = document.getElementById("drawerDepsCountBadge");
-  var elDrawerBlockedByList = document.getElementById("drawerBlockedByList");
-  var elDrawerBlocksList = document.getElementById("drawerBlocksList");
-  var elSelectAddBlocker = document.getElementById("selectAddBlocker");
-  var elBtnAddBlockerConfirm = document.getElementById("btnAddBlockerConfirm");
-
-  var elBtnRefresh = document.getElementById("btnRefresh");
-  var elIconRefresh = document.getElementById("iconRefresh");
-  var elBtnNewIssue = document.getElementById("btnNewIssue");
-  var elBtnLogsToggle = document.getElementById("btnLogsToggle");
-  var elBtnFilterToggle = document.getElementById("btnFilterToggle");
-  var elFilterBar = document.getElementById("filterBar");
-  var elSelectSort = document.getElementById("selectSort");
-  var elSelectGroupBy = document.getElementById("selectGroupBy");
-  var elSelectFilterPriority = document.getElementById("selectFilterPriority");
-  var elSelectFilterTag = document.getElementById("selectFilterTag");
-  var elBtnStartTagIssues = document.getElementById("btnStartTagIssues");
-  var elBtnResetFilters = document.getElementById("btnResetFilters");
-  var elBatchActionBar = document.getElementById("batchActionBar");
-  var elBatchCountBadge = document.getElementById("batchCountBadge");
-  var elBtnBatchPackage = document.getElementById("btnBatchPackage");
-  var elBtnBatchStart = document.getElementById("btnBatchStart");
-  var elBtnBatchAttach = document.getElementById("btnBatchAttach");
-  var elBtnBatchDeselect = document.getElementById("btnBatchDeselect");
-  var elStatusTabBar = document.getElementById("statusTabBar");
-  var elListViewContainer = document.getElementById("listViewContainer");
-  var elKanbanViewContainer = document.getElementById("kanbanViewContainer");
-  var kanbanCardContainers = {
-    "backlog": document.getElementById("kCardsBacklog"),
-    "todo": document.getElementById("kCardsTodo"),
-    "in-progress": document.getElementById("kCardsProgress"),
-    "in-review": document.getElementById("kCardsReview"),
-    "done": document.getElementById("kCardsDone")
-  };
-  var elDrawerScrim = document.getElementById("drawerScrim");
-  var elTaskDrawer = document.getElementById("taskDrawer");
-  var elBtnDrawerClose = document.getElementById("btnDrawerClose");
-  var elDrawerIssueNumber = document.getElementById("drawerIssueNumber");
-  var elDrawerIssueAuthor = document.getElementById("drawerIssueAuthor");
-  var elDrawerGithubLink = document.getElementById("drawerGithubLink");
-  var elBtnDrawerToggleClose = document.getElementById("btnDrawerToggleClose");
-  var elDrawerIssueTitle = document.getElementById("drawerIssueTitle");
-  var elDrawerPrioritySelect = document.getElementById("drawerPrioritySelect");
-  var elDrawerStatusSelect = document.getElementById("drawerStatusSelect");
-  var elDrawerComplexitySelect = document.getElementById("drawerComplexitySelect");
-  var elDrawerAlignmentWarning = document.getElementById("drawerAlignmentWarning");
-  var elDrawerLabelsContainer = document.getElementById("drawerLabelsContainer");
-  var elBtnAddLabelToggle = document.getElementById("btnAddLabelToggle");
-  var elDrawerAddLabelRow = document.getElementById("drawerAddLabelRow");
-  var elInputNewTag = document.getElementById("inputNewTag");
-  var elRepoLabelsDatalist = document.getElementById("repoLabelsDatalist");
-  var elBtnConfirmAddLabel = document.getElementById("btnConfirmAddLabel");
-  var elBtnCancelAddLabel = document.getElementById("btnCancelAddLabel");
-  var elDrawerAgentBadge = document.getElementById("drawerAgentBadge");
-  var elDrawerWorktreeName = document.getElementById("drawerWorktreeName");
-  var elBtnDrawerJumpSession = document.getElementById("btnDrawerJumpSession");
-  var elChecklistProgressText = document.getElementById("checklistProgressText");
-  var elChecklistProgressFill = document.getElementById("checklistProgressFill");
-  var elDrawerChecklistContainer = document.getElementById("drawerChecklistContainer");
-  var elInputAddSubtask = document.getElementById("inputAddSubtask");
-  var elBtnAddSubtask = document.getElementById("btnAddSubtask");
-  var elQuestionsProgressText = document.getElementById("questionsProgressText");
-  var elDrawerQuestionsContainer = document.getElementById("drawerQuestionsContainer");
-  var elInputAddQuestion = document.getElementById("inputAddQuestion");
-  var elBtnAddQuestion = document.getElementById("btnAddQuestion");
-  var elDrawerDescriptionViewBox = document.getElementById("drawerDescriptionViewBox");
-  var elDrawerDescriptionCollapsible = document.getElementById("drawerDescriptionCollapsible");
-  var elDrawerDescriptionContent = document.getElementById("drawerDescriptionContent");
-  var elDrawerDescriptionToggleRow = document.getElementById("drawerDescriptionToggleRow");
-  var elBtnToggleCollapse = document.getElementById("btnToggleCollapse");
-  var elDrawerDescriptionEditBox = document.getElementById("drawerDescriptionEditBox");
-  var elDrawerDescriptionTextarea = document.getElementById("drawerDescriptionTextarea");
-  var elBtnEditDescription = document.getElementById("btnEditDescription");
-  var elBtnSaveDescription = document.getElementById("btnSaveDescription");
-  var elBtnCancelDescription = document.getElementById("btnCancelDescription");
-  var elDrawerCommentsContainer = document.getElementById("drawerCommentsContainer");
-  var elCommentCountBadge = document.getElementById("commentCountBadge");
-  var elDrawerRelatedIssuesContainer = document.getElementById("drawerRelatedIssuesContainer");
-  var elRelatedIssuesCountBadge = document.getElementById("relatedIssuesCountBadge");
-  var elBtnDrawerAttachComposer = document.getElementById("btnDrawerAttachComposer");
-  var elBtnDrawerArchive = document.getElementById("btnDrawerArchive");
-  var elTxtDrawerArchive = document.getElementById("txtDrawerArchive");
-  var elBtnDrawerOpenPreflight = document.getElementById("btnDrawerOpenPreflight");
-  var elPreflightBackdrop = document.getElementById("preflightModalBackdrop");
-  var elModalPreflightTitle = document.getElementById("modalPreflightTitle");
-  var elPreflightWorktreeToggle = document.getElementById("preflightWorktreeToggle");
-  var elPreflightWorktreeSection = document.getElementById("preflightWorktreeSection");
-  var elRadioWorktreeTag = document.getElementById("radioWorktreeTag");
-  var elRadioWorktreeIssue = document.getElementById("radioWorktreeIssue");
-  var elPreflightTagPreview = document.getElementById("preflightTagPreview");
-  var elPreflightIssuePreview = document.getElementById("preflightIssuePreview");
-  var elPreflightBranchInput = document.getElementById("preflightBranchInput");
-  var elPreflightBaseBranchInput = document.getElementById("preflightBaseBranchInput");
-  var elPreflightPromptInput = document.getElementById("preflightPromptInput");
-  var elPreflightMoveInProgress = document.getElementById("preflightMoveInProgress");
-  var elBtnPreflightCancel = document.getElementById("btnPreflightCancel");
-  var elBtnPreflightClose = document.getElementById("btnPreflightClose");
-  var elBtnPreflightLaunch = document.getElementById("btnPreflightLaunch");
-  var elLogDrawer = document.getElementById("logDrawer");
-  var elBtnLogDrawerClose = document.getElementById("btnLogDrawerClose");
-  var elBtnCopyLogs = document.getElementById("btnCopyLogs");
-  var elBtnClearLogs = document.getElementById("btnClearLogs");
-  function showBanner(text, actionLabel, onAction) {
-    const elBanner = document.getElementById("boardBanner");
-    const elBannerText = document.getElementById("boardBannerText");
-    const elBannerActions = document.getElementById("boardBannerActions");
-    if (!elBanner || !elBannerText || !elBannerActions) return;
-    elBannerText.textContent = text;
-    elBannerActions.innerHTML = "";
-    if (actionLabel && onAction) {
-      const btn = document.createElement("button");
-      btn.className = "btn btn-sm btn-primary";
-      btn.textContent = actionLabel;
-      btn.onclick = onAction;
-      elBannerActions.appendChild(btn);
+  function parseGitRemoteFromConfig(configContent) {
+    if (!configContent || typeof configContent !== "string") return null;
+    const match = configContent.match(/\[remote\s+["\w-]+\][^\[]*?url\s*=\s*([^\r\n]+)/);
+    if (match) {
+      return parseGitHubRemoteUrl(match[1]);
     }
-    elBanner.style.display = "flex";
+    return null;
   }
-  function hideBanner() {
-    const elBanner = document.getElementById("boardBanner");
-    if (elBanner) elBanner.style.display = "none";
+  function extractGitHubTokenFromCredentials(content) {
+    if (!content || typeof content !== "string") return null;
+    const match = content.match(/https:\/\/(?:[^:]+?:)?(gh[pousr]_[A-Za-z0-9_]+)@github\.com/);
+    if (match) return match[1];
+    const generic = content.match(/gh[pousr]_[A-Za-z0-9_]+/);
+    return generic ? generic[0] : null;
   }
+
+  // panel/types.ts
+  function extractWorktreeName(wt) {
+    if (!wt) return "";
+    if (typeof wt === "string") return wt;
+    if (typeof wt === "object") {
+      return wt.name || wt.branch || wt.directory || "";
+    }
+    return "";
+  }
+
+  // panel/core.ts
   var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
   var questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
   var headingRegex = /^#{1,4}\s+/;
@@ -1536,7 +2886,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 ${questionsBlock}`;
     }
     if (questionsSectionRegex.test(cleanBody)) {
-      return `${cleanBody}\n${questionsBlock}`;
+      return `${cleanBody}
+${questionsBlock}`;
     }
     return `${cleanBody}
 
@@ -1544,44 +2895,826 @@ ${questionsBlock}`;
 
 ${questionsBlock}`;
   }
-  function slugify(text) {
-    return text.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 30);
-  }
-  function sanitizeHexColor(color) {
-    if (!color) return null;
-    const clean = color.trim().replace(/^#/, "");
-    if (/^[0-9a-fA-F]{3,8}$/.test(clean)) {
-      return `#${clean}`;
+  function isVagueIdea(issue) {
+    if (!issue) return true;
+    const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labels.includes("status:needs-alignment")) {
+      return true;
     }
-    return null;
+    const openQuestions = issue.openQuestions || [];
+    if (openQuestions.some((q) => !q.completed)) {
+      return true;
+    }
+    const subtaskCount = (issue.subtasks || []).length;
+    const bodyText = (issue.body || "").trim();
+    const wordCount = bodyText ? bodyText.split(/\s+/).length : 0;
+    return subtaskCount === 0 && wordCount < 20;
   }
-  function escapeHtml(str) {
-    return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  function formatQuestionBadge(openQuestions) {
+    const list = openQuestions || [];
+    const total = list.length;
+    if (total === 0) {
+      return { total: 0, resolved: 0, open: 0, label: "", className: "", html: "" };
+    }
+    const resolved = list.filter((q) => q.completed).length;
+    const open = total - resolved;
+    const isOpen = open > 0;
+    const label = isOpen ? `${open} open` : `${total} Qs resolved`;
+    const className = isOpen ? "questions-prog is-open" : "questions-prog is-resolved";
+    const icon2 = isOpen ? `<svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>` : `<svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+    const html = `<div class="${className}" title="${open} open, ${resolved} resolved">${icon2}<span>${label}</span></div>`;
+    return { total, resolved, open, label, className, html };
   }
-  function parseGitHubRemoteUrl(raw) {
-    if (!raw || typeof raw !== "string") return null;
-    const val = raw.trim();
-    const scpMatch = val.match(/^(?:git@|ssh:\/\/git@)github\.com[:/]([^\s/]+)\/([^\s/.]+?)(\.git)?$/);
-    if (scpMatch) return { owner: scpMatch[1], repo: scpMatch[2] };
-    try {
-      const url = new URL(val);
-      if (url.hostname === "github.com") {
-        const parts = url.pathname.replace(/^\/+|\.git$/g, "").split("/");
-        if (parts.length >= 2 && parts[0] && parts[1]) {
-          return { owner: parts[0], repo: parts[1] };
+  function getIssueTheme(issue) {
+    if (!issue || !issue.labels || issue.labels.length === 0) return "No Theme";
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name.toLowerCase().startsWith("theme:")) {
+        const themeName = name.slice(6).trim();
+        if (themeName) return themeName;
+      }
+    }
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      const lower = name.toLowerCase();
+      if (name && !lower.startsWith("status:") && !lower.startsWith("priority:") && !lower.startsWith("complexity:") && !lower.startsWith("theme:") && !["archived", "archive"].includes(lower)) {
+        return name;
+      }
+    }
+    return "No Theme";
+  }
+  function extractTaskThemes(issuesList) {
+    if (!issuesList || !Array.isArray(issuesList)) return [];
+    const counts = /* @__PURE__ */ new Map();
+    for (const issue of issuesList) {
+      const theme = getIssueTheme(issue);
+      if (theme && theme !== "No Theme") {
+        counts.set(theme, (counts.get(theme) || 0) + 1);
+      }
+    }
+    return Array.from(counts.entries()).map(([theme, count]) => ({ theme, count })).sort((a, b) => b.count - a.count || a.theme.localeCompare(b.theme));
+  }
+  function parseScratchPadThemes(text) {
+    if (!text || typeof text !== "string") {
+      return { themes: [], totalIdeas: 0, totalQuestions: 0 };
+    }
+    const lines = text.split("\n");
+    const themes = [];
+    let currentTheme = { name: "General Ideas", lines: [] };
+    let hasExplicitHeader = false;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      const headingMatch = trimmed.match(/^#{1,3}\s+(?:\[Theme:\s*)?([^\]\n]+)\]?/i);
+      if (headingMatch) {
+        if (currentTheme.lines.length > 0 || hasExplicitHeader) {
+          themes.push(currentTheme);
+        }
+        hasExplicitHeader = true;
+        currentTheme = {
+          name: headingMatch[1].trim(),
+          lines: []
+        };
+        continue;
+      }
+      currentTheme.lines.push(line);
+    }
+    if (currentTheme.lines.length > 0 || hasExplicitHeader) {
+      themes.push(currentTheme);
+    }
+    const activeThemes = themes.filter((t) => t.lines.some((l) => l.trim().length > 0) || t.name !== "General Ideas");
+    let totalIdeas = 0;
+    let totalQuestions = 0;
+    const analyzed = activeThemes.map((t) => {
+      const content = t.lines.join("\n").trim();
+      const ideaLines = t.lines.filter((l) => /^\s*(?:[-*+]|\d+\.)(?:\s*\[[ xX]?\])?\s+(?!\?|Q:|Question:)/i.test(l));
+      const questionLines = t.lines.filter((l) => /(?:\?|\bQ:|\bQuestion:|\?\s*\[)/i.test(l));
+      const ideasCount = ideaLines.length || (content ? 1 : 0);
+      const questionsCount = questionLines.length;
+      totalIdeas += ideasCount;
+      totalQuestions += questionsCount;
+      return {
+        name: t.name,
+        content,
+        ideasCount,
+        questionsCount
+      };
+    });
+    return {
+      themes: analyzed,
+      totalIdeas,
+      totalQuestions
+    };
+  }
+  var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
+
+Input Objective / User Mind-Dump:
+{userInput}
+
+Instructions for the Agent:
+1. Analyze the user's input. If the user described multiple independent tasks, bugs, or features, decompose them into distinct, well-scoped GitHub issues. If it describes a single topic, create one focused issue.
+2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture.
+3. Every generated issue must follow this exact structure tailored for the OpenChamber Task Board:
+   - Title: Conventional commit format (e.g. "feat(auth): add remember-me token refresh" or "fix(ui): prevent horizontal overflow in mobile table").
+   - Overview: Clear description of the problem, motivation, or user value.
+   - Files Impacted: List candidate file paths grounded in the codebase.
+   - Actionable Subtasks Checklist: Mandatory interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
+     - [ ] Reproduce with test / define contract
+     - [ ] Implement core changes
+     - [ ] Run test suite and verify green
+   - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify.
+   - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
+   - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
+4. If a GitHub token or gh CLI is available in the environment, you can create the issues directly using the GitHub API. Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
+  function resolveAiIssuePrompt({
+    repo,
+    userInput,
+    storedRepoPrompt,
+    storedGlobalPrompt
+  }) {
+    const template = storedRepoPrompt?.trim() || storedGlobalPrompt?.trim() || DEFAULT_AI_ISSUE_PROMPT;
+    return template.replace(/\{repo\}/g, repo).replace(/\{userInput\}/g, userInput.trim());
+  }
+  var DEFAULT_AI_ALIGNMENT_PROMPT = `You are a principal engineer and architect conducting a deep technical alignment session for repository "{repo}".
+
+User Scratch Pad / Multi-Theme Mind-Dump:
+{userInput}
+
+Instructions for the Alignment Session:
+1. Review every theme, idea, feature, and bug in the user's scratch pad.
+2. Ground yourself by inspecting project architecture, existing modules, conventions, and configuration files in this workspace.
+3. Your primary goal is ALIGNMENT before issue creation:
+   - For each distinct theme, identify unstated assumptions, ambiguities, technical tradeoffs, and potential edge cases.
+   - Formulate probing, concise questions that need clarification (e.g. data modeling decisions, auth boundaries, UX state handling, error recovery).
+   - Propose 2-3 architectural approaches or solutions for tricky decisions with pros/cons and a clear recommendation.
+4. Interact directly with the user to align on answers.
+5. Once aligned on each theme, synthesize the finalized decisions into clean, well-scoped GitHub issues containing:
+   - Title in Conventional Commit format
+   - Impacted files and architectural plan
+   - Actionable Subtasks Checklist (- [ ])
+   - Open Questions (- [ ] / - [x])
+   - Suggested worktree branch slug`;
+  function resolveAiAlignmentPrompt({
+    repo,
+    userInput,
+    storedPrompt
+  }) {
+    const template = storedPrompt?.trim() || DEFAULT_AI_ALIGNMENT_PROMPT;
+    return template.replace(/\{repo\}/g, repo || "").replace(/\{userInput\}/g, (userInput || "").trim());
+  }
+  function buildIssueAttachPayload(issue) {
+    const numStr = String(issue.number);
+    const title = `#${issue.number} ${issue.title || ""}`.slice(0, 150);
+    const url = (issue.html_url || "").slice(0, 1e3);
+    const text = `Context from GitHub Issue #${issue.number}: ${issue.title || ""}
+
+${issue.body || ""}`.slice(0, 15e3);
+    return {
+      providerId: "github-task-board",
+      id: numStr,
+      title,
+      url,
+      text,
+      ...issue.user?.login ? { author: String(issue.user.login) } : {},
+      data: {
+        issueNumber: issue.number
+      }
+    };
+  }
+  function buildMultiIssueAttachPayload(issues2, repo = "") {
+    if (!issues2 || issues2.length === 0) {
+      return {
+        providerId: "github-task-board",
+        id: "bundle-empty",
+        title: "No Issues Selected",
+        url: repo ? `https://github.com/${repo}/issues` : "",
+        text: "No issues attached.",
+        data: { issueNumbers: [], count: 0, isMulti: true }
+      };
+    }
+    if (issues2.length === 1) {
+      return buildIssueAttachPayload(issues2[0]);
+    }
+    const numbers = issues2.map((i) => i.number);
+    const id = `bundle-${numbers.join("-")}`.slice(0, 120);
+    const titlesPreview = issues2.map((i) => `#${i.number}`).join(", ");
+    const title = `[${issues2.length} Issues] ${titlesPreview}`.slice(0, 150);
+    const primaryUrl = (issues2[0]?.html_url || (repo ? `https://github.com/${repo}/issues` : "")).slice(0, 1e3);
+    let text = `## Attached GitHub Issues (${issues2.length} items)
+`;
+    if (repo) text += `Repository: ${repo}
+
+`;
+    issues2.forEach((issue) => {
+      text += `### Issue #${issue.number}: ${issue.title || "Untitled"}
+`;
+      if (issue.html_url) text += `Link: ${issue.html_url}
+`;
+      const labelNames = (issue.labels || []).map((l) => typeof l === "string" ? l : l.name || "").filter(Boolean);
+      if (labelNames.length > 0) text += `Labels: ${labelNames.join(", ")}
+`;
+      if (issue.subtasks && issue.subtasks.length > 0) {
+        text += `Subtasks:
+`;
+        issue.subtasks.forEach((s) => {
+          text += `- [${s.completed ? "x" : " "}] ${s.text}
+`;
+        });
+      }
+      if (issue.body) {
+        text += `
+Description:
+${issue.body.trim()}
+`;
+      }
+      text += `
+---
+
+`;
+    });
+    return {
+      providerId: "github-task-board",
+      id,
+      title,
+      url: primaryUrl,
+      text: text.slice(0, 15e3),
+      data: {
+        issueNumbers: numbers,
+        count: issues2.length,
+        isMulti: true
+      }
+    };
+  }
+  function buildConsolidatedIssuePrompt(selectedIssues) {
+    if (!selectedIssues || selectedIssues.length === 0) return "";
+    const issueNumbers = selectedIssues.map((i) => `#${i.number}`).join(", ");
+    let prompt = `You are assigned to work on multiple packaged GitHub Issues: ${issueNumbers}
+
+`;
+    prompt += `### Packaged Tasks Summary (${selectedIssues.length} items):
+`;
+    selectedIssues.forEach((issue) => {
+      prompt += `- Issue #${issue.number}: ${issue.title}
+`;
+    });
+    prompt += "\n---\n\n";
+    selectedIssues.forEach((issue, idx) => {
+      prompt += `## Task ${idx + 1} of ${selectedIssues.length}: #${issue.number} ${issue.title}
+
+`;
+      if (issue.body) {
+        prompt += `### Overview & Context:
+${issue.body.trim()}
+
+`;
+      }
+      if (issue.subtasks && issue.subtasks.length > 0) {
+        prompt += `### Actionable Subtasks Checklist:
+`;
+        issue.subtasks.forEach((s) => {
+          prompt += `- [${s.completed ? "x" : " "}] ${s.text}
+`;
+        });
+        prompt += "\n";
+      }
+      prompt += "---\n\n";
+    });
+    prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
+    return prompt;
+  }
+  function serializeDraftSubtasks(body, subtaskTexts) {
+    const cleanBody = (body || "").trim();
+    const cleanTasks = (subtaskTexts || []).map((t) => typeof t === "string" ? t.trim() : "").filter(Boolean);
+    if (cleanTasks.length === 0) {
+      return cleanBody;
+    }
+    const checklistBlock = cleanTasks.map((t) => `- [ ] ${t}`).join("\n");
+    if (!cleanBody) {
+      return `### Actionable Subtasks Checklist:
+
+${checklistBlock}`;
+    }
+    if (cleanBody.includes("### Actionable Subtasks Checklist:")) {
+      return `${cleanBody}
+${checklistBlock}`;
+    }
+    return `${cleanBody}
+
+### Actionable Subtasks Checklist:
+
+${checklistBlock}`;
+  }
+  var DEPENDENCY_LINE_REGEX = /(?:^|\n)\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*([^\n]+)/gi;
+  function parseIssueDependencies(body) {
+    if (!body || typeof body !== "string") return [];
+    const numbers = /* @__PURE__ */ new Set();
+    const matches = body.matchAll(DEPENDENCY_LINE_REGEX);
+    for (const match of matches) {
+      const text = match[1] || "";
+      const numMatches = text.matchAll(/#(\d+)/g);
+      for (const nm of numMatches) {
+        const n = parseInt(nm[1], 10);
+        if (Number.isFinite(n) && n > 0) {
+          numbers.add(n);
         }
       }
-    } catch {
     }
-    return null;
+    return Array.from(numbers).sort((a, b) => a - b);
   }
-  function parseGitRemoteFromConfig(configContent) {
-    if (!configContent || typeof configContent !== "string") return null;
-    const match = configContent.match(/\[remote\s+["\w-]+\][^\[]*?url\s*=\s*([^\r\n]+)/);
-    if (match) {
-      return parseGitHubRemoteUrl(match[1]);
+  function addDependencyToMarkdown(body, blockerNumber) {
+    const blockerRef = `#${blockerNumber}`;
+    const existingBlockers = parseIssueDependencies(body);
+    if (existingBlockers.includes(blockerNumber)) {
+      return body || "";
     }
-    return null;
+    const raw = (body || "").trim();
+    if (!raw) {
+      return `Blocked by ${blockerRef}`;
+    }
+    const lines = raw.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on)(?:\s*:)?\s*/i.test(line)) {
+        lines[i] = `${line.trimEnd()}, ${blockerRef}`;
+        return lines.join("\n");
+      }
+    }
+    return `${raw}
+
+Blocked by ${blockerRef}`;
+  }
+  function removeDependencyFromMarkdown(body, blockerNumber) {
+    if (!body || typeof body !== "string") return "";
+    const blockerRef = `#${blockerNumber}`;
+    if (!body.includes(blockerRef)) return body;
+    const lines = body.split("\n");
+    const newLines = [];
+    for (const line of lines) {
+      if (/^\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*/i.test(line)) {
+        if (line.includes(blockerRef)) {
+          const currentNums = Array.from(line.matchAll(/#(\d+)/g)).map((m) => parseInt(m[1], 10)).filter((n) => n !== blockerNumber);
+          if (currentNums.length > 0) {
+            const prefixMatch = line.match(/^(\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*)/i);
+            const prefix = prefixMatch ? prefixMatch[1] : "Blocked by ";
+            newLines.push(`${prefix}${currentNums.map((n) => `#${n}`).join(", ")}`);
+          }
+          continue;
+        }
+      }
+      newLines.push(line);
+    }
+    return newLines.join("\n").trim();
+  }
+  function extractIssueReferences(body, selfNumber) {
+    if (!body || typeof body !== "string") return [];
+    const numbers = /* @__PURE__ */ new Set();
+    const matches = body.matchAll(/#(\d+)/g);
+    for (const m of matches) {
+      const n = parseInt(m[1], 10);
+      if (Number.isFinite(n) && n > 0 && n !== selfNumber) {
+        numbers.add(n);
+      }
+    }
+    return Array.from(numbers).sort((a, b) => a - b);
+  }
+  function buildDependencyGraph(issues2) {
+    const nodes = /* @__PURE__ */ new Map();
+    const byNumber = /* @__PURE__ */ new Map();
+    for (const issue of issues2) {
+      byNumber.set(issue.number, issue);
+    }
+    for (const issue of issues2) {
+      const isDone = issue.state === "closed" || (issue.labels || []).some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase() === "status:done");
+      const blockers = parseIssueDependencies(issue.body);
+      const openBlockers = blockers.filter((num) => {
+        const target = byNumber.get(num);
+        if (!target) return true;
+        return target.state !== "closed" && !(target.labels || []).some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase() === "status:done");
+      });
+      const isFrontier = !isDone && openBlockers.length === 0;
+      const isBlocked = !isDone && openBlockers.length > 0;
+      let priority = "normal";
+      for (const l of issue.labels || []) {
+        const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+        if (name.startsWith("priority:")) {
+          priority = name.slice(9);
+          break;
+        }
+      }
+      nodes.set(issue.number, {
+        issue,
+        blockers,
+        openBlockers,
+        dependents: [],
+        openDependents: [],
+        downstreamImpact: 0,
+        isDone,
+        isFrontier,
+        isBlocked,
+        layer: 0,
+        theme: getIssueTheme(issue),
+        priority
+      });
+    }
+    for (const node of nodes.values()) {
+      for (const blockerNum of node.blockers) {
+        const blockerNode = nodes.get(blockerNum);
+        if (blockerNode) {
+          blockerNode.dependents.push(node.issue.number);
+          if (!node.isDone) {
+            blockerNode.openDependents.push(node.issue.number);
+          }
+        }
+      }
+    }
+    for (const node of nodes.values()) {
+      if (node.isDone) {
+        node.downstreamImpact = 0;
+        continue;
+      }
+      const seen = /* @__PURE__ */ new Set([node.issue.number]);
+      const queue = [...node.openDependents];
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        if (seen.has(curr)) continue;
+        seen.add(curr);
+        const currNode = nodes.get(curr);
+        if (currNode) {
+          queue.push(...currNode.openDependents);
+        }
+      }
+      node.downstreamImpact = seen.size - 1;
+    }
+    const openNodeNumbers = Array.from(nodes.values()).filter((n) => !n.isDone).map((n) => n.issue.number);
+    const indices = /* @__PURE__ */ new Map();
+    const lowLinks = /* @__PURE__ */ new Map();
+    const stack = [];
+    const onStack = /* @__PURE__ */ new Set();
+    const componentOf = /* @__PURE__ */ new Map();
+    const components = [];
+    let nextIndex = 0;
+    const visit = (num) => {
+      const idx = nextIndex++;
+      indices.set(num, idx);
+      lowLinks.set(num, idx);
+      stack.push(num);
+      onStack.add(num);
+      const node = nodes.get(num);
+      const activeBlockers = (node?.openBlockers || []).filter((b) => nodes.has(b) && !nodes.get(b).isDone);
+      for (const blocker of activeBlockers) {
+        if (!indices.has(blocker)) {
+          visit(blocker);
+          lowLinks.set(num, Math.min(lowLinks.get(num), lowLinks.get(blocker)));
+        } else if (onStack.has(blocker)) {
+          lowLinks.set(num, Math.min(lowLinks.get(num), indices.get(blocker)));
+        }
+      }
+      if (lowLinks.get(num) === idx) {
+        const component = [];
+        while (stack.length > 0) {
+          const member = stack.pop();
+          onStack.delete(member);
+          componentOf.set(member, components.length);
+          component.push(member);
+          if (member === num) break;
+        }
+        components.push(component);
+      }
+    };
+    for (const num of openNodeNumbers) {
+      if (!indices.has(num)) {
+        visit(num);
+      }
+    }
+    const memoLayer = /* @__PURE__ */ new Map();
+    const layerOfComponent = (compIdx) => {
+      const cached = memoLayer.get(compIdx);
+      if (cached !== void 0) return cached;
+      let maxBlockerLayer = -1;
+      for (const member of components[compIdx]) {
+        const memberNode = nodes.get(member);
+        if (!memberNode) continue;
+        for (const blocker of memberNode.openBlockers) {
+          const blockerComp = componentOf.get(blocker);
+          if (blockerComp !== void 0 && blockerComp !== compIdx) {
+            maxBlockerLayer = Math.max(maxBlockerLayer, layerOfComponent(blockerComp));
+          }
+        }
+      }
+      const layer = maxBlockerLayer + 1;
+      memoLayer.set(compIdx, layer);
+      return layer;
+    };
+    for (const node of nodes.values()) {
+      if (node.isDone) {
+        node.layer = 0;
+      } else {
+        const comp = componentOf.get(node.issue.number);
+        node.layer = comp !== void 0 ? layerOfComponent(comp) : 0;
+      }
+    }
+    let maxLayer = 0;
+    for (const node of nodes.values()) {
+      if (node.layer > maxLayer) maxLayer = node.layer;
+    }
+    const layers = Array.from({ length: maxLayer + 1 }, () => []);
+    for (const node of nodes.values()) {
+      layers[node.layer].push(node);
+    }
+    const pos = /* @__PURE__ */ new Map();
+    layers[0].sort((a, b) => {
+      if (a.isDone !== b.isDone) return a.isDone ? 1 : -1;
+      if (a.isFrontier !== b.isFrontier) return a.isFrontier ? -1 : 1;
+      return b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number;
+    });
+    layers[0].forEach((n, idx) => pos.set(n.issue.number, idx));
+    for (let l = 1; l < layers.length; l++) {
+      const layer = layers[l];
+      const key = (n) => {
+        const blockerPositions = n.blockers.map((b) => pos.get(b)).filter((p) => p !== void 0);
+        return blockerPositions.length > 0 ? blockerPositions.reduce((acc, p) => acc + p, 0) / blockerPositions.length : n.issue.number;
+      };
+      layer.sort((a, b) => key(a) - key(b) || b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number);
+      layer.forEach((n, idx) => pos.set(n.issue.number, idx));
+    }
+    const edges = [];
+    const themeNodes = /* @__PURE__ */ new Map();
+    const frontierNodes = [];
+    for (const node of nodes.values()) {
+      if (node.isFrontier) {
+        frontierNodes.push(node);
+      }
+      let list = themeNodes.get(node.theme);
+      if (!list) {
+        list = [];
+        themeNodes.set(node.theme, list);
+      }
+      list.push(node);
+      for (const blockerNum of node.blockers) {
+        const blockerNode = nodes.get(blockerNum);
+        const isCrossTheme = blockerNode ? blockerNode.theme !== node.theme : false;
+        const isClosed = node.isDone || (blockerNode?.isDone ?? false);
+        edges.push({
+          from: blockerNum,
+          to: node.issue.number,
+          isCrossTheme,
+          isClosed,
+          isFrontier: node.isFrontier
+        });
+      }
+    }
+    const themes = Array.from(themeNodes.keys()).sort((a, b) => {
+      if (a === "No Theme") return 1;
+      if (b === "No Theme") return -1;
+      return (themeNodes.get(b)?.length || 0) - (themeNodes.get(a)?.length || 0);
+    });
+    return {
+      nodes,
+      layers,
+      edges,
+      themes,
+      themeNodes,
+      frontierNodes
+    };
+  }
+  function calculateEdgePath(sourceRect, targetRect, canvasRect) {
+    const sWidth = sourceRect.width ?? (sourceRect.right !== void 0 ? sourceRect.right - sourceRect.left : 0);
+    const sHeight = sourceRect.height ?? (sourceRect.bottom !== void 0 ? sourceRect.bottom - sourceRect.top : 0);
+    const tWidth = targetRect.width ?? (targetRect.right !== void 0 ? targetRect.right - targetRect.left : 0);
+    const x1 = Math.round(sourceRect.left + sWidth / 2 - canvasRect.left);
+    const y1 = Math.round((sourceRect.bottom !== void 0 ? sourceRect.bottom : sourceRect.top + sHeight) - canvasRect.top);
+    const x2 = Math.round(targetRect.left + tWidth / 2 - canvasRect.left);
+    const y2 = Math.round(targetRect.top - canvasRect.top);
+    const dy = y2 - y1;
+    const curvature = Math.max(30, Math.abs(dy) * 0.5);
+    const d = `M ${x1} ${y1} C ${x1} ${y1 + curvature}, ${x2} ${y2 - curvature}, ${x2} ${y2}`;
+    return { d, x1, y1, x2, y2 };
+  }
+  function detectCycle(issues2, newBlockerNum, targetNum) {
+    if (newBlockerNum === targetNum) return true;
+    const blockerMap = /* @__PURE__ */ new Map();
+    for (const issue of issues2) {
+      blockerMap.set(issue.number, parseIssueDependencies(issue.body));
+    }
+    const visited = /* @__PURE__ */ new Set();
+    const queue = [...blockerMap.get(newBlockerNum) || []];
+    while (queue.length > 0) {
+      const curr = queue.shift();
+      if (curr === targetNum) return true;
+      if (visited.has(curr)) continue;
+      visited.add(curr);
+      queue.push(...blockerMap.get(curr) || []);
+    }
+    return false;
+  }
+
+  // panel/main.ts
+  var host = connectHost();
+  var currentProject = null;
+  var currentDirectory = "";
+  var currentRepo = "";
+  var allProjects = [];
+  var isDiscoveringRepos = false;
+  var issues = [];
+  var sessions = [];
+  var worktrees = [];
+  var activeIssue = null;
+  var searchQuery = "";
+  var activeTab = "all";
+  var userSelectedTab = false;
+  var showArchivedOnly = false;
+  var currentSort = "newest";
+  var filterPriority = "all";
+  var filterTag = "all";
+  var currentGroupBy = "theme";
+  var isFilterBarOpen = false;
+  var selectedIssueNumbers = /* @__PURE__ */ new Set();
+  var userLayoutPreference = "auto";
+  var graphSelectedTheme = "all";
+  var graphShowDone = true;
+  var isDraggingEdge = false;
+  var dragSourceNum = null;
+  var currentGraph = null;
+  var isWideScreen = false;
+  var draggedIssueNumber = null;
+  var isLoading = false;
+  var collapsedGroupKeys = /* @__PURE__ */ new Set();
+  function toggleGroupCollapse(key) {
+    if (collapsedGroupKeys.has(key)) {
+      collapsedGroupKeys.delete(key);
+    } else {
+      collapsedGroupKeys.add(key);
+    }
+    if (host?.storage) {
+      void host.storage.set("collapsed_groups", Array.from(collapsedGroupKeys));
+    }
+    return collapsedGroupKeys.has(key);
+  }
+  function isGroupCollapsed(key) {
+    return collapsedGroupKeys.has(key);
+  }
+  function selectTab(tabId) {
+    activeTab = tabId;
+    const bar = document.getElementById("statusTabBar");
+    if (bar) {
+      bar.querySelectorAll(".status-tab").forEach((tab) => {
+        if (tab.getAttribute("data-tab") === tabId) {
+          tab.classList.add("active");
+        } else {
+          tab.classList.remove("active");
+        }
+      });
+    }
+  }
+  var elBtnRepoSelect = document.getElementById("btnRepoSelect");
+  var elTxtRepoLabel = document.getElementById("txtRepoLabel");
+  var elRepoPopover = document.getElementById("repoPopover");
+  var elDetectedReposList = document.getElementById("detectedReposList");
+  var elInputCustomRepo = document.getElementById("inputCustomRepo");
+  var elBtnSaveCustomRepo = document.getElementById("btnSaveCustomRepo");
+  var elSearchInput = document.getElementById("searchInput");
+  var elBtnLayoutToggle = document.getElementById("btnLayoutToggle");
+  var elBtnGraphToggle = document.getElementById("btnGraphToggle");
+  var elBtnViewList = document.getElementById("btnViewList");
+  var elBtnViewKanban = document.getElementById("btnViewKanban");
+  var elBtnViewGraph = document.getElementById("btnViewGraph");
+  var elMenuItemToggleGraph = document.getElementById("menuItemToggleGraph");
+  var elTxtMenuGraph = document.getElementById("txtMenuGraph");
+  var elGraphViewContainer = document.getElementById("graphViewContainer");
+  var elGraphThemePills = document.getElementById("graphThemePills");
+  var elChkGraphShowDone = document.getElementById("chkGraphShowDone");
+  var elGraphStatFrontier = document.getElementById("graphStatFrontier");
+  var elGraphStatBlocked = document.getElementById("graphStatBlocked");
+  var elGraphStatDone = document.getElementById("graphStatDone");
+  var txtGraphStatFrontier = document.getElementById("txtGraphStatFrontier");
+  var txtGraphStatBlocked = document.getElementById("txtGraphStatBlocked");
+  var txtGraphStatDone = document.getElementById("txtGraphStatDone");
+  var elGraphCanvasContainer = document.getElementById("graphCanvasContainer");
+  var elGraphCanvas = document.getElementById("graphCanvas");
+  var elGraphSvgOverlay = document.getElementById("graphSvgOverlay");
+  var elGraphEdgesLayer = document.getElementById("graphEdgesLayer");
+  var elGraphDragLayer = document.getElementById("graphDragLayer");
+  var elGraphLayers = document.getElementById("graphLayers");
+  var elDrawerDependenciesContainer = document.getElementById("drawerDependenciesContainer");
+  var elDrawerDepsCountBadge = document.getElementById("drawerDepsCountBadge");
+  var elDrawerBlockedByList = document.getElementById("drawerBlockedByList");
+  var elDrawerBlocksList = document.getElementById("drawerBlocksList");
+  var elSelectAddBlocker = document.getElementById("selectAddBlocker");
+  var elBtnAddBlockerConfirm = document.getElementById("btnAddBlockerConfirm");
+  var elBtnRefresh = document.getElementById("btnRefresh");
+  var elIconRefresh = document.getElementById("iconRefresh");
+  var elBtnNewIssue = document.getElementById("btnNewIssue");
+  var elBtnLogsToggle = document.getElementById("btnLogsToggle");
+  var elBtnFilterToggle = document.getElementById("btnFilterToggle");
+  var elFilterBar = document.getElementById("filterBar");
+  var elSelectSort = document.getElementById("selectSort");
+  var elSelectGroupBy = document.getElementById("selectGroupBy");
+  var elSelectFilterPriority = document.getElementById("selectFilterPriority");
+  var elSelectFilterTag = document.getElementById("selectFilterTag");
+  var elBtnStartTagIssues = document.getElementById("btnStartTagIssues");
+  var elBtnResetFilters = document.getElementById("btnResetFilters");
+  var elBatchActionBar = document.getElementById("batchActionBar");
+  var elBatchCountBadge = document.getElementById("batchCountBadge");
+  var elBtnBatchPackage = document.getElementById("btnBatchPackage");
+  var elBtnBatchStart = document.getElementById("btnBatchStart");
+  var elBtnBatchAttach = document.getElementById("btnBatchAttach");
+  var elBtnBatchDeselect = document.getElementById("btnBatchDeselect");
+  var elStatusTabBar = document.getElementById("statusTabBar");
+  var elListViewContainer = document.getElementById("listViewContainer");
+  var elKanbanViewContainer = document.getElementById("kanbanViewContainer");
+  var kanbanCardContainers = {
+    "backlog": document.getElementById("kCardsBacklog"),
+    "todo": document.getElementById("kCardsTodo"),
+    "in-progress": document.getElementById("kCardsProgress"),
+    "in-review": document.getElementById("kCardsReview"),
+    "done": document.getElementById("kCardsDone")
+  };
+  var elDrawerScrim = document.getElementById("drawerScrim");
+  var elTaskDrawer = document.getElementById("taskDrawer");
+  var elBtnDrawerClose = document.getElementById("btnDrawerClose");
+  var elDrawerIssueNumber = document.getElementById("drawerIssueNumber");
+  var elDrawerIssueAuthor = document.getElementById("drawerIssueAuthor");
+  var elDrawerGithubLink = document.getElementById("drawerGithubLink");
+  var elBtnDrawerToggleClose = document.getElementById("btnDrawerToggleClose");
+  var elDrawerIssueTitle = document.getElementById("drawerIssueTitle");
+  var elDrawerPrioritySelect = document.getElementById("drawerPrioritySelect");
+  var elDrawerStatusSelect = document.getElementById("drawerStatusSelect");
+  var elDrawerComplexitySelect = document.getElementById("drawerComplexitySelect");
+  var elDrawerAlignmentWarning = document.getElementById("drawerAlignmentWarning");
+  var elDrawerLabelsContainer = document.getElementById("drawerLabelsContainer");
+  var elBtnAddLabelToggle = document.getElementById("btnAddLabelToggle");
+  var elDrawerAddLabelRow = document.getElementById("drawerAddLabelRow");
+  var elInputNewTag = document.getElementById("inputNewTag");
+  var elRepoLabelsDatalist = document.getElementById("repoLabelsDatalist");
+  var elBtnConfirmAddLabel = document.getElementById("btnConfirmAddLabel");
+  var elBtnCancelAddLabel = document.getElementById("btnCancelAddLabel");
+  var elDrawerAgentBadge = document.getElementById("drawerAgentBadge");
+  var elDrawerWorktreeName = document.getElementById("drawerWorktreeName");
+  var elBtnDrawerJumpSession = document.getElementById("btnDrawerJumpSession");
+  var elChecklistProgressText = document.getElementById("checklistProgressText");
+  var elChecklistProgressFill = document.getElementById("checklistProgressFill");
+  var elDrawerChecklistContainer = document.getElementById("drawerChecklistContainer");
+  var elInputAddSubtask = document.getElementById("inputAddSubtask");
+  var elBtnAddSubtask = document.getElementById("btnAddSubtask");
+  var elQuestionsProgressText = document.getElementById("questionsProgressText");
+  var elDrawerQuestionsContainer = document.getElementById("drawerQuestionsContainer");
+  var elInputAddQuestion = document.getElementById("inputAddQuestion");
+  var elBtnAddQuestion = document.getElementById("btnAddQuestion");
+  var elDrawerDescriptionViewBox = document.getElementById("drawerDescriptionViewBox");
+  var elDrawerDescriptionCollapsible = document.getElementById("drawerDescriptionCollapsible");
+  var elDrawerDescriptionContent = document.getElementById("drawerDescriptionContent");
+  var elDrawerDescriptionToggleRow = document.getElementById("drawerDescriptionToggleRow");
+  var elBtnToggleCollapse = document.getElementById("btnToggleCollapse");
+  var elDrawerDescriptionEditBox = document.getElementById("drawerDescriptionEditBox");
+  var elDrawerDescriptionTextarea = document.getElementById("drawerDescriptionTextarea");
+  var elBtnEditDescription = document.getElementById("btnEditDescription");
+  var elBtnSaveDescription = document.getElementById("btnSaveDescription");
+  var elBtnCancelDescription = document.getElementById("btnCancelDescription");
+  var elDrawerCommentsContainer = document.getElementById("drawerCommentsContainer");
+  var elCommentCountBadge = document.getElementById("commentCountBadge");
+  var elDrawerRelatedIssuesContainer = document.getElementById("drawerRelatedIssuesContainer");
+  var elRelatedIssuesCountBadge = document.getElementById("relatedIssuesCountBadge");
+  var elBtnDrawerAttachComposer = document.getElementById("btnDrawerAttachComposer");
+  var elBtnDrawerArchive = document.getElementById("btnDrawerArchive");
+  var elTxtDrawerArchive = document.getElementById("txtDrawerArchive");
+  var elBtnDrawerOpenPreflight = document.getElementById("btnDrawerOpenPreflight");
+  var elPreflightBackdrop = document.getElementById("preflightModalBackdrop");
+  var elModalPreflightTitle = document.getElementById("modalPreflightTitle");
+  var elPreflightWorktreeToggle = document.getElementById("preflightWorktreeToggle");
+  var elPreflightWorktreeSection = document.getElementById("preflightWorktreeSection");
+  var elRadioWorktreeTag = document.getElementById("radioWorktreeTag");
+  var elRadioWorktreeIssue = document.getElementById("radioWorktreeIssue");
+  var elPreflightTagPreview = document.getElementById("preflightTagPreview");
+  var elPreflightIssuePreview = document.getElementById("preflightIssuePreview");
+  var elPreflightBranchInput = document.getElementById("preflightBranchInput");
+  var elPreflightBaseBranchInput = document.getElementById("preflightBaseBranchInput");
+  var elPreflightPromptInput = document.getElementById("preflightPromptInput");
+  var elPreflightMoveInProgress = document.getElementById("preflightMoveInProgress");
+  var elBtnPreflightCancel = document.getElementById("btnPreflightCancel");
+  var elBtnPreflightClose = document.getElementById("btnPreflightClose");
+  var elBtnPreflightLaunch = document.getElementById("btnPreflightLaunch");
+  var elLogDrawer = document.getElementById("logDrawer");
+  var elBtnLogDrawerClose = document.getElementById("btnLogDrawerClose");
+  var elBtnCopyLogs = document.getElementById("btnCopyLogs");
+  var elBtnClearLogs = document.getElementById("btnClearLogs");
+  function showBanner(text, actionLabel, onAction) {
+    const elBanner = document.getElementById("boardBanner");
+    const elBannerText = document.getElementById("boardBannerText");
+    const elBannerActions = document.getElementById("boardBannerActions");
+    if (!elBanner || !elBannerText || !elBannerActions) return;
+    elBannerText.textContent = text;
+    elBannerActions.innerHTML = "";
+    if (actionLabel && onAction) {
+      const btn = document.createElement("button");
+      btn.className = "btn btn-sm btn-primary";
+      btn.textContent = actionLabel;
+      btn.onclick = onAction;
+      elBannerActions.appendChild(btn);
+    }
+    elBanner.style.display = "flex";
+  }
+  function hideBanner() {
+    const elBanner = document.getElementById("boardBanner");
+    if (elBanner) elBanner.style.display = "none";
   }
   var dirGitCache = /* @__PURE__ */ new Map();
   var issueCache = /* @__PURE__ */ new Map();
@@ -1854,24 +3987,20 @@ ${questionsBlock}`;
     if (workspaceGitToken) return workspaceGitToken;
     try {
       const creds = await host.readFile("/workspace/.git-credentials");
-      if (creds && creds.content) {
-        const match = creds.content.match(/https:\/\/(?:[^:]+?:)?(gh[pousr]_[A-Za-z0-9_]+)@github\.com/) || creds.content.match(/gh[pousr]_[A-Za-z0-9_]+/);
-        if (match) {
-          workspaceGitToken = match[1] || match[0];
-          addLog("Loaded authenticated GitHub PAT from workspace credentials", "succ");
-          return workspaceGitToken;
-        }
+      const token = extractGitHubTokenFromCredentials(creds?.content);
+      if (token) {
+        workspaceGitToken = token;
+        addLog("Loaded authenticated GitHub PAT from workspace credentials", "succ");
+        return workspaceGitToken;
       }
     } catch {
     }
     try {
       const cfg = await host.readFile("/workspace/.gitconfig");
-      if (cfg && cfg.content) {
-        const match = cfg.content.match(/gh[pousr]_[A-Za-z0-9_]+/);
-        if (match) {
-          workspaceGitToken = match[0];
-          return workspaceGitToken;
-        }
+      const token = extractGitHubTokenFromCredentials(cfg?.content);
+      if (token) {
+        workspaceGitToken = token;
+        return workspaceGitToken;
       }
     } catch {
     }
@@ -2058,78 +4187,6 @@ ${questionsBlock}`;
       await host.toast({ kind: "error", message: `Failed to move #${issue.number}` });
     }
   }
-  function buildIssueAttachPayload(issue) {
-    const numStr = String(issue.number);
-    const title = `#${issue.number} ${issue.title || ""}`.slice(0, 150);
-    const url = (issue.html_url || "").slice(0, 1e3);
-    const text = `Context from GitHub Issue #${issue.number}: ${issue.title || ""}
-
-${issue.body || ""}`.slice(0, 15e3);
-    return {
-      providerId: "github-task-board",
-      id: numStr,
-      title,
-      url,
-      text,
-      ...issue.user?.login ? { author: String(issue.user.login) } : {},
-      data: {
-        issueNumber: issue.number
-      }
-    };
-  }
-  function buildMultiIssueAttachPayload(issues2, repo = "") {
-    if (!issues2 || issues2.length === 0) {
-      return {
-        providerId: "github-task-board",
-        id: "bundle-empty",
-        title: "No Issues Selected",
-        url: repo ? `https://github.com/${repo}/issues` : "",
-        text: "No issues attached.",
-        data: { issueNumbers: [], count: 0, isMulti: true }
-      };
-    }
-    if (issues2.length === 1) {
-      return buildIssueAttachPayload(issues2[0]);
-    }
-    const numbers = issues2.map((i) => i.number);
-    const id = `bundle-${numbers.join("-")}`.slice(0, 120);
-    const titlesPreview = issues2.map((i) => `#${i.number}`).join(", ");
-    const title = `[${issues2.length} Issues] ${titlesPreview}`.slice(0, 150);
-    const primaryUrl = (issues2[0]?.html_url || (repo ? `https://github.com/${repo}/issues` : "")).slice(0, 1e3);
-
-    let text = `## Attached GitHub Issues (${issues2.length} items)\n`;
-    if (repo) text += `Repository: ${repo}\n\n`;
-
-    issues2.forEach((issue) => {
-      text += `### Issue #${issue.number}: ${issue.title || "Untitled"}\n`;
-      if (issue.html_url) text += `Link: ${issue.html_url}\n`;
-      const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "")).filter(Boolean);
-      if (labelNames.length > 0) text += `Labels: ${labelNames.join(", ")}\n`;
-      if (issue.subtasks && issue.subtasks.length > 0) {
-        text += `Subtasks:\n`;
-        issue.subtasks.forEach((s) => {
-          text += `- [${s.completed ? "x" : " "}] ${s.text}\n`;
-        });
-      }
-      if (issue.body) {
-        text += `\nDescription:\n${issue.body.trim()}\n`;
-      }
-      text += `\n---\n\n`;
-    });
-
-    return {
-      providerId: "github-task-board",
-      id,
-      title,
-      url: primaryUrl,
-      text: text.slice(0, 15e3),
-      data: {
-        issueNumbers: numbers,
-        count: issues2.length,
-        isMulti: true
-      }
-    };
-  }
   function isIssueClosed(issue) {
     if (!issue) return false;
     if (typeof issue.state === "string" && issue.state.toLowerCase() === "closed") {
@@ -2188,7 +4245,9 @@ ${issue.body || ""}`.slice(0, 15e3);
     const prevLabels = [...issue.labels];
     const prevState = issue.state;
     const currentNames = issue.labels.map((l) => typeof l === "string" ? l : l.name || "");
-    const clean = currentNames.filter((n) => !["archived", "archive", "status:archived"].includes(n.toLowerCase()));
+    const clean = currentNames.filter(
+      (n) => !["archived", "archive", "status:archived"].includes(n.toLowerCase())
+    );
     let newState = issue.state;
     let targetCategory = "todo";
     if (!isArch) {
@@ -2239,76 +4298,21 @@ ${issue.body || ""}`.slice(0, 15e3);
       await host.toast({ kind: "error", message: `Failed to archive #${issue.number}: ${err.message}` });
     }
   }
-
-  function getIssuePriority(issue) {
-    if (!issue || !issue.labels) return null;
-    for (const l of issue.labels) {
-      const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
-      if (name === "priority:critical") return "critical";
-      if (name === "priority:important") return "important";
-      if (name === "priority:useful") return "useful";
-      if (name === "priority:optional") return "optional";
-    }
-    return null;
-  }
-  function updatePriorityLabels(currentLabels, newPriority) {
-    const cleanExisting = currentLabels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.toLowerCase().startsWith("priority:"));
-    if (newPriority && typeof newPriority === "string" && newPriority.trim().toLowerCase() !== "none") {
-      cleanExisting.push(`priority:${newPriority.trim().toLowerCase()}`);
-    }
-    return cleanExisting;
-  }
-  function getIssueTheme(issue) {
-    if (!issue || !issue.labels || issue.labels.length === 0) return "No Theme";
-    for (const l of issue.labels) {
-      const name = (typeof l === "string" ? l : l.name || "").trim();
-      if (name.toLowerCase().startsWith("theme:")) {
-        const themeName = name.slice(6).trim();
-        if (themeName) return themeName;
-      }
-    }
-    for (const l of issue.labels) {
-      const name = (typeof l === "string" ? l : l.name || "").trim();
-      const lower = name.toLowerCase();
-      if (
-        name &&
-        !lower.startsWith("status:") &&
-        !lower.startsWith("priority:") &&
-        !lower.startsWith("complexity:") &&
-        !lower.startsWith("theme:") &&
-        !["archived", "archive"].includes(lower)
-      ) {
-        return name;
-      }
-    }
-    return "No Theme";
-  }
-  function extractTaskThemes(issuesList) {
-    if (!issuesList || !Array.isArray(issuesList)) return [];
-    const counts = /* @__PURE__ */ new Map();
-    for (const issue of issuesList) {
-      const theme = getIssueTheme(issue);
-      if (theme && theme !== "No Theme") {
-        counts.set(theme, (counts.get(theme) || 0) + 1);
-      }
-    }
-    return Array.from(counts.entries()).map(([theme, count]) => ({ theme, count })).sort((a, b) => b.count - a.count || a.theme.localeCompare(b.theme));
-  }
   function groupIssuesBy(issuesList, groupBy) {
     if (groupBy === "priority") {
-      const groups = [
+      const groups2 = [
         { id: "critical", title: "Critical", issues: [] },
         { id: "important", title: "Important", issues: [] },
         { id: "useful", title: "Useful", issues: [] },
         { id: "optional", title: "Optional", issues: [] },
         { id: "none", title: "No Priority", issues: [] }
       ];
-      const map = new Map(groups.map((g) => [g.id, g]));
+      const map2 = new Map(groups2.map((g) => [g.id, g]));
       for (const issue of issuesList) {
         const p = getIssuePriority(issue) || "none";
-        map.get(p)?.issues.push(issue);
+        map2.get(p)?.issues.push(issue);
       }
-      return groups;
+      return groups2;
     }
     if (groupBy === "theme" || groupBy === "tag") {
       const themeMap = /* @__PURE__ */ new Map();
@@ -2327,71 +4331,22 @@ ${issue.body || ""}`.slice(0, 15e3);
     if (groupBy === "none") {
       return [{ id: "all", title: "All Items", issues: issuesList }];
     }
-    const groups2 = [
+    const groups = [
       { id: "backlog", title: "Backlog", issues: [] },
       { id: "todo", title: "To Do", issues: [] },
       { id: "in-progress", title: "In Progress", issues: [] },
       { id: "in-review", title: "In Review", issues: [] },
       { id: "done", title: "Done", issues: [] }
     ];
-    const map2 = new Map(groups2.map((g) => [g.id, g]));
+    const map = new Map(groups.map((g) => [g.id, g]));
     for (const issue of issuesList) {
       const col = resolveIssueColumn(issue);
-      if (col && map2.has(col)) {
-        map2.get(col).issues.push(issue);
+      if (col && map.has(col)) {
+        map.get(col).issues.push(issue);
       }
     }
-    return groups2;
+    return groups;
   }
-
-  function getIssueComplexity(issue) {
-    if (!issue || !issue.labels) return null;
-    for (const l of issue.labels) {
-      const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
-      if (name === "complexity:xl") return "XL";
-      if (name === "complexity:l") return "L";
-      if (name === "complexity:m") return "M";
-      if (name === "complexity:s") return "S";
-      if (name === "complexity:xs") return "XS";
-    }
-    return null;
-  }
-
-  var PRIORITY_WEIGHTS = { critical: 4, important: 3, useful: 2, optional: 1 };
-  var COMPLEXITY_WEIGHTS = { XL: 5, L: 4, M: 3, S: 2, XS: 1 };
-
-  function sortIssuesList(list, sortKey) {
-    const copy = [...list];
-    switch (sortKey) {
-      case "newest":
-        return copy.sort((a, b) => b.number - a.number);
-      case "oldest":
-        return copy.sort((a, b) => a.number - b.number);
-      case "priority":
-        return copy.sort((a, b) => {
-          const pA = PRIORITY_WEIGHTS[getIssuePriority(a) || ""] || 0;
-          const pB = PRIORITY_WEIGHTS[getIssuePriority(b) || ""] || 0;
-          return pB !== pA ? pB - pA : b.number - a.number;
-        });
-      case "complexity":
-        return copy.sort((a, b) => {
-          const cA = COMPLEXITY_WEIGHTS[getIssueComplexity(a) || ""] || 0;
-          const cB = COMPLEXITY_WEIGHTS[getIssueComplexity(b) || ""] || 0;
-          return cB !== cA ? cB - cA : b.number - a.number;
-        });
-      case "subtasks":
-        return copy.sort((a, b) => {
-          const remA = (a.subtasks || []).filter((s) => !s.completed).length;
-          const remB = (b.subtasks || []).filter((s) => !s.completed).length;
-          return remB !== remA ? remB - remA : b.number - a.number;
-        });
-      case "title":
-        return copy.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
-      default:
-        return copy;
-    }
-  }
-
   function getIssueSession(issue) {
     const issueNumStr = String(issue.number);
     const match = sessions.find((s) => {
@@ -2506,12 +4461,12 @@ ${issue.body || ""}`.slice(0, 15e3);
     const banner = document.createElement("div");
     banner.className = "archive-header-banner";
     banner.innerHTML = `
-      <div class="archive-title-wrap">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
-        <span>Archived Issues (${archivedIssues.length})</span>
-      </div>
-      <button class="btn btn-sm btn-secondary" id="btnExitArchive">Exit Archive</button>
-    `;
+    <div class="archive-title-wrap">
+      <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
+      <span>Archived Issues (${archivedIssues.length})</span>
+    </div>
+    <button class="btn btn-sm btn-secondary" id="btnExitArchive">Exit Archive</button>
+  `;
     const btnExit = banner.querySelector("#btnExitArchive");
     if (btnExit) {
       btnExit.addEventListener("click", () => {
@@ -2526,9 +4481,9 @@ ${issue.body || ""}`.slice(0, 15e3);
       const empty = document.createElement("div");
       empty.className = "empty-box";
       empty.innerHTML = `
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
-        <span>No archived issues in this repository.</span>
-      `;
+      <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
+      <span>No archived issues in this repository.</span>
+    `;
       elListViewContainer.appendChild(empty);
       return;
     }
@@ -2544,14 +4499,7 @@ ${issue.body || ""}`.slice(0, 15e3);
       issues.forEach((i) => {
         (i.labels || []).forEach((l) => {
           const name = typeof l === "string" ? l : l.name || "";
-          if (
-            name &&
-            !name.startsWith("status:") &&
-            !name.startsWith("priority:") &&
-            !name.startsWith("complexity:") &&
-            name.toLowerCase() !== "archived" &&
-            name.toLowerCase() !== "archive"
-          ) {
+          if (name && !name.startsWith("status:") && !name.startsWith("priority:") && !name.startsWith("complexity:") && name.toLowerCase() !== "archived" && name.toLowerCase() !== "archive") {
             existingTags.add(name);
           }
         });
@@ -2621,52 +4569,6 @@ ${issue.body || ""}`.slice(0, 15e3);
     renderGraphView(sorted);
     updateBatchBar();
     applyLayoutMode();
-  }
-  function getIssueDescriptionPreview(body) {
-    if (!body || typeof body !== "string") return "";
-    const lines = body.split(/\r?\n/);
-    const GENERIC_HEADERS = /^(overview|description|context|summary|details|background|goal|problem|about)$/i;
-    let fallback = "";
-    for (let rawLine of lines) {
-      let line = rawLine.trim();
-      if (!line) continue;
-      if (line.startsWith("```") || line.startsWith("~~~")) continue;
-      const isHeading = line.startsWith("#");
-      line = line.replace(/^#+\s*/, "");
-      line = line.replace(/^>\s*/, "");
-      line = line.replace(/^[-*+]\s*\[[ xX]\]\s*/, "");
-      line = line.replace(/^[-*+]\s+/, "");
-      line = line.replace(/^\d+\.\s+/, "");
-      line = line.replace(/(\*\*|__)(.*?)\1/g, "$2");
-      line = line.replace(/(\*|_)(.*?)\1/g, "$2");
-      line = line.replace(/`([^`]+)`/g, "$1");
-      line = line.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
-      line = line.replace(/<[^>]*>/g, "");
-      line = line.trim();
-      if (!line) continue;
-      if (isHeading && GENERIC_HEADERS.test(line)) {
-        if (!fallback) fallback = line;
-        continue;
-      }
-      return line;
-    }
-    return fallback;
-  }
-  function isSystemLabel(labelName) {
-    if (!labelName || typeof labelName !== "string") return false;
-    const lower = labelName.trim().toLowerCase();
-    return (
-      lower.startsWith("status:") ||
-      lower.startsWith("priority:") ||
-      lower.startsWith("complexity:") ||
-      lower.startsWith("theme:") ||
-      lower === "archived" ||
-      lower === "archive"
-    );
-  }
-  function filterDisplayLabels(labels) {
-    if (!labels || !Array.isArray(labels)) return [];
-    return labels.filter((l) => !isSystemLabel(typeof l === "string" ? l : l.name || ""));
   }
   function buildCardElement(issue, inKanban) {
     const session = getIssueSession(issue);
@@ -2749,11 +4651,11 @@ ${issue.body || ""}`.slice(0, 15e3);
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
         <span>Unarchive</span>
       </button>
-    ` : (!inKanban ? `
-      <button class="card-btn-archive ${isArch ? "is-archived" : ""}" data-issue="${issue.number}" title="${isArch ? "Unarchive issue" : "Archive issue"}">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
-      </button>
-    ` : "");
+    ` : !inKanban ? `
+        <button class="card-btn-archive ${isArch ? "is-archived" : ""}" data-issue="${issue.number}" title="${isArch ? "Unarchive issue" : "Archive issue"}">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
+        </button>
+      ` : "";
     const attachButtonHtml = `
     <button class="card-btn-attach" data-issue="${issue.number}" title="Attach issue chip to active prompt">
       <svg class="icon icon-sm icon-paperclip" viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5V6h-2v9.5a3.5 3.5 0 0 0 7 0V5a4.5 4.5 0 0 0-9 0v12.5c0 3.31 2.69 6 6 6s6-2.69 6-6V6h-2z"/></svg>
@@ -2861,11 +4763,11 @@ ${issue.body || ""}`.slice(0, 15e3);
     const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn(i) === activeTab);
     if (listItems.length === 0) {
       elListViewContainer.innerHTML = `
-        <div class="empty-box">
-          <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
-          <span>No issues match this view</span>
-        </div>
-      `;
+      <div class="empty-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+        <span>No issues match this view</span>
+      </div>
+    `;
       return;
     }
     if (currentGroupBy === "none") {
@@ -2881,22 +4783,20 @@ ${issue.body || ""}`.slice(0, 15e3);
         totalRendered += grp.issues.length;
         const groupKey = `list:${grp.id}`;
         const isCollapsed = isGroupCollapsed(groupKey);
-
         const groupEl = document.createElement("div");
         groupEl.className = `list-group ${isCollapsed ? "is-collapsed" : ""}`;
         groupEl.dataset.groupId = grp.id;
         groupEl.dataset.groupKey = groupKey;
         groupEl.innerHTML = `
-          <div class="list-group-header" role="button" tabindex="0" title="Click to collapse / expand group">
-            <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
-              <svg class="list-group-chevron icon icon-sm" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-              <span>${escapeHtml(grp.title)}</span>
-            </div>
-            <span class="status-pill">${grp.issues.length}</span>
+        <div class="list-group-header" role="button" tabindex="0" title="Click to collapse / expand group">
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+            <svg class="list-group-chevron icon icon-sm" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+            <span>${escapeHtml(grp.title)}</span>
           </div>
-          <div class="list-group-cards"></div>
-        `;
-
+          <span class="status-pill">${grp.issues.length}</span>
+        </div>
+        <div class="list-group-cards"></div>
+      `;
         const headerEl = groupEl.querySelector(".list-group-header");
         const toggleCollapse = (e) => {
           e.stopPropagation();
@@ -2910,22 +4810,20 @@ ${issue.body || ""}`.slice(0, 15e3);
             toggleCollapse(e);
           }
         });
-
         const listCardsContainer = groupEl.querySelector(".list-group-cards");
         grp.issues.forEach((issue) => {
           const card = buildCardElement(issue, false);
           listCardsContainer.appendChild(card);
         });
-
         elListViewContainer.appendChild(groupEl);
       });
       if (totalRendered === 0) {
         elListViewContainer.innerHTML = `
-          <div class="empty-box">
-            <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
-            <span>No issues match this view</span>
-          </div>
-        `;
+        <div class="empty-box">
+          <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+          <span>No issues match this view</span>
+        </div>
+      `;
       }
     }
   }
@@ -2944,12 +4842,12 @@ ${issue.body || ""}`.slice(0, 15e3);
       colEl.className = "kanban-col";
       colEl.dataset.column = col.id;
       colEl.innerHTML = `
-        <div class="kanban-col-header">
-          <span>${escapeHtml(col.title)}</span>
-          <span class="status-pill">${colIssues.length}</span>
-        </div>
-        <div class="kanban-cards" data-column="${escapeHtml(col.id)}"></div>
-      `;
+      <div class="kanban-col-header">
+        <span>${escapeHtml(col.title)}</span>
+        <span class="status-pill">${colIssues.length}</span>
+      </div>
+      <div class="kanban-cards" data-column="${escapeHtml(col.id)}"></div>
+    `;
       const cardsContainer = colEl.querySelector(".kanban-cards");
       cardsContainer.addEventListener("dragover", (e) => {
         e.preventDefault();
@@ -2966,12 +4864,9 @@ ${issue.body || ""}`.slice(0, 15e3);
         if (!issueNum) return;
         const issue = issues.find((i) => i.number === issueNum);
         if (!issue) return;
-
         const subEl = e.target?.closest?.(".kanban-subgroup");
         const subgroupId = subEl?.dataset?.subgroupId;
-
         await updateIssueStatus(issue, col.id);
-
         if (currentGroupBy === "priority" && subgroupId && subgroupId !== "none") {
           const updatedLabels = updatePriorityLabels(issue.labels, subgroupId);
           issue.labels = updatedLabels.map((name) => ({ name }));
@@ -2985,7 +4880,6 @@ ${issue.body || ""}`.slice(0, 15e3);
           }
         }
       });
-
       if (currentGroupBy === "none" || currentGroupBy === "status") {
         colIssues.forEach((issue) => {
           const card = buildCardElement(issue, true);
@@ -2997,22 +4891,20 @@ ${issue.body || ""}`.slice(0, 15e3);
           if (subGrp.issues.length === 0) return;
           const groupKey = `kanban:${col.id}:${subGrp.id}`;
           const isCollapsed = isGroupCollapsed(groupKey);
-
           const subGroupEl = document.createElement("div");
           subGroupEl.className = `kanban-subgroup ${isCollapsed ? "is-collapsed" : ""}`;
           subGroupEl.dataset.subgroupId = subGrp.id;
           subGroupEl.dataset.groupKey = groupKey;
           subGroupEl.innerHTML = `
-            <div class="kanban-subgroup-header" role="button" tabindex="0" title="Click to collapse / expand group">
-              <div style="display: flex; align-items: center; gap: 5px; min-width: 0;">
-                <svg class="kanban-subgroup-chevron icon icon-sm" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-                <span class="kanban-subgroup-title">${escapeHtml(subGrp.title)}</span>
-              </div>
-              <span class="kanban-subgroup-count">${subGrp.issues.length}</span>
+          <div class="kanban-subgroup-header" role="button" tabindex="0" title="Click to collapse / expand group">
+            <div style="display: flex; align-items: center; gap: 5px; min-width: 0;">
+              <svg class="kanban-subgroup-chevron icon icon-sm" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              <span class="kanban-subgroup-title">${escapeHtml(subGrp.title)}</span>
             </div>
-            <div class="kanban-subgroup-cards"></div>
-          `;
-
+            <span class="kanban-subgroup-count">${subGrp.issues.length}</span>
+          </div>
+          <div class="kanban-subgroup-cards"></div>
+        `;
           const headerEl = subGroupEl.querySelector(".kanban-subgroup-header");
           const toggleCollapse = (e) => {
             e.stopPropagation();
@@ -3026,7 +4918,6 @@ ${issue.body || ""}`.slice(0, 15e3);
               toggleCollapse(e);
             }
           });
-
           const subCardsContainer = subGroupEl.querySelector(".kanban-subgroup-cards");
           subGrp.issues.forEach((issue) => {
             const card = buildCardElement(issue, true);
@@ -3073,22 +4964,30 @@ ${issue.body || ""}`.slice(0, 15e3);
     }
   }
   var THEME_PALETTE = [
-    "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899",
-    "#06b6d4", "#14b8a6", "#f97316", "#6366f1", "#84cc16"
+    "#3b82f6",
+    "#10b981",
+    "#f59e0b",
+    "#8b5cf6",
+    "#ec4899",
+    "#06b6d4",
+    "#14b8a6",
+    "#f97316",
+    "#6366f1",
+    "#84cc16"
   ];
   function getThemeColor(theme) {
     if (!theme || theme === "No Theme") return "var(--border)";
     let hash = 0;
     for (let i = 0; i < theme.length; i++) {
-      hash = (hash * 31 + theme.charCodeAt(i)) & 4294967295;
+      hash = hash * 31 + theme.charCodeAt(i) & 4294967295;
     }
     return THEME_PALETTE[Math.abs(hash) % THEME_PALETTE.length];
   }
   async function handleAddDependency(targetNum, blockerNum) {
     if (targetNum === blockerNum) return;
     if (detectCycle(issues, blockerNum, targetNum)) {
-      if (typeof host !== "undefined" && host?.toast) {
-        await host.toast({ kind: "warn", message: `Cannot link #${targetNum} -> #${blockerNum}: creates circular dependency` });
+      if (host?.toast) {
+        await host.toast({ kind: "error", message: `Cannot link #${targetNum} -> #${blockerNum}: creates circular dependency` });
       }
       return;
     }
@@ -3097,7 +4996,7 @@ ${issue.body || ""}`.slice(0, 15e3);
     const newBody = addDependencyToMarkdown(targetIssue.body, blockerNum);
     if (newBody !== targetIssue.body) {
       await updateIssueBody(targetIssue, newBody);
-      if (typeof host !== "undefined" && host?.toast) {
+      if (host?.toast) {
         await host.toast({ kind: "info", message: `Linked #${targetNum} as blocked by #${blockerNum}` });
       }
     }
@@ -3108,7 +5007,7 @@ ${issue.body || ""}`.slice(0, 15e3);
     const newBody = removeDependencyFromMarkdown(targetIssue.body, blockerNum);
     if (newBody !== targetIssue.body) {
       await updateIssueBody(targetIssue, newBody);
-      if (typeof host !== "undefined" && host?.toast) {
+      if (host?.toast) {
         await host.toast({ kind: "info", message: `Removed dependency: #${blockerNum} no longer blocks #${targetNum}` });
       }
     }
@@ -3132,21 +5031,21 @@ ${issue.body || ""}`.slice(0, 15e3);
     } else {
       candidateIssues.forEach((cand) => {
         itemsHtml += `
-          <div class="popover-item" data-blocker-num="${cand.number}" style="padding: 6px 10px; cursor: pointer;">
-            <div style="font-weight: 600; font-size: 11.5px; color: var(--fg);">#${cand.number} ${escapeHtml(cand.title)}</div>
-          </div>
-        `;
+        <div class="popover-item" data-blocker-num="${cand.number}" style="padding: 6px 10px; cursor: pointer;">
+          <div style="font-weight: 600; font-size: 11.5px; color: var(--fg);">#${cand.number} ${escapeHtml(cand.title)}</div>
+        </div>
+      `;
       });
     }
     popover.innerHTML = `
-      <div class="popover-head" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>Add Blocker to #${targetIssue.number}</span>
-        <span class="popover-close-btn" style="cursor: pointer; font-weight: 700;">×</span>
-      </div>
-      <div class="popover-list" style="max-height: 200px; overflow-y: auto;">
-        ${itemsHtml}
-      </div>
-    `;
+    <div class="popover-head" style="display: flex; justify-content: space-between; align-items: center;">
+      <span>Add Blocker to #${targetIssue.number}</span>
+      <span class="popover-close-btn" style="cursor: pointer; font-weight: 700;">\xD7</span>
+    </div>
+    <div class="popover-list" style="max-height: 200px; overflow-y: auto;">
+      ${itemsHtml}
+    </div>
+  `;
     document.body.appendChild(popover);
     const closePopover = () => {
       popover.remove();
@@ -3198,8 +5097,7 @@ ${issue.body || ""}`.slice(0, 15e3);
       dragPath.setAttribute("d", `M ${startX} ${startY} C ${startX} ${startY + curvature}, ${curX} ${curY - curvature}, ${curX} ${curY}`);
       elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
         const rect = card.getBoundingClientRect();
-        const isInside = moveEv.clientX >= rect.left && moveEv.clientX <= rect.right &&
-                         moveEv.clientY >= rect.top && moveEv.clientY <= rect.bottom;
+        const isInside = moveEv.clientX >= rect.left && moveEv.clientX <= rect.right && moveEv.clientY >= rect.top && moveEv.clientY <= rect.bottom;
         const num = parseInt(card.dataset.issueNumber || "0", 10);
         card.classList.toggle("drop-target-active", isInside && num !== dragSourceNum);
       });
@@ -3213,10 +5111,7 @@ ${issue.body || ""}`.slice(0, 15e3);
       if (elGraphCanvas) {
         elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
           const rect = card.getBoundingClientRect();
-          if (
-            upEv.clientX >= rect.left && upEv.clientX <= rect.right &&
-            upEv.clientY >= rect.top && upEv.clientY <= rect.bottom
-          ) {
+          if (upEv.clientX >= rect.left && upEv.clientX <= rect.right && upEv.clientY >= rect.top && upEv.clientY <= rect.bottom) {
             const num = parseInt(card.dataset.issueNumber || "0", 10);
             if (num > 0 && num !== dragSourceNum) {
               targetNum = num;
@@ -3268,27 +5163,27 @@ ${issue.body || ""}`.slice(0, 15e3);
       subtaskHtml = `<span class="graph-badge-subtasks">${subDone}/${subTotal}</span>`;
     }
     card.innerHTML = `
-      ${frontierFlagHtml}
-      <div class="graph-port graph-port-in" data-port="in" data-issue="${node.issue.number}" title="Drop arrow here to make #${node.issue.number} depend on another task">
-        <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
-      </div>
-      <div class="graph-card-head">
-        <input type="checkbox" class="graph-card-check" ${node.isDone ? "checked" : ""} title="Mark done / todo" />
-        <span class="graph-card-num">#${node.issue.number}</span>
-        <span class="graph-card-theme" title="${escapeHtml(node.theme)}">${escapeHtml(node.theme)}</span>
-        ${priorityHtml}
-      </div>
-      <div class="graph-card-title" title="${escapeHtml(node.issue.title)}">${escapeHtml(node.issue.title)}</div>
-      <div class="graph-card-meta">
-        ${blockersHtml}
-        ${impactHtml}
-        ${subtaskHtml}
-        <button class="graph-card-add-dep-btn" data-add-dep="${node.issue.number}" title="Add a blocker to #${node.issue.number}">+ Blocker</button>
-      </div>
-      <div class="graph-port graph-port-out" data-port="out" data-issue="${node.issue.number}" title="Drag arrow to another task to make it depend on #${node.issue.number}">
-        <svg viewBox="0 0 24 24"><path d="M12 16l-6-6h12l-6 6z"/></svg>
-      </div>
-    `;
+    ${frontierFlagHtml}
+    <div class="graph-port graph-port-in" data-port="in" data-issue="${node.issue.number}" title="Drop arrow here to make #${node.issue.number} depend on another task">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+    </div>
+    <div class="graph-card-head">
+      <input type="checkbox" class="graph-card-check" ${node.isDone ? "checked" : ""} title="Mark done / todo" />
+      <span class="graph-card-num">#${node.issue.number}</span>
+      <span class="graph-card-theme" title="${escapeHtml(node.theme)}">${escapeHtml(node.theme)}</span>
+      ${priorityHtml}
+    </div>
+    <div class="graph-card-title" title="${escapeHtml(node.issue.title)}">${escapeHtml(node.issue.title)}</div>
+    <div class="graph-card-meta">
+      ${blockersHtml}
+      ${impactHtml}
+      ${subtaskHtml}
+      <button class="graph-card-add-dep-btn" data-add-dep="${node.issue.number}" title="Add a blocker to #${node.issue.number}">+ Blocker</button>
+    </div>
+    <div class="graph-port graph-port-out" data-port="out" data-issue="${node.issue.number}" title="Drag arrow to another task to make it depend on #${node.issue.number}">
+      <svg viewBox="0 0 24 24"><path d="M12 16l-6-6h12l-6 6z"/></svg>
+    </div>
+  `;
     const chk = card.querySelector(".graph-card-check");
     if (chk) {
       chk.addEventListener("click", (e) => {
@@ -3341,7 +5236,7 @@ ${issue.body || ""}`.slice(0, 15e3);
     elGraphSvgOverlay.setAttribute("height", String(canvasH));
     elGraphSvgOverlay.setAttribute("viewBox", `0 0 ${canvasW} ${canvasH}`);
     const canvasRect = elGraphCanvas.getBoundingClientRect();
-    const cardElements = new Map();
+    const cardElements = /* @__PURE__ */ new Map();
     elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
       const num = parseInt(card.dataset.issueNumber || "0", 10);
       if (num > 0) cardElements.set(num, card);
@@ -3388,6 +5283,16 @@ ${issue.body || ""}`.slice(0, 15e3);
     if (document.body.getAttribute("data-layout") !== "graph") return;
     drawGraphEdges(currentGraph);
   }
+  var graphResizeObserver = null;
+  function observeGraphResize() {
+    if (elGraphCanvasContainer && "ResizeObserver" in window) {
+      if (graphResizeObserver) graphResizeObserver.disconnect();
+      graphResizeObserver = new ResizeObserver(() => {
+        drawCurrentGraphEdges();
+      });
+      graphResizeObserver.observe(elGraphCanvasContainer);
+    }
+  }
   function renderGraphView(filteredIssues) {
     if (!elGraphViewContainer || !elGraphLayers) return;
     const graph = buildDependencyGraph(filteredIssues);
@@ -3403,50 +5308,50 @@ ${issue.body || ""}`.slice(0, 15e3);
     }
     if (elGraphThemePills) {
       elGraphThemePills.innerHTML = "";
-    const allChip = document.createElement("div");
-    allChip.className = `graph-theme-chip ${graphSelectedTheme === "all" ? "active" : ""}`;
-    allChip.setAttribute("tabindex", "0");
-    allChip.setAttribute("role", "button");
-    allChip.setAttribute("aria-label", `Filter by All Themes (${filteredIssues.length} issues)`);
-    allChip.innerHTML = `<span>All Themes</span><span style="font-size: 9.5px; opacity: 0.7;">(${filteredIssues.length})</span>`;
-    allChip.addEventListener("click", () => {
-      graphSelectedTheme = "all";
-      renderViews();
-    });
-    allChip.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        allChip.click();
-      }
-    });
-    elGraphThemePills.appendChild(allChip);
-    graph.themes.forEach((theme) => {
-      const themeCount = graph.themeNodes.get(theme)?.length || 0;
-      const chip = document.createElement("div");
-      chip.className = `graph-theme-chip ${graphSelectedTheme === theme ? "active" : ""}`;
-      chip.setAttribute("tabindex", "0");
-      chip.setAttribute("role", "button");
-      chip.setAttribute("aria-label", `Filter by theme ${theme} (${themeCount} issues)`);
-      const dotCol = getThemeColor(theme);
-      chip.innerHTML = `
+      const allChip = document.createElement("div");
+      allChip.className = `graph-theme-chip ${graphSelectedTheme === "all" ? "active" : ""}`;
+      allChip.setAttribute("tabindex", "0");
+      allChip.setAttribute("role", "button");
+      allChip.setAttribute("aria-label", `Filter by All Themes (${filteredIssues.length} issues)`);
+      allChip.innerHTML = `<span>All Themes</span><span style="font-size: 9.5px; opacity: 0.7;">(${filteredIssues.length})</span>`;
+      allChip.addEventListener("click", () => {
+        graphSelectedTheme = "all";
+        renderViews();
+      });
+      allChip.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          allChip.click();
+        }
+      });
+      elGraphThemePills.appendChild(allChip);
+      graph.themes.forEach((theme) => {
+        const themeCount = graph.themeNodes.get(theme)?.length || 0;
+        const chip = document.createElement("div");
+        chip.className = `graph-theme-chip ${graphSelectedTheme === theme ? "active" : ""}`;
+        chip.setAttribute("tabindex", "0");
+        chip.setAttribute("role", "button");
+        chip.setAttribute("aria-label", `Filter by theme ${theme} (${themeCount} issues)`);
+        const dotCol = getThemeColor(theme);
+        chip.innerHTML = `
         <span class="graph-theme-dot" style="--dot-color: ${dotCol};"></span>
         <span>${escapeHtml(theme)}</span>
         <span style="font-size: 9.5px; opacity: 0.7;">(${themeCount})</span>
       `;
-      chip.addEventListener("click", () => {
-        graphSelectedTheme = theme;
-        renderViews();
+        chip.addEventListener("click", () => {
+          graphSelectedTheme = theme;
+          renderViews();
+        });
+        chip.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            chip.click();
+          }
+        });
+        elGraphThemePills.appendChild(chip);
       });
-      chip.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") {
-          e.preventDefault();
-          chip.click();
-        }
-      });
-      elGraphThemePills.appendChild(chip);
-    });
     }
-    const visibleNumbers = new Set();
+    const visibleNumbers = /* @__PURE__ */ new Set();
     for (const node of graph.nodes.values()) {
       if (!graphShowDone && node.isDone) continue;
       if (graphSelectedTheme !== "all") {
@@ -3459,10 +5364,10 @@ ${issue.body || ""}`.slice(0, 15e3);
     elGraphLayers.innerHTML = "";
     if (visibleNumbers.size === 0) {
       elGraphLayers.innerHTML = `
-        <div style="color: var(--fg-muted); padding: 48px 0; text-align: center; font-size: 13px;">
-          No issues match the current graph filters.
-        </div>
-      `;
+      <div style="color: var(--fg-muted); padding: 48px 0; text-align: center; font-size: 13px;">
+        No issues match the current graph filters.
+      </div>
+    `;
       if (elGraphEdgesLayer) elGraphEdgesLayer.innerHTML = "";
       return;
     }
@@ -3472,15 +5377,13 @@ ${issue.body || ""}`.slice(0, 15e3);
       const rowEl = document.createElement("div");
       rowEl.className = "graph-layer-row";
       rowEl.dataset.layer = String(layerIdx);
-      const headerText = layerIdx === 0
-        ? "Layer 0 — Ready / Roots"
-        : `Layer ${layerIdx} — Waterfall Step ${layerIdx + 1} (${layerVisible.length})`;
+      const headerText = layerIdx === 0 ? "Layer 0 \u2014 Ready / Roots" : `Layer ${layerIdx} \u2014 Waterfall Step ${layerIdx + 1} (${layerVisible.length})`;
       const headerEl = document.createElement("div");
       headerEl.className = "graph-layer-header";
       headerEl.innerHTML = `
-        <span class="graph-layer-header-num">L${layerIdx}</span>
-        <span>${headerText}</span>
-      `;
+      <span class="graph-layer-header-num">L${layerIdx}</span>
+      <span>${headerText}</span>
+    `;
       rowEl.appendChild(headerEl);
       const cardsWrap = document.createElement("div");
       cardsWrap.className = "graph-layer-cards";
@@ -3497,20 +5400,11 @@ ${issue.body || ""}`.slice(0, 15e3);
       requestAnimationFrame(() => drawCurrentGraphEdges());
     });
   }
-  function observeGraphResize() {
-    if (elGraphCanvasContainer && "ResizeObserver" in window) {
-      if (graphResizeObserver) graphResizeObserver.disconnect();
-      graphResizeObserver = new ResizeObserver(() => {
-        drawCurrentGraphEdges();
-      });
-      graphResizeObserver.observe(elGraphCanvasContainer);
-    }
-  }
   function renderDrawerDependencies(issue) {
     if (!elDrawerDependenciesContainer) return;
     const blockers = parseIssueDependencies(issue.body);
-    const dependents = issues.filter((other) =>
-      other.number !== issue.number && parseIssueDependencies(other.body).includes(issue.number)
+    const dependents = issues.filter(
+      (other) => other.number !== issue.number && parseIssueDependencies(other.body).includes(issue.number)
     );
     if (elDrawerDepsCountBadge) {
       elDrawerDepsCountBadge.textContent = String(blockers.length + dependents.length);
@@ -3531,9 +5425,9 @@ ${issue.body || ""}`.slice(0, 15e3);
           const isClosed = blockerIssue ? isIssueClosed(blockerIssue) : false;
           if (isClosed) pill.style.opacity = "0.6";
           pill.innerHTML = `
-            <span>#${bNum} ${escapeHtml(blockerIssue?.title || "")}</span>
-            <span class="badge-remove-btn" title="Remove dependency" style="font-weight: 700; cursor: pointer; padding: 0 2px;">×</span>
-          `;
+          <span>#${bNum} ${escapeHtml(blockerIssue?.title || "")}</span>
+          <span class="badge-remove-btn" title="Remove dependency" style="font-weight: 700; cursor: pointer; padding: 0 2px;">\xD7</span>
+        `;
           pill.addEventListener("click", (e) => {
             if (e.target?.classList.contains("badge-remove-btn")) {
               e.stopPropagation();
@@ -3565,12 +5459,9 @@ ${issue.body || ""}`.slice(0, 15e3);
     }
     if (elSelectAddBlocker) {
       let optionsHtml = '<option value="">+ Add blocker / dependency...</option>';
-      issues
-        .filter((other) => other.number !== issue.number && !blockers.includes(other.number))
-        .sort((a, b) => a.number - b.number)
-        .forEach((other) => {
-          optionsHtml += `<option value="${other.number}">#${other.number}: ${escapeHtml(other.title)}</option>`;
-        });
+      issues.filter((other) => other.number !== issue.number && !blockers.includes(other.number)).sort((a, b) => a.number - b.number).forEach((other) => {
+        optionsHtml += `<option value="${other.number}">#${other.number}: ${escapeHtml(other.title)}</option>`;
+      });
       elSelectAddBlocker.innerHTML = optionsHtml;
       elSelectAddBlocker.value = "";
     }
@@ -3585,32 +5476,6 @@ ${issue.body || ""}`.slice(0, 15e3);
     activeIssue = null;
     elDrawerScrim.classList.remove("active");
     elTaskDrawer.classList.remove("active");
-  }
-  function renderMarkdown(raw) {
-    if (!raw || typeof raw !== "string") return '<p style="color: var(--fg-muted); font-style: italic;">No description provided.</p>';
-    let html = raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-    html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (_, lang, code) => {
-      return `<pre class="md-code-block"><code class="language-${lang}">${code.trim()}</code></pre>`;
-    });
-    html = html.replace(/`([^`]+)`/g, '<code class="md-inline-code">$1</code>');
-    html = html.replace(/^#### (.*$)/gim, '<h4 class="md-h4">$1</h4>');
-    html = html.replace(/^### (.*$)/gim, '<h3 class="md-h3">$1</h3>');
-    html = html.replace(/^## (.*$)/gim, '<h2 class="md-h2">$1</h2>');
-    html = html.replace(/^# (.*$)/gim, '<h1 class="md-h1">$1</h1>');
-    html = html.replace(/^\> (.*$)/gim, '<blockquote class="md-quote">$1</blockquote>');
-    html = html.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-    html = html.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-    html = html.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="md-link">$1 \u2197</a>');
-    const paragraphs = html.split(/\n\n+/);
-    html = paragraphs.map((p) => {
-      const trimmed = p.trim();
-      if (!trimmed) return "";
-      if (trimmed.startsWith("<h") || trimmed.startsWith("<pre") || trimmed.startsWith("<blockquote")) {
-        return trimmed;
-      }
-      return `<p class="md-p">${trimmed.replace(/\n/g, "<br/>")}</p>`;
-    }).filter(Boolean).join("\n");
-    return html;
   }
   var repoLabelsCache = /* @__PURE__ */ new Map();
   async function loadRepoLabels() {
@@ -3812,23 +5677,6 @@ ${issue.body || ""}`.slice(0, 15e3);
       elDrawerChecklistContainer.appendChild(itemEl);
     });
   }
-  function formatQuestionBadge(openQuestions) {
-    const list = openQuestions || [];
-    const total = list.length;
-    if (total === 0) {
-      return { total: 0, resolved: 0, open: 0, label: "", className: "", html: "" };
-    }
-    const resolved = list.filter((q) => q.completed).length;
-    const open = total - resolved;
-    const isOpen = open > 0;
-    const label = isOpen ? `${open} open` : `${total} Qs resolved`;
-    const className = isOpen ? "questions-prog is-open" : "questions-prog is-resolved";
-    const icon = isOpen
-      ? `<svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>`
-      : `<svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
-    const html = `<div class="${className}" title="${open} open, ${resolved} resolved">${icon}<span>${label}</span></div>`;
-    return { total, resolved, open, label, className, html };
-  }
   function renderQuestions(issue) {
     if (!elDrawerQuestionsContainer || !elQuestionsProgressText) return;
     const questions = issue.openQuestions || [];
@@ -3839,10 +5687,10 @@ ${issue.body || ""}`.slice(0, 15e3);
       elQuestionsProgressText.textContent = "0 open";
       elQuestionsProgressText.style.color = "var(--fg-muted)";
       elDrawerQuestionsContainer.innerHTML = `
-        <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
-          No open questions. Add one below to align on specifications.
-        </div>
-      `;
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No open questions. Add one below to align on specifications.
+      </div>
+    `;
       return;
     }
     elQuestionsProgressText.textContent = `${open} open (${resolved} resolved)`;
@@ -3892,38 +5740,6 @@ ${issue.body || ""}`.slice(0, 15e3);
       elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
     }
   }
-  function findRelatedIssues(targetIssue, allIssues, limit = 4) {
-    if (!targetIssue || !allIssues) return [];
-    const targetNum = targetIssue.number;
-    const targetLabels = new Set(
-      (targetIssue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase()).filter((n) => !n.startsWith("status:") && n !== "archived")
-    );
-    const targetWords = new Set(
-      (targetIssue.title || "").toLowerCase().split(/[^a-z0-9_-]+/).filter((w) => w.length > 3)
-    );
-    const scored = [];
-    for (const other of allIssues) {
-      if (other.number === targetNum) continue;
-      let score = 0;
-      const otherLabels = (other.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
-      for (const l of otherLabels) {
-        if (targetLabels.has(l)) score += 3;
-      }
-      const otherText = `${other.title || ""} ${other.body || ""}`;
-      if (otherText.includes(`#${targetNum}`)) score += 5;
-      const targetText = `${targetIssue.title || ""} ${targetIssue.body || ""}`;
-      if (targetText.includes(`#${other.number}`)) score += 5;
-      const otherWords = (other.title || "").toLowerCase().split(/[^a-z0-9_-]+/);
-      for (const w of otherWords) {
-        if (w.length > 3 && targetWords.has(w)) score += 1;
-      }
-      if (score > 0) {
-        scored.push({ issue: other, score });
-      }
-    }
-    scored.sort((a, b) => b.score - a.score || b.issue.number - a.issue.number);
-    return scored.slice(0, limit).map((s) => s.issue);
-  }
   function renderRelatedIssues(issue) {
     if (!elDrawerRelatedIssuesContainer || !elRelatedIssuesCountBadge) return;
     const related = findRelatedIssues(issue, issues, 4);
@@ -3939,20 +5755,17 @@ ${issue.body || ""}`.slice(0, 15e3);
       const otherComp = getIssueComplexity(other);
       const compHtml = otherComp ? `<span class="badge badge-complexity badge-complexity-${otherComp.toLowerCase()}">${otherComp}</span>` : "";
       const isAlreadyBlocker = parseIssueDependencies(issue.body).includes(other.number);
-      const linkBtnHtml = isAlreadyBlocker
-        ? '<span class="status-pill" style="font-size: 9px; color: var(--fg-muted);">Blocker</span>'
-        : `<button class="btn btn-sm btn-link-blocker" data-other-num="${other.number}" style="font-size: 9.5px; height: 18px; padding: 0 5px;" title="Link #${other.number} as a blocker of #${issue.number}">+ Link Blocker</button>`;
-
+      const linkBtnHtml = isAlreadyBlocker ? '<span class="status-pill" style="font-size: 9px; color: var(--fg-muted);">Blocker</span>' : `<button class="btn btn-sm btn-link-blocker" data-other-num="${other.number}" style="font-size: 9.5px; height: 18px; padding: 0 5px;" title="Link #${other.number} as a blocker of #${issue.number}">+ Link Blocker</button>`;
       item.innerHTML = `
-        <div class="related-issue-title" title="${escapeHtml(other.title)}">#${other.number} ${escapeHtml(other.title)}</div>
-        <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
-          ${compHtml}
-          <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn(other) || "all"}</span>
-          ${linkBtnHtml}
-        </div>
-      `;
+      <div class="related-issue-title" title="${escapeHtml(other.title)}">#${other.number} ${escapeHtml(other.title)}</div>
+      <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+        ${compHtml}
+        <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn(other) || "all"}</span>
+        ${linkBtnHtml}
+      </div>
+    `;
       item.addEventListener("click", (e) => {
-        const btn = e.target?.closest?.(".btn-link-blocker");
+        const btn = e.target.closest(".btn-link-blocker");
         if (btn) {
           e.stopPropagation();
           void handleAddDependency(issue.number, other.number);
@@ -3967,14 +5780,7 @@ ${issue.body || ""}`.slice(0, 15e3);
     if (!issue || !issue.labels) return "task";
     for (const l of issue.labels) {
       const name = (typeof l === "string" ? l : l.name || "").trim();
-      if (
-        name &&
-        !name.startsWith("status:") &&
-        !name.startsWith("priority:") &&
-        !name.startsWith("complexity:") &&
-        !name.startsWith("theme:") &&
-        !["archived", "archive"].includes(name.toLowerCase())
-      ) {
+      if (name && !name.startsWith("status:") && !name.startsWith("priority:") && !name.startsWith("complexity:") && !name.startsWith("theme:") && !["archived", "archive"].includes(name.toLowerCase())) {
         return name;
       }
     }
@@ -3997,14 +5803,21 @@ ${issue.body || ""}`.slice(0, 15e3);
   function updatePreflightBrief() {
     if (!activeIssue) return;
     const useWt = elPreflightWorktreeToggle.checked;
-    let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}\n\n`;
+    let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}
+
+`;
     if (activeIssue.body) {
-      brief += `### Description:\n${activeIssue.body}\n\n`;
+      brief += `### Description:
+${activeIssue.body}
+
+`;
     }
     if (activeIssue.subtasks.length > 0) {
-      brief += `### Subtasks Checklist:\n`;
+      brief += `### Subtasks Checklist:
+`;
       activeIssue.subtasks.forEach((s) => {
-        brief += `- [${s.completed ? "x" : " "}] ${s.text}\n`;
+        brief += `- [${s.completed ? "x" : " "}] ${s.text}
+`;
       });
       brief += "\n";
     }
@@ -4088,32 +5901,6 @@ ${issue.body || ""}`.slice(0, 15e3);
       elBtnPreflightLaunch.textContent = elPreflightWorktreeToggle.checked ? "Launch Worktree & Agent" : "Start Agent Session (Current Workspace)";
     }
   }
-  function buildConsolidatedIssuePrompt(selectedIssues) {
-    if (!selectedIssues || selectedIssues.length === 0) return "";
-    const issueNumbers = selectedIssues.map((i) => `#${i.number}`).join(", ");
-    let prompt = `You are assigned to work on multiple packaged GitHub Issues: ${issueNumbers}\n\n`;
-    prompt += `### Packaged Tasks Summary (${selectedIssues.length} items):\n`;
-    selectedIssues.forEach((issue) => {
-      prompt += `- Issue #${issue.number}: ${issue.title}\n`;
-    });
-    prompt += "\n---\n\n";
-    selectedIssues.forEach((issue, idx) => {
-      prompt += `## Task ${idx + 1} of ${selectedIssues.length}: #${issue.number} ${issue.title}\n\n`;
-      if (issue.body) {
-        prompt += `### Overview & Context:\n${issue.body.trim()}\n\n`;
-      }
-      if (issue.subtasks && issue.subtasks.length > 0) {
-        prompt += `### Actionable Subtasks Checklist:\n`;
-        issue.subtasks.forEach((s) => {
-          prompt += `- [${s.completed ? "x" : " "}] ${s.text}\n`;
-        });
-        prompt += "\n";
-      }
-      prompt += "---\n\n";
-    });
-    prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
-    return prompt;
-  }
   function updateBatchBar() {
     const count = selectedIssueNumbers.size;
     if (count > 0) {
@@ -4157,6 +5944,7 @@ ${issue.body || ""}`.slice(0, 15e3);
         providerId: "github-task-board",
         id: `package-${Date.now()}`,
         title,
+        url: selected[0]?.html_url || (currentRepo ? `https://github.com/${currentRepo}/issues` : ""),
         text: promptText,
         data: {
           packaged: true,
@@ -4194,7 +5982,12 @@ ${issue.body || ""}`.slice(0, 15e3);
           id: String(issue.number),
           title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
           url: (issue.html_url || "").slice(0, 1e3),
-          text: `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}\n\n${issue.body ? `### Description:\n${issue.body}\n\n` : ""}Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`,
+          text: `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}
+
+${issue.body ? `### Description:
+${issue.body}
+
+` : ""}Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`,
           data: {
             issueNumber: issue.number
           }
@@ -4212,135 +6005,23 @@ ${issue.body || ""}`.slice(0, 15e3);
     const selected = issues.filter((i) => selectedIssueNumbers.has(i.number));
     if (selected.length === 0) return;
     try {
-      const payload = selected.length === 1
-        ? buildIssueAttachPayload(selected[0])
-        : buildMultiIssueAttachPayload(selected, currentRepo);
+      const payload = selected.length === 1 ? buildIssueAttachPayload(selected[0]) : buildMultiIssueAttachPayload(selected, currentRepo);
       await host.attach(payload);
-
       if (selected.length > 1 && typeof host.compose === "function") {
         try {
           await host.compose({ text: `Focusing on issues: ${selected.map((i) => `#${i.number}`).join(", ")}` });
-        } catch {}
+        } catch {
+        }
       }
-
       clearSelection();
       await host.toast({
         kind: "success",
-        message: selected.length === 1
-          ? `Attached issue #${selected[0].number} to composer`
-          : `Attached ${selected.length} issues in consolidated chip to composer`
+        message: selected.length === 1 ? `Attached issue #${selected[0].number} to composer` : `Attached ${selected.length} issues in consolidated chip to composer`
       });
     } catch (err) {
       addLog(`Failed to attach selected issues: ${err.message}`, "error");
       await host.toast({ kind: "error", message: `Failed to attach: ${err?.message || "Unknown error"}` });
     }
-  }
-  var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
-
-Input Objective / User Mind-Dump:
-{userInput}
-
-Instructions for the Agent:
-1. Analyze the user's input. If the user described multiple independent tasks, bugs, or features, decompose them into distinct, well-scoped GitHub issues. If it describes a single topic, create one focused issue.
-2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture.
-3. Every generated issue must follow this exact structure tailored for the OpenChamber Task Board:
-   - Title: Conventional commit format (e.g. "feat(auth): add remember-me token refresh" or "fix(ui): prevent horizontal overflow in mobile table").
-   - Overview: Clear description of the problem, motivation, or user value.
-   - Files Impacted: List candidate file paths grounded in the codebase.
-   - Actionable Subtasks Checklist: Mandatory interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
-     - [ ] Reproduce with test / define contract
-     - [ ] Implement core changes
-     - [ ] Run test suite and verify green
-   - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify.
-   - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
-   - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
-4. If a GitHub token or gh CLI is available in the environment, you can create the issues directly using the GitHub API. Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
-  function resolveAiIssuePrompt({
-    repo,
-    userInput,
-    storedRepoPrompt,
-    storedGlobalPrompt
-  }) {
-    const template = storedRepoPrompt?.trim() || storedGlobalPrompt?.trim() || DEFAULT_AI_ISSUE_PROMPT;
-    return template.replace(/\{repo\}/g, repo).replace(/\{userInput\}/g, userInput.trim());
-  }
-  var DEFAULT_AI_ALIGNMENT_PROMPT = `You are a principal engineer and architect conducting a deep technical alignment session for repository "{repo}".
-
-User Scratch Pad / Multi-Theme Mind-Dump:
-{userInput}
-
-Instructions for the Alignment Session:
-1. Review every theme, idea, feature, and bug in the user's scratch pad.
-2. Ground yourself by inspecting project architecture, existing modules, conventions, and configuration files in this workspace.
-3. Your primary goal is ALIGNMENT before issue creation:
-   - For each distinct theme, identify unstated assumptions, ambiguities, technical tradeoffs, and potential edge cases.
-   - Formulate probing, concise questions that need clarification (e.g. data modeling decisions, auth boundaries, UX state handling, error recovery).
-   - Propose 2-3 architectural approaches or solutions for tricky decisions with pros/cons and a clear recommendation.
-4. Interact directly with the user to align on answers.
-5. Once aligned on each theme, synthesize the finalized decisions into clean, well-scoped GitHub issues containing:
-   - Title in Conventional Commit format
-   - Impacted files and architectural plan
-   - Actionable Subtasks Checklist (- [ ])
-   - Open Questions (- [ ] / - [x])
-   - Suggested worktree branch slug`;
-  function resolveAiAlignmentPrompt({
-    repo,
-    userInput,
-    storedPrompt
-  }) {
-    const template = storedPrompt?.trim() || DEFAULT_AI_ALIGNMENT_PROMPT;
-    return template.replace(/\{repo\}/g, repo || "").replace(/\{userInput\}/g, (userInput || "").trim());
-  }
-  function parseScratchPadThemes(text) {
-    if (!text || typeof text !== "string") {
-      return { themes: [], totalIdeas: 0, totalQuestions: 0 };
-    }
-    const lines = text.split("\n");
-    const themes = [];
-    let currentTheme = { name: "General Ideas", lines: [] };
-    let hasExplicitHeader = false;
-    for (const line of lines) {
-      const trimmed = line.trim();
-      const headingMatch = trimmed.match(/^#{1,3}\s+(?:\[Theme:\s*)?([^\]\n]+)\]?/i);
-      if (headingMatch) {
-        if (currentTheme.lines.length > 0 || hasExplicitHeader) {
-          themes.push(currentTheme);
-        }
-        hasExplicitHeader = true;
-        currentTheme = {
-          name: headingMatch[1].trim(),
-          lines: []
-        };
-        continue;
-      }
-      currentTheme.lines.push(line);
-    }
-    if (currentTheme.lines.length > 0 || hasExplicitHeader) {
-      themes.push(currentTheme);
-    }
-    const activeThemes = themes.filter((t) => t.lines.some((l) => l.trim().length > 0) || t.name !== "General Ideas");
-    let totalIdeas = 0;
-    let totalQuestions = 0;
-    const analyzed = activeThemes.map((t) => {
-      const content = t.lines.join("\n").trim();
-      const ideaLines = t.lines.filter((l) => /^\s*(?:[-*+]|\d+\.)(?:\s*\[[ xX]?\])?\s+(?!\?|Q:|Question:)/i.test(l));
-      const questionLines = t.lines.filter((l) => /(?:\?|\bQ:|\bQuestion:|\?\s*\[)/i.test(l));
-      const ideasCount = ideaLines.length || (content ? 1 : 0);
-      const questionsCount = questionLines.length;
-      totalIdeas += ideasCount;
-      totalQuestions += questionsCount;
-      return {
-        name: t.name,
-        content,
-        ideasCount,
-        questionsCount
-      };
-    });
-    return {
-      themes: analyzed,
-      totalIdeas,
-      totalQuestions
-    };
   }
   var elNewIssueModalBackdrop = document.getElementById("newIssueModalBackdrop");
   var elNewIssueRepoTarget = document.getElementById("newIssueRepoTarget");
@@ -4352,17 +6033,16 @@ Instructions for the Alignment Session:
   var elFootNewIssueManual = document.getElementById("footNewIssueManual");
   var elAiIssueInput = document.getElementById("aiIssueInput");
   var elBtnTogglePromptConfig = document.getElementById("btnTogglePromptConfig");
-  var elAiAlignmentPromptTextarea = document.getElementById("aiAlignmentPromptTextarea");
   var elAiPromptConfigPanel = document.getElementById("aiPromptConfigPanel");
   var elRadioScopeRepo = document.getElementById("radioScopeRepo");
   var elRadioScopeGlobal = document.getElementById("radioScopeGlobal");
   var elAiPromptTemplateTextarea = document.getElementById("aiPromptTemplateTextarea");
+  var elAiAlignmentPromptTextarea = document.getElementById("aiAlignmentPromptTextarea");
   var elBtnResetPromptToDefault = document.getElementById("btnResetPromptToDefault");
   var elBtnSavePromptConfig = document.getElementById("btnSavePromptConfig");
   var elBtnNewIssueAICancel = document.getElementById("btnNewIssueAICancel");
   var elBtnLaunchAISession = document.getElementById("btnLaunchAISession");
   var elBtnImportFromScratchpad = document.getElementById("btnImportFromScratchpad");
-
   var elBtnOpenScratchpad = document.getElementById("btnOpenScratchpad");
   var elScratchpadModalBackdrop = document.getElementById("scratchpadModalBackdrop");
   var elScratchpadRepoBadge = document.getElementById("scratchpadRepoBadge");
@@ -4386,7 +6066,6 @@ Instructions for the Alignment Session:
   var elBtnScratchpadThemeAdd = document.getElementById("btnScratchpadThemeAdd");
   var elBtnMoreMenu = document.getElementById("btnMoreMenu");
   var elMoreMenuPopover = document.getElementById("moreMenuPopover");
-  var elMenuItemToggleLayout = document.getElementById("menuItemToggleLayout");
   var elMenuItemToggleArchive = document.getElementById("menuItemToggleArchive");
   var elMenuItemRefresh = document.getElementById("menuItemRefresh");
   var elMenuItemLogs = document.getElementById("menuItemLogs");
@@ -4486,355 +6165,6 @@ Instructions for the Alignment Session:
     } catch {
     }
   }
-  function serializeDraftSubtasks(body, subtaskTexts) {
-    const cleanBody = (body || "").trim();
-    const cleanTasks = (subtaskTexts || []).map((t) => typeof t === "string" ? t.trim() : "").filter(Boolean);
-    if (cleanTasks.length === 0) {
-      return cleanBody;
-    }
-    const checklistBlock = cleanTasks.map((t) => `- [ ] ${t}`).join("\n");
-    if (!cleanBody) {
-      return `### Actionable Subtasks Checklist:\n\n${checklistBlock}`;
-    }
-    if (cleanBody.includes("### Actionable Subtasks Checklist:")) {
-      return `${cleanBody}\n${checklistBlock}`;
-    }
-    return `${cleanBody}\n\n### Actionable Subtasks Checklist:\n\n${checklistBlock}`;
-  }
-  var DEPENDENCY_LINE_REGEX = /(?:^|\n)\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*([^\n]+)/gi;
-  function parseIssueDependencies(body) {
-    if (!body || typeof body !== "string") return [];
-    const numbers = new Set();
-    const matches = body.matchAll(DEPENDENCY_LINE_REGEX);
-    for (const match of matches) {
-      const text = match[1] || "";
-      const numMatches = text.matchAll(/#(\d+)/g);
-      for (const nm of numMatches) {
-        const n = parseInt(nm[1], 10);
-        if (Number.isFinite(n) && n > 0) {
-          numbers.add(n);
-        }
-      }
-    }
-    return Array.from(numbers).sort((a, b) => a - b);
-  }
-  function addDependencyToMarkdown(body, blockerNumber) {
-    const blockerRef = `#${blockerNumber}`;
-    const existingBlockers = parseIssueDependencies(body);
-    if (existingBlockers.includes(blockerNumber)) {
-      return body || "";
-    }
-    const raw = (body || "").trim();
-    if (!raw) {
-      return `Blocked by ${blockerRef}`;
-    }
-    const lines = raw.split("\n");
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (/^\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on)(?:\s*:)?\s*/i.test(line)) {
-        lines[i] = `${line.trimEnd()}, ${blockerRef}`;
-        return lines.join("\n");
-      }
-    }
-    return `${raw}\n\nBlocked by ${blockerRef}`;
-  }
-  function removeDependencyFromMarkdown(body, blockerNumber) {
-    if (!body || typeof body !== "string") return "";
-    const blockerRef = `#${blockerNumber}`;
-    if (!body.includes(blockerRef)) return body;
-    const lines = body.split("\n");
-    const newLines = [];
-    for (const line of lines) {
-      if (/^\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*/i.test(line)) {
-        if (line.includes(blockerRef)) {
-          const currentNums = Array.from(line.matchAll(/#(\d+)/g))
-            .map((m) => parseInt(m[1], 10))
-            .filter((n) => n !== blockerNumber);
-          if (currentNums.length > 0) {
-            const prefixMatch = line.match(/^(\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*)/i);
-            const prefix = prefixMatch ? prefixMatch[1] : "Blocked by ";
-            newLines.push(`${prefix}${currentNums.map((n) => `#${n}`).join(", ")}`);
-          }
-          continue;
-        }
-      }
-      newLines.push(line);
-    }
-    return newLines.join("\n").trim();
-  }
-  function extractIssueReferences(body, selfNumber) {
-    if (!body || typeof body !== "string") return [];
-    const numbers = new Set();
-    const matches = body.matchAll(/#(\d+)/g);
-    for (const m of matches) {
-      const n = parseInt(m[1], 10);
-      if (Number.isFinite(n) && n > 0 && n !== selfNumber) {
-        numbers.add(n);
-      }
-    }
-    return Array.from(numbers).sort((a, b) => a - b);
-  }
-  function buildDependencyGraph(issuesList) {
-    const nodes = new Map();
-    const byNumber = new Map();
-    for (const issue of issuesList) {
-      byNumber.set(issue.number, issue);
-    }
-    for (const issue of issuesList) {
-      const isDone =
-        issue.state === "closed" ||
-        (issue.labels || []).some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase() === "status:done");
-      const blockers = parseIssueDependencies(issue.body);
-      const openBlockers = blockers.filter((num) => {
-        const target = byNumber.get(num);
-        if (!target) return true;
-        return (
-          target.state !== "closed" &&
-          !(target.labels || []).some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase() === "status:done")
-        );
-      });
-      const isFrontier = !isDone && openBlockers.length === 0;
-      const isBlocked = !isDone && openBlockers.length > 0;
-      let priority = "normal";
-      for (const l of issue.labels || []) {
-        const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
-        if (name.startsWith("priority:")) {
-          priority = name.slice(9);
-          break;
-        }
-      }
-      nodes.set(issue.number, {
-        issue,
-        blockers,
-        openBlockers,
-        dependents: [],
-        openDependents: [],
-        downstreamImpact: 0,
-        isDone,
-        isFrontier,
-        isBlocked,
-        layer: 0,
-        theme: getIssueTheme(issue),
-        priority,
-      });
-    }
-    for (const node of nodes.values()) {
-      for (const blockerNum of node.blockers) {
-        const blockerNode = nodes.get(blockerNum);
-        if (blockerNode) {
-          blockerNode.dependents.push(node.issue.number);
-          if (!node.isDone) {
-            blockerNode.openDependents.push(node.issue.number);
-          }
-        }
-      }
-    }
-    for (const node of nodes.values()) {
-      if (node.isDone) {
-        node.downstreamImpact = 0;
-        continue;
-      }
-      const seen = new Set([node.issue.number]);
-      const queue = [...node.openDependents];
-      while (queue.length > 0) {
-        const curr = queue.shift();
-        if (seen.has(curr)) continue;
-        seen.add(curr);
-        const currNode = nodes.get(curr);
-        if (currNode) {
-          queue.push(...currNode.openDependents);
-        }
-      }
-      node.downstreamImpact = seen.size - 1;
-    }
-    const openNodeNumbers = Array.from(nodes.values())
-      .filter((n) => !n.isDone)
-      .map((n) => n.issue.number);
-    const indices = new Map();
-    const lowLinks = new Map();
-    const stack = [];
-    const onStack = new Set();
-    const componentOf = new Map();
-    const components = [];
-    let nextIndex = 0;
-    const visit = (num) => {
-      const idx = nextIndex++;
-      indices.set(num, idx);
-      lowLinks.set(num, idx);
-      stack.push(num);
-      onStack.add(num);
-      const node = nodes.get(num);
-      const activeBlockers = (node?.openBlockers || []).filter((b) => nodes.has(b) && !nodes.get(b).isDone);
-      for (const blocker of activeBlockers) {
-        if (!indices.has(blocker)) {
-          visit(blocker);
-          lowLinks.set(num, Math.min(lowLinks.get(num), lowLinks.get(blocker)));
-        } else if (onStack.has(blocker)) {
-          lowLinks.set(num, Math.min(lowLinks.get(num), indices.get(blocker)));
-        }
-      }
-      if (lowLinks.get(num) === idx) {
-        const component = [];
-        while (stack.length > 0) {
-          const member = stack.pop();
-          onStack.delete(member);
-          componentOf.set(member, components.length);
-          component.push(member);
-          if (member === num) break;
-        }
-        components.push(component);
-      }
-    };
-    for (const num of openNodeNumbers) {
-      if (!indices.has(num)) {
-        visit(num);
-      }
-    }
-    const memoLayer = new Map();
-    const layerOfComponent = (compIdx) => {
-      const cached = memoLayer.get(compIdx);
-      if (cached !== undefined) return cached;
-      let maxBlockerLayer = -1;
-      for (const member of components[compIdx]) {
-        const memberNode = nodes.get(member);
-        if (!memberNode) continue;
-        for (const blocker of memberNode.openBlockers) {
-          const blockerComp = componentOf.get(blocker);
-          if (blockerComp !== undefined && blockerComp !== compIdx) {
-            maxBlockerLayer = Math.max(maxBlockerLayer, layerOfComponent(blockerComp));
-          }
-        }
-      }
-      const layer = maxBlockerLayer + 1;
-      memoLayer.set(compIdx, layer);
-      return layer;
-    };
-    for (const node of nodes.values()) {
-      if (node.isDone) {
-        node.layer = 0;
-      } else {
-        const comp = componentOf.get(node.issue.number);
-        node.layer = comp !== undefined ? layerOfComponent(comp) : 0;
-      }
-    }
-    let maxLayer = 0;
-    for (const node of nodes.values()) {
-      if (node.layer > maxLayer) maxLayer = node.layer;
-    }
-    const layers = Array.from({ length: maxLayer + 1 }, () => []);
-    for (const node of nodes.values()) {
-      layers[node.layer].push(node);
-    }
-    const pos = new Map();
-    layers[0].sort((a, b) => {
-      if (a.isDone !== b.isDone) return a.isDone ? 1 : -1;
-      if (a.isFrontier !== b.isFrontier) return a.isFrontier ? -1 : 1;
-      return b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number;
-    });
-    layers[0].forEach((n, idx) => pos.set(n.issue.number, idx));
-    for (let l = 1; l < layers.length; l++) {
-      const layer = layers[l];
-      const key = (n) => {
-        const blockerPositions = n.blockers.map((b) => pos.get(b)).filter((p) => p !== undefined);
-        return blockerPositions.length > 0
-          ? blockerPositions.reduce((acc, p) => acc + p, 0) / blockerPositions.length
-          : n.issue.number;
-      };
-      layer.sort((a, b) => key(a) - key(b) || b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number);
-      layer.forEach((n, idx) => pos.set(n.issue.number, idx));
-    }
-    const edges = [];
-    const themeNodes = new Map();
-    const frontierNodes = [];
-    for (const node of nodes.values()) {
-      if (node.isFrontier) {
-        frontierNodes.push(node);
-      }
-      let list = themeNodes.get(node.theme);
-      if (!list) {
-        list = [];
-        themeNodes.set(node.theme, list);
-      }
-      list.push(node);
-      for (const blockerNum of node.blockers) {
-        const blockerNode = nodes.get(blockerNum);
-        const isCrossTheme = blockerNode ? blockerNode.theme !== node.theme : false;
-        const isClosed = node.isDone || (blockerNode ? blockerNode.isDone : false);
-        edges.push({
-          from: blockerNum,
-          to: node.issue.number,
-          isCrossTheme,
-          isClosed,
-          isFrontier: node.isFrontier,
-        });
-      }
-    }
-    const themes = Array.from(themeNodes.keys()).sort((a, b) => {
-      if (a === "No Theme") return 1;
-      if (b === "No Theme") return -1;
-      return (themeNodes.get(b)?.length || 0) - (themeNodes.get(a)?.length || 0);
-    });
-    return {
-      nodes,
-      layers,
-      edges,
-      themes,
-      themeNodes,
-      frontierNodes,
-    };
-  }
-  function calculateEdgePath(sourceRect, targetRect, canvasRect) {
-    const sWidth = sourceRect.width ?? (sourceRect.right !== undefined ? sourceRect.right - sourceRect.left : 0);
-    const sHeight = sourceRect.height ?? (sourceRect.bottom !== undefined ? sourceRect.bottom - sourceRect.top : 0);
-    const tWidth = targetRect.width ?? (targetRect.right !== undefined ? targetRect.right - targetRect.left : 0);
-    const x1 = Math.round(sourceRect.left + sWidth / 2 - canvasRect.left);
-    const y1 = Math.round((sourceRect.bottom !== undefined ? sourceRect.bottom : sourceRect.top + sHeight) - canvasRect.top);
-    const x2 = Math.round(targetRect.left + tWidth / 2 - canvasRect.left);
-    const y2 = Math.round(targetRect.top - canvasRect.top);
-    const dy = y2 - y1;
-    const curvature = Math.max(30, Math.abs(dy) * 0.5);
-    const d = `M ${x1} ${y1} C ${x1} ${y1 + curvature}, ${x2} ${y2 - curvature}, ${x2} ${y2}`;
-    return { d, x1, y1, x2, y2 };
-  }
-  function detectCycle(issuesList, newBlockerNum, targetNum) {
-    if (newBlockerNum === targetNum) return true;
-    const blockerMap = new Map();
-    for (const issue of issuesList) {
-      blockerMap.set(issue.number, parseIssueDependencies(issue.body));
-    }
-    const visited = new Set();
-    const queue = [...(blockerMap.get(newBlockerNum) || [])];
-    while (queue.length > 0) {
-      const curr = queue.shift();
-      if (curr === targetNum) return true;
-      if (visited.has(curr)) continue;
-      visited.add(curr);
-      queue.push(...(blockerMap.get(curr) || []));
-    }
-    return false;
-  }
-  function isVagueIdea(issue) {
-    if (!issue) return true;
-    const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
-    if (labels.includes("status:needs-alignment")) {
-      return true;
-    }
-    const openQuestions = issue.openQuestions || [];
-    if (openQuestions.some((q) => !q.completed)) {
-      return true;
-    }
-    const subtaskCount = (issue.subtasks || []).length;
-    const bodyText = (issue.body || "").trim();
-    const wordCount = bodyText ? bodyText.split(/\s+/).length : 0;
-    return subtaskCount === 0 && wordCount < 20;
-  }
-  function updateComplexityLabel(currentLabels, newComplexity) {
-    const cleanExisting = currentLabels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.toLowerCase().startsWith("complexity:"));
-    if (newComplexity && typeof newComplexity === "string" && newComplexity.trim().toLowerCase() !== "none") {
-      cleanExisting.push(`complexity:${newComplexity.trim().toUpperCase()}`);
-    }
-    return cleanExisting;
-  }
   function renderDraftSubtasks() {
     if (!elNewIssueSubtasksList) return;
     elNewIssueSubtasksList.innerHTML = "";
@@ -4855,12 +6185,12 @@ Instructions for the Alignment Session:
       row.style.borderRadius = "var(--rad-sm)";
       row.style.fontSize = "11.5px";
       row.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-          <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono);">${idx + 1}.</span>
-          <span style="color: var(--fg);">${escapeHtml(task)}</span>
-        </div>
-        <button class="btn btn-icon btn-sm btn-del-draft-task" type="button" style="width: 18px; height: 18px; font-size: 11px; padding: 0;" title="Remove step">\u2715</button>
-      `;
+      <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono);">${idx + 1}.</span>
+        <span style="color: var(--fg);">${escapeHtml(task)}</span>
+      </div>
+      <button class="btn btn-icon btn-sm btn-del-draft-task" type="button" style="width: 18px; height: 18px; font-size: 11px; padding: 0;" title="Remove step">\u2715</button>
+    `;
       const btnDel = row.querySelector(".btn-del-draft-task");
       if (btnDel) {
         btnDel.addEventListener("click", () => {
@@ -4891,12 +6221,12 @@ Instructions for the Alignment Session:
       row.style.borderRadius = "var(--rad-sm)";
       row.style.fontSize = "11.5px";
       row.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-          <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono);">Q${idx + 1}.</span>
-          <span style="color: var(--fg);">${escapeHtml(question)}</span>
-        </div>
-        <button class="btn btn-icon btn-sm btn-del-draft-question" type="button" style="width: 18px; height: 18px; font-size: 11px; padding: 0;" title="Remove question">\u2715</button>
-      `;
+      <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono);">Q${idx + 1}.</span>
+        <span style="color: var(--fg);">${escapeHtml(question)}</span>
+      </div>
+      <button class="btn btn-icon btn-sm btn-del-draft-question" type="button" style="width: 18px; height: 18px; font-size: 11px; padding: 0;" title="Remove question">\u2715</button>
+    `;
       const btnDel = row.querySelector(".btn-del-draft-question");
       if (btnDel) {
         btnDel.addEventListener("click", () => {
@@ -4907,7 +6237,7 @@ Instructions for the Alignment Session:
       elNewIssueQuestionsList.appendChild(row);
     });
   }
-  let scratchpadSaveTimer = null;
+  var scratchpadSaveTimer = null;
   function getScratchpadStorageKey() {
     return currentRepo ? `scratchpad_${currentRepo}` : "scratchpad_global";
   }
@@ -4922,11 +6252,13 @@ Instructions for the Alignment Session:
       if (typeof stored === "string") {
         text = stored;
       }
-    } catch {}
+    } catch {
+    }
     if (!text) {
       try {
         text = localStorage.getItem(getScratchpadLocalKey()) || "";
-      } catch {}
+      } catch {
+      }
     }
     if (elScratchpadTextarea) {
       elScratchpadTextarea.value = text;
@@ -4943,9 +6275,9 @@ Instructions for the Alignment Session:
     } else {
       elScratchpadSaveIndicator.style.color = "var(--succ)";
       elScratchpadSaveIndicator.innerHTML = `
-        <svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 11px; height: 11px; fill: currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-        <span>Saved</span>
-      `;
+      <svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 11px; height: 11px; fill: currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      <span>Saved</span>
+    `;
     }
   }
   function updateScratchpadStats(text) {
@@ -4969,7 +6301,8 @@ Instructions for the Alignment Session:
       updateScratchpadStats(text);
       try {
         localStorage.setItem(getScratchpadLocalKey(), text);
-      } catch {}
+      } catch {
+      }
       void host.storage.set(getScratchpadStorageKey(), text).then(() => setScratchpadSaveStatus("Saved")).catch(() => setScratchpadSaveStatus("Saved"));
     }, 300);
   }
@@ -5082,7 +6415,7 @@ Instructions for the Alignment Session:
     const promptText = resolveAiAlignmentPrompt({
       repo: currentRepo,
       userInput: text,
-      storedPrompt: typeof storedRepoPrompt === "string" ? storedRepoPrompt : (typeof storedGlobalPrompt === "string" ? storedGlobalPrompt : null)
+      storedPrompt: typeof storedRepoPrompt === "string" ? storedRepoPrompt : typeof storedGlobalPrompt === "string" ? storedGlobalPrompt : null
     });
     const firstLine = text.split("\n")[0].replace(/[^a-zA-Z0-9\s-_]/g, "").trim().slice(0, 45);
     try {
@@ -5163,31 +6496,36 @@ Instructions for the Alignment Session:
     try {
       const stored = await host.storage.get(key);
       if (typeof stored === "string") val = stored;
-    } catch {}
+    } catch {
+    }
     if (!val) {
       try {
         val = localStorage.getItem(`openchamber_ai_draft_${currentRepo || "global"}`) || "";
-      } catch {}
+      } catch {
+      }
     }
     if (elAiIssueInput && val) {
       elAiIssueInput.value = val;
     }
   }
-  let draftSaveTimer = null;
+  var draftSaveTimer = null;
   function saveDraftAiInput(text) {
     const key = currentRepo ? `ai_draft_input_${currentRepo}` : "ai_draft_input_global";
     const localKey = `openchamber_ai_draft_${currentRepo || "global"}`;
     try {
       if (text) localStorage.setItem(localKey, text);
       else localStorage.removeItem(localKey);
-    } catch {}
+    } catch {
+    }
     clearTimeout(draftSaveTimer);
     if (!text) {
-      void host.storage.delete(key).catch(() => {});
+      void host.storage.delete(key).catch(() => {
+      });
       return;
     }
     draftSaveTimer = setTimeout(() => {
-      void host.storage.set(key, text).catch(() => {});
+      void host.storage.set(key, text).catch(() => {
+      });
     }, 300);
   }
   async function openNewIssueModal() {
@@ -5275,6 +6613,7 @@ Instructions for the Alignment Session:
       const res = await host.startSession({
         projectId: currentProject?.id,
         worktree: false,
+        // Issue drafting is administrative; no worktree churn
         navigation: "open",
         providerId: "github-task-board",
         id: `draft-${Date.now()}`,
@@ -5327,206 +6666,9 @@ Instructions for the Alignment Session:
       });
     });
   }
-  function setupCustomDropdown(selectEl) {
-    if (!selectEl || selectEl.dataset.customDropdownInitialized === "true") {
-      return null;
-    }
-    selectEl.dataset.customDropdownInitialized = "true";
-    selectEl.style.display = "none";
-    const wrapper = document.createElement("div");
-    wrapper.className = "custom-dropdown";
-    if (selectEl.classList.contains("select-sm")) {
-      wrapper.classList.add("size-sm");
-    }
-    if (selectEl.style.width === "100%") {
-      wrapper.classList.add("size-full");
-    }
-    if (selectEl.style.flex) {
-      wrapper.style.flex = selectEl.style.flex;
-    }
-    wrapper.dataset.selectId = selectEl.id || "";
-    const trigger = document.createElement("button");
-    trigger.type = "button";
-    trigger.className = "custom-dropdown-trigger";
-    trigger.setAttribute("aria-haspopup", "listbox");
-    trigger.setAttribute("aria-expanded", "false");
-    const labelSpan = document.createElement("span");
-    labelSpan.className = "custom-dropdown-label";
-    const arrowSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    arrowSvg.setAttribute("class", "custom-dropdown-arrow icon icon-sm");
-    arrowSvg.setAttribute("viewBox", "0 0 24 24");
-    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-    path.setAttribute("d", "M7 10l5 5 5-5z");
-    arrowSvg.appendChild(path);
-    trigger.appendChild(labelSpan);
-    trigger.appendChild(arrowSvg);
-    wrapper.appendChild(trigger);
-    const menu = document.createElement("div");
-    menu.className = "custom-dropdown-menu";
-    menu.setAttribute("role", "listbox");
-    document.body.appendChild(menu);
-    function syncOptions() {
-      menu.innerHTML = "";
-      const opts = Array.from(selectEl.options);
-      opts.forEach((opt) => {
-        const item = document.createElement("div");
-        item.className = "custom-dropdown-item";
-        item.setAttribute("role", "option");
-        item.dataset.value = opt.value;
-        if (opt.value === selectEl.value) {
-          item.classList.add("is-selected");
-          item.setAttribute("aria-selected", "true");
-        }
-        const textSpan = document.createElement("span");
-        textSpan.className = "custom-dropdown-item-text";
-        textSpan.textContent = opt.textContent || opt.value;
-        const checkSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-        checkSvg.setAttribute("class", "custom-dropdown-check icon icon-sm");
-        checkSvg.setAttribute("viewBox", "0 0 24 24");
-        const checkPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        checkPath.setAttribute("d", "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z");
-        checkSvg.appendChild(checkPath);
-        item.appendChild(textSpan);
-        item.appendChild(checkSvg);
-        item.addEventListener("click", (e) => {
-          e.stopPropagation();
-          selectOption(opt.value);
-        });
-        menu.appendChild(item);
-      });
-    }
-    function syncLabel() {
-      const selectedOpt = selectEl.options[selectEl.selectedIndex];
-      labelSpan.textContent = selectedOpt ? (selectedOpt.textContent || selectedOpt.value) : selectEl.value;
-      menu.querySelectorAll(".custom-dropdown-item").forEach((it) => {
-        const isSel = it.dataset.value === selectEl.value;
-        it.classList.toggle("is-selected", isSel);
-        it.setAttribute("aria-selected", isSel ? "true" : "false");
-      });
-    }
-    function openMenu() {
-      document.querySelectorAll(".custom-dropdown-menu.is-open").forEach((m) => {
-        if (m !== menu) {
-          m.classList.remove("is-open");
-        }
-      });
-      document.querySelectorAll(".custom-dropdown-trigger.is-open").forEach((t) => {
-        if (t !== trigger) {
-          t.classList.remove("is-open");
-          t.setAttribute("aria-expanded", "false");
-        }
-      });
-      syncOptions();
-      syncLabel();
-      menu.classList.add("is-open");
-      trigger.classList.add("is-open");
-      trigger.setAttribute("aria-expanded", "true");
-      const rect = trigger.getBoundingClientRect();
-      const menuHeight = menu.offsetHeight || 160;
-      const menuWidth = Math.max(rect.width, menu.offsetWidth || 130);
-      let top = rect.bottom + 4;
-      if (top + menuHeight > window.innerHeight - 8 && rect.top - menuHeight - 4 > 8) {
-        top = rect.top - menuHeight - 4;
-      }
-      let left = rect.left;
-      if (left + menuWidth > window.innerWidth - 8) {
-        left = window.innerWidth - menuWidth - 8;
-      }
-      if (left < 8) left = 8;
-      menu.style.top = `${top}px`;
-      menu.style.left = `${left}px`;
-      menu.style.minWidth = `${rect.width}px`;
-    }
-    function closeMenu() {
-      menu.classList.remove("is-open");
-      trigger.classList.remove("is-open");
-      trigger.setAttribute("aria-expanded", "false");
-    }
-    function selectOption(val) {
-      if (selectEl.value !== val) {
-        selectEl.value = val;
-        selectEl.dispatchEvent(new Event("change", { bubbles: true }));
-        selectEl.dispatchEvent(new Event("input", { bubbles: true }));
-      }
-      syncLabel();
-      closeMenu();
-      trigger.focus();
-    }
-    trigger.addEventListener("click", (e) => {
-      e.stopPropagation();
-      if (menu.classList.contains("is-open")) {
-        closeMenu();
-      } else {
-        openMenu();
-      }
-    });
-    trigger.addEventListener("keydown", (e) => {
-      if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        if (!menu.classList.contains("is-open")) {
-          openMenu();
-        }
-        const firstItem = menu.querySelector(".custom-dropdown-item");
-        firstItem?.focus();
-      } else if (e.key === "Escape") {
-        closeMenu();
-      }
-    });
-    const proto = HTMLSelectElement.prototype;
-    const originalDescriptor = Object.getOwnPropertyDescriptor(proto, "value");
-    if (originalDescriptor) {
-      Object.defineProperty(selectEl, "value", {
-        get() {
-          return originalDescriptor.get?.call(this);
-        },
-        set(newVal) {
-          originalDescriptor.set?.call(this, newVal);
-          syncLabel();
-        },
-        configurable: true
-      });
-    }
-    selectEl.addEventListener("change", syncLabel);
-    const observer = new MutationObserver(() => {
-      syncOptions();
-      syncLabel();
-    });
-    observer.observe(selectEl, { childList: true, subtree: true, attributes: true });
-    document.addEventListener("click", (e) => {
-      if (!wrapper.contains(e.target) && !menu.contains(e.target)) {
-        closeMenu();
-      }
-    });
-    window.addEventListener("resize", closeMenu);
-    syncOptions();
-    syncLabel();
-    selectEl.parentNode?.insertBefore(wrapper, selectEl.nextSibling);
-    return {
-      wrapper,
-      trigger,
-      menu,
-      sync: () => {
-        syncOptions();
-        syncLabel();
-      },
-      destroy: () => {
-        observer.disconnect();
-        menu.remove();
-        wrapper.remove();
-        selectEl.style.display = "";
-        delete selectEl.dataset.customDropdownInitialized;
-      }
-    };
-  }
-  function initAllCustomDropdowns(root = document) {
-    const selects = root.querySelectorAll("select.form-ctrl, select.select-sm");
-    selects.forEach((s) => {
-      setupCustomDropdown(s);
-    });
-  }
   function initEvents() {
     initAllCustomDropdowns();
-    if (typeof host !== "undefined" && host?.storage) {
+    if (host?.storage) {
       void host.storage.get("collapsed_groups").then((stored) => {
         if (Array.isArray(stored)) {
           stored.forEach((k) => collapsedGroupKeys.add(k));
@@ -5570,7 +6712,6 @@ Instructions for the Alignment Session:
       userLayoutPreference = "graph";
       applyLayoutMode();
     });
-
     document.getElementById("menuItemViewList")?.addEventListener("click", () => {
       userLayoutPreference = "list";
       applyLayoutMode();
@@ -5586,7 +6727,6 @@ Instructions for the Alignment Session:
       applyLayoutMode();
       closeMoreMenu();
     });
-
     if (elBtnLayoutToggle) {
       elBtnLayoutToggle.addEventListener("click", () => {
         const cur = document.body.getAttribute("data-layout");
@@ -5596,7 +6736,7 @@ Instructions for the Alignment Session:
     }
     if (elBtnGraphToggle) {
       elBtnGraphToggle.addEventListener("click", () => {
-        userLayoutPreference = document.body.getAttribute("data-layout") === "graph" ? (isWideScreen ? "kanban" : "list") : "graph";
+        userLayoutPreference = document.body.getAttribute("data-layout") === "graph" ? isWideScreen ? "kanban" : "list" : "graph";
         applyLayoutMode();
       });
     }
@@ -5681,12 +6821,6 @@ Instructions for the Alignment Session:
           e.preventDefault();
           item.click();
         }
-      });
-    }
-    if (elMenuItemToggleLayout) {
-      elMenuItemToggleLayout.addEventListener("click", () => {
-        toggleLayoutMode();
-        closeMoreMenu();
       });
     }
     if (elMenuItemToggleArchive) {
@@ -5963,9 +7097,7 @@ Instructions for the Alignment Session:
       if (activeIssue) {
         const val = elDrawerStatusSelect.value;
         if (val === "none") {
-          const filteredLabels = activeIssue.labels
-            .map((l) => typeof l === "string" ? l : l.name || "")
-            .filter((name) => !name.startsWith("status:"));
+          const filteredLabels = activeIssue.labels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.startsWith("status:"));
           activeIssue.labels = filteredLabels.map((name) => ({ name }));
           if (currentRepo) issueCache.delete(currentRepo);
           renderViews();
@@ -6153,8 +7285,8 @@ Instructions for the Alignment Session:
     if (elBtnStartTagIssues) {
       elBtnStartTagIssues.addEventListener("click", () => {
         if (filterTag === "all") return;
-        const taggedIssues = issues.filter((i) =>
-          (i.labels || []).some((l) => (typeof l === "string" ? l : l.name || "") === filterTag)
+        const taggedIssues = issues.filter(
+          (i) => (i.labels || []).some((l) => (typeof l === "string" ? l : l.name || "") === filterTag)
         );
         taggedIssues.forEach((i) => selectedIssueNumbers.add(i.number));
         updateBatchBar();
