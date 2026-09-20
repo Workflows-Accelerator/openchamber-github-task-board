@@ -1011,12 +1011,14 @@
       display: flex;
       flex-direction: column;
       gap: 7px;
-      transition: border-color 0.15s ease, background 0.15s ease;
+      transition: border-color 0.15s ease, background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
       position: relative;
     }
     .card:hover {
       background: var(--surf-muted);
       border-color: rgba(255, 255, 255, 0.18);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     }
     .card.dragging {
       opacity: 0.35;
@@ -1625,7 +1627,7 @@
       margin-right: 8px;
     }
 
-    /* Slide-Over / Side-by-Side Drawer (No dark overlay, no blur) */
+    /* Slide-Over / Side-by-Side Drawer (No dark overlay, no blur, smooth sliding animation) */
     .drawer-scrim {
       display: none !important;
       background: transparent !important;
@@ -1635,16 +1637,16 @@
     }
 
     .drawer {
-      display: none;
+      display: flex;
       background: var(--bg);
       flex-direction: column;
       overflow: hidden;
+      box-sizing: border-box;
     }
 
-    /* Narrow screen / Sidebar mode: drawer takes the whole page and opens fully */
+    /* Narrow screen / Sidebar mode: drawer slides smoothly in from the right edge to fill the page */
     @media (max-width: 767px) {
-      .drawer.active {
-        display: flex;
+      .drawer {
         position: fixed;
         inset: 0;
         width: 100%;
@@ -1653,22 +1655,70 @@
         z-index: 100;
         border-left: none;
         box-shadow: none;
+        transform: translateX(100%);
+        pointer-events: none;
+        visibility: hidden;
+        transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+                    visibility 0.26s cubic-bezier(0.16, 1, 0.3, 1);
+      }
+      .drawer.active {
+        transform: translateX(0);
+        pointer-events: auto;
+        visibility: visible;
       }
     }
 
-    /* Wide screen / Full page mode: drawer pushes the board/list to the side and appears on the side without dark blur */
+    /* Wide screen / Full page mode: drawer smoothly pushes the view and slides in from the right side */
     @media (min-width: 768px) {
+      .drawer {
+        position: relative;
+        height: 100%;
+        flex-shrink: 0;
+        width: 0;
+        min-width: 0;
+        max-width: 0;
+        opacity: 0;
+        pointer-events: none;
+        visibility: hidden;
+        border-left: 1px solid transparent;
+        box-shadow: none;
+        transition: width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                    max-width 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                    opacity 0.22s ease,
+                    visibility 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+                    border-color 0.22s ease,
+                    box-shadow 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+      }
       .drawer.active {
-        display: flex;
         width: 480px;
         max-width: 48vw;
         min-width: 360px;
-        height: 100%;
-        position: relative;
-        flex-shrink: 0;
-        border-left: 1px solid var(--border);
-        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.25);
+        opacity: 1;
+        pointer-events: auto;
+        visibility: visible;
+        border-left-color: var(--border);
+        box-shadow: -6px 0 24px rgba(0, 0, 0, 0.25);
         z-index: 20;
+      }
+
+      /* Inner sliding motion so content glides in from the right as it pushes */
+      .drawer > .drawer-head,
+      .drawer > .drawer-scroll,
+      .drawer > .drawer-foot {
+        width: 480px;
+        max-width: 48vw;
+        min-width: 360px;
+        box-sizing: border-box;
+        transform: translateX(36px);
+        opacity: 0;
+        transition: transform 0.26s cubic-bezier(0.16, 1, 0.3, 1),
+                    opacity 0.22s ease;
+      }
+      .drawer.active > .drawer-head,
+      .drawer.active > .drawer-scroll,
+      .drawer.active > .drawer-foot {
+        transform: translateX(0);
+        opacity: 1;
       }
     }
 
@@ -1907,7 +1957,14 @@
     #repoPopover .popover-list {
       max-height: 280px;
     }
-    .popover.active { display: flex; }
+    .popover.active {
+      display: flex;
+      animation: popoverSlideIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes popoverSlideIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
     .popover-head {
       padding: 8px 10px;
       border-bottom: 1px solid var(--border-subtle);
@@ -2050,7 +2107,21 @@
       justify-content: center;
       padding: 16px;
     }
-    .modal-backdrop.active { display: flex; }
+    .modal-backdrop.active {
+      display: flex;
+      animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-backdrop.active .modal {
+      animation: modalPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    @keyframes modalPopIn {
+      from { opacity: 0; transform: translateY(12px) scale(0.97); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
     .modal {
       background: var(--surf);
       border: 1px solid var(--border);

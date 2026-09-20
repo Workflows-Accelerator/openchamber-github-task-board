@@ -37,6 +37,20 @@ test('panel/index.html drawer has zero dark blur and supports split push & full 
 
   // view-container must flex horizontally to push views side-by-side
   assert.ok(INDEX_HTML.includes('flex-direction: row'), 'view-container must have flex-direction row');
+
+  // Drawer must feature smooth side-slide transition in sidebar mode
+  assert.ok(INDEX_HTML.includes('transform: translateX(100%)'), 'drawer must be positioned off-screen to the right when inactive');
+  assert.ok(INDEX_HTML.includes('transform: translateX(0)'), 'drawer must slide to translateX(0) when active');
+
+  // Drawer must feature smooth width push transition and inner slide in wide mode
+  assert.ok(INDEX_HTML.includes('transition: width 0.28s'), 'drawer must smoothly animate width push');
+  assert.ok(INDEX_HTML.includes('transform: translateX(36px)'), 'drawer inner content must slide in from right');
+});
+
+test('panel/index.html modal and popover feature smooth open animations', () => {
+  assert.ok(INDEX_HTML.includes('modalFadeIn'), 'modals must have fade-in backdrop animation');
+  assert.ok(INDEX_HTML.includes('modalPopIn'), 'modals must have scale/slide pop-in animation');
+  assert.ok(INDEX_HTML.includes('popoverSlideIn'), 'popovers must have slide-in animation');
 });
 
 test('panel/index.html scratchpad modal has increased height and flex textarea', () => {

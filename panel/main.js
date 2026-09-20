@@ -7101,6 +7101,11 @@ ${issue.body}
     });
     elBtnDrawerClose.addEventListener("click", closeDrawer);
     elDrawerScrim.addEventListener("click", closeDrawer);
+    elTaskDrawer.addEventListener("transitionend", () => {
+      if (document.body.getAttribute("data-layout") === "graph") {
+        drawCurrentGraphEdges();
+      }
+    });
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape" && activeIssue) {
         const activeModal = document.querySelector(".modal-backdrop.active");
