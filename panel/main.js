@@ -5471,11 +5471,19 @@ Blocked by ${blockerRef}`;
     renderDrawer(issue);
     elDrawerScrim.classList.add("active");
     elTaskDrawer.classList.add("active");
+    document.body.classList.add("drawer-open");
+    if (document.body.getAttribute("data-layout") === "graph") {
+      requestAnimationFrame(() => drawCurrentGraphEdges());
+    }
   }
   function closeDrawer() {
     activeIssue = null;
     elDrawerScrim.classList.remove("active");
     elTaskDrawer.classList.remove("active");
+    document.body.classList.remove("drawer-open");
+    if (document.body.getAttribute("data-layout") === "graph") {
+      requestAnimationFrame(() => drawCurrentGraphEdges());
+    }
   }
   var repoLabelsCache = /* @__PURE__ */ new Map();
   async function loadRepoLabels() {
@@ -7074,6 +7082,14 @@ ${issue.body}
     });
     elBtnDrawerClose.addEventListener("click", closeDrawer);
     elDrawerScrim.addEventListener("click", closeDrawer);
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && activeIssue) {
+        const activeModal = document.querySelector(".modal-backdrop.active");
+        if (!activeModal) {
+          closeDrawer();
+        }
+      }
+    });
     if (elDrawerPrioritySelect) {
       elDrawerPrioritySelect.addEventListener("change", async () => {
         if (!activeIssue || !currentRepo) return;

@@ -309,12 +309,15 @@
       flex: 1;
       overflow: hidden;
       display: flex;
+      flex-direction: row;
       position: relative;
+      min-height: 0;
     }
 
     /* Mode 1: Full-Width List View (Used in narrow sidebar) */
     .list-view {
       flex: 1;
+      min-width: 0;
       overflow-y: auto;
       padding: 8px 10px;
       display: flex;
@@ -325,6 +328,7 @@
     /* Mode 2: Multi-Column Kanban View (Used in wide page mode) */
     .kanban-view {
       flex: 1;
+      min-width: 0;
       display: none;
       gap: 12px;
       padding: 12px;
@@ -383,6 +387,7 @@
     /* Mode 3: Dependency Graph Waterfall View */
     .graph-view {
       flex: 1;
+      min-width: 0;
       display: none;
       flex-direction: column;
       overflow: hidden;
@@ -1609,39 +1614,51 @@
       margin-right: 8px;
     }
 
-    /* Slide-Over Drawer */
+    /* Slide-Over / Side-by-Side Drawer (No dark overlay, no blur) */
     .drawer-scrim {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.55);
-      backdrop-filter: blur(2px);
-      z-index: 90;
-      display: none;
-      opacity: 0;
-      transition: opacity 0.2s ease;
-    }
-    .drawer-scrim.active {
-      display: block;
-      opacity: 1;
+      display: none !important;
+      background: transparent !important;
+      backdrop-filter: none !important;
+      pointer-events: none !important;
+      opacity: 0 !important;
     }
 
     .drawer {
-      position: fixed;
-      top: 0;
-      right: -620px;
-      width: 540px;
-      max-width: 100vw;
-      height: 100vh;
+      display: none;
       background: var(--bg);
-      border-left: 1px solid var(--border);
-      z-index: 100;
-      box-shadow: -10px 0 30px rgba(0,0,0,0.5);
-      display: flex;
       flex-direction: column;
-      transition: right 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
     }
-    .drawer.active {
-      right: 0;
+
+    /* Narrow screen / Sidebar mode: drawer takes the whole page and opens fully */
+    @media (max-width: 767px) {
+      .drawer.active {
+        display: flex;
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        max-width: 100vw;
+        height: 100%;
+        z-index: 100;
+        border-left: none;
+        box-shadow: none;
+      }
+    }
+
+    /* Wide screen / Full page mode: drawer pushes the board/list to the side and appears on the side without dark blur */
+    @media (min-width: 768px) {
+      .drawer.active {
+        display: flex;
+        width: 480px;
+        max-width: 48vw;
+        min-width: 360px;
+        height: 100%;
+        position: relative;
+        flex-shrink: 0;
+        border-left: 1px solid var(--border);
+        box-shadow: -4px 0 16px rgba(0, 0, 0, 0.25);
+        z-index: 20;
+      }
     }
 
     .drawer-head {
@@ -2348,12 +2365,10 @@
       </div>
     </main>
 
-  </div>
-
-  <!-- Slide-Over Drawer Scrim -->
+  <!-- Slide-Over Drawer Scrim (kept for DOM reference, inert) -->
   <div class="drawer-scrim" id="drawerScrim"></div>
 
-  <!-- Slide-Over Inspection Drawer -->
+  <!-- Slide-Over / Split Inspection Drawer -->
   <aside class="drawer" id="taskDrawer">
     <div class="drawer-head">
       <div class="drawer-head-info">
@@ -2581,6 +2596,8 @@
       </button>
     </div>
   </aside>
+
+  </div>
 
   <!-- Floating Batch Action Bar -->
   <div class="batch-bar" id="batchActionBar" style="display: none;">
