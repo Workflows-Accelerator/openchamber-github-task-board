@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { getIssueTheme } from './label-manager.test.js';
 
 export function parseScratchPadThemes(text) {
   if (!text || typeof text !== 'string') {
@@ -132,4 +133,42 @@ test('resolveAiAlignmentPrompt incorporates repo and scratchpad text with zero e
   // Zero emojis rule
   const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
   assert.equal(emojiRegex.test(prompt), false);
+});
+
+export function extractTaskThemes(issuesList) {
+  if (!issuesList || !Array.isArray(issuesList)) return [];
+  const counts = new Map();
+  for (const issue of issuesList) {
+    const theme = getIssueTheme(issue);
+    if (theme && theme !== 'No Theme') {
+      counts.set(theme, (counts.get(theme) || 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .map(([theme, count]) => ({ theme, count }))
+    .sort((a, b) => b.count - a.count || a.theme.localeCompare(b.theme));
+}
+
+test('extractTaskThemes extracts and ranks existing themes with task frequencies', () => {
+  const sampleIssues = [
+    { number: 1, labels: [{ name: 'theme:authentication' }] },
+    { number: 2, labels: [{ name: 'theme:authentication' }] },
+    { number: 3, labels: [{ name: 'frontend' }] },
+    { number: 4, labels: [{ name: 'theme:billing' }] },
+    { number: 5, labels: [{ name: 'theme:billing' }] },
+    { number: 6, labels: [{ name: 'theme:billing' }] },
+    { number: 7, labels: [{ name: 'status:todo' }] }, // No Theme
+  ];
+
+  const themes = extractTaskThemes(sampleIssues);
+  assert.equal(themes.length, 3);
+  // billing has 3
+  assert.equal(themes[0].theme, 'billing');
+  assert.equal(themes[0].count, 3);
+  // authentication has 2
+  assert.equal(themes[1].theme, 'authentication');
+  assert.equal(themes[1].count, 2);
+  // frontend has 1
+  assert.equal(themes[2].theme, 'frontend');
+  assert.equal(themes[2].count, 1);
 });

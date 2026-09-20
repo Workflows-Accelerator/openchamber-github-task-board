@@ -1353,6 +1353,20 @@ export function getIssueTheme(issue: Issue): string {
   return 'No Theme';
 }
 
+export function extractTaskThemes(issuesList: Issue[]): Array<{ theme: string; count: number }> {
+  if (!issuesList || !Array.isArray(issuesList)) return [];
+  const counts = new Map<string, number>();
+  for (const issue of issuesList) {
+    const theme = getIssueTheme(issue);
+    if (theme && theme !== 'No Theme') {
+      counts.set(theme, (counts.get(theme) || 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .map(([theme, count]) => ({ theme, count }))
+    .sort((a, b) => b.count - a.count || a.theme.localeCompare(b.theme));
+}
+
 export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[] {
   if (groupBy === 'priority') {
     const groups: IssueGroup[] = [
@@ -3248,6 +3262,22 @@ const elBtnScratchpadCopyToCreator = document.getElementById('btnScratchpadCopyT
 const elBtnScratchpadDirectDraft = document.getElementById('btnScratchpadDirectDraft') as HTMLButtonElement | null;
 const elBtnScratchpadAlignAI = document.getElementById('btnScratchpadAlignAI') as HTMLButtonElement | null;
 
+// Scratch Pad Theme Picker Elements
+const elScratchpadThemePopover = document.getElementById('scratchpadThemePopover') as HTMLDivElement | null;
+const elScratchpadThemeSearch = document.getElementById('scratchpadThemeSearch') as HTMLInputElement | null;
+const elBtnScratchpadThemeClose = document.getElementById('btnScratchpadThemeClose') as HTMLButtonElement | null;
+const elScratchpadThemeList = document.getElementById('scratchpadThemeList') as HTMLDivElement | null;
+const elScratchpadThemeEmpty = document.getElementById('scratchpadThemeEmpty') as HTMLDivElement | null;
+const elBtnScratchpadThemeAdd = document.getElementById('btnScratchpadThemeAdd') as HTMLButtonElement | null;
+
+// Toolbar More Menu Elements
+const elBtnMoreMenu = document.getElementById('btnMoreMenu') as HTMLButtonElement | null;
+const elMoreMenuPopover = document.getElementById('moreMenuPopover') as HTMLDivElement | null;
+const elMenuItemToggleLayout = document.getElementById('menuItemToggleLayout') as HTMLDivElement | null;
+const elMenuItemToggleArchive = document.getElementById('menuItemToggleArchive') as HTMLDivElement | null;
+const elMenuItemRefresh = document.getElementById('menuItemRefresh') as HTMLDivElement | null;
+const elMenuItemLogs = document.getElementById('menuItemLogs') as HTMLDivElement | null;
+
 // Manual Mode elements
 const elNewIssueTitleInput = document.getElementById('newIssueTitleInput') as HTMLInputElement;
 const elNewIssueComplexitySelect = document.getElementById('newIssueComplexitySelect') as HTMLSelectElement | null;
@@ -3588,6 +3618,64 @@ function insertIntoScratchpad(snippet: string): void {
   handleScratchpadInput();
 }
 
+function insertScratchpadTheme(themeName: string): void {
+  const clean = themeName.trim();
+  if (!clean) return;
+  insertIntoScratchpad(`## [Theme: ${clean}]\n- [ ] `);
+  if (elScratchpadThemePopover) elScratchpadThemePopover.style.display = 'none';
+}
+
+function renderScratchpadThemeList(query: string): void {
+  if (!elScratchpadThemeList) return;
+  const themes = extractTaskThemes(issues);
+  const q = (query || '').trim().toLowerCase();
+  const filtered = q
+    ? themes.filter((t) => t.theme.toLowerCase().includes(q))
+    : themes;
+
+  elScratchpadThemeList.innerHTML = '';
+
+  if (filtered.length === 0) {
+    if (elScratchpadThemeEmpty) {
+      elScratchpadThemeEmpty.style.display = 'block';
+      elScratchpadThemeEmpty.textContent = themes.length === 0
+        ? 'No existing themes found in tasks. Type a name below to create one.'
+        : 'No themes match your search. Press Enter or click Add to create it.';
+    }
+  } else if (elScratchpadThemeEmpty) {
+    elScratchpadThemeEmpty.style.display = 'none';
+  }
+
+  filtered.forEach(({ theme, count }) => {
+    const row = document.createElement('div');
+    row.className = 'theme-option-row';
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.justifyContent = 'space-between';
+    row.style.padding = '4px 8px';
+    row.style.background = 'var(--surf)';
+    row.style.border = '1px solid var(--border-subtle)';
+    row.style.borderRadius = 'var(--rad-sm)';
+    row.style.cursor = 'pointer';
+    row.style.fontSize = '11.5px';
+    row.style.gap = '8px';
+    row.innerHTML = `
+      <span style="color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(theme)}</span>
+      <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono); flex-shrink: 0;">${count} ${count === 1 ? 'task' : 'tasks'}</span>
+    `;
+    row.addEventListener('mouseenter', () => {
+      row.style.background = 'var(--surf-hover)';
+      row.style.borderColor = 'var(--border)';
+    });
+    row.addEventListener('mouseleave', () => {
+      row.style.background = 'var(--surf)';
+      row.style.borderColor = 'var(--border-subtle)';
+    });
+    row.addEventListener('click', () => insertScratchpadTheme(theme));
+    elScratchpadThemeList.appendChild(row);
+  });
+}
+
 async function openScratchpadModal(): Promise<void> {
   if (elScratchpadRepoBadge) {
     elScratchpadRepoBadge.textContent = currentRepo || 'Global';
@@ -3604,6 +3692,9 @@ async function openScratchpadModal(): Promise<void> {
 function closeScratchpadModal(): void {
   if (elScratchpadModalBackdrop) {
     elScratchpadModalBackdrop.classList.remove('active');
+  }
+  if (elScratchpadThemePopover) {
+    elScratchpadThemePopover.style.display = 'none';
   }
 }
 
@@ -4212,14 +4303,15 @@ function initEvents(): void {
   });
 
   // Layout toggle (List <-> Kanban)
-  elBtnLayoutToggle.addEventListener('click', () => {
+  const toggleLayoutMode = () => {
     if (document.body.getAttribute('data-layout') === 'kanban') {
       userLayoutPreference = 'list';
     } else {
       userLayoutPreference = 'kanban';
     }
     applyLayoutMode();
-  });
+  };
+  elBtnLayoutToggle.addEventListener('click', toggleLayoutMode);
 
   // Window resize handler for responsive view adaptivity
   window.addEventListener('resize', () => {
@@ -4229,25 +4321,74 @@ function initEvents(): void {
   });
 
   // Refresh
-  elBtnRefresh.addEventListener('click', () => {
+  const refreshTasks = () => {
     void fetchIssues();
     void discoverWorkspaceRepositories();
-  });
+  };
+  elBtnRefresh.addEventListener('click', refreshTasks);
 
   // Archive Toggle
   const elBtnArchiveToggle = document.getElementById('btnArchiveToggle') as HTMLButtonElement | null;
-  if (elBtnArchiveToggle) {
-    elBtnArchiveToggle.addEventListener('click', () => {
-      showArchivedOnly = !showArchivedOnly;
-      elBtnArchiveToggle.classList.toggle('active', showArchivedOnly);
+  const toggleArchiveView = () => {
+    showArchivedOnly = !showArchivedOnly;
+    elBtnArchiveToggle?.classList.toggle('active', showArchivedOnly);
+    if (elBtnArchiveToggle) {
       elBtnArchiveToggle.title = showArchivedOnly
         ? 'Viewing Archived (Click to show active issues)'
         : 'Toggle Archived Issues View';
-      renderViews();
-      void host.toast({
-        kind: 'info',
-        message: showArchivedOnly ? 'Viewing archived issues' : 'Viewing active issues',
-      });
+    }
+    renderViews();
+    void host.toast({
+      kind: 'info',
+      message: showArchivedOnly ? 'Viewing archived issues' : 'Viewing active issues',
+    });
+  };
+  if (elBtnArchiveToggle) {
+    elBtnArchiveToggle.addEventListener('click', toggleArchiveView);
+  }
+
+  // Toolbar More Menu (used when sidebar is too narrow for all buttons)
+  const closeMoreMenu = () => {
+    if (elMoreMenuPopover) elMoreMenuPopover.style.display = 'none';
+  };
+  if (elBtnMoreMenu && elMoreMenuPopover) {
+    elBtnMoreMenu.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = elMoreMenuPopover.style.display === 'none';
+      elMoreMenuPopover.style.display = isHidden ? 'flex' : 'none';
+    });
+    document.addEventListener('click', (e) => {
+      if (
+        elMoreMenuPopover.style.display !== 'none' &&
+        !elMoreMenuPopover.contains(e.target as Node) &&
+        !elBtnMoreMenu.contains(e.target as Node)
+      ) {
+        closeMoreMenu();
+      }
+    });
+  }
+  if (elMenuItemToggleLayout) {
+    elMenuItemToggleLayout.addEventListener('click', () => {
+      toggleLayoutMode();
+      closeMoreMenu();
+    });
+  }
+  if (elMenuItemToggleArchive) {
+    elMenuItemToggleArchive.addEventListener('click', () => {
+      toggleArchiveView();
+      closeMoreMenu();
+    });
+  }
+  if (elMenuItemRefresh) {
+    elMenuItemRefresh.addEventListener('click', () => {
+      refreshTasks();
+      closeMoreMenu();
+    });
+  }
+  if (elMenuItemLogs) {
+    elMenuItemLogs.addEventListener('click', () => {
+      elLogDrawer.classList.toggle('active');
+      closeMoreMenu();
     });
   }
 
@@ -4366,8 +4507,58 @@ function initEvents(): void {
     elScratchpadTextarea.addEventListener('input', handleScratchpadInput);
   }
   if (elBtnScratchpadAddTheme) {
-    elBtnScratchpadAddTheme.addEventListener('click', () => insertIntoScratchpad('## [Theme: New Topic]\n- [ ] '));
+    elBtnScratchpadAddTheme.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (elScratchpadThemePopover) {
+        const isHidden = elScratchpadThemePopover.style.display === 'none';
+        if (isHidden) {
+          elScratchpadThemePopover.style.display = 'flex';
+          if (elScratchpadThemeSearch) elScratchpadThemeSearch.value = '';
+          renderScratchpadThemeList('');
+          elScratchpadThemeSearch?.focus();
+        } else {
+          elScratchpadThemePopover.style.display = 'none';
+        }
+      }
+    });
   }
+  if (elBtnScratchpadThemeClose) {
+    elBtnScratchpadThemeClose.addEventListener('click', () => {
+      if (elScratchpadThemePopover) elScratchpadThemePopover.style.display = 'none';
+    });
+  }
+  if (elScratchpadThemeSearch) {
+    elScratchpadThemeSearch.addEventListener('input', () => {
+      renderScratchpadThemeList(elScratchpadThemeSearch?.value || '');
+    });
+    elScratchpadThemeSearch.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const query = elScratchpadThemeSearch?.value.trim() || '';
+        if (query) insertScratchpadTheme(query);
+      }
+    });
+  }
+  if (elBtnScratchpadThemeAdd) {
+    elBtnScratchpadThemeAdd.addEventListener('click', () => {
+      const query = elScratchpadThemeSearch?.value.trim() || '';
+      if (query) {
+        insertScratchpadTheme(query);
+      } else {
+        elScratchpadThemeSearch?.focus();
+      }
+    });
+  }
+  document.addEventListener('click', (e) => {
+    if (
+      elScratchpadThemePopover &&
+      elScratchpadThemePopover.style.display !== 'none' &&
+      !elScratchpadThemePopover.contains(e.target as Node) &&
+      !elBtnScratchpadAddTheme?.contains(e.target as Node)
+    ) {
+      elScratchpadThemePopover.style.display = 'none';
+    }
+  });
   if (elBtnScratchpadAddFeature) {
     elBtnScratchpadAddFeature.addEventListener('click', () => insertIntoScratchpad('- [ ] Feature: '));
   }

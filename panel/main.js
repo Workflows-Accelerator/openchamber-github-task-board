@@ -2248,6 +2248,17 @@ ${issue.body || ""}`.slice(0, 15e3);
     }
     return "No Theme";
   }
+  function extractTaskThemes(issuesList) {
+    if (!issuesList || !Array.isArray(issuesList)) return [];
+    const counts = /* @__PURE__ */ new Map();
+    for (const issue of issuesList) {
+      const theme = getIssueTheme(issue);
+      if (theme && theme !== "No Theme") {
+        counts.set(theme, (counts.get(theme) || 0) + 1);
+      }
+    }
+    return Array.from(counts.entries()).map(([theme, count]) => ({ theme, count })).sort((a, b) => b.count - a.count || a.theme.localeCompare(b.theme));
+  }
   function groupIssuesBy(issuesList, groupBy) {
     if (groupBy === "priority") {
       const groups = [
@@ -3798,6 +3809,18 @@ Instructions for the Alignment Session:
   var elBtnScratchpadCopyToCreator = document.getElementById("btnScratchpadCopyToCreator");
   var elBtnScratchpadDirectDraft = document.getElementById("btnScratchpadDirectDraft");
   var elBtnScratchpadAlignAI = document.getElementById("btnScratchpadAlignAI");
+  var elScratchpadThemePopover = document.getElementById("scratchpadThemePopover");
+  var elScratchpadThemeSearch = document.getElementById("scratchpadThemeSearch");
+  var elBtnScratchpadThemeClose = document.getElementById("btnScratchpadThemeClose");
+  var elScratchpadThemeList = document.getElementById("scratchpadThemeList");
+  var elScratchpadThemeEmpty = document.getElementById("scratchpadThemeEmpty");
+  var elBtnScratchpadThemeAdd = document.getElementById("btnScratchpadThemeAdd");
+  var elBtnMoreMenu = document.getElementById("btnMoreMenu");
+  var elMoreMenuPopover = document.getElementById("moreMenuPopover");
+  var elMenuItemToggleLayout = document.getElementById("menuItemToggleLayout");
+  var elMenuItemToggleArchive = document.getElementById("menuItemToggleArchive");
+  var elMenuItemRefresh = document.getElementById("menuItemRefresh");
+  var elMenuItemLogs = document.getElementById("menuItemLogs");
   var elNewIssueTitleInput = document.getElementById("newIssueTitleInput");
   var elNewIssueComplexitySelect = document.getElementById("newIssueComplexitySelect");
   var elNewIssueBodyInput = document.getElementById("newIssueBodyInput");
@@ -4084,6 +4107,56 @@ Instructions for the Alignment Session:
     ta.focus();
     handleScratchpadInput();
   }
+  function insertScratchpadTheme(themeName) {
+    const clean = themeName.trim();
+    if (!clean) return;
+    insertIntoScratchpad(`## [Theme: ${clean}]
+- [ ] `);
+    if (elScratchpadThemePopover) elScratchpadThemePopover.style.display = "none";
+  }
+  function renderScratchpadThemeList(query) {
+    if (!elScratchpadThemeList) return;
+    const themes = extractTaskThemes(issues);
+    const q = (query || "").trim().toLowerCase();
+    const filtered = q ? themes.filter((t) => t.theme.toLowerCase().includes(q)) : themes;
+    elScratchpadThemeList.innerHTML = "";
+    if (filtered.length === 0) {
+      if (elScratchpadThemeEmpty) {
+        elScratchpadThemeEmpty.style.display = "block";
+        elScratchpadThemeEmpty.textContent = themes.length === 0 ? "No existing themes found in tasks. Type a name below to create one." : "No themes match your search. Press Enter or click Add to create it.";
+      }
+    } else if (elScratchpadThemeEmpty) {
+      elScratchpadThemeEmpty.style.display = "none";
+    }
+    filtered.forEach(({ theme, count }) => {
+      const row = document.createElement("div");
+      row.className = "theme-option-row";
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.justifyContent = "space-between";
+      row.style.padding = "4px 8px";
+      row.style.background = "var(--surf)";
+      row.style.border = "1px solid var(--border-subtle)";
+      row.style.borderRadius = "var(--rad-sm)";
+      row.style.cursor = "pointer";
+      row.style.fontSize = "11.5px";
+      row.style.gap = "8px";
+      row.innerHTML = `
+      <span style="color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(theme)}</span>
+      <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono); flex-shrink: 0;">${count} ${count === 1 ? "task" : "tasks"}</span>
+    `;
+      row.addEventListener("mouseenter", () => {
+        row.style.background = "var(--surf-hover)";
+        row.style.borderColor = "var(--border)";
+      });
+      row.addEventListener("mouseleave", () => {
+        row.style.background = "var(--surf)";
+        row.style.borderColor = "var(--border-subtle)";
+      });
+      row.addEventListener("click", () => insertScratchpadTheme(theme));
+      elScratchpadThemeList.appendChild(row);
+    });
+  }
   async function openScratchpadModal() {
     if (elScratchpadRepoBadge) {
       elScratchpadRepoBadge.textContent = currentRepo || "Global";
@@ -4099,6 +4172,9 @@ Instructions for the Alignment Session:
   function closeScratchpadModal() {
     if (elScratchpadModalBackdrop) {
       elScratchpadModalBackdrop.classList.remove("active");
+    }
+    if (elScratchpadThemePopover) {
+      elScratchpadThemePopover.style.display = "none";
     }
   }
   async function launchScratchpadAlignmentSession() {
@@ -4605,34 +4681,78 @@ Instructions for the Alignment Session:
       searchQuery = e.target.value;
       renderViews();
     });
-    elBtnLayoutToggle.addEventListener("click", () => {
+    const toggleLayoutMode = () => {
       if (document.body.getAttribute("data-layout") === "kanban") {
         userLayoutPreference = "list";
       } else {
         userLayoutPreference = "kanban";
       }
       applyLayoutMode();
-    });
+    };
+    elBtnLayoutToggle.addEventListener("click", toggleLayoutMode);
     window.addEventListener("resize", () => {
       if (userLayoutPreference === "auto") {
         applyLayoutMode();
       }
     });
-    elBtnRefresh.addEventListener("click", () => {
+    const refreshTasks = () => {
       void fetchIssues();
       void discoverWorkspaceRepositories();
-    });
+    };
+    elBtnRefresh.addEventListener("click", refreshTasks);
     const elBtnArchiveToggle = document.getElementById("btnArchiveToggle");
-    if (elBtnArchiveToggle) {
-      elBtnArchiveToggle.addEventListener("click", () => {
-        showArchivedOnly = !showArchivedOnly;
-        elBtnArchiveToggle.classList.toggle("active", showArchivedOnly);
+    const toggleArchiveView = () => {
+      showArchivedOnly = !showArchivedOnly;
+      elBtnArchiveToggle?.classList.toggle("active", showArchivedOnly);
+      if (elBtnArchiveToggle) {
         elBtnArchiveToggle.title = showArchivedOnly ? "Viewing Archived (Click to show active issues)" : "Toggle Archived Issues View";
-        renderViews();
-        void host.toast({
-          kind: "info",
-          message: showArchivedOnly ? "Viewing archived issues" : "Viewing active issues"
-        });
+      }
+      renderViews();
+      void host.toast({
+        kind: "info",
+        message: showArchivedOnly ? "Viewing archived issues" : "Viewing active issues"
+      });
+    };
+    if (elBtnArchiveToggle) {
+      elBtnArchiveToggle.addEventListener("click", toggleArchiveView);
+    }
+    const closeMoreMenu = () => {
+      if (elMoreMenuPopover) elMoreMenuPopover.style.display = "none";
+    };
+    if (elBtnMoreMenu && elMoreMenuPopover) {
+      elBtnMoreMenu.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const isHidden = elMoreMenuPopover.style.display === "none";
+        elMoreMenuPopover.style.display = isHidden ? "flex" : "none";
+      });
+      document.addEventListener("click", (e) => {
+        if (elMoreMenuPopover.style.display !== "none" && !elMoreMenuPopover.contains(e.target) && !elBtnMoreMenu.contains(e.target)) {
+          closeMoreMenu();
+        }
+      });
+    }
+    if (elMenuItemToggleLayout) {
+      elMenuItemToggleLayout.addEventListener("click", () => {
+        toggleLayoutMode();
+        closeMoreMenu();
+      });
+    }
+    if (elMenuItemToggleArchive) {
+      elMenuItemToggleArchive.addEventListener("click", () => {
+        toggleArchiveView();
+        closeMoreMenu();
+      });
+    }
+    if (elMenuItemRefresh) {
+      elMenuItemRefresh.addEventListener("click", () => {
+        refreshTasks();
+        closeMoreMenu();
+      });
+    }
+    if (elMenuItemLogs) {
+      elMenuItemLogs.addEventListener("click", () => {
+        elLogDrawer.classList.toggle("active");
+        closeMoreMenu();
       });
     }
     if (elBtnFilterToggle && elFilterBar) {
@@ -4731,8 +4851,53 @@ Instructions for the Alignment Session:
       elScratchpadTextarea.addEventListener("input", handleScratchpadInput);
     }
     if (elBtnScratchpadAddTheme) {
-      elBtnScratchpadAddTheme.addEventListener("click", () => insertIntoScratchpad("## [Theme: New Topic]\n- [ ] "));
+      elBtnScratchpadAddTheme.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (elScratchpadThemePopover) {
+          const isHidden = elScratchpadThemePopover.style.display === "none";
+          if (isHidden) {
+            elScratchpadThemePopover.style.display = "flex";
+            if (elScratchpadThemeSearch) elScratchpadThemeSearch.value = "";
+            renderScratchpadThemeList("");
+            elScratchpadThemeSearch?.focus();
+          } else {
+            elScratchpadThemePopover.style.display = "none";
+          }
+        }
+      });
     }
+    if (elBtnScratchpadThemeClose) {
+      elBtnScratchpadThemeClose.addEventListener("click", () => {
+        if (elScratchpadThemePopover) elScratchpadThemePopover.style.display = "none";
+      });
+    }
+    if (elScratchpadThemeSearch) {
+      elScratchpadThemeSearch.addEventListener("input", () => {
+        renderScratchpadThemeList(elScratchpadThemeSearch?.value || "");
+      });
+      elScratchpadThemeSearch.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const query = elScratchpadThemeSearch?.value.trim() || "";
+          if (query) insertScratchpadTheme(query);
+        }
+      });
+    }
+    if (elBtnScratchpadThemeAdd) {
+      elBtnScratchpadThemeAdd.addEventListener("click", () => {
+        const query = elScratchpadThemeSearch?.value.trim() || "";
+        if (query) {
+          insertScratchpadTheme(query);
+        } else {
+          elScratchpadThemeSearch?.focus();
+        }
+      });
+    }
+    document.addEventListener("click", (e) => {
+      if (elScratchpadThemePopover && elScratchpadThemePopover.style.display !== "none" && !elScratchpadThemePopover.contains(e.target) && !elBtnScratchpadAddTheme?.contains(e.target)) {
+        elScratchpadThemePopover.style.display = "none";
+      }
+    });
     if (elBtnScratchpadAddFeature) {
       elBtnScratchpadAddFeature.addEventListener("click", () => insertIntoScratchpad("- [ ] Feature: "));
     }

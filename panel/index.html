@@ -96,8 +96,9 @@
       font-size: 12px;
       font-weight: 500;
       cursor: pointer;
-      max-width: 180px;
+      max-width: 150px;
       transition: background 0.15s ease, border-color 0.15s ease;
+      flex-shrink: 1;
     }
     .repo-btn:hover {
       background: var(--surf-hover);
@@ -110,6 +111,45 @@
       font-family: var(--font-mono);
       font-size: 11px;
       color: var(--fg);
+    }
+
+    /* Toolbar Responsive & More Menu */
+    .toolbar-btn-optional {
+      display: none;
+    }
+    .more-menu-wrapper {
+      display: inline-flex;
+      position: relative;
+    }
+    .btn-label-issue {
+      display: inline;
+    }
+    @media (min-width: 660px) {
+      .toolbar-btn-optional {
+        display: inline-flex;
+      }
+      .more-menu-wrapper {
+        display: none;
+      }
+    }
+    @media (max-width: 420px) {
+      .btn-label-issue {
+        display: none;
+      }
+      .search-input {
+        width: 70px;
+      }
+      .repo-btn {
+        max-width: 110px;
+      }
+    }
+    @media (max-width: 330px) {
+      .search-input {
+        width: 50px;
+      }
+      .repo-btn {
+        max-width: 80px;
+      }
     }
 
     /* Common Button Styles */
@@ -1539,37 +1579,64 @@
         <svg class="icon" viewBox="0 0 24 24"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
       </button>
 
-      <!-- Layout Toggle (List vs Kanban) -->
-      <button class="btn btn-icon" id="btnLayoutToggle" title="Toggle Board / List View">
-        <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>
-      </button>
-
-      <!-- Refresh -->
+      <!-- Refresh (Always handy) -->
       <button class="btn btn-icon" id="btnRefresh" title="Refresh Issues & Sessions">
         <svg class="icon" id="iconRefresh" viewBox="0 0 24 24"><path d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
       </button>
 
-      <!-- Archive Toggle -->
-      <button class="btn btn-icon" id="btnArchiveToggle" title="Toggle Archived Issues View">
+      <!-- Layout Toggle (Inline on wide screen) -->
+      <button class="btn btn-icon toolbar-btn-optional" id="btnLayoutToggle" title="Toggle Board / List View">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>
+      </button>
+
+      <!-- Archive Toggle (Inline on wide screen) -->
+      <button class="btn btn-icon toolbar-btn-optional" id="btnArchiveToggle" title="Toggle Archived Issues View">
         <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
       </button>
 
-      <!-- Scratch Pad Button -->
-      <button class="btn" id="btnOpenScratchpad" title="Open persistent Ideas Scratch Pad">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-        <span>Scratch Pad</span>
-      </button>
-
-      <!-- New Issue Button -->
-      <button class="btn" id="btnNewIssue" title="Create New GitHub Issue">
-        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
-        <span>Issue</span>
-      </button>
-
-      <!-- Logs / Diagnostics Toggle -->
-      <button class="btn btn-icon" id="btnLogsToggle" title="Diagnostics & Logs">
+      <!-- Logs Toggle (Inline on wide screen) -->
+      <button class="btn btn-icon toolbar-btn-optional" id="btnLogsToggle" title="Diagnostics & Logs">
         <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 2v14h16V5H4zm3 3h2v2H7V8zm0 4h10v2H7v-2zm0 4h7v2H7v-2zm4-8h6v2h-6V8z"/></svg>
       </button>
+
+      <!-- Scratch Pad Button (Compact 26px Icon Button, never crowds) -->
+      <button class="btn btn-icon" id="btnOpenScratchpad" title="Ideas Scratch Pad">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+      </button>
+
+      <!-- New Issue Button (Primary Action - ALWAYS prominent & visible) -->
+      <button class="btn btn-primary" id="btnNewIssue" title="Create New GitHub Issue" style="flex-shrink: 0;">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M11 11V5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></svg>
+        <span class="btn-label-issue">Issue</span>
+      </button>
+
+      <!-- More Options Popover Menu (Sidebar mode) -->
+      <div class="more-menu-wrapper">
+        <button class="btn btn-icon" id="btnMoreMenu" title="More Views & Diagnostics">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/></svg>
+        </button>
+        <div class="popover more-popover" id="moreMenuPopover" style="position: absolute; top: 32px; right: 0; left: auto; width: 190px; z-index: 150; display: none;">
+          <div class="popover-head">Views & Diagnostics</div>
+          <div class="popover-list">
+            <div class="popover-item" id="menuItemToggleLayout">
+              <span class="popover-item-title" id="txtMenuLayout">Board / List View</span>
+              <span class="popover-item-sub">Switch Kanban & List</span>
+            </div>
+            <div class="popover-item" id="menuItemToggleArchive">
+              <span class="popover-item-title" id="txtMenuArchive">Archived Issues</span>
+              <span class="popover-item-sub">Toggle archived tasks</span>
+            </div>
+            <div class="popover-item" id="menuItemRefresh">
+              <span class="popover-item-title">Refresh Tasks</span>
+              <span class="popover-item-sub">Sync issues & sessions</span>
+            </div>
+            <div class="popover-item" id="menuItemLogs">
+              <span class="popover-item-title">Diagnostics & Logs</span>
+              <span class="popover-item-sub">Inspect extension logs</span>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 
@@ -2003,6 +2070,24 @@
           <button class="btn btn-sm" id="btnScratchpadAddQuestion" type="button" style="font-size: 10.5px; height: 22px; padding: 0 7px;">+ Open Question</button>
           <div style="flex: 1;"></div>
           <span id="scratchpadStatsBadge" style="font-size: 11px; color: var(--fg-muted);">0 themes, 0 ideas</span>
+        </div>
+
+        <!-- Theme Picker Popover (anchored below Quick add) -->
+        <div id="scratchpadThemePopover" class="panel-box" style="display: none; flex-direction: column; gap: 6px; padding: 8px; background: var(--surf-muted);">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 11px; font-weight: 600; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.5px;">Insert Existing Theme from Tasks</span>
+            <button class="btn btn-icon btn-sm" id="btnScratchpadThemeClose" type="button" style="width: 20px; height: 20px;">
+              <svg class="icon icon-sm" viewBox="0 0 24 24" style="width: 10px; height: 10px;"><path d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"/></svg>
+            </button>
+          </div>
+          <input type="text" id="scratchpadThemeSearch" class="form-ctrl" style="font-size: 11.5px; height: 24px;" placeholder="Search or type new theme name..." />
+          <div id="scratchpadThemeList" style="max-height: 140px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px;"></div>
+          <div id="scratchpadThemeEmpty" style="display: none; color: var(--fg-faint); font-size: 11px; padding: 4px 0;">
+            No existing themes found in tasks.
+          </div>
+          <div style="display: flex; justify-content: flex-end;">
+            <button class="btn btn-sm btn-primary" id="btnScratchpadThemeAdd" type="button" style="font-size: 11px;">Add New Theme</button>
+          </div>
         </div>
 
         <!-- Main Textarea -->
