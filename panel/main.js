@@ -1208,6 +1208,11 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var isFilterBarOpen = false;
   var selectedIssueNumbers = /* @__PURE__ */ new Set();
   var userLayoutPreference = "auto";
+  var graphSelectedTheme = "all";
+  var graphShowDone = true;
+  var isDraggingEdge = false;
+  var dragSourceNum = null;
+  var currentGraph = null;
   var isWideScreen = false;
   var draggedIssueNumber = null;
   var isLoading = false;
@@ -1247,6 +1252,29 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var elBtnSaveCustomRepo = document.getElementById("btnSaveCustomRepo");
   var elSearchInput = document.getElementById("searchInput");
   var elBtnLayoutToggle = document.getElementById("btnLayoutToggle");
+  var elBtnGraphToggle = document.getElementById("btnGraphToggle");
+  var elMenuItemToggleGraph = document.getElementById("menuItemToggleGraph");
+  var elTxtMenuGraph = document.getElementById("txtMenuGraph");
+
+  var elGraphViewContainer = document.getElementById("graphViewContainer");
+  var elGraphThemePills = document.getElementById("graphThemePills");
+  var elChkGraphShowDone = document.getElementById("chkGraphShowDone");
+  var elGraphStatFrontier = document.getElementById("graphStatFrontier");
+  var elGraphStatBlocked = document.getElementById("graphStatBlocked");
+  var elGraphStatDone = document.getElementById("graphStatDone");
+  var elGraphCanvasContainer = document.getElementById("graphCanvasContainer");
+  var elGraphCanvas = document.getElementById("graphCanvas");
+  var elGraphSvgOverlay = document.getElementById("graphSvgOverlay");
+  var elGraphEdgesLayer = document.getElementById("graphEdgesLayer");
+  var elGraphDragLayer = document.getElementById("graphDragLayer");
+  var elGraphLayers = document.getElementById("graphLayers");
+
+  var elDrawerDepsCountBadge = document.getElementById("drawerDepsCountBadge");
+  var elDrawerBlockedByList = document.getElementById("drawerBlockedByList");
+  var elDrawerBlocksList = document.getElementById("drawerBlocksList");
+  var elSelectAddBlocker = document.getElementById("selectAddBlocker");
+  var elBtnAddBlockerConfirm = document.getElementById("btnAddBlockerConfirm");
+
   var elBtnRefresh = document.getElementById("btnRefresh");
   var elIconRefresh = document.getElementById("iconRefresh");
   var elBtnNewIssue = document.getElementById("btnNewIssue");
@@ -2570,6 +2598,7 @@ ${issue.body || ""}`.slice(0, 15e3);
       document.body.removeAttribute("data-layout");
       if (elStatusTabBar) elStatusTabBar.style.display = "none";
       if (elKanbanViewContainer) elKanbanViewContainer.style.display = "none";
+      if (elGraphViewContainer) elGraphViewContainer.style.display = "none";
       if (elListViewContainer) {
         elListViewContainer.style.display = "flex";
         renderArchiveView(sorted);
@@ -2579,8 +2608,10 @@ ${issue.body || ""}`.slice(0, 15e3);
     if (elStatusTabBar) elStatusTabBar.style.display = "";
     if (elKanbanViewContainer) elKanbanViewContainer.style.display = "";
     if (elListViewContainer) elListViewContainer.style.display = "";
+    if (elGraphViewContainer) elGraphViewContainer.style.display = "";
     renderListView(sorted);
     renderKanbanView(sorted);
+    renderGraphView(sorted);
     updateBatchBar();
     applyLayoutMode();
   }
@@ -3006,16 +3037,478 @@ ${issue.body || ""}`.slice(0, 15e3);
       return;
     }
     isWideScreen = window.innerWidth >= 680;
-    let useKanban = false;
-    if (userLayoutPreference === "kanban") useKanban = true;
-    else if (userLayoutPreference === "list") useKanban = false;
-    else useKanban = isWideScreen;
-    if (useKanban) {
+    if (userLayoutPreference === "graph") {
+      document.body.setAttribute("data-layout", "graph");
+      if (elBtnLayoutToggle) elBtnLayoutToggle.title = "Switch to List View";
+      if (elBtnGraphToggle) elBtnGraphToggle.classList.add("active");
+      drawCurrentGraphEdges();
+    } else if (userLayoutPreference === "kanban") {
       document.body.setAttribute("data-layout", "kanban");
-      elBtnLayoutToggle.title = "Switch to List View";
-    } else {
+      if (elBtnLayoutToggle) elBtnLayoutToggle.title = "Switch to Dependency Graph View";
+      if (elBtnGraphToggle) elBtnGraphToggle.classList.remove("active");
+    } else if (userLayoutPreference === "list") {
       document.body.removeAttribute("data-layout");
-      elBtnLayoutToggle.title = "Switch to Kanban View";
+      if (elBtnLayoutToggle) elBtnLayoutToggle.title = "Switch to Kanban View";
+      if (elBtnGraphToggle) elBtnGraphToggle.classList.remove("active");
+    } else {
+      if (isWideScreen) {
+        document.body.setAttribute("data-layout", "kanban");
+        if (elBtnLayoutToggle) elBtnLayoutToggle.title = "Switch to Dependency Graph View";
+      } else {
+        document.body.removeAttribute("data-layout");
+        if (elBtnLayoutToggle) elBtnLayoutToggle.title = "Switch to Kanban View";
+      }
+      if (elBtnGraphToggle) elBtnGraphToggle.classList.remove("active");
+    }
+  }
+  var THEME_PALETTE = [
+    "#3b82f6", "#10b981", "#f59e0b", "#8b5cf6", "#ec4899",
+    "#06b6d4", "#14b8a6", "#f97316", "#6366f1", "#84cc16"
+  ];
+  function getThemeColor(theme) {
+    if (!theme || theme === "No Theme") return "var(--border)";
+    let hash = 0;
+    for (let i = 0; i < theme.length; i++) {
+      hash = (hash * 31 + theme.charCodeAt(i)) & 4294967295;
+    }
+    return THEME_PALETTE[Math.abs(hash) % THEME_PALETTE.length];
+  }
+  async function handleAddDependency(targetNum, blockerNum) {
+    if (targetNum === blockerNum) return;
+    if (detectCycle(issues, blockerNum, targetNum)) {
+      if (typeof host !== "undefined" && host?.toast) {
+        await host.toast({ kind: "warn", message: `Cannot link #${targetNum} -> #${blockerNum}: creates circular dependency` });
+      }
+      return;
+    }
+    const targetIssue = issues.find((i) => i.number === targetNum);
+    if (!targetIssue) return;
+    const newBody = addDependencyToMarkdown(targetIssue.body, blockerNum);
+    if (newBody !== targetIssue.body) {
+      await updateIssueBody(targetIssue, newBody);
+      if (typeof host !== "undefined" && host?.toast) {
+        await host.toast({ kind: "info", message: `Linked #${targetNum} as blocked by #${blockerNum}` });
+      }
+    }
+  }
+  async function handleRemoveDependency(targetNum, blockerNum) {
+    const targetIssue = issues.find((i) => i.number === targetNum);
+    if (!targetIssue) return;
+    const newBody = removeDependencyFromMarkdown(targetIssue.body, blockerNum);
+    if (newBody !== targetIssue.body) {
+      await updateIssueBody(targetIssue, newBody);
+      if (typeof host !== "undefined" && host?.toast) {
+        await host.toast({ kind: "info", message: `Removed dependency: #${blockerNum} no longer blocks #${targetNum}` });
+      }
+    }
+  }
+  function showQuickBlockerPicker(targetIssue, triggerEl) {
+    document.querySelectorAll(".graph-quick-picker").forEach((p) => p.remove());
+    const popover = document.createElement("div");
+    popover.className = "popover graph-quick-picker";
+    popover.style.display = "block";
+    popover.style.position = "absolute";
+    popover.style.width = "240px";
+    popover.style.zIndex = "200";
+    const triggerRect = triggerEl.getBoundingClientRect();
+    popover.style.top = `${triggerRect.bottom + window.scrollY + 4}px`;
+    popover.style.left = `${Math.max(10, Math.min(window.innerWidth - 250, triggerRect.left + window.scrollX))}px`;
+    const existingBlockers = parseIssueDependencies(targetIssue.body);
+    const candidateIssues = issues.filter((i) => i.number !== targetIssue.number && !existingBlockers.includes(i.number));
+    let itemsHtml = "";
+    if (candidateIssues.length === 0) {
+      itemsHtml = '<div style="padding: 8px 10px; color: var(--fg-faint); font-size: 11px;">No other issues available.</div>';
+    } else {
+      candidateIssues.forEach((cand) => {
+        itemsHtml += `
+          <div class="popover-item" data-blocker-num="${cand.number}" style="padding: 6px 10px; cursor: pointer;">
+            <div style="font-weight: 600; font-size: 11.5px; color: var(--fg);">#${cand.number} ${escapeHtml(cand.title)}</div>
+          </div>
+        `;
+      });
+    }
+    popover.innerHTML = `
+      <div class="popover-head" style="display: flex; justify-content: space-between; align-items: center;">
+        <span>Add Blocker to #${targetIssue.number}</span>
+        <span class="popover-close-btn" style="cursor: pointer; font-weight: 700;">×</span>
+      </div>
+      <div class="popover-list" style="max-height: 200px; overflow-y: auto;">
+        ${itemsHtml}
+      </div>
+    `;
+    document.body.appendChild(popover);
+    const closePopover = () => {
+      popover.remove();
+      document.removeEventListener("click", onDocClick);
+    };
+    const onDocClick = (e) => {
+      if (!popover.contains(e.target) && e.target !== triggerEl) {
+        closePopover();
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener("click", onDocClick);
+    }, 10);
+    popover.querySelector(".popover-close-btn")?.addEventListener("click", closePopover);
+    popover.querySelectorAll(".popover-item[data-blocker-num]").forEach((item) => {
+      item.addEventListener("click", () => {
+        const bNum = parseInt(item.dataset.blockerNum || "0", 10);
+        if (bNum > 0) {
+          closePopover();
+          void handleAddDependency(targetIssue.number, bNum);
+        }
+      });
+    });
+  }
+  function initDragEdge(sourceNum, e) {
+    isDraggingEdge = true;
+    dragSourceNum = sourceNum;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!elGraphCanvas || !elGraphDragLayer) return;
+    const canvasRect = elGraphCanvas.getBoundingClientRect();
+    const sourceCard = elGraphCanvas.querySelector(`.graph-card[data-issue-number="${sourceNum}"]`);
+    if (!sourceCard) return;
+    const sourceRect = sourceCard.getBoundingClientRect();
+    const startX = Math.round(sourceRect.left + sourceRect.width / 2 - canvasRect.left);
+    const startY = Math.round(sourceRect.bottom - canvasRect.top);
+    const dragPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    dragPath.setAttribute("class", "graph-edge graph-edge-drag");
+    dragPath.setAttribute("marker-end", "url(#wf-arrow-drag)");
+    elGraphDragLayer.innerHTML = "";
+    elGraphDragLayer.appendChild(dragPath);
+    const onMouseMove = (moveEv) => {
+      if (!isDraggingEdge || !elGraphCanvas) return;
+      const currentCanvasRect = elGraphCanvas.getBoundingClientRect();
+      const curX = Math.round(moveEv.clientX - currentCanvasRect.left);
+      const curY = Math.round(moveEv.clientY - currentCanvasRect.top);
+      const dy = curY - startY;
+      const curvature = Math.max(30, Math.abs(dy) * 0.5);
+      dragPath.setAttribute("d", `M ${startX} ${startY} C ${startX} ${startY + curvature}, ${curX} ${curY - curvature}, ${curX} ${curY}`);
+      elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
+        const rect = card.getBoundingClientRect();
+        const isInside = moveEv.clientX >= rect.left && moveEv.clientX <= rect.right &&
+                         moveEv.clientY >= rect.top && moveEv.clientY <= rect.bottom;
+        const num = parseInt(card.dataset.issueNumber || "0", 10);
+        card.classList.toggle("drop-target-active", isInside && num !== dragSourceNum);
+      });
+    };
+    const onMouseUp = (upEv) => {
+      isDraggingEdge = false;
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      if (elGraphDragLayer) elGraphDragLayer.innerHTML = "";
+      let targetNum = null;
+      if (elGraphCanvas) {
+        elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
+          const rect = card.getBoundingClientRect();
+          if (
+            upEv.clientX >= rect.left && upEv.clientX <= rect.right &&
+            upEv.clientY >= rect.top && upEv.clientY <= rect.bottom
+          ) {
+            const num = parseInt(card.dataset.issueNumber || "0", 10);
+            if (num > 0 && num !== dragSourceNum) {
+              targetNum = num;
+            }
+          }
+          card.classList.remove("drop-target-active");
+        });
+      }
+      if (targetNum && dragSourceNum) {
+        void handleAddDependency(targetNum, dragSourceNum);
+      }
+      dragSourceNum = null;
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  }
+  function createGraphCardElement(node) {
+    const card = document.createElement("div");
+    card.className = "graph-card";
+    card.dataset.issueNumber = String(node.issue.number);
+    if (node.isDone) card.classList.add("graph-card-done");
+    if (node.isFrontier) card.classList.add("graph-card-frontier");
+    if (node.isBlocked) card.classList.add("graph-card-blocked");
+    const themeCol = getThemeColor(node.theme);
+    card.style.setProperty("--card-theme-color", themeCol);
+    const subTotal = (node.issue.subtasks || []).length;
+    const subDone = (node.issue.subtasks || []).filter((s) => s.completed).length;
+    let frontierFlagHtml = "";
+    if (node.isFrontier) {
+      frontierFlagHtml = '<div class="graph-frontier-flag">READY</div>';
+    }
+    let priorityHtml = "";
+    if (node.priority && node.priority !== "normal" && node.priority !== "none") {
+      priorityHtml = `<span class="badge badge-priority badge-priority-${node.priority.toLowerCase()} graph-card-priority">${node.priority}</span>`;
+    }
+    let blockersHtml = "";
+    if (node.isBlocked && node.openBlockers.length > 0) {
+      blockersHtml = `<span class="graph-badge-blocked" title="Blocked by #${node.openBlockers.join(", #")}">🔒 #${node.openBlockers.join(", #")}</span>`;
+    }
+    let impactHtml = "";
+    if (node.downstreamImpact > 0) {
+      impactHtml = `<span class="graph-badge-impact" title="Unblocks ${node.downstreamImpact} downstream tasks">⚡ ${node.downstreamImpact} waiting</span>`;
+    }
+    let subtaskHtml = "";
+    if (subTotal > 0) {
+      subtaskHtml = `<span class="graph-badge-subtasks">${subDone}/${subTotal}</span>`;
+    }
+    card.innerHTML = `
+      ${frontierFlagHtml}
+      <div class="graph-port graph-port-in" data-port="in" data-issue="${node.issue.number}" title="Drop arrow here to make #${node.issue.number} depend on another task"></div>
+      <div class="graph-card-head">
+        <input type="checkbox" class="graph-card-check" ${node.isDone ? "checked" : ""} title="Mark done / todo" />
+        <span class="graph-card-num">#${node.issue.number}</span>
+        <span class="graph-card-theme" title="${escapeHtml(node.theme)}">${escapeHtml(node.theme)}</span>
+        ${priorityHtml}
+      </div>
+      <div class="graph-card-title" title="${escapeHtml(node.issue.title)}">${escapeHtml(node.issue.title)}</div>
+      <div class="graph-card-meta">
+        ${blockersHtml}
+        ${impactHtml}
+        ${subtaskHtml}
+        <button class="graph-card-add-dep-btn" data-add-dep="${node.issue.number}" title="Add a blocker to #${node.issue.number}">+ Blocker</button>
+      </div>
+      <div class="graph-port graph-port-out" data-port="out" data-issue="${node.issue.number}" title="Drag arrow to another task to make it depend on #${node.issue.number}"></div>
+    `;
+    const chk = card.querySelector(".graph-card-check");
+    if (chk) {
+      chk.addEventListener("click", (e) => {
+        e.stopPropagation();
+        void updateIssueStatus(node.issue, chk.checked ? "done" : "todo");
+      });
+    }
+    const addBtn = card.querySelector(".graph-card-add-dep-btn");
+    if (addBtn) {
+      addBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showQuickBlockerPicker(node.issue, addBtn);
+      });
+    }
+    card.addEventListener("click", (e) => {
+      const target = e.target;
+      if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn")) {
+        return;
+      }
+      openDrawer(node.issue);
+    });
+    const outPort = card.querySelector(".graph-port-out");
+    if (outPort) {
+      outPort.addEventListener("mousedown", (e) => {
+        initDragEdge(node.issue.number, e);
+      });
+    }
+    return card;
+  }
+  function drawGraphEdges(graph) {
+    if (!elGraphEdgesLayer || !elGraphCanvas) return;
+    elGraphEdgesLayer.innerHTML = "";
+    const canvasRect = elGraphCanvas.getBoundingClientRect();
+    const cardElements = new Map();
+    elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
+      const num = parseInt(card.dataset.issueNumber || "0", 10);
+      if (num > 0) cardElements.set(num, card);
+    });
+    for (const edge of graph.edges) {
+      const sourceEl = cardElements.get(edge.from);
+      const targetEl = cardElements.get(edge.to);
+      if (!sourceEl || !targetEl) continue;
+      const sourceRect = sourceEl.getBoundingClientRect();
+      const targetRect = targetEl.getBoundingClientRect();
+      const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", pathData.d);
+      path.setAttribute("data-from", String(edge.from));
+      path.setAttribute("data-to", String(edge.to));
+      let edgeClass = "graph-edge";
+      let markerId = "wf-arrow-open";
+      if (edge.isClosed) {
+        edgeClass += " graph-edge-closed";
+        markerId = "wf-arrow-closed";
+      } else if (edge.isFrontier) {
+        edgeClass += " graph-edge-frontier";
+        markerId = "wf-arrow-frontier";
+      } else if (edge.isCrossTheme) {
+        edgeClass += " graph-edge-crosstheme";
+        markerId = "wf-arrow-crosstheme";
+      } else {
+        edgeClass += " graph-edge-open";
+      }
+      path.setAttribute("class", edgeClass);
+      path.setAttribute("marker-end", `url(#${markerId})`);
+      path.addEventListener("click", (e) => {
+        e.stopPropagation();
+        void handleRemoveDependency(edge.to, edge.from);
+      });
+      const titleEl = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to remove dependency)`;
+      path.appendChild(titleEl);
+      elGraphEdgesLayer.appendChild(path);
+    }
+  }
+  function drawCurrentGraphEdges() {
+    if (!currentGraph || !elGraphEdgesLayer || !elGraphCanvas) return;
+    if (document.body.getAttribute("data-layout") !== "graph") return;
+    drawGraphEdges(currentGraph);
+  }
+  function renderGraphView(filteredIssues) {
+    if (!elGraphViewContainer || !elGraphLayers) return;
+    const graph = buildDependencyGraph(filteredIssues);
+    currentGraph = graph;
+    if (elGraphStatFrontier) {
+      elGraphStatFrontier.textContent = `⚡ ${graph.frontierNodes.length} Ready`;
+    }
+    if (elGraphStatBlocked) {
+      const blockedCount = Array.from(graph.nodes.values()).filter((n) => n.isBlocked).length;
+      elGraphStatBlocked.textContent = `🔒 ${blockedCount} Blocked`;
+    }
+    if (elGraphStatDone) {
+      const doneCount = Array.from(graph.nodes.values()).filter((n) => n.isDone).length;
+      elGraphStatDone.textContent = `✓ ${doneCount} Done`;
+    }
+    if (elGraphThemePills) {
+      elGraphThemePills.innerHTML = "";
+      const allChip = document.createElement("div");
+      allChip.className = `graph-theme-chip ${graphSelectedTheme === "all" ? "active" : ""}`;
+      allChip.innerHTML = `<span>All Themes</span><span style="font-size: 9.5px; opacity: 0.7;">(${filteredIssues.length})</span>`;
+      allChip.addEventListener("click", () => {
+        graphSelectedTheme = "all";
+        renderViews();
+      });
+      elGraphThemePills.appendChild(allChip);
+      graph.themes.forEach((theme) => {
+        const themeCount = graph.themeNodes.get(theme)?.length || 0;
+        const chip = document.createElement("div");
+        chip.className = `graph-theme-chip ${graphSelectedTheme === theme ? "active" : ""}`;
+        const dotCol = getThemeColor(theme);
+        chip.innerHTML = `
+          <span class="graph-theme-dot" style="--dot-color: ${dotCol};"></span>
+          <span>${escapeHtml(theme)}</span>
+          <span style="font-size: 9.5px; opacity: 0.7;">(${themeCount})</span>
+        `;
+        chip.addEventListener("click", () => {
+          graphSelectedTheme = theme;
+          renderViews();
+        });
+        elGraphThemePills.appendChild(chip);
+      });
+    }
+    const visibleNumbers = new Set();
+    for (const node of graph.nodes.values()) {
+      if (!graphShowDone && node.isDone) continue;
+      if (graphSelectedTheme !== "all") {
+        if (node.theme !== graphSelectedTheme && !node.dependents.some((d) => graph.nodes.get(d)?.theme === graphSelectedTheme)) {
+          continue;
+        }
+      }
+      visibleNumbers.add(node.issue.number);
+    }
+    elGraphLayers.innerHTML = "";
+    if (visibleNumbers.size === 0) {
+      elGraphLayers.innerHTML = `
+        <div style="color: var(--fg-muted); padding: 48px 0; text-align: center; font-size: 13px;">
+          No issues match the current graph filters.
+        </div>
+      `;
+      if (elGraphEdgesLayer) elGraphEdgesLayer.innerHTML = "";
+      return;
+    }
+    graph.layers.forEach((layerNodes, layerIdx) => {
+      const layerVisible = layerNodes.filter((n) => visibleNumbers.has(n.issue.number));
+      if (layerVisible.length === 0) return;
+      const rowEl = document.createElement("div");
+      rowEl.className = "graph-layer-row";
+      rowEl.dataset.layer = String(layerIdx);
+      const headerText = layerIdx === 0
+        ? "Layer 0 — Ready / Roots"
+        : `Layer ${layerIdx} — Waterfall Step ${layerIdx + 1} (${layerVisible.length})`;
+      const headerEl = document.createElement("div");
+      headerEl.className = "graph-layer-header";
+      headerEl.innerHTML = `
+        <span class="graph-layer-header-num">L${layerIdx}</span>
+        <span>${headerText}</span>
+      `;
+      rowEl.appendChild(headerEl);
+      const cardsWrap = document.createElement("div");
+      cardsWrap.className = "graph-layer-cards";
+      layerVisible.forEach((node) => {
+        const card = createGraphCardElement(node);
+        cardsWrap.appendChild(card);
+      });
+      rowEl.appendChild(cardsWrap);
+      elGraphLayers.appendChild(rowEl);
+    });
+    requestAnimationFrame(() => {
+      drawCurrentGraphEdges();
+    });
+  }
+  function renderDrawerDependencies(issue) {
+    if (!elDrawerDependenciesContainer) return;
+    const blockers = parseIssueDependencies(issue.body);
+    const dependents = issues.filter((other) =>
+      other.number !== issue.number && parseIssueDependencies(other.body).includes(issue.number)
+    );
+    if (elDrawerDepsCountBadge) {
+      elDrawerDepsCountBadge.textContent = String(blockers.length + dependents.length);
+    }
+    if (elDrawerBlockedByList) {
+      elDrawerBlockedByList.innerHTML = "";
+      if (blockers.length === 0) {
+        elDrawerBlockedByList.innerHTML = '<span style="color: var(--fg-faint); font-size: 11px;">None</span>';
+      } else {
+        blockers.forEach((bNum) => {
+          const blockerIssue = issues.find((i) => i.number === bNum);
+          const pill = document.createElement("div");
+          pill.className = "badge";
+          pill.style.display = "inline-flex";
+          pill.style.alignItems = "center";
+          pill.style.gap = "4px";
+          pill.style.cursor = "pointer";
+          const isClosed = blockerIssue ? isIssueClosed(blockerIssue) : false;
+          if (isClosed) pill.style.opacity = "0.6";
+          pill.innerHTML = `
+            <span>#${bNum} ${escapeHtml(blockerIssue?.title || "")}</span>
+            <span class="badge-remove-btn" title="Remove dependency" style="font-weight: 700; cursor: pointer; padding: 0 2px;">×</span>
+          `;
+          pill.addEventListener("click", (e) => {
+            if (e.target?.classList.contains("badge-remove-btn")) {
+              e.stopPropagation();
+              void handleRemoveDependency(issue.number, bNum);
+            } else if (blockerIssue) {
+              openDrawer(blockerIssue);
+            }
+          });
+          elDrawerBlockedByList.appendChild(pill);
+        });
+      }
+    }
+    if (elDrawerBlocksList) {
+      elDrawerBlocksList.innerHTML = "";
+      if (dependents.length === 0) {
+        elDrawerBlocksList.innerHTML = '<span style="color: var(--fg-faint); font-size: 11px;">None</span>';
+      } else {
+        dependents.forEach((dep) => {
+          const pill = document.createElement("div");
+          pill.className = "badge";
+          pill.style.cursor = "pointer";
+          const isClosed = isIssueClosed(dep);
+          if (isClosed) pill.style.opacity = "0.6";
+          pill.textContent = `#${dep.number} ${dep.title}`;
+          pill.addEventListener("click", () => openDrawer(dep));
+          elDrawerBlocksList.appendChild(pill);
+        });
+      }
+    }
+    if (elSelectAddBlocker) {
+      let optionsHtml = '<option value="">+ Add blocker / dependency...</option>';
+      issues
+        .filter((other) => other.number !== issue.number && !blockers.includes(other.number))
+        .sort((a, b) => a.number - b.number)
+        .forEach((other) => {
+          optionsHtml += `<option value="${other.number}">#${other.number}: ${escapeHtml(other.title)}</option>`;
+        });
+      elSelectAddBlocker.innerHTML = optionsHtml;
+      elSelectAddBlocker.value = "";
     }
   }
   function openDrawer(issue) {
@@ -3220,6 +3713,7 @@ ${issue.body || ""}`.slice(0, 15e3);
       }
     });
     void loadComments(issue.number);
+    renderDrawerDependencies(issue);
     renderRelatedIssues(issue);
   }
   function renderChecklist(issue) {
@@ -3380,14 +3874,26 @@ ${issue.body || ""}`.slice(0, 15e3);
       item.className = "related-issue-card";
       const otherComp = getIssueComplexity(other);
       const compHtml = otherComp ? `<span class="badge badge-complexity badge-complexity-${otherComp.toLowerCase()}">${otherComp}</span>` : "";
+      const isAlreadyBlocker = parseIssueDependencies(issue.body).includes(other.number);
+      const linkBtnHtml = isAlreadyBlocker
+        ? '<span class="status-pill" style="font-size: 9px; color: var(--fg-muted);">Blocker</span>'
+        : `<button class="btn btn-sm btn-link-blocker" data-other-num="${other.number}" style="font-size: 9.5px; height: 18px; padding: 0 5px;" title="Link #${other.number} as a blocker of #${issue.number}">+ Link Blocker</button>`;
+
       item.innerHTML = `
         <div class="related-issue-title" title="${escapeHtml(other.title)}">#${other.number} ${escapeHtml(other.title)}</div>
         <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
           ${compHtml}
           <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn(other) || "all"}</span>
+          ${linkBtnHtml}
         </div>
       `;
-      item.addEventListener("click", () => {
+      item.addEventListener("click", (e) => {
+        const btn = e.target?.closest?.(".btn-link-blocker");
+        if (btn) {
+          e.stopPropagation();
+          void handleAddDependency(issue.number, other.number);
+          return;
+        }
         openDrawer(other);
       });
       elDrawerRelatedIssuesContainer.appendChild(item);
@@ -4213,6 +4719,36 @@ Instructions for the Alignment Session:
       frontierNodes,
     };
   }
+  function calculateEdgePath(sourceRect, targetRect, canvasRect) {
+    const sWidth = sourceRect.width ?? (sourceRect.right !== undefined ? sourceRect.right - sourceRect.left : 0);
+    const sHeight = sourceRect.height ?? (sourceRect.bottom !== undefined ? sourceRect.bottom - sourceRect.top : 0);
+    const tWidth = targetRect.width ?? (targetRect.right !== undefined ? targetRect.right - targetRect.left : 0);
+    const x1 = Math.round(sourceRect.left + sWidth / 2 - canvasRect.left);
+    const y1 = Math.round((sourceRect.bottom !== undefined ? sourceRect.bottom : sourceRect.top + sHeight) - canvasRect.top);
+    const x2 = Math.round(targetRect.left + tWidth / 2 - canvasRect.left);
+    const y2 = Math.round(targetRect.top - canvasRect.top);
+    const dy = y2 - y1;
+    const curvature = Math.max(30, Math.abs(dy) * 0.5);
+    const d = `M ${x1} ${y1} C ${x1} ${y1 + curvature}, ${x2} ${y2 - curvature}, ${x2} ${y2}`;
+    return { d, x1, y1, x2, y2 };
+  }
+  function detectCycle(issuesList, newBlockerNum, targetNum) {
+    if (newBlockerNum === targetNum) return true;
+    const blockerMap = new Map();
+    for (const issue of issuesList) {
+      blockerMap.set(issue.number, parseIssueDependencies(issue.body));
+    }
+    const visited = new Set();
+    const queue = [...(blockerMap.get(newBlockerNum) || [])];
+    while (queue.length > 0) {
+      const curr = queue.shift();
+      if (curr === targetNum) return true;
+      if (visited.has(curr)) continue;
+      visited.add(curr);
+      queue.push(...(blockerMap.get(curr) || []));
+    }
+    return false;
+  }
   function isVagueIdea(issue) {
     if (!issue) return true;
     const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
@@ -4959,7 +5495,10 @@ Instructions for the Alignment Session:
       renderViews();
     });
     const toggleLayoutMode = () => {
-      if (document.body.getAttribute("data-layout") === "kanban") {
+      const cur = document.body.getAttribute("data-layout");
+      if (cur === "kanban") {
+        userLayoutPreference = "graph";
+      } else if (cur === "graph") {
         userLayoutPreference = "list";
       } else {
         userLayoutPreference = "kanban";
@@ -4967,6 +5506,37 @@ Instructions for the Alignment Session:
       applyLayoutMode();
     };
     elBtnLayoutToggle.addEventListener("click", toggleLayoutMode);
+    if (elBtnGraphToggle) {
+      elBtnGraphToggle.addEventListener("click", () => {
+        if (document.body.getAttribute("data-layout") === "graph") {
+          userLayoutPreference = isWideScreen ? "kanban" : "list";
+        } else {
+          userLayoutPreference = "graph";
+        }
+        applyLayoutMode();
+      });
+    }
+    if (elMenuItemToggleGraph) {
+      elMenuItemToggleGraph.addEventListener("click", () => {
+        userLayoutPreference = "graph";
+        applyLayoutMode();
+        closeMoreMenu();
+      });
+    }
+    if (elChkGraphShowDone) {
+      elChkGraphShowDone.addEventListener("change", () => {
+        graphShowDone = elChkGraphShowDone.checked;
+        renderViews();
+      });
+    }
+    if (elSelectAddBlocker) {
+      elSelectAddBlocker.addEventListener("change", () => {
+        const val = parseInt(elSelectAddBlocker.value, 10);
+        if (val > 0 && activeIssue) {
+          void handleAddDependency(activeIssue.number, val);
+        }
+      });
+    }
     window.addEventListener("resize", () => {
       if (userLayoutPreference === "auto") {
         applyLayoutMode();
