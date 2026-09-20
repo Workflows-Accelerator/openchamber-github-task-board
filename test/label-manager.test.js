@@ -147,6 +147,24 @@ export function updatePriorityLabels(currentLabels, newPriority) {
   return cleanExisting;
 }
 
+export function isSystemLabel(labelName) {
+  if (!labelName || typeof labelName !== 'string') return false;
+  const lower = labelName.trim().toLowerCase();
+  return (
+    lower.startsWith('status:') ||
+    lower.startsWith('priority:') ||
+    lower.startsWith('complexity:') ||
+    lower.startsWith('theme:') ||
+    lower === 'archived' ||
+    lower === 'archive'
+  );
+}
+
+export function filterDisplayLabels(labels) {
+  if (!labels || !Array.isArray(labels)) return [];
+  return labels.filter((l) => !isSystemLabel(typeof l === 'string' ? l : l.name || ''));
+}
+
 export function getIssueTheme(issue) {
   if (!issue || !issue.labels || issue.labels.length === 0) return 'No Theme';
   for (const l of issue.labels) {
@@ -272,4 +290,21 @@ test('getIssueTheme and groupIssuesBy group by theme with tag fallback', () => {
   assert.equal(groups[1].issues[0].number, 2);
   assert.equal(groups[2].id, 'No Theme');
   assert.equal(groups[2].issues[0].number, 3);
+});
+
+test('filterDisplayLabels excludes extension system tags (status, priority, complexity, theme, archived)', () => {
+  const mixedLabels = [
+    { name: 'status:todo' },
+    { name: 'priority:critical' },
+    { name: 'complexity:M' },
+    { name: 'theme:voice-supervisor' },
+    { name: 'archived' },
+    { name: 'bug' },
+    { name: 'frontend' },
+  ];
+
+  const visible = filterDisplayLabels(mixedLabels);
+  assert.equal(visible.length, 2);
+  assert.equal(visible[0].name, 'bug');
+  assert.equal(visible[1].name, 'frontend');
 });

@@ -2421,6 +2421,22 @@ ${issue.body || ""}`.slice(0, 15e3);
     }
     return fallback;
   }
+  function isSystemLabel(labelName) {
+    if (!labelName || typeof labelName !== "string") return false;
+    const lower = labelName.trim().toLowerCase();
+    return (
+      lower.startsWith("status:") ||
+      lower.startsWith("priority:") ||
+      lower.startsWith("complexity:") ||
+      lower.startsWith("theme:") ||
+      lower === "archived" ||
+      lower === "archive"
+    );
+  }
+  function filterDisplayLabels(labels) {
+    if (!labels || !Array.isArray(labels)) return [];
+    return labels.filter((l) => !isSystemLabel(typeof l === "string" ? l : l.name || ""));
+  }
   function buildCardElement(issue, inKanban) {
     const session = getIssueSession(issue);
     const card = document.createElement("div");
@@ -2459,7 +2475,7 @@ ${issue.body || ""}`.slice(0, 15e3);
         <span>${escapeHtml(wtTag)}</span>
       </div>
     ` : "";
-    const labelsHtml = issue.labels.filter((l) => !l.name.startsWith("status:")).map((l) => {
+    const labelsHtml = filterDisplayLabels(issue.labels).map((l) => {
       const hex = sanitizeHexColor(l.color);
       const bg2 = hex ? `${hex}18` : "var(--surf-muted)";
       const fg2 = hex || "var(--fg-muted)";

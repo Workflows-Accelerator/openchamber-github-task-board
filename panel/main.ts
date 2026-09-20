@@ -1600,6 +1600,24 @@ export function getIssueDescriptionPreview(body: string | null | undefined): str
   return fallback;
 }
 
+export function isSystemLabel(labelName: string): boolean {
+  if (!labelName || typeof labelName !== 'string') return false;
+  const lower = labelName.trim().toLowerCase();
+  return (
+    lower.startsWith('status:') ||
+    lower.startsWith('priority:') ||
+    lower.startsWith('complexity:') ||
+    lower.startsWith('theme:') ||
+    lower === 'archived' ||
+    lower === 'archive'
+  );
+}
+
+export function filterDisplayLabels(labels: Array<{ name: string; color?: string }>): Array<{ name: string; color?: string }> {
+  if (!labels || !Array.isArray(labels)) return [];
+  return labels.filter((l) => !isSystemLabel(typeof l === 'string' ? l : l.name || ''));
+}
+
 function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
   const session = getIssueSession(issue);
   const card = document.createElement('div');
@@ -1647,8 +1665,7 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
     : '';
 
   // Labels
-  const labelsHtml = issue.labels
-    .filter((l) => !l.name.startsWith('status:'))
+  const labelsHtml = filterDisplayLabels(issue.labels)
     .map((l) => {
       const hex = sanitizeHexColor(l.color);
       const bg = hex ? `${hex}18` : 'var(--surf-muted)';
