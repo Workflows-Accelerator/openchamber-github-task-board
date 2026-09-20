@@ -13,12 +13,29 @@ export function getNextLayoutMode(currentLayout) {
   return 'kanban';
 }
 
+export function getActiveLayoutMode({ userLayoutPreference = 'auto', showArchivedOnly = false, isWideScreen = false }) {
+  if (showArchivedOnly) return 'list';
+  if (userLayoutPreference === 'graph') return 'graph';
+  if (userLayoutPreference === 'kanban') return 'kanban';
+  if (userLayoutPreference === 'list') return 'list';
+  return isWideScreen ? 'kanban' : 'list';
+}
+
 test('getNextLayoutMode cycles list -> kanban -> graph -> list correctly', () => {
   assert.equal(getNextLayoutMode('list'), 'kanban');
   assert.equal(getNextLayoutMode(null), 'kanban');
   assert.equal(getNextLayoutMode(''), 'kanban');
   assert.equal(getNextLayoutMode('kanban'), 'graph');
   assert.equal(getNextLayoutMode('graph'), 'list');
+});
+
+test('getActiveLayoutMode determines current active view accurately', () => {
+  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'graph' }), 'graph');
+  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'kanban' }), 'kanban');
+  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'list' }), 'list');
+  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'auto', isWideScreen: true }), 'kanban');
+  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'auto', isWideScreen: false }), 'list');
+  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'graph', showArchivedOnly: true }), 'list');
 });
 
 test('panel/index.html drawer has zero dark blur and supports split push & full page', () => {

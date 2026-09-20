@@ -121,6 +121,7 @@ let currentGraph: DependencyGraph | null = null;
 let isWideScreen: boolean = false;
 let draggedIssueNumber: number | null = null;
 let isLoading: boolean = false;
+let currentRenderedLayout: 'list' | 'kanban' | 'graph' | null = null;
 let collapsedGroupKeys = new Set<string>();
 
 export function toggleGroupCollapse(key: string): boolean {
@@ -1406,20 +1407,27 @@ function renderViews(): void {
   if (elListViewContainer) elListViewContainer.style.display = '';
   if (elGraphViewContainer) elGraphViewContainer.style.display = '';
 
-  // 1. Render Mode: List View
-  renderListView(sorted);
+  // Synchronize layout attributes and tab visibility
+  applyLayoutMode(false);
 
-  // 2. Render Mode: Kanban View
-  renderKanbanView(sorted);
+  const activeLayout: 'list' | 'kanban' | 'graph' = document.body.getAttribute('data-layout') === 'graph'
+    ? 'graph'
+    : document.body.getAttribute('data-layout') === 'kanban'
+      ? 'kanban'
+      : 'list';
 
-  // 3. Render Mode: Dependency Graph View
-  renderGraphView(sorted);
+  // Render ONLY the active view to avoid triple-DOM overhead
+  if (activeLayout === 'list') {
+    renderListView(sorted);
+  } else if (activeLayout === 'kanban') {
+    renderKanbanView(sorted);
+  } else if (activeLayout === 'graph') {
+    renderGraphView(sorted);
+  }
+  currentRenderedLayout = activeLayout;
 
   // Sync batch bar & card selections
   updateBatchBar();
-
-  // Auto layout check
-  applyLayoutMode();
 }
 
 function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
@@ -1682,13 +1690,16 @@ function renderListView(filteredIssues: Issue[]): void {
   }
 
   if (currentGroupBy === 'none') {
+    const fragment = document.createDocumentFragment();
     listItems.forEach((issue) => {
       const card = buildCardElement(issue, false);
-      elListViewContainer.appendChild(card);
+      fragment.appendChild(card);
     });
+    elListViewContainer.appendChild(fragment);
   } else {
     const groups = groupIssuesBy(listItems, currentGroupBy);
     let totalRendered = 0;
+    const fragment = document.createDocumentFragment();
 
     groups.forEach((grp) => {
       if (grp.issues.length === 0) return;
@@ -1727,12 +1738,14 @@ function renderListView(filteredIssues: Issue[]): void {
       });
 
       const listCardsContainer = groupEl.querySelector('.list-group-cards') as HTMLDivElement;
+      const cardsFragment = document.createDocumentFragment();
       grp.issues.forEach((issue) => {
         const card = buildCardElement(issue, false);
-        listCardsContainer.appendChild(card);
+        cardsFragment.appendChild(card);
       });
+      listCardsContainer.appendChild(cardsFragment);
 
-      elListViewContainer.appendChild(groupEl);
+      fragment.appendChild(groupEl);
     });
 
     if (totalRendered === 0) {
@@ -1742,12 +1755,15 @@ function renderListView(filteredIssues: Issue[]): void {
           <span>No issues match this view</span>
         </div>
       `;
+    } else {
+      elListViewContainer.appendChild(fragment);
     }
   }
 }
 
 function renderKanbanView(filteredIssues: Issue[]): void {
   elKanbanViewContainer.innerHTML = '';
+  const kanbanFragment = document.createDocumentFragment();
   const columns: Array<{ id: ColumnId; title: string }> = [
     { id: 'backlog', title: 'Backlog' },
     { id: 'todo', title: 'To Do' },
@@ -1807,12 +1823,15 @@ function renderKanbanView(filteredIssues: Issue[]): void {
     });
 
     if (currentGroupBy === 'none' || currentGroupBy === 'status') {
+      const cardsFragment = document.createDocumentFragment();
       colIssues.forEach((issue) => {
         const card = buildCardElement(issue, true);
-        cardsContainer.appendChild(card);
+        cardsFragment.appendChild(card);
       });
+      cardsContainer.appendChild(cardsFragment);
     } else {
       const subGroups = groupIssuesBy(colIssues, currentGroupBy);
+      const subFragment = document.createDocumentFragment();
       subGroups.forEach((subGrp) => {
         if (subGrp.issues.length === 0) return;
         const groupKey = `kanban:${col.id}:${subGrp.id}`;
@@ -1848,16 +1867,20 @@ function renderKanbanView(filteredIssues: Issue[]): void {
         });
 
         const subCardsContainer = subGroupEl.querySelector('.kanban-subgroup-cards') as HTMLDivElement;
+        const subCardsFragment = document.createDocumentFragment();
         subGrp.issues.forEach((issue) => {
           const card = buildCardElement(issue, true);
-          subCardsContainer.appendChild(card);
+          subCardsFragment.appendChild(card);
         });
-        cardsContainer.appendChild(subGroupEl);
+        subCardsContainer.appendChild(subCardsFragment);
+        subFragment.appendChild(subGroupEl);
       });
+      cardsContainer.appendChild(subFragment);
     }
 
-    elKanbanViewContainer.appendChild(colEl);
+    kanbanFragment.appendChild(colEl);
   });
+  elKanbanViewContainer.appendChild(kanbanFragment);
 }
 
 function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph'): void {
@@ -1887,31 +1910,42 @@ function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph'): void {
   }
 }
 
-function applyLayoutMode(): void {
+function applyLayoutMode(triggerRender: boolean = true): void {
   if (showArchivedOnly) {
     document.body.removeAttribute('data-layout');
     return;
   }
   isWideScreen = window.innerWidth >= 680;
 
+  let newLayout: 'list' | 'kanban' | 'graph' = 'list';
   if (userLayoutPreference === 'graph') {
+    newLayout = 'graph';
     document.body.setAttribute('data-layout', 'graph');
     updateViewModeButtons('graph');
-    drawCurrentGraphEdges();
   } else if (userLayoutPreference === 'kanban') {
+    newLayout = 'kanban';
     document.body.setAttribute('data-layout', 'kanban');
     updateViewModeButtons('kanban');
   } else if (userLayoutPreference === 'list') {
+    newLayout = 'list';
     document.body.removeAttribute('data-layout');
     updateViewModeButtons('list');
   } else {
     if (isWideScreen) {
+      newLayout = 'kanban';
       document.body.setAttribute('data-layout', 'kanban');
       updateViewModeButtons('kanban');
     } else {
+      newLayout = 'list';
       document.body.removeAttribute('data-layout');
       updateViewModeButtons('list');
     }
+  }
+
+  if (triggerRender && currentRenderedLayout !== newLayout) {
+    renderViews();
+  } else if (newLayout === 'graph') {
+    drawCurrentGraphEdges();
   }
 }
 
@@ -3988,10 +4022,20 @@ function initEvents(): void {
     }
   });
 
-  // Search input
+  // Search input (debounced by 150ms for responsive typing across hundreds of issues)
+  let searchDebounceTimer: any = null;
   elSearchInput.addEventListener('input', (e) => {
     searchQuery = (e.target as HTMLInputElement).value;
-    renderViews();
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      renderViews();
+    }, 150);
+  });
+  elSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      clearTimeout(searchDebounceTimer);
+      renderViews();
+    }
   });
 
   // 3-Way View Switcher (List / Board / Graph)

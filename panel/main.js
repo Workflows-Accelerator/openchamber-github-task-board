@@ -3595,6 +3595,7 @@ Blocked by ${blockerRef}`;
   var isWideScreen = false;
   var draggedIssueNumber = null;
   var isLoading = false;
+  var currentRenderedLayout = null;
   var collapsedGroupKeys = /* @__PURE__ */ new Set();
   function toggleGroupCollapse(key) {
     if (collapsedGroupKeys.has(key)) {
@@ -4610,11 +4611,17 @@ Blocked by ${blockerRef}`;
     if (elKanbanViewContainer) elKanbanViewContainer.style.display = "";
     if (elListViewContainer) elListViewContainer.style.display = "";
     if (elGraphViewContainer) elGraphViewContainer.style.display = "";
-    renderListView(sorted);
-    renderKanbanView(sorted);
-    renderGraphView(sorted);
+    applyLayoutMode(false);
+    const activeLayout = document.body.getAttribute("data-layout") === "graph" ? "graph" : document.body.getAttribute("data-layout") === "kanban" ? "kanban" : "list";
+    if (activeLayout === "list") {
+      renderListView(sorted);
+    } else if (activeLayout === "kanban") {
+      renderKanbanView(sorted);
+    } else if (activeLayout === "graph") {
+      renderGraphView(sorted);
+    }
+    currentRenderedLayout = activeLayout;
     updateBatchBar();
-    applyLayoutMode();
   }
   function buildCardElement(issue, inKanban) {
     const session = getIssueSession(issue);
@@ -4817,13 +4824,16 @@ Blocked by ${blockerRef}`;
       return;
     }
     if (currentGroupBy === "none") {
+      const fragment = document.createDocumentFragment();
       listItems.forEach((issue) => {
         const card = buildCardElement(issue, false);
-        elListViewContainer.appendChild(card);
+        fragment.appendChild(card);
       });
+      elListViewContainer.appendChild(fragment);
     } else {
       const groups = groupIssuesBy(listItems, currentGroupBy);
       let totalRendered = 0;
+      const fragment = document.createDocumentFragment();
       groups.forEach((grp) => {
         if (grp.issues.length === 0) return;
         totalRendered += grp.issues.length;
@@ -4857,11 +4867,13 @@ Blocked by ${blockerRef}`;
           }
         });
         const listCardsContainer = groupEl.querySelector(".list-group-cards");
+        const cardsFragment = document.createDocumentFragment();
         grp.issues.forEach((issue) => {
           const card = buildCardElement(issue, false);
-          listCardsContainer.appendChild(card);
+          cardsFragment.appendChild(card);
         });
-        elListViewContainer.appendChild(groupEl);
+        listCardsContainer.appendChild(cardsFragment);
+        fragment.appendChild(groupEl);
       });
       if (totalRendered === 0) {
         elListViewContainer.innerHTML = `
@@ -4870,11 +4882,14 @@ Blocked by ${blockerRef}`;
           <span>No issues match this view</span>
         </div>
       `;
+      } else {
+        elListViewContainer.appendChild(fragment);
       }
     }
   }
   function renderKanbanView(filteredIssues) {
     elKanbanViewContainer.innerHTML = "";
+    const kanbanFragment = document.createDocumentFragment();
     const columns = [
       { id: "backlog", title: "Backlog" },
       { id: "todo", title: "To Do" },
@@ -4927,12 +4942,15 @@ Blocked by ${blockerRef}`;
         }
       });
       if (currentGroupBy === "none" || currentGroupBy === "status") {
+        const cardsFragment = document.createDocumentFragment();
         colIssues.forEach((issue) => {
           const card = buildCardElement(issue, true);
-          cardsContainer.appendChild(card);
+          cardsFragment.appendChild(card);
         });
+        cardsContainer.appendChild(cardsFragment);
       } else {
         const subGroups = groupIssuesBy(colIssues, currentGroupBy);
+        const subFragment = document.createDocumentFragment();
         subGroups.forEach((subGrp) => {
           if (subGrp.issues.length === 0) return;
           const groupKey = `kanban:${col.id}:${subGrp.id}`;
@@ -4965,15 +4983,19 @@ Blocked by ${blockerRef}`;
             }
           });
           const subCardsContainer = subGroupEl.querySelector(".kanban-subgroup-cards");
+          const subCardsFragment = document.createDocumentFragment();
           subGrp.issues.forEach((issue) => {
             const card = buildCardElement(issue, true);
-            subCardsContainer.appendChild(card);
+            subCardsFragment.appendChild(card);
           });
-          cardsContainer.appendChild(subGroupEl);
+          subCardsContainer.appendChild(subCardsFragment);
+          subFragment.appendChild(subGroupEl);
         });
+        cardsContainer.appendChild(subFragment);
       }
-      elKanbanViewContainer.appendChild(colEl);
+      kanbanFragment.appendChild(colEl);
     });
+    elKanbanViewContainer.appendChild(kanbanFragment);
   }
   function updateViewModeButtons(mode) {
     elBtnViewList?.classList.toggle("active", mode === "list");
@@ -4998,30 +5020,40 @@ Blocked by ${blockerRef}`;
       }
     }
   }
-  function applyLayoutMode() {
+  function applyLayoutMode(triggerRender = true) {
     if (showArchivedOnly) {
       document.body.removeAttribute("data-layout");
       return;
     }
     isWideScreen = window.innerWidth >= 680;
+    let newLayout = "list";
     if (userLayoutPreference === "graph") {
+      newLayout = "graph";
       document.body.setAttribute("data-layout", "graph");
       updateViewModeButtons("graph");
-      drawCurrentGraphEdges();
     } else if (userLayoutPreference === "kanban") {
+      newLayout = "kanban";
       document.body.setAttribute("data-layout", "kanban");
       updateViewModeButtons("kanban");
     } else if (userLayoutPreference === "list") {
+      newLayout = "list";
       document.body.removeAttribute("data-layout");
       updateViewModeButtons("list");
     } else {
       if (isWideScreen) {
+        newLayout = "kanban";
         document.body.setAttribute("data-layout", "kanban");
         updateViewModeButtons("kanban");
       } else {
+        newLayout = "list";
         document.body.removeAttribute("data-layout");
         updateViewModeButtons("list");
       }
+    }
+    if (triggerRender && currentRenderedLayout !== newLayout) {
+      renderViews();
+    } else if (newLayout === "graph") {
+      drawCurrentGraphEdges();
     }
   }
   var THEME_PALETTE = [
@@ -6765,9 +6797,19 @@ ${issue.body}
         closeRepoPopover();
       }
     });
+    let searchDebounceTimer = null;
     elSearchInput.addEventListener("input", (e) => {
       searchQuery = e.target.value;
-      renderViews();
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        renderViews();
+      }, 150);
+    });
+    elSearchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        clearTimeout(searchDebounceTimer);
+        renderViews();
+      }
     });
     elBtnViewList?.addEventListener("click", () => {
       userLayoutPreference = "list";
