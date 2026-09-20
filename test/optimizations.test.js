@@ -1,5 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {
+  buildIssueAttachPayload,
+  buildMultiIssueAttachPayload,
+  buildConsolidatedIssuePrompt,
+  updateSubtaskInMarkdown,
+} from '../panel/core.ts';
 
 export function matchProjectByDirectory(projects, targetDir) {
   if (!targetDir || !projects || projects.length === 0) return null;
@@ -84,78 +90,6 @@ test('session worktree matching handles object worktree without throwing s.workt
   assert.equal(matchSession(15)?.id, '3');
   assert.equal(matchSession(999), null);
 });
-
-export function buildIssueAttachPayload(issue) {
-  const numStr = String(issue.number);
-  const title = `#${issue.number} ${issue.title || ''}`.slice(0, 150);
-  const url = (issue.html_url || '').slice(0, 1000);
-  const text = `Context from GitHub Issue #${issue.number}: ${issue.title || ''}\n\n${issue.body || ''}`.slice(0, 15000);
-  return {
-    providerId: 'github-task-board',
-    id: numStr,
-    title,
-    url,
-    text,
-    ...(issue.user?.login ? { author: String(issue.user.login) } : {}),
-    data: {
-      issueNumber: issue.number,
-    },
-  };
-}
-
-export function buildMultiIssueAttachPayload(issues, repo = '') {
-  if (!issues || issues.length === 0) {
-    return {
-      providerId: 'github-task-board',
-      id: 'bundle-empty',
-      title: 'No Issues Selected',
-      url: repo ? `https://github.com/${repo}/issues` : '',
-      text: 'No issues attached.',
-      data: { issueNumbers: [], count: 0, isMulti: true },
-    };
-  }
-  if (issues.length === 1) {
-    return buildIssueAttachPayload(issues[0]);
-  }
-  const numbers = issues.map((i) => i.number);
-  const id = `bundle-${numbers.join('-')}`.slice(0, 120);
-  const titlesPreview = issues.map((i) => `#${i.number}`).join(', ');
-  const title = `[${issues.length} Issues] ${titlesPreview}`.slice(0, 150);
-  const primaryUrl = (issues[0]?.html_url || (repo ? `https://github.com/${repo}/issues` : '')).slice(0, 1000);
-
-  let text = `## Attached GitHub Issues (${issues.length} items)\n`;
-  if (repo) text += `Repository: ${repo}\n\n`;
-
-  issues.forEach((issue) => {
-    text += `### Issue #${issue.number}: ${issue.title || 'Untitled'}\n`;
-    if (issue.html_url) text += `Link: ${issue.html_url}\n`;
-    const labelNames = (issue.labels || []).map((l) => (typeof l === 'string' ? l : l.name || '')).filter(Boolean);
-    if (labelNames.length > 0) text += `Labels: ${labelNames.join(', ')}\n`;
-    if (issue.subtasks && issue.subtasks.length > 0) {
-      text += `Subtasks:\n`;
-      issue.subtasks.forEach((s) => {
-        text += `- [${s.completed ? 'x' : ' '}] ${s.text}\n`;
-      });
-    }
-    if (issue.body) {
-      text += `\nDescription:\n${issue.body.trim()}\n`;
-    }
-    text += `\n---\n\n`;
-  });
-
-  return {
-    providerId: 'github-task-board',
-    id,
-    title,
-    url: primaryUrl,
-    text: text.slice(0, 15000),
-    data: {
-      issueNumbers: numbers,
-      count: issues.length,
-      isMulti: true,
-    },
-  };
-}
 
 test('buildIssueAttachPayload constructs valid OpenChamber attach payload', () => {
   const issue = {
@@ -764,35 +698,6 @@ test('buildLaunchSessionPayload defaults to worktree: false (workspace-first)', 
   assert.equal(payloadWorktree.data.branch, 'worktree-tag-frontend');
 });
 
-export function buildConsolidatedIssuePrompt(issues) {
-  if (!issues || issues.length === 0) return '';
-  const issueNumbers = issues.map((i) => `#${i.number}`).join(', ');
-  let prompt = `You are assigned to work on multiple packaged GitHub Issues: ${issueNumbers}\n\n`;
-  prompt += `### Packaged Tasks Summary (${issues.length} items):\n`;
-  issues.forEach((issue) => {
-    prompt += `- Issue #${issue.number}: ${issue.title}\n`;
-  });
-  prompt += '\n---\n\n';
-
-  issues.forEach((issue, idx) => {
-    prompt += `## Task ${idx + 1} of ${issues.length}: #${issue.number} ${issue.title}\n\n`;
-    if (issue.body) {
-      prompt += `### Overview & Context:\n${issue.body.trim()}\n\n`;
-    }
-    if (issue.subtasks && issue.subtasks.length > 0) {
-      prompt += `### Actionable Subtasks Checklist:\n`;
-      issue.subtasks.forEach((s) => {
-        prompt += `- [${s.completed ? 'x' : ' '}] ${s.text}\n`;
-      });
-      prompt += '\n';
-    }
-    prompt += '---\n\n';
-  });
-
-  prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
-  return prompt;
-}
-
 test('buildConsolidatedIssuePrompt consolidates multiple issues into structured brief', () => {
   const issues = [
     {
@@ -819,20 +724,6 @@ test('buildConsolidatedIssuePrompt consolidates multiple issues into structured 
   assert.ok(result.includes('- [ ] Add priority dropdown'));
   assert.ok(result.includes('Please inspect the codebase, address all packaged issues'));
 });
-
-const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
-
-export function updateSubtaskInMarkdown(body, lineIndex, completed) {
-  const lines = body.split('\n');
-  if (lineIndex >= 0 && lineIndex < lines.length) {
-    const match = lines[lineIndex].match(checklistRegex);
-    if (match) {
-      const mark = completed ? 'x' : ' ';
-      lines[lineIndex] = `${match[1]}${mark}${match[3]}${match[4]}`;
-    }
-  }
-  return lines.join('\n');
-}
 
 test('verify Task Board live sync flow: detection, checklist update, and session attachment', () => {
   // 1. Verify issue detection across columns
@@ -888,5 +779,4 @@ test('validateBranchSlug and validateSessionTitle enforce standardized triage co
   assert.equal(validateSessionTitle('Packaged Tasks (2): #8, #9'), true);
   assert.equal(validateSessionTitle('random title'), false);
 });
-
 

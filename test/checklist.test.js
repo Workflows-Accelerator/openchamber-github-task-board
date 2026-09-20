@@ -1,9 +1,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {
+  parseSubtasks,
+  updateSubtaskInMarkdown,
+  appendSubtaskToMarkdown,
+  serializeDraftSubtasks,
+  isVagueIdea,
+  parseOpenQuestions,
+  updateOpenQuestionInMarkdown,
+  appendOpenQuestionToMarkdown,
+  serializeDraftQuestions,
+  formatQuestionBadge,
+} from '../panel/core.ts';
 
-const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
-const questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
-const headingRegex = /^#{1,4}\s+/;
 const explicitQuestionPrefixRegex = /^(\s*(?:\?|[-*+]\s*\[\s*[?xX ]\s*\]|\d+\.)\s*(?:\?|Q:|Question:)\s*)(.+)$/i;
 
 function isQuestionLine(line, inQuestionsSection) {
@@ -11,153 +20,6 @@ function isQuestionLine(line, inQuestionsSection) {
     return checklistRegex.test(line);
   }
   return explicitQuestionPrefixRegex.test(line);
-}
-
-function parseOpenQuestions(body) {
-  if (!body) return [];
-  const lines = body.split('\n');
-  const questions = [];
-  let inQuestionsSection = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (headingRegex.test(line)) {
-      inQuestionsSection = questionsSectionRegex.test(line);
-      continue;
-    }
-    if (inQuestionsSection) {
-      const match = line.match(checklistRegex);
-      if (match) {
-        questions.push({
-          id: `question-${i}`,
-          lineIndex: i,
-          completed: match[2].toLowerCase() === 'x',
-          text: match[4].trim(),
-          rawLine: line,
-        });
-      }
-    } else {
-      const match = line.match(checklistRegex);
-      if (match && /^\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
-        questions.push({
-          id: `question-${i}`,
-          lineIndex: i,
-          completed: match[2].toLowerCase() === 'x',
-          text: match[4].replace(/^(?:\?|Q:|Question:)\s*/i, '').trim(),
-          rawLine: line,
-        });
-      }
-    }
-  }
-  return questions;
-}
-
-function parseSubtasks(body) {
-  if (!body) return [];
-  const lines = body.split('\n');
-  const subtasks = [];
-  let inQuestionsSection = false;
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (headingRegex.test(line)) {
-      inQuestionsSection = questionsSectionRegex.test(line);
-      continue;
-    }
-    if (inQuestionsSection) {
-      continue;
-    }
-    const match = line.match(checklistRegex);
-    if (match) {
-      // Don't treat explicit questions as subtasks
-      if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
-        continue;
-      }
-      subtasks.push({
-        id: `task-${i}`,
-        lineIndex: i,
-        completed: match[2].toLowerCase() === 'x',
-        text: match[4].trim(),
-        rawLine: line,
-      });
-    }
-  }
-  return subtasks;
-}
-
-function updateSubtaskInMarkdown(body, lineIndex, completed) {
-  const lines = body.split('\n');
-  if (lineIndex >= 0 && lineIndex < lines.length) {
-    const match = lines[lineIndex].match(checklistRegex);
-    if (match) {
-      const mark = completed ? 'x' : ' ';
-      lines[lineIndex] = `${match[1]}${mark}${match[3]}${match[4]}`;
-    }
-  }
-  return lines.join('\n');
-}
-
-function updateOpenQuestionInMarkdown(body, lineIndex, completed) {
-  return updateSubtaskInMarkdown(body, lineIndex, completed);
-}
-
-function appendSubtaskToMarkdown(body, text) {
-  const cleanText = text.trim();
-  if (!cleanText) return body;
-  const suffix = `\n- [ ] ${cleanText}`;
-  return body ? `${body.trimEnd()}${suffix}` : `- [ ] ${cleanText}`;
-}
-
-function appendOpenQuestionToMarkdown(body, text) {
-  const cleanText = text.trim();
-  if (!cleanText) return body;
-  if (!body) {
-    return `### Open Questions:\n- [ ] ${cleanText}`;
-  }
-  const lines = body.split('\n');
-  let qHeaderIndex = -1;
-  let nextHeaderIndex = -1;
-
-  for (let i = 0; i < lines.length; i++) {
-    if (questionsSectionRegex.test(lines[i])) {
-      qHeaderIndex = i;
-      for (let j = i + 1; j < lines.length; j++) {
-        if (headingRegex.test(lines[j])) {
-          nextHeaderIndex = j;
-          break;
-        }
-      }
-      break;
-    }
-  }
-
-  if (qHeaderIndex !== -1) {
-    if (nextHeaderIndex !== -1) {
-      // Insert right before next heading
-      lines.splice(nextHeaderIndex, 0, `- [ ] ${cleanText}`);
-      return lines.join('\n');
-    } else {
-      // Append at end of questions section
-      return `${body.trimEnd()}\n- [ ] ${cleanText}`;
-    }
-  }
-  return `${body.trimEnd()}\n\n### Open Questions:\n- [ ] ${cleanText}`;
-}
-
-export function serializeDraftQuestions(body, questionTexts) {
-  const cleanBody = (body || '').trim();
-  const cleanQuestions = (questionTexts || [])
-    .map((t) => (typeof t === 'string' ? t.trim() : ''))
-    .filter(Boolean);
-  if (cleanQuestions.length === 0) return cleanBody;
-  const questionsBlock = cleanQuestions.map((q) => `- [ ] ${q}`).join('\n');
-  if (!cleanBody) {
-    return `### Open Questions:\n\n${questionsBlock}`;
-  }
-  if (questionsSectionRegex.test(cleanBody)) {
-    return `${cleanBody}\n${questionsBlock}`;
-  }
-  return `${cleanBody}\n\n### Open Questions:\n\n${questionsBlock}`;
 }
 
 test('parseSubtasks parses standard and mixed list formats', () => {
@@ -186,43 +48,6 @@ test('updateSubtaskInMarkdown toggles specific line index without touching dupli
   const updated = updateSubtaskInMarkdown(body, 1, true);
   assert.equal(updated, `- [ ] Duplicate name\n- [x] Duplicate name`);
 });
-
-export function serializeDraftSubtasks(body, subtaskTexts) {
-  const cleanBody = (body || '').trim();
-  const cleanTasks = (subtaskTexts || [])
-    .map((t) => (typeof t === 'string' ? t.trim() : ''))
-    .filter(Boolean);
-
-  if (cleanTasks.length === 0) {
-    return cleanBody;
-  }
-
-  const checklistBlock = cleanTasks.map((t) => `- [ ] ${t}`).join('\n');
-  if (!cleanBody) {
-    return `### Actionable Subtasks Checklist:\n\n${checklistBlock}`;
-  }
-  if (cleanBody.includes('### Actionable Subtasks Checklist:')) {
-    // Replace or append to existing section
-    return `${cleanBody}\n${checklistBlock}`;
-  }
-  return `${cleanBody}\n\n### Actionable Subtasks Checklist:\n\n${checklistBlock}`;
-}
-
-export function isVagueIdea(issue) {
-  if (!issue) return true;
-  const labels = (issue.labels || []).map((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase());
-  if (labels.includes('status:needs-alignment')) {
-    return true;
-  }
-  const openQuestions = issue.openQuestions || [];
-  if (openQuestions.some((q) => !q.completed)) {
-    return true;
-  }
-  const subtaskCount = (issue.subtasks || []).length;
-  const bodyText = (issue.body || '').trim();
-  const wordCount = bodyText ? bodyText.split(/\s+/).length : 0;
-  return subtaskCount === 0 && wordCount < 20;
-}
 
 test('serializeDraftSubtasks formats interactive draft items into markdown checklist', () => {
   const tasks = ['Define contract in test', 'Implement UI', 'Run test suite'];
@@ -337,21 +162,6 @@ test('isVagueIdea flags issues with unresolved open questions even if long descr
   };
   assert.equal(isVagueIdea(issueWithResolvedQuestions), false);
 });
-
-export function formatQuestionBadge(openQuestions) {
-  const list = openQuestions || [];
-  const total = list.length;
-  if (total === 0) {
-    return { total: 0, resolved: 0, open: 0, label: '', className: '', html: '' };
-  }
-  const resolved = list.filter((q) => q.completed).length;
-  const open = total - resolved;
-  const isOpen = open > 0;
-  const label = isOpen ? `${open} open` : `${total} Qs resolved`;
-  const className = isOpen ? 'questions-prog is-open' : 'questions-prog is-resolved';
-  const html = `<div class="${className}" title="${open} open, ${resolved} resolved"><span>${label}</span></div>`;
-  return { total, resolved, open, label, className, html };
-}
 
 test('formatQuestionBadge generates accurate badge states for open vs resolved questions', () => {
   assert.equal(formatQuestionBadge([]).html, '');

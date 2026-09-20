@@ -3263,7 +3263,7 @@ ${issue.body || ""}`.slice(0, 15e3);
     const resolved = list.filter((q) => q.completed).length;
     const open = total - resolved;
     const isOpen = open > 0;
-    const label = isOpen ? `${open} open Qs` : `${total} Qs resolved`;
+    const label = isOpen ? `${open} open` : `${total} Qs resolved`;
     const className = isOpen ? "questions-prog is-open" : "questions-prog is-resolved";
     const icon = isOpen
       ? `<svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>`
