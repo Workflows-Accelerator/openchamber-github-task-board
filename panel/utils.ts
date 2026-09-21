@@ -11,13 +11,15 @@ export function escapeHtml(str: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export function slugify(text: string): string {
-  return text
+export function slugify(text: string, maxLen: number = 60): string {
+  return (text || '')
+    .toString()
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
     .trim()
+    .replace(/[^\w\s-]/g, '')
     .replace(/[\s_-]+/g, '-')
-    .slice(0, 30);
+    .replace(/^-+|-+$/g, '')
+    .slice(0, maxLen);
 }
 
 export function sanitizeHexColor(color?: string): string | null {

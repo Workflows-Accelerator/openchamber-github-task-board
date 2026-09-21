@@ -2498,8 +2498,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   function escapeHtml(str) {
     return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-  function slugify(text) {
-    return text.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 30);
+  function slugify(text, maxLen = 60) {
+    return (text || "").toString().toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, maxLen);
   }
   function sanitizeHexColor(color) {
     if (!color) return null;
@@ -2866,7 +2866,12 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       if (Array.isArray(sessionOrList)) {
         const issueNumStr = String(issue.number);
         session = sessionOrList.find((s) => {
-          if (s.items && s.items.some((it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number)) {
+          if (s.items && s.items.some(
+            (it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number || it.data && Array.isArray(it.data.issueNumbers) && it.data.issueNumbers.includes(issue.number)
+          )) {
+            return true;
+          }
+          if (s.data && (s.data.issueNumber === issue.number || Array.isArray(s.data.issueNumbers) && s.data.issueNumbers.includes(issue.number))) {
             return true;
           }
           if (s.title && s.title.includes(`#${issue.number}`)) {
@@ -3146,6 +3151,9 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   }
 
   // panel/core.ts
+  function slugify2(text, maxLen = 60) {
+    return (text || "").toString().toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, maxLen);
+  }
   var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
   var questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
   var testPlanIssueHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
@@ -3625,6 +3633,129 @@ ${lines.join("\n")}`;
       totalQuestions
     };
   }
+  function getIssuePrimaryTag(issue) {
+    if (!issue || !issue.labels) return "task";
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name && !name.startsWith("status:") && !name.startsWith("priority:") && !name.startsWith("complexity:") && !name.startsWith("theme:") && !["archived", "archive"].includes(name.toLowerCase())) {
+        return name;
+      }
+    }
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name.startsWith("theme:")) {
+        return name.replace("theme:", "");
+      }
+    }
+    return "task";
+  }
+  function buildWorktreeBranchName(options) {
+    const mode = options.mode || "issue";
+    if (mode === "tag") {
+      const tag = options.customTag || getIssuePrimaryTag(options.issue);
+      return `worktree-tag-${slugify2(tag || "task")}`.slice(0, 80);
+    }
+    if (mode === "theme") {
+      const rawTheme = options.theme || getIssueTheme(options.issue);
+      const theme = rawTheme && rawTheme !== "No Theme" ? rawTheme : "task";
+      const batch = options.batch || getIssueBatch(options.issue);
+      const themeSlug = slugify2(theme);
+      if (batch) {
+        return `${themeSlug}-${slugify2(batch)}`.slice(0, 80);
+      }
+      const branchSlug2 = slugify2(options.issue?.title || "task");
+      return `${themeSlug}-issue-${options.issue?.number}-${branchSlug2}`.slice(0, 80);
+    }
+    const branchSlug = slugify2(options.issue?.title || "task");
+    return `issue-${options.issue?.number}-${branchSlug}`.slice(0, 80);
+  }
+  function findThemeWorktree(worktrees2, themeOrIssue, batch) {
+    if (!Array.isArray(worktrees2) || worktrees2.length === 0) return null;
+    let theme = null;
+    let issueBatch = batch || null;
+    if (typeof themeOrIssue === "string") {
+      theme = themeOrIssue.trim();
+    } else if (themeOrIssue && typeof themeOrIssue === "object") {
+      theme = getIssueTheme(themeOrIssue);
+      if (!issueBatch) {
+        issueBatch = getIssueBatch(themeOrIssue);
+      }
+    }
+    if (!theme || theme === "No Theme") return null;
+    const themeSlug = slugify2(theme);
+    const themeLower = theme.toLowerCase();
+    const batchSlug = issueBatch ? slugify2(issueBatch) : null;
+    const batchLower = issueBatch ? issueBatch.toLowerCase() : null;
+    const themeBatchSlug = batchSlug ? `${themeSlug}-${batchSlug}` : null;
+    const themeBatchLower = batchLower ? `${themeLower}-${batchLower}` : null;
+    if (themeBatchSlug || themeBatchLower) {
+      for (const wt of worktrees2) {
+        if (!wt) continue;
+        const names = [wt.name, wt.branch, typeof wt === "string" ? wt : wt.name || wt.branch || wt.directory].filter(Boolean);
+        for (const n of names) {
+          const nStr = String(n).trim();
+          const nSlug = slugify2(nStr);
+          const nLower = nStr.toLowerCase();
+          if (themeBatchSlug && nSlug === themeBatchSlug || themeBatchLower && nLower === themeBatchLower || themeBatchSlug && (nSlug === `worktree-tag-${themeBatchSlug}` || nSlug === `theme-${themeBatchSlug}`) || themeBatchLower && (nLower === `worktree-tag-${themeBatchLower}` || nLower === `theme-${themeBatchLower}`)) {
+            return wt;
+          }
+        }
+      }
+    }
+    for (const wt of worktrees2) {
+      if (!wt) continue;
+      const names = [wt.name, wt.branch, typeof wt === "string" ? wt : wt.name || wt.branch || wt.directory].filter(Boolean);
+      for (const n of names) {
+        const nStr = String(n).trim();
+        const nSlug = slugify2(nStr);
+        const nLower = nStr.toLowerCase();
+        if (nSlug === themeSlug || nLower === themeLower || nSlug === `worktree-tag-${themeSlug}` || nSlug === `theme-${themeSlug}` || nLower === `theme:${themeLower}` || nLower === `worktree-tag-${themeLower}`) {
+          return wt;
+        }
+      }
+    }
+    return null;
+  }
+  function buildLaunchSessionPayload(options) {
+    const { issue, projectId, useWorktree = false, branchName, baseBranch, prompt } = options;
+    let existingWorktree = options.existingWorktree;
+    if (!existingWorktree && options.worktrees && options.worktrees.length > 0) {
+      existingWorktree = findThemeWorktree(options.worktrees, issue);
+    }
+    let worktreePayload = false;
+    let directory = void 0;
+    if (existingWorktree) {
+      worktreePayload = {
+        kind: "existing",
+        name: existingWorktree.name || existingWorktree.branch || "",
+        directory: existingWorktree.directory || ""
+      };
+      if (existingWorktree.directory) {
+        directory = existingWorktree.directory;
+      }
+    } else if (useWorktree) {
+      const cleanBranch2 = branchName ? branchName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
+      if (cleanBranch2) {
+        worktreePayload = { kind: "new", name: cleanBranch2, baseBranch };
+      }
+    }
+    const cleanBranch = branchName ? branchName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
+    const branchForData = existingWorktree ? existingWorktree.branch || existingWorktree.name : useWorktree && cleanBranch ? cleanBranch : void 0;
+    return {
+      projectId,
+      worktree: worktreePayload,
+      ...directory ? { directory } : {},
+      providerId: "github-task-board",
+      id: String(issue.number),
+      title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
+      url: (issue.html_url || "").slice(0, 1e3),
+      text: prompt || "",
+      data: {
+        issueNumber: issue.number,
+        ...branchForData ? { branch: branchForData } : {}
+      }
+    };
+  }
   var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
 
 Input Objective / User Mind-Dump:
@@ -3764,6 +3895,44 @@ ${issue.body.trim()}
         isMulti: true
       }
     };
+  }
+  function mergeSessionItems(existingItems, newItems) {
+    const result = Array.isArray(existingItems) ? [...existingItems] : [];
+    const incoming = Array.isArray(newItems) ? newItems : newItems ? [newItems] : [];
+    for (const item of incoming) {
+      if (!item) continue;
+      const itemId = item.id ? String(item.id) : null;
+      const itemNum = item.data?.issueNumber != null ? Number(item.data.issueNumber) : itemId && /^\d+$/.test(itemId) ? parseInt(itemId, 10) : null;
+      const existingIdx = result.findIndex((existing) => {
+        if (!existing) return false;
+        if (itemId && existing.id && String(existing.id) === itemId) return true;
+        if (itemNum != null && (existing.data?.issueNumber != null && Number(existing.data.issueNumber) === itemNum || existing.id && String(existing.id) === String(itemNum))) {
+          return true;
+        }
+        return false;
+      });
+      if (existingIdx >= 0) {
+        const existing = result[existingIdx];
+        const mergedData = { ...existing.data || {}, ...item.data || {} };
+        if (Array.isArray(existing.data?.issueNumbers) || Array.isArray(item.data?.issueNumbers)) {
+          const combined = /* @__PURE__ */ new Set([
+            ...Array.isArray(existing.data?.issueNumbers) ? existing.data.issueNumbers : [],
+            ...Array.isArray(item.data?.issueNumbers) ? item.data.issueNumbers : []
+          ]);
+          mergedData.issueNumbers = Array.from(combined);
+        }
+        result[existingIdx] = { ...existing, ...item, data: mergedData };
+      } else {
+        result.push(item);
+      }
+    }
+    return result;
+  }
+  function attachIssueToSession(session, issueOrPayload) {
+    if (!session) return session;
+    const payload = issueOrPayload && typeof issueOrPayload === "object" && "providerId" in issueOrPayload ? issueOrPayload : issueOrPayload && typeof issueOrPayload === "object" && "number" in issueOrPayload ? buildIssueAttachPayload(issueOrPayload) : issueOrPayload;
+    session.items = mergeSessionItems(session.items, payload);
+    return session;
   }
   function buildConsolidatedIssuePrompt(selectedIssues) {
     if (!selectedIssues || selectedIssues.length === 0) return "";
@@ -4141,7 +4310,7 @@ Blocked by ${blockerRef}`;
     if (!sessions2 || !Array.isArray(sessions2)) return index;
     const activityPriority = (act) => {
       if (act === "running") return 4;
-      if (act === "waiting-permission" || act === "waiting-question") return 3;
+      if (act === "waiting-permission" || act === "waiting-question" || typeof act === "string" && act.startsWith("waiting")) return 3;
       if (act === "idle") return 2;
       return 1;
     };
@@ -4166,14 +4335,22 @@ Blocked by ${blockerRef}`;
           if (item.id && /^\d+$/.test(item.id)) {
             register(parseInt(item.id, 10), s);
           }
-          if (item.data?.issueNumber) {
-            register(parseInt(item.data.issueNumber, 10), s);
+          if (item.data?.issueNumber != null) {
+            register(parseInt(String(item.data.issueNumber), 10), s);
           }
           if (Array.isArray(item.data?.issueNumbers)) {
             for (const n of item.data.issueNumbers) {
-              register(parseInt(n, 10), s);
+              register(parseInt(String(n), 10), s);
             }
           }
+        }
+      }
+      if (s.data?.issueNumber != null) {
+        register(parseInt(String(s.data.issueNumber), 10), s);
+      }
+      if (Array.isArray(s.data?.issueNumbers)) {
+        for (const n of s.data.issueNumbers) {
+          register(parseInt(String(n), 10), s);
         }
       }
       if (typeof s.title === "string") {
@@ -4430,6 +4607,7 @@ Blocked by ${blockerRef}`;
   var elTxtDrawerArchive = document.getElementById("txtDrawerArchive");
   var elBtnDrawerOpenPreflight = document.getElementById("btnDrawerOpenPreflight");
   var elPreflightBackdrop = document.getElementById("preflightModalBackdrop");
+  var elPreflightThemeNotice = document.getElementById("preflightThemeNotice");
   var elModalPreflightTitle = document.getElementById("modalPreflightTitle");
   var elPreflightWorktreeToggle = document.getElementById("preflightWorktreeToggle");
   var elPreflightWorktreeSection = document.getElementById("preflightWorktreeSection");
@@ -5229,7 +5407,12 @@ Blocked by ${blockerRef}`;
       if (Array.isArray(sessionOverride)) {
         const issueNumStr = String(issue.number);
         session = sessionOverride.find((s) => {
-          if (s.items && s.items.some((it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number)) {
+          if (s.items && s.items.some(
+            (it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number || it.data && Array.isArray(it.data.issueNumbers) && it.data.issueNumbers.includes(issue.number)
+          )) {
+            return true;
+          }
+          if (s.data && (s.data.issueNumber === issue.number || Array.isArray(s.data.issueNumbers) && s.data.issueNumbers.includes(issue.number))) {
             return true;
           }
           if (s.title && s.title.includes(`#${issue.number}`)) {
@@ -7019,33 +7202,11 @@ Blocked by ${blockerRef}`;
       elDrawerRelatedIssuesContainer.appendChild(item);
     });
   }
-  function getIssuePrimaryTag(issue) {
-    if (!issue || !issue.labels) return "task";
-    for (const l of issue.labels) {
-      const name = (typeof l === "string" ? l : l.name || "").trim();
-      if (name && !name.startsWith("status:") && !name.startsWith("priority:") && !name.startsWith("complexity:") && !name.startsWith("theme:") && !["archived", "archive"].includes(name.toLowerCase())) {
-        return name;
-      }
-    }
-    for (const l of issue.labels) {
-      const name = (typeof l === "string" ? l : l.name || "").trim();
-      if (name.startsWith("theme:")) {
-        return name.replace("theme:", "");
-      }
-    }
-    return "task";
-  }
-  function buildWorktreeBranchName(options) {
-    if (options.mode === "tag") {
-      const tag = options.customTag || getIssuePrimaryTag(options.issue);
-      return `worktree-tag-${slugify(tag || "task")}`.slice(0, 80);
-    }
-    const branchSlug = slugify(options.issue.title || "task");
-    return `issue-${options.issue.number}-${branchSlug}`.slice(0, 80);
-  }
   function updatePreflightBrief() {
     if (!activeIssue) return;
     const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
+    const theme = getIssueTheme(activeIssue);
+    const existingThemeWorktree = theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue) : null;
     let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}
 
 `;
@@ -7085,7 +7246,7 @@ ${skills.join("\n")}
 
 `;
     }
-    if (useWt) {
+    if (useWt || existingThemeWorktree) {
       brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
     } else {
       brief += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
@@ -7113,7 +7274,24 @@ ${skills.join("\n")}
     elPreflightIssuePreview.textContent = issueBranch;
     elPreflightBranchInput.value = issueBranch;
     elPreflightBaseBranchInput.value = "main";
-    elBtnPreflightLaunch.textContent = "Start Agent Session (Current Workspace)";
+    const theme = getIssueTheme(issue);
+    const hasTheme = Boolean(theme && theme !== "No Theme");
+    const existingThemeWorktree = hasTheme ? findThemeWorktree(worktrees, issue) : null;
+    if (elPreflightThemeNotice) {
+      if (existingThemeWorktree) {
+        elPreflightThemeNotice.style.display = "flex";
+        elPreflightThemeNotice.textContent = `Reusing active theme worktree: ${theme}`;
+        elPreflightThemeNotice.title = `Found existing theme worktree "${existingThemeWorktree.name || theme}". Session will automatically reuse it.`;
+      } else {
+        elPreflightThemeNotice.style.display = "none";
+        elPreflightThemeNotice.textContent = "";
+      }
+    }
+    if (existingThemeWorktree) {
+      elBtnPreflightLaunch.textContent = `Start Agent Session (Theme: ${theme})`;
+    } else {
+      elBtnPreflightLaunch.textContent = "Start Agent Session (Current Workspace)";
+    }
     updatePreflightBrief();
     elPreflightBackdrop.classList.add("active");
   }
@@ -7128,24 +7306,24 @@ ${skills.join("\n")}
     const baseBranch = useWorktree ? elPreflightBaseBranchInput.value.trim() || void 0 : void 0;
     const promptText = elPreflightPromptInput.value.trim().slice(0, 15e3);
     const autoMove = elPreflightMoveInProgress.checked;
+    const theme = getIssueTheme(activeIssue);
+    const existingThemeWorktree = theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue) : null;
+    const payload = buildLaunchSessionPayload({
+      issue: activeIssue,
+      projectId: currentProject.id,
+      useWorktree,
+      branchName: cleanBranch,
+      baseBranch,
+      prompt: promptText,
+      existingWorktree: existingThemeWorktree,
+      worktrees
+    });
     elBtnPreflightLaunch.disabled = true;
     elBtnPreflightLaunch.textContent = "Provisioning...";
     try {
-      const targetDesc = useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : "workspace";
+      const targetDesc = existingThemeWorktree ? `theme worktree "${existingThemeWorktree.name || theme}"` : useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : "workspace";
       addLog(`Starting session in ${targetDesc} on project ${currentProject.id}...`);
-      const res = await host.startSession({
-        projectId: currentProject.id,
-        worktree: useWorktree && cleanBranch ? { kind: "new", name: cleanBranch, baseBranch } : false,
-        providerId: "github-task-board",
-        id: String(activeIssue.number),
-        title: `#${activeIssue.number} ${activeIssue.title}`.slice(0, 150),
-        url: activeIssue.html_url.slice(0, 1e3),
-        text: promptText,
-        data: {
-          issueNumber: activeIssue.number,
-          ...useWorktree && cleanBranch ? { branch: cleanBranch } : {}
-        }
-      });
+      const res = await host.startSession(payload);
       closePreflightModal();
       if (autoMove) {
         void updateIssueStatus(activeIssue, "in-progress");
@@ -7162,7 +7340,7 @@ ${skills.join("\n")}
       await host.toast({ kind: "error", message: `Failed to launch agent: ${err.message || "Unknown error"}` });
     } finally {
       elBtnPreflightLaunch.disabled = false;
-      elBtnPreflightLaunch.textContent = elPreflightWorktreeToggle.checked ? "Launch Worktree & Agent" : "Start Agent Session (Current Workspace)";
+      elBtnPreflightLaunch.textContent = elPreflightWorktreeToggle.checked ? "Launch Worktree & Agent" : existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : "Start Agent Session (Current Workspace)";
     }
   }
   function updateBatchBar() {
@@ -7202,6 +7380,9 @@ ${skills.join("\n")}
     const title = `Packaged Tasks (${selected.length}): ${selected.map((i) => `#${i.number}`).join(", ")}`.slice(0, 150);
     try {
       addLog(`Launching packaged session for ${selected.length} issues...`);
+      const multiPayload = buildMultiIssueAttachPayload(selected, currentRepo);
+      const individualItems = selected.map((i) => buildIssueAttachPayload(i));
+      const items = mergeSessionItems([multiPayload], individualItems);
       const res = await host.startSession({
         projectId: currentProject.id,
         worktree: false,
@@ -7212,8 +7393,11 @@ ${skills.join("\n")}
         text: promptText,
         data: {
           packaged: true,
-          issueNumbers: selected.map((i) => i.number)
-        }
+          issueNumber: selected[0]?.number,
+          issueNumbers: selected.map((i) => i.number),
+          items
+        },
+        items
       });
       clearSelection();
       selected.forEach((issue) => {

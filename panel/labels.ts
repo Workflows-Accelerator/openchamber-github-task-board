@@ -353,7 +353,22 @@ export function resolveIssueColumn(
       const issueNumStr = String(issue.number);
       session =
         sessionOrList.find((s) => {
-          if (s.items && s.items.some((it) => it.id === issueNumStr || (it.data && it.data.issueNumber === issue.number))) {
+          if (
+            s.items &&
+            s.items.some(
+              (it) =>
+                it.id === issueNumStr ||
+                (it.data && it.data.issueNumber === issue.number) ||
+                (it.data && Array.isArray(it.data.issueNumbers) && it.data.issueNumbers.includes(issue.number))
+            )
+          ) {
+            return true;
+          }
+          if (
+            s.data &&
+            (s.data.issueNumber === issue.number ||
+              (Array.isArray(s.data.issueNumbers) && s.data.issueNumbers.includes(issue.number)))
+          ) {
             return true;
           }
           if (s.title && s.title.includes(`#${issue.number}`)) {

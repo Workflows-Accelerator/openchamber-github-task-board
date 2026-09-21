@@ -6,6 +6,17 @@
 // test/shipped-parity.test.js).
 // ==========================================
 
+export function slugify(text: string, maxLen: number = 60): string {
+  return (text || '')
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, maxLen);
+}
+
 export interface Subtask {
   id: string;
   lineIndex: number;
@@ -610,6 +621,193 @@ export function parseScratchPadThemes(text: string) {
   };
 }
 
+export function getIssuePrimaryTag(issue: Issue): string {
+  if (!issue || !issue.labels) return 'task';
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l.name || '').trim();
+    if (
+      name &&
+      !name.startsWith('status:') &&
+      !name.startsWith('priority:') &&
+      !name.startsWith('complexity:') &&
+      !name.startsWith('theme:') &&
+      !['archived', 'archive'].includes(name.toLowerCase())
+    ) {
+      return name;
+    }
+  }
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l.name || '').trim();
+    if (name.startsWith('theme:')) {
+      return name.replace('theme:', '');
+    }
+  }
+  return 'task';
+}
+
+export function buildWorktreeBranchName(options: {
+  issue: Issue;
+  mode?: 'tag' | 'issue' | 'theme';
+  customTag?: string;
+  theme?: string;
+  batch?: string;
+}): string {
+  const mode = options.mode || 'issue';
+  if (mode === 'tag') {
+    const tag = options.customTag || getIssuePrimaryTag(options.issue);
+    return `worktree-tag-${slugify(tag || 'task')}`.slice(0, 80);
+  }
+  if (mode === 'theme') {
+    const rawTheme = options.theme || getIssueTheme(options.issue);
+    const theme = rawTheme && rawTheme !== 'No Theme' ? rawTheme : 'task';
+    const batch = options.batch || getIssueBatch(options.issue);
+    const themeSlug = slugify(theme);
+    if (batch) {
+      return `${themeSlug}-${slugify(batch)}`.slice(0, 80);
+    }
+    const branchSlug = slugify(options.issue?.title || 'task');
+    return `${themeSlug}-issue-${options.issue?.number}-${branchSlug}`.slice(0, 80);
+  }
+  const branchSlug = slugify(options.issue?.title || 'task');
+  return `issue-${options.issue?.number}-${branchSlug}`.slice(0, 80);
+}
+
+export function findThemeWorktree(
+  worktrees: any[],
+  themeOrIssue: string | Issue | any,
+  batch?: string | null
+): any | null {
+  if (!Array.isArray(worktrees) || worktrees.length === 0) return null;
+
+  let theme: string | null = null;
+  let issueBatch: string | null = batch || null;
+
+  if (typeof themeOrIssue === 'string') {
+    theme = themeOrIssue.trim();
+  } else if (themeOrIssue && typeof themeOrIssue === 'object') {
+    theme = getIssueTheme(themeOrIssue);
+    if (!issueBatch) {
+      issueBatch = getIssueBatch(themeOrIssue);
+    }
+  }
+
+  if (!theme || theme === 'No Theme') return null;
+
+  const themeSlug = slugify(theme);
+  const themeLower = theme.toLowerCase();
+  const batchSlug = issueBatch ? slugify(issueBatch) : null;
+  const batchLower = issueBatch ? issueBatch.toLowerCase() : null;
+
+  const themeBatchSlug = batchSlug ? `${themeSlug}-${batchSlug}` : null;
+  const themeBatchLower = batchLower ? `${themeLower}-${batchLower}` : null;
+
+  // 1. If batch is present, try matching <theme>-<batch> first
+  if (themeBatchSlug || themeBatchLower) {
+    for (const wt of worktrees) {
+      if (!wt) continue;
+      const names = [wt.name, wt.branch, typeof wt === 'string' ? wt : (wt.name || wt.branch || wt.directory)].filter(Boolean);
+      for (const n of names) {
+        const nStr = String(n).trim();
+        const nSlug = slugify(nStr);
+        const nLower = nStr.toLowerCase();
+        if (
+          (themeBatchSlug && nSlug === themeBatchSlug) ||
+          (themeBatchLower && nLower === themeBatchLower) ||
+          (themeBatchSlug && (nSlug === `worktree-tag-${themeBatchSlug}` || nSlug === `theme-${themeBatchSlug}`)) ||
+          (themeBatchLower && (nLower === `worktree-tag-${themeBatchLower}` || nLower === `theme-${themeBatchLower}`))
+        ) {
+          return wt;
+        }
+      }
+    }
+  }
+
+  // 2. Match <theme>
+  for (const wt of worktrees) {
+    if (!wt) continue;
+    const names = [wt.name, wt.branch, typeof wt === 'string' ? wt : (wt.name || wt.branch || wt.directory)].filter(Boolean);
+    for (const n of names) {
+      const nStr = String(n).trim();
+      const nSlug = slugify(nStr);
+      const nLower = nStr.toLowerCase();
+      if (
+        nSlug === themeSlug ||
+        nLower === themeLower ||
+        nSlug === `worktree-tag-${themeSlug}` ||
+        nSlug === `theme-${themeSlug}` ||
+        nLower === `theme:${themeLower}` ||
+        nLower === `worktree-tag-${themeLower}`
+      ) {
+        return wt;
+      }
+    }
+  }
+
+  return null;
+}
+
+export function buildLaunchSessionPayload(options: {
+  issue: Issue;
+  projectId: string;
+  useWorktree?: boolean;
+  branchName?: string;
+  baseBranch?: string;
+  prompt?: string;
+  worktrees?: any[];
+  existingWorktree?: any;
+}): any {
+  const { issue, projectId, useWorktree = false, branchName, baseBranch, prompt } = options;
+
+  let existingWorktree = options.existingWorktree;
+  if (!existingWorktree && options.worktrees && options.worktrees.length > 0) {
+    existingWorktree = findThemeWorktree(options.worktrees, issue);
+  }
+
+  let worktreePayload: any = false;
+  let directory: string | undefined = undefined;
+
+  if (existingWorktree) {
+    worktreePayload = {
+      kind: 'existing',
+      name: existingWorktree.name || existingWorktree.branch || '',
+      directory: existingWorktree.directory || '',
+    };
+    if (existingWorktree.directory) {
+      directory = existingWorktree.directory;
+    }
+  } else if (useWorktree) {
+    const cleanBranch = branchName
+      ? branchName.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 80)
+      : undefined;
+    if (cleanBranch) {
+      worktreePayload = { kind: 'new', name: cleanBranch, baseBranch };
+    }
+  }
+
+  const cleanBranch = branchName
+    ? branchName.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 80)
+    : undefined;
+
+  const branchForData = existingWorktree
+    ? (existingWorktree.branch || existingWorktree.name)
+    : (useWorktree && cleanBranch ? cleanBranch : undefined);
+
+  return {
+    projectId,
+    worktree: worktreePayload,
+    ...(directory ? { directory } : {}),
+    providerId: 'github-task-board',
+    id: String(issue.number),
+    title: `#${issue.number} ${issue.title || ''}`.slice(0, 150),
+    url: (issue.html_url || '').slice(0, 1000),
+    text: prompt || '',
+    data: {
+      issueNumber: issue.number,
+      ...(branchForData ? { branch: branchForData } : {}),
+    },
+  };
+}
+
 export const DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
 
 Input Objective / User Mind-Dump:
@@ -752,6 +950,65 @@ export function buildMultiIssueAttachPayload(issues: Issue[], repo: string = '')
       isMulti: true,
     },
   };
+}
+
+export function mergeSessionItems(
+  existingItems: any[] | undefined | null,
+  newItems: any[] | any
+): any[] {
+  const result: any[] = Array.isArray(existingItems) ? [...existingItems] : [];
+  const incoming = Array.isArray(newItems) ? newItems : (newItems ? [newItems] : []);
+
+  for (const item of incoming) {
+    if (!item) continue;
+    const itemId = item.id ? String(item.id) : null;
+    const itemNum = item.data?.issueNumber != null
+      ? Number(item.data.issueNumber)
+      : (itemId && /^\d+$/.test(itemId) ? parseInt(itemId, 10) : null);
+
+    const existingIdx = result.findIndex((existing) => {
+      if (!existing) return false;
+      if (itemId && existing.id && String(existing.id) === itemId) return true;
+      if (
+        itemNum != null &&
+        ((existing.data?.issueNumber != null && Number(existing.data.issueNumber) === itemNum) ||
+          (existing.id && String(existing.id) === String(itemNum)))
+      ) {
+        return true;
+      }
+      return false;
+    });
+
+    if (existingIdx >= 0) {
+      const existing = result[existingIdx];
+      const mergedData = { ...(existing.data || {}), ...(item.data || {}) };
+      if (Array.isArray(existing.data?.issueNumbers) || Array.isArray(item.data?.issueNumbers)) {
+        const combined = new Set([
+          ...(Array.isArray(existing.data?.issueNumbers) ? existing.data.issueNumbers : []),
+          ...(Array.isArray(item.data?.issueNumbers) ? item.data.issueNumbers : []),
+        ]);
+        mergedData.issueNumbers = Array.from(combined);
+      }
+      result[existingIdx] = { ...existing, ...item, data: mergedData };
+    } else {
+      result.push(item);
+    }
+  }
+
+  return result;
+}
+
+export function attachIssueToSession(session: any, issueOrPayload: Issue | any): any {
+  if (!session) return session;
+  const payload =
+    issueOrPayload && typeof issueOrPayload === 'object' && 'providerId' in issueOrPayload
+      ? issueOrPayload
+      : issueOrPayload && typeof issueOrPayload === 'object' && 'number' in issueOrPayload
+      ? buildIssueAttachPayload(issueOrPayload)
+      : issueOrPayload;
+
+  session.items = mergeSessionItems(session.items, payload);
+  return session;
 }
 
 export function buildConsolidatedIssuePrompt(selectedIssues: Issue[]): string {
@@ -1235,7 +1492,7 @@ export function buildSessionIndex(sessions: any[]): Map<number, any> {
 
   const activityPriority = (act: string): number => {
     if (act === 'running') return 4;
-    if (act === 'waiting-permission' || act === 'waiting-question') return 3;
+    if (act === 'waiting-permission' || act === 'waiting-question' || (typeof act === 'string' && act.startsWith('waiting'))) return 3;
     if (act === 'idle') return 2;
     return 1;
   };
@@ -1262,14 +1519,22 @@ export function buildSessionIndex(sessions: any[]): Map<number, any> {
         if (item.id && /^\d+$/.test(item.id)) {
           register(parseInt(item.id, 10), s);
         }
-        if (item.data?.issueNumber) {
-          register(parseInt(item.data.issueNumber, 10), s);
+        if (item.data?.issueNumber != null) {
+          register(parseInt(String(item.data.issueNumber), 10), s);
         }
         if (Array.isArray(item.data?.issueNumbers)) {
           for (const n of item.data.issueNumbers) {
-            register(parseInt(n, 10), s);
+            register(parseInt(String(n), 10), s);
           }
         }
+      }
+    }
+    if (s.data?.issueNumber != null) {
+      register(parseInt(String(s.data.issueNumber), 10), s);
+    }
+    if (Array.isArray(s.data?.issueNumbers)) {
+      for (const n of s.data.issueNumbers) {
+        register(parseInt(String(n), 10), s);
       }
     }
     if (typeof s.title === 'string') {

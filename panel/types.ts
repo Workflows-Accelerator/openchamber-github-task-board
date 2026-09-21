@@ -22,6 +22,7 @@ export interface SessionInfo {
   worktree?: string | { name?: string; branch?: string; directory?: string; status?: string } | null;
   directory?: string | null;
   items?: Array<{ id?: string; providerId?: string; data?: any; url?: string }>;
+  data?: any;
 }
 
 export function extractWorktreeName(wt: any): string {

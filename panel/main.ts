@@ -127,6 +127,12 @@ import {
   serializeTestPlan,
   getIssueBatch,
   isBatchReadyForReview,
+  getIssuePrimaryTag,
+  buildWorktreeBranchName,
+  findThemeWorktree,
+  buildLaunchSessionPayload,
+  mergeSessionItems,
+  attachIssueToSession,
 } from './core.js';
 export type { TestItem };
 export {
@@ -143,6 +149,12 @@ export {
   serializeTestPlan,
   getIssueBatch,
   isBatchReadyForReview,
+  getIssuePrimaryTag,
+  buildWorktreeBranchName,
+  findThemeWorktree,
+  buildLaunchSessionPayload,
+  mergeSessionItems,
+  attachIssueToSession,
 };
 
 // ==========================================
@@ -368,6 +380,7 @@ const elBtnDrawerOpenPreflight = document.getElementById('btnDrawerOpenPreflight
 
 // Preflight modal elements
 const elPreflightBackdrop = document.getElementById('preflightModalBackdrop') as HTMLDivElement;
+const elPreflightThemeNotice = document.getElementById('preflightThemeNotice') as HTMLDivElement | null;
 const elModalPreflightTitle = document.getElementById('modalPreflightTitle') as HTMLHeadingElement;
 const elPreflightWorktreeToggle = document.getElementById('preflightWorktreeToggle') as HTMLInputElement;
 const elPreflightWorktreeSection = document.getElementById('preflightWorktreeSection') as HTMLDivElement;
@@ -1356,7 +1369,22 @@ export function resolveIssueColumn(
       const issueNumStr = String(issue.number);
       session =
         sessionOverride.find((s) => {
-          if (s.items && s.items.some((it) => it.id === issueNumStr || (it.data && it.data.issueNumber === issue.number))) {
+          if (
+            s.items &&
+            s.items.some(
+              (it: any) =>
+                it.id === issueNumStr ||
+                (it.data && it.data.issueNumber === issue.number) ||
+                (it.data && Array.isArray(it.data.issueNumbers) && it.data.issueNumbers.includes(issue.number))
+            )
+          ) {
+            return true;
+          }
+          if (
+            (s as any).data &&
+            ((s as any).data.issueNumber === issue.number ||
+              (Array.isArray((s as any).data.issueNumbers) && (s as any).data.issueNumbers.includes(issue.number)))
+          ) {
             return true;
           }
           if (s.title && s.title.includes(`#${issue.number}`)) {
@@ -3541,46 +3569,11 @@ function renderRelatedIssues(issue: Issue): void {
 // Pre-Flight Worktree Config Modal
 // ==========================================
 
-export function getIssuePrimaryTag(issue: Issue): string {
-  if (!issue || !issue.labels) return 'task';
-  for (const l of issue.labels) {
-    const name = (typeof l === 'string' ? l : l.name || '').trim();
-    if (
-      name &&
-      !name.startsWith('status:') &&
-      !name.startsWith('priority:') &&
-      !name.startsWith('complexity:') &&
-      !name.startsWith('theme:') &&
-      !['archived', 'archive'].includes(name.toLowerCase())
-    ) {
-      return name;
-    }
-  }
-  for (const l of issue.labels) {
-    const name = (typeof l === 'string' ? l : l.name || '').trim();
-    if (name.startsWith('theme:')) {
-      return name.replace('theme:', '');
-    }
-  }
-  return 'task';
-}
-
-export function buildWorktreeBranchName(options: {
-  issue: Issue;
-  mode: 'tag' | 'issue';
-  customTag?: string;
-}): string {
-  if (options.mode === 'tag') {
-    const tag = options.customTag || getIssuePrimaryTag(options.issue);
-    return `worktree-tag-${slugify(tag || 'task')}`.slice(0, 80);
-  }
-  const branchSlug = slugify(options.issue.title || 'task');
-  return `issue-${options.issue.number}-${branchSlug}`.slice(0, 80);
-}
-
 function updatePreflightBrief(): void {
   if (!activeIssue) return;
   const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
+  const theme = getIssueTheme(activeIssue);
+  const existingThemeWorktree = (theme && theme !== 'No Theme') ? findThemeWorktree(worktrees, activeIssue) : null;
   let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}\n\n`;
   if (activeIssue.body) {
     brief += `### Description:\n${activeIssue.body}\n\n`;
@@ -3613,7 +3606,7 @@ function updatePreflightBrief(): void {
     brief += `### Skills:\n${skills.join('\n')}\n\n`;
   }
 
-  if (useWt) {
+  if (useWt || existingThemeWorktree) {
     brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
   } else {
     brief += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
@@ -3647,7 +3640,27 @@ function openPreflightModal(issue: Issue): void {
   elPreflightBranchInput.value = issueBranch;
   elPreflightBaseBranchInput.value = 'main';
 
-  elBtnPreflightLaunch.textContent = 'Start Agent Session (Current Workspace)';
+  // Check for existing theme worktree
+  const theme = getIssueTheme(issue);
+  const hasTheme = Boolean(theme && theme !== 'No Theme');
+  const existingThemeWorktree = hasTheme ? findThemeWorktree(worktrees, issue) : null;
+
+  if (elPreflightThemeNotice) {
+    if (existingThemeWorktree) {
+      elPreflightThemeNotice.style.display = 'flex';
+      elPreflightThemeNotice.textContent = `Reusing active theme worktree: ${theme}`;
+      elPreflightThemeNotice.title = `Found existing theme worktree "${existingThemeWorktree.name || theme}". Session will automatically reuse it.`;
+    } else {
+      elPreflightThemeNotice.style.display = 'none';
+      elPreflightThemeNotice.textContent = '';
+    }
+  }
+
+  if (existingThemeWorktree) {
+    elBtnPreflightLaunch.textContent = `Start Agent Session (Theme: ${theme})`;
+  } else {
+    elBtnPreflightLaunch.textContent = 'Start Agent Session (Current Workspace)';
+  }
 
   updatePreflightBrief();
   elPreflightBackdrop.classList.add('active');
@@ -3669,26 +3682,30 @@ async function launchAgentSession(): Promise<void> {
   const promptText = elPreflightPromptInput.value.trim().slice(0, 15000);
   const autoMove = elPreflightMoveInProgress.checked;
 
+  const theme = getIssueTheme(activeIssue);
+  const existingThemeWorktree = (theme && theme !== 'No Theme') ? findThemeWorktree(worktrees, activeIssue) : null;
+
+  const payload = buildLaunchSessionPayload({
+    issue: activeIssue,
+    projectId: currentProject.id,
+    useWorktree,
+    branchName: cleanBranch,
+    baseBranch,
+    prompt: promptText,
+    existingWorktree: existingThemeWorktree,
+    worktrees,
+  });
+
   elBtnPreflightLaunch.disabled = true;
   elBtnPreflightLaunch.textContent = 'Provisioning...';
 
   try {
-    const targetDesc = useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : 'workspace';
+    const targetDesc = existingThemeWorktree
+      ? `theme worktree "${existingThemeWorktree.name || theme}"`
+      : (useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : 'workspace');
     addLog(`Starting session in ${targetDesc} on project ${currentProject.id}...`);
 
-    const res = await host.startSession({
-      projectId: currentProject.id,
-      worktree: useWorktree && cleanBranch ? { kind: 'new', name: cleanBranch, baseBranch } : false,
-      providerId: 'github-task-board',
-      id: String(activeIssue.number),
-      title: `#${activeIssue.number} ${activeIssue.title}`.slice(0, 150),
-      url: activeIssue.html_url.slice(0, 1000),
-      text: promptText,
-      data: {
-        issueNumber: activeIssue.number,
-        ...(useWorktree && cleanBranch ? { branch: cleanBranch } : {}),
-      },
-    });
+    const res = await host.startSession(payload);
 
     closePreflightModal();
 
@@ -3711,7 +3728,7 @@ async function launchAgentSession(): Promise<void> {
     elBtnPreflightLaunch.disabled = false;
     elBtnPreflightLaunch.textContent = elPreflightWorktreeToggle.checked
       ? 'Launch Worktree & Agent'
-      : 'Start Agent Session (Current Workspace)';
+      : (existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : 'Start Agent Session (Current Workspace)');
   }
 }
 
@@ -3764,6 +3781,10 @@ async function launchPackagedSession(): Promise<void> {
 
   try {
     addLog(`Launching packaged session for ${selected.length} issues...`);
+    const multiPayload = buildMultiIssueAttachPayload(selected, currentRepo);
+    const individualItems = selected.map((i) => buildIssueAttachPayload(i));
+    const items = mergeSessionItems([multiPayload], individualItems);
+
     const res = await host.startSession({
       projectId: currentProject.id,
       worktree: false,
@@ -3774,9 +3795,12 @@ async function launchPackagedSession(): Promise<void> {
       text: promptText,
       data: {
         packaged: true,
+        issueNumber: selected[0]?.number,
         issueNumbers: selected.map((i) => i.number),
+        items,
       },
-    });
+      items,
+    } as any);
 
     clearSelection();
     selected.forEach((issue) => {
