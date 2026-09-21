@@ -566,8 +566,8 @@ export interface StatusReconcilerOptions {
 }
 
 export class StatusReconciler {
-  private inFlight = new Set<number>();
-  private lastReconciled = new Map<number, ColumnId>();
+  private inFlight = new Set<string>();
+  private lastReconciled = new Map<string, ColumnId>();
   private timer: any = null;
   private debounceMs: number;
   private updateStatus: (issue: Issue, targetColumn: ColumnId) => Promise<void>;
@@ -579,6 +579,14 @@ export class StatusReconciler {
     this.updateStatus = options.updateStatus;
     this.getSession = options.getSession;
     this.onReconciled = options.onReconciled;
+  }
+
+  // Repo-qualified key so two same-numbered issues in different repositories
+  // are tracked independently and never block or overwrite each other.
+  private keyFor(issue: Issue | any): string {
+    const repo = issue && typeof issue.repo === 'string' ? issue.repo.trim().toLowerCase() : '';
+    if (repo && Number.isFinite(issue?.number)) return `${repo}#${issue.number}`;
+    return `#${issue?.number}`;
   }
 
   public schedule(issues: Issue[]): void {
@@ -618,20 +626,21 @@ export class StatusReconciler {
       if (currentStatus === targetCol) continue;
 
       // Prevent race conditions and loops
-      if (this.inFlight.has(issue.number)) continue;
-      if (this.lastReconciled.get(issue.number) === targetCol) continue;
+      const key = this.keyFor(issue);
+      if (this.inFlight.has(key)) continue;
+      if (this.lastReconciled.get(key) === targetCol) continue;
 
-      this.inFlight.add(issue.number);
-      this.lastReconciled.set(issue.number, targetCol);
+      this.inFlight.add(key);
+      this.lastReconciled.set(key, targetCol);
 
       try {
         await this.updateStatus(issue, targetCol);
         reconciled.push({ issueNumber: issue.number, target: targetCol });
         this.onReconciled?.(issue, targetCol);
       } catch (err) {
-        this.lastReconciled.delete(issue.number);
+        this.lastReconciled.delete(key);
       } finally {
-        this.inFlight.delete(issue.number);
+        this.inFlight.delete(key);
       }
     }
 
@@ -647,11 +656,13 @@ export class StatusReconciler {
     this.lastReconciled.clear();
   }
 
-  public isInFlight(issueNumber: number): boolean {
-    return this.inFlight.has(issueNumber);
+  public isInFlight(issueOrNumber: Issue | number): boolean {
+    const key = typeof issueOrNumber === 'number' ? `#${issueOrNumber}` : this.keyFor(issueOrNumber);
+    return this.inFlight.has(key);
   }
 
-  public getLastReconciled(issueNumber: number): ColumnId | undefined {
-    return this.lastReconciled.get(issueNumber);
+  public getLastReconciled(issueOrNumber: Issue | number): ColumnId | undefined {
+    const key = typeof issueOrNumber === 'number' ? `#${issueOrNumber}` : this.keyFor(issueOrNumber);
+    return this.lastReconciled.get(key);
   }
 }

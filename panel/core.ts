@@ -1678,13 +1678,7 @@ export function getProjectRepoFullName(project: ProjectItem | null | undefined):
 
 export function getIssueRepoFullName(issue: Issue | null | undefined): string | null {
   if (!issue) return null;
-  const repo = typeof issue.repo === 'string' ? issue.repo.trim() : '';
-  if (repo && repo.includes('/')) return repo;
-  const match = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(issue.html_url || '');
-  if (match) {
-    return `${match[1]}/${match[2].replace(/\.git$/, '')}`;
-  }
-  return null;
+  return parseRepoFullName(issue.repo) || parseRepoFullName(issue.html_url) || null;
 }
 
 // Consolidates issues fetched from multiple repositories into one deduplicated
@@ -1795,6 +1789,236 @@ export function readCachedIssueCollection(
     return null;
   }
   return entry.issues;
+}
+
+// ==========================================
+// Repo-Aware Session Attribution
+// ==========================================
+
+// Extracts owner/repo from a GitHub URL or a plain "owner/repo" string.
+export function parseRepoFullName(value: string | null | undefined): string | null {
+  if (!value || typeof value !== 'string') return null;
+  const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(value);
+  if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, '')}`;
+  const cleaned = value.trim().replace(/\.git$/, '');
+  if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+  return null;
+}
+
+// The repository a session chip/attach item belongs to, from an explicit repo
+// field or the item's URL. Returns null when the origin cannot be determined.
+export function getSessionIssueRepo(item: any): string | null {
+  if (!item) return null;
+  const explicit = item.repo ?? item.projectRepo ?? item.data?.repo;
+  const fromExplicit = parseRepoFullName(explicit);
+  if (fromExplicit) return fromExplicit;
+  return parseRepoFullName(item.html_url) || parseRepoFullName(item.url);
+}
+
+// A repo-qualified session key. Only produces a key when the repo is known,
+// because issue numbers are only unique within a repository.
+export function issueRepoKey(issue: Issue | null | undefined): string | null {
+  if (!issue || !Number.isFinite(issue.number)) return null;
+  const repo = getIssueRepoFullName(issue);
+  if (!repo) return null;
+  return `${repo.toLowerCase()}#${issue.number}`;
+}
+
+// Every repo-qualified (repo, issue number) pair a session is attached to.
+export function sessionRepoKeys(session: any): string[] {
+  const keys = new Set<string>();
+  if (!session) return [];
+  const items = Array.isArray(session.items) ? session.items : [];
+  for (const item of items) {
+    if (!item) continue;
+    const repo = getSessionIssueRepo(item);
+    if (!repo) continue;
+    const numbers = new Set<number>();
+    if (item.data?.issueNumber != null) numbers.add(Number(item.data.issueNumber));
+    if (Array.isArray(item.data?.issueNumbers)) {
+      for (const n of item.data.issueNumbers) numbers.add(Number(n));
+    }
+    if (item.id && /^\d+$/.test(String(item.id))) numbers.add(parseInt(String(item.id), 10));
+    for (const n of numbers) {
+      if (Number.isFinite(n) && n > 0) keys.add(`${repo.toLowerCase()}#${n}`);
+    }
+  }
+  return Array.from(keys);
+}
+
+// Repo-aware session index. A session only registers a (repo, number) key when
+// the repo is known, so a session from repo A can never bind to repo B's #N.
+export function buildSessionIndexByRepo(sessions: any[]): Map<string, any> {
+  const index = new Map<string, any>();
+  if (!sessions || !Array.isArray(sessions)) return index;
+
+  const activityPriority = (act: string): number => {
+    if (act === 'running') return 4;
+    if (act === 'waiting-permission' || act === 'waiting-question' || (typeof act === 'string' && act.startsWith('waiting'))) return 3;
+    if (act === 'idle') return 2;
+    return 1;
+  };
+
+  for (const session of sessions) {
+    if (!session) continue;
+    for (const key of sessionRepoKeys(session)) {
+      const existing = index.get(key);
+      if (!existing || activityPriority(session.activity || '') > activityPriority(existing.activity || '')) {
+        index.set(key, session);
+      }
+    }
+  }
+  return index;
+}
+
+export function findSessionForIssueByRepo(index: Map<string, any> | null | undefined, issue: Issue | null | undefined): any | null {
+  if (!index || !issue) return null;
+  const key = issueRepoKey(issue);
+  if (!key) return null;
+  return index.get(key) || null;
+}
+
+// ==========================================
+// Workspace Root Resolution & Rate-Limit Helpers
+// ==========================================
+
+export interface WorkspaceRootResolution {
+  project: ProjectItem | null;
+  /** True only when a project is registered with directory exactly /workspace. */
+  pinned: boolean;
+  reason: 'exact' | 'named' | 'missing';
+}
+
+// Deterministically resolves the project that represents the /workspace root.
+// Never silently falls back to an arbitrary shortest directory: if no project
+// is registered at /workspace we report `missing` (or `named` for a project
+// explicitly called "workspace"), so the caller can warn the operator.
+export function resolveWorkspaceRootProject(projects: ProjectItem[] | null | undefined): WorkspaceRootResolution {
+  const list = Array.isArray(projects) ? projects.filter(Boolean) : [];
+
+  const exact = list.find((p) => p.directory && p.directory.replace(/\/+$/, '') === '/workspace');
+  if (exact) return { project: exact, pinned: true, reason: 'exact' };
+
+  const named = list.find((p) => {
+    const name = (p.name || '').trim().toLowerCase();
+    const id = (p.id || '').trim().toLowerCase();
+    const basename = p.directory ? p.directory.replace(/\/+$/, '').split('/').filter(Boolean).pop() || '' : '';
+    return name === 'workspace' || id === 'workspace' || basename === 'workspace';
+  });
+  if (named) return { project: named, pinned: false, reason: 'named' };
+
+  return { project: null, pinned: false, reason: 'missing' };
+}
+
+// Parses Retry-After (delay-seconds or HTTP-date) into milliseconds.
+export function parseRetryAfterMs(headers: Record<string, string> | null | undefined, now: number = Date.now()): number {
+  if (!headers) return 0;
+  const raw = headers['retry-after'] ?? headers['Retry-After'];
+  if (raw === undefined || raw === null || raw === '') return 0;
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.round(seconds * 1000);
+  const date = Date.parse(String(raw));
+  if (!Number.isNaN(date)) return Math.max(0, date - now);
+  return 0;
+}
+
+// Distinguishes a GitHub secondary/primary rate limit from a real auth failure
+// so callers can back off instead of showing the authentication banner.
+export function isSecondaryRateLimit(
+  status: number,
+  headers?: Record<string, string> | null,
+  body?: string | null
+): boolean {
+  if (status !== 403 && status !== 429) return false;
+  const retryAfter = headers?.['retry-after'] ?? headers?.['Retry-After'];
+  if (retryAfter !== undefined && retryAfter !== null && retryAfter !== '') return true;
+  const remaining = headers?.['x-ratelimit-remaining'] ?? headers?.['X-RateLimit-Remaining'];
+  if (remaining !== undefined && Number(remaining) === 0) return true;
+  const text = typeof body === 'string' ? body.toLowerCase() : '';
+  return (
+    text.includes('secondary rate limit') ||
+    text.includes('abuse detection') ||
+    text.includes('rate limit') ||
+    text.includes('api rate limit exceeded')
+  );
+}
+
+// Exponential backoff, clamped. A server-provided Retry-After always wins.
+export function computeBackoffMs(attempt: number, retryAfterMs: number = 0, baseMs: number = 1000, maxMs: number = 60000): number {
+  if (retryAfterMs > 0) return Math.min(retryAfterMs, maxMs);
+  const exp = baseMs * Math.pow(2, Math.max(0, attempt));
+  return Math.min(maxMs, Math.max(baseMs, exp));
+}
+
+export interface RetryWithBackoffOptions {
+  maxAttempts?: number;
+  baseMs?: number;
+  maxMs?: number;
+  isRetryable?: (err: any) => boolean;
+  getRetryAfterMs?: (err: any) => number;
+  sleep?: (ms: number) => Promise<void>;
+  onRetry?: (attempt: number, delayMs: number, err: any) => void;
+}
+
+export async function retryWithBackoff<T>(
+  worker: (attempt: number) => Promise<T>,
+  options: RetryWithBackoffOptions = {}
+): Promise<T> {
+  const maxAttempts = Math.max(1, options.maxAttempts ?? 3);
+  const baseMs = options.baseMs ?? 1000;
+  const maxMs = options.maxMs ?? 60000;
+  const isRetryable = options.isRetryable ?? (() => false);
+  const getRetryAfterMs = options.getRetryAfterMs ?? (() => 0);
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+
+  let lastErr: any;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await worker(attempt);
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryable(err) || attempt === maxAttempts - 1) throw err;
+      const delay = computeBackoffMs(attempt, getRetryAfterMs(err), baseMs, maxMs);
+      options.onRetry?.(attempt, delay, err);
+      await sleep(delay);
+    }
+  }
+  throw lastErr;
+}
+
+export interface ConcurrencyResult<T, R> {
+  item: T;
+  status: 'fulfilled' | 'rejected';
+  value?: R;
+  reason?: any;
+}
+
+// Runs `worker` over `items` with at most `limit` promises in flight, returning
+// one settled result per item. Keeps multi-repo bursts within API limits.
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<Array<ConcurrencyResult<T, R>>> {
+  const list = Array.isArray(items) ? items : [];
+  const results: Array<ConcurrencyResult<T, R>> = new Array(list.length);
+  const concurrency = Math.max(1, Math.min(Math.floor(limit) || 1, list.length || 1));
+  let cursor = 0;
+
+  const runner = async (): Promise<void> => {
+    while (true) {
+      const index = cursor++;
+      if (index >= list.length) return;
+      try {
+        results[index] = { item: list[index], status: 'fulfilled', value: await worker(list[index], index) };
+      } catch (reason) {
+        results[index] = { item: list[index], status: 'rejected', reason };
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: concurrency }, () => runner()));
+  return results;
 }
 
 

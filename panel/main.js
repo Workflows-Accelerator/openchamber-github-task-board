@@ -3031,6 +3031,13 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       this.getSession = options.getSession;
       this.onReconciled = options.onReconciled;
     }
+    // Repo-qualified key so two same-numbered issues in different repositories
+    // are tracked independently and never block or overwrite each other.
+    keyFor(issue) {
+      const repo = issue && typeof issue.repo === "string" ? issue.repo.trim().toLowerCase() : "";
+      if (repo && Number.isFinite(issue?.number)) return `${repo}#${issue.number}`;
+      return `#${issue?.number}`;
+    }
     schedule(issues2) {
       if (this.timer) {
         clearTimeout(this.timer);
@@ -3055,18 +3062,19 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
         );
         const currentStatus = currentLabels.find((n) => n.startsWith("status:"))?.replace("status:", "").trim();
         if (currentStatus === targetCol) continue;
-        if (this.inFlight.has(issue.number)) continue;
-        if (this.lastReconciled.get(issue.number) === targetCol) continue;
-        this.inFlight.add(issue.number);
-        this.lastReconciled.set(issue.number, targetCol);
+        const key = this.keyFor(issue);
+        if (this.inFlight.has(key)) continue;
+        if (this.lastReconciled.get(key) === targetCol) continue;
+        this.inFlight.add(key);
+        this.lastReconciled.set(key, targetCol);
         try {
           await this.updateStatus(issue, targetCol);
           reconciled.push({ issueNumber: issue.number, target: targetCol });
           this.onReconciled?.(issue, targetCol);
         } catch (err) {
-          this.lastReconciled.delete(issue.number);
+          this.lastReconciled.delete(key);
         } finally {
-          this.inFlight.delete(issue.number);
+          this.inFlight.delete(key);
         }
       }
       return reconciled;
@@ -3079,11 +3087,13 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       this.inFlight.clear();
       this.lastReconciled.clear();
     }
-    isInFlight(issueNumber) {
-      return this.inFlight.has(issueNumber);
+    isInFlight(issueOrNumber) {
+      const key = typeof issueOrNumber === "number" ? `#${issueOrNumber}` : this.keyFor(issueOrNumber);
+      return this.inFlight.has(key);
     }
-    getLastReconciled(issueNumber) {
-      return this.lastReconciled.get(issueNumber);
+    getLastReconciled(issueOrNumber) {
+      const key = typeof issueOrNumber === "number" ? `#${issueOrNumber}` : this.keyFor(issueOrNumber);
+      return this.lastReconciled.get(key);
     }
   };
 
@@ -4453,13 +4463,7 @@ Blocked by ${blockerRef}`;
   }
   function getIssueRepoFullName(issue) {
     if (!issue) return null;
-    const repo = typeof issue.repo === "string" ? issue.repo.trim() : "";
-    if (repo && repo.includes("/")) return repo;
-    const match = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(issue.html_url || "");
-    if (match) {
-      return `${match[1]}/${match[2].replace(/\.git$/, "")}`;
-    }
-    return null;
+    return parseRepoFullName(issue.repo) || parseRepoFullName(issue.html_url) || null;
   }
   function aggregateProjectIssues(sources) {
     const byKey = /* @__PURE__ */ new Map();
@@ -4541,6 +4545,150 @@ Blocked by ${blockerRef}`;
     }
     return entry.issues;
   }
+  function parseRepoFullName(value) {
+    if (!value || typeof value !== "string") return null;
+    const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(value);
+    if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, "")}`;
+    const cleaned = value.trim().replace(/\.git$/, "");
+    if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+    return null;
+  }
+  function getSessionIssueRepo(item) {
+    if (!item) return null;
+    const explicit = item.repo ?? item.projectRepo ?? item.data?.repo;
+    const fromExplicit = parseRepoFullName(explicit);
+    if (fromExplicit) return fromExplicit;
+    return parseRepoFullName(item.html_url) || parseRepoFullName(item.url);
+  }
+  function issueRepoKey(issue) {
+    if (!issue || !Number.isFinite(issue.number)) return null;
+    const repo = getIssueRepoFullName(issue);
+    if (!repo) return null;
+    return `${repo.toLowerCase()}#${issue.number}`;
+  }
+  function sessionRepoKeys(session) {
+    const keys = /* @__PURE__ */ new Set();
+    if (!session) return [];
+    const items = Array.isArray(session.items) ? session.items : [];
+    for (const item of items) {
+      if (!item) continue;
+      const repo = getSessionIssueRepo(item);
+      if (!repo) continue;
+      const numbers = /* @__PURE__ */ new Set();
+      if (item.data?.issueNumber != null) numbers.add(Number(item.data.issueNumber));
+      if (Array.isArray(item.data?.issueNumbers)) {
+        for (const n of item.data.issueNumbers) numbers.add(Number(n));
+      }
+      if (item.id && /^\d+$/.test(String(item.id))) numbers.add(parseInt(String(item.id), 10));
+      for (const n of numbers) {
+        if (Number.isFinite(n) && n > 0) keys.add(`${repo.toLowerCase()}#${n}`);
+      }
+    }
+    return Array.from(keys);
+  }
+  function buildSessionIndexByRepo(sessions2) {
+    const index = /* @__PURE__ */ new Map();
+    if (!sessions2 || !Array.isArray(sessions2)) return index;
+    const activityPriority = (act) => {
+      if (act === "running") return 4;
+      if (act === "waiting-permission" || act === "waiting-question" || typeof act === "string" && act.startsWith("waiting")) return 3;
+      if (act === "idle") return 2;
+      return 1;
+    };
+    for (const session of sessions2) {
+      if (!session) continue;
+      for (const key of sessionRepoKeys(session)) {
+        const existing = index.get(key);
+        if (!existing || activityPriority(session.activity || "") > activityPriority(existing.activity || "")) {
+          index.set(key, session);
+        }
+      }
+    }
+    return index;
+  }
+  function findSessionForIssueByRepo(index, issue) {
+    if (!index || !issue) return null;
+    const key = issueRepoKey(issue);
+    if (!key) return null;
+    return index.get(key) || null;
+  }
+  function resolveWorkspaceRootProject(projects) {
+    const list = Array.isArray(projects) ? projects.filter(Boolean) : [];
+    const exact = list.find((p) => p.directory && p.directory.replace(/\/+$/, "") === "/workspace");
+    if (exact) return { project: exact, pinned: true, reason: "exact" };
+    const named = list.find((p) => {
+      const name = (p.name || "").trim().toLowerCase();
+      const id = (p.id || "").trim().toLowerCase();
+      const basename = p.directory ? p.directory.replace(/\/+$/, "").split("/").filter(Boolean).pop() || "" : "";
+      return name === "workspace" || id === "workspace" || basename === "workspace";
+    });
+    if (named) return { project: named, pinned: false, reason: "named" };
+    return { project: null, pinned: false, reason: "missing" };
+  }
+  function parseRetryAfterMs(headers, now = Date.now()) {
+    if (!headers) return 0;
+    const raw = headers["retry-after"] ?? headers["Retry-After"];
+    if (raw === void 0 || raw === null || raw === "") return 0;
+    const seconds = Number(raw);
+    if (Number.isFinite(seconds) && seconds >= 0) return Math.round(seconds * 1e3);
+    const date = Date.parse(String(raw));
+    if (!Number.isNaN(date)) return Math.max(0, date - now);
+    return 0;
+  }
+  function isSecondaryRateLimit(status, headers, body) {
+    if (status !== 403 && status !== 429) return false;
+    const retryAfter = headers?.["retry-after"] ?? headers?.["Retry-After"];
+    if (retryAfter !== void 0 && retryAfter !== null && retryAfter !== "") return true;
+    const remaining = headers?.["x-ratelimit-remaining"] ?? headers?.["X-RateLimit-Remaining"];
+    if (remaining !== void 0 && Number(remaining) === 0) return true;
+    const text = typeof body === "string" ? body.toLowerCase() : "";
+    return text.includes("secondary rate limit") || text.includes("abuse detection") || text.includes("rate limit") || text.includes("api rate limit exceeded");
+  }
+  function computeBackoffMs(attempt, retryAfterMs = 0, baseMs = 1e3, maxMs = 6e4) {
+    if (retryAfterMs > 0) return Math.min(retryAfterMs, maxMs);
+    const exp = baseMs * Math.pow(2, Math.max(0, attempt));
+    return Math.min(maxMs, Math.max(baseMs, exp));
+  }
+  async function retryWithBackoff(worker, options = {}) {
+    const maxAttempts = Math.max(1, options.maxAttempts ?? 3);
+    const baseMs = options.baseMs ?? 1e3;
+    const maxMs = options.maxMs ?? 6e4;
+    const isRetryable = options.isRetryable ?? (() => false);
+    const getRetryAfterMs = options.getRetryAfterMs ?? (() => 0);
+    const sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    let lastErr;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        return await worker(attempt);
+      } catch (err) {
+        lastErr = err;
+        if (!isRetryable(err) || attempt === maxAttempts - 1) throw err;
+        const delay = computeBackoffMs(attempt, getRetryAfterMs(err), baseMs, maxMs);
+        options.onRetry?.(attempt, delay, err);
+        await sleep(delay);
+      }
+    }
+    throw lastErr;
+  }
+  async function mapWithConcurrency(items, limit, worker) {
+    const list = Array.isArray(items) ? items : [];
+    const results = new Array(list.length);
+    const concurrency = Math.max(1, Math.min(Math.floor(limit) || 1, list.length || 1));
+    let cursor = 0;
+    const runner = async () => {
+      while (true) {
+        const index = cursor++;
+        if (index >= list.length) return;
+        try {
+          results[index] = { item: list[index], status: "fulfilled", value: await worker(list[index], index) };
+        } catch (reason) {
+          results[index] = { item: list[index], status: "rejected", reason };
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: concurrency }, () => runner()));
+    return results;
+  }
 
   // panel/main.ts
   var host = connectHost();
@@ -4552,10 +4700,14 @@ Blocked by ${blockerRef}`;
   var allProjectsRepoRefs = [];
   var ALL_PROJECTS_CACHE_KEY = "__all_projects__";
   var MAX_PROJECT_ISSUE_PAGES = 10;
+  var MAX_CONCURRENT_REPO_FETCHES = 4;
+  var RATE_LIMIT_MAX_ATTEMPTS = 3;
+  var workspaceRootNoticeShown = false;
   var isDiscoveringRepos = false;
   var issues = [];
   var sessions = [];
   var sessionIndex = /* @__PURE__ */ new Map();
+  var sessionIndexByRepo = /* @__PURE__ */ new Map();
   var worktrees = [];
   var activeIssue = null;
   var searchQuery = "";
@@ -4791,11 +4943,13 @@ Blocked by ${blockerRef}`;
     }
     sessions = [];
     sessionIndex = /* @__PURE__ */ new Map();
+    sessionIndexByRepo = /* @__PURE__ */ new Map();
     try {
       unsubSessions = await host.onSessions(projectId, (sessSnap) => {
         const prevSessions = sessions;
         sessions = sessSnap.sessions || [];
         sessionIndex = buildSessionIndex(sessions);
+        sessionIndexByRepo = buildSessionIndexByRepo(sessions);
         renderViews();
         if (activeIssue) renderDrawer(activeIssue);
         statusReconciler.schedule(issues);
@@ -5008,6 +5162,7 @@ Blocked by ${blockerRef}`;
     userSelectedTab = false;
     isAllProjectsMode = false;
     allProjectsRepoRefs = [];
+    workspaceRootNoticeShown = false;
     currentRepo = repo;
     issues = [];
     showAllDoneIssues = false;
@@ -5131,15 +5286,21 @@ Blocked by ${blockerRef}`;
     hideBanner();
     closeRepoPopover();
     addLog(`All Projects mode: aggregating issues from ${refs.length} repositories`, "succ");
+    getWorkspaceRootProject();
     await fetchAllProjectIssues();
   }
   function getWorkspaceRootProject() {
-    const exact = allProjects.find(
-      (p) => p.directory && p.directory.replace(/\/+$/, "") === "/workspace"
-    );
-    if (exact) return exact;
-    const candidates = allProjects.filter((p) => !!p.directory).sort((a, b) => a.directory.length - b.directory.length);
-    return candidates[0] || null;
+    const resolution = resolveWorkspaceRootProject(allProjects);
+    if (!resolution.pinned && !workspaceRootNoticeShown) {
+      workspaceRootNoticeShown = true;
+      addLog(
+        resolution.project ? `No project is registered at /workspace. Global sessions cannot be pinned to /workspace; using "${resolution.project.name}" (${resolution.project.directory}) for All Projects launches.` : 'No project is registered at /workspace and none is named "workspace". Global sessions cannot be pinned to /workspace; All Projects will use the active project.',
+        "warn"
+      );
+    } else if (resolution.pinned) {
+      workspaceRootNoticeShown = false;
+    }
+    return resolution.project;
   }
   var workspaceGitToken = null;
   async function getWorkspaceGitToken() {
@@ -5164,6 +5325,44 @@ Blocked by ${blockerRef}`;
     } catch {
     }
     return null;
+  }
+  function headerRecord(headers) {
+    const out = {};
+    if (!headers) return out;
+    if (typeof headers.forEach === "function") {
+      headers.forEach((value, key) => {
+        out[String(key).toLowerCase()] = String(value);
+      });
+      return out;
+    }
+    if (typeof headers === "object") {
+      for (const key of Object.keys(headers)) {
+        out[String(key).toLowerCase()] = String(headers[key]);
+      }
+    }
+    return out;
+  }
+  function makeRateLimitError(status, retryAfterMs) {
+    const err = new Error(
+      `GitHub rate limit (HTTP ${status})${retryAfterMs > 0 ? `; retry after ${Math.ceil(retryAfterMs / 1e3)}s` : ""}.`
+    );
+    err.rateLimited = true;
+    err.retryAfterMs = retryAfterMs;
+    return err;
+  }
+  function rateLimitErrorFromResponse(status, headers, body) {
+    const record = headerRecord(headers);
+    const bodyText = typeof body === "string" ? body : "";
+    if (!isSecondaryRateLimit(status, record, bodyText)) return null;
+    const retryAfterMs = parseRetryAfterMs(record);
+    lastRateLimitRemaining = 0;
+    addLog(`GitHub rate limit hit (HTTP ${status}); backing off ${Math.ceil(retryAfterMs / 1e3)}s before retry...`, "warn");
+    showBanner(
+      "GitHub rate limit reached. The board is backing off and will retry automatically.",
+      "Dismiss",
+      () => hideBanner()
+    );
+    return makeRateLimitError(status, retryAfterMs);
   }
   async function githubRequest(method, path, body, query) {
     addLog(`API ${method} ${path}`);
@@ -5190,8 +5389,18 @@ Blocked by ${blockerRef}`;
           if (rem !== null) lastRateLimitRemaining = parseInt(rem, 10);
           return directRes.json();
         }
+        if (directRes.status === 403 || directRes.status === 429) {
+          let errBody = "";
+          try {
+            errBody = await directRes.clone().text();
+          } catch {
+          }
+          const rlErr = rateLimitErrorFromResponse(directRes.status, directRes.headers, errBody);
+          if (rlErr) throw rlErr;
+        }
         addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, "warn");
       } catch (err) {
+        if (err && err.rateLimited) throw err;
         addLog(`Direct PAT fetch failed (${err.message}), falling back to host proxy...`, "warn");
       }
     }
@@ -5211,6 +5420,10 @@ Blocked by ${blockerRef}`;
           if (rem) lastRateLimitRemaining = parseInt(rem, 10);
         }
         return typeof res.body === "string" ? JSON.parse(res.body) : res.body;
+      }
+      if (res.status === 403 || res.status === 429) {
+        const rlErr = rateLimitErrorFromResponse(res.status, res.headers, res.body);
+        if (rlErr) throw rlErr;
       }
       if (res.status === 401 || res.status === 403) {
         addLog(`API auth error HTTP ${res.status}: OAuth access restricted or missing`, "error");
@@ -5340,18 +5553,28 @@ Blocked by ${blockerRef}`;
         renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || "Check GitHub integration tokens"}`);
       }
     } finally {
-      isLoading = false;
-      if (elIconRefresh) elIconRefresh.style.animation = "";
+      if (activeStreamEpoch === streamEpoch) {
+        isLoading = false;
+        if (elIconRefresh) elIconRefresh.style.animation = "";
+      }
     }
   }
+  function githubRequestWithRetry(method, path) {
+    return retryWithBackoff(() => githubRequest(method, path), {
+      maxAttempts: RATE_LIMIT_MAX_ATTEMPTS,
+      isRetryable: (err) => Boolean(err && err.rateLimited),
+      getRetryAfterMs: (err) => Number(err?.retryAfterMs) || 0,
+      onRetry: (attempt, delayMs) => addLog(`Rate limited; retrying (${attempt + 1}) in ${Math.round(delayMs / 1e3)}s...`, "warn")
+    });
+  }
   async function fetchAllRepoIssuePages(repo, epoch) {
-    const firstRaw = await githubRequest("GET", `/repos/${repo}/issues?state=all&per_page=100&page=1`);
+    const firstRaw = await githubRequestWithRetry("GET", `/repos/${repo}/issues?state=all&per_page=100&page=1`);
     const firstItems = Array.isArray(firstRaw) ? firstRaw : firstRaw?.items || [];
     let repoIssues = normalizeGithubIssues(firstItems);
     if (firstItems.length < 100) return repoIssues;
     let page = 2;
     while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
-      const nextRaw = await githubRequest("GET", `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
+      const nextRaw = await githubRequestWithRetry("GET", `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
       const nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
       if (nextItems.length === 0) break;
       repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
@@ -5373,26 +5596,39 @@ Blocked by ${blockerRef}`;
         return;
       }
     }
+    if (!force && issues.length === 0 && host?.storage) {
+      try {
+        const stored = await host.storage.get(`cached_issues_${cacheKey}`);
+        if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
+          issues = stored.issues;
+          issueCache.set(cacheKey, { timestamp: stored.timestamp || Date.now(), issues });
+          if (!userSelectedTab) selectTab(resolveDefaultTab2(issues));
+          renderViews();
+          addLog(`Instantly rendered ${issues.length} aggregated issues from persistent storage`);
+        }
+      } catch {
+      }
+    }
     isLoading = true;
     if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
     try {
       const refs = [...allProjectsRepoRefs];
-      addLog(`Fetching issues in parallel across ${refs.length} repositories...`);
-      const settled = await Promise.allSettled(
-        refs.map(async (ref) => ({
-          projectId: ref.projectId,
-          projectName: ref.projectName,
-          repo: ref.repo,
-          issues: await fetchAllRepoIssuePages(ref.repo, epoch)
-        }))
-      );
+      addLog(`Fetching issues across ${refs.length} repositories (max ${MAX_CONCURRENT_REPO_FETCHES} in parallel)...`);
+      const settled = await mapWithConcurrency(refs, MAX_CONCURRENT_REPO_FETCHES, async (ref) => ({
+        projectId: ref.projectId,
+        projectName: ref.projectName,
+        repo: ref.repo,
+        issues: await fetchAllRepoIssuePages(ref.repo, epoch)
+      }));
       if (activeStreamEpoch !== epoch) return;
-      const sources = settled.filter((r) => r.status === "fulfilled").map((r) => r.value);
-      settled.forEach((r) => {
-        if (r.status === "rejected") {
-          addLog(`Skipped repository during aggregation: ${r.reason?.message || r.reason}`, "warn");
+      const sources = [];
+      for (const result of settled) {
+        if (result.status === "fulfilled" && result.value) {
+          sources.push(result.value);
+        } else if (result.status === "rejected") {
+          addLog(`Skipped repository during aggregation: ${result.reason?.message || result.reason}`, "warn");
         }
-      });
+      }
       if (sources.length === 0) {
         throw new Error("All repository requests failed");
       }
@@ -5415,8 +5651,10 @@ Blocked by ${blockerRef}`;
         renderEmptyState(`Failed to load aggregated issues: ${err.message || "Check GitHub integration tokens"}`);
       }
     } finally {
-      isLoading = false;
-      if (elIconRefresh) elIconRefresh.style.animation = "";
+      if (activeStreamEpoch === epoch) {
+        isLoading = false;
+        if (elIconRefresh) elIconRefresh.style.animation = "";
+      }
     }
   }
   function repoForIssue(issue) {
@@ -5666,6 +5904,9 @@ Blocked by ${blockerRef}`;
   }
   function getIssueSession(issue) {
     if (!issue) return null;
+    if (isAllProjectsMode) {
+      return findSessionForIssueByRepo(sessionIndexByRepo, issue) || null;
+    }
     return sessionIndex.get(issue.number) || null;
   }
   function resolveIssueColumn2(issue, sessionOverride) {

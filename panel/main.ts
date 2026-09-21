@@ -137,6 +137,13 @@ import {
   aggregateProjectIssues,
   readCachedIssueCollection,
   getProjectRepoFullName,
+  buildSessionIndexByRepo,
+  findSessionForIssueByRepo,
+  resolveWorkspaceRootProject,
+  parseRetryAfterMs,
+  isSecondaryRateLimit,
+  retryWithBackoff,
+  mapWithConcurrency,
 } from './core.js';
 export type { TestItem };
 export {
@@ -180,10 +187,14 @@ interface ProjectRepoRef {
 let allProjectsRepoRefs: ProjectRepoRef[] = [];
 const ALL_PROJECTS_CACHE_KEY = '__all_projects__';
 const MAX_PROJECT_ISSUE_PAGES = 10;
+const MAX_CONCURRENT_REPO_FETCHES = 4;
+const RATE_LIMIT_MAX_ATTEMPTS = 3;
+let workspaceRootNoticeShown = false;
 let isDiscoveringRepos: boolean = false;
 let issues: Issue[] = [];
 let sessions: SessionInfo[] = [];
 let sessionIndex: Map<number, SessionInfo> = new Map();
+let sessionIndexByRepo: Map<string, SessionInfo> = new Map();
 let worktrees: any[] = [];
 let activeIssue: Issue | null = null;
 let searchQuery: string = '';
@@ -493,12 +504,14 @@ async function watchActiveProject(projectId: string): Promise<void> {
   }
   sessions = [];
   sessionIndex = new Map();
+  sessionIndexByRepo = new Map();
 
   try {
     unsubSessions = await host.onSessions(projectId, (sessSnap) => {
       const prevSessions = sessions;
       sessions = (sessSnap.sessions as any[]) || [];
       sessionIndex = buildSessionIndex(sessions);
+      sessionIndexByRepo = buildSessionIndexByRepo(sessions);
       renderViews();
       if (activeIssue) renderDrawer(activeIssue);
       statusReconciler.schedule(issues);
@@ -762,6 +775,7 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
   userSelectedTab = false;
   isAllProjectsMode = false;
   allProjectsRepoRefs = [];
+  workspaceRootNoticeShown = false;
   currentRepo = repo;
   issues = [];
   showAllDoneIssues = false;
@@ -908,16 +922,26 @@ async function selectAllProjects(): Promise<void> {
   closeRepoPopover();
   addLog(`All Projects mode: aggregating issues from ${refs.length} repositories`, 'succ');
 
+  // Surface early if global sessions cannot be pinned to the /workspace root.
+  getWorkspaceRootProject();
+
   await fetchAllProjectIssues();
 }
 
 function getWorkspaceRootProject(): ProjectItem | null {
-  const exact = allProjects.find(
-    (p) => p.directory && p.directory.replace(/\/+$/, '') === '/workspace'
-  );
-  if (exact) return exact;
-  const candidates = allProjects.filter((p) => !!p.directory).sort((a, b) => a.directory.length - b.directory.length);
-  return candidates[0] || null;
+  const resolution = resolveWorkspaceRootProject(allProjects);
+  if (!resolution.pinned && !workspaceRootNoticeShown) {
+    workspaceRootNoticeShown = true;
+    addLog(
+      resolution.project
+        ? `No project is registered at /workspace. Global sessions cannot be pinned to /workspace; using "${resolution.project.name}" (${resolution.project.directory}) for All Projects launches.`
+        : 'No project is registered at /workspace and none is named "workspace". Global sessions cannot be pinned to /workspace; All Projects will use the active project.',
+      'warn'
+    );
+  } else if (resolution.pinned) {
+    workspaceRootNoticeShown = false;
+  }
+  return resolution.project;
 }
 
 let workspaceGitToken: string | null = null;
@@ -947,6 +971,49 @@ async function getWorkspaceGitToken(): Promise<string | null> {
 // ==========================================
 // GitHub API Client Layer
 // ==========================================
+
+function headerRecord(headers: any): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!headers) return out;
+  if (typeof headers.forEach === 'function') {
+    headers.forEach((value: any, key: any) => {
+      out[String(key).toLowerCase()] = String(value);
+    });
+    return out;
+  }
+  if (typeof headers === 'object') {
+    for (const key of Object.keys(headers)) {
+      out[String(key).toLowerCase()] = String(headers[key]);
+    }
+  }
+  return out;
+}
+
+function makeRateLimitError(status: number, retryAfterMs: number): Error {
+  const err: any = new Error(
+    `GitHub rate limit (HTTP ${status})${retryAfterMs > 0 ? `; retry after ${Math.ceil(retryAfterMs / 1000)}s` : ''}.`
+  );
+  err.rateLimited = true;
+  err.retryAfterMs = retryAfterMs;
+  return err;
+}
+
+// Detects a rate limit on a non-2xx GitHub response. Shows a specific notice
+// (never the authentication banner) and returns a tagged, retryable error.
+function rateLimitErrorFromResponse(status: number, headers: any, body: any): Error | null {
+  const record = headerRecord(headers);
+  const bodyText = typeof body === 'string' ? body : '';
+  if (!isSecondaryRateLimit(status, record, bodyText)) return null;
+  const retryAfterMs = parseRetryAfterMs(record);
+  lastRateLimitRemaining = 0;
+  addLog(`GitHub rate limit hit (HTTP ${status}); backing off ${Math.ceil(retryAfterMs / 1000)}s before retry...`, 'warn');
+  showBanner(
+    'GitHub rate limit reached. The board is backing off and will retry automatically.',
+    'Dismiss',
+    () => hideBanner()
+  );
+  return makeRateLimitError(status, retryAfterMs);
+}
 
 async function githubRequest(
   method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
@@ -982,8 +1049,17 @@ async function githubRequest(
         if (rem !== null) lastRateLimitRemaining = parseInt(rem, 10);
         return directRes.json();
       }
+      if (directRes.status === 403 || directRes.status === 429) {
+        let errBody = '';
+        try {
+          errBody = await directRes.clone().text();
+        } catch {}
+        const rlErr = rateLimitErrorFromResponse(directRes.status, directRes.headers, errBody);
+        if (rlErr) throw rlErr;
+      }
       addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, 'warn');
     } catch (err: any) {
+      if (err && err.rateLimited) throw err;
       addLog(`Direct PAT fetch failed (${err.message}), falling back to host proxy...`, 'warn');
     }
   }
@@ -1005,6 +1081,10 @@ async function githubRequest(
         if (rem) lastRateLimitRemaining = parseInt(rem, 10);
       }
       return typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+    }
+    if (res.status === 403 || res.status === 429) {
+      const rlErr = rateLimitErrorFromResponse(res.status, (res as any).headers, res.body);
+      if (rlErr) throw rlErr;
     }
     if (res.status === 401 || res.status === 403) {
       addLog(`API auth error HTTP ${res.status}: OAuth access restricted or missing`, 'error');
@@ -1154,15 +1234,28 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || 'Check GitHub integration tokens'}`);
     }
   } finally {
-    isLoading = false;
-    if (elIconRefresh) elIconRefresh.style.animation = '';
+    // Only the newest fetch may clear the spinner; a superseded one must not.
+    if (activeStreamEpoch === streamEpoch) {
+      isLoading = false;
+      if (elIconRefresh) elIconRefresh.style.animation = '';
+    }
   }
+}
+
+// GitHub request with bounded retry/backoff for rate-limit responses.
+function githubRequestWithRetry(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', path: string): Promise<any> {
+  return retryWithBackoff(() => githubRequest(method, path), {
+    maxAttempts: RATE_LIMIT_MAX_ATTEMPTS,
+    isRetryable: (err: any) => Boolean(err && err.rateLimited),
+    getRetryAfterMs: (err: any) => Number(err?.retryAfterMs) || 0,
+    onRetry: (attempt, delayMs) => addLog(`Rate limited; retrying (${attempt + 1}) in ${Math.round(delayMs / 1000)}s...`, 'warn'),
+  });
 }
 
 // Fetch every page of issues for one repository, capped so a single runaway
 // repo cannot exhaust the API budget. Returns normalized issues only.
 async function fetchAllRepoIssuePages(repo: string, epoch: number): Promise<Issue[]> {
-  const firstRaw = await githubRequest('GET', `/repos/${repo}/issues?state=all&per_page=100&page=1`);
+  const firstRaw = await githubRequestWithRetry('GET', `/repos/${repo}/issues?state=all&per_page=100&page=1`);
   const firstItems = Array.isArray(firstRaw) ? firstRaw : (firstRaw?.items || []);
   let repoIssues = normalizeGithubIssues(firstItems);
 
@@ -1170,7 +1263,7 @@ async function fetchAllRepoIssuePages(repo: string, epoch: number): Promise<Issu
 
   let page = 2;
   while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
-    const nextRaw = await githubRequest('GET', `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
+    const nextRaw = await githubRequestWithRetry('GET', `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
     const nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
     if (nextItems.length === 0) break;
     repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
@@ -1196,31 +1289,43 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
     }
   }
 
+  // 2. Persistent cache: instant render on a fresh reload before the network.
+  if (!force && issues.length === 0 && host?.storage) {
+    try {
+      const stored = (await host.storage.get(`cached_issues_${cacheKey}`)) as any;
+      if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
+        issues = stored.issues;
+        issueCache.set(cacheKey, { timestamp: stored.timestamp || Date.now(), issues });
+        if (!userSelectedTab) selectTab(resolveDefaultTab(issues));
+        renderViews();
+        addLog(`Instantly rendered ${issues.length} aggregated issues from persistent storage`);
+      }
+    } catch {}
+  }
+
   isLoading = true;
   if (elIconRefresh) elIconRefresh.style.animation = 'spin 1s linear infinite';
 
   try {
     const refs = [...allProjectsRepoRefs];
-    addLog(`Fetching issues in parallel across ${refs.length} repositories...`);
+    addLog(`Fetching issues across ${refs.length} repositories (max ${MAX_CONCURRENT_REPO_FETCHES} in parallel)...`);
 
-    const settled = await Promise.allSettled(
-      refs.map(async (ref) => ({
-        projectId: ref.projectId,
-        projectName: ref.projectName,
-        repo: ref.repo,
-        issues: await fetchAllRepoIssuePages(ref.repo, epoch),
-      }))
-    );
+    const settled = await mapWithConcurrency(refs, MAX_CONCURRENT_REPO_FETCHES, async (ref) => ({
+      projectId: ref.projectId,
+      projectName: ref.projectName,
+      repo: ref.repo,
+      issues: await fetchAllRepoIssuePages(ref.repo, epoch),
+    }));
     if (activeStreamEpoch !== epoch) return;
 
-    const sources = settled
-      .filter((r): r is PromiseFulfilledResult<{ projectId: string; projectName: string; repo: string; issues: Issue[] }> => r.status === 'fulfilled')
-      .map((r) => r.value);
-    settled.forEach((r) => {
-      if (r.status === 'rejected') {
-        addLog(`Skipped repository during aggregation: ${r.reason?.message || r.reason}`, 'warn');
+    const sources: Array<{ projectId: string; projectName: string; repo: string; issues: Issue[] }> = [];
+    for (const result of settled) {
+      if (result.status === 'fulfilled' && result.value) {
+        sources.push(result.value);
+      } else if (result.status === 'rejected') {
+        addLog(`Skipped repository during aggregation: ${result.reason?.message || result.reason}`, 'warn');
       }
-    });
+    }
     if (sources.length === 0) {
       throw new Error('All repository requests failed');
     }
@@ -1245,8 +1350,11 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
       renderEmptyState(`Failed to load aggregated issues: ${err.message || 'Check GitHub integration tokens'}`);
     }
   } finally {
-    isLoading = false;
-    if (elIconRefresh) elIconRefresh.style.animation = '';
+    // Only the newest fetch may clear the spinner; a superseded one must not.
+    if (activeStreamEpoch === epoch) {
+      isLoading = false;
+      if (elIconRefresh) elIconRefresh.style.animation = '';
+    }
   }
 }
 
@@ -1549,6 +1657,11 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[
 
 function getIssueSession(issue: Issue): SessionInfo | null {
   if (!issue) return null;
+  // In the aggregated view attribution must be repo-qualified so a session from
+  // repo A never binds to a same-numbered issue in repo B.
+  if (isAllProjectsMode) {
+    return findSessionForIssueByRepo(sessionIndexByRepo, issue) || null;
+  }
   return sessionIndex.get(issue.number) || null;
 }
 
