@@ -1821,8 +1821,9 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
   let awaitingBatchHtml = '';
   if (col === 'in-review' && batchName) {
     const res = isBatchReadyForReview(batchName, issues || []);
-    if (!res.ready && res.outstandingIssues.length > 0) {
-      awaitingBatchHtml = `<span class="badge-awaiting-batch" title="Waiting on #${res.outstandingIssues.join(', #')} before batch testing">Awaiting Batch</span>`;
+    const otherOutstanding = res.outstandingIssues.filter((n) => n !== issue.number);
+    if (!res.ready && otherOutstanding.length > 0) {
+      awaitingBatchHtml = `<span class="badge-awaiting-batch" title="Waiting on #${otherOutstanding.join(', #')} before batch testing">Awaiting Batch</span>`;
     }
   }
 

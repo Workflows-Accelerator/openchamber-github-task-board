@@ -3402,7 +3402,8 @@ ${questionsBlock}`;
     if (!cleanText) return body || "";
     const header = scope === "issue" ? "## Test Plan (Issue)" : "## Test Plan (Batch)";
     const targetRegex = scope === "issue" ? testPlanIssueHeadingRegex : testPlanBatchHeadingRegex;
-    if (!body) {
+    const lineEnding = typeof body === "string" && body.includes("\r\n") ? "\r" : "";
+    if (!body || typeof body !== "string") {
       return `${header}
 - [ ] ${cleanText}`;
     }
@@ -3413,7 +3414,7 @@ ${questionsBlock}`;
       if (targetRegex.test(lines[i])) {
         targetHeaderIndex = i;
         for (let j = i + 1; j < lines.length; j++) {
-          if (headingRegex.test(lines[j])) {
+          if (/^#{1,6}\s+/.test(lines[j])) {
             nextHeaderIndex = j;
             break;
           }
@@ -3422,17 +3423,19 @@ ${questionsBlock}`;
       }
     }
     if (targetHeaderIndex !== -1) {
-      if (nextHeaderIndex !== -1) {
-        let insertIndex = nextHeaderIndex;
-        while (insertIndex > targetHeaderIndex + 1 && lines[insertIndex - 1].trim() === "") {
-          insertIndex--;
+      const sectionEnd = nextHeaderIndex !== -1 ? nextHeaderIndex : lines.length;
+      let lastChecklistIndex = -1;
+      for (let i = targetHeaderIndex + 1; i < sectionEnd; i++) {
+        if (checklistRegex.test(lines[i])) {
+          lastChecklistIndex = i;
         }
-        lines.splice(insertIndex, 0, `- [ ] ${cleanText}`);
-        return lines.join("\n");
-      } else {
-        return `${body.trimEnd()}
-- [ ] ${cleanText}`;
       }
+      if (lastChecklistIndex !== -1) {
+        lines.splice(lastChecklistIndex + 1, 0, `- [ ] ${cleanText}${lineEnding}`);
+        return lines.join("\n");
+      }
+      lines.splice(targetHeaderIndex + 1, 0, `- [ ] ${cleanText}${lineEnding}`);
+      return lines.join("\n");
     }
     return `${body.trimEnd()}
 
@@ -3465,10 +3468,28 @@ ${lines.join("\n")}`;
     if (!normalizedBatch || !Array.isArray(allIssues)) {
       return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
     }
-    const batchIssues = allIssues.filter((issue) => {
-      const b = getIssueBatch(issue);
-      return b ? b.toLowerCase() === normalizedBatch : false;
-    });
+    const seenNumbers = /* @__PURE__ */ new Set();
+    const batchIssues = [];
+    for (const issue of allIssues) {
+      if (!issue || typeof issue.number !== "number") continue;
+      if (seenNumbers.has(issue.number)) continue;
+      let belongsToBatch = false;
+      if (Array.isArray(issue.labels)) {
+        for (const l of issue.labels) {
+          const name = (typeof l === "string" ? l : l?.name || "").trim();
+          if (name.toLowerCase().startsWith("batch:")) {
+            if (name.slice(6).trim().toLowerCase() === normalizedBatch) {
+              belongsToBatch = true;
+              break;
+            }
+          }
+        }
+      }
+      if (belongsToBatch) {
+        seenNumbers.add(issue.number);
+        batchIssues.push(issue);
+      }
+    }
     const total = batchIssues.length;
     if (total === 0) {
       return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
@@ -3476,10 +3497,10 @@ ${lines.join("\n")}`;
     let inReviewCount = 0;
     const outstandingIssues = [];
     for (const issue of batchIssues) {
-      const isClosed = issue.state === "closed";
+      const isClosed = typeof issue.state === "string" && issue.state.toLowerCase() === "closed" || issue.state_reason === "completed" || issue.state_reason === "not_planned";
       const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l?.name || "").toLowerCase());
-      const isDone = isClosed || labelNames.includes("status:done") || issue.column === "done" || issue.status === "done";
-      const isInReview = labelNames.includes("status:in-review") || issue.column === "in-review" || issue.status === "in-review";
+      const isDone = isClosed || labelNames.includes("status:done") || labelNames.includes("status:closed") || labelNames.includes("done") || labelNames.includes("closed") || issue.column === "done" || issue.status === "done";
+      const isInReview = !isDone && (labelNames.includes("status:in-review") || labelNames.includes("in-review") || issue.column === "in-review" || issue.status === "in-review");
       if (isInReview) {
         inReviewCount++;
       } else if (!isDone) {
@@ -5557,8 +5578,9 @@ Blocked by ${blockerRef}`;
     let awaitingBatchHtml = "";
     if (col === "in-review" && batchName) {
       const res = isBatchReadyForReview(batchName, issues || []);
-      if (!res.ready && res.outstandingIssues.length > 0) {
-        awaitingBatchHtml = `<span class="badge-awaiting-batch" title="Waiting on #${res.outstandingIssues.join(", #")} before batch testing">Awaiting Batch</span>`;
+      const otherOutstanding = res.outstandingIssues.filter((n) => n !== issue.number);
+      if (!res.ready && otherOutstanding.length > 0) {
+        awaitingBatchHtml = `<span class="badge-awaiting-batch" title="Waiting on #${otherOutstanding.join(", #")} before batch testing">Awaiting Batch</span>`;
       }
     }
     const questionBadgeInfo = formatQuestionBadge(issue.openQuestions);

@@ -357,3 +357,96 @@ test('g) card badge rendering produces awaiting-batch badge when issue is in-rev
   const badgeReady = renderBatchBadge(allReady[0], 'in-review', allReady);
   assert.equal(badgeReady, '');
 });
+
+test('h) batch readiness handles cancelled issues, case-insensitivity, multiple batch labels, and duplicate issue IDs', () => {
+  const issuesWithCancelled = [
+    {
+      number: 501,
+      state: 'open',
+      labels: [{ name: 'batch:core-api' }, { name: 'status:in-review' }],
+    },
+    {
+      number: 502,
+      state: 'CLOSED', // uppercase state
+      state_reason: 'not_planned', // cancelled
+      labels: [{ name: 'batch:core-api' }],
+    },
+    {
+      number: 503,
+      state: 'open',
+      labels: [{ name: 'batch:core-api' }, { name: 'status:closed' }],
+    },
+    // Duplicate entry of #501 shouldn't skew total or counts
+    {
+      number: 501,
+      state: 'open',
+      labels: [{ name: 'batch:core-api' }, { name: 'status:in-review' }],
+    },
+    // Multi-batch issue
+    {
+      number: 504,
+      state: 'open',
+      labels: [{ name: 'batch:other' }, { name: 'batch:core-api' }, { name: 'status:in-progress' }],
+    },
+  ];
+
+  // Batch 'core-api': #501 in-review, #502 cancelled/closed, #503 status:closed, #504 in-progress
+  const res1 = isBatchReadyForReview('core-api', issuesWithCancelled);
+  assert.equal(res1.ready, false);
+  assert.equal(res1.total, 4); // 501, 502, 503, 504 (deduplicated)
+  assert.equal(res1.inReview, 1); // 501
+  assert.deepEqual(res1.outstandingIssues, [504]);
+
+  // When #504 reaches in-review, cancelled issue #502 does not block batch readiness
+  issuesWithCancelled[4].labels = [{ name: 'batch:core-api' }, { name: 'status:in-review' }];
+  const res2 = isBatchReadyForReview('core-api', issuesWithCancelled);
+  assert.equal(res2.ready, true);
+  assert.equal(res2.total, 4);
+  assert.equal(res2.inReview, 2);
+  assert.deepEqual(res2.outstandingIssues, []);
+});
+
+test('i) appendTestItemToMarkdown inserts before trailing notes or paragraphs', () => {
+  const bodyWithNotes = [
+    '## Test Plan (Issue)',
+    '- [ ] First test',
+    '',
+    '### Additional Notes',
+    'Some non-checklist remarks.',
+  ].join('\n');
+
+  const appended = appendTestItemToMarkdown(bodyWithNotes, 'Second test', 'issue');
+  const parsed = parseTestPlan(appended);
+  assert.equal(parsed.issueTests.length, 2);
+  assert.equal(parsed.issueTests[0].text, 'First test');
+  assert.equal(parsed.issueTests[1].text, 'Second test');
+  assert.ok(appended.indexOf('- [ ] Second test') < appended.indexOf('### Additional Notes'));
+
+  // Appending to an empty section with trailing notes
+  const bodyEmptySectionWithNotes = [
+    '## Test Plan (Issue)',
+    '',
+    'Some non-checklist remarks.',
+  ].join('\n');
+
+  const appendedToEmpty = appendTestItemToMarkdown(bodyEmptySectionWithNotes, 'Initial test', 'issue');
+  assert.ok(appendedToEmpty.indexOf('- [ ] Initial test') < appendedToEmpty.indexOf('Some non-checklist remarks.'));
+});
+
+test('j) adversarial stress test: parsing 5,000 test plan items completes in <100ms', () => {
+  const lines = [
+    '## Test Plan (Issue)',
+    ...Array.from({ length: 2500 }, (_, i) => (i % 2 === 0 ? `- [ ] Issue test ${i}` : `- [x] Issue test ${i}`)),
+    '## Test Plan (Batch)',
+    ...Array.from({ length: 2500 }, (_, i) => (i % 2 === 0 ? `- [ ] Batch test ${i}` : `- [x] Batch test ${i}`)),
+  ];
+  const hugeBody = lines.join('\n');
+
+  const start = performance.now();
+  const res = parseTestPlan(hugeBody);
+  const duration = performance.now() - start;
+
+  assert.equal(res.issueTests.length, 2500);
+  assert.equal(res.batchTests.length, 2500);
+  assert.ok(duration < 100, `Parsing 5,000 test plan items took ${duration}ms, expected <100ms`);
+});

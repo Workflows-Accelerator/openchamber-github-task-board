@@ -326,8 +326,9 @@ export function appendTestItemToMarkdown(body: string, text: string, scope: 'iss
 
   const header = scope === 'issue' ? '## Test Plan (Issue)' : '## Test Plan (Batch)';
   const targetRegex = scope === 'issue' ? testPlanIssueHeadingRegex : testPlanBatchHeadingRegex;
+  const lineEnding = typeof body === 'string' && body.includes('\r\n') ? '\r' : '';
 
-  if (!body) {
+  if (!body || typeof body !== 'string') {
     return `${header}\n- [ ] ${cleanText}`;
   }
 
@@ -339,7 +340,7 @@ export function appendTestItemToMarkdown(body: string, text: string, scope: 'iss
     if (targetRegex.test(lines[i])) {
       targetHeaderIndex = i;
       for (let j = i + 1; j < lines.length; j++) {
-        if (headingRegex.test(lines[j])) {
+        if (/^#{1,6}\s+/.test(lines[j])) {
           nextHeaderIndex = j;
           break;
         }
@@ -349,16 +350,22 @@ export function appendTestItemToMarkdown(body: string, text: string, scope: 'iss
   }
 
   if (targetHeaderIndex !== -1) {
-    if (nextHeaderIndex !== -1) {
-      let insertIndex = nextHeaderIndex;
-      while (insertIndex > targetHeaderIndex + 1 && lines[insertIndex - 1].trim() === '') {
-        insertIndex--;
+    const sectionEnd = nextHeaderIndex !== -1 ? nextHeaderIndex : lines.length;
+    let lastChecklistIndex = -1;
+    for (let i = targetHeaderIndex + 1; i < sectionEnd; i++) {
+      if (checklistRegex.test(lines[i])) {
+        lastChecklistIndex = i;
       }
-      lines.splice(insertIndex, 0, `- [ ] ${cleanText}`);
-      return lines.join('\n');
-    } else {
-      return `${body.trimEnd()}\n- [ ] ${cleanText}`;
     }
+
+    if (lastChecklistIndex !== -1) {
+      lines.splice(lastChecklistIndex + 1, 0, `- [ ] ${cleanText}${lineEnding}`);
+      return lines.join('\n');
+    }
+
+    // No existing checklist items in section: insert right after header
+    lines.splice(targetHeaderIndex + 1, 0, `- [ ] ${cleanText}${lineEnding}`);
+    return lines.join('\n');
   }
 
   return `${body.trimEnd()}\n\n${header}\n- [ ] ${cleanText}`;
@@ -395,10 +402,32 @@ export function isBatchReadyForReview(
     return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
   }
 
-  const batchIssues = allIssues.filter((issue) => {
-    const b = getIssueBatch(issue);
-    return b ? b.toLowerCase() === normalizedBatch : false;
-  });
+  const seenNumbers = new Set<number>();
+  const batchIssues: Issue[] = [];
+
+  for (const issue of allIssues) {
+    if (!issue || typeof issue.number !== 'number') continue;
+    if (seenNumbers.has(issue.number)) continue;
+
+    // Check if issue belongs to this batch (supports multiple batch labels)
+    let belongsToBatch = false;
+    if (Array.isArray(issue.labels)) {
+      for (const l of issue.labels) {
+        const name = (typeof l === 'string' ? l : l?.name || '').trim();
+        if (name.toLowerCase().startsWith('batch:')) {
+          if (name.slice(6).trim().toLowerCase() === normalizedBatch) {
+            belongsToBatch = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (belongsToBatch) {
+      seenNumbers.add(issue.number);
+      batchIssues.push(issue);
+    }
+  }
 
   const total = batchIssues.length;
   if (total === 0) {
@@ -409,10 +438,27 @@ export function isBatchReadyForReview(
   const outstandingIssues: number[] = [];
 
   for (const issue of batchIssues) {
-    const isClosed = issue.state === 'closed';
+    const isClosed =
+      (typeof issue.state === 'string' && issue.state.toLowerCase() === 'closed') ||
+      (issue as any).state_reason === 'completed' ||
+      (issue as any).state_reason === 'not_planned';
+
     const labelNames = (issue.labels || []).map((l: any) => (typeof l === 'string' ? l : l?.name || '').toLowerCase());
-    const isDone = isClosed || labelNames.includes('status:done') || (issue as any).column === 'done' || (issue as any).status === 'done';
-    const isInReview = labelNames.includes('status:in-review') || (issue as any).column === 'in-review' || (issue as any).status === 'in-review';
+    const isDone =
+      isClosed ||
+      labelNames.includes('status:done') ||
+      labelNames.includes('status:closed') ||
+      labelNames.includes('done') ||
+      labelNames.includes('closed') ||
+      (issue as any).column === 'done' ||
+      (issue as any).status === 'done';
+
+    const isInReview =
+      !isDone &&
+      (labelNames.includes('status:in-review') ||
+        labelNames.includes('in-review') ||
+        (issue as any).column === 'in-review' ||
+        (issue as any).status === 'in-review');
 
     if (isInReview) {
       inReviewCount++;
