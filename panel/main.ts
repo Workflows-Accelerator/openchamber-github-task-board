@@ -1038,10 +1038,11 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
 }
 
 async function updateIssueStatus(issue: Issue, targetColumn: ColumnId): Promise<void> {
-  const prevLabels = [...issue.labels];
+  if (!issue || !currentRepo) return;
+  const prevLabels = [...(issue.labels || [])];
   const prevState = issue.state;
 
-  const currentLabels = issue.labels.map((l) => l.name);
+  const currentLabels = (issue.labels || []).map((l: any) => (typeof l === 'string' ? l : l.name || ''));
   const filteredLabels = currentLabels.filter((name) => !name.startsWith('status:'));
 
   let newState: 'open' | 'closed' = 'open';
@@ -1129,9 +1130,9 @@ export function getNextColumn(current: ColumnId): ColumnId {
     case 'planned':
       return 'in-progress';
     case 'in-progress':
-      return 'needs-human';
-    case 'needs-human':
       return 'in-review';
+    case 'needs-human':
+      return 'in-progress';
     case 'in-review':
       return 'done';
     case 'done':
@@ -1762,7 +1763,7 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
   if (isArch) {
     const statusLabel = (issue.labels || []).find((l) => (typeof l === 'string' ? l : l.name || '').startsWith('status:'));
     const rawCat = statusLabel ? (typeof statusLabel === 'string' ? statusLabel : statusLabel.name || '').replace('status:', '') : '';
-    const catLabel = rawCat === 'in-progress' ? 'In Progress' : rawCat === 'in-review' ? 'In Review' : rawCat === 'done' ? 'Done' : rawCat === 'backlog' ? 'Backlog' : 'To Do';
+    const catLabel = STATUS_METADATA[rawCat as ColumnId]?.displayName || (rawCat ? rawCat : 'To Do');
     archiveCategoryBadge = `<span class="archive-from-badge">From: ${escapeHtml(catLabel)}</span>`;
   }
 
@@ -4432,6 +4433,7 @@ async function launchAiIssueSession(): Promise<void> {
 function setupDragAndDrop(): void {
   (Object.keys(kanbanCardContainers) as ColumnId[]).forEach((colId) => {
     const container = kanbanCardContainers[colId];
+    if (!container) return;
 
     container.addEventListener('dragover', (e) => {
       e.preventDefault();

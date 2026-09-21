@@ -4785,9 +4785,10 @@ Blocked by ${blockerRef}`;
     }
   }
   async function updateIssueStatus(issue, targetColumn) {
-    const prevLabels = [...issue.labels];
+    if (!issue || !currentRepo) return;
+    const prevLabels = [...issue.labels || []];
     const prevState = issue.state;
-    const currentLabels = issue.labels.map((l) => l.name);
+    const currentLabels = (issue.labels || []).map((l) => typeof l === "string" ? l : l.name || "");
     const filteredLabels = currentLabels.filter((name) => !name.startsWith("status:"));
     let newState = "open";
     if (targetColumn === "done") {
@@ -4855,9 +4856,9 @@ Blocked by ${blockerRef}`;
       case "planned":
         return "in-progress";
       case "in-progress":
-        return "needs-human";
-      case "needs-human":
         return "in-review";
+      case "needs-human":
+        return "in-progress";
       case "in-review":
         return "done";
       case "done":
@@ -5352,7 +5353,7 @@ Blocked by ${blockerRef}`;
     if (isArch) {
       const statusLabel = (issue.labels || []).find((l) => (typeof l === "string" ? l : l.name || "").startsWith("status:"));
       const rawCat = statusLabel ? (typeof statusLabel === "string" ? statusLabel : statusLabel.name || "").replace("status:", "") : "";
-      const catLabel = rawCat === "in-progress" ? "In Progress" : rawCat === "in-review" ? "In Review" : rawCat === "done" ? "Done" : rawCat === "backlog" ? "Backlog" : "To Do";
+      const catLabel = STATUS_METADATA[rawCat]?.displayName || (rawCat ? rawCat : "To Do");
       archiveCategoryBadge = `<span class="archive-from-badge">From: ${escapeHtml(catLabel)}</span>`;
     }
     const priority = getIssuePriority(issue);
@@ -7606,6 +7607,7 @@ ${issue.body}
   function setupDragAndDrop() {
     Object.keys(kanbanCardContainers).forEach((colId) => {
       const container = kanbanCardContainers[colId];
+      if (!container) return;
       container.addEventListener("dragover", (e) => {
         e.preventDefault();
         if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
