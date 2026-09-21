@@ -264,3 +264,107 @@ test('d) buildSessionIndex indexes multiple issues additively per session', () =
   assert.equal(session.items[0].id, 'item-existing');
   assert.equal(session.items[1].data.issueNumber, 402);
 });
+
+test('e) adversarial hostile verification: project scoping, case sensitivity, long tokens, and directory worktrees', () => {
+  // 1. Cross-project isolation: worktree for another project is NOT reused
+  const multiProjectWorktrees = [
+    {
+      name: 'voice-supervisor',
+      projectId: 'other-project-id',
+      directory: '/workspace/other/voice-supervisor',
+    },
+    {
+      name: 'voice-supervisor',
+      projectId: 'my-project-id',
+      directory: '/workspace/my/voice-supervisor',
+    },
+  ];
+  const matchedSameProject = findThemeWorktree(
+    multiProjectWorktrees,
+    'voice-supervisor',
+    null,
+    'my-project-id'
+  );
+  assert.equal(matchedSameProject?.projectId, 'my-project-id');
+  assert.equal(matchedSameProject?.directory, '/workspace/my/voice-supervisor');
+
+  // 2. Directory-only worktree with path basename
+  const dirOnlyWorktrees = [
+    {
+      directory: '/workspace/.openchamber/worktree/theme-voice-supervisor',
+    },
+  ];
+  const matchedDirOnly = findThemeWorktree(dirOnlyWorktrees, 'voice-supervisor');
+  assert.ok(matchedDirOnly);
+  assert.equal(matchedDirOnly.directory, '/workspace/.openchamber/worktree/theme-voice-supervisor');
+
+  // 3. Git ref prefix normalization (refs/heads/)
+  const gitRefWorktrees = [
+    {
+      name: 'theme-billing',
+      branch: 'refs/heads/billing-phase-1',
+      directory: '/workspace/billing',
+    },
+  ];
+  const matchedGitRef = findThemeWorktree(gitRefWorktrees, 'billing', 'phase-1');
+  assert.ok(matchedGitRef);
+
+  // 4. Case sensitivity & spaces in themes and batches
+  const caseInsensitiveWorktrees = [
+    {
+      name: 'voice-supervisor-sprint-one',
+      branch: 'voice-supervisor-sprint-one',
+      directory: '/workspace/voice',
+    },
+  ];
+  const matchedCase = findThemeWorktree(
+    caseInsensitiveWorktrees,
+    'VOICE SUPERVISOR',
+    'Sprint One'
+  );
+  assert.ok(matchedCase);
+
+  // 5. Extremely long theme name does NOT truncate issue-<n> token
+  const longThemeIssue = {
+    number: 8888,
+    title: 'A very important feature with a long description title',
+    labels: [{ name: 'theme:an-unbelievably-long-and-elaborate-theme-name-that-would-overflow-eighty-characters' }],
+  };
+  const longBranch = buildWorktreeBranchName({ issue: longThemeIssue, mode: 'theme' });
+  assert.ok(longBranch.includes('issue-8888'), `Expected branch "${longBranch}" to contain "issue-8888"`);
+  assert.ok(longBranch.length <= 80, `Expected branch length ${longBranch.length} <= 80`);
+  const regex = /(?:^|[^a-zA-Z0-9])issue-(\d+)(?=[^0-9]|$)/gi;
+  const m = [...longBranch.matchAll(regex)];
+  assert.equal(m.length, 1);
+  assert.equal(m[0][1], '8888');
+
+  // 6. buildSessionIndex checks worktree.branch even when worktree.name lacks issue token
+  const compoundWtSession = {
+    id: 'sess-compound',
+    activity: 'running',
+    worktree: {
+      name: 'voice-supervisor',
+      branch: 'voice-supervisor-issue-999-fix',
+    },
+  };
+  const compoundIndex = buildSessionIndex([compoundWtSession]);
+  assert.ok(compoundIndex.has(999), 'Session index should map issue 999 from worktree.branch');
+  assert.equal(compoundIndex.get(999)?.id, 'sess-compound');
+
+  // 7. buildSessionIndex handles string issueNumbers in item.data.issueNumbers
+  const stringNumsSession = {
+    id: 'sess-strings',
+    activity: 'idle',
+    items: [
+      {
+        id: 'bundle',
+        data: {
+          issueNumbers: ['123', '456'],
+        },
+      },
+    ],
+  };
+  const strIndex = buildSessionIndex([stringNumsSession]);
+  assert.equal(strIndex.get(123)?.id, 'sess-strings');
+  assert.equal(strIndex.get(456)?.id, 'sess-strings');
+});

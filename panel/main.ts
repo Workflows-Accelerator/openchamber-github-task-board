@@ -1390,8 +1390,12 @@ export function resolveIssueColumn(
           if (s.title && s.title.includes(`#${issue.number}`)) {
             return true;
           }
-          const wtName = extractWorktreeName(s.worktree);
-          if (wtName && wtName.includes(`issue-${issue.number}`)) {
+          const wtStrings = typeof s.worktree === 'string'
+            ? [s.worktree]
+            : s.worktree
+            ? [(s.worktree as any).name, (s.worktree as any).branch, (s.worktree as any).directory].filter(Boolean)
+            : [];
+          if (wtStrings.some((str: any) => String(str).includes(`issue-${issue.number}`))) {
             return true;
           }
           return false;
@@ -5396,9 +5400,11 @@ function initEvents(): void {
     elPreflightWorktreeToggle.addEventListener('change', () => {
       const isChecked = elPreflightWorktreeToggle.checked;
       elPreflightWorktreeSection.style.display = isChecked ? 'flex' : 'none';
+      const theme = activeIssue ? getIssueTheme(activeIssue) : '';
+      const existingThemeWorktree = (theme && theme !== 'No Theme') ? findThemeWorktree(worktrees, activeIssue, undefined, currentProject?.id) : null;
       elBtnPreflightLaunch.textContent = isChecked
         ? 'Launch Worktree & Agent'
-        : 'Start Agent Session (Current Workspace)';
+        : (existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : 'Start Agent Session (Current Workspace)');
       updatePreflightBrief();
     });
   }

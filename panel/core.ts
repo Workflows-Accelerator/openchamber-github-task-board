@@ -661,12 +661,15 @@ export function buildWorktreeBranchName(options: {
     const rawTheme = options.theme || getIssueTheme(options.issue);
     const theme = rawTheme && rawTheme !== 'No Theme' ? rawTheme : 'task';
     const batch = options.batch || getIssueBatch(options.issue);
-    const themeSlug = slugify(theme);
+    const themeSlug = slugify(theme, 30);
     if (batch) {
-      return `${themeSlug}-${slugify(batch)}`.slice(0, 80);
+      return `${themeSlug}-${slugify(batch, 30)}`.slice(0, 80);
     }
-    const branchSlug = slugify(options.issue?.title || 'task');
-    return `${themeSlug}-issue-${options.issue?.number}-${branchSlug}`.slice(0, 80);
+    const issueToken = `issue-${options.issue?.number}`;
+    const prefix = `${themeSlug}-${issueToken}-`;
+    const remaining = Math.max(10, 80 - prefix.length);
+    const branchSlug = slugify(options.issue?.title || 'task', remaining);
+    return `${prefix}${branchSlug}`.slice(0, 80);
   }
   const branchSlug = slugify(options.issue?.title || 'task');
   return `issue-${options.issue?.number}-${branchSlug}`.slice(0, 80);
@@ -675,7 +678,8 @@ export function buildWorktreeBranchName(options: {
 export function findThemeWorktree(
   worktrees: any[],
   themeOrIssue: string | Issue | any,
-  batch?: string | null
+  batch?: string | null,
+  projectId?: string | null
 ): any | null {
   if (!Array.isArray(worktrees) || worktrees.length === 0) return null;
 
@@ -701,11 +705,29 @@ export function findThemeWorktree(
   const themeBatchSlug = batchSlug ? `${themeSlug}-${batchSlug}` : null;
   const themeBatchLower = batchLower ? `${themeLower}-${batchLower}` : null;
 
+  const getCandidateNames = (wt: any): string[] => {
+    if (!wt) return [];
+    if (typeof wt === 'string') return [wt];
+    const dirBasename = typeof wt.directory === 'string'
+      ? wt.directory.split('/').filter(Boolean).pop() || ''
+      : '';
+    const cleanBranch = typeof wt.branch === 'string'
+      ? wt.branch.replace(/^refs\/heads\//, '').replace(/^heads\//, '').replace(/^origin\//, '')
+      : '';
+    return [
+      wt.name,
+      wt.branch,
+      cleanBranch,
+      dirBasename,
+    ].filter(Boolean);
+  };
+
   // 1. If batch is present, try matching <theme>-<batch> first
   if (themeBatchSlug || themeBatchLower) {
     for (const wt of worktrees) {
       if (!wt) continue;
-      const names = [wt.name, wt.branch, typeof wt === 'string' ? wt : (wt.name || wt.branch || wt.directory)].filter(Boolean);
+      if (projectId && wt.projectId && wt.projectId !== projectId) continue;
+      const names = getCandidateNames(wt);
       for (const n of names) {
         const nStr = String(n).trim();
         const nSlug = slugify(nStr);
@@ -725,7 +747,8 @@ export function findThemeWorktree(
   // 2. Match <theme>
   for (const wt of worktrees) {
     if (!wt) continue;
-    const names = [wt.name, wt.branch, typeof wt === 'string' ? wt : (wt.name || wt.branch || wt.directory)].filter(Boolean);
+    if (projectId && wt.projectId && wt.projectId !== projectId) continue;
+    const names = getCandidateNames(wt);
     for (const n of names) {
       const nStr = String(n).trim();
       const nSlug = slugify(nStr);
@@ -760,7 +783,7 @@ export function buildLaunchSessionPayload(options: {
 
   let existingWorktree = options.existingWorktree;
   if (!existingWorktree && options.worktrees && options.worktrees.length > 0) {
-    existingWorktree = findThemeWorktree(options.worktrees, issue);
+    existingWorktree = findThemeWorktree(options.worktrees, issue, undefined, projectId);
   }
 
   let worktreePayload: any = false;
@@ -1543,9 +1566,15 @@ export function buildSessionIndex(sessions: any[]): Map<number, any> {
         register(parseInt(m[1], 10), s);
       }
     }
-    const wt = s.worktree;
-    const wtStr = typeof wt === 'string' ? wt : (wt?.name || wt?.branch || wt?.directory || '');
-    if (wtStr) {
+    const wtStrings: string[] = [];
+    if (typeof s.worktree === 'string') {
+      wtStrings.push(s.worktree);
+    } else if (s.worktree && typeof s.worktree === 'object') {
+      if (s.worktree.name) wtStrings.push(String(s.worktree.name));
+      if (s.worktree.branch) wtStrings.push(String(s.worktree.branch));
+      if (s.worktree.directory) wtStrings.push(String(s.worktree.directory));
+    }
+    for (const wtStr of wtStrings) {
       const wtMatches = wtStr.matchAll(/(?:^|[^a-zA-Z0-9])issue-(\d+)(?=[^0-9]|$)/gi);
       for (const m of wtMatches) {
         register(parseInt(m[1], 10), s);

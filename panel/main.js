@@ -2877,8 +2877,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
           if (s.title && s.title.includes(`#${issue.number}`)) {
             return true;
           }
-          const wtName = extractWorktreeName(s.worktree);
-          if (wtName && wtName.includes(`issue-${issue.number}`)) {
+          const wtStrings = typeof s.worktree === "string" ? [s.worktree] : s.worktree ? [s.worktree.name, s.worktree.branch, s.worktree.directory].filter(Boolean) : [];
+          if (wtStrings.some((str) => String(str).includes(`issue-${issue.number}`))) {
             return true;
           }
           return false;
@@ -3659,17 +3659,20 @@ ${lines.join("\n")}`;
       const rawTheme = options.theme || getIssueTheme(options.issue);
       const theme = rawTheme && rawTheme !== "No Theme" ? rawTheme : "task";
       const batch = options.batch || getIssueBatch(options.issue);
-      const themeSlug = slugify2(theme);
+      const themeSlug = slugify2(theme, 30);
       if (batch) {
-        return `${themeSlug}-${slugify2(batch)}`.slice(0, 80);
+        return `${themeSlug}-${slugify2(batch, 30)}`.slice(0, 80);
       }
-      const branchSlug2 = slugify2(options.issue?.title || "task");
-      return `${themeSlug}-issue-${options.issue?.number}-${branchSlug2}`.slice(0, 80);
+      const issueToken = `issue-${options.issue?.number}`;
+      const prefix = `${themeSlug}-${issueToken}-`;
+      const remaining = Math.max(10, 80 - prefix.length);
+      const branchSlug2 = slugify2(options.issue?.title || "task", remaining);
+      return `${prefix}${branchSlug2}`.slice(0, 80);
     }
     const branchSlug = slugify2(options.issue?.title || "task");
     return `issue-${options.issue?.number}-${branchSlug}`.slice(0, 80);
   }
-  function findThemeWorktree(worktrees2, themeOrIssue, batch) {
+  function findThemeWorktree(worktrees2, themeOrIssue, batch, projectId) {
     if (!Array.isArray(worktrees2) || worktrees2.length === 0) return null;
     let theme = null;
     let issueBatch = batch || null;
@@ -3688,10 +3691,23 @@ ${lines.join("\n")}`;
     const batchLower = issueBatch ? issueBatch.toLowerCase() : null;
     const themeBatchSlug = batchSlug ? `${themeSlug}-${batchSlug}` : null;
     const themeBatchLower = batchLower ? `${themeLower}-${batchLower}` : null;
+    const getCandidateNames = (wt) => {
+      if (!wt) return [];
+      if (typeof wt === "string") return [wt];
+      const dirBasename = typeof wt.directory === "string" ? wt.directory.split("/").filter(Boolean).pop() || "" : "";
+      const cleanBranch = typeof wt.branch === "string" ? wt.branch.replace(/^refs\/heads\//, "").replace(/^heads\//, "").replace(/^origin\//, "") : "";
+      return [
+        wt.name,
+        wt.branch,
+        cleanBranch,
+        dirBasename
+      ].filter(Boolean);
+    };
     if (themeBatchSlug || themeBatchLower) {
       for (const wt of worktrees2) {
         if (!wt) continue;
-        const names = [wt.name, wt.branch, typeof wt === "string" ? wt : wt.name || wt.branch || wt.directory].filter(Boolean);
+        if (projectId && wt.projectId && wt.projectId !== projectId) continue;
+        const names = getCandidateNames(wt);
         for (const n of names) {
           const nStr = String(n).trim();
           const nSlug = slugify2(nStr);
@@ -3704,7 +3720,8 @@ ${lines.join("\n")}`;
     }
     for (const wt of worktrees2) {
       if (!wt) continue;
-      const names = [wt.name, wt.branch, typeof wt === "string" ? wt : wt.name || wt.branch || wt.directory].filter(Boolean);
+      if (projectId && wt.projectId && wt.projectId !== projectId) continue;
+      const names = getCandidateNames(wt);
       for (const n of names) {
         const nStr = String(n).trim();
         const nSlug = slugify2(nStr);
@@ -3720,7 +3737,7 @@ ${lines.join("\n")}`;
     const { issue, projectId, useWorktree = false, branchName, baseBranch, prompt } = options;
     let existingWorktree = options.existingWorktree;
     if (!existingWorktree && options.worktrees && options.worktrees.length > 0) {
-      existingWorktree = findThemeWorktree(options.worktrees, issue);
+      existingWorktree = findThemeWorktree(options.worktrees, issue, void 0, projectId);
     }
     let worktreePayload = false;
     let directory = void 0;
@@ -4359,9 +4376,15 @@ Blocked by ${blockerRef}`;
           register(parseInt(m[1], 10), s);
         }
       }
-      const wt = s.worktree;
-      const wtStr = typeof wt === "string" ? wt : wt?.name || wt?.branch || wt?.directory || "";
-      if (wtStr) {
+      const wtStrings = [];
+      if (typeof s.worktree === "string") {
+        wtStrings.push(s.worktree);
+      } else if (s.worktree && typeof s.worktree === "object") {
+        if (s.worktree.name) wtStrings.push(String(s.worktree.name));
+        if (s.worktree.branch) wtStrings.push(String(s.worktree.branch));
+        if (s.worktree.directory) wtStrings.push(String(s.worktree.directory));
+      }
+      for (const wtStr of wtStrings) {
         const wtMatches = wtStr.matchAll(/(?:^|[^a-zA-Z0-9])issue-(\d+)(?=[^0-9]|$)/gi);
         for (const m of wtMatches) {
           register(parseInt(m[1], 10), s);
@@ -5418,8 +5441,8 @@ Blocked by ${blockerRef}`;
           if (s.title && s.title.includes(`#${issue.number}`)) {
             return true;
           }
-          const wtName = extractWorktreeName2(s.worktree);
-          if (wtName && wtName.includes(`issue-${issue.number}`)) {
+          const wtStrings = typeof s.worktree === "string" ? [s.worktree] : s.worktree ? [s.worktree.name, s.worktree.branch, s.worktree.directory].filter(Boolean) : [];
+          if (wtStrings.some((str) => String(str).includes(`issue-${issue.number}`))) {
             return true;
           }
           return false;
@@ -8776,7 +8799,9 @@ ${issue.body}
       elPreflightWorktreeToggle.addEventListener("change", () => {
         const isChecked = elPreflightWorktreeToggle.checked;
         elPreflightWorktreeSection.style.display = isChecked ? "flex" : "none";
-        elBtnPreflightLaunch.textContent = isChecked ? "Launch Worktree & Agent" : "Start Agent Session (Current Workspace)";
+        const theme = activeIssue ? getIssueTheme(activeIssue) : "";
+        const existingThemeWorktree = theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue, void 0, currentProject?.id) : null;
+        elBtnPreflightLaunch.textContent = isChecked ? "Launch Worktree & Agent" : existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : "Start Agent Session (Current Workspace)";
         updatePreflightBrief();
       });
     }

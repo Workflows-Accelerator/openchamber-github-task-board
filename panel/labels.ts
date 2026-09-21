@@ -374,8 +374,12 @@ export function resolveIssueColumn(
           if (s.title && s.title.includes(`#${issue.number}`)) {
             return true;
           }
-          const wtName = extractWorktreeName(s.worktree);
-          if (wtName && wtName.includes(`issue-${issue.number}`)) {
+          const wtStrings = typeof s.worktree === 'string'
+            ? [s.worktree]
+            : s.worktree
+            ? [s.worktree.name, s.worktree.branch, s.worktree.directory].filter(Boolean)
+            : [];
+          if (wtStrings.some((str: any) => String(str).includes(`issue-${issue.number}`))) {
             return true;
           }
           return false;
