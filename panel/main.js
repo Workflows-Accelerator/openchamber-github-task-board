@@ -5131,7 +5131,6 @@ Blocked by ${blockerRef}`;
     hideBanner();
     closeRepoPopover();
     addLog(`All Projects mode: aggregating issues from ${refs.length} repositories`, "succ");
-    void host.storage.set("selected_repo", ALL_PROJECTS_CACHE_KEY);
     await fetchAllProjectIssues();
   }
   function getWorkspaceRootProject() {
@@ -5578,15 +5577,16 @@ Blocked by ${blockerRef}`;
     }
     issue.state = newState;
     issue.labels = clean.map((name) => ({ name }));
-    if (currentRepo) {
-      issueCache.delete(currentRepo);
+    const archiveRepo = repoForIssue(issue);
+    if (archiveRepo) {
+      issueCache.delete(archiveRepo);
     }
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue);
     }
     try {
-      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+      await githubRequest("PATCH", `/repos/${archiveRepo}/issues/${issue.number}`, {
         state: newState,
         labels: clean
       });
@@ -5637,6 +5637,9 @@ Blocked by ${blockerRef}`;
       return Array.from(themeMap.values());
     }
     if (groupBy === "project") {
+      if (!isAllProjectsMode) {
+        return [{ id: currentRepo || "all", title: currentRepo || "All Items", issues: issuesList }];
+      }
       return groupIssuesByProject(issuesList, allProjects);
     }
     if (groupBy === "none") {
@@ -6290,10 +6293,11 @@ Blocked by ${blockerRef}`;
         if (currentGroupBy === "priority" && subgroupId && subgroupId !== "none") {
           const updatedLabels = updatePriorityLabels(issue.labels, subgroupId);
           issue.labels = updatedLabels.map((name) => ({ name }));
-          if (currentRepo) issueCache.delete(currentRepo);
+          const dropRepo = repoForIssue(issue);
+          if (dropRepo) issueCache.delete(dropRepo);
           renderViews();
           try {
-            await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+            await githubRequest("PATCH", `/repos/${dropRepo}/issues/${issue.number}`, {
               labels: updatedLabels
             });
           } catch {
@@ -7025,15 +7029,16 @@ Blocked by ${blockerRef}`;
   }
   var repoLabelsCache = /* @__PURE__ */ new Map();
   async function loadRepoLabels() {
-    if (!currentRepo) return;
-    if (repoLabelsCache.has(currentRepo)) {
-      populateLabelsDatalist(repoLabelsCache.get(currentRepo));
+    const repo = repoForIssue(activeIssue);
+    if (!repo) return;
+    if (repoLabelsCache.has(repo)) {
+      populateLabelsDatalist(repoLabelsCache.get(repo));
       return;
     }
     try {
-      const list = await githubRequest("GET", `/repos/${currentRepo}/labels?per_page=100`);
+      const list = await githubRequest("GET", `/repos/${repo}/labels?per_page=100`);
       if (Array.isArray(list)) {
-        repoLabelsCache.set(currentRepo, list);
+        repoLabelsCache.set(repo, list);
         populateLabelsDatalist(list);
       }
     } catch {
@@ -7080,7 +7085,7 @@ Blocked by ${blockerRef}`;
     renderViews();
     try {
       addLog(`Adding label "${clean}" to #${issue.number}...`);
-      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+      await githubRequest("PATCH", `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
         labels: newNames
       });
       await host.toast({ kind: "success", message: `Added label "${clean}" to #${issue.number}` });
@@ -7097,7 +7102,7 @@ Blocked by ${blockerRef}`;
     renderViews();
     try {
       addLog(`Removing label "${tagName}" from #${issue.number}...`);
-      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+      await githubRequest("PATCH", `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
         labels: newLabels.map((l) => l.name)
       });
       await host.toast({ kind: "info", message: `Removed label "${tagName}" from #${issue.number}` });
@@ -7414,8 +7419,9 @@ Blocked by ${blockerRef}`;
   }
   async function loadComments(issueNumber) {
     elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-muted); font-size: 11.5px;">Loading comments...</div>';
+    const commentIssue = activeIssue && activeIssue.number === issueNumber ? activeIssue : issues.find((i) => i.number === issueNumber) || null;
     try {
-      const comments = await githubRequest("GET", `/repos/${currentRepo}/issues/${issueNumber}/comments`);
+      const comments = await githubRequest("GET", `/repos/${repoForIssue(commentIssue)}/issues/${issueNumber}/comments`);
       elCommentCountBadge.textContent = String(comments.length);
       if (!comments || comments.length === 0) {
         elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">No comments yet.</div>';
@@ -7609,7 +7615,6 @@ ${skills.join("\n")}
     });
     if (allProjectsMode) {
       payload.worktree = false;
-      payload.directory = "/workspace";
       if (payload.data) delete payload.data.branch;
     }
     elBtnPreflightLaunch.disabled = true;
@@ -8280,6 +8285,11 @@ ${issue.body}
     }, 300);
   }
   async function openNewIssueModal() {
+    if (isAllProjectsMode) {
+      await host.toast({ kind: "info", message: "Pick a specific repository to create an issue." });
+      openRepoPopover();
+      return;
+    }
     if (!currentRepo) {
       openRepoPopover();
       return;
@@ -8878,15 +8888,16 @@ ${issue.body}
     });
     if (elDrawerPrioritySelect) {
       elDrawerPrioritySelect.addEventListener("change", async () => {
-        if (!activeIssue || !currentRepo) return;
+        const priorityRepo = repoForIssue(activeIssue);
+        if (!activeIssue || !priorityRepo) return;
         const val = elDrawerPrioritySelect.value;
         const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
         activeIssue.labels = updatedLabels.map((name) => ({ name }));
-        if (currentRepo) issueCache.delete(currentRepo);
+        issueCache.delete(priorityRepo);
         renderDrawer(activeIssue);
         renderViews();
         try {
-          await githubRequest("PATCH", `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+          await githubRequest("PATCH", `/repos/${priorityRepo}/issues/${activeIssue.number}`, {
             labels: updatedLabels
           });
           await host.toast({ kind: "info", message: `Updated priority on #${activeIssue.number} to ${val}` });
@@ -8901,10 +8912,11 @@ ${issue.body}
         if (val === "none") {
           const filteredLabels = activeIssue.labels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.startsWith("status:"));
           activeIssue.labels = filteredLabels.map((name) => ({ name }));
-          if (currentRepo) issueCache.delete(currentRepo);
+          const statusRepo = repoForIssue(activeIssue);
+          if (statusRepo) issueCache.delete(statusRepo);
           renderViews();
           renderDrawer(activeIssue);
-          void githubRequest("PATCH", `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+          void githubRequest("PATCH", `/repos/${statusRepo}/issues/${activeIssue.number}`, {
             labels: filteredLabels
           });
         } else {
@@ -8915,15 +8927,16 @@ ${issue.body}
     });
     if (elDrawerComplexitySelect) {
       elDrawerComplexitySelect.addEventListener("change", async () => {
-        if (!activeIssue || !currentRepo) return;
+        const complexityRepo = repoForIssue(activeIssue);
+        if (!activeIssue || !complexityRepo) return;
         const val = elDrawerComplexitySelect.value;
         const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
         activeIssue.labels = updatedLabels.map((name) => ({ name }));
-        if (currentRepo) issueCache.delete(currentRepo);
+        issueCache.delete(complexityRepo);
         renderDrawer(activeIssue);
         renderViews();
         try {
-          await githubRequest("PATCH", `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+          await githubRequest("PATCH", `/repos/${complexityRepo}/issues/${activeIssue.number}`, {
             labels: updatedLabels
           });
           await host.toast({ kind: "info", message: `Updated complexity on #${activeIssue.number} to ${val}` });
