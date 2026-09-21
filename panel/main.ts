@@ -118,7 +118,7 @@ let isFilterBarOpen: boolean = false;
 let selectedIssueNumbers = new Set<number>();
 let userLayoutPreference: 'auto' | 'list' | 'kanban' | 'graph' = 'auto';
 let graphSelectedTheme: string = 'all';
-let graphShowDone: boolean = true;
+let graphShowDone: boolean = false;
 let isDraggingEdge: boolean = false;
 let dragSourceNum: number | null = null;
 let currentGraph: DependencyGraph | null = null;
@@ -3654,6 +3654,22 @@ function updateScratchpadStats(text: string): void {
   elScratchpadStatsBadge.textContent = stats;
 }
 
+function flushScratchpadSave(): void {
+  if (scratchpadSaveTimer !== null) {
+    clearTimeout(scratchpadSaveTimer);
+    scratchpadSaveTimer = null;
+    const text = elScratchpadTextarea?.value ?? '';
+    updateScratchpadStats(text);
+    try {
+      localStorage.setItem(getScratchpadLocalKey(), text);
+    } catch {}
+    void host.storage
+      .set(getScratchpadStorageKey(), text)
+      .then(() => setScratchpadSaveStatus('Saved'))
+      .catch(() => setScratchpadSaveStatus('Saved'));
+  }
+}
+
 function handleScratchpadInput(): void {
   if (!elScratchpadTextarea) return;
   // Show the pending state at once, but batch the re-parse and both writes so a
@@ -3661,6 +3677,7 @@ function handleScratchpadInput(): void {
   setScratchpadSaveStatus('Saving...');
   clearTimeout(scratchpadSaveTimer);
   scratchpadSaveTimer = setTimeout(() => {
+    scratchpadSaveTimer = null;
     const text = elScratchpadTextarea?.value ?? '';
     updateScratchpadStats(text);
     try {
@@ -3768,6 +3785,7 @@ async function openScratchpadModal(): Promise<void> {
 }
 
 function closeScratchpadModal(): void {
+  flushScratchpadSave();
   if (elScratchpadModalBackdrop) {
     elScratchpadModalBackdrop.classList.remove('active');
   }
@@ -4576,9 +4594,22 @@ function initEvents(): void {
   });
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && activeIssue) {
+    if (e.key === 'Escape') {
       const activeModal = document.querySelector('.modal-backdrop.active');
-      if (!activeModal) {
+      if (activeModal) {
+        if (activeModal === elScratchpadModalBackdrop || activeModal.id === 'scratchpadModalBackdrop') {
+          flushScratchpadSave();
+          closeScratchpadModal();
+        } else if (activeModal === elPreflightBackdrop || activeModal.id === 'preflightModalBackdrop') {
+          closePreflightModal();
+        } else if (activeModal === elNewIssueModalBackdrop || activeModal.id === 'newIssueModalBackdrop') {
+          closeNewIssueModal();
+        } else {
+          activeModal.classList.remove('active');
+        }
+        return;
+      }
+      if (activeIssue) {
         closeDrawer();
       }
     }
