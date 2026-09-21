@@ -45,6 +45,25 @@ export interface Issue {
   created_at: string;
   subtasks: Subtask[];
   openQuestions?: Subtask[];
+  // Set on issues aggregated from multiple projects/repositories.
+  projectId?: string;
+  projectName?: string;
+  repo?: string;
+}
+
+export interface ProjectItem {
+  id: string;
+  name: string;
+  directory: string;
+  gitRepo: { owner: string; repo: string } | null;
+  linkedRepo: string | null;
+}
+
+export interface IssueGroup {
+  id: string;
+  title: string;
+  issues: Issue[];
+  count?: number;
 }
 
 const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
@@ -1641,6 +1660,141 @@ export function mergeIssuePages(existing: Issue[], incoming: Issue[]): Issue[] {
     }
   }
   return Array.from(map.values()).sort((a, b) => b.number - a.number);
+}
+
+// ==========================================
+// Multi-Project Aggregation & Grouping
+// ==========================================
+
+export function getProjectRepoFullName(project: ProjectItem | null | undefined): string | null {
+  if (!project) return null;
+  const linked = typeof project.linkedRepo === 'string' ? project.linkedRepo.trim() : '';
+  if (linked && linked.includes('/')) return linked;
+  if (project.gitRepo && project.gitRepo.owner && project.gitRepo.repo) {
+    return `${project.gitRepo.owner}/${project.gitRepo.repo}`;
+  }
+  return null;
+}
+
+export function getIssueRepoFullName(issue: Issue | null | undefined): string | null {
+  if (!issue) return null;
+  const repo = typeof issue.repo === 'string' ? issue.repo.trim() : '';
+  if (repo && repo.includes('/')) return repo;
+  const match = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(issue.html_url || '');
+  if (match) {
+    return `${match[1]}/${match[2].replace(/\.git$/, '')}`;
+  }
+  return null;
+}
+
+// Consolidates issues fetched from multiple repositories into one deduplicated
+// collection. Dedup key is repo + issue number, because issue numbers are only
+// unique within a repository. Each issue is tagged with its origin so the
+// project grouping view can cluster it later.
+export function aggregateProjectIssues(sources: Array<{ projectId: string; projectName: string; repo: string; issues: Issue[] }>): Issue[] {
+  const byKey = new Map<string, Issue>();
+  const list = Array.isArray(sources) ? sources : [];
+  for (const source of list) {
+    if (!source) continue;
+    const repo = typeof source.repo === 'string' ? source.repo.trim() : '';
+    const incoming = Array.isArray(source.issues) ? source.issues : [];
+    for (const issue of incoming) {
+      if (!issue || !Number.isFinite(issue.number)) continue;
+      const key = `${repo.toLowerCase()}#${issue.number}`;
+      byKey.set(key, {
+        ...issue,
+        projectId: source.projectId,
+        projectName: source.projectName,
+        repo: issue.repo || repo,
+      });
+    }
+  }
+  return Array.from(byKey.values());
+}
+
+// Clusters issues by their tagged project (projectId/projectName) or by the
+// repository they came from. Projects without issues are omitted so the board
+// shows only clean, non-empty groups, each with its issue count.
+export function groupIssuesByProject(issues: Issue[], projects: ProjectItem[]): IssueGroup[] {
+  const list = Array.isArray(issues) ? issues.filter(Boolean) : [];
+  const projectList = Array.isArray(projects) ? projects.filter(Boolean) : [];
+
+  const byId = new Map<string, ProjectItem>();
+  const byRepo = new Map<string, ProjectItem>();
+  const projectGroups = new Map<string, IssueGroup>();
+
+  for (const project of projectList) {
+    if (project.id) {
+      byId.set(project.id, project);
+      projectGroups.set(project.id, { id: project.id, title: project.name || project.id, issues: [], count: 0 });
+    }
+    const repo = getProjectRepoFullName(project);
+    if (repo) byRepo.set(repo.toLowerCase(), project);
+  }
+
+  const unmatchedGroups = new Map<string, IssueGroup>();
+
+  for (const issue of list) {
+    if (!issue || !Number.isFinite(issue.number)) continue;
+
+    let target: IssueGroup | undefined;
+    if (issue.projectId && byId.has(issue.projectId)) {
+      target = projectGroups.get(issue.projectId);
+    }
+    if (!target) {
+      const repo = getIssueRepoFullName(issue);
+      const project = repo ? byRepo.get(repo.toLowerCase()) : undefined;
+      if (project) target = projectGroups.get(project.id);
+    }
+    if (!target) {
+      const label = (typeof issue.projectName === 'string' && issue.projectName.trim())
+        || getIssueRepoFullName(issue)
+        || 'Unknown Project';
+      if (!unmatchedGroups.has(label)) {
+        unmatchedGroups.set(label, { id: `unmatched:${label}`, title: label, issues: [], count: 0 });
+      }
+      target = unmatchedGroups.get(label);
+    }
+    target!.issues.push(issue);
+  }
+
+  const result: IssueGroup[] = [];
+  for (const project of projectList) {
+    const group = project.id ? projectGroups.get(project.id) : undefined;
+    if (group && group.issues.length > 0) {
+      group.count = group.issues.length;
+      result.push(group);
+    }
+  }
+  for (const group of unmatchedGroups.values()) {
+    if (group.issues.length > 0) {
+      group.count = group.issues.length;
+      result.push(group);
+    }
+  }
+  return result;
+}
+
+export interface IssueCacheEntry {
+  timestamp: number;
+  issues: Issue[];
+}
+
+// TTL cache read used by both single-repo and all-projects issue fetching so a
+// refresh inside the window costs zero GitHub API requests (rate-limit friendly).
+export function readCachedIssueCollection(
+  cache: Map<string, IssueCacheEntry>,
+  key: string,
+  ttlMs: number = 60000,
+  now: number = Date.now()
+): Issue[] | null {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (now - entry.timestamp >= ttlMs) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.issues;
 }
 
 

@@ -4442,6 +4442,105 @@ Blocked by ${blockerRef}`;
     }
     return Array.from(map.values()).sort((a, b) => b.number - a.number);
   }
+  function getProjectRepoFullName(project) {
+    if (!project) return null;
+    const linked = typeof project.linkedRepo === "string" ? project.linkedRepo.trim() : "";
+    if (linked && linked.includes("/")) return linked;
+    if (project.gitRepo && project.gitRepo.owner && project.gitRepo.repo) {
+      return `${project.gitRepo.owner}/${project.gitRepo.repo}`;
+    }
+    return null;
+  }
+  function getIssueRepoFullName(issue) {
+    if (!issue) return null;
+    const repo = typeof issue.repo === "string" ? issue.repo.trim() : "";
+    if (repo && repo.includes("/")) return repo;
+    const match = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(issue.html_url || "");
+    if (match) {
+      return `${match[1]}/${match[2].replace(/\.git$/, "")}`;
+    }
+    return null;
+  }
+  function aggregateProjectIssues(sources) {
+    const byKey = /* @__PURE__ */ new Map();
+    const list = Array.isArray(sources) ? sources : [];
+    for (const source of list) {
+      if (!source) continue;
+      const repo = typeof source.repo === "string" ? source.repo.trim() : "";
+      const incoming = Array.isArray(source.issues) ? source.issues : [];
+      for (const issue of incoming) {
+        if (!issue || !Number.isFinite(issue.number)) continue;
+        const key = `${repo.toLowerCase()}#${issue.number}`;
+        byKey.set(key, {
+          ...issue,
+          projectId: source.projectId,
+          projectName: source.projectName,
+          repo: issue.repo || repo
+        });
+      }
+    }
+    return Array.from(byKey.values());
+  }
+  function groupIssuesByProject(issues2, projects) {
+    const list = Array.isArray(issues2) ? issues2.filter(Boolean) : [];
+    const projectList = Array.isArray(projects) ? projects.filter(Boolean) : [];
+    const byId = /* @__PURE__ */ new Map();
+    const byRepo = /* @__PURE__ */ new Map();
+    const projectGroups = /* @__PURE__ */ new Map();
+    for (const project of projectList) {
+      if (project.id) {
+        byId.set(project.id, project);
+        projectGroups.set(project.id, { id: project.id, title: project.name || project.id, issues: [], count: 0 });
+      }
+      const repo = getProjectRepoFullName(project);
+      if (repo) byRepo.set(repo.toLowerCase(), project);
+    }
+    const unmatchedGroups = /* @__PURE__ */ new Map();
+    for (const issue of list) {
+      if (!issue || !Number.isFinite(issue.number)) continue;
+      let target;
+      if (issue.projectId && byId.has(issue.projectId)) {
+        target = projectGroups.get(issue.projectId);
+      }
+      if (!target) {
+        const repo = getIssueRepoFullName(issue);
+        const project = repo ? byRepo.get(repo.toLowerCase()) : void 0;
+        if (project) target = projectGroups.get(project.id);
+      }
+      if (!target) {
+        const label = typeof issue.projectName === "string" && issue.projectName.trim() || getIssueRepoFullName(issue) || "Unknown Project";
+        if (!unmatchedGroups.has(label)) {
+          unmatchedGroups.set(label, { id: `unmatched:${label}`, title: label, issues: [], count: 0 });
+        }
+        target = unmatchedGroups.get(label);
+      }
+      target.issues.push(issue);
+    }
+    const result = [];
+    for (const project of projectList) {
+      const group = project.id ? projectGroups.get(project.id) : void 0;
+      if (group && group.issues.length > 0) {
+        group.count = group.issues.length;
+        result.push(group);
+      }
+    }
+    for (const group of unmatchedGroups.values()) {
+      if (group.issues.length > 0) {
+        group.count = group.issues.length;
+        result.push(group);
+      }
+    }
+    return result;
+  }
+  function readCachedIssueCollection(cache, key, ttlMs = 6e4, now = Date.now()) {
+    const entry = cache.get(key);
+    if (!entry) return null;
+    if (now - entry.timestamp >= ttlMs) {
+      cache.delete(key);
+      return null;
+    }
+    return entry.issues;
+  }
 
   // panel/main.ts
   var host = connectHost();
@@ -4449,6 +4548,10 @@ Blocked by ${blockerRef}`;
   var currentDirectory = "";
   var currentRepo = "";
   var allProjects = [];
+  var isAllProjectsMode = false;
+  var allProjectsRepoRefs = [];
+  var ALL_PROJECTS_CACHE_KEY = "__all_projects__";
+  var MAX_PROJECT_ISSUE_PAGES = 10;
   var isDiscoveringRepos = false;
   var issues = [];
   var sessions = [];
@@ -4793,6 +4896,9 @@ Blocked by ${blockerRef}`;
         })
       );
       allProjects = inspected.filter(Boolean);
+      if (isAllProjectsMode) {
+        allProjectsRepoRefs = buildProjectRepoRefs();
+      }
       allProjects.forEach((p) => {
         if (p.gitRepo) {
           addLog(`Project "${p.name}" has Git repo: ${p.gitRepo.owner}/${p.gitRepo.repo}`, "succ");
@@ -4809,6 +4915,7 @@ Blocked by ${blockerRef}`;
     }
   }
   async function autoResolveRepoForActiveContext() {
+    if (isAllProjectsMode) return;
     let worktreeMatchedProject = null;
     if (currentDirectory && currentDirectory.includes("/workspace/.local/share/opencode/worktree/")) {
       try {
@@ -4899,6 +5006,8 @@ Blocked by ${blockerRef}`;
       return;
     }
     userSelectedTab = false;
+    isAllProjectsMode = false;
+    allProjectsRepoRefs = [];
     currentRepo = repo;
     issues = [];
     showAllDoneIssues = false;
@@ -4926,10 +5035,10 @@ Blocked by ${blockerRef}`;
     `;
       return;
     }
-    elDetectedReposList.innerHTML = allProjects.map((p) => {
+    const projectItemsHtml = allProjects.map((p) => {
       const isCurrentProject = p.id === currentProject?.id;
       const repoName = p.linkedRepo || (p.gitRepo ? `${p.gitRepo.owner}/${p.gitRepo.repo}` : null);
-      const isSelectedRepo = repoName && repoName === currentRepo;
+      const isSelectedRepo = !isAllProjectsMode && repoName && repoName === currentRepo;
       return `
         <div class="popover-item" data-project-id="${escapeHtml(p.id)}" data-repo="${escapeHtml(repoName || "")}">
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -4943,6 +5052,11 @@ Blocked by ${blockerRef}`;
         </div>
       `;
     }).join("");
+    const allProjectsOptionHtml = isAllProjectsMode ? `<div class="repo-option all-projects-option is-active" data-all-projects="true"><span>All Projects</span><span style="color: var(--prim); font-size: 10px; font-weight: 500;">[active]</span></div>` : `<div class="repo-option all-projects-option" data-all-projects="true"><span>All Projects</span></div>`;
+    elDetectedReposList.innerHTML = allProjectsOptionHtml + projectItemsHtml;
+    elDetectedReposList.querySelector(".all-projects-option")?.addEventListener("click", () => {
+      void selectAllProjects();
+    });
     elDetectedReposList.querySelectorAll(".popover-item").forEach((item) => {
       item.addEventListener("click", async () => {
         const projId = item.getAttribute("data-project-id");
@@ -4979,6 +5093,54 @@ Blocked by ${blockerRef}`;
   }
   function closeRepoPopover() {
     elRepoPopover.classList.remove("active");
+  }
+  function buildProjectRepoRefs() {
+    const refsByRepo = /* @__PURE__ */ new Map();
+    for (const project of allProjects) {
+      const repo = getProjectRepoFullName(project);
+      if (!repo) continue;
+      const key = repo.toLowerCase();
+      if (!refsByRepo.has(key)) {
+        refsByRepo.set(key, { projectId: project.id, projectName: project.name, repo });
+      }
+    }
+    return Array.from(refsByRepo.values());
+  }
+  async function selectAllProjects() {
+    const refs = buildProjectRepoRefs();
+    if (refs.length === 0) {
+      addLog("No workspace project has a linked or detected Git repository", "warn");
+      showBanner(
+        "No workspace project has a linked or detected Git repository. Link one to use the All Projects view.",
+        "Select Repo",
+        () => openRepoPopover()
+      );
+      return;
+    }
+    isAllProjectsMode = true;
+    allProjectsRepoRefs = refs;
+    currentRepo = ALL_PROJECTS_CACHE_KEY;
+    userSelectedTab = false;
+    issues = [];
+    showAllDoneIssues = false;
+    clearSelection();
+    currentGroupBy = "project";
+    if (elSelectGroupBy) elSelectGroupBy.value = "project";
+    elTxtRepoLabel.textContent = "All Projects";
+    elTxtRepoLabel.title = `Aggregated issues across ${refs.length} repositories`;
+    hideBanner();
+    closeRepoPopover();
+    addLog(`All Projects mode: aggregating issues from ${refs.length} repositories`, "succ");
+    void host.storage.set("selected_repo", ALL_PROJECTS_CACHE_KEY);
+    await fetchAllProjectIssues();
+  }
+  function getWorkspaceRootProject() {
+    const exact = allProjects.find(
+      (p) => p.directory && p.directory.replace(/\/+$/, "") === "/workspace"
+    );
+    if (exact) return exact;
+    const candidates = allProjects.filter((p) => !!p.directory).sort((a, b) => a.directory.length - b.directory.length);
+    return candidates[0] || null;
   }
   var workspaceGitToken = null;
   async function getWorkspaceGitToken() {
@@ -5108,13 +5270,17 @@ Blocked by ${blockerRef}`;
     }
   }
   async function fetchIssues(force = false) {
+    if (isAllProjectsMode) {
+      await fetchAllProjectIssues(force);
+      return;
+    }
     if (!currentRepo) return;
     const storageKey = `cached_issues_${currentRepo}`;
     const streamEpoch = ++activeStreamEpoch;
-    if (!force && issueCache.has(currentRepo)) {
-      const cached = issueCache.get(currentRepo);
-      if (Date.now() - cached.timestamp < ISSUE_CACHE_TTL_MS) {
-        issues = cached.issues;
+    if (!force) {
+      const cached = readCachedIssueCollection(issueCache, currentRepo, ISSUE_CACHE_TTL_MS);
+      if (cached) {
+        issues = cached;
         if (!userSelectedTab) {
           selectTab(resolveDefaultTab2(issues));
         }
@@ -5179,16 +5345,97 @@ Blocked by ${blockerRef}`;
       if (elIconRefresh) elIconRefresh.style.animation = "";
     }
   }
+  async function fetchAllRepoIssuePages(repo, epoch) {
+    const firstRaw = await githubRequest("GET", `/repos/${repo}/issues?state=all&per_page=100&page=1`);
+    const firstItems = Array.isArray(firstRaw) ? firstRaw : firstRaw?.items || [];
+    let repoIssues = normalizeGithubIssues(firstItems);
+    if (firstItems.length < 100) return repoIssues;
+    let page = 2;
+    while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
+      const nextRaw = await githubRequest("GET", `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
+      const nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
+      if (nextItems.length === 0) break;
+      repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
+      if (nextItems.length < 100) break;
+      page++;
+    }
+    return repoIssues;
+  }
+  async function fetchAllProjectIssues(force = false) {
+    const cacheKey = ALL_PROJECTS_CACHE_KEY;
+    const epoch = ++activeStreamEpoch;
+    if (!force) {
+      const cached = readCachedIssueCollection(issueCache, cacheKey, ISSUE_CACHE_TTL_MS);
+      if (cached) {
+        issues = cached;
+        if (!userSelectedTab) selectTab(resolveDefaultTab2(issues));
+        renderViews();
+        addLog(`Rendered ${issues.length} aggregated issues from memory cache`);
+        return;
+      }
+    }
+    isLoading = true;
+    if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
+    try {
+      const refs = [...allProjectsRepoRefs];
+      addLog(`Fetching issues in parallel across ${refs.length} repositories...`);
+      const settled = await Promise.allSettled(
+        refs.map(async (ref) => ({
+          projectId: ref.projectId,
+          projectName: ref.projectName,
+          repo: ref.repo,
+          issues: await fetchAllRepoIssuePages(ref.repo, epoch)
+        }))
+      );
+      if (activeStreamEpoch !== epoch) return;
+      const sources = settled.filter((r) => r.status === "fulfilled").map((r) => r.value);
+      settled.forEach((r) => {
+        if (r.status === "rejected") {
+          addLog(`Skipped repository during aggregation: ${r.reason?.message || r.reason}`, "warn");
+        }
+      });
+      if (sources.length === 0) {
+        throw new Error("All repository requests failed");
+      }
+      issues = aggregateProjectIssues(sources);
+      issueCache.set(cacheKey, { timestamp: Date.now(), issues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues });
+      }
+      if (!userSelectedTab) selectTab(resolveDefaultTab2(issues));
+      renderViews();
+      statusReconciler.schedule(issues);
+      addLog(`Aggregated ${issues.length} deduplicated issues across ${sources.length} repositories`, "succ");
+    } catch (err) {
+      addLog(`Failed to fetch all-project issues: ${err.message}`, "error");
+      if (issues.length > 0) {
+        if (host?.toast) {
+          void host.toast({ kind: "info", message: `Offline / Rate-limited. Showing ${issues.length} aggregated issues.` });
+        }
+      } else {
+        renderEmptyState(`Failed to load aggregated issues: ${err.message || "Check GitHub integration tokens"}`);
+      }
+    } finally {
+      isLoading = false;
+      if (elIconRefresh) elIconRefresh.style.animation = "";
+    }
+  }
+  function repoForIssue(issue) {
+    if (issue && isAllProjectsMode && issue.repo) return issue.repo;
+    return currentRepo;
+  }
   async function updateIssueBody(issue, newBody) {
     issue.body = newBody;
     issue.subtasks = parseSubtasks(newBody);
     issue.openQuestions = parseOpenQuestions(newBody);
+    const repo = repoForIssue(issue);
+    if (repo) issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue);
     }
     try {
-      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+      await githubRequest("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         body: newBody
       });
       await host.toast({ kind: "info", message: `Updated issue #${issue.number}` });
@@ -5198,7 +5445,8 @@ Blocked by ${blockerRef}`;
     }
   }
   async function updateIssueStatus(issue, targetColumn) {
-    if (!issue || !currentRepo) return;
+    const repo = repoForIssue(issue);
+    if (!issue || !repo) return;
     const prevLabels = [...issue.labels || []];
     const prevState = issue.state;
     const currentLabels = (issue.labels || []).map((l) => typeof l === "string" ? l : l.name || "");
@@ -5212,15 +5460,13 @@ Blocked by ${blockerRef}`;
     }
     issue.state = newState;
     issue.labels = filteredLabels.map((name) => ({ name }));
-    if (currentRepo) {
-      issueCache.delete(currentRepo);
-    }
+    issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue);
     }
     try {
-      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+      await githubRequest("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         state: newState,
         labels: filteredLabels
       });
@@ -5389,6 +5635,9 @@ Blocked by ${blockerRef}`;
         themeMap.set("No Theme", { id: "No Theme", title: "No Theme", issues: [] });
       }
       return Array.from(themeMap.values());
+    }
+    if (groupBy === "project") {
+      return groupIssuesByProject(issuesList, allProjects);
     }
     if (groupBy === "none") {
       return [{ id: "all", title: "All Items", issues: issuesList }];
@@ -7300,6 +7549,20 @@ ${skills.join("\n")}
     const theme = getIssueTheme(issue);
     const hasTheme = Boolean(theme && theme !== "No Theme");
     const existingThemeWorktree = hasTheme ? findThemeWorktree(worktrees, issue) : null;
+    if (isAllProjectsMode) {
+      elPreflightWorktreeToggle.checked = false;
+      elPreflightWorktreeToggle.disabled = true;
+      elPreflightWorktreeSection.style.display = "none";
+      if (elPreflightThemeNotice) {
+        elPreflightThemeNotice.style.display = "none";
+        elPreflightThemeNotice.textContent = "";
+      }
+      elBtnPreflightLaunch.textContent = "Start Agent Session (All Projects)";
+      updatePreflightBrief();
+      elPreflightBackdrop.classList.add("active");
+      return;
+    }
+    elPreflightWorktreeToggle.disabled = false;
     if (elPreflightThemeNotice) {
       if (existingThemeWorktree) {
         elPreflightThemeNotice.style.display = "flex";
@@ -7322,18 +7585,21 @@ ${skills.join("\n")}
     elPreflightBackdrop.classList.remove("active");
   }
   async function launchAgentSession() {
-    if (!activeIssue || !currentProject) return;
-    const useWorktree = elPreflightWorktreeToggle.checked;
+    if (!activeIssue) return;
+    const allProjectsMode = isAllProjectsMode;
+    const targetProject = allProjectsMode ? getWorkspaceRootProject() || currentProject : currentProject;
+    if (!targetProject) return;
+    const useWorktree = allProjectsMode ? false : elPreflightWorktreeToggle.checked;
     const rawBranch = elPreflightBranchInput.value.trim();
     const cleanBranch = useWorktree ? rawBranch.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
     const baseBranch = useWorktree ? elPreflightBaseBranchInput.value.trim() || void 0 : void 0;
     const promptText = elPreflightPromptInput.value.trim().slice(0, 15e3);
     const autoMove = elPreflightMoveInProgress.checked;
     const theme = getIssueTheme(activeIssue);
-    const existingThemeWorktree = theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue) : null;
+    const existingThemeWorktree = !allProjectsMode && theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue) : null;
     const payload = buildLaunchSessionPayload({
       issue: activeIssue,
-      projectId: currentProject.id,
+      projectId: targetProject.id,
       useWorktree,
       branchName: cleanBranch,
       baseBranch,
@@ -7341,11 +7607,16 @@ ${skills.join("\n")}
       existingWorktree: existingThemeWorktree,
       worktrees
     });
+    if (allProjectsMode) {
+      payload.worktree = false;
+      payload.directory = "/workspace";
+      if (payload.data) delete payload.data.branch;
+    }
     elBtnPreflightLaunch.disabled = true;
     elBtnPreflightLaunch.textContent = "Provisioning...";
     try {
-      const targetDesc = existingThemeWorktree ? `theme worktree "${existingThemeWorktree.name || theme}"` : useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : "workspace";
-      addLog(`Starting session in ${targetDesc} on project ${currentProject.id}...`);
+      const targetDesc = allProjectsMode ? "workspace root /workspace" : existingThemeWorktree ? `theme worktree "${existingThemeWorktree.name || theme}"` : useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : "workspace";
+      addLog(`Starting session in ${targetDesc} on project ${targetProject.id}...`);
       const res = await host.startSession(payload);
       closePreflightModal();
       if (autoMove) {
@@ -7363,7 +7634,7 @@ ${skills.join("\n")}
       await host.toast({ kind: "error", message: `Failed to launch agent: ${err.message || "Unknown error"}` });
     } finally {
       elBtnPreflightLaunch.disabled = false;
-      elBtnPreflightLaunch.textContent = elPreflightWorktreeToggle.checked ? "Launch Worktree & Agent" : existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : "Start Agent Session (Current Workspace)";
+      elBtnPreflightLaunch.textContent = allProjectsMode ? "Start Agent Session (All Projects)" : elPreflightWorktreeToggle.checked ? "Launch Worktree & Agent" : existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : "Start Agent Session (Current Workspace)";
     }
   }
   function updateBatchBar() {
@@ -8262,8 +8533,12 @@ ${issue.body}
       }
     });
     const refreshTasks = () => {
-      void fetchIssues();
-      void discoverWorkspaceRepositories();
+      if (isAllProjectsMode) {
+        void discoverWorkspaceRepositories().then(() => fetchAllProjectIssues(true));
+      } else {
+        void fetchIssues();
+        void discoverWorkspaceRepositories();
+      }
     };
     elBtnRefresh.addEventListener("click", refreshTasks);
     const elBtnArchiveToggle = document.getElementById("btnArchiveToggle");

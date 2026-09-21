@@ -133,6 +133,10 @@ import {
   buildLaunchSessionPayload,
   mergeSessionItems,
   attachIssueToSession,
+  groupIssuesByProject,
+  aggregateProjectIssues,
+  readCachedIssueCollection,
+  getProjectRepoFullName,
 } from './core.js';
 export type { TestItem };
 export {
@@ -167,6 +171,15 @@ let currentProject: ProjectItem | null = null;
 let currentDirectory: string = '';
 let currentRepo: string = '';
 let allProjects: ProjectItem[] = [];
+let isAllProjectsMode: boolean = false;
+interface ProjectRepoRef {
+  projectId: string;
+  projectName: string;
+  repo: string;
+}
+let allProjectsRepoRefs: ProjectRepoRef[] = [];
+const ALL_PROJECTS_CACHE_KEY = '__all_projects__';
+const MAX_PROJECT_ISSUE_PAGES = 10;
 let isDiscoveringRepos: boolean = false;
 let issues: Issue[] = [];
 let sessions: SessionInfo[] = [];
@@ -181,7 +194,7 @@ let showAllDoneIssues: boolean = false;
 let currentSort: 'newest' | 'oldest' | 'priority' | 'complexity' | 'subtasks' | 'title' = 'newest';
 let filterPriority: string = 'all';
 let filterTag: string = 'all';
-let currentGroupBy: 'theme' | 'priority' | 'none' | 'status' | 'tag' = 'theme';
+let currentGroupBy: 'theme' | 'priority' | 'none' | 'status' | 'tag' | 'project' = 'theme';
 let isFilterBarOpen: boolean = false;
 let selectedIssueNumbers = new Set<number>();
 let userLayoutPreference: 'auto' | 'list' | 'kanban' | 'graph' = 'auto';
@@ -605,6 +618,11 @@ async function discoverWorkspaceRepositories(): Promise<void> {
 
     allProjects = inspected.filter(Boolean) as ProjectItem[];
 
+    // Keep the aggregated view's repo list in sync when a scan finishes.
+    if (isAllProjectsMode) {
+      allProjectsRepoRefs = buildProjectRepoRefs();
+    }
+
     allProjects.forEach((p) => {
       if (p.gitRepo) {
         addLog(`Project "${p.name}" has Git repo: ${p.gitRepo.owner}/${p.gitRepo.repo}`, 'succ');
@@ -623,6 +641,9 @@ async function discoverWorkspaceRepositories(): Promise<void> {
 }
 
 async function autoResolveRepoForActiveContext(): Promise<void> {
+  // Never steal focus from the aggregated All Projects view.
+  if (isAllProjectsMode) return;
+
   // If currentDirectory is inside /workspace/.local/share/opencode/worktree/,
   // extract parent repository root from .git file and match that project in allProjects first,
   // so worktree sessions inherit their true repository context!
@@ -739,6 +760,8 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
     return;
   }
   userSelectedTab = false;
+  isAllProjectsMode = false;
+  allProjectsRepoRefs = [];
   currentRepo = repo;
   issues = [];
   showAllDoneIssues = false;
@@ -768,11 +791,11 @@ function renderRepoPopoverList(): void {
     return;
   }
 
-  elDetectedReposList.innerHTML = allProjects
+  const projectItemsHtml = allProjects
     .map((p) => {
       const isCurrentProject = p.id === currentProject?.id;
       const repoName = p.linkedRepo || (p.gitRepo ? `${p.gitRepo.owner}/${p.gitRepo.repo}` : null);
-      const isSelectedRepo = repoName && repoName === currentRepo;
+      const isSelectedRepo = !isAllProjectsMode && repoName && repoName === currentRepo;
 
       return `
         <div class="popover-item" data-project-id="${escapeHtml(p.id)}" data-repo="${escapeHtml(repoName || '')}">
@@ -788,6 +811,16 @@ function renderRepoPopoverList(): void {
       `;
     })
     .join('');
+
+  const allProjectsOptionHtml = isAllProjectsMode
+    ? `<div class="repo-option all-projects-option is-active" data-all-projects="true"><span>All Projects</span><span style="color: var(--prim); font-size: 10px; font-weight: 500;">[active]</span></div>`
+    : `<div class="repo-option all-projects-option" data-all-projects="true"><span>All Projects</span></div>`;
+
+  elDetectedReposList.innerHTML = allProjectsOptionHtml + projectItemsHtml;
+
+  elDetectedReposList.querySelector<HTMLElement>('.all-projects-option')?.addEventListener('click', () => {
+    void selectAllProjects();
+  });
 
   elDetectedReposList.querySelectorAll('.popover-item').forEach((item) => {
     item.addEventListener('click', async () => {
@@ -827,6 +860,65 @@ function openRepoPopover(): void {
 }
 function closeRepoPopover(): void {
   elRepoPopover.classList.remove('active');
+}
+
+// One repo per unique linked/detected repository, keeping the first project
+// that owns it. Deduping by repo avoids querying the same GitHub repo twice.
+function buildProjectRepoRefs(): ProjectRepoRef[] {
+  const refsByRepo = new Map<string, ProjectRepoRef>();
+  for (const project of allProjects) {
+    const repo = getProjectRepoFullName(project);
+    if (!repo) continue;
+    const key = repo.toLowerCase();
+    if (!refsByRepo.has(key)) {
+      refsByRepo.set(key, { projectId: project.id, projectName: project.name, repo });
+    }
+  }
+  return Array.from(refsByRepo.values());
+}
+
+// Switch the board to the aggregated "All Projects" view: every workspace
+// project that has a linked or detected Git repository is queried in parallel,
+// and the results are consolidated into one deduplicated issue collection.
+async function selectAllProjects(): Promise<void> {
+  const refs = buildProjectRepoRefs();
+
+  if (refs.length === 0) {
+    addLog('No workspace project has a linked or detected Git repository', 'warn');
+    showBanner(
+      'No workspace project has a linked or detected Git repository. Link one to use the All Projects view.',
+      'Select Repo',
+      () => openRepoPopover()
+    );
+    return;
+  }
+
+  isAllProjectsMode = true;
+  allProjectsRepoRefs = refs;
+  currentRepo = ALL_PROJECTS_CACHE_KEY;
+  userSelectedTab = false;
+  issues = [];
+  showAllDoneIssues = false;
+  clearSelection();
+  currentGroupBy = 'project';
+  if (elSelectGroupBy) elSelectGroupBy.value = 'project';
+  elTxtRepoLabel.textContent = 'All Projects';
+  elTxtRepoLabel.title = `Aggregated issues across ${refs.length} repositories`;
+  hideBanner();
+  closeRepoPopover();
+  addLog(`All Projects mode: aggregating issues from ${refs.length} repositories`, 'succ');
+
+  void host.storage.set('selected_repo', ALL_PROJECTS_CACHE_KEY);
+  await fetchAllProjectIssues();
+}
+
+function getWorkspaceRootProject(): ProjectItem | null {
+  const exact = allProjects.find(
+    (p) => p.directory && p.directory.replace(/\/+$/, '') === '/workspace'
+  );
+  if (exact) return exact;
+  const candidates = allProjects.filter((p) => !!p.directory).sort((a, b) => a.directory.length - b.directory.length);
+  return candidates[0] || null;
 }
 
 let workspaceGitToken: string | null = null;
@@ -978,15 +1070,19 @@ async function streamRemainingPages(repo: string, storageKey: string, startPage:
 }
 
 async function fetchIssues(force: boolean = false): Promise<void> {
+  if (isAllProjectsMode) {
+    await fetchAllProjectIssues(force);
+    return;
+  }
   if (!currentRepo) return;
   const storageKey = `cached_issues_${currentRepo}`;
   const streamEpoch = ++activeStreamEpoch;
 
   // 1. Instant in-memory cache check (0ms UI latency)
-  if (!force && issueCache.has(currentRepo)) {
-    const cached = issueCache.get(currentRepo)!;
-    if (Date.now() - cached.timestamp < ISSUE_CACHE_TTL_MS) {
-      issues = cached.issues;
+  if (!force) {
+    const cached = readCachedIssueCollection(issueCache, currentRepo, ISSUE_CACHE_TTL_MS);
+    if (cached) {
+      issues = cached;
       if (!userSelectedTab) {
         selectTab(resolveDefaultTab(issues));
       }
@@ -1064,17 +1160,116 @@ async function fetchIssues(force: boolean = false): Promise<void> {
   }
 }
 
+// Fetch every page of issues for one repository, capped so a single runaway
+// repo cannot exhaust the API budget. Returns normalized issues only.
+async function fetchAllRepoIssuePages(repo: string, epoch: number): Promise<Issue[]> {
+  const firstRaw = await githubRequest('GET', `/repos/${repo}/issues?state=all&per_page=100&page=1`);
+  const firstItems = Array.isArray(firstRaw) ? firstRaw : (firstRaw?.items || []);
+  let repoIssues = normalizeGithubIssues(firstItems);
+
+  if (firstItems.length < 100) return repoIssues;
+
+  let page = 2;
+  while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
+    const nextRaw = await githubRequest('GET', `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
+    const nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
+    if (nextItems.length === 0) break;
+    repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
+    if (nextItems.length < 100) break;
+    page++;
+  }
+  return repoIssues;
+}
+
+// Parallel multi-repo fetch + dedupe + TTL caching for the All Projects view.
+async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
+  const cacheKey = ALL_PROJECTS_CACHE_KEY;
+  const epoch = ++activeStreamEpoch;
+
+  if (!force) {
+    const cached = readCachedIssueCollection(issueCache, cacheKey, ISSUE_CACHE_TTL_MS);
+    if (cached) {
+      issues = cached;
+      if (!userSelectedTab) selectTab(resolveDefaultTab(issues));
+      renderViews();
+      addLog(`Rendered ${issues.length} aggregated issues from memory cache`);
+      return;
+    }
+  }
+
+  isLoading = true;
+  if (elIconRefresh) elIconRefresh.style.animation = 'spin 1s linear infinite';
+
+  try {
+    const refs = [...allProjectsRepoRefs];
+    addLog(`Fetching issues in parallel across ${refs.length} repositories...`);
+
+    const settled = await Promise.allSettled(
+      refs.map(async (ref) => ({
+        projectId: ref.projectId,
+        projectName: ref.projectName,
+        repo: ref.repo,
+        issues: await fetchAllRepoIssuePages(ref.repo, epoch),
+      }))
+    );
+    if (activeStreamEpoch !== epoch) return;
+
+    const sources = settled
+      .filter((r): r is PromiseFulfilledResult<{ projectId: string; projectName: string; repo: string; issues: Issue[] }> => r.status === 'fulfilled')
+      .map((r) => r.value);
+    settled.forEach((r) => {
+      if (r.status === 'rejected') {
+        addLog(`Skipped repository during aggregation: ${r.reason?.message || r.reason}`, 'warn');
+      }
+    });
+    if (sources.length === 0) {
+      throw new Error('All repository requests failed');
+    }
+
+    issues = aggregateProjectIssues(sources);
+    issueCache.set(cacheKey, { timestamp: Date.now(), issues });
+    if (host?.storage) {
+      void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues } as any);
+    }
+
+    if (!userSelectedTab) selectTab(resolveDefaultTab(issues));
+    renderViews();
+    statusReconciler.schedule(issues);
+    addLog(`Aggregated ${issues.length} deduplicated issues across ${sources.length} repositories`, 'succ');
+  } catch (err: any) {
+    addLog(`Failed to fetch all-project issues: ${err.message}`, 'error');
+    if (issues.length > 0) {
+      if (host?.toast) {
+        void host.toast({ kind: 'info', message: `Offline / Rate-limited. Showing ${issues.length} aggregated issues.` });
+      }
+    } else {
+      renderEmptyState(`Failed to load aggregated issues: ${err.message || 'Check GitHub integration tokens'}`);
+    }
+  } finally {
+    isLoading = false;
+    if (elIconRefresh) elIconRefresh.style.animation = '';
+  }
+}
+
+// In the aggregated view a PATCH must target the issue's own repository.
+function repoForIssue(issue: Issue | null | undefined): string {
+  if (issue && isAllProjectsMode && issue.repo) return issue.repo;
+  return currentRepo;
+}
+
 async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   issue.body = newBody;
   issue.subtasks = parseSubtasks(newBody);
   issue.openQuestions = parseOpenQuestions(newBody);
+  const repo = repoForIssue(issue);
+  if (repo) issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
     renderDrawer(issue);
   }
 
   try {
-    await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
+    await githubRequest('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       body: newBody,
     });
     await host.toast({ kind: 'info', message: `Updated issue #${issue.number}` });
@@ -1085,7 +1280,8 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
 }
 
 async function updateIssueStatus(issue: Issue, targetColumn: ColumnId): Promise<void> {
-  if (!issue || !currentRepo) return;
+  const repo = repoForIssue(issue);
+  if (!issue || !repo) return;
   const prevLabels = [...(issue.labels || [])];
   const prevState = issue.state;
 
@@ -1102,16 +1298,14 @@ async function updateIssueStatus(issue: Issue, targetColumn: ColumnId): Promise<
 
   issue.state = newState;
   issue.labels = filteredLabels.map((name) => ({ name }));
-  if (currentRepo) {
-    issueCache.delete(currentRepo);
-  }
+  issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
     renderDrawer(issue);
   }
 
   try {
-    await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
+    await githubRequest('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       state: newState,
       labels: filteredLabels,
     });
@@ -1312,6 +1506,10 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[
       themeMap.set('No Theme', { id: 'No Theme', title: 'No Theme', issues: [] });
     }
     return Array.from(themeMap.values());
+  }
+
+  if (groupBy === 'project') {
+    return groupIssuesByProject(issuesList, allProjects);
   }
 
   if (groupBy === 'none') {
@@ -3649,6 +3847,22 @@ function openPreflightModal(issue: Issue): void {
   const hasTheme = Boolean(theme && theme !== 'No Theme');
   const existingThemeWorktree = hasTheme ? findThemeWorktree(worktrees, issue) : null;
 
+  // All Projects always launches at the /workspace root without worktree isolation.
+  if (isAllProjectsMode) {
+    elPreflightWorktreeToggle.checked = false;
+    elPreflightWorktreeToggle.disabled = true;
+    elPreflightWorktreeSection.style.display = 'none';
+    if (elPreflightThemeNotice) {
+      elPreflightThemeNotice.style.display = 'none';
+      elPreflightThemeNotice.textContent = '';
+    }
+    elBtnPreflightLaunch.textContent = 'Start Agent Session (All Projects)';
+    updatePreflightBrief();
+    elPreflightBackdrop.classList.add('active');
+    return;
+  }
+  elPreflightWorktreeToggle.disabled = false;
+
   if (elPreflightThemeNotice) {
     if (existingThemeWorktree) {
       elPreflightThemeNotice.style.display = 'flex';
@@ -3675,9 +3889,14 @@ function closePreflightModal(): void {
 }
 
 async function launchAgentSession(): Promise<void> {
-  if (!activeIssue || !currentProject) return;
+  if (!activeIssue) return;
 
-  const useWorktree = elPreflightWorktreeToggle.checked;
+  const allProjectsMode = isAllProjectsMode;
+  const targetProject = allProjectsMode ? (getWorkspaceRootProject() || currentProject) : currentProject;
+  if (!targetProject) return;
+
+  // The All Projects view never provisions a worktree; it always targets /workspace.
+  const useWorktree = allProjectsMode ? false : elPreflightWorktreeToggle.checked;
   const rawBranch = elPreflightBranchInput.value.trim();
   const cleanBranch = useWorktree
     ? rawBranch.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 80)
@@ -3687,11 +3906,13 @@ async function launchAgentSession(): Promise<void> {
   const autoMove = elPreflightMoveInProgress.checked;
 
   const theme = getIssueTheme(activeIssue);
-  const existingThemeWorktree = (theme && theme !== 'No Theme') ? findThemeWorktree(worktrees, activeIssue) : null;
+  const existingThemeWorktree = (!allProjectsMode && theme && theme !== 'No Theme')
+    ? findThemeWorktree(worktrees, activeIssue)
+    : null;
 
   const payload = buildLaunchSessionPayload({
     issue: activeIssue,
-    projectId: currentProject.id,
+    projectId: targetProject.id,
     useWorktree,
     branchName: cleanBranch,
     baseBranch,
@@ -3700,14 +3921,22 @@ async function launchAgentSession(): Promise<void> {
     worktrees,
   });
 
+  if (allProjectsMode) {
+    payload.worktree = false;
+    payload.directory = '/workspace';
+    if (payload.data) delete payload.data.branch;
+  }
+
   elBtnPreflightLaunch.disabled = true;
   elBtnPreflightLaunch.textContent = 'Provisioning...';
 
   try {
-    const targetDesc = existingThemeWorktree
-      ? `theme worktree "${existingThemeWorktree.name || theme}"`
-      : (useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : 'workspace');
-    addLog(`Starting session in ${targetDesc} on project ${currentProject.id}...`);
+    const targetDesc = allProjectsMode
+      ? 'workspace root /workspace'
+      : existingThemeWorktree
+        ? `theme worktree "${existingThemeWorktree.name || theme}"`
+        : (useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : 'workspace');
+    addLog(`Starting session in ${targetDesc} on project ${targetProject.id}...`);
 
     const res = await host.startSession(payload);
 
@@ -3730,9 +3959,11 @@ async function launchAgentSession(): Promise<void> {
     await host.toast({ kind: 'error', message: `Failed to launch agent: ${err.message || 'Unknown error'}` });
   } finally {
     elBtnPreflightLaunch.disabled = false;
-    elBtnPreflightLaunch.textContent = elPreflightWorktreeToggle.checked
-      ? 'Launch Worktree & Agent'
-      : (existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : 'Start Agent Session (Current Workspace)');
+    elBtnPreflightLaunch.textContent = allProjectsMode
+      ? 'Start Agent Session (All Projects)'
+      : elPreflightWorktreeToggle.checked
+        ? 'Launch Worktree & Agent'
+        : (existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : 'Start Agent Session (Current Workspace)');
   }
 }
 
@@ -4789,8 +5020,13 @@ function initEvents(): void {
 
   // Refresh
   const refreshTasks = () => {
-    void fetchIssues();
-    void discoverWorkspaceRepositories();
+    if (isAllProjectsMode) {
+      // Rescan projects first so newly linked repos are included, then refetch.
+      void discoverWorkspaceRepositories().then(() => fetchAllProjectIssues(true));
+    } else {
+      void fetchIssues();
+      void discoverWorkspaceRepositories();
+    }
   };
   elBtnRefresh.addEventListener('click', refreshTasks);
 

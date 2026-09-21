@@ -10,6 +10,9 @@ import {
   parseIssueDependencies,
   parseSubtasks,
   parseOpenQuestions,
+  groupIssuesByProject,
+  aggregateProjectIssues,
+  readCachedIssueCollection,
 } from '../panel/core.ts';
 import { sortIssues, filterIssues } from './optimizations.test.js';
 
@@ -173,4 +176,128 @@ test('adversarial defense: null, undefined, malformed, and huge markdown data ne
 
   assert.equal(subtasks.length, 5000);
   assert.ok(duration < 100, `Parsing 5,000 subtasks took ${duration}ms, expected <100ms`);
+});
+
+const PROJECTS = [
+  {
+    id: 'p1',
+    name: 'Alpha',
+    directory: '/workspace/alpha',
+    gitRepo: { owner: 'acme', repo: 'alpha' },
+    linkedRepo: 'acme/alpha',
+  },
+  {
+    id: 'p2',
+    name: 'Beta',
+    directory: '/workspace/beta',
+    gitRepo: null,
+    linkedRepo: 'acme/beta',
+  },
+];
+
+test('groupIssuesByProject: a) clusters issues by tagged project and by repository', () => {
+  const issues = [
+    { number: 1, title: 'A1', projectId: 'p1' },
+    { number: 2, title: 'A2', projectId: 'p1' },
+    { number: 3, title: 'B1', projectId: 'p2' },
+    { number: 4, title: 'B2 by repo', repo: 'acme/beta' },
+    { number: 5, title: 'orphan', repo: 'other/repo' },
+    { number: 6, title: 'inferred from url', html_url: 'https://github.com/acme/alpha/issues/6' },
+  ];
+
+  const groups = groupIssuesByProject(issues, PROJECTS);
+
+  // Empty projects are omitted; unmatched issues fall into a labelled group.
+  assert.deepEqual(groups.map((g) => g.title), ['Alpha', 'Beta', 'other/repo']);
+  assert.deepEqual(groups.map((g) => g.id), ['p1', 'p2', 'unmatched:other/repo']);
+  assert.deepEqual(groups.map((g) => g.count), [3, 2, 1]);
+  assert.deepEqual(
+    groups.map((g) => g.issues.map((i) => i.number)),
+    [[1, 2, 6], [3, 4], [5]]
+  );
+  // Every issue is accounted for exactly once.
+  assert.equal(groups.reduce((sum, g) => sum + g.issues.length, 0), issues.length);
+});
+
+test('groupIssuesByProject: defends against empty, null, and malformed input', () => {
+  assert.deepEqual(groupIssuesByProject([], PROJECTS), []);
+  assert.deepEqual(groupIssuesByProject(null, PROJECTS), []);
+  assert.deepEqual(groupIssuesByProject(undefined, PROJECTS), []);
+
+  // No projects supplied: unmatched issues still cluster by repo/name label.
+  const groups = groupIssuesByProject(
+    [
+      { number: 1, title: 'x', projectName: 'Gamma' },
+      { number: 2, title: 'y', projectName: 'Gamma' },
+    ],
+    null
+  );
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].title, 'Gamma');
+  assert.equal(groups[0].count, 2);
+
+  // Null entries inside the arrays never throw.
+  assert.deepEqual(groupIssuesByProject([null, undefined], [null, undefined]), []);
+});
+
+test('adversarial stress test: multi-repo aggregation and caching handles 1,000+ issues', () => {
+  const repoCount = 12;
+  const issuesPerRepo = 100;
+  const sources = Array.from({ length: repoCount }, (_, ri) => ({
+    projectId: `p${ri}`,
+    projectName: `Project ${ri}`,
+    repo: `acme/repo-${ri}`,
+    issues: Array.from({ length: issuesPerRepo }, (_, ii) => ({
+      number: ri * 1000 + ii + 1,
+      title: `Issue ${ri}-${ii}`,
+      state: 'open',
+      labels: [],
+      subtasks: [],
+    })),
+  }));
+
+  const start = performance.now();
+  const merged = aggregateProjectIssues(sources);
+  const duration = performance.now() - start;
+
+  assert.equal(merged.length, repoCount * issuesPerRepo);
+  assert.equal(merged[0].projectId, 'p0');
+  assert.equal(merged[0].projectName, 'Project 0');
+  assert.equal(merged[0].repo, 'acme/repo-0');
+  assert.equal(merged[merged.length - 1].projectId, `p${repoCount - 1}`);
+  assert.ok(duration < 100, `Aggregating 1,200 issues took ${duration}ms, expected <100ms`);
+
+  // Duplicate pages from the same repo must dedupe by repo + issue number.
+  const deduped = aggregateProjectIssues([...sources, ...sources]);
+  assert.equal(deduped.length, repoCount * issuesPerRepo);
+
+  // Same issue number in different repos must NOT collide.
+  const collisions = aggregateProjectIssues([
+    { projectId: 'a', projectName: 'A', repo: 'acme/one', issues: [{ number: 7, title: 'one' }] },
+    { projectId: 'b', projectName: 'B', repo: 'acme/two', issues: [{ number: 7, title: 'two' }] },
+  ]);
+  assert.equal(collisions.length, 2);
+
+  // Fresh cache entry returns instantly; stale entry is evicted.
+  const cache = new Map();
+  cache.set('all', { timestamp: 1_000_000, issues: merged });
+  const cached = readCachedIssueCollection(cache, 'all', 60000, 1_050_000);
+  assert.equal(cached.length, repoCount * issuesPerRepo);
+  assert.equal(readCachedIssueCollection(cache, 'all', 60000, 1_070_000), null);
+  assert.equal(cache.has('all'), false);
+
+  // Grouping 1,200 aggregated issues by project stays fast.
+  const groupStart = performance.now();
+  const groups = groupIssuesByProject(merged, sources.map((s) => ({
+    id: s.projectId,
+    name: s.projectName,
+    directory: `/workspace/${s.projectName}`,
+    gitRepo: null,
+    linkedRepo: s.repo,
+  })));
+  const groupDuration = performance.now() - groupStart;
+
+  assert.equal(groups.length, repoCount);
+  assert.ok(groups.every((g) => g.count === issuesPerRepo));
+  assert.ok(groupDuration < 100, `Grouping 1,200 issues took ${groupDuration}ms, expected <100ms`);
 });

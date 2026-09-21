@@ -2084,6 +2084,25 @@
     .popover-item:hover {
       background: var(--surf-hover);
     }
+    .all-projects-option {
+      padding: 7px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg);
+      background: var(--surf-muted);
+      transition: background 0.15s ease;
+    }
+    .all-projects-option:hover {
+      background: var(--surf-hover);
+    }
+    .all-projects-option.is-active {
+      color: var(--prim);
+    }
     .popover-item-title {
       font-size: 12px;
       font-weight: 500;
@@ -2385,6 +2404,7 @@
       <label for="selectGroupBy">Group by:</label>
       <select id="selectGroupBy" class="form-ctrl select-sm">
         <option value="theme" selected>Theme</option>
+        <option value="project">Project</option>
         <option value="priority">Priority</option>
         <option value="none">None</option>
       </select>
