@@ -3658,16 +3658,17 @@ function flushScratchpadSave(): void {
   if (scratchpadSaveTimer !== null) {
     clearTimeout(scratchpadSaveTimer);
     scratchpadSaveTimer = null;
-    const text = elScratchpadTextarea?.value ?? '';
-    updateScratchpadStats(text);
-    try {
-      localStorage.setItem(getScratchpadLocalKey(), text);
-    } catch {}
-    void host.storage
-      .set(getScratchpadStorageKey(), text)
-      .then(() => setScratchpadSaveStatus('Saved'))
-      .catch(() => setScratchpadSaveStatus('Saved'));
   }
+  const text = elScratchpadTextarea?.value ?? '';
+  updateScratchpadStats(text);
+  try {
+    localStorage.setItem(getScratchpadLocalKey(), text);
+  } catch {}
+  setScratchpadSaveStatus('Saved');
+  void host.storage
+    .set(getScratchpadStorageKey(), text)
+    .then(() => setScratchpadSaveStatus('Saved'))
+    .catch(() => setScratchpadSaveStatus('Saved'));
 }
 
 function handleScratchpadInput(): void {
@@ -3677,17 +3678,8 @@ function handleScratchpadInput(): void {
   setScratchpadSaveStatus('Saving...');
   clearTimeout(scratchpadSaveTimer);
   scratchpadSaveTimer = setTimeout(() => {
-    scratchpadSaveTimer = null;
-    const text = elScratchpadTextarea?.value ?? '';
-    updateScratchpadStats(text);
-    try {
-      localStorage.setItem(getScratchpadLocalKey(), text);
-    } catch {}
-    void host.storage
-      .set(getScratchpadStorageKey(), text)
-      .then(() => setScratchpadSaveStatus('Saved'))
-      .catch(() => setScratchpadSaveStatus('Saved'));
-  }, 300);
+    flushScratchpadSave();
+  }, 1000);
 }
 
 function insertIntoScratchpad(snippet: string): void {
@@ -4436,7 +4428,13 @@ function initEvents(): void {
   }
   if (elScratchpadTextarea) {
     elScratchpadTextarea.addEventListener('input', handleScratchpadInput);
+    elScratchpadTextarea.addEventListener('blur', flushScratchpadSave);
   }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      flushScratchpadSave();
+    }
+  });
   if (elBtnScratchpadAddTheme) {
     const setThemePickerOpen = (open: boolean) => {
       if (!elScratchpadThemePopover) return;
