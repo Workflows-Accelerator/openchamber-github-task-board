@@ -138,7 +138,10 @@ export function answerOpenQuestionInMarkdown(body: string | null | undefined, qu
   if (!match) return body;
 
   const lineEnding = match[4].endsWith('\r') ? '\r' : '';
-  const questionContent = match[4].replace(/\r$/, '').trimEnd();
+  const questionContent = match[4]
+    .replace(/\r$/, '')
+    .replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, '')
+    .trimEnd();
   lines[target.lineIndex] = `${match[1]}x${match[3]}${questionContent} *(Answer: ${cleanAnswer})*${lineEnding}`;
   return lines.join('\n');
 }

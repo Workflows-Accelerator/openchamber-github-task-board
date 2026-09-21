@@ -245,6 +245,43 @@ test('answerOpenQuestionInMarkdown replaces target question with - [x] and *(Ans
   const answeredTrim = answerOpenQuestionInMarkdown(body, 0, '   Use Postgres with SSL   \n');
   assert.ok(answeredTrim.includes('- [x] Should we use SQLite or PostgreSQL? *(Answer: Use Postgres with SSL)*'));
 
+  // Handles duplicate question texts: targets exact unresolved index
+  const duplicateBody = '### Open Questions:\n- [ ] Duplicate question?\n- [ ] Duplicate question?';
+  const answeredDup1 = answerOpenQuestionInMarkdown(duplicateBody, 1, 'Second answer');
+  assert.equal(answeredDup1, '### Open Questions:\n- [ ] Duplicate question?\n- [x] Duplicate question? *(Answer: Second answer)*');
+
+  // Re-answering a question updates cleanly without stacking *(Answer: ...)* notes
+  const reAnswered = answerOpenQuestionInMarkdown(answeredDup1, 0, 'First answer');
+  assert.equal(reAnswered, '### Open Questions:\n- [x] Duplicate question? *(Answer: First answer)*\n- [x] Duplicate question? *(Answer: Second answer)*');
+  const updatedAnswer = answerOpenQuestionInMarkdown(
+    '### Open Questions:\n- [ ] Duplicate question? *(Answer: First answer)*',
+    0,
+    'Updated answer'
+  );
+  assert.equal(updatedAnswer, '### Open Questions:\n- [x] Duplicate question? *(Answer: Updated answer)*');
+
+  // Special characters and multiline answers
+  const specialChars = answerOpenQuestionInMarkdown(
+    '### Open Questions:\n- [ ] How to query?',
+    0,
+    'Use `SELECT * FROM tbl WHERE a > 1 & b < 2` (tested)'
+  );
+  assert.equal(
+    specialChars,
+    '### Open Questions:\n- [x] How to query? *(Answer: Use `SELECT * FROM tbl WHERE a > 1 & b < 2` (tested))*'
+  );
+
+  // Multiline answer is flattened to single line
+  const multiline = answerOpenQuestionInMarkdown(
+    '### Open Questions:\n- [ ] How to configure?',
+    0,
+    'Line one\nLine two\n\nLine three'
+  );
+  assert.equal(
+    multiline,
+    '### Open Questions:\n- [x] How to configure? *(Answer: Line one Line two Line three)*'
+  );
+
   // Edge cases: out of bounds, null, undefined, empty
   assert.equal(answerOpenQuestionInMarkdown(body, -1, 'X'), body);
   assert.equal(answerOpenQuestionInMarkdown(body, 99, 'X'), body);

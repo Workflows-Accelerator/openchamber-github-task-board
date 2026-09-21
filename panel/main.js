@@ -2866,7 +2866,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     const match = line.match(checklistRegex);
     if (!match) return body;
     const lineEnding = match[4].endsWith("\r") ? "\r" : "";
-    const questionContent = match[4].replace(/\r$/, "").trimEnd();
+    const questionContent = match[4].replace(/\r$/, "").replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, "").trimEnd();
     lines[target.lineIndex] = `${match[1]}x${match[3]}${questionContent} *(Answer: ${cleanAnswer})*${lineEnding}`;
     return lines.join("\n");
   }
@@ -6126,17 +6126,25 @@ Blocked by ${blockerRef}`;
           answerRow.style.display = "flex";
           answerRow.style.gap = "6px";
           answerRow.style.marginTop = "4px";
-          answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button></div>`;
+          answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>`;
           contentEl.appendChild(answerRow);
           const input = answerRow.querySelector(".input-inline-answer");
           const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
           const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
           const submitAnswer = async () => {
             const answerText = input?.value.trim();
-            if (!answerText) return;
+            if (!answerText) {
+              input?.focus();
+              return;
+            }
             const targetIssue = activeIssue || issue;
             if (!targetIssue) return;
             const newBody = answerOpenQuestionInMarkdown(targetIssue.body, idx, answerText);
+            if (issue && issue !== targetIssue) {
+              issue.body = newBody;
+              issue.subtasks = parseSubtasks(newBody);
+              issue.openQuestions = parseOpenQuestions(newBody);
+            }
             await updateIssueBody(targetIssue, newBody);
             await host.toast({ kind: "info", message: "Recorded answer to question" });
             if (activeIssue && activeIssue.number === targetIssue.number) {
@@ -6150,14 +6158,18 @@ Blocked by ${blockerRef}`;
           btnCancel?.addEventListener("click", (ev) => {
             ev.stopPropagation();
             if (answerRow) answerRow.style.display = "none";
+            btnAnswer.focus();
           });
           input?.addEventListener("keydown", (ev) => {
             if (ev.key === "Enter") {
               ev.preventDefault();
+              ev.stopPropagation();
               void submitAnswer();
             } else if (ev.key === "Escape") {
               ev.preventDefault();
+              ev.stopPropagation();
               if (answerRow) answerRow.style.display = "none";
+              btnAnswer.focus();
             }
           });
           input?.focus();

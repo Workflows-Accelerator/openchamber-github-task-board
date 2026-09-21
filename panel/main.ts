@@ -3119,7 +3119,7 @@ function renderQuestions(issue: Issue): void {
         answerRow.style.display = 'flex';
         answerRow.style.gap = '6px';
         answerRow.style.marginTop = '4px';
-        answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button></div>`;
+        answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>`;
         contentEl.appendChild(answerRow);
 
         const input = answerRow.querySelector<HTMLInputElement>('.input-inline-answer');
@@ -3128,10 +3128,18 @@ function renderQuestions(issue: Issue): void {
 
         const submitAnswer = async () => {
           const answerText = input?.value.trim();
-          if (!answerText) return;
+          if (!answerText) {
+            input?.focus();
+            return;
+          }
           const targetIssue = activeIssue || issue;
           if (!targetIssue) return;
           const newBody = answerOpenQuestionInMarkdown(targetIssue.body, idx, answerText);
+          if (issue && issue !== targetIssue) {
+            issue.body = newBody;
+            issue.subtasks = parseSubtasks(newBody);
+            issue.openQuestions = parseOpenQuestions(newBody);
+          }
           await updateIssueBody(targetIssue, newBody);
           await host.toast({ kind: 'info', message: 'Recorded answer to question' });
           if (activeIssue && activeIssue.number === targetIssue.number) {
@@ -3147,15 +3155,19 @@ function renderQuestions(issue: Issue): void {
         btnCancel?.addEventListener('click', (ev) => {
           ev.stopPropagation();
           if (answerRow) answerRow.style.display = 'none';
+          btnAnswer.focus();
         });
 
         input?.addEventListener('keydown', (ev) => {
           if (ev.key === 'Enter') {
             ev.preventDefault();
+            ev.stopPropagation();
             void submitAnswer();
           } else if (ev.key === 'Escape') {
             ev.preventDefault();
+            ev.stopPropagation();
             if (answerRow) answerRow.style.display = 'none';
+            btnAnswer.focus();
           }
         });
 
