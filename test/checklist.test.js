@@ -11,6 +11,7 @@ import {
   appendOpenQuestionToMarkdown,
   serializeDraftQuestions,
   formatQuestionBadge,
+  answerOpenQuestionInMarkdown,
 } from '../panel/core.ts';
 
 const explicitQuestionPrefixRegex = /^(\s*(?:\?|[-*+]\s*\[\s*[?xX ]\s*\]|\d+\.)\s*(?:\?|Q:|Question:)\s*)(.+)$/i;
@@ -205,4 +206,80 @@ test('serializeDraftQuestions output round-trips back through parseOpenQuestions
   assert.equal(parsed[0].text, 'First?');
   assert.equal(parsed[1].text, 'Second?');
   assert.equal(parsed.every((q) => q.completed === false), true);
+});
+
+test('answerOpenQuestionInMarkdown replaces target question with - [x] and *(Answer: ...)* note without corrupting other markdown', () => {
+  const body = [
+    '# Feature RFC',
+    '',
+    'Initial description of the task.',
+    '',
+    '### Actionable Subtasks Checklist:',
+    '- [ ] Implement schema',
+    '- [x] Write docs',
+    '',
+    '### Open Questions:',
+    '- [ ] Should we use SQLite or PostgreSQL?',
+    '- [x] Already resolved question *(Answer: Keep existing)*',
+    '  - [ ] Indented question about migrations?',
+    '',
+    '### Next Steps',
+    'Final notes.',
+  ].join('\n');
+
+  // Answer first unresolved question (idx 0)
+  const answered0 = answerOpenQuestionInMarkdown(body, 0, 'PostgreSQL');
+  assert.ok(answered0.includes('- [x] Should we use SQLite or PostgreSQL? *(Answer: PostgreSQL)*'));
+  assert.ok(answered0.includes('# Feature RFC'));
+  assert.ok(answered0.includes('### Actionable Subtasks Checklist:\n- [ ] Implement schema\n- [x] Write docs'));
+  assert.ok(answered0.includes('  - [ ] Indented question about migrations?'));
+  assert.ok(answered0.includes('### Next Steps\nFinal notes.'));
+
+  // Answer second unresolved question (idx 1) - tests preservation of indentation
+  const answered1 = answerOpenQuestionInMarkdown(body, 1, 'Run at startup');
+  assert.ok(answered1.includes('  - [x] Indented question about migrations? *(Answer: Run at startup)*'));
+  assert.ok(answered1.includes('- [ ] Should we use SQLite or PostgreSQL?'));
+  assert.ok(answered1.includes('- [x] Already resolved question *(Answer: Keep existing)*'));
+
+  // Handles whitespace trimming on answerText
+  const answeredTrim = answerOpenQuestionInMarkdown(body, 0, '   Use Postgres with SSL   \n');
+  assert.ok(answeredTrim.includes('- [x] Should we use SQLite or PostgreSQL? *(Answer: Use Postgres with SSL)*'));
+
+  // Edge cases: out of bounds, null, undefined, empty
+  assert.equal(answerOpenQuestionInMarkdown(body, -1, 'X'), body);
+  assert.equal(answerOpenQuestionInMarkdown(body, 99, 'X'), body);
+  assert.equal(answerOpenQuestionInMarkdown(null, 0, 'X'), '');
+  assert.equal(answerOpenQuestionInMarkdown(undefined, 0, 'X'), '');
+  assert.equal(answerOpenQuestionInMarkdown('', 0, 'X'), '');
+});
+
+test('parseOpenQuestions correctly parses answered questions and recognizes their completed state', () => {
+  const markdown = [
+    '### Open Questions:',
+    '- [x] Which framework should we use? *(Answer: Preact)*',
+    '- [ ] What is the auth timeout?',
+    '- [x] Will this support dark mode? *(Answer: Yes via CSS variables)*',
+  ].join('\n');
+
+  const parsed = parseOpenQuestions(markdown);
+  assert.equal(parsed.length, 3);
+
+  // Question 0
+  assert.equal(parsed[0].completed, true);
+  assert.equal(parsed[0].text, 'Which framework should we use? *(Answer: Preact)*');
+
+  // Question 1
+  assert.equal(parsed[1].completed, false);
+  assert.equal(parsed[1].text, 'What is the auth timeout?');
+
+  // Question 2
+  assert.equal(parsed[2].completed, true);
+  assert.equal(parsed[2].text, 'Will this support dark mode? *(Answer: Yes via CSS variables)*');
+
+  // Verification with badge formatting
+  const badge = formatQuestionBadge(parsed);
+  assert.equal(badge.total, 3);
+  assert.equal(badge.open, 1);
+  assert.equal(badge.resolved, 2);
+  assert.equal(badge.label, '1 open');
 });

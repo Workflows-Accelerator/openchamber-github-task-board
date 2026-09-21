@@ -2851,6 +2851,25 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   function updateOpenQuestionInMarkdown(body, lineIndex, completed) {
     return updateSubtaskInMarkdown(body, lineIndex, completed);
   }
+  function answerOpenQuestionInMarkdown(body, questionIndex, answerText) {
+    if (!body) return "";
+    const cleanAnswer = (answerText || "").trim().replace(/\r?\n+/g, " ");
+    const questions = parseOpenQuestions(body);
+    const unresolved = questions.filter((q) => !q.completed);
+    if (questionIndex < 0 || questionIndex >= unresolved.length) {
+      return body;
+    }
+    const target = unresolved[questionIndex];
+    const lines = body.split("\n");
+    const line = lines[target.lineIndex];
+    if (!line) return body;
+    const match = line.match(checklistRegex);
+    if (!match) return body;
+    const lineEnding = match[4].endsWith("\r") ? "\r" : "";
+    const questionContent = match[4].replace(/\r$/, "").trimEnd();
+    lines[target.lineIndex] = `${match[1]}x${match[3]}${questionContent} *(Answer: ${cleanAnswer})*${lineEnding}`;
+    return lines.join("\n");
+  }
   function appendSubtaskToMarkdown(body, text) {
     const cleanText = text.trim();
     if (!cleanText) return body;
@@ -6057,6 +6076,7 @@ Blocked by ${blockerRef}`;
     elQuestionsProgressText.textContent = `${open} open (${resolved} resolved)`;
     elQuestionsProgressText.style.color = open > 0 ? "var(--warn)" : "var(--succ)";
     elDrawerQuestionsContainer.innerHTML = "";
+    let unresolvedIdx = 0;
     questions.forEach((question) => {
       const itemEl = document.createElement("div");
       itemEl.className = `check-item ${question.completed ? "done" : ""}`;
@@ -6064,14 +6084,88 @@ Blocked by ${blockerRef}`;
       cb.type = "checkbox";
       cb.checked = question.completed;
       cb.title = question.completed ? "Mark question as open" : "Mark question as resolved/answered";
-      const span = document.createElement("span");
-      span.textContent = question.text;
       cb.addEventListener("change", () => {
         const updatedBody = updateOpenQuestionInMarkdown(issue.body, question.lineIndex, cb.checked);
         void updateIssueBody(issue, updatedBody);
       });
+      const contentEl = document.createElement("div");
+      contentEl.style.flex = "1";
+      contentEl.style.minWidth = "0";
+      const textRow = document.createElement("div");
+      textRow.style.display = "flex";
+      textRow.style.alignItems = "flex-start";
+      textRow.style.justifyContent = "space-between";
+      textRow.style.gap = "8px";
+      const span = document.createElement("span");
+      span.textContent = question.text;
+      span.style.flex = "1";
+      span.style.wordBreak = "break-word";
+      textRow.appendChild(span);
+      if (!question.completed) {
+        const idx = unresolvedIdx;
+        unresolvedIdx++;
+        const btnAnswer = document.createElement("button");
+        btnAnswer.className = "btn btn-xs btn-inline-answer";
+        btnAnswer.setAttribute("data-question-index", String(idx));
+        btnAnswer.title = "Record decision or answer";
+        btnAnswer.textContent = "Answer";
+        textRow.appendChild(btnAnswer);
+        btnAnswer.addEventListener("click", (e) => {
+          e.stopPropagation();
+          let answerRow = contentEl.querySelector(".inline-answer-row");
+          if (answerRow) {
+            const isVisible = answerRow.style.display !== "none";
+            answerRow.style.display = isVisible ? "none" : "flex";
+            if (!isVisible) {
+              answerRow.querySelector(".input-inline-answer")?.focus();
+            }
+            return;
+          }
+          answerRow = document.createElement("div");
+          answerRow.className = "inline-answer-row";
+          answerRow.style.display = "flex";
+          answerRow.style.gap = "6px";
+          answerRow.style.marginTop = "4px";
+          answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button></div>`;
+          contentEl.appendChild(answerRow);
+          const input = answerRow.querySelector(".input-inline-answer");
+          const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
+          const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
+          const submitAnswer = async () => {
+            const answerText = input?.value.trim();
+            if (!answerText) return;
+            const targetIssue = activeIssue || issue;
+            if (!targetIssue) return;
+            const newBody = answerOpenQuestionInMarkdown(targetIssue.body, idx, answerText);
+            await updateIssueBody(targetIssue, newBody);
+            await host.toast({ kind: "info", message: "Recorded answer to question" });
+            if (activeIssue && activeIssue.number === targetIssue.number) {
+              renderDrawer(targetIssue);
+            }
+          };
+          btnSave?.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            void submitAnswer();
+          });
+          btnCancel?.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            if (answerRow) answerRow.style.display = "none";
+          });
+          input?.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter") {
+              ev.preventDefault();
+              void submitAnswer();
+            } else if (ev.key === "Escape") {
+              ev.preventDefault();
+              if (answerRow) answerRow.style.display = "none";
+            }
+          });
+          input?.focus();
+        });
+      }
+      contentEl.appendChild(textRow);
       itemEl.appendChild(cb);
-      itemEl.appendChild(span);
+      itemEl.appendChild(contentEl);
       elDrawerQuestionsContainer.appendChild(itemEl);
     });
   }

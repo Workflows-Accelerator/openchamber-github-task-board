@@ -65,6 +65,7 @@ import {
   parseSubtasks,
   updateSubtaskInMarkdown,
   updateOpenQuestionInMarkdown,
+  answerOpenQuestionInMarkdown,
   appendSubtaskToMarkdown,
   appendOpenQuestionToMarkdown,
   serializeDraftQuestions,
@@ -3059,6 +3060,7 @@ function renderQuestions(issue: Issue): void {
   elQuestionsProgressText.style.color = open > 0 ? 'var(--warn)' : 'var(--succ)';
 
   elDrawerQuestionsContainer.innerHTML = '';
+  let unresolvedIdx = 0;
   questions.forEach((question) => {
     const itemEl = document.createElement('div');
     itemEl.className = `check-item ${question.completed ? 'done' : ''}`;
@@ -3068,16 +3070,102 @@ function renderQuestions(issue: Issue): void {
     cb.checked = question.completed;
     cb.title = question.completed ? 'Mark question as open' : 'Mark question as resolved/answered';
 
-    const span = document.createElement('span');
-    span.textContent = question.text;
-
     cb.addEventListener('change', () => {
       const updatedBody = updateOpenQuestionInMarkdown(issue.body, question.lineIndex, cb.checked);
       void updateIssueBody(issue, updatedBody);
     });
 
+    const contentEl = document.createElement('div');
+    contentEl.style.flex = '1';
+    contentEl.style.minWidth = '0';
+
+    const textRow = document.createElement('div');
+    textRow.style.display = 'flex';
+    textRow.style.alignItems = 'flex-start';
+    textRow.style.justifyContent = 'space-between';
+    textRow.style.gap = '8px';
+
+    const span = document.createElement('span');
+    span.textContent = question.text;
+    span.style.flex = '1';
+    span.style.wordBreak = 'break-word';
+    textRow.appendChild(span);
+
+    if (!question.completed) {
+      const idx = unresolvedIdx;
+      unresolvedIdx++;
+
+      const btnAnswer = document.createElement('button');
+      btnAnswer.className = 'btn btn-xs btn-inline-answer';
+      btnAnswer.setAttribute('data-question-index', String(idx));
+      btnAnswer.title = 'Record decision or answer';
+      btnAnswer.textContent = 'Answer';
+      textRow.appendChild(btnAnswer);
+
+      btnAnswer.addEventListener('click', (e) => {
+        e.stopPropagation();
+        let answerRow = contentEl.querySelector<HTMLDivElement>('.inline-answer-row');
+        if (answerRow) {
+          const isVisible = answerRow.style.display !== 'none';
+          answerRow.style.display = isVisible ? 'none' : 'flex';
+          if (!isVisible) {
+            answerRow.querySelector<HTMLInputElement>('.input-inline-answer')?.focus();
+          }
+          return;
+        }
+
+        answerRow = document.createElement('div');
+        answerRow.className = 'inline-answer-row';
+        answerRow.style.display = 'flex';
+        answerRow.style.gap = '6px';
+        answerRow.style.marginTop = '4px';
+        answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button></div>`;
+        contentEl.appendChild(answerRow);
+
+        const input = answerRow.querySelector<HTMLInputElement>('.input-inline-answer');
+        const btnSave = answerRow.querySelector<HTMLButtonElement>('.btn-submit-inline-answer');
+        const btnCancel = answerRow.querySelector<HTMLButtonElement>('.btn-cancel-inline-answer');
+
+        const submitAnswer = async () => {
+          const answerText = input?.value.trim();
+          if (!answerText) return;
+          const targetIssue = activeIssue || issue;
+          if (!targetIssue) return;
+          const newBody = answerOpenQuestionInMarkdown(targetIssue.body, idx, answerText);
+          await updateIssueBody(targetIssue, newBody);
+          await host.toast({ kind: 'info', message: 'Recorded answer to question' });
+          if (activeIssue && activeIssue.number === targetIssue.number) {
+            renderDrawer(targetIssue);
+          }
+        };
+
+        btnSave?.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          void submitAnswer();
+        });
+
+        btnCancel?.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          if (answerRow) answerRow.style.display = 'none';
+        });
+
+        input?.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            void submitAnswer();
+          } else if (ev.key === 'Escape') {
+            ev.preventDefault();
+            if (answerRow) answerRow.style.display = 'none';
+          }
+        });
+
+        input?.focus();
+      });
+    }
+
+    contentEl.appendChild(textRow);
     itemEl.appendChild(cb);
-    itemEl.appendChild(span);
+    itemEl.appendChild(contentEl);
     elDrawerQuestionsContainer.appendChild(itemEl);
   });
 }

@@ -122,6 +122,27 @@ export function updateOpenQuestionInMarkdown(body: string, lineIndex: number, co
   return updateSubtaskInMarkdown(body, lineIndex, completed);
 }
 
+export function answerOpenQuestionInMarkdown(body: string | null | undefined, questionIndex: number, answerText: string): string {
+  if (!body) return '';
+  const cleanAnswer = (answerText || '').trim().replace(/\r?\n+/g, ' ');
+  const questions = parseOpenQuestions(body);
+  const unresolved = questions.filter((q) => !q.completed);
+  if (questionIndex < 0 || questionIndex >= unresolved.length) {
+    return body;
+  }
+  const target = unresolved[questionIndex];
+  const lines = body.split('\n');
+  const line = lines[target.lineIndex];
+  if (!line) return body;
+  const match = line.match(checklistRegex);
+  if (!match) return body;
+
+  const lineEnding = match[4].endsWith('\r') ? '\r' : '';
+  const questionContent = match[4].replace(/\r$/, '').trimEnd();
+  lines[target.lineIndex] = `${match[1]}x${match[3]}${questionContent} *(Answer: ${cleanAnswer})*${lineEnding}`;
+  return lines.join('\n');
+}
+
 export function appendSubtaskToMarkdown(body: string, text: string): string {
   const cleanText = text.trim();
   if (!cleanText) return body;
