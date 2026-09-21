@@ -14,6 +14,13 @@ export interface Subtask {
   rawLine: string;
 }
 
+export interface TestItem {
+  text: string;
+  completed: boolean;
+  lineIndex: number;
+  scope: 'issue' | 'batch';
+}
+
 export interface Issue {
   number: number;
   title: string;
@@ -32,6 +39,8 @@ export interface Issue {
 const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
 
 const questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
+const testPlanIssueHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
+const testPlanBatchHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
 
 const headingRegex = /^#{1,4}\s+/;
 
@@ -260,6 +269,166 @@ export function serializeDraftQuestions(body: string, questionTexts: string[]): 
     return `${cleanBody}\n${questionsBlock}`;
   }
   return `${cleanBody}\n\n### Open Questions:\n\n${questionsBlock}`;
+}
+
+export function parseTestPlan(body: string | null | undefined): { issueTests: TestItem[]; batchTests: TestItem[] } {
+  const result: { issueTests: TestItem[]; batchTests: TestItem[] } = {
+    issueTests: [],
+    batchTests: [],
+  };
+  if (!body || typeof body !== 'string') return result;
+
+  const lines = body.split('\n');
+  let currentScope: 'issue' | 'batch' | null = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (headingRegex.test(line)) {
+      if (testPlanIssueHeadingRegex.test(line)) {
+        currentScope = 'issue';
+      } else if (testPlanBatchHeadingRegex.test(line)) {
+        currentScope = 'batch';
+      } else {
+        currentScope = null;
+      }
+      continue;
+    }
+
+    if (currentScope) {
+      const match = line.match(checklistRegex);
+      if (match) {
+        const item: TestItem = {
+          text: match[4].trim(),
+          completed: match[2].toLowerCase() === 'x',
+          lineIndex: i,
+          scope: currentScope,
+        };
+        if (currentScope === 'issue') {
+          result.issueTests.push(item);
+        } else {
+          result.batchTests.push(item);
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+export function updateTestItemInMarkdown(body: string, lineIndex: number, completed: boolean): string {
+  if (!body) return '';
+  return updateSubtaskInMarkdown(body, lineIndex, completed);
+}
+
+export function appendTestItemToMarkdown(body: string, text: string, scope: 'issue' | 'batch'): string {
+  const cleanText = (text || '').trim();
+  if (!cleanText) return body || '';
+
+  const header = scope === 'issue' ? '## Test Plan (Issue)' : '## Test Plan (Batch)';
+  const targetRegex = scope === 'issue' ? testPlanIssueHeadingRegex : testPlanBatchHeadingRegex;
+
+  if (!body) {
+    return `${header}\n- [ ] ${cleanText}`;
+  }
+
+  const lines = body.split('\n');
+  let targetHeaderIndex = -1;
+  let nextHeaderIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (targetRegex.test(lines[i])) {
+      targetHeaderIndex = i;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (headingRegex.test(lines[j])) {
+          nextHeaderIndex = j;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  if (targetHeaderIndex !== -1) {
+    if (nextHeaderIndex !== -1) {
+      let insertIndex = nextHeaderIndex;
+      while (insertIndex > targetHeaderIndex + 1 && lines[insertIndex - 1].trim() === '') {
+        insertIndex--;
+      }
+      lines.splice(insertIndex, 0, `- [ ] ${cleanText}`);
+      return lines.join('\n');
+    } else {
+      return `${body.trimEnd()}\n- [ ] ${cleanText}`;
+    }
+  }
+
+  return `${body.trimEnd()}\n\n${header}\n- [ ] ${cleanText}`;
+}
+
+export function serializeTestPlan(items: Array<{ text: string; completed?: boolean }>, scope: 'issue' | 'batch'): string {
+  const header = scope === 'issue' ? '## Test Plan (Issue)' : '## Test Plan (Batch)';
+  const cleanItems = (items || []).filter((item) => item && typeof item.text === 'string' && item.text.trim());
+  if (cleanItems.length === 0) {
+    return header;
+  }
+  const lines = cleanItems.map((item) => `- [${item.completed ? 'x' : ' '}] ${item.text.trim()}`);
+  return `${header}\n${lines.join('\n')}`;
+}
+
+export function getIssueBatch(issue: Issue | any): string | null {
+  if (!issue || !issue.labels || !Array.isArray(issue.labels) || issue.labels.length === 0) return null;
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l?.name || '').trim();
+    if (name.toLowerCase().startsWith('batch:')) {
+      const batchName = name.slice(6).trim();
+      if (batchName) return batchName;
+    }
+  }
+  return null;
+}
+
+export function isBatchReadyForReview(
+  batchName: string,
+  allIssues: Issue[]
+): { ready: boolean; total: number; inReview: number; outstandingIssues: number[] } {
+  const normalizedBatch = (batchName || '').trim().toLowerCase();
+  if (!normalizedBatch || !Array.isArray(allIssues)) {
+    return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
+  }
+
+  const batchIssues = allIssues.filter((issue) => {
+    const b = getIssueBatch(issue);
+    return b ? b.toLowerCase() === normalizedBatch : false;
+  });
+
+  const total = batchIssues.length;
+  if (total === 0) {
+    return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
+  }
+
+  let inReviewCount = 0;
+  const outstandingIssues: number[] = [];
+
+  for (const issue of batchIssues) {
+    const isClosed = issue.state === 'closed';
+    const labelNames = (issue.labels || []).map((l: any) => (typeof l === 'string' ? l : l?.name || '').toLowerCase());
+    const isDone = isClosed || labelNames.includes('status:done') || (issue as any).column === 'done' || (issue as any).status === 'done';
+    const isInReview = labelNames.includes('status:in-review') || (issue as any).column === 'in-review' || (issue as any).status === 'in-review';
+
+    if (isInReview) {
+      inReviewCount++;
+    } else if (!isDone) {
+      outstandingIssues.push(issue.number);
+    }
+  }
+
+  const ready = total > 0 && outstandingIssues.length === 0;
+
+  return {
+    ready,
+    total,
+    inReview: inReviewCount,
+    outstandingIssues,
+  };
 }
 
 export function isVagueIdea(issue: { title?: string; body?: string; subtasks?: any[]; openQuestions?: any[]; labels?: any[] }): boolean {

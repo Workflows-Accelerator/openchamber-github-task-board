@@ -120,8 +120,30 @@ import {
   normalizeGithubIssues,
   mergeIssuePages,
   parseFriendlyTitle,
+  TestItem,
+  parseTestPlan,
+  updateTestItemInMarkdown,
+  appendTestItemToMarkdown,
+  serializeTestPlan,
+  getIssueBatch,
+  isBatchReadyForReview,
 } from './core.js';
-export { buildSessionIndex, scopeDoneIssues, normalizeGithubIssues, mergeIssuePages, renderBlockerChip, renderBlockerChips, parseFriendlyTitle };
+export type { TestItem };
+export {
+  buildSessionIndex,
+  scopeDoneIssues,
+  normalizeGithubIssues,
+  mergeIssuePages,
+  renderBlockerChip,
+  renderBlockerChips,
+  parseFriendlyTitle,
+  parseTestPlan,
+  updateTestItemInMarkdown,
+  appendTestItemToMarkdown,
+  serializeTestPlan,
+  getIssueBatch,
+  isBatchReadyForReview,
+};
 
 // ==========================================
 // State Store
@@ -311,6 +333,17 @@ const elQuestionsProgressText = document.getElementById('questionsProgressText')
 const elDrawerQuestionsContainer = document.getElementById('drawerQuestionsContainer') as HTMLDivElement | null;
 const elInputAddQuestion = document.getElementById('inputAddQuestion') as HTMLInputElement | null;
 const elBtnAddQuestion = document.getElementById('btnAddQuestion') as HTMLButtonElement | null;
+
+// Test plan elements
+const elIssueTestsProgressText = document.getElementById('issueTestsProgressText') as HTMLSpanElement | null;
+const elDrawerIssueTestsContainer = document.getElementById('drawerIssueTestsContainer') as HTMLDivElement | null;
+const elInputAddIssueTest = document.getElementById('inputAddIssueTest') as HTMLInputElement | null;
+const elBtnAddIssueTest = document.getElementById('btnAddIssueTest') as HTMLButtonElement | null;
+
+const elBatchTestsProgressText = document.getElementById('batchTestsProgressText') as HTMLSpanElement | null;
+const elDrawerBatchTestsContainer = document.getElementById('drawerBatchTestsContainer') as HTMLDivElement | null;
+const elInputAddBatchTest = document.getElementById('inputAddBatchTest') as HTMLInputElement | null;
+const elBtnAddBatchTest = document.getElementById('btnAddBatchTest') as HTMLButtonElement | null;
 
 // Dual-mode description elements
 const elDrawerDescriptionViewBox = document.getElementById('drawerDescriptionViewBox') as HTMLDivElement;
@@ -1784,6 +1817,15 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
     ? `<span class="badge badge-vague" title="Sparse task needing alignment">Needs Alignment</span>`
     : '';
 
+  const batchName = getIssueBatch(issue);
+  let awaitingBatchHtml = '';
+  if (col === 'in-review' && batchName) {
+    const res = isBatchReadyForReview(batchName, issues || []);
+    if (!res.ready && res.outstandingIssues.length > 0) {
+      awaitingBatchHtml = `<span class="badge-awaiting-batch" title="Waiting on #${res.outstandingIssues.join(', #')} before batch testing">Awaiting Batch</span>`;
+    }
+  }
+
   const questionBadgeInfo = formatQuestionBadge(issue.openQuestions);
   const questionsBadgeHtml = questionBadgeInfo.html;
 
@@ -1836,6 +1878,7 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
         ${priorityHtml}
         ${complexityHtml}
         ${vagueBadgeHtml}
+        ${awaitingBatchHtml}
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ''}
         ${archiveCategoryBadge}
       </div>
@@ -3130,6 +3173,9 @@ function renderDrawer(issue: Issue): void {
   // Render open questions
   renderQuestions(issue);
 
+  // Render test plan checklists
+  renderTestPlans(issue);
+
   // Render Markdown Description (View Mode)
   elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
   elDrawerDescriptionViewBox.style.display = 'block';
@@ -3335,6 +3381,86 @@ function renderQuestions(issue: Issue): void {
     itemEl.appendChild(contentEl);
     elDrawerQuestionsContainer.appendChild(itemEl);
   });
+}
+
+function renderTestPlans(issue: Issue): void {
+  if (!elDrawerIssueTestsContainer || !elDrawerBatchTestsContainer) return;
+
+  const { issueTests, batchTests } = parseTestPlan(issue.body);
+
+  // 1. Issue Tests
+  const totalIssue = issueTests.length;
+  const completedIssue = issueTests.filter((t) => t.completed).length;
+  if (elIssueTestsProgressText) {
+    elIssueTestsProgressText.textContent = `${completedIssue} / ${totalIssue}`;
+  }
+
+  elDrawerIssueTestsContainer.innerHTML = '';
+  if (totalIssue === 0) {
+    elDrawerIssueTestsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No issue test plan found. Add tests below or add "## Test Plan (Issue)" in description.
+      </div>
+    `;
+  } else {
+    issueTests.forEach((item) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = `check-item ${item.completed ? 'done' : ''}`;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = item.completed;
+
+      const span = document.createElement('span');
+      span.textContent = item.text;
+
+      cb.addEventListener('change', () => {
+        const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
+        void updateIssueBody(issue, updatedBody);
+      });
+
+      itemEl.appendChild(cb);
+      itemEl.appendChild(span);
+      elDrawerIssueTestsContainer.appendChild(itemEl);
+    });
+  }
+
+  // 2. Batch Tests
+  const totalBatch = batchTests.length;
+  const completedBatch = batchTests.filter((t) => t.completed).length;
+  if (elBatchTestsProgressText) {
+    elBatchTestsProgressText.textContent = `${completedBatch} / ${totalBatch}`;
+  }
+
+  elDrawerBatchTestsContainer.innerHTML = '';
+  if (totalBatch === 0) {
+    elDrawerBatchTestsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No batch test plan found. Add tests below or add "## Test Plan (Batch)" in description.
+      </div>
+    `;
+  } else {
+    batchTests.forEach((item) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = `check-item ${item.completed ? 'done' : ''}`;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = item.completed;
+
+      const span = document.createElement('span');
+      span.textContent = item.text;
+
+      cb.addEventListener('change', () => {
+        const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
+        void updateIssueBody(issue, updatedBody);
+      });
+
+      itemEl.appendChild(cb);
+      itemEl.appendChild(span);
+      elDrawerBatchTestsContainer.appendChild(itemEl);
+    });
+  }
 }
 
 async function loadComments(issueNumber: number): Promise<void> {
@@ -5188,6 +5314,34 @@ function initEvents(): void {
 
     elInputAddQuestion.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') elBtnAddQuestion.click();
+    });
+  }
+
+  if (elBtnAddIssueTest && elInputAddIssueTest) {
+    elBtnAddIssueTest.addEventListener('click', () => {
+      if (activeIssue && elInputAddIssueTest.value.trim()) {
+        const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddIssueTest.value, 'issue');
+        elInputAddIssueTest.value = '';
+        void updateIssueBody(activeIssue, newBody);
+      }
+    });
+
+    elInputAddIssueTest.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') elBtnAddIssueTest.click();
+    });
+  }
+
+  if (elBtnAddBatchTest && elInputAddBatchTest) {
+    elBtnAddBatchTest.addEventListener('click', () => {
+      if (activeIssue && elInputAddBatchTest.value.trim()) {
+        const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddBatchTest.value, 'batch');
+        elInputAddBatchTest.value = '';
+        void updateIssueBody(activeIssue, newBody);
+      }
+    });
+
+    elInputAddBatchTest.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') elBtnAddBatchTest.click();
     });
   }
 

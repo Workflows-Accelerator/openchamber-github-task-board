@@ -3148,6 +3148,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   // panel/core.ts
   var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
   var questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
+  var testPlanIssueHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
+  var testPlanBatchHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
   var headingRegex = /^#{1,4}\s+/;
   function parseFriendlyTitle(body, defaultTitle) {
     if (!body || typeof body !== "string") {
@@ -3351,6 +3353,146 @@ ${questionsBlock}`;
 ### Open Questions:
 
 ${questionsBlock}`;
+  }
+  function parseTestPlan(body) {
+    const result = {
+      issueTests: [],
+      batchTests: []
+    };
+    if (!body || typeof body !== "string") return result;
+    const lines = body.split("\n");
+    let currentScope = null;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (headingRegex.test(line)) {
+        if (testPlanIssueHeadingRegex.test(line)) {
+          currentScope = "issue";
+        } else if (testPlanBatchHeadingRegex.test(line)) {
+          currentScope = "batch";
+        } else {
+          currentScope = null;
+        }
+        continue;
+      }
+      if (currentScope) {
+        const match = line.match(checklistRegex);
+        if (match) {
+          const item = {
+            text: match[4].trim(),
+            completed: match[2].toLowerCase() === "x",
+            lineIndex: i,
+            scope: currentScope
+          };
+          if (currentScope === "issue") {
+            result.issueTests.push(item);
+          } else {
+            result.batchTests.push(item);
+          }
+        }
+      }
+    }
+    return result;
+  }
+  function updateTestItemInMarkdown(body, lineIndex, completed) {
+    if (!body) return "";
+    return updateSubtaskInMarkdown(body, lineIndex, completed);
+  }
+  function appendTestItemToMarkdown(body, text, scope) {
+    const cleanText = (text || "").trim();
+    if (!cleanText) return body || "";
+    const header = scope === "issue" ? "## Test Plan (Issue)" : "## Test Plan (Batch)";
+    const targetRegex = scope === "issue" ? testPlanIssueHeadingRegex : testPlanBatchHeadingRegex;
+    if (!body) {
+      return `${header}
+- [ ] ${cleanText}`;
+    }
+    const lines = body.split("\n");
+    let targetHeaderIndex = -1;
+    let nextHeaderIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (targetRegex.test(lines[i])) {
+        targetHeaderIndex = i;
+        for (let j = i + 1; j < lines.length; j++) {
+          if (headingRegex.test(lines[j])) {
+            nextHeaderIndex = j;
+            break;
+          }
+        }
+        break;
+      }
+    }
+    if (targetHeaderIndex !== -1) {
+      if (nextHeaderIndex !== -1) {
+        let insertIndex = nextHeaderIndex;
+        while (insertIndex > targetHeaderIndex + 1 && lines[insertIndex - 1].trim() === "") {
+          insertIndex--;
+        }
+        lines.splice(insertIndex, 0, `- [ ] ${cleanText}`);
+        return lines.join("\n");
+      } else {
+        return `${body.trimEnd()}
+- [ ] ${cleanText}`;
+      }
+    }
+    return `${body.trimEnd()}
+
+${header}
+- [ ] ${cleanText}`;
+  }
+  function serializeTestPlan(items, scope) {
+    const header = scope === "issue" ? "## Test Plan (Issue)" : "## Test Plan (Batch)";
+    const cleanItems = (items || []).filter((item) => item && typeof item.text === "string" && item.text.trim());
+    if (cleanItems.length === 0) {
+      return header;
+    }
+    const lines = cleanItems.map((item) => `- [${item.completed ? "x" : " "}] ${item.text.trim()}`);
+    return `${header}
+${lines.join("\n")}`;
+  }
+  function getIssueBatch(issue) {
+    if (!issue || !issue.labels || !Array.isArray(issue.labels) || issue.labels.length === 0) return null;
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l?.name || "").trim();
+      if (name.toLowerCase().startsWith("batch:")) {
+        const batchName = name.slice(6).trim();
+        if (batchName) return batchName;
+      }
+    }
+    return null;
+  }
+  function isBatchReadyForReview(batchName, allIssues) {
+    const normalizedBatch = (batchName || "").trim().toLowerCase();
+    if (!normalizedBatch || !Array.isArray(allIssues)) {
+      return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
+    }
+    const batchIssues = allIssues.filter((issue) => {
+      const b = getIssueBatch(issue);
+      return b ? b.toLowerCase() === normalizedBatch : false;
+    });
+    const total = batchIssues.length;
+    if (total === 0) {
+      return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
+    }
+    let inReviewCount = 0;
+    const outstandingIssues = [];
+    for (const issue of batchIssues) {
+      const isClosed = issue.state === "closed";
+      const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l?.name || "").toLowerCase());
+      const isDone = isClosed || labelNames.includes("status:done") || issue.column === "done" || issue.status === "done";
+      const isInReview = labelNames.includes("status:in-review") || issue.column === "in-review" || issue.status === "in-review";
+      if (isInReview) {
+        inReviewCount++;
+      } else if (!isDone) {
+        outstandingIssues.push(issue.number);
+      }
+    }
+    const ready = total > 0 && outstandingIssues.length === 0;
+    return {
+      ready,
+      total,
+      inReview: inReviewCount,
+      outstandingIssues
+    };
   }
   function isVagueIdea(issue) {
     if (!issue) return true;
@@ -4240,6 +4382,14 @@ Blocked by ${blockerRef}`;
   var elDrawerQuestionsContainer = document.getElementById("drawerQuestionsContainer");
   var elInputAddQuestion = document.getElementById("inputAddQuestion");
   var elBtnAddQuestion = document.getElementById("btnAddQuestion");
+  var elIssueTestsProgressText = document.getElementById("issueTestsProgressText");
+  var elDrawerIssueTestsContainer = document.getElementById("drawerIssueTestsContainer");
+  var elInputAddIssueTest = document.getElementById("inputAddIssueTest");
+  var elBtnAddIssueTest = document.getElementById("btnAddIssueTest");
+  var elBatchTestsProgressText = document.getElementById("batchTestsProgressText");
+  var elDrawerBatchTestsContainer = document.getElementById("drawerBatchTestsContainer");
+  var elInputAddBatchTest = document.getElementById("inputAddBatchTest");
+  var elBtnAddBatchTest = document.getElementById("btnAddBatchTest");
   var elDrawerDescriptionViewBox = document.getElementById("drawerDescriptionViewBox");
   var elDrawerDescriptionCollapsible = document.getElementById("drawerDescriptionCollapsible");
   var elDrawerDescriptionContent = document.getElementById("drawerDescriptionContent");
@@ -5403,6 +5553,14 @@ Blocked by ${blockerRef}`;
     const complexityHtml = complexity ? `<span class="badge badge-complexity badge-complexity-${complexity.toLowerCase()}">${complexity}</span>` : "";
     const vague = isVagueIdea(issue);
     const vagueBadgeHtml = vague ? `<span class="badge badge-vague" title="Sparse task needing alignment">Needs Alignment</span>` : "";
+    const batchName = getIssueBatch(issue);
+    let awaitingBatchHtml = "";
+    if (col === "in-review" && batchName) {
+      const res = isBatchReadyForReview(batchName, issues || []);
+      if (!res.ready && res.outstandingIssues.length > 0) {
+        awaitingBatchHtml = `<span class="badge-awaiting-batch" title="Waiting on #${res.outstandingIssues.join(", #")} before batch testing">Awaiting Batch</span>`;
+      }
+    }
     const questionBadgeInfo = formatQuestionBadge(issue.openQuestions);
     const questionsBadgeHtml = questionBadgeInfo.html;
     const descPreview = getIssueDescriptionPreview(issue.body);
@@ -5439,6 +5597,7 @@ Blocked by ${blockerRef}`;
         ${priorityHtml}
         ${complexityHtml}
         ${vagueBadgeHtml}
+        ${awaitingBatchHtml}
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ""}
         ${archiveCategoryBadge}
       </div>
@@ -6538,6 +6697,7 @@ Blocked by ${blockerRef}`;
     }
     renderChecklist(issue);
     renderQuestions(issue);
+    renderTestPlans(issue);
     elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
     elDrawerDescriptionViewBox.style.display = "block";
     elDrawerDescriptionEditBox.style.display = "none";
@@ -6710,6 +6870,70 @@ Blocked by ${blockerRef}`;
       itemEl.appendChild(contentEl);
       elDrawerQuestionsContainer.appendChild(itemEl);
     });
+  }
+  function renderTestPlans(issue) {
+    if (!elDrawerIssueTestsContainer || !elDrawerBatchTestsContainer) return;
+    const { issueTests, batchTests } = parseTestPlan(issue.body);
+    const totalIssue = issueTests.length;
+    const completedIssue = issueTests.filter((t) => t.completed).length;
+    if (elIssueTestsProgressText) {
+      elIssueTestsProgressText.textContent = `${completedIssue} / ${totalIssue}`;
+    }
+    elDrawerIssueTestsContainer.innerHTML = "";
+    if (totalIssue === 0) {
+      elDrawerIssueTestsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No issue test plan found. Add tests below or add "## Test Plan (Issue)" in description.
+      </div>
+    `;
+    } else {
+      issueTests.forEach((item) => {
+        const itemEl = document.createElement("div");
+        itemEl.className = `check-item ${item.completed ? "done" : ""}`;
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = item.completed;
+        const span = document.createElement("span");
+        span.textContent = item.text;
+        cb.addEventListener("change", () => {
+          const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
+          void updateIssueBody(issue, updatedBody);
+        });
+        itemEl.appendChild(cb);
+        itemEl.appendChild(span);
+        elDrawerIssueTestsContainer.appendChild(itemEl);
+      });
+    }
+    const totalBatch = batchTests.length;
+    const completedBatch = batchTests.filter((t) => t.completed).length;
+    if (elBatchTestsProgressText) {
+      elBatchTestsProgressText.textContent = `${completedBatch} / ${totalBatch}`;
+    }
+    elDrawerBatchTestsContainer.innerHTML = "";
+    if (totalBatch === 0) {
+      elDrawerBatchTestsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No batch test plan found. Add tests below or add "## Test Plan (Batch)" in description.
+      </div>
+    `;
+    } else {
+      batchTests.forEach((item) => {
+        const itemEl = document.createElement("div");
+        itemEl.className = `check-item ${item.completed ? "done" : ""}`;
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = item.completed;
+        const span = document.createElement("span");
+        span.textContent = item.text;
+        cb.addEventListener("change", () => {
+          const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
+          void updateIssueBody(issue, updatedBody);
+        });
+        itemEl.appendChild(cb);
+        itemEl.appendChild(span);
+        elDrawerBatchTestsContainer.appendChild(itemEl);
+      });
+    }
   }
   async function loadComments(issueNumber) {
     elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-muted); font-size: 11.5px;">Loading comments...</div>';
@@ -8298,6 +8522,30 @@ ${issue.body}
       });
       elInputAddQuestion.addEventListener("keydown", (e) => {
         if (e.key === "Enter") elBtnAddQuestion.click();
+      });
+    }
+    if (elBtnAddIssueTest && elInputAddIssueTest) {
+      elBtnAddIssueTest.addEventListener("click", () => {
+        if (activeIssue && elInputAddIssueTest.value.trim()) {
+          const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddIssueTest.value, "issue");
+          elInputAddIssueTest.value = "";
+          void updateIssueBody(activeIssue, newBody);
+        }
+      });
+      elInputAddIssueTest.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") elBtnAddIssueTest.click();
+      });
+    }
+    if (elBtnAddBatchTest && elInputAddBatchTest) {
+      elBtnAddBatchTest.addEventListener("click", () => {
+        if (activeIssue && elInputAddBatchTest.value.trim()) {
+          const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddBatchTest.value, "batch");
+          elInputAddBatchTest.value = "";
+          void updateIssueBody(activeIssue, newBody);
+        }
+      });
+      elInputAddBatchTest.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") elBtnAddBatchTest.click();
       });
     }
     elBtnDrawerAttachComposer.addEventListener("click", async () => {

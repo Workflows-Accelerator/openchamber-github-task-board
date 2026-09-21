@@ -6,6 +6,7 @@ import type { Issue } from './core.js';
 
 export type {
   Subtask,
+  TestItem,
   Issue,
   DependencyGraph,
   DependencyNode,
