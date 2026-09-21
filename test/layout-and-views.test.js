@@ -413,3 +413,61 @@ test('updatePreflightBrief in main.ts enriches brief with skill transclusions fo
     'main.ts must include documentation-and-adrs skill for documentation'
   );
 });
+
+test('hostile edge cases: angle brackets, quotes, placeholder ignoring, bold variations, and next-line guards', () => {
+  // Bold with colon outside asterisks
+  const resBoldOutside = parseFriendlyTitle('**Friendly Title**: Clean Settings UI', 'feat: settings');
+  assert.equal(resBoldOutside.title, 'Clean Settings UI');
+  assert.equal(resBoldOutside.subtitle, 'feat: settings');
+
+  // Angle brackets stripping
+  const resAngle = parseFriendlyTitle('### Friendly Title: <Keyboard Navigation Shortcuts>', 'feat: shortcuts');
+  assert.equal(resAngle.title, 'Keyboard Navigation Shortcuts');
+
+  // Quotes stripping
+  const resQuotes = parseFriendlyTitle('### Friendly Title: "Live Real-Time Sync"', 'feat: sync');
+  assert.equal(resQuotes.title, 'Live Real-Time Sync');
+
+  // Literal unreplaced template placeholder must be ignored
+  const resPlaceholder1 = parseFriendlyTitle('### Friendly Title: <3-6 words plain English title>', 'fix(ui): actual title');
+  assert.equal(resPlaceholder1.title, 'fix(ui): actual title');
+  assert.equal(resPlaceholder1.subtitle, null);
+
+  const resPlaceholder2 = parseFriendlyTitle('### Friendly Title: 3-6 words plain English title', 'fix(ui): actual title');
+  assert.equal(resPlaceholder2.title, 'fix(ui): actual title');
+  assert.equal(resPlaceholder2.subtitle, null);
+
+  // Next-line with bullet/checklist items must NOT be treated as title
+  const resBulletNext = parseFriendlyTitle('### Friendly Title:\n- [ ] First implementation task\n- [ ] Second', 'feat: task');
+  assert.equal(resBulletNext.title, 'feat: task');
+  assert.equal(resBulletNext.subtitle, null);
+
+  // Next-line with another section header must NOT be treated as title
+  const resHeaderNext = parseFriendlyTitle('### Friendly Title:\n### Overview\nDescription here', 'feat: header');
+  assert.equal(resHeaderNext.title, 'feat: header');
+  assert.equal(resHeaderNext.subtitle, null);
+
+  // Next-line with bold section header must NOT be treated as title
+  const resBoldHeaderNext = parseFriendlyTitle('### Friendly Title:\n**Overview:**\nDescription here', 'feat: bold header');
+  assert.equal(resBoldHeaderNext.title, 'feat: bold header');
+  assert.equal(resBoldHeaderNext.subtitle, null);
+});
+
+test('card-subtitle-tech styling supports narrow-screen word wrapping and XSS escaping', () => {
+  // Check index.html has word-break and overflow-wrap for card-subtitle-tech
+  const updatedHtml = fs.readFileSync(path.join(here, '..', 'panel', 'index.html'), 'utf8');
+  assert.ok(updatedHtml.includes('.card-subtitle-tech'), 'index.html must have .card-subtitle-tech class');
+  assert.ok(updatedHtml.includes('word-break: break-word'), 'card-subtitle-tech must have word-break');
+  assert.ok(updatedHtml.includes('overflow-wrap: anywhere'), 'card-subtitle-tech must have overflow-wrap');
+
+  // Verify XSS escaping behavior
+  const maliciousIssue = {
+    title: '<script>alert("xss")</script>',
+    body: '### Friendly Title: <img src=x onerror=alert(1)>',
+  };
+  const titles = parseFriendlyTitle(maliciousIssue.body, maliciousIssue.title);
+  assert.ok(!titles.title.includes('<script>'));
+  // When escaping HTML:
+  const escapedTitle = titles.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  assert.ok(!escapedTitle.includes('<'));
+});

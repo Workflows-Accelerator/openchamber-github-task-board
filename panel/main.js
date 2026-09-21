@@ -3153,7 +3153,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     if (!body || typeof body !== "string") {
       return { title: defaultTitle || "", subtitle: null };
     }
-    const match = body.match(/(?:^|\r?\n)\s*(?:#{2,3}\s*Friendly Title:|\*\*Friendly Title:\*\*)\s*([^\r\n]*)/i);
+    const match = body.match(/(?:^|\r?\n)[ \t]*(?:#{1,4}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
     if (match) {
       let extracted = match[1].trim();
       if (!extracted) {
@@ -3163,12 +3163,21 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
         for (const rawLine of lines) {
           const line = rawLine.trim();
           if (!line) continue;
-          if (line.startsWith("#") || line.startsWith("**")) break;
+          if (line.startsWith("#") || /^\*\*(?:overview|description|details|context|background|about|tasks?|subtasks?|questions?):?\*\*/i.test(line) || /^[-*+]\s+/.test(line) || /^\d+\.\s+/.test(line)) {
+            break;
+          }
           extracted = line;
           break;
         }
       }
       if (extracted) {
+        extracted = extracted.replace(/^<([^>]+)>$/, "$1").replace(/^["'](.*)["']$/, "$1").trim();
+        if (extracted.toLowerCase() === "3-6 words plain english title" || extracted.toLowerCase() === "<3-6 words plain english title>") {
+          return {
+            title: defaultTitle || "",
+            subtitle: null
+          };
+        }
         return {
           title: extracted,
           subtitle: defaultTitle || null
@@ -6790,7 +6799,7 @@ Blocked by ${blockerRef}`;
   }
   function updatePreflightBrief() {
     if (!activeIssue) return;
-    const useWt = elPreflightWorktreeToggle.checked;
+    const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
     let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}
 
 `;

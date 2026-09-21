@@ -3453,7 +3453,7 @@ export function buildWorktreeBranchName(options: {
 
 function updatePreflightBrief(): void {
   if (!activeIssue) return;
-  const useWt = elPreflightWorktreeToggle.checked;
+  const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
   let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}\n\n`;
   if (activeIssue.body) {
     brief += `### Description:\n${activeIssue.body}\n\n`;

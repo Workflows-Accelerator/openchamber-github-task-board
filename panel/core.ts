@@ -43,7 +43,7 @@ export function parseFriendlyTitle(
     return { title: defaultTitle || '', subtitle: null };
   }
 
-  const match = body.match(/(?:^|\r?\n)\s*(?:#{2,3}\s*Friendly Title:|\*\*Friendly Title:\*\*)\s*([^\r\n]*)/i);
+  const match = body.match(/(?:^|\r?\n)[ \t]*(?:#{1,4}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
   if (match) {
     let extracted = match[1].trim();
     if (!extracted) {
@@ -53,12 +53,34 @@ export function parseFriendlyTitle(
       for (const rawLine of lines) {
         const line = rawLine.trim();
         if (!line) continue;
-        if (line.startsWith('#') || line.startsWith('**')) break;
+        if (
+          line.startsWith('#') ||
+          /^\*\*(?:overview|description|details|context|background|about|tasks?|subtasks?|questions?):?\*\*/i.test(line) ||
+          /^[-*+]\s+/.test(line) ||
+          /^\d+\.\s+/.test(line)
+        ) {
+          break;
+        }
         extracted = line;
         break;
       }
     }
+
     if (extracted) {
+      // Strip wrapping quotes or angle brackets if present
+      extracted = extracted.replace(/^<([^>]+)>$/, '$1').replace(/^["'](.*)["']$/, '$1').trim();
+
+      // Guard against unreplaced template placeholder
+      if (
+        extracted.toLowerCase() === '3-6 words plain english title' ||
+        extracted.toLowerCase() === '<3-6 words plain english title>'
+      ) {
+        return {
+          title: defaultTitle || '',
+          subtitle: null,
+        };
+      }
+
       return {
         title: extracted,
         subtitle: defaultTitle || null,
