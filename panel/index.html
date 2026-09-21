@@ -550,6 +550,39 @@
       stroke-width: 3.5 !important;
       opacity: 1 !important;
     }
+    .graph-edge-group {
+      cursor: pointer;
+    }
+    .graph-edge-delete-badge {
+      opacity: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      cursor: pointer;
+    }
+    .graph-edge-group:hover .graph-edge-delete-badge,
+    .graph-edge-delete-badge:hover,
+    .graph-edge-delete-badge:focus {
+      opacity: 1;
+    }
+    .graph-edge-delete-circle {
+      fill: var(--surf-elevated, #20242b);
+      stroke: var(--border, #475569);
+      stroke-width: 1.5;
+      transition: fill 0.15s ease, stroke 0.15s ease;
+    }
+    .graph-edge-delete-text {
+      fill: var(--fg-muted, #94a3b8);
+      font-size: 11px;
+      font-weight: 700;
+      user-select: none;
+      pointer-events: none;
+    }
+    .graph-edge-delete-badge:hover .graph-edge-delete-circle {
+      fill: var(--err, #e74c3c);
+      stroke: var(--err, #e74c3c);
+    }
+    .graph-edge-delete-badge:hover .graph-edge-delete-text {
+      fill: #ffffff;
+    }
     .graph-edge-open {
       stroke: var(--oc-border-strong, var(--fg-muted, #64748b));
       stroke-width: 2;
@@ -753,6 +786,29 @@
       padding: 1px 5px;
       border-radius: 3px;
       font-weight: 600;
+    }
+    .graph-badge-blocked-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .btn-remove-blocker {
+      background: transparent;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 0 2px;
+      font-size: 11px;
+      line-height: 1;
+      opacity: 0.7;
+      transition: opacity 0.15s ease, color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-remove-blocker:hover {
+      opacity: 1;
+      color: var(--err, #e74c3c);
     }
     .graph-badge-impact {
       display: inline-flex;

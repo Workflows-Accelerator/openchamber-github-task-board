@@ -2736,6 +2736,25 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     const generic = content.match(/gh[pousr]_[A-Za-z0-9_]+/);
     return generic ? generic[0] : null;
   }
+  function parseGitdirContent(content) {
+    if (!content || typeof content !== "string") return null;
+    const match = content.match(/^gitdir:\s*(.+)$/m);
+    return match ? match[1].trim() : null;
+  }
+  function extractParentRepoRootFromGitdir(gitdirPath) {
+    if (!gitdirPath || typeof gitdirPath !== "string") return null;
+    if (!gitdirPath.includes("/.git/worktrees/")) return null;
+    return gitdirPath.split("/.git/worktrees/")[0];
+  }
+  function resolveParentRemoteFromGitdir(gitdirContent, readConfigFileFn) {
+    const path = parseGitdirContent(gitdirContent);
+    if (!path) return null;
+    const parentRepoRoot = extractParentRepoRootFromGitdir(path);
+    if (!parentRepoRoot) return null;
+    const config = readConfigFileFn(`${parentRepoRoot}/.git/config`);
+    if (!config) return null;
+    return parseGitRemoteFromConfig(config);
+  }
 
   // panel/types.ts
   function extractWorktreeName(wt) {
@@ -3263,6 +3282,15 @@ Blocked by ${blockerRef}`;
       newLines.push(line);
     }
     return newLines.join("\n").trim();
+  }
+  function renderBlockerChip(target, blocker) {
+    const targetNum = typeof target === "number" ? target : target.number;
+    return `<span class="graph-badge-blocked-item">#${blocker} <button class="btn-remove-blocker" data-target="${targetNum}" data-blocker="${blocker}" title="Remove dependency">&times;</button></span>`;
+  }
+  function renderBlockerChips(target, blockers) {
+    if (!blockers || blockers.length === 0) return "";
+    const targetNum = typeof target === "number" ? target : target.number;
+    return blockers.map((b) => renderBlockerChip(targetNum, b)).join(" ");
   }
   function extractIssueReferences(body, selfNumber) {
     if (!body || typeof body !== "string") return [];
@@ -3890,20 +3918,32 @@ Blocked by ${blockerRef}`;
           if (match) {
             const gitdir = match[1].trim();
             const targetPath = gitdir.startsWith("/") ? gitdir : `${cleanDir}/${gitdir}`;
-            try {
-              const wtConfig = await host.readFile(`${targetPath}/config`);
-              if (wtConfig?.content) {
-                found = parseGitRemoteFromConfig(wtConfig.content);
-              }
-            } catch {
-            }
-            if (!found) {
+            if (targetPath.includes("/.git/worktrees/")) {
+              const parentRepoRoot = targetPath.split("/.git/worktrees/")[0];
               try {
-                const parentConfig = await host.readFile(`${targetPath}/../../config`);
-                if (parentConfig?.content) {
+                const parentConfig = await host.readFile(`${parentRepoRoot}/.git/config`);
+                if (parentConfig && parentConfig.content) {
                   found = parseGitRemoteFromConfig(parentConfig.content);
                 }
               } catch {
+              }
+            }
+            if (!found) {
+              try {
+                const wtConfig = await host.readFile(`${targetPath}/config`);
+                if (wtConfig?.content) {
+                  found = parseGitRemoteFromConfig(wtConfig.content);
+                }
+              } catch {
+              }
+              if (!found) {
+                try {
+                  const parentConfig = await host.readFile(`${targetPath}/../../config`);
+                  if (parentConfig?.content) {
+                    found = parseGitRemoteFromConfig(parentConfig.content);
+                  }
+                } catch {
+                }
               }
             }
           }
@@ -3954,8 +3994,35 @@ Blocked by ${blockerRef}`;
     }
   }
   async function autoResolveRepoForActiveContext() {
+    let worktreeMatchedProject = null;
+    if (currentDirectory && currentDirectory.includes("/workspace/.local/share/opencode/worktree/")) {
+      try {
+        const cleanCurDir = currentDirectory.replace(/\/+$/, "");
+        const gitFileRes = await host.readFile(`${cleanCurDir}/.git`);
+        if (gitFileRes && gitFileRes.content) {
+          const match = gitFileRes.content.match(/^gitdir:\s*(.+)$/m);
+          if (match) {
+            const gitdir = match[1].trim();
+            const targetPath = gitdir.startsWith("/") ? gitdir : `${cleanCurDir}/${gitdir}`;
+            if (targetPath.includes("/.git/worktrees/")) {
+              const parentRepoRoot = targetPath.split("/.git/worktrees/")[0].replace(/\/+$/, "");
+              worktreeMatchedProject = allProjects.find((p) => {
+                if (!p.directory) return false;
+                const cleanP = p.directory.replace(/\/+$/, "");
+                return cleanP === parentRepoRoot || parentRepoRoot.startsWith(cleanP + "/");
+              }) || null;
+              if (worktreeMatchedProject) {
+                addLog(`Worktree matched to parent project: "${worktreeMatchedProject.name}" (${worktreeMatchedProject.directory})`, "succ");
+              }
+            }
+          }
+        }
+      } catch (err) {
+        addLog(`Failed to resolve parent project from worktree .git: ${err?.message || err}`, "warn");
+      }
+    }
     const sorted = [...allProjects].sort((a, b) => (b.directory?.length || 0) - (a.directory?.length || 0));
-    let targetProject = sorted.find((p) => {
+    let targetProject = worktreeMatchedProject || sorted.find((p) => {
       if (!p.directory) return false;
       const cleanP = p.directory.replace(/\/+$/, "");
       const cleanT = currentDirectory.replace(/\/+$/, "");
@@ -5232,6 +5299,18 @@ Blocked by ${blockerRef}`;
       }
     }
   }
+  document.addEventListener("click", (e) => {
+    const btn = e.target?.closest(".btn-remove-blocker");
+    if (btn) {
+      e.stopPropagation();
+      e.preventDefault();
+      const target = parseInt(btn.dataset.target || "0", 10);
+      const blocker = parseInt(btn.dataset.blocker || "0", 10);
+      if (target > 0 && blocker > 0) {
+        void handleRemoveDependency(target, blocker);
+      }
+    }
+  });
   function showQuickBlockerPicker(targetIssue, triggerEl) {
     document.querySelectorAll(".graph-quick-picker").forEach((p) => p.remove());
     const popover = document.createElement("div");
@@ -5372,7 +5451,8 @@ Blocked by ${blockerRef}`;
     }
     let blockersHtml = "";
     if (node.isBlocked && node.openBlockers.length > 0) {
-      blockersHtml = `<span class="graph-badge-blocked" title="Blocked by #${node.openBlockers.join(", #")}"><svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg> #${node.openBlockers.join(", #")}</span>`;
+      const chipsHtml = renderBlockerChips(node.issue, node.openBlockers);
+      blockersHtml = `<span class="graph-badge-blocked" title="Blocked by #${node.openBlockers.join(", #")}"><svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg> ${chipsHtml}</span>`;
     }
     let impactHtml = "";
     if (node.downstreamImpact > 0) {
@@ -5418,9 +5498,20 @@ Blocked by ${blockerRef}`;
         showQuickBlockerPicker(node.issue, addBtn);
       });
     }
+    card.querySelectorAll(".btn-remove-blocker").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const target = parseInt(btn.dataset.target || "0", 10);
+        const blocker = parseInt(btn.dataset.blocker || "0", 10);
+        if (target > 0 && blocker > 0) {
+          void handleRemoveDependency(target, blocker);
+        }
+      });
+    });
     card.addEventListener("click", (e) => {
       const target = e.target;
-      if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn")) {
+      if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn") || target.closest(".btn-remove-blocker")) {
         return;
       }
       openDrawer(node.issue);
@@ -5428,7 +5519,7 @@ Blocked by ${blockerRef}`;
     card.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         const target = e.target;
-        if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn")) {
+        if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn") || target.closest(".btn-remove-blocker")) {
           return;
         }
         e.preventDefault();
@@ -5471,6 +5562,10 @@ Blocked by ${blockerRef}`;
       const targetRect = cardRects.get(edge.to);
       if (!sourceRect || !targetRect) continue;
       const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
+      const edgeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      edgeGroup.setAttribute("class", "graph-edge-group");
+      edgeGroup.setAttribute("data-from", String(edge.from));
+      edgeGroup.setAttribute("data-to", String(edge.to));
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", pathData.d);
       path.setAttribute("data-from", String(edge.from));
@@ -5498,7 +5593,41 @@ Blocked by ${blockerRef}`;
       const titleEl = document.createElementNS("http://www.w3.org/2000/svg", "title");
       titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to remove dependency)`;
       path.appendChild(titleEl);
-      edgeFragment.appendChild(path);
+      edgeGroup.appendChild(path);
+      const midX = Math.round((pathData.x1 + pathData.x2) / 2);
+      const midY = Math.round((pathData.y1 + pathData.y2) / 2);
+      const badgeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      badgeGroup.setAttribute("class", "graph-edge-delete-badge");
+      badgeGroup.setAttribute("transform", `translate(${midX}, ${midY})`);
+      badgeGroup.setAttribute("data-from", String(edge.from));
+      badgeGroup.setAttribute("data-to", String(edge.to));
+      badgeGroup.setAttribute("role", "button");
+      badgeGroup.setAttribute("aria-label", `Remove dependency: #${edge.from} blocks #${edge.to}`);
+      badgeGroup.style.cursor = "pointer";
+      const hitCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      hitCircle.setAttribute("r", "12");
+      hitCircle.setAttribute("fill", "transparent");
+      badgeGroup.appendChild(hitCircle);
+      const visualCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      visualCircle.setAttribute("class", "graph-edge-delete-circle");
+      visualCircle.setAttribute("r", "8");
+      badgeGroup.appendChild(visualCircle);
+      const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      textEl.setAttribute("class", "graph-edge-delete-text");
+      textEl.setAttribute("text-anchor", "middle");
+      textEl.setAttribute("dominant-baseline", "central");
+      textEl.textContent = "\xD7";
+      badgeGroup.appendChild(textEl);
+      const badgeTitle = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      badgeTitle.textContent = `Remove dependency: #${edge.from} blocks #${edge.to}`;
+      badgeGroup.appendChild(badgeTitle);
+      badgeGroup.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        void handleRemoveDependency(edge.to, edge.from);
+      });
+      edgeGroup.appendChild(badgeGroup);
+      edgeFragment.appendChild(edgeGroup);
     }
     elGraphEdgesLayer.appendChild(edgeFragment);
   }

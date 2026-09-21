@@ -39,3 +39,30 @@ export function extractGitHubTokenFromCredentials(content: string | null | undef
   const generic = content.match(/gh[pousr]_[A-Za-z0-9_]+/);
   return generic ? generic[0] : null;
 }
+
+export function parseGitdirContent(content: string | null | undefined): string | null {
+  if (!content || typeof content !== 'string') return null;
+  const match = content.match(/^gitdir:\s*(.+)$/m);
+  return match ? match[1].trim() : null;
+}
+
+export function extractParentRepoRootFromGitdir(gitdirPath: string | null | undefined): string | null {
+  if (!gitdirPath || typeof gitdirPath !== 'string') return null;
+  if (!gitdirPath.includes('/.git/worktrees/')) return null;
+  return gitdirPath.split('/.git/worktrees/')[0];
+}
+
+export function resolveParentRemoteFromGitdir(
+  gitdirContent: string | null | undefined,
+  readConfigFileFn: (path: string) => string | null
+): { owner: string; repo: string } | null {
+  const path = parseGitdirContent(gitdirContent);
+  if (!path) return null;
+  const parentRepoRoot = extractParentRepoRootFromGitdir(path);
+  if (!parentRepoRoot) return null;
+  const config = readConfigFileFn(`${parentRepoRoot}/.git/config`);
+  if (!config) return null;
+  return parseGitRemoteFromConfig(config);
+}
+
+

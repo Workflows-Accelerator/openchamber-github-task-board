@@ -614,6 +614,17 @@ export function removeDependencyFromMarkdown(body: string | null | undefined, bl
   return newLines.join('\n').trim();
 }
 
+export function renderBlockerChip(target: { number: number } | number, blocker: number): string {
+  const targetNum = typeof target === 'number' ? target : target.number;
+  return `<span class="graph-badge-blocked-item">#${blocker} <button class="btn-remove-blocker" data-target="${targetNum}" data-blocker="${blocker}" title="Remove dependency">&times;</button></span>`;
+}
+
+export function renderBlockerChips(target: { number: number } | number, blockers: number[]): string {
+  if (!blockers || blockers.length === 0) return '';
+  const targetNum = typeof target === 'number' ? target : target.number;
+  return blockers.map((b) => renderBlockerChip(targetNum, b)).join(' ');
+}
+
 export function extractIssueReferences(body: string | null | undefined, selfNumber: number): number[] {
   if (!body || typeof body !== 'string') return [];
   const numbers = new Set<number>();

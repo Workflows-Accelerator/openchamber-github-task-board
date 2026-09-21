@@ -1,5 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {
+  parseGitdirContent,
+  extractParentRepoRootFromGitdir,
+  resolveParentRemoteFromGitdir,
+} from '../panel/git.ts';
+
+export { parseGitdirContent, extractParentRepoRootFromGitdir, resolveParentRemoteFromGitdir };
 
 export function parseGitHubRemoteUrl(raw) {
   if (!raw || typeof raw !== 'string') return null;
@@ -77,3 +84,34 @@ test('sanitizeHexColor enforces valid hex colors and strips injection', () => {
   assert.equal(sanitizeHexColor('red; background: url(x)'), null);
   assert.equal(sanitizeHexColor('"><script>alert(1)</script>'), null);
 });
+
+test('verifying gitdir parsing with /.git/worktrees/ resolves parent remote', () => {
+  const gitdirContent = 'gitdir: /workspace/main-project/.git/worktrees/task-execution-issue-6-graph-delete-and-repo-detect\n';
+  const parsedPath = parseGitdirContent(gitdirContent);
+  assert.equal(parsedPath, '/workspace/main-project/.git/worktrees/task-execution-issue-6-graph-delete-and-repo-detect');
+
+  const parentRepoRoot = extractParentRepoRootFromGitdir(parsedPath);
+  assert.equal(parentRepoRoot, '/workspace/main-project');
+
+  const mockParentConfig = `
+[core]
+\trepositoryformatversion = 0
+\tfilemode = true
+[remote "origin"]
+\turl = git@github.com:Workflows-Accelerator/openchamber-github-task-board.git
+\tfetch = +refs/heads/*:refs/remotes/origin/*
+`;
+
+  const remote = resolveParentRemoteFromGitdir(gitdirContent, (filePath) => {
+    if (filePath === '/workspace/main-project/.git/config') {
+      return mockParentConfig;
+    }
+    return null;
+  });
+
+  assert.deepEqual(remote, {
+    owner: 'Workflows-Accelerator',
+    repo: 'openchamber-github-task-board',
+  });
+});
+

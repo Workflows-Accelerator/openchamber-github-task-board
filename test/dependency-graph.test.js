@@ -8,6 +8,8 @@ import {
   buildDependencyGraph,
   calculateEdgePath,
   detectCycle,
+  renderBlockerChip,
+  renderBlockerChips,
 } from '../panel/core.ts';
 
 test('parseIssueDependencies extracts blocker numbers from various standard formats', () => {
@@ -244,5 +246,58 @@ test('add and remove dependency round-trip preserves other markdown content', ()
   const removedAll = removeDependencyFromMarkdown(removedFirst, 88);
   assert.equal(removedAll, initial);
 });
+
+test('blocker chip rendering generates interactive remove button with data-target and data-blocker', () => {
+  const issue = { number: 42, title: 'Test Task' };
+  const chips = renderBlockerChips(issue, [7, 12]);
+
+  assert.ok(chips.includes('class="graph-badge-blocked-item"'));
+  assert.ok(chips.includes('#7'));
+  assert.ok(chips.includes('#12'));
+  assert.ok(chips.includes('class="btn-remove-blocker"'));
+  assert.ok(chips.includes('data-target="42"'));
+  assert.ok(chips.includes('data-blocker="7"'));
+  assert.ok(chips.includes('data-blocker="12"'));
+  assert.ok(chips.includes('&times;'));
+
+  // Single chip helper
+  const single = renderBlockerChip(42, 7);
+  assert.equal(
+    single,
+    '<span class="graph-badge-blocked-item">#7 <button class="btn-remove-blocker" data-target="42" data-blocker="7" title="Remove dependency">&times;</button></span>'
+  );
+
+  // Empty returns empty string
+  assert.equal(renderBlockerChips(issue, []), '');
+});
+
+test('blocker remove interaction removes dependency cleanly and updates chips', () => {
+  const targetIssue = { number: 42, body: 'Initial implementation\n\nBlocked by #7, #12' };
+  const blockers = parseIssueDependencies(targetIssue.body);
+  assert.deepEqual(blockers, [7, 12]);
+
+  const chipsHtml = renderBlockerChips(targetIssue, blockers);
+  assert.ok(chipsHtml.includes('data-blocker="7"'));
+  assert.ok(chipsHtml.includes('data-blocker="12"'));
+
+  // Simulate clicking .btn-remove-blocker for target 42 and blocker 7
+  const newBody = removeDependencyFromMarkdown(targetIssue.body, 7);
+  targetIssue.body = newBody;
+  assert.equal(targetIssue.body, 'Initial implementation\n\nBlocked by #12');
+
+  const updatedBlockers = parseIssueDependencies(targetIssue.body);
+  assert.deepEqual(updatedBlockers, [12]);
+  const updatedChips = renderBlockerChips(targetIssue, updatedBlockers);
+  assert.ok(!updatedChips.includes('data-blocker="7"'));
+  assert.ok(updatedChips.includes('data-blocker="12"'));
+
+  // Simulate removing remaining blocker 12
+  const finalBody = removeDependencyFromMarkdown(targetIssue.body, 12);
+  targetIssue.body = finalBody;
+  assert.equal(targetIssue.body, 'Initial implementation');
+  assert.deepEqual(parseIssueDependencies(targetIssue.body), []);
+  assert.equal(renderBlockerChips(targetIssue, parseIssueDependencies(targetIssue.body)), '');
+});
+
 
 
