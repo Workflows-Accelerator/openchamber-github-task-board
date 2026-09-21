@@ -2592,6 +2592,142 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   }
 
   // panel/labels.ts
+  function extractWorktreeName(wt) {
+    if (!wt) return "";
+    if (typeof wt === "string") return wt;
+    if (typeof wt === "object") {
+      return wt.name || wt.branch || wt.directory || "";
+    }
+    return "";
+  }
+  function checkVague(issue) {
+    if (!issue) return true;
+    const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labels.includes("status:needs-alignment")) {
+      return true;
+    }
+    const openQuestions = issue.openQuestions || [];
+    const hasUnansweredQuestions = openQuestions.some((q) => !q.completed);
+    if (hasUnansweredQuestions) {
+      return true;
+    }
+    const body = issue.body || "";
+    const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+    const subtaskCount = (issue.subtasks || []).length;
+    return subtaskCount === 0 && wordCount < 20;
+  }
+  function extractTheme(issue) {
+    if (!issue || !issue.labels || issue.labels.length === 0) return "No Theme";
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name.toLowerCase().startsWith("theme:")) {
+        const themeName = name.slice(6).trim();
+        if (themeName) return themeName;
+      }
+    }
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      const lower = name.toLowerCase();
+      if (name && !lower.startsWith("status:") && !lower.startsWith("priority:") && !lower.startsWith("complexity:") && !lower.startsWith("theme:") && !["archived", "archive"].includes(lower)) {
+        return name;
+      }
+    }
+    return "No Theme";
+  }
+  var STATUS_DRAFT = "status:draft";
+  var STATUS_BACKLOG = "status:backlog";
+  var STATUS_TODO = "status:todo";
+  var STATUS_PLANNED = "status:planned";
+  var STATUS_IN_PROGRESS = "status:in-progress";
+  var STATUS_NEEDS_HUMAN = "status:needs-human";
+  var STATUS_IN_REVIEW = "status:in-review";
+  var STATUS_DONE = "status:done";
+  var STATUS_LABELS = [
+    STATUS_DRAFT,
+    STATUS_BACKLOG,
+    STATUS_TODO,
+    STATUS_PLANNED,
+    STATUS_IN_PROGRESS,
+    STATUS_NEEDS_HUMAN,
+    STATUS_IN_REVIEW,
+    STATUS_DONE
+  ];
+  var STATUS_COLUMNS = [
+    "draft",
+    "backlog",
+    "todo",
+    "planned",
+    "in-progress",
+    "needs-human",
+    "in-review",
+    "done"
+  ];
+  var STATUS_METADATA = {
+    "draft": {
+      id: "draft",
+      label: STATUS_DRAFT,
+      name: "Draft",
+      displayName: "Draft",
+      color: "#6e7681",
+      description: "Initial ideas or drafting phase requiring further clarification"
+    },
+    "backlog": {
+      id: "backlog",
+      label: STATUS_BACKLOG,
+      name: "Backlog",
+      displayName: "Backlog",
+      color: "#8b949e",
+      description: "Prioritized ideas and incoming work not yet scheduled"
+    },
+    "todo": {
+      id: "todo",
+      label: STATUS_TODO,
+      name: "To Do",
+      displayName: "To Do",
+      color: "#d29922",
+      description: "Well-formed work ready to be picked up"
+    },
+    "planned": {
+      id: "planned",
+      label: STATUS_PLANNED,
+      name: "Planned",
+      displayName: "Planned",
+      color: "#58a6ff",
+      description: "Scheduled or queued for execution"
+    },
+    "in-progress": {
+      id: "in-progress",
+      label: STATUS_IN_PROGRESS,
+      name: "In Progress",
+      displayName: "In Progress",
+      color: "#bc8cff",
+      description: "Actively being worked on by an agent or human"
+    },
+    "needs-human": {
+      id: "needs-human",
+      label: STATUS_NEEDS_HUMAN,
+      name: "Needs Human",
+      displayName: "Needs Human",
+      color: "#f85149",
+      description: "Blocked waiting on human permission, answers, or input"
+    },
+    "in-review": {
+      id: "in-review",
+      label: STATUS_IN_REVIEW,
+      name: "In Review",
+      displayName: "In Review",
+      color: "#3fb950",
+      description: "Execution finished and awaiting human review or PR validation"
+    },
+    "done": {
+      id: "done",
+      label: STATUS_DONE,
+      name: "Done",
+      displayName: "Done",
+      color: "#238636",
+      description: "Completed or closed"
+    }
+  };
   function isSystemLabel(labelName) {
     if (!labelName || typeof labelName !== "string") return false;
     const lower = labelName.trim().toLowerCase();
@@ -2702,6 +2838,249 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     }
     return scored.sort((a, b) => b.score - a.score || b.issue.number - a.issue.number).slice(0, limit).map((s) => s.issue);
   }
+  function isIssueClosed(issue) {
+    if (!issue) return false;
+    if (typeof issue.state === "string" && issue.state.toLowerCase() === "closed") {
+      return true;
+    }
+    if (issue.state_reason === "completed") {
+      return true;
+    }
+    const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labelNames.includes("status:done") || labelNames.includes("status:closed") || labelNames.includes("closed") || labelNames.includes("done")) {
+      return true;
+    }
+    return false;
+  }
+  function resolveIssueColumn(issue, sessionOrList) {
+    if (!issue) return null;
+    if (isIssueClosed(issue)) {
+      return "done";
+    }
+    const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labelNames.includes("status:done")) return "done";
+    if (labelNames.includes("status:in-review")) return "in-review";
+    if (labelNames.includes("status:needs-human")) return "needs-human";
+    let session = null;
+    if (sessionOrList) {
+      if (Array.isArray(sessionOrList)) {
+        const issueNumStr = String(issue.number);
+        session = sessionOrList.find((s) => {
+          if (s.items && s.items.some((it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number)) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issue.number}`)) {
+            return true;
+          }
+          const wtName = extractWorktreeName(s.worktree);
+          if (wtName && wtName.includes(`issue-${issue.number}`)) {
+            return true;
+          }
+          return false;
+        }) || null;
+      } else {
+        session = sessionOrList;
+      }
+    }
+    const isSessionRunning = Boolean(session && session.activity === "running");
+    const isSessionWaiting = Boolean(
+      session && (session.activity === "waiting-permission" || session.activity === "waiting-question" || session.activity.startsWith("waiting"))
+    );
+    const isSessionIdle = Boolean(session && session.activity === "idle");
+    if (labelNames.includes("status:in-progress")) {
+      if (isSessionIdle) {
+        return "in-review";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "in-progress";
+    }
+    if (labelNames.includes("status:planned")) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "planned";
+    }
+    if (labelNames.includes("status:todo")) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "todo";
+    }
+    if (labelNames.includes("status:backlog")) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "backlog";
+    }
+    if (labelNames.includes("status:draft") || checkVague(issue)) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "draft";
+    }
+    if (session) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      if (isSessionIdle) {
+        return "in-review";
+      }
+    }
+    return "todo";
+  }
+  function resolveDefaultTab(issues2, sessionOrList) {
+    if (!issues2 || issues2.length === 0) return "all";
+    const hasNeedsHuman = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "needs-human");
+    if (hasNeedsHuman) return "needs-human";
+    const hasReview = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "in-review");
+    if (hasReview) return "in-review";
+    const hasProgress = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "in-progress");
+    if (hasProgress) return "in-progress";
+    const hasTodo = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "todo");
+    if (hasTodo) return "todo";
+    const hasPlanned = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "planned");
+    if (hasPlanned) return "planned";
+    const hasBacklog = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "backlog");
+    if (hasBacklog) return "backlog";
+    const hasDraft = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "draft");
+    if (hasDraft) return "draft";
+    return "all";
+  }
+  function groupIssuesBy(issuesList, groupBy, sessionOrList) {
+    if (groupBy === "priority") {
+      const groups2 = [
+        { id: "critical", title: "Critical", issues: [] },
+        { id: "important", title: "Important", issues: [] },
+        { id: "useful", title: "Useful", issues: [] },
+        { id: "optional", title: "Optional", issues: [] },
+        { id: "none", title: "No Priority", issues: [] }
+      ];
+      const map2 = new Map(groups2.map((g) => [g.id, g]));
+      for (const issue of issuesList) {
+        const p = getIssuePriority(issue) || "none";
+        map2.get(p)?.issues.push(issue);
+      }
+      return groups2;
+    }
+    if (groupBy === "theme" || groupBy === "tag") {
+      const map2 = /* @__PURE__ */ new Map();
+      for (const issue of issuesList) {
+        const theme = extractTheme(issue);
+        if (!map2.has(theme)) {
+          map2.set(theme, { id: theme, title: theme, issues: [] });
+        }
+        map2.get(theme).issues.push(issue);
+      }
+      if (map2.size === 0) {
+        map2.set("No Theme", { id: "No Theme", title: "No Theme", issues: [] });
+      }
+      return Array.from(map2.values());
+    }
+    const groups = [
+      { id: "draft", title: "Draft", issues: [] },
+      { id: "backlog", title: "Backlog", issues: [] },
+      { id: "todo", title: "To Do", issues: [] },
+      { id: "planned", title: "Planned", issues: [] },
+      { id: "in-progress", title: "In Progress", issues: [] },
+      { id: "needs-human", title: "Needs Human", issues: [] },
+      { id: "in-review", title: "In Review", issues: [] },
+      { id: "done", title: "Done", issues: [] }
+    ];
+    const map = new Map(groups.map((g) => [g.id, g]));
+    for (const issue of issuesList) {
+      const col = resolveIssueColumn(issue, sessionOrList);
+      if (col && map.has(col)) {
+        map.get(col).issues.push(issue);
+      }
+    }
+    return groups;
+  }
+  var StatusReconciler = class {
+    inFlight = /* @__PURE__ */ new Set();
+    lastReconciled = /* @__PURE__ */ new Map();
+    timer = null;
+    debounceMs;
+    updateStatus;
+    getSession;
+    onReconciled;
+    constructor(options) {
+      this.debounceMs = options.debounceMs ?? 300;
+      this.updateStatus = options.updateStatus;
+      this.getSession = options.getSession;
+      this.onReconciled = options.onReconciled;
+    }
+    schedule(issues2) {
+      if (this.timer) {
+        clearTimeout(this.timer);
+      }
+      this.timer = setTimeout(() => {
+        this.timer = null;
+        void this.reconcile(issues2);
+      }, this.debounceMs);
+    }
+    async reconcile(issues2) {
+      const reconciled = [];
+      if (!issues2 || !Array.isArray(issues2)) return reconciled;
+      for (const issue of issues2) {
+        if (!issue || !issue.number) continue;
+        const session = this.getSession ? this.getSession(issue) : null;
+        if (!session) continue;
+        const targetCol = resolveIssueColumn(issue, session);
+        if (!targetCol) continue;
+        if (issue.state === "closed" && targetCol === "done") continue;
+        const currentLabels = (issue.labels || []).map(
+          (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
+        );
+        const currentStatus = currentLabels.find((n) => n.startsWith("status:"))?.replace("status:", "").trim();
+        if (currentStatus === targetCol) continue;
+        if (this.inFlight.has(issue.number)) continue;
+        if (this.lastReconciled.get(issue.number) === targetCol) continue;
+        this.inFlight.add(issue.number);
+        this.lastReconciled.set(issue.number, targetCol);
+        try {
+          await this.updateStatus(issue, targetCol);
+          reconciled.push({ issueNumber: issue.number, target: targetCol });
+          this.onReconciled?.(issue, targetCol);
+        } catch (err) {
+          this.lastReconciled.delete(issue.number);
+        } finally {
+          this.inFlight.delete(issue.number);
+        }
+      }
+      return reconciled;
+    }
+    clear() {
+      if (this.timer) {
+        clearTimeout(this.timer);
+        this.timer = null;
+      }
+      this.inFlight.clear();
+      this.lastReconciled.clear();
+    }
+    isInFlight(issueNumber) {
+      return this.inFlight.has(issueNumber);
+    }
+    getLastReconciled(issueNumber) {
+      return this.lastReconciled.get(issueNumber);
+    }
+  };
 
   // panel/git.ts
   function parseGitHubRemoteUrl(raw) {
@@ -2757,7 +3136,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   }
 
   // panel/types.ts
-  function extractWorktreeName(wt) {
+  function extractWorktreeName2(wt) {
     if (!wt) return "";
     if (typeof wt === "string") return wt;
     if (typeof wt === "object") {
@@ -3780,9 +4159,12 @@ Blocked by ${blockerRef}`;
   var elListViewContainer = document.getElementById("listViewContainer");
   var elKanbanViewContainer = document.getElementById("kanbanViewContainer");
   var kanbanCardContainers = {
+    "draft": document.getElementById("kCardsDraft"),
     "backlog": document.getElementById("kCardsBacklog"),
     "todo": document.getElementById("kCardsTodo"),
+    "planned": document.getElementById("kCardsPlanned"),
     "in-progress": document.getElementById("kCardsProgress"),
+    "needs-human": document.getElementById("kCardsNeedsHuman"),
     "in-review": document.getElementById("kCardsReview"),
     "done": document.getElementById("kCardsDone")
   };
@@ -3900,6 +4282,7 @@ Blocked by ${blockerRef}`;
         sessionIndex = buildSessionIndex(sessions);
         renderViews();
         if (activeIssue) renderDrawer(activeIssue);
+        statusReconciler.schedule(issues);
         const becameIdle = sessions.some((s) => {
           const prev = prevSessions.find((p) => p.id === s.id);
           return s.activity === "idle" && (!prev || prev.activity !== "idle");
@@ -4301,6 +4684,7 @@ Blocked by ${blockerRef}`;
           void host.storage.set(storageKey, { timestamp: Date.now(), issues });
         }
         renderViews();
+        statusReconciler.schedule(issues);
         addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
         if (nextItems.length < 100) break;
         page++;
@@ -4319,7 +4703,7 @@ Blocked by ${blockerRef}`;
       if (Date.now() - cached.timestamp < ISSUE_CACHE_TTL_MS) {
         issues = cached.issues;
         if (!userSelectedTab) {
-          selectTab(resolveDefaultTab(issues));
+          selectTab(resolveDefaultTab2(issues));
         }
         renderViews();
         addLog(`Rendered ${issues.length} issues from memory cache for ${currentRepo}`);
@@ -4333,7 +4717,7 @@ Blocked by ${blockerRef}`;
           issues = stored.issues;
           issueCache.set(currentRepo, { timestamp: stored.timestamp || Date.now(), issues });
           if (!userSelectedTab) {
-            selectTab(resolveDefaultTab(issues));
+            selectTab(resolveDefaultTab2(issues));
           }
           renderViews();
           addLog(`Instantly rendered ${issues.length} issues from persistent storage for ${currentRepo}`);
@@ -4361,9 +4745,10 @@ Blocked by ${blockerRef}`;
       }
       addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, "succ");
       if (!userSelectedTab) {
-        selectTab(resolveDefaultTab(issues));
+        selectTab(resolveDefaultTab2(issues));
       }
       renderViews();
+      statusReconciler.schedule(issues);
       if (page1Items.length >= 100) {
         void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch);
       }
@@ -4438,7 +4823,7 @@ Blocked by ${blockerRef}`;
       await host.toast({ kind: "error", message: `Failed to move #${issue.number}` });
     }
   }
-  function isIssueClosed(issue) {
+  function isIssueClosed2(issue) {
     if (!issue) return false;
     if (typeof issue.state === "string" && issue.state.toLowerCase() === "closed") {
       return true;
@@ -4461,11 +4846,17 @@ Blocked by ${blockerRef}`;
   }
   function getNextColumn(current) {
     switch (current) {
+      case "draft":
+        return "backlog";
       case "backlog":
         return "todo";
       case "todo":
+        return "planned";
+      case "planned":
         return "in-progress";
       case "in-progress":
+        return "needs-human";
+      case "needs-human":
         return "in-review";
       case "in-review":
         return "done";
@@ -4477,12 +4868,18 @@ Blocked by ${blockerRef}`;
   }
   function getNextColumnAction(current) {
     switch (current) {
+      case "draft":
+        return { label: "Backlog", target: "backlog", icon: "\u2192" };
       case "backlog":
         return { label: "To Do", target: "todo", icon: "\u2192" };
       case "todo":
+        return { label: "Planned", target: "planned", icon: "\u2192" };
+      case "planned":
         return { label: "In Progress", target: "in-progress", icon: "\u25B6" };
       case "in-progress":
         return { label: "In Review", target: "in-review", icon: "\u2192" };
+      case "needs-human":
+        return { label: "In Progress", target: "in-progress", icon: "\u25B6" };
       case "in-review":
         return { label: "Done", target: "done", icon: "\u2713" };
       case "done":
@@ -4502,7 +4899,7 @@ Blocked by ${blockerRef}`;
     let newState = issue.state;
     let targetCategory = "todo";
     if (!isArch) {
-      const currentCategory = resolveIssueColumn(issue) || "todo";
+      const currentCategory = resolveIssueColumn2(issue) || "todo";
       if (!clean.some((n) => n.startsWith("status:"))) {
         clean.push(`status:${currentCategory}`);
       }
@@ -4549,7 +4946,7 @@ Blocked by ${blockerRef}`;
       await host.toast({ kind: "error", message: `Failed to archive #${issue.number}: ${err.message}` });
     }
   }
-  function groupIssuesBy(issuesList, groupBy) {
+  function groupIssuesBy2(issuesList, groupBy) {
     if (groupBy === "priority") {
       const groups2 = [
         { id: "critical", title: "Critical", issues: [] },
@@ -4583,15 +4980,18 @@ Blocked by ${blockerRef}`;
       return [{ id: "all", title: "All Items", issues: issuesList }];
     }
     const groups = [
+      { id: "draft", title: "Draft", issues: [] },
       { id: "backlog", title: "Backlog", issues: [] },
       { id: "todo", title: "To Do", issues: [] },
+      { id: "planned", title: "Planned", issues: [] },
       { id: "in-progress", title: "In Progress", issues: [] },
+      { id: "needs-human", title: "Needs Human", issues: [] },
       { id: "in-review", title: "In Review", issues: [] },
       { id: "done", title: "Done", issues: [] }
     ];
     const map = new Map(groups.map((g) => [g.id, g]));
     for (const issue of issuesList) {
-      const col = resolveIssueColumn(issue);
+      const col = resolveIssueColumn2(issue);
       if (col && map.has(col)) {
         map.get(col).issues.push(issue);
       }
@@ -4602,65 +5002,140 @@ Blocked by ${blockerRef}`;
     if (!issue) return null;
     return sessionIndex.get(issue.number) || null;
   }
-  function resolveIssueColumn(issue) {
-    if (isIssueClosed(issue)) {
+  function resolveIssueColumn2(issue, sessionOverride) {
+    if (!issue) return null;
+    if (isIssueClosed2(issue)) {
       return "done";
     }
     const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
     if (labelNames.includes("status:done")) return "done";
     if (labelNames.includes("status:in-review")) return "in-review";
-    const session = getIssueSession(issue);
+    if (labelNames.includes("status:needs-human")) return "needs-human";
+    let session = null;
+    if (sessionOverride !== void 0) {
+      if (Array.isArray(sessionOverride)) {
+        const issueNumStr = String(issue.number);
+        session = sessionOverride.find((s) => {
+          if (s.items && s.items.some((it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number)) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issue.number}`)) {
+            return true;
+          }
+          const wtName = extractWorktreeName2(s.worktree);
+          if (wtName && wtName.includes(`issue-${issue.number}`)) {
+            return true;
+          }
+          return false;
+        }) || null;
+      } else {
+        session = sessionOverride;
+      }
+    } else {
+      session = getIssueSession(issue);
+    }
+    const isSessionRunning = Boolean(session && session.activity === "running");
+    const isSessionWaiting = Boolean(
+      session && (session.activity === "waiting-permission" || session.activity === "waiting-question" || session.activity.startsWith("waiting"))
+    );
+    const isSessionIdle = Boolean(session && session.activity === "idle");
     if (labelNames.includes("status:in-progress")) {
-      if (session && session.activity === "idle") {
+      if (isSessionIdle) {
         return "in-review";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
       }
       return "in-progress";
     }
-    if (labelNames.includes("status:todo")) {
-      if (session && (session.activity === "running" || session.activity.startsWith("waiting"))) {
+    if (labelNames.includes("status:planned")) {
+      if (isSessionRunning) {
         return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "planned";
+    }
+    if (labelNames.includes("status:todo")) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
       }
       return "todo";
     }
     if (labelNames.includes("status:backlog")) {
-      if (session && (session.activity === "running" || session.activity.startsWith("waiting"))) {
+      if (isSessionRunning) {
         return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
       }
       return "backlog";
     }
-    if (session) {
-      if (session.activity === "running" || session.activity.startsWith("waiting")) {
+    if (labelNames.includes("status:draft") || isVagueIdea(issue)) {
+      if (isSessionRunning) {
         return "in-progress";
       }
-      if (session.activity === "idle") {
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "draft";
+    }
+    if (session) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      if (isSessionIdle) {
         return "in-review";
       }
     }
-    return null;
+    return "todo";
   }
-  function resolveDefaultTab(issues2) {
+  function resolveDefaultTab2(issues2) {
     if (!issues2 || issues2.length === 0) return "all";
-    const hasReview = issues2.some((i) => resolveIssueColumn(i) === "in-review");
+    const hasNeedsHuman = issues2.some((i) => resolveIssueColumn2(i) === "needs-human");
+    if (hasNeedsHuman) return "needs-human";
+    const hasReview = issues2.some((i) => resolveIssueColumn2(i) === "in-review");
     if (hasReview) return "in-review";
-    const hasProgress = issues2.some((i) => resolveIssueColumn(i) === "in-progress");
+    const hasProgress = issues2.some((i) => resolveIssueColumn2(i) === "in-progress");
     if (hasProgress) return "in-progress";
-    const hasTodo = issues2.some((i) => resolveIssueColumn(i) === "todo");
+    const hasTodo = issues2.some((i) => resolveIssueColumn2(i) === "todo");
     if (hasTodo) return "todo";
-    const hasBacklog = issues2.some((i) => resolveIssueColumn(i) === "backlog");
+    const hasPlanned = issues2.some((i) => resolveIssueColumn2(i) === "planned");
+    if (hasPlanned) return "planned";
+    const hasBacklog = issues2.some((i) => resolveIssueColumn2(i) === "backlog");
     if (hasBacklog) return "backlog";
+    const hasDraft = issues2.some((i) => resolveIssueColumn2(i) === "draft");
+    if (hasDraft) return "draft";
     return "all";
   }
+  var statusReconciler = new StatusReconciler({
+    debounceMs: 300,
+    updateStatus: async (issue, targetColumn) => {
+      await updateIssueStatus(issue, targetColumn);
+    },
+    getSession: (issue) => getIssueSession(issue)
+  });
   function updateBadgeCounts() {
     const counts = {
+      "draft": 0,
       "backlog": 0,
       "todo": 0,
+      "planned": 0,
       "in-progress": 0,
+      "needs-human": 0,
       "in-review": 0,
       "done": 0
     };
     const visibleIssues = issues.filter((issue) => showArchivedOnly ? isIssueArchived(issue) : !isIssueArchived(issue));
     visibleIssues.forEach((issue) => {
-      const col = resolveIssueColumn(issue);
+      const col = resolveIssueColumn2(issue);
       if (col && counts[col] !== void 0) {
         counts[col]++;
       }
@@ -4671,14 +5146,20 @@ Blocked by ${blockerRef}`;
       if (el2) el2.textContent = String(val);
     };
     setTxt("tabCountAll", total);
+    setTxt("tabCountDraft", counts["draft"]);
     setTxt("tabCountBacklog", counts["backlog"]);
     setTxt("tabCountTodo", counts["todo"]);
+    setTxt("tabCountPlanned", counts["planned"]);
     setTxt("tabCountProgress", counts["in-progress"]);
+    setTxt("tabCountNeedsHuman", counts["needs-human"]);
     setTxt("tabCountReview", counts["in-review"]);
     setTxt("tabCountDone", counts["done"]);
+    setTxt("kCountDraft", counts["draft"]);
     setTxt("kCountBacklog", counts["backlog"]);
     setTxt("kCountTodo", counts["todo"]);
+    setTxt("kCountPlanned", counts["planned"]);
     setTxt("kCountProgress", counts["in-progress"]);
+    setTxt("kCountNeedsHuman", counts["needs-human"]);
     setTxt("kCountReview", counts["in-review"]);
     setTxt("kCountDone", counts["done"]);
     const blockedCount = sessions.filter(
@@ -4845,7 +5326,7 @@ Blocked by ${blockerRef}`;
       </div>
     `;
     }
-    const wtTag = extractWorktreeName(session?.worktree);
+    const wtTag = extractWorktreeName2(session?.worktree);
     const worktreeHtml = wtTag ? `
       <div class="worktree-tag">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
@@ -4864,7 +5345,7 @@ Blocked by ${blockerRef}`;
         <div class="micro-bar"><div class="micro-fill" style="width: ${pct}%;"></div></div>
       </div>
     ` : "<span></span>";
-    const col = resolveIssueColumn(issue);
+    const col = resolveIssueColumn2(issue);
     const nextAction = col ? getNextColumnAction(col) : { label: "To Do", target: "todo", icon: "\u2192" };
     const isArch = isIssueArchived(issue);
     let archiveCategoryBadge = "";
@@ -5004,7 +5485,7 @@ Blocked by ${blockerRef}`;
   }
   function renderListView(filteredIssues) {
     elListViewContainer.innerHTML = "";
-    const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn(i) === activeTab);
+    const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn2(i) === activeTab);
     if (listItems.length === 0) {
       elListViewContainer.innerHTML = `
       <div class="empty-box">
@@ -5022,7 +5503,7 @@ Blocked by ${blockerRef}`;
       });
       elListViewContainer.appendChild(fragment);
     } else {
-      const groups = groupIssuesBy(listItems, currentGroupBy);
+      const groups = groupIssuesBy2(listItems, currentGroupBy);
       let totalRendered = 0;
       const fragment = document.createDocumentFragment();
       groups.forEach((grp) => {
@@ -5084,14 +5565,17 @@ Blocked by ${blockerRef}`;
     elKanbanViewContainer.innerHTML = "";
     const kanbanFragment = document.createDocumentFragment();
     const columns = [
+      { id: "draft", title: "Draft" },
       { id: "backlog", title: "Backlog" },
       { id: "todo", title: "To Do" },
+      { id: "planned", title: "Planned" },
       { id: "in-progress", title: "In Progress" },
-      { id: "in-review", title: "In Review" },
+      { id: "needs-human", title: "Needs Human" },
+      { id: "in-review", title: "Review" },
       { id: "done", title: "Done" }
     ];
     columns.forEach((col) => {
-      const colIssues = filteredIssues.filter((i) => resolveIssueColumn(i) === col.id);
+      const colIssues = filteredIssues.filter((i) => resolveIssueColumn2(i) === col.id);
       const colEl = document.createElement("div");
       colEl.className = "kanban-col";
       colEl.dataset.column = col.id;
@@ -5149,7 +5633,7 @@ Blocked by ${blockerRef}`;
         });
         cardsContainer.appendChild(cardsFragment);
       } else {
-        const subGroups = groupIssuesBy(displayIssues, currentGroupBy);
+        const subGroups = groupIssuesBy2(displayIssues, currentGroupBy);
         const subFragment = document.createDocumentFragment();
         subGroups.forEach((subGrp) => {
           if (subGrp.issues.length === 0) return;
@@ -5794,7 +6278,7 @@ Blocked by ${blockerRef}`;
           pill.style.alignItems = "center";
           pill.style.gap = "4px";
           pill.style.cursor = "pointer";
-          const isClosed = blockerIssue ? isIssueClosed(blockerIssue) : false;
+          const isClosed = blockerIssue ? isIssueClosed2(blockerIssue) : false;
           if (isClosed) pill.style.opacity = "0.6";
           pill.innerHTML = `
           <span>#${bNum} ${escapeHtml(blockerIssue?.title || "")}</span>
@@ -5821,7 +6305,7 @@ Blocked by ${blockerRef}`;
           const pill = document.createElement("div");
           pill.className = "badge";
           pill.style.cursor = "pointer";
-          const isClosed = isIssueClosed(dep);
+          const isClosed = isIssueClosed2(dep);
           if (isClosed) pill.style.opacity = "0.6";
           pill.textContent = `#${dep.number} ${dep.title}`;
           pill.addEventListener("click", () => openDrawer(dep));
@@ -5945,7 +6429,7 @@ Blocked by ${blockerRef}`;
     elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : "";
     elDrawerGithubLink.href = issue.html_url;
     elDrawerIssueTitle.textContent = issue.title;
-    const col = resolveIssueColumn(issue);
+    const col = resolveIssueColumn2(issue);
     elDrawerStatusSelect.value = col || "none";
     if (elDrawerPrioritySelect) {
       elDrawerPrioritySelect.value = getIssuePriority(issue) || "none";
@@ -5966,7 +6450,7 @@ Blocked by ${blockerRef}`;
       };
     }
     if (elBtnDrawerToggleClose) {
-      const isClosed = isIssueClosed(issue);
+      const isClosed = isIssueClosed2(issue);
       elBtnDrawerToggleClose.textContent = isClosed ? "Reopen Issue" : "Close Issue";
       elBtnDrawerToggleClose.onclick = () => {
         void updateIssueStatus(issue, isClosed ? "todo" : "done");
@@ -5992,7 +6476,7 @@ Blocked by ${blockerRef}`;
       <span class="dot ${dotClass}"></span>
       <span>${label}</span>
     `;
-      const wtName = extractWorktreeName(session.worktree);
+      const wtName = extractWorktreeName2(session.worktree);
       elDrawerWorktreeName.textContent = wtName || "Project Root";
       elBtnDrawerJumpSession.style.display = "inline-flex";
       elBtnDrawerJumpSession.onclick = () => {
@@ -6227,7 +6711,7 @@ Blocked by ${blockerRef}`;
       <div class="related-issue-title" title="${escapeHtml(other.title)}">#${other.number} ${escapeHtml(other.title)}</div>
       <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
         ${compHtml}
-        <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn(other) || "all"}</span>
+        <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn2(other) || "all"}</span>
         ${linkBtnHtml}
       </div>
     `;

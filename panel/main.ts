@@ -12,6 +12,18 @@ import {
   updateComplexityLabel,
   sortIssuesList,
   findRelatedIssues,
+  STATUS_DRAFT,
+  STATUS_BACKLOG,
+  STATUS_TODO,
+  STATUS_PLANNED,
+  STATUS_IN_PROGRESS,
+  STATUS_NEEDS_HUMAN,
+  STATUS_IN_REVIEW,
+  STATUS_DONE,
+  STATUS_LABELS,
+  STATUS_METADATA,
+  STATUS_COLUMNS,
+  StatusReconciler,
 } from './labels.js';
 import {
   parseGitHubRemoteUrl,
@@ -43,6 +55,18 @@ export {
   parseGitdirContent,
   extractParentRepoRootFromGitdir,
   resolveParentRemoteFromGitdir,
+  STATUS_DRAFT,
+  STATUS_BACKLOG,
+  STATUS_TODO,
+  STATUS_PLANNED,
+  STATUS_IN_PROGRESS,
+  STATUS_NEEDS_HUMAN,
+  STATUS_IN_REVIEW,
+  STATUS_DONE,
+  STATUS_LABELS,
+  STATUS_METADATA,
+  STATUS_COLUMNS,
+  StatusReconciler,
 };
 import type {
   Subtask,
@@ -241,9 +265,12 @@ const elKanbanViewContainer = document.getElementById('kanbanViewContainer') as 
 
 // Kanban column references
 const kanbanCardContainers: Record<ColumnId, HTMLDivElement> = {
+  'draft': document.getElementById('kCardsDraft') as HTMLDivElement,
   'backlog': document.getElementById('kCardsBacklog') as HTMLDivElement,
   'todo': document.getElementById('kCardsTodo') as HTMLDivElement,
+  'planned': document.getElementById('kCardsPlanned') as HTMLDivElement,
   'in-progress': document.getElementById('kCardsProgress') as HTMLDivElement,
+  'needs-human': document.getElementById('kCardsNeedsHuman') as HTMLDivElement,
   'in-review': document.getElementById('kCardsReview') as HTMLDivElement,
   'done': document.getElementById('kCardsDone') as HTMLDivElement,
 };
@@ -414,6 +441,7 @@ async function watchActiveProject(projectId: string): Promise<void> {
       sessionIndex = buildSessionIndex(sessions);
       renderViews();
       if (activeIssue) renderDrawer(activeIssue);
+      statusReconciler.schedule(issues);
 
       // When a session finishes / becomes idle, bust issue cache and fetch fresh state from GitHub
       const becameIdle = sessions.some((s) => {
@@ -890,6 +918,7 @@ async function streamRemainingPages(repo: string, storageKey: string, startPage:
         void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any);
       }
       renderViews();
+      statusReconciler.schedule(issues);
       addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
 
       if (nextItems.length < 100) break;
@@ -966,6 +995,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       selectTab(resolveDefaultTab(issues));
     }
     renderViews();
+    statusReconciler.schedule(issues);
 
     // Background streaming for remaining pages if 100 items returned
     if (page1Items.length >= 100) {
@@ -1090,11 +1120,17 @@ export function isIssueArchived(issue: Issue): boolean {
 
 export function getNextColumn(current: ColumnId): ColumnId {
   switch (current) {
+    case 'draft':
+      return 'backlog';
     case 'backlog':
       return 'todo';
     case 'todo':
+      return 'planned';
+    case 'planned':
       return 'in-progress';
     case 'in-progress':
+      return 'needs-human';
+    case 'needs-human':
       return 'in-review';
     case 'in-review':
       return 'done';
@@ -1107,12 +1143,18 @@ export function getNextColumn(current: ColumnId): ColumnId {
 
 export function getNextColumnAction(current: ColumnId): { label: string; target: ColumnId; icon: string } {
   switch (current) {
+    case 'draft':
+      return { label: 'Backlog', target: 'backlog', icon: '→' };
     case 'backlog':
       return { label: 'To Do', target: 'todo', icon: '→' };
     case 'todo':
+      return { label: 'Planned', target: 'planned', icon: '→' };
+    case 'planned':
       return { label: 'In Progress', target: 'in-progress', icon: '▶' };
     case 'in-progress':
       return { label: 'In Review', target: 'in-review', icon: '→' };
+    case 'needs-human':
+      return { label: 'In Progress', target: 'in-progress', icon: '▶' };
     case 'in-review':
       return { label: 'Done', target: 'done', icon: '✓' };
     case 'done':
@@ -1230,9 +1272,12 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[
 
   // Default: status
   const groups: IssueGroup[] = [
+    { id: 'draft', title: 'Draft', issues: [] },
     { id: 'backlog', title: 'Backlog', issues: [] },
     { id: 'todo', title: 'To Do', issues: [] },
+    { id: 'planned', title: 'Planned', issues: [] },
     { id: 'in-progress', title: 'In Progress', issues: [] },
+    { id: 'needs-human', title: 'Needs Human', issues: [] },
     { id: 'in-review', title: 'In Review', issues: [] },
     { id: 'done', title: 'Done', issues: [] },
   ];
@@ -1255,59 +1300,132 @@ function getIssueSession(issue: Issue): SessionInfo | null {
   return sessionIndex.get(issue.number) || null;
 }
 
-export function resolveIssueColumn(issue: Issue): ColumnId | null {
+export function resolveIssueColumn(
+  issue: Issue,
+  sessionOverride?: SessionInfo | SessionInfo[] | null
+): ColumnId | null {
+  if (!issue) return null;
   if (isIssueClosed(issue)) {
     return 'done';
   }
 
-  const labelNames = (issue.labels || []).map((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase());
+  const labelNames = (issue.labels || []).map((l: any) => (typeof l === 'string' ? l : l.name || '').toLowerCase());
   if (labelNames.includes('status:done')) return 'done';
   if (labelNames.includes('status:in-review')) return 'in-review';
+  if (labelNames.includes('status:needs-human')) return 'needs-human';
 
   // Check attached session activity
-  const session = getIssueSession(issue);
+  let session: SessionInfo | null = null;
+  if (sessionOverride !== undefined) {
+    if (Array.isArray(sessionOverride)) {
+      const issueNumStr = String(issue.number);
+      session =
+        sessionOverride.find((s) => {
+          if (s.items && s.items.some((it) => it.id === issueNumStr || (it.data && it.data.issueNumber === issue.number))) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issue.number}`)) {
+            return true;
+          }
+          const wtName = extractWorktreeName(s.worktree);
+          if (wtName && wtName.includes(`issue-${issue.number}`)) {
+            return true;
+          }
+          return false;
+        }) || null;
+    } else {
+      session = sessionOverride;
+    }
+  } else {
+    session = getIssueSession(issue);
+  }
 
-  // If issue has explicit status:in-progress label
+  const isSessionRunning = Boolean(session && session.activity === 'running');
+  const isSessionWaiting = Boolean(
+    session &&
+      (session.activity === 'waiting-permission' ||
+        session.activity === 'waiting-question' ||
+        session.activity.startsWith('waiting'))
+  );
+  const isSessionIdle = Boolean(session && session.activity === 'idle');
+
+  // Explicit status:in-progress label
   if (labelNames.includes('status:in-progress')) {
-    if (session && session.activity === 'idle') {
-      // In-progress work has finished and agent session is idle -> transition to in-review
+    if (isSessionIdle) {
       return 'in-review';
+    }
+    if (isSessionWaiting) {
+      return 'needs-human';
     }
     return 'in-progress';
   }
 
+  // Explicit status:planned label
+  if (labelNames.includes('status:planned')) {
+    if (isSessionRunning) {
+      return 'in-progress';
+    }
+    if (isSessionWaiting) {
+      return 'needs-human';
+    }
+    return 'planned';
+  }
+
   // Explicit status:todo label
   if (labelNames.includes('status:todo')) {
-    if (session && (session.activity === 'running' || session.activity.startsWith('waiting'))) {
+    if (isSessionRunning) {
       return 'in-progress';
+    }
+    if (isSessionWaiting) {
+      return 'needs-human';
     }
     return 'todo';
   }
 
   // Explicit status:backlog label
   if (labelNames.includes('status:backlog')) {
-    if (session && (session.activity === 'running' || session.activity.startsWith('waiting'))) {
+    if (isSessionRunning) {
       return 'in-progress';
+    }
+    if (isSessionWaiting) {
+      return 'needs-human';
     }
     return 'backlog';
   }
 
-  // Dynamic session detection for issues without explicit status labels
-  if (session) {
-    if (session.activity === 'running' || session.activity.startsWith('waiting')) {
+  // Explicit status:draft or isVagueIdea(issue)
+  if (labelNames.includes('status:draft') || isVagueIdea(issue)) {
+    if (isSessionRunning) {
       return 'in-progress';
     }
-    if (session.activity === 'idle') {
+    if (isSessionWaiting) {
+      return 'needs-human';
+    }
+    return 'draft';
+  }
+
+  // Dynamic session detection for issues without explicit status labels
+  if (session) {
+    if (isSessionRunning) {
+      return 'in-progress';
+    }
+    if (isSessionWaiting) {
+      return 'needs-human';
+    }
+    if (isSessionIdle) {
       return 'in-review';
     }
   }
 
-  // Unknown status (only show in 'all' view)
-  return null;
+  // Default for unlabelled well-formed issues
+  return 'todo';
 }
 
 export function resolveDefaultTab(issues: Issue[]): TabId {
   if (!issues || issues.length === 0) return 'all';
+
+  const hasNeedsHuman = issues.some((i) => resolveIssueColumn(i) === 'needs-human');
+  if (hasNeedsHuman) return 'needs-human';
 
   const hasReview = issues.some((i) => resolveIssueColumn(i) === 'in-review');
   if (hasReview) return 'in-review';
@@ -1318,17 +1436,35 @@ export function resolveDefaultTab(issues: Issue[]): TabId {
   const hasTodo = issues.some((i) => resolveIssueColumn(i) === 'todo');
   if (hasTodo) return 'todo';
 
+  const hasPlanned = issues.some((i) => resolveIssueColumn(i) === 'planned');
+  if (hasPlanned) return 'planned';
+
   const hasBacklog = issues.some((i) => resolveIssueColumn(i) === 'backlog');
   if (hasBacklog) return 'backlog';
+
+  const hasDraft = issues.some((i) => resolveIssueColumn(i) === 'draft');
+  if (hasDraft) return 'draft';
 
   return 'all';
 }
 
+// Live session write-back reconciler
+export const statusReconciler = new StatusReconciler({
+  debounceMs: 300,
+  updateStatus: async (issue, targetColumn) => {
+    await updateIssueStatus(issue, targetColumn);
+  },
+  getSession: (issue) => getIssueSession(issue),
+});
+
 function updateBadgeCounts(): void {
   const counts: Record<ColumnId, number> = {
+    'draft': 0,
     'backlog': 0,
     'todo': 0,
+    'planned': 0,
     'in-progress': 0,
+    'needs-human': 0,
     'in-review': 0,
     'done': 0,
   };
@@ -1350,16 +1486,22 @@ function updateBadgeCounts(): void {
     if (el) el.textContent = String(val);
   };
   setTxt('tabCountAll', total);
+  setTxt('tabCountDraft', counts['draft']);
   setTxt('tabCountBacklog', counts['backlog']);
   setTxt('tabCountTodo', counts['todo']);
+  setTxt('tabCountPlanned', counts['planned']);
   setTxt('tabCountProgress', counts['in-progress']);
+  setTxt('tabCountNeedsHuman', counts['needs-human']);
   setTxt('tabCountReview', counts['in-review']);
   setTxt('tabCountDone', counts['done']);
 
   // Kanban counts
+  setTxt('kCountDraft', counts['draft']);
   setTxt('kCountBacklog', counts['backlog']);
   setTxt('kCountTodo', counts['todo']);
+  setTxt('kCountPlanned', counts['planned']);
   setTxt('kCountProgress', counts['in-progress']);
+  setTxt('kCountNeedsHuman', counts['needs-human']);
   setTxt('kCountReview', counts['in-review']);
   setTxt('kCountDone', counts['done']);
 
@@ -1884,10 +2026,13 @@ function renderKanbanView(filteredIssues: Issue[]): void {
   elKanbanViewContainer.innerHTML = '';
   const kanbanFragment = document.createDocumentFragment();
   const columns: Array<{ id: ColumnId; title: string }> = [
+    { id: 'draft', title: 'Draft' },
     { id: 'backlog', title: 'Backlog' },
     { id: 'todo', title: 'To Do' },
+    { id: 'planned', title: 'Planned' },
     { id: 'in-progress', title: 'In Progress' },
-    { id: 'in-review', title: 'In Review' },
+    { id: 'needs-human', title: 'Needs Human' },
+    { id: 'in-review', title: 'Review' },
     { id: 'done', title: 'Done' },
   ];
 

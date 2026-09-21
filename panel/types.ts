@@ -40,7 +40,7 @@ export interface ProjectItem {
   linkedRepo: string | null;
 }
 
-export type ColumnId = 'backlog' | 'todo' | 'in-progress' | 'in-review' | 'done';
+export type ColumnId = 'draft' | 'backlog' | 'todo' | 'planned' | 'in-progress' | 'needs-human' | 'in-review' | 'done';
 export type TabId = 'all' | ColumnId;
 
 export interface IssueGroup {

@@ -2414,10 +2414,13 @@
   <!-- Responsive Segmented Tab Bar (Visible in narrow panel / list mode) -->
   <nav class="status-tabs" id="statusTabBar">
     <button class="status-tab active" data-tab="all">All <span class="status-pill" id="tabCountAll">0</span></button>
+    <button class="status-tab" data-tab="draft">Draft <span class="status-pill" id="tabCountDraft">0</span></button>
     <button class="status-tab" data-tab="backlog">Backlog <span class="status-pill" id="tabCountBacklog">0</span></button>
     <button class="status-tab" data-tab="todo">To Do <span class="status-pill" id="tabCountTodo">0</span></button>
+    <button class="status-tab" data-tab="planned">Planned <span class="status-pill" id="tabCountPlanned">0</span></button>
     <button class="status-tab" data-tab="in-progress">In Progress <span class="status-pill" id="tabCountProgress">0</span></button>
-    <button class="status-tab" data-tab="in-review">In Review <span class="status-pill" id="tabCountReview">0</span></button>
+    <button class="status-tab" data-tab="needs-human">Needs Human <span class="status-pill" id="tabCountNeedsHuman">0</span></button>
+    <button class="status-tab" data-tab="in-review">Review <span class="status-pill" id="tabCountReview">0</span></button>
     <button class="status-tab" data-tab="done">Done <span class="status-pill" id="tabCountDone">0</span></button>
   </nav>
 
@@ -2429,6 +2432,14 @@
 
     <!-- Mode 2: Multi-Column Kanban View (Wide canvas for page mode) -->
     <main class="kanban-view" id="kanbanViewContainer">
+      <!-- Draft -->
+      <div class="kanban-col" data-column="draft">
+        <div class="kanban-col-header">
+          <span>Draft</span>
+          <span class="status-pill" id="kCountDraft">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsDraft" data-status="draft"></div>
+      </div>
       <!-- Backlog -->
       <div class="kanban-col" data-column="backlog">
         <div class="kanban-col-header">
@@ -2445,6 +2456,14 @@
         </div>
         <div class="kanban-cards" id="kCardsTodo" data-status="todo"></div>
       </div>
+      <!-- Planned -->
+      <div class="kanban-col" data-column="planned">
+        <div class="kanban-col-header">
+          <span>Planned</span>
+          <span class="status-pill" id="kCountPlanned">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsPlanned" data-status="planned"></div>
+      </div>
       <!-- In Progress -->
       <div class="kanban-col" data-column="in-progress">
         <div class="kanban-col-header">
@@ -2453,10 +2472,18 @@
         </div>
         <div class="kanban-cards" id="kCardsProgress" data-status="in-progress"></div>
       </div>
+      <!-- Needs Human -->
+      <div class="kanban-col" data-column="needs-human">
+        <div class="kanban-col-header">
+          <span>Needs Human</span>
+          <span class="status-pill" id="kCountNeedsHuman">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsNeedsHuman" data-status="needs-human"></div>
+      </div>
       <!-- In Review -->
       <div class="kanban-col" data-column="in-review">
         <div class="kanban-col-header">
-          <span>In Review</span>
+          <span>Review</span>
           <span class="status-pill" id="kCountReview">0</span>
         </div>
         <div class="kanban-cards" id="kCardsReview" data-status="in-review"></div>
@@ -2570,9 +2597,12 @@
         <div class="section-label">Workflow Status</div>
         <select class="form-ctrl" id="drawerStatusSelect" style="width: 100%;">
           <option value="none">Uncategorized (All View Only)</option>
+          <option value="draft">Draft</option>
           <option value="backlog">Backlog</option>
           <option value="todo">To Do</option>
+          <option value="planned">Planned</option>
           <option value="in-progress">In Progress</option>
+          <option value="needs-human">Needs Human</option>
           <option value="in-review">In Review</option>
           <option value="done">Done</option>
         </select>
