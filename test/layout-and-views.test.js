@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { parseFriendlyTitle } from '../panel/core.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_HTML = fs.readFileSync(path.join(here, '..', 'panel', 'index.html'), 'utf8');
@@ -249,4 +250,166 @@ test('Escape closes active modals before drawer', () => {
   assert.equal(result, 'none');
   assert.equal(closedModal, null);
   assert.equal(closedDrawer, false);
+});
+
+test('parseFriendlyTitle extracts friendly human title from markdown headers and bold markers', () => {
+  // ### Friendly Title:
+  const resH3 = parseFriendlyTitle(
+    '### Friendly Title: Quick Search Shortcut\n\n### Overview\nDetails here...',
+    'feat(search): add quick search shortcut'
+  );
+  assert.deepEqual(resH3, {
+    title: 'Quick Search Shortcut',
+    subtitle: 'feat(search): add quick search shortcut',
+  });
+
+  // ## Friendly Title:
+  const resH2 = parseFriendlyTitle(
+    '## Friendly Title: Clean Navigation Menu\n\nMore info...',
+    'feat(nav): clean navigation menu'
+  );
+  assert.deepEqual(resH2, {
+    title: 'Clean Navigation Menu',
+    subtitle: 'feat(nav): clean navigation menu',
+  });
+
+  // **Friendly Title:**
+  const resBold = parseFriendlyTitle(
+    '**Friendly Title:** Fix Table Overflow\n\nBug details...',
+    'fix(ui): prevent table horizontal overflow'
+  );
+  assert.deepEqual(resBold, {
+    title: 'Fix Table Overflow',
+    subtitle: 'fix(ui): prevent table horizontal overflow',
+  });
+
+  // Title on next line after heading
+  const resNextLine = parseFriendlyTitle(
+    '### Friendly Title:\nExport to CSV and PDF\n\n### Overview',
+    'feat(export): add export options'
+  );
+  assert.deepEqual(resNextLine, {
+    title: 'Export to CSV and PDF',
+    subtitle: 'feat(export): add export options',
+  });
+
+  // When defaultTitle is not provided or empty
+  const resNoDefault = parseFriendlyTitle('### Friendly Title: Simple Title');
+  assert.deepEqual(resNoDefault, {
+    title: 'Simple Title',
+    subtitle: null,
+  });
+});
+
+test('parseFriendlyTitle handles missing or malformed markdown gracefully', () => {
+  // Missing friendly title
+  const resMissing = parseFriendlyTitle(
+    '### Overview\nJust a normal description',
+    'feat(core): some feature'
+  );
+  assert.deepEqual(resMissing, {
+    title: 'feat(core): some feature',
+    subtitle: null,
+  });
+
+  // Empty / null / undefined body
+  assert.deepEqual(parseFriendlyTitle('', 'feat(core): fallback'), {
+    title: 'feat(core): fallback',
+    subtitle: null,
+  });
+  assert.deepEqual(parseFriendlyTitle(null, 'feat(core): fallback'), {
+    title: 'feat(core): fallback',
+    subtitle: null,
+  });
+  assert.deepEqual(parseFriendlyTitle(undefined, 'feat(core): fallback'), {
+    title: 'feat(core): fallback',
+    subtitle: null,
+  });
+  assert.deepEqual(parseFriendlyTitle(null, undefined), {
+    title: '',
+    subtitle: null,
+  });
+});
+
+test('renderIssueCard in main.ts renders friendly title and conditional card-subtitle-tech', () => {
+  // Check main.ts defines or uses parseFriendlyTitle
+  assert.ok(
+    MAIN_TS.includes('parseFriendlyTitle(issue.body, issue.title)'),
+    'main.ts must call parseFriendlyTitle(issue.body, issue.title)'
+  );
+  // Check main.ts renders card-title with titles.title
+  assert.ok(
+    MAIN_TS.includes('<div class="card-title">${escapeHtml(titles.title)}</div>'),
+    'main.ts must render card-title with titles.title'
+  );
+  // Check main.ts renders card-subtitle-tech with specified styling
+  assert.ok(
+    MAIN_TS.includes('card-subtitle-tech'),
+    'main.ts must render card-subtitle-tech'
+  );
+  assert.ok(
+    MAIN_TS.includes('font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;'),
+    'main.ts must include exact required subtitle styling'
+  );
+  assert.ok(
+    MAIN_TS.includes('${escapeHtml(titles.subtitle)}'),
+    'main.ts must escape subtitle'
+  );
+});
+
+test('card title and subtitle logic generates correct HTML snippets', () => {
+  function renderCardTitles(issue) {
+    const titles = parseFriendlyTitle(issue.body, issue.title);
+    const subtitleHtml = titles.subtitle
+      ? `<div class="card-subtitle-tech" style="font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;">${titles.subtitle}</div>`
+      : '';
+    return {
+      titleHtml: `<div class="card-title">${titles.title}</div>`,
+      subtitleHtml,
+    };
+  }
+
+  // Case 1: Issue with friendly title in body
+  const issueWithFriendly = {
+    title: 'feat(board): friendly human titles on cards',
+    body: '### Friendly Title: Friendly Titles on Board Cards\n\n### Overview\nMore info...',
+  };
+  const rendered1 = renderCardTitles(issueWithFriendly);
+  assert.equal(rendered1.titleHtml, '<div class="card-title">Friendly Titles on Board Cards</div>');
+  assert.equal(
+    rendered1.subtitleHtml,
+    '<div class="card-subtitle-tech" style="font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;">feat(board): friendly human titles on cards</div>'
+  );
+
+  // Case 2: Issue without friendly title in body
+  const issueWithoutFriendly = {
+    title: 'fix(core): resolve null pointer',
+    body: '### Overview\nJust fixing a bug.',
+  };
+  const rendered2 = renderCardTitles(issueWithoutFriendly);
+  assert.equal(rendered2.titleHtml, '<div class="card-title">fix(core): resolve null pointer</div>');
+  assert.equal(rendered2.subtitleHtml, '', 'No subtitle rendered when friendly title is missing');
+});
+
+test('updatePreflightBrief in main.ts enriches brief with skill transclusions for bug, enhancement, documentation', () => {
+  assert.ok(
+    MAIN_TS.includes('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]'),
+    'main.ts must include surgical-patch skill for bug'
+  );
+  assert.ok(
+    MAIN_TS.includes('[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]'),
+    'main.ts must include debugging-and-error-recovery skill for bug'
+  );
+  assert.ok(
+    MAIN_TS.includes('[@.agents/skills/build/methodology/test-driven-development/SKILL.md]'),
+    'main.ts must include test-driven-development skill for enhancement'
+  );
+  assert.ok(
+    MAIN_TS.includes('[@.agents/skills/build/methodology/lean-build/SKILL.md]'),
+    'main.ts must include lean-build skill for enhancement'
+  );
+  assert.ok(
+    MAIN_TS.includes('[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]'),
+    'main.ts must include documentation-and-adrs skill for documentation'
+  );
 });

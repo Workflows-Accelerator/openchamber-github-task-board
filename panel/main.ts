@@ -119,8 +119,9 @@ import {
   scopeDoneIssues,
   normalizeGithubIssues,
   mergeIssuePages,
+  parseFriendlyTitle,
 } from './core.js';
-export { buildSessionIndex, scopeDoneIssues, normalizeGithubIssues, mergeIssuePages, renderBlockerChip, renderBlockerChips };
+export { buildSessionIndex, scopeDoneIssues, normalizeGithubIssues, mergeIssuePages, renderBlockerChip, renderBlockerChips, parseFriendlyTitle };
 
 // ==========================================
 // State Store
@@ -1689,7 +1690,7 @@ function renderViews(): void {
   updateBatchBar();
 }
 
-function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
+function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
   const session = getIssueSession(issue);
   const card = document.createElement('div');
   const isSelected = selectedIssueNumbers.has(issue.number);
@@ -1822,6 +1823,11 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
     </button>
   `;
 
+  const titles = parseFriendlyTitle(issue.body, issue.title);
+  const subtitleHtml = titles.subtitle
+    ? `<div class="card-subtitle-tech" style="font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;">${escapeHtml(titles.subtitle)}</div>`
+    : '';
+
   card.innerHTML = `
     <div class="card-meta">
       <div class="card-id-wrap">
@@ -1839,7 +1845,8 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
         ${agentBadgeHtml}
       </div>
     </div>
-    <div class="card-title">${escapeHtml(issue.title)}</div>
+    <div class="card-title">${escapeHtml(titles.title)}</div>
+    ${subtitleHtml}
     ${descHtml}
     ${labelsHtml ? `<div class="card-labels">${labelsHtml}</div>` : ''}
     <div class="card-footer">
@@ -1930,6 +1937,8 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
 
   return card;
 }
+
+const buildCardElement = renderIssueCard;
 
 function renderListView(filteredIssues: Issue[]): void {
   elListViewContainer.innerHTML = '';
@@ -3456,6 +3465,27 @@ function updatePreflightBrief(): void {
     });
     brief += '\n';
   }
+
+  const labelNames = (activeIssue.labels || []).map((l: any) =>
+    (typeof l === 'string' ? l : l.name || '').toLowerCase()
+  );
+  const skills: string[] = [];
+  if (labelNames.some((l) => l === 'bug' || l === 'kind:bug' || l === 'type:bug')) {
+    skills.push('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]');
+    skills.push('[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]');
+  }
+  if (labelNames.some((l) => l === 'enhancement' || l === 'kind:enhancement' || l === 'type:enhancement' || l === 'feature')) {
+    skills.push('[@.agents/skills/build/methodology/test-driven-development/SKILL.md]');
+    skills.push('[@.agents/skills/build/methodology/lean-build/SKILL.md]');
+  }
+  if (labelNames.some((l) => l === 'documentation' || l === 'kind:documentation' || l === 'docs')) {
+    skills.push('[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]');
+  }
+
+  if (skills.length > 0) {
+    brief += `### Skills:\n${skills.join('\n')}\n\n`;
+  }
+
   if (useWt) {
     brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
   } else {

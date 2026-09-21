@@ -3149,6 +3149,37 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
   var questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
   var headingRegex = /^#{1,4}\s+/;
+  function parseFriendlyTitle(body, defaultTitle) {
+    if (!body || typeof body !== "string") {
+      return { title: defaultTitle || "", subtitle: null };
+    }
+    const match = body.match(/(?:^|\r?\n)\s*(?:#{2,3}\s*Friendly Title:|\*\*Friendly Title:\*\*)\s*([^\r\n]*)/i);
+    if (match) {
+      let extracted = match[1].trim();
+      if (!extracted) {
+        const matchIndex = match.index ?? 0;
+        const remainder = body.slice(matchIndex + match[0].length);
+        const lines = remainder.split(/\r?\n/);
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line) continue;
+          if (line.startsWith("#") || line.startsWith("**")) break;
+          extracted = line;
+          break;
+        }
+      }
+      if (extracted) {
+        return {
+          title: extracted,
+          subtitle: defaultTitle || null
+        };
+      }
+    }
+    return {
+      title: defaultTitle || "",
+      subtitle: null
+    };
+  }
   function parseOpenQuestions(body) {
     if (!body) return [];
     const lines = body.split("\n");
@@ -3432,6 +3463,7 @@ Instructions for the Agent:
 2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture.
 3. Every generated issue must follow this exact structure tailored for the OpenChamber Task Board:
    - Title: Conventional commit format (e.g. "feat(auth): add remember-me token refresh" or "fix(ui): prevent horizontal overflow in mobile table").
+   - Friendly Title: Start the issue body with "### Friendly Title: <3-6 words plain English title>" before the Overview.
    - Overview: Clear description of the problem, motivation, or user value.
    - Files Impacted: List candidate file paths grounded in the codebase.
    - Actionable Subtasks Checklist: Mandatory interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
@@ -5296,7 +5328,7 @@ Blocked by ${blockerRef}`;
     currentRenderedLayout = activeLayout;
     updateBatchBar();
   }
-  function buildCardElement(issue, inKanban) {
+  function renderIssueCard(issue, inKanban) {
     const session = getIssueSession(issue);
     const card = document.createElement("div");
     const isSelected = selectedIssueNumbers.has(issue.number);
@@ -5388,6 +5420,8 @@ Blocked by ${blockerRef}`;
       <svg class="icon icon-sm icon-check" style="display: none;" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
     </button>
   `;
+    const titles = parseFriendlyTitle(issue.body, issue.title);
+    const subtitleHtml = titles.subtitle ? `<div class="card-subtitle-tech" style="font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;">${escapeHtml(titles.subtitle)}</div>` : "";
     card.innerHTML = `
     <div class="card-meta">
       <div class="card-id-wrap">
@@ -5405,7 +5439,8 @@ Blocked by ${blockerRef}`;
         ${agentBadgeHtml}
       </div>
     </div>
-    <div class="card-title">${escapeHtml(issue.title)}</div>
+    <div class="card-title">${escapeHtml(titles.title)}</div>
+    ${subtitleHtml}
     ${descHtml}
     ${labelsHtml ? `<div class="card-labels">${labelsHtml}</div>` : ""}
     <div class="card-footer">
@@ -5484,6 +5519,7 @@ Blocked by ${blockerRef}`;
     }
     return card;
   }
+  var buildCardElement = renderIssueCard;
   function renderListView(filteredIssues) {
     elListViewContainer.innerHTML = "";
     const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn2(i) === activeTab);
@@ -6772,6 +6808,27 @@ ${activeIssue.body}
 `;
       });
       brief += "\n";
+    }
+    const labelNames = (activeIssue.labels || []).map(
+      (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
+    );
+    const skills = [];
+    if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug")) {
+      skills.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
+      skills.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
+    }
+    if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature")) {
+      skills.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
+      skills.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
+    }
+    if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs")) {
+      skills.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
+    }
+    if (skills.length > 0) {
+      brief += `### Skills:
+${skills.join("\n")}
+
+`;
     }
     if (useWt) {
       brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;

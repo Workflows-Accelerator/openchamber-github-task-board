@@ -54,6 +54,7 @@ const JS_FUNCS = [
   'scopeDoneIssues',
   'normalizeGithubIssues',
   'mergeIssuePages',
+  'parseFriendlyTitle',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -71,8 +72,29 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 35);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 36);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
+});
+
+test('parseFriendlyTitle: shipped == core', () => {
+  const cases = [
+    { body: '### Friendly Title: My Nice Title\n\n### Overview', defaultTitle: 'feat(core): do something' },
+    { body: '## Friendly Title: Another Title', defaultTitle: 'fix: bug' },
+    { body: '**Friendly Title:** Bold Title', defaultTitle: 'chore: update' },
+    { body: '### Friendly Title:\nNext Line Title', defaultTitle: 'refactor: code' },
+    { body: 'Regular description without friendly title', defaultTitle: 'feat: regular' },
+    { body: '', defaultTitle: 'feat: empty body' },
+    { body: null, defaultTitle: 'feat: null body' },
+    { body: undefined, defaultTitle: 'feat: undefined body' },
+    { body: '### Friendly Title: Standalone Title', defaultTitle: undefined },
+  ];
+  for (const c of cases) {
+    assert.deepEqual(
+      Shipped.parseFriendlyTitle(c.body, c.defaultTitle),
+      Core.parseFriendlyTitle(c.body, c.defaultTitle),
+      'parseFriendlyTitle parity: ' + JSON.stringify(c)
+    );
+  }
 });
 
 test('parseSubtasks / parseOpenQuestions: shipped == core', () => {

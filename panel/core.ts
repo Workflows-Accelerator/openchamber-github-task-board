@@ -35,6 +35,43 @@ const questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
 
 const headingRegex = /^#{1,4}\s+/;
 
+export function parseFriendlyTitle(
+  body: string | null | undefined,
+  defaultTitle?: string
+): { title: string; subtitle: string | null } {
+  if (!body || typeof body !== 'string') {
+    return { title: defaultTitle || '', subtitle: null };
+  }
+
+  const match = body.match(/(?:^|\r?\n)\s*(?:#{2,3}\s*Friendly Title:|\*\*Friendly Title:\*\*)\s*([^\r\n]*)/i);
+  if (match) {
+    let extracted = match[1].trim();
+    if (!extracted) {
+      const matchIndex = match.index ?? 0;
+      const remainder = body.slice(matchIndex + match[0].length);
+      const lines = remainder.split(/\r?\n/);
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        if (line.startsWith('#') || line.startsWith('**')) break;
+        extracted = line;
+        break;
+      }
+    }
+    if (extracted) {
+      return {
+        title: extracted,
+        subtitle: defaultTitle || null,
+      };
+    }
+  }
+
+  return {
+    title: defaultTitle || '',
+    subtitle: null,
+  };
+}
+
 export function parseOpenQuestions(body: string): Subtask[] {
   if (!body) return [];
   const lines = body.split('\n');
@@ -346,6 +383,7 @@ Instructions for the Agent:
 2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture.
 3. Every generated issue must follow this exact structure tailored for the OpenChamber Task Board:
    - Title: Conventional commit format (e.g. "feat(auth): add remember-me token refresh" or "fix(ui): prevent horizontal overflow in mobile table").
+   - Friendly Title: Start the issue body with "### Friendly Title: <3-6 words plain English title>" before the Overview.
    - Overview: Clear description of the problem, motivation, or user value.
    - Files Impacted: List candidate file paths grounded in the codebase.
    - Actionable Subtasks Checklist: Mandatory interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
