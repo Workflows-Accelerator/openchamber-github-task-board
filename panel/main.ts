@@ -3839,7 +3839,7 @@ async function loadComments(issueNumber: number): Promise<void> {
               <strong>@${escapeHtml(author)}</strong>
               <span>${date}</span>
             </div>
-            <div style="font-size: 12px; white-space: pre-wrap;">${escapeHtml(c.body)}</div>
+            <div class="md-rendered" style="font-size: 12px; width: 100%;">${renderMarkdown(c.body)}</div>
           </div>
         `;
       })
