@@ -339,3 +339,239 @@ test('blur, visibilitychange, and modal close trigger immediate flush and clear 
   openScratchpadModal(externalVoiceContent);
   assert.equal(textareaValue, externalVoiceContent, 'Scratchpad content refreshed when modal opened');
 });
+
+test('regression test: cross-repository typing race condition preserves old repo content and never overwrites new repo', () => {
+  let currentTime = 0;
+  let timerId = 0;
+  let scheduledTimers = new Map();
+  let pendingTimer = null;
+  const mockStorage = {
+    'scratchpad_Workflows-Accelerator/opencode-config': 'Existing opencode-config notes',
+    'scratchpad_Workflows-Accelerator/case-management-platform': 'Initial case-management notes',
+  };
+  const mockLocalStorage = { ...mockStorage };
+
+  const clock = {
+    setTimeout(fn, delay) {
+      const id = ++timerId;
+      scheduledTimers.set(id, { fn, runAt: currentTime + delay });
+      return id;
+    },
+    clearTimeout(id) {
+      scheduledTimers.delete(id);
+    },
+    tick(ms) {
+      currentTime += ms;
+      for (const [id, t] of Array.from(scheduledTimers.entries())) {
+        if (t.runAt <= currentTime) {
+          scheduledTimers.delete(id);
+          t.fn();
+        }
+      }
+    },
+  };
+
+  let currentRepo = 'Workflows-Accelerator/case-management-platform';
+  let activeScratchpadRepo = null;
+  let isModalActive = false;
+  let textareaValue = '';
+  let repoBadgeText = '';
+
+  function getScratchpadStorageKey(repo) {
+    return repo ? `scratchpad_${repo}` : 'scratchpad_global';
+  }
+
+  function flushScratchpadSave() {
+    if (pendingTimer !== null) {
+      clock.clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
+    const targetRepo = activeScratchpadRepo ?? currentRepo;
+    const text = textareaValue;
+    const key = getScratchpadStorageKey(targetRepo);
+    mockLocalStorage[key] = text;
+    mockStorage[key] = text;
+  }
+
+  function handleScratchpadInput() {
+    if (pendingTimer !== null) {
+      clock.clearTimeout(pendingTimer);
+    }
+    pendingTimer = clock.setTimeout(() => {
+      flushScratchpadSave();
+    }, 1000);
+  }
+
+  function openScratchpadModal() {
+    activeScratchpadRepo = currentRepo;
+    repoBadgeText = currentRepo;
+    textareaValue = mockStorage[getScratchpadStorageKey(currentRepo)] || '';
+    isModalActive = true;
+  }
+
+  function setRepository(newRepo) {
+    if (currentRepo === newRepo) return;
+    // CRITICAL: Flush pending scratchpad save to activeScratchpadRepo BEFORE switching currentRepo
+    if (activeScratchpadRepo || pendingTimer !== null) {
+      flushScratchpadSave();
+    }
+    currentRepo = newRepo;
+    // If modal is active, reload scratchpad content for new repository
+    if (isModalActive) {
+      activeScratchpadRepo = newRepo;
+      repoBadgeText = newRepo;
+      textareaValue = mockStorage[getScratchpadStorageKey(newRepo)] || '';
+    } else {
+      activeScratchpadRepo = null;
+    }
+  }
+
+  // 1. User opens modal on case-management-platform
+  openScratchpadModal();
+  assert.equal(textareaValue, 'Initial case-management notes');
+  assert.equal(activeScratchpadRepo, 'Workflows-Accelerator/case-management-platform');
+
+  // 2. User rapidly types notes for case-management-platform
+  textareaValue = 'Change colour of navbar to dark theme\n- [ ] Bug: The login screen is locked';
+  handleScratchpadInput();
+  assert.ok(pendingTimer !== null, 'Save timer is pending');
+
+  // 3. User or background event switches repo to opencode-config BEFORE timer expires (at 300ms)
+  clock.tick(300);
+  setRepository('Workflows-Accelerator/opencode-config');
+
+  // 4. VERIFY:
+  // a) Old repo (case-management-platform) got saved with typed notes!
+  assert.equal(
+    mockStorage['scratchpad_Workflows-Accelerator/case-management-platform'],
+    'Change colour of navbar to dark theme\n- [ ] Bug: The login screen is locked',
+    'case-management-platform scratchpad must be saved with typed notes'
+  );
+
+  // b) New repo (opencode-config) MUST NOT be overwritten!
+  assert.equal(
+    mockStorage['scratchpad_Workflows-Accelerator/opencode-config'],
+    'Existing opencode-config notes',
+    'opencode-config scratchpad MUST NOT be overwritten by case-management notes'
+  );
+
+  // c) Textarea must have switched to opencode-config content
+  assert.equal(
+    textareaValue,
+    'Existing opencode-config notes',
+    'Textarea must display the newly selected repo content when modal remains open'
+  );
+  assert.equal(repoBadgeText, 'Workflows-Accelerator/opencode-config');
+  assert.equal(activeScratchpadRepo, 'Workflows-Accelerator/opencode-config');
+
+  // 5. Advance clock past 1000ms: no delayed timer should fire and stomp anything
+  clock.tick(1500);
+  assert.equal(
+    mockStorage['scratchpad_Workflows-Accelerator/opencode-config'],
+    'Existing opencode-config notes'
+  );
+});
+
+test('regression test: backup snapshot is created before overwriting non-empty scratchpad content', () => {
+  const mockStorage = {
+    'scratchpad_Workflows-Accelerator/opencode-config': 'Crucial architecture plan for opencode',
+  };
+  const mockLocalStorage = { ...mockStorage };
+  const lastSavedContent = new Map();
+  lastSavedContent.set('Workflows-Accelerator/opencode-config', 'Crucial architecture plan for opencode');
+
+  function getScratchpadStorageKey(repo) {
+    return repo ? `scratchpad_${repo}` : 'scratchpad_global';
+  }
+  function getScratchpadBackupStorageKey(repo) {
+    return repo ? `scratchpad_backup_${repo}` : 'scratchpad_backup_global';
+  }
+  function getScratchpadLocalKey(repo) {
+    return `openchamber_scratchpad_${repo || 'global'}`;
+  }
+  function getScratchpadBackupLocalKey(repo) {
+    return `openchamber_scratchpad_backup_${repo || 'global'}`;
+  }
+
+  function flushScratchpadSave(targetRepo, newText) {
+    const key = getScratchpadStorageKey(targetRepo);
+    const backupKey = getScratchpadBackupStorageKey(targetRepo);
+    const backupLocalKey = getScratchpadBackupLocalKey(targetRepo);
+
+    const previousText = lastSavedContent.get(targetRepo) || mockStorage[key] || '';
+    if (previousText && previousText.trim() && previousText !== newText) {
+      mockStorage[backupKey] = previousText;
+      mockLocalStorage[backupLocalKey] = previousText;
+    }
+
+    mockStorage[key] = newText;
+    mockLocalStorage[getScratchpadLocalKey(targetRepo)] = newText;
+    lastSavedContent.set(targetRepo, newText);
+  }
+
+  // Overwrite opencode-config with new notes
+  flushScratchpadSave('Workflows-Accelerator/opencode-config', 'Brand new notes after rewrite');
+
+  assert.equal(
+    mockStorage['scratchpad_Workflows-Accelerator/opencode-config'],
+    'Brand new notes after rewrite'
+  );
+  assert.equal(
+    mockStorage['scratchpad_backup_Workflows-Accelerator/opencode-config'],
+    'Crucial architecture plan for opencode',
+    'Backup key must retain the prior non-empty content'
+  );
+  assert.equal(
+    mockLocalStorage['openchamber_scratchpad_backup_Workflows-Accelerator/opencode-config'],
+    'Crucial architecture plan for opencode',
+    'Local storage backup must retain the prior non-empty content'
+  );
+
+  // Saving the same content again should not change backup
+  flushScratchpadSave('Workflows-Accelerator/opencode-config', 'Brand new notes after rewrite');
+  assert.equal(
+    mockStorage['scratchpad_backup_Workflows-Accelerator/opencode-config'],
+    'Crucial architecture plan for opencode'
+  );
+});
+
+test('panel/main.ts tracks activeScratchpadRepo, flushes prior repo before setRepository and selectAllProjects, and writes backups', () => {
+  // 1. Must define activeScratchpadRepo
+  assert.match(
+    MAIN_TS,
+    /let\s+activeScratchpadRepo\s*:\s*string\s*\|\s*null\s*=\s*null;?/,
+    'main.ts must declare activeScratchpadRepo to track buffer ownership'
+  );
+
+  // 2. setRepository must flush scratchpad BEFORE changing currentRepo
+  const setRepoMatch = MAIN_TS.match(/function\s+setRepository\([^)]*\):[^{]*\{([\s\S]*?)\n\}/);
+  assert.ok(setRepoMatch, 'setRepository function must exist');
+  const setRepoBody = setRepoMatch[1];
+  const flushPosInSetRepo = setRepoBody.indexOf('flushScratchpadSave()');
+  const currentRepoAssignPos = setRepoBody.indexOf('currentRepo = repo');
+  assert.ok(flushPosInSetRepo !== -1, 'setRepository must call flushScratchpadSave()');
+  assert.ok(
+    flushPosInSetRepo < currentRepoAssignPos,
+    'flushScratchpadSave() must be called BEFORE currentRepo = repo in setRepository'
+  );
+
+  // 3. selectAllProjects must flush scratchpad BEFORE changing currentRepo to ALL_PROJECTS_CACHE_KEY
+  const selectAllMatch = MAIN_TS.match(/async\s+function\s+selectAllProjects\([^)]*\):[^{]*\{([\s\S]*?)\n\}/);
+  assert.ok(selectAllMatch, 'selectAllProjects function must exist');
+  const selectAllBody = selectAllMatch[1];
+  const flushPosInSelectAll = selectAllBody.indexOf('flushScratchpadSave()');
+  const allProjectsAssignPos = selectAllBody.indexOf('currentRepo = ALL_PROJECTS_CACHE_KEY');
+  assert.ok(flushPosInSelectAll !== -1, 'selectAllProjects must call flushScratchpadSave()');
+  assert.ok(
+    flushPosInSelectAll < allProjectsAssignPos,
+    'flushScratchpadSave() must be called BEFORE currentRepo = ALL_PROJECTS_CACHE_KEY in selectAllProjects'
+  );
+
+  // 4. Must define getScratchpadBackupStorageKey or handle scratchpad_backup_
+  assert.match(
+    MAIN_TS,
+    /scratchpad_backup_/,
+    'main.ts must create scratchpad_backup_ fallback snapshot keys before overwriting'
+  );
+});
+

@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLBAR_CSS = `
 :root {
   --oc-scrollbar-thumb: color-mix(in srgb, var(--oc-muted, currentColor) 40%, transparent);
@@ -38,13 +38,13 @@
 }
 `;
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -263,7 +263,7 @@
     return wire;
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var HostRequestError = class extends Error {
     code;
     constructor(code, message) {
@@ -906,7 +906,172 @@
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  var BROWSER_PROVIDER_PATH = "/browser-control";
+  var BROWSER_CONTROL_ACTIONS = [
+    "browser.open",
+    "browser.snapshot",
+    "browser.click",
+    "browser.type",
+    "browser.scroll",
+    "browser.back",
+    "browser.forward",
+    "browser.inspect",
+    "browser.capture",
+    "browser.resize"
+  ];
+  var BROWSER_VIEWPORT_MODES = ["mobile", "tablet", "desktop", "fill"];
+  var BROWSER_SCROLL_DIRECTIONS = ["up", "down", "top", "bottom"];
+  var BROWSER_PROVIDER_OPEN_TIMEOUT_MS = 45e3;
+  var BROWSER_PROVIDER_ACTION_TIMEOUT_MS = 2e4;
+  var BROWSER_PROVIDER_RESPONSE_MAX = 12e6;
+  var BROWSER_PROVIDER_IDLE_MS = 10 * 6e4;
+  var CONTROL_ACTIONS = new Set(BROWSER_CONTROL_ACTIONS);
+  var isBrowserControlAction = (value) => CONTROL_ACTIONS.has(value);
+  var readContext = (wire) => {
+    const directory = wire?.directory;
+    const sessionId = wire?.sessionId;
+    return {
+      directory: String(directory) === directory && directory.length > 0 ? directory : null,
+      sessionId: String(sessionId) === sessionId && sessionId.length > 0 ? sessionId : null
+    };
+  };
+  var readBrowserProviderRequest = (body) => {
+    let wire;
+    try {
+      const parsed = JSON.parse(body);
+      if (Object(parsed) !== parsed || parsed === null)
+        return null;
+      wire = parsed;
+    } catch {
+      return null;
+    }
+    const { requestId, action, parameters, context } = wire;
+    if (String(requestId) !== requestId || requestId.length === 0)
+      return null;
+    if (String(action) !== action || !isBrowserControlAction(action))
+      return null;
+    if (Object(parameters) !== parameters)
+      return null;
+    return { requestId, action, parameters, context: readContext(context) };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  var SURFACE_FRAME_PATH = "/surface/frame";
+  var SURFACE_INPUT_PATH = "/surface/input";
+  var SURFACE_CONTROL_PATH = "/surface/control";
+  var SURFACE_RESIZE_PATH = "/surface/resize";
+  var SURFACE_CLIPBOARD_PATH = "/surface/clipboard";
+  var SURFACE_SEQ_HEADER = "x-surface-seq";
+  var SURFACE_WIDTH_HEADER = "x-surface-width";
+  var SURFACE_HEIGHT_HEADER = "x-surface-height";
+  var SURFACE_TITLE_HEADER = "x-surface-title";
+  var SURFACE_AGENT_ACTIVE_HEADER = "x-surface-agent-active";
+  var SURFACE_FRAME_MIMES = ["image/jpeg", "image/png"];
+  var SURFACE_FRAME_WAIT_MS = 25e3;
+  var SURFACE_FRAME_MAX_BYTES = 8e6;
+  var SURFACE_INPUT_BATCH_MAX = 256;
+  var SURFACE_TEXT_MAX = 64e3;
+  var SURFACE_TITLE_MAX = 200;
+  var SURFACE_DIMENSION_MAX = 16384;
+  var SURFACE_AGENT_HOLD_MS = 3e4;
+  var SURFACE_CONTROLLERS = ["none", "agent", "user"];
+  var isFiniteNumber = (value) => Number(value) === value && Number.isFinite(value);
+  var isBool = (value) => value === true || value === false;
+  var isText = (value) => String(value) === value;
+  var readModifiers = (value) => {
+    if (Object(value) !== value || value === null)
+      return null;
+    const wire = value;
+    if (!isBool(wire.alt) || !isBool(wire.ctrl) || !isBool(wire.meta) || !isBool(wire.shift))
+      return null;
+    return { alt: wire.alt, ctrl: wire.ctrl, meta: wire.meta, shift: wire.shift };
+  };
+  var readEvent = (value) => {
+    if (value.type === "text") {
+      if (!isText(value.text) || value.text.length > SURFACE_TEXT_MAX)
+        return null;
+      return { type: "text", text: value.text };
+    }
+    const modifiers = readModifiers(value.modifiers);
+    if (!modifiers)
+      return null;
+    if (value.type === "pointer") {
+      if (value.action !== "down" && value.action !== "up" && value.action !== "move")
+        return null;
+      if (!isFiniteNumber(value.x) || !isFiniteNumber(value.y) || !isFiniteNumber(value.button) || !isFiniteNumber(value.buttons))
+        return null;
+      return { type: "pointer", action: value.action, x: value.x, y: value.y, button: value.button, buttons: value.buttons, modifiers };
+    }
+    if (value.type === "wheel") {
+      if (!isFiniteNumber(value.x) || !isFiniteNumber(value.y) || !isFiniteNumber(value.deltaX) || !isFiniteNumber(value.deltaY))
+        return null;
+      return { type: "wheel", x: value.x, y: value.y, deltaX: value.deltaX, deltaY: value.deltaY, modifiers };
+    }
+    if (value.type === "key") {
+      if (value.action !== "down" && value.action !== "up")
+        return null;
+      if (!isText(value.key) || !isText(value.code) || value.key.length > 64 || value.code.length > 64)
+        return null;
+      return { type: "key", action: value.action, key: value.key, code: value.code, modifiers };
+    }
+    return null;
+  };
+  var readSurfaceInputBatch = (body) => {
+    let parsed;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      return null;
+    }
+    if (Object(parsed) !== parsed || parsed === null || !Array.isArray(parsed.events))
+      return null;
+    if (parsed.events.length > SURFACE_INPUT_BATCH_MAX)
+      return null;
+    const events = [];
+    for (const item of parsed.events) {
+      if (Object(item) !== item || item === null)
+        return null;
+      const event = readEvent(item);
+      if (!event)
+        return null;
+      events.push(event);
+    }
+    return { events };
+  };
+  var CONTROLLERS = new Set(SURFACE_CONTROLLERS);
+  var readSurfaceControlNotice = (body) => {
+    let parsed;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      return null;
+    }
+    if (Object(parsed) !== parsed || parsed === null)
+      return null;
+    const { controller } = parsed;
+    if (!isText(controller) || !CONTROLLERS.has(controller))
+      return null;
+    return { controller };
+  };
+  var readSurfaceResizeRequest = (body) => {
+    let parsed;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      return null;
+    }
+    if (Object(parsed) !== parsed || parsed === null)
+      return null;
+    const { width, height } = parsed;
+    if (!isFiniteNumber(width) || !isFiniteNumber(height))
+      return null;
+    if (width < 1 || height < 1 || width > SURFACE_DIMENSION_MAX || height > SURFACE_DIMENSION_MAX)
+      return null;
+    return { width: Math.round(width), height: Math.round(height) };
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -981,7 +1146,7 @@
     }
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -1039,7 +1204,7 @@
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1241,7 +1406,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -1289,7 +1454,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1337,7 +1502,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -1361,7 +1526,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return node;
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1422,7 +1587,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -1456,7 +1621,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return target?.id ?? null;
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -1491,7 +1656,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -1530,7 +1695,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -1687,7 +1852,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1731,7 +1896,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1791,7 +1956,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -1816,7 +1981,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -1904,7 +2069,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1946,7 +2111,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1975,7 +2140,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2021,7 +2186,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2047,7 +2212,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2090,7 +2255,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2196,7 +2361,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -5388,6 +5553,7 @@ Blocked by ${blockerRef}`;
     if (!force && currentRepo === repo) {
       return;
     }
+    flushScratchpadSave();
     userSelectedTab = false;
     isAllProjectsMode = false;
     allProjectsRepoRefs = [];
@@ -5407,6 +5573,14 @@ Blocked by ${blockerRef}`;
     }
     if (!elRepoPopover.classList.contains("active")) {
       renderRepoPopoverList();
+    }
+    if (elScratchpadModalBackdrop && elScratchpadModalBackdrop.classList.contains("active")) {
+      if (elScratchpadRepoBadge) {
+        elScratchpadRepoBadge.textContent = repo || "Global";
+      }
+      void loadScratchpadContent(repo);
+    } else {
+      activeScratchpadRepo = null;
     }
     void fetchIssues();
   }
@@ -5501,6 +5675,7 @@ Blocked by ${blockerRef}`;
       );
       return;
     }
+    flushScratchpadSave();
     isAllProjectsMode = true;
     allProjectsRepoRefs = refs;
     currentRepo = ALL_PROJECTS_CACHE_KEY;
@@ -5515,6 +5690,14 @@ Blocked by ${blockerRef}`;
     hideBanner();
     closeRepoPopover();
     addLog(`All Projects mode: aggregating issues from ${refs.length} repositories`, "succ");
+    if (elScratchpadModalBackdrop && elScratchpadModalBackdrop.classList.contains("active")) {
+      if (elScratchpadRepoBadge) {
+        elScratchpadRepoBadge.textContent = "All Projects";
+      }
+      void loadScratchpadContent(ALL_PROJECTS_CACHE_KEY);
+    } else {
+      activeScratchpadRepo = null;
+    }
     getWorkspaceRootProject();
     await fetchAllProjectIssues();
   }
@@ -8455,14 +8638,28 @@ ${issue.body}
     });
   }
   var scratchpadSaveTimer = null;
-  function getScratchpadStorageKey() {
-    return currentRepo ? `scratchpad_${currentRepo}` : "scratchpad_global";
+  var activeScratchpadRepo = null;
+  var scratchpadLastSavedContent = /* @__PURE__ */ new Map();
+  function getScratchpadStorageKey(repo) {
+    const target = repo !== void 0 ? repo : activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
+    return target ? `scratchpad_${target}` : "scratchpad_global";
   }
-  function getScratchpadLocalKey() {
-    return `openchamber_scratchpad_${currentRepo || "global"}`;
+  function getScratchpadBackupStorageKey(repo) {
+    const target = repo !== void 0 ? repo : activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
+    return target ? `scratchpad_backup_${target}` : "scratchpad_backup_global";
   }
-  async function loadScratchpadContent() {
-    const storageKey = getScratchpadStorageKey();
+  function getScratchpadLocalKey(repo) {
+    const target = repo !== void 0 ? repo : activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
+    return `openchamber_scratchpad_${target || "global"}`;
+  }
+  function getScratchpadBackupLocalKey(repo) {
+    const target = repo !== void 0 ? repo : activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
+    return `openchamber_scratchpad_backup_${target || "global"}`;
+  }
+  async function loadScratchpadContent(repoOverride) {
+    const targetRepo = repoOverride !== void 0 ? repoOverride || "" : isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo;
+    activeScratchpadRepo = targetRepo;
+    const storageKey = getScratchpadStorageKey(targetRepo);
     let text = "";
     try {
       const stored = await host.storage.get(storageKey);
@@ -8473,10 +8670,14 @@ ${issue.body}
     }
     if (!text) {
       try {
-        text = localStorage.getItem(getScratchpadLocalKey()) || "";
+        text = localStorage.getItem(getScratchpadLocalKey(targetRepo)) || "";
       } catch {
       }
     }
+    if (activeScratchpadRepo !== targetRepo) {
+      return text;
+    }
+    scratchpadLastSavedContent.set(targetRepo, text);
     if (elScratchpadTextarea) {
       elScratchpadTextarea.value = text;
     }
@@ -8514,14 +8715,33 @@ ${issue.body}
       clearTimeout(scratchpadSaveTimer);
       scratchpadSaveTimer = null;
     }
+    const targetRepo = activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
     const text = elScratchpadTextarea?.value ?? "";
     updateScratchpadStats(text);
+    let previousText = scratchpadLastSavedContent.get(targetRepo);
+    if (!previousText) {
+      try {
+        previousText = localStorage.getItem(getScratchpadLocalKey(targetRepo)) || "";
+      } catch {
+      }
+    }
+    if (previousText && previousText.trim() && previousText !== text) {
+      const backupKey = getScratchpadBackupStorageKey(targetRepo);
+      const backupLocalKey = getScratchpadBackupLocalKey(targetRepo);
+      try {
+        localStorage.setItem(backupLocalKey, previousText);
+      } catch {
+      }
+      void host.storage.set(backupKey, previousText).catch(() => {
+      });
+    }
+    scratchpadLastSavedContent.set(targetRepo, text);
     try {
-      localStorage.setItem(getScratchpadLocalKey(), text);
+      localStorage.setItem(getScratchpadLocalKey(targetRepo), text);
     } catch {
     }
     setScratchpadSaveStatus("Saved");
-    void host.storage.set(getScratchpadStorageKey(), text).then(() => setScratchpadSaveStatus("Saved")).catch(() => setScratchpadSaveStatus("Saved"));
+    void host.storage.set(getScratchpadStorageKey(targetRepo), text).then(() => setScratchpadSaveStatus("Saved")).catch(() => setScratchpadSaveStatus("Saved"));
   }
   function handleScratchpadInput() {
     if (!elScratchpadTextarea) return;
@@ -8604,8 +8824,10 @@ ${issue.body}
     });
   }
   async function openScratchpadModal() {
+    const targetRepo = isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo;
+    activeScratchpadRepo = targetRepo;
     if (elScratchpadRepoBadge) {
-      elScratchpadRepoBadge.textContent = currentRepo || "Global";
+      elScratchpadRepoBadge.textContent = isAllProjectsMode ? "All Projects" : currentRepo || "Global";
     }
     await loadScratchpadContent();
     if (elScratchpadModalBackdrop) {
@@ -8617,6 +8839,7 @@ ${issue.body}
   }
   function closeScratchpadModal() {
     flushScratchpadSave();
+    activeScratchpadRepo = null;
     if (elScratchpadModalBackdrop) {
       elScratchpadModalBackdrop.classList.remove("active");
     }
@@ -9191,6 +9414,9 @@ ${issue.body}
       if (document.hidden) {
         flushScratchpadSave();
       }
+    });
+    window.addEventListener("beforeunload", () => {
+      flushScratchpadSave();
     });
     if (elBtnScratchpadAddTheme) {
       const setThemePickerOpen = (open) => {

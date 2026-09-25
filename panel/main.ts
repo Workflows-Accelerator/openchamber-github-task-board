@@ -772,6 +772,9 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
     // Guard against redundant re-render loops
     return;
   }
+  // Flush pending scratchpad save for previous active repository before switching
+  flushScratchpadSave();
+
   userSelectedTab = false;
   isAllProjectsMode = false;
   allProjectsRepoRefs = [];
@@ -791,6 +794,14 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
   }
   if (!elRepoPopover.classList.contains('active')) {
     renderRepoPopoverList();
+  }
+  if (elScratchpadModalBackdrop && elScratchpadModalBackdrop.classList.contains('active')) {
+    if (elScratchpadRepoBadge) {
+      elScratchpadRepoBadge.textContent = repo || 'Global';
+    }
+    void loadScratchpadContent(repo);
+  } else {
+    activeScratchpadRepo = null;
   }
   void fetchIssues();
 }
@@ -907,6 +918,9 @@ async function selectAllProjects(): Promise<void> {
     return;
   }
 
+  // Flush pending scratchpad save for previous active repository before switching
+  flushScratchpadSave();
+
   isAllProjectsMode = true;
   allProjectsRepoRefs = refs;
   currentRepo = ALL_PROJECTS_CACHE_KEY;
@@ -921,6 +935,15 @@ async function selectAllProjects(): Promise<void> {
   hideBanner();
   closeRepoPopover();
   addLog(`All Projects mode: aggregating issues from ${refs.length} repositories`, 'succ');
+
+  if (elScratchpadModalBackdrop && elScratchpadModalBackdrop.classList.contains('active')) {
+    if (elScratchpadRepoBadge) {
+      elScratchpadRepoBadge.textContent = 'All Projects';
+    }
+    void loadScratchpadContent(ALL_PROJECTS_CACHE_KEY);
+  } else {
+    activeScratchpadRepo = null;
+  }
 
   // Surface early if global sessions cannot be pinned to the /workspace root.
   getWorkspaceRootProject();
@@ -4511,17 +4534,33 @@ function renderDraftQuestions(): void {
 // ==========================================
 
 let scratchpadSaveTimer: any = null;
+let activeScratchpadRepo: string | null = null;
+const scratchpadLastSavedContent = new Map<string, string>();
 
-function getScratchpadStorageKey(): string {
-  return currentRepo ? `scratchpad_${currentRepo}` : 'scratchpad_global';
+function getScratchpadStorageKey(repo?: string | null): string {
+  const target = repo !== undefined ? repo : (activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo));
+  return target ? `scratchpad_${target}` : 'scratchpad_global';
 }
 
-function getScratchpadLocalKey(): string {
-  return `openchamber_scratchpad_${currentRepo || 'global'}`;
+function getScratchpadBackupStorageKey(repo?: string | null): string {
+  const target = repo !== undefined ? repo : (activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo));
+  return target ? `scratchpad_backup_${target}` : 'scratchpad_backup_global';
 }
 
-export async function loadScratchpadContent(): Promise<string> {
-  const storageKey = getScratchpadStorageKey();
+function getScratchpadLocalKey(repo?: string | null): string {
+  const target = repo !== undefined ? repo : (activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo));
+  return `openchamber_scratchpad_${target || 'global'}`;
+}
+
+function getScratchpadBackupLocalKey(repo?: string | null): string {
+  const target = repo !== undefined ? repo : (activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo));
+  return `openchamber_scratchpad_backup_${target || 'global'}`;
+}
+
+export async function loadScratchpadContent(repoOverride?: string | null): Promise<string> {
+  const targetRepo = repoOverride !== undefined ? (repoOverride || '') : (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
+  activeScratchpadRepo = targetRepo;
+  const storageKey = getScratchpadStorageKey(targetRepo);
   let text = '';
   try {
     const stored = await host.storage.get(storageKey);
@@ -4531,9 +4570,13 @@ export async function loadScratchpadContent(): Promise<string> {
   } catch {}
   if (!text) {
     try {
-      text = localStorage.getItem(getScratchpadLocalKey()) || '';
+      text = localStorage.getItem(getScratchpadLocalKey(targetRepo)) || '';
     } catch {}
   }
+  if (activeScratchpadRepo !== targetRepo) {
+    return text;
+  }
+  scratchpadLastSavedContent.set(targetRepo, text);
   if (elScratchpadTextarea) {
     elScratchpadTextarea.value = text;
   }
@@ -4574,14 +4617,32 @@ function flushScratchpadSave(): void {
     clearTimeout(scratchpadSaveTimer);
     scratchpadSaveTimer = null;
   }
+  const targetRepo = activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
   const text = elScratchpadTextarea?.value ?? '';
   updateScratchpadStats(text);
+
+  let previousText = scratchpadLastSavedContent.get(targetRepo);
+  if (!previousText) {
+    try {
+      previousText = localStorage.getItem(getScratchpadLocalKey(targetRepo)) || '';
+    } catch {}
+  }
+  if (previousText && previousText.trim() && previousText !== text) {
+    const backupKey = getScratchpadBackupStorageKey(targetRepo);
+    const backupLocalKey = getScratchpadBackupLocalKey(targetRepo);
+    try {
+      localStorage.setItem(backupLocalKey, previousText);
+    } catch {}
+    void host.storage.set(backupKey, previousText).catch(() => {});
+  }
+  scratchpadLastSavedContent.set(targetRepo, text);
+
   try {
-    localStorage.setItem(getScratchpadLocalKey(), text);
+    localStorage.setItem(getScratchpadLocalKey(targetRepo), text);
   } catch {}
   setScratchpadSaveStatus('Saved');
   void host.storage
-    .set(getScratchpadStorageKey(), text)
+    .set(getScratchpadStorageKey(targetRepo), text)
     .then(() => setScratchpadSaveStatus('Saved'))
     .catch(() => setScratchpadSaveStatus('Saved'));
 }
@@ -4679,8 +4740,10 @@ function renderScratchpadThemeList(query: string): void {
 }
 
 async function openScratchpadModal(): Promise<void> {
+  const targetRepo = isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo;
+  activeScratchpadRepo = targetRepo;
   if (elScratchpadRepoBadge) {
-    elScratchpadRepoBadge.textContent = currentRepo || 'Global';
+    elScratchpadRepoBadge.textContent = isAllProjectsMode ? 'All Projects' : (currentRepo || 'Global');
   }
   await loadScratchpadContent();
   if (elScratchpadModalBackdrop) {
@@ -4693,6 +4756,7 @@ async function openScratchpadModal(): Promise<void> {
 
 function closeScratchpadModal(): void {
   flushScratchpadSave();
+  activeScratchpadRepo = null;
   if (elScratchpadModalBackdrop) {
     elScratchpadModalBackdrop.classList.remove('active');
   }
@@ -5361,6 +5425,9 @@ function initEvents(): void {
     if (document.hidden) {
       flushScratchpadSave();
     }
+  });
+  window.addEventListener('beforeunload', () => {
+    flushScratchpadSave();
   });
   if (elBtnScratchpadAddTheme) {
     const setThemePickerOpen = (open: boolean) => {
