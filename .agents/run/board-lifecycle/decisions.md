@@ -47,6 +47,23 @@ grant the manager direct access. Until it is live, issue ops route through worke
 ## D8. Voice multi-project routing (new tool `repo` argument) — NOT this iteration
 Tracked as filed issue; the seam map has the gap analysis.
 
+## D9. Contract v1 clarifications (surfaced by skill walkthroughs + its hostile review)
+1. Human Tasks / Open Questions items must be **self-contained prose** — chambervoice
+   reads raw issue bodies over REST and sees no drawer metadata.
+2. Cross-repo dependencies use **full URLs**, never `#N` shorthand (wrong-repo links).
+3. Issues **actively blocked awaiting alignment** sit in `status:needs-human`; passive
+   ideas stay `status:draft` (they surface via the Questions view).
+FOLD INTO docs/issue-body-contract.md when the contract worker's output lands
+(its brief predates these lines) — small follow-up patch at review time.
+
+## D10. Gate ledger (this run)
+| Work | L4 hostile review | L5 human review |
+| --- | --- | --- |
+| explore-board-map / explore-voice-seam | waived — read-only mapping, no code changes | waived |
+| issue-lifecycle skill (ses_500dac19a1fa9ad474cb9429, commits 03f0b6e + c17c1f1, issue #21) | PASSED 2026-09-26 — 5 findings, all fixed (state-machine branch, section order, alignment-blocked status, L5 batching contract, issue #21 self-compliance) | queued for batch |
+| voice crash fix + 4 filed issues (ses_909742d6a8b4139607f53184) | pending completion | queued for batch |
+| contract + extraction (ses_cb7138841e2593d7a1f8bdff) | pending completion | queued for batch |
+
 # Issue body contract (v1 — canonical text in specs/issue-body-contract-v1.md)
 - `### Friendly Title:` — 3-6 words plain English (parseFriendlyTitle, core.ts:85)
 - Overview / description block
