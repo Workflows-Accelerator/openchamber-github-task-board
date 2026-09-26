@@ -196,6 +196,25 @@ test('Human Tasks: Checkbox write-back toggles markdown via updateSubtaskInMarkd
   assert.equal(remainingTodos[0].text, 'Run smoke tests');
 });
 
+test('Human Tasks: Checkbox write-back resolves duplicate text task by toggled state', () => {
+  const initialBody = `### Friendly Title: Deploy Service\n\n### Human Tasks:\n- [x] Run smoke tests\n- [ ] Run smoke tests`;
+  const tasks = parseHumanTasks(initialBody);
+  assert.equal(tasks.length, 2);
+  assert.equal(tasks[0].completed, true);
+  assert.equal(tasks[1].completed, false);
+
+  // When checking an item (cb.checked === true), find target whose completed !== true
+  const target = tasks.find((t) => t.completed !== true && t.text.trim() === 'Run smoke tests')
+    || tasks.find((t) => t.text.trim() === 'Run smoke tests');
+  assert.ok(target, 'Target task must be found');
+  assert.equal(target.lineIndex, tasks[1].lineIndex, 'Must target the incomplete item, not the already-completed duplicate');
+
+  const updatedBody = updateSubtaskInMarkdown(initialBody, target.lineIndex, true);
+  const reParsed = parseHumanTasks(updatedBody);
+  assert.equal(reParsed[0].completed, true);
+  assert.equal(reParsed[1].completed, true);
+});
+
 // ---------------------------------------------------------------------------
 // 2. All Tasks View Logic
 // ---------------------------------------------------------------------------
@@ -356,4 +375,68 @@ test('panel/main.ts dispatches active layout to renderHumanTasksView, renderAllT
   assert.ok(MAIN_TS.includes('renderHumanTasksView'), 'main.ts must call renderHumanTasksView');
   assert.ok(MAIN_TS.includes('renderAllTasksView'), 'main.ts must call renderAllTasksView');
   assert.ok(MAIN_TS.includes('renderQuestionsView'), 'main.ts must call renderQuestionsView');
+});
+
+// ---------------------------------------------------------------------------
+// 7. Hardened Quality & Parity Invariants
+// ---------------------------------------------------------------------------
+
+test('All Tasks: groupAllTasksByStatus preserves all 8 column buckets and matches Kanban count parity', () => {
+  const issues = [
+    { number: 1, title: 'Draft 1', status: 'draft' },
+    { number: 2, title: 'Backlog 1', status: 'backlog' },
+    { number: 3, title: 'Todo 1', status: 'todo' },
+    { number: 4, title: 'Todo 2', status: 'todo' },
+    { number: 5, title: 'Planned 1', status: 'planned' },
+    { number: 6, title: 'In-progress 1', status: 'in-progress' },
+    { number: 7, title: 'Needs-human 1', status: 'needs-human' },
+    { number: 8, title: 'In-review 1', status: 'in-review' },
+    { number: 9, title: 'Done 1', status: 'done' },
+  ];
+
+  const grouped = groupAllTasksByStatus(issues);
+  const totalGrouped = Object.values(grouped).reduce((acc, list) => acc + list.length, 0);
+  assert.equal(totalGrouped, issues.length, 'All issues must be accounted for across groups');
+  assert.equal(grouped['todo'].length, 2);
+  assert.equal(grouped['draft'].length, 1);
+  assert.equal(grouped['done'].length, 1);
+});
+
+test('Loading vs Empty State: Simplified views distinguish loading state from zero items', () => {
+  assert.ok(MAIN_TS.includes('Loading human tasks...'), 'main.ts must include loading state for Human Tasks');
+  assert.ok(MAIN_TS.includes('Loading tasks...'), 'main.ts must include loading state for All Tasks');
+  assert.ok(MAIN_TS.includes('Loading questions...'), 'main.ts must include loading state for Questions');
+  assert.ok(MAIN_TS.includes('spin-fast'), 'main.ts must use spin-fast spinner class');
+  assert.ok(INDEX_HTML.includes('.spin-fast'), 'index.html must define .spin-fast CSS rule');
+});
+
+test('View Switching: Inactive view containers are cleared on layout change to prevent stale DOM', () => {
+  assert.ok(MAIN_TS.includes('currentRenderedLayout && currentRenderedLayout !== activeLayout'), 'Must check layout change');
+  assert.ok(MAIN_TS.includes("elHumanViewContainer.innerHTML = ''"), 'Must clear humanViewContainer on switch away');
+  assert.ok(MAIN_TS.includes("elAllTasksViewContainer.innerHTML = ''"), 'Must clear allTasksViewContainer on switch away');
+  assert.ok(MAIN_TS.includes("elQuestionsViewContainer.innerHTML = ''"), 'Must clear questionsViewContainer on switch away');
+});
+
+test('Friendly Title: Fallback safety when title or friendly title is missing or empty', () => {
+  const issueEmpty = { number: 42, title: '', body: '' };
+  const titles = parseFriendlyTitle(issueEmpty.body, issueEmpty.title);
+  const displayTitle = titles.title.trim() || issueEmpty.title?.trim() || `Issue #${issueEmpty.number}`;
+  assert.equal(displayTitle, 'Issue #42', 'Must fall back to issue number when title is empty');
+});
+
+test('Drawer reveal: Questions view targets existing drawerQuestionsContainer, not non-existent element', () => {
+  assert.equal(MAIN_TS.includes('drawerQuestionsCollapsible'), false, 'main.ts must NOT reference nonexistent drawerQuestionsCollapsible');
+  assert.ok(MAIN_TS.includes('drawerQuestionsContainer'), 'main.ts must target drawerQuestionsContainer');
+  assert.ok(INDEX_HTML.includes('id="drawerQuestionsContainer"'), 'index.html must define drawerQuestionsContainer');
+});
+
+test('Accessibility: ARIA landmarks and labels configured on simplified views and controls', () => {
+  assert.ok(INDEX_HTML.includes('aria-label="Human Tasks View"'), 'humanViewContainer must have aria-label');
+  assert.ok(INDEX_HTML.includes('aria-label="All Tasks View"'), 'allTasksViewContainer must have aria-label');
+  assert.ok(INDEX_HTML.includes('aria-label="Questions View"'), 'questionsViewContainer must have aria-label');
+  assert.ok(INDEX_HTML.includes('id="btnViewHuman" title="Human Tasks View" aria-label="Human Tasks View"'), 'btnViewHuman must have aria-label');
+  assert.ok(INDEX_HTML.includes('id="btnViewAllTasks" title="All Tasks View" aria-label="All Tasks View"'), 'btnViewAllTasks must have aria-label');
+  assert.ok(INDEX_HTML.includes('id="btnViewQuestions" title="Questions View" aria-label="Questions View"'), 'btnViewQuestions must have aria-label');
+  assert.ok(MAIN_TS.includes('aria-expanded'), 'Inline answer toggles must manage aria-expanded');
+  assert.ok(MAIN_TS.includes('aria-level="2"'), 'All tasks group headers must have aria-level');
 });

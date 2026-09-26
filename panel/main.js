@@ -6271,6 +6271,7 @@ Blocked by ${blockerRef}`;
     issue.body = newBody;
     issue.subtasks = parseSubtasks(newBody);
     issue.openQuestions = parseOpenQuestions(newBody);
+    issue.humanTasks = parseHumanTasks(newBody);
     const repo = repoForIssue(issue);
     if (repo) issueCache.delete(repo);
     renderViews();
@@ -6692,6 +6693,15 @@ Blocked by ${blockerRef}`;
     if (elKanbanViewContainer) {
       elKanbanViewContainer.innerHTML = `<div class="empty-box" style="margin: auto;">${escapeHtml(message)}</div>`;
     }
+    if (elHumanViewContainer) {
+      elHumanViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+    }
+    if (elAllTasksViewContainer) {
+      elAllTasksViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+    }
+    if (elQuestionsViewContainer) {
+      elQuestionsViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+    }
   }
   function renderArchiveView(archivedIssues) {
     elListViewContainer.innerHTML = "";
@@ -6809,6 +6819,14 @@ Blocked by ${blockerRef}`;
     if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = "";
     applyLayoutMode(false);
     const activeLayout = document.body.getAttribute("data-layout") === "graph" ? "graph" : document.body.getAttribute("data-layout") === "kanban" ? "kanban" : document.body.getAttribute("data-layout") === "human" ? "human" : document.body.getAttribute("data-layout") === "all-tasks" ? "all-tasks" : document.body.getAttribute("data-layout") === "questions" ? "questions" : "list";
+    if (currentRenderedLayout && currentRenderedLayout !== activeLayout) {
+      if (currentRenderedLayout === "human" && elHumanViewContainer) elHumanViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "all-tasks" && elAllTasksViewContainer) elAllTasksViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "questions" && elQuestionsViewContainer) elQuestionsViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "kanban" && elKanbanViewContainer) elKanbanViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "list" && elListViewContainer) elListViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "graph" && elGraphViewContainer) elGraphViewContainer.innerHTML = "";
+    }
     if (activeLayout === "list") {
       renderListView(sorted);
     } else if (activeLayout === "kanban") {
@@ -7031,6 +7049,15 @@ Blocked by ${blockerRef}`;
     elListViewContainer.innerHTML = "";
     const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn2(i) === activeTab);
     if (listItems.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elListViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading issues...</span>
+        </div>
+      `;
+        return;
+      }
       elListViewContainer.innerHTML = `
       <div class="empty-box">
         <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
@@ -7244,6 +7271,15 @@ Blocked by ${blockerRef}`;
     elHumanViewContainer.innerHTML = "";
     const humanIssues = filteredIssues.filter((i) => resolveIssueColumn2(i) === "needs-human");
     if (humanIssues.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elHumanViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading human tasks...</span>
+        </div>
+      `;
+        return;
+      }
       elHumanViewContainer.innerHTML = `
       <div class="empty-box">
         <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
@@ -7260,31 +7296,34 @@ Blocked by ${blockerRef}`;
       const session = getIssueSession(issue);
       const todos = collectHumanTodos(issue, session);
       const titles = parseFriendlyTitle(issue.body, issue.title);
+      const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
+      const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
       const header = document.createElement("div");
       header.className = "human-issue-header";
       header.setAttribute("role", "button");
       header.setAttribute("tabindex", "0");
-      header.setAttribute("aria-label", `Open issue #${issue.number}: ${titles.title}`);
+      header.setAttribute("aria-label", `Open issue #${issue.number}: ${displayTitle}`);
       const titleGroup = document.createElement("div");
       titleGroup.className = "human-issue-title-group";
       const titleSpan = document.createElement("div");
       titleSpan.className = "human-issue-title";
-      titleSpan.textContent = titles.title;
+      titleSpan.textContent = displayTitle;
       titleGroup.appendChild(titleSpan);
-      if (titles.subtitle) {
+      if (displaySubtitle) {
         const subSpan = document.createElement("div");
         subSpan.className = "card-subtitle-tech";
         subSpan.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
-        subSpan.textContent = titles.subtitle;
+        subSpan.textContent = displaySubtitle;
         titleGroup.appendChild(subSpan);
       }
       const meta = document.createElement("div");
       meta.className = "human-issue-meta";
-      if (isAllProjectsMode && issue.repo) {
+      const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+      if (isAllProjectsMode && repoName) {
         const repoPill = document.createElement("span");
         repoPill.className = "status-pill";
         repoPill.style.fontSize = "10px";
-        repoPill.textContent = issue.repo.split("/")[1] || issue.repo;
+        repoPill.textContent = repoName.split("/")[1] || repoName;
         meta.appendChild(repoPill);
       }
       const numSpan = document.createElement("span");
@@ -7323,14 +7362,14 @@ Blocked by ${blockerRef}`;
             e.stopPropagation();
             if (todo.source === "human-task") {
               const tasks = parseHumanTasks(issue.body);
-              const target = tasks.find((t) => t.text.trim() === todo.text.trim());
+              const target = tasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || tasks.find((t) => t.text.trim() === todo.text.trim());
               if (target) {
                 const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
                 await updateIssueBody(issue, updatedBody);
               }
             } else if (todo.source === "open-question") {
               const questions = parseOpenQuestions(issue.body);
-              const target = questions.find((q) => q.text.trim() === todo.text.trim());
+              const target = questions.find((q) => q.completed !== cb.checked && q.text.trim() === todo.text.trim()) || questions.find((q) => q.text.trim() === todo.text.trim());
               if (target) {
                 const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
                 await updateIssueBody(issue, updatedBody);
@@ -7361,7 +7400,7 @@ Blocked by ${blockerRef}`;
     if (isAllProjectsMode) {
       const byRepo = {};
       for (const issue of humanIssues) {
-        const repo = repoForIssue(issue) || "Unknown Repository";
+        const repo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : "Unknown Repository");
         if (!byRepo[repo]) byRepo[repo] = [];
         byRepo[repo].push(issue);
       }
@@ -7390,8 +7429,16 @@ Blocked by ${blockerRef}`;
   function renderAllTasksView(filteredIssues) {
     if (!elAllTasksViewContainer) return;
     elAllTasksViewContainer.innerHTML = "";
-    const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn2(i) === activeTab);
-    if (listItems.length === 0) {
+    if (filteredIssues.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elAllTasksViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading tasks...</span>
+        </div>
+      `;
+        return;
+      }
       elAllTasksViewContainer.innerHTML = `
       <div class="empty-box">
         <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
@@ -7411,25 +7458,24 @@ Blocked by ${blockerRef}`;
       "in-review": [],
       done: []
     };
-    for (const issue of listItems) {
-      const col = resolveIssueColumn2(issue) || "backlog";
-      if (groups[col]) {
+    for (const issue of filteredIssues) {
+      const col = resolveIssueColumn2(issue);
+      if (col && groups[col]) {
         groups[col].push(issue);
-      } else {
-        groups.backlog.push(issue);
       }
     }
     const fragment = document.createDocumentFragment();
     STATUS_COLUMNS.forEach((colId) => {
-      if (activeTab !== "all" && activeTab !== colId) return;
       const colIssues = groups[colId];
       if (colIssues.length === 0) return;
       const groupEl = document.createElement("div");
       groupEl.className = "all-tasks-group";
+      groupEl.setAttribute("role", "region");
+      groupEl.setAttribute("aria-label", `${STATUS_METADATA[colId].label} (${colIssues.length} tasks)`);
       const header = document.createElement("div");
       header.className = "all-tasks-group-header";
       header.innerHTML = `
-      <div class="all-tasks-group-title">
+      <div class="all-tasks-group-title" role="heading" aria-level="2">
         <span class="status-dot" style="background: ${STATUS_METADATA[colId].color}; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
         <span>${escapeHtml(STATUS_METADATA[colId].label)}</span>
       </div>
@@ -7444,27 +7490,30 @@ Blocked by ${blockerRef}`;
         card.setAttribute("role", "button");
         card.setAttribute("tabindex", "0");
         const titles = parseFriendlyTitle(issue.body, issue.title);
-        card.setAttribute("aria-label", `Open issue #${issue.number}: ${titles.title}`);
+        const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
+        const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+        card.setAttribute("aria-label", `Open issue #${issue.number}: ${displayTitle}`);
         const content = document.createElement("div");
         content.className = "all-task-content";
         const titleEl = document.createElement("div");
         titleEl.className = "all-task-title";
-        titleEl.textContent = titles.title;
+        titleEl.textContent = displayTitle;
         content.appendChild(titleEl);
-        if (titles.subtitle) {
+        if (displaySubtitle) {
           const subEl = document.createElement("div");
           subEl.className = "card-subtitle-tech";
           subEl.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
-          subEl.textContent = titles.subtitle;
+          subEl.textContent = displaySubtitle;
           content.appendChild(subEl);
         }
         const meta = document.createElement("div");
         meta.className = "all-task-meta";
-        if (isAllProjectsMode && issue.repo) {
+        const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+        if (isAllProjectsMode && repoName) {
           const repoPill = document.createElement("span");
           repoPill.className = "status-pill";
           repoPill.style.fontSize = "10px";
-          repoPill.textContent = issue.repo.split("/")[1] || issue.repo;
+          repoPill.textContent = repoName.split("/")[1] || repoName;
           meta.appendChild(repoPill);
         }
         const numSpan = document.createElement("span");
@@ -7493,13 +7542,22 @@ Blocked by ${blockerRef}`;
     elQuestionsViewContainer.innerHTML = "";
     const issuesWithQuestions = [];
     for (const issue of filteredIssues) {
-      const questions = issue.openQuestions || parseOpenQuestions(issue.body || "");
+      const questions = parseOpenQuestions(issue.body || "");
       const unanswered = questions.filter((q) => !q.completed);
       if (unanswered.length > 0) {
         issuesWithQuestions.push({ issue, questions: unanswered });
       }
     }
     if (issuesWithQuestions.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elQuestionsViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading questions...</span>
+        </div>
+      `;
+        return;
+      }
       elQuestionsViewContainer.innerHTML = `
       <div class="empty-box">
         <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
@@ -7513,34 +7571,39 @@ Blocked by ${blockerRef}`;
     issuesWithQuestions.forEach(({ issue, questions }) => {
       const card = document.createElement("div");
       card.className = "questions-issue-card";
+      card.setAttribute("role", "region");
       const titles = parseFriendlyTitle(issue.body, issue.title);
+      const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
+      const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+      card.setAttribute("aria-label", `Issue #${issue.number}: ${displayTitle}`);
       const col = resolveIssueColumn2(issue) || "backlog";
       const statusMeta = STATUS_METADATA[col];
       const header = document.createElement("div");
       header.className = "questions-issue-header";
       header.setAttribute("role", "button");
       header.setAttribute("tabindex", "0");
-      header.setAttribute("aria-label", `Open questions for issue #${issue.number}: ${titles.title}`);
+      header.setAttribute("aria-label", `Open questions for issue #${issue.number}: ${displayTitle}`);
       const titleGroup = document.createElement("div");
       titleGroup.className = "human-issue-title-group";
       const titleSpan = document.createElement("div");
       titleSpan.className = "human-issue-title";
-      titleSpan.textContent = titles.title;
+      titleSpan.textContent = displayTitle;
       titleGroup.appendChild(titleSpan);
-      if (titles.subtitle) {
+      if (displaySubtitle) {
         const subSpan = document.createElement("div");
         subSpan.className = "card-subtitle-tech";
         subSpan.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
-        subSpan.textContent = titles.subtitle;
+        subSpan.textContent = displaySubtitle;
         titleGroup.appendChild(subSpan);
       }
       const meta = document.createElement("div");
       meta.className = "human-issue-meta";
-      if (isAllProjectsMode && issue.repo) {
+      const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+      if (isAllProjectsMode && repoName) {
         const repoPill = document.createElement("span");
         repoPill.className = "status-pill";
         repoPill.style.fontSize = "10px";
-        repoPill.textContent = issue.repo.split("/")[1] || issue.repo;
+        repoPill.textContent = repoName.split("/")[1] || repoName;
         meta.appendChild(repoPill);
       }
       const statusPill = document.createElement("span");
@@ -7562,9 +7625,8 @@ Blocked by ${blockerRef}`;
       const onHeaderClick = () => {
         openDrawer(issue);
         setTimeout(() => {
-          const elQuestions = document.getElementById("drawerQuestionsCollapsible");
+          const elQuestions = document.getElementById("drawerQuestionsContainer");
           if (elQuestions) {
-            elQuestions.classList.add("expanded");
             elQuestions.scrollIntoView({ behavior: "smooth", block: "nearest" });
           }
         }, 50);
@@ -7597,7 +7659,9 @@ Blocked by ${blockerRef}`;
         cb.addEventListener("click", (e) => e.stopPropagation());
         cb.addEventListener("change", async (e) => {
           e.stopPropagation();
-          const updatedBody = updateOpenQuestionInMarkdown(issue.body, question.lineIndex, cb.checked);
+          const currentQuestions = parseOpenQuestions(issue.body);
+          const target = currentQuestions.find((q) => q.completed !== cb.checked && q.text.trim() === question.text.trim()) || currentQuestions.find((q) => q.text.trim() === question.text.trim()) || question;
+          const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
           await updateIssueBody(issue, updatedBody);
         });
         const spanText = document.createElement("span");
@@ -7608,6 +7672,8 @@ Blocked by ${blockerRef}`;
         const btnAnswer = document.createElement("button");
         btnAnswer.className = "btn btn-xs btn-inline-answer";
         btnAnswer.title = "Record decision or answer";
+        btnAnswer.setAttribute("aria-expanded", "false");
+        btnAnswer.setAttribute("aria-label", `Answer question: ${question.text}`);
         btnAnswer.textContent = "Answer";
         row.appendChild(leftRow);
         row.appendChild(btnAnswer);
@@ -7616,9 +7682,9 @@ Blocked by ${blockerRef}`;
         answerRow.className = "inline-answer-row";
         answerRow.style.cssText = "display: none; gap: 6px; margin-top: 6px;";
         answerRow.innerHTML = `
-        <input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" />
-        <button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button>
-        <button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>
+        <input type="text" class="form-ctrl input-inline-answer" aria-label="Answer for: ${escapeHtml(question.text)}" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" />
+        <button class="btn btn-xs btn-primary btn-submit-inline-answer" aria-label="Save answer">Save</button>
+        <button class="btn btn-xs btn-cancel-inline-answer" aria-label="Cancel answer">Cancel</button>
       `;
         itemEl.appendChild(answerRow);
         const input = answerRow.querySelector(".input-inline-answer");
@@ -7628,6 +7694,7 @@ Blocked by ${blockerRef}`;
           e.stopPropagation();
           const isVisible = answerRow.style.display !== "none";
           answerRow.style.display = isVisible ? "none" : "flex";
+          btnAnswer.setAttribute("aria-expanded", isVisible ? "false" : "true");
           if (!isVisible) {
             input?.focus();
           }
@@ -7640,6 +7707,7 @@ Blocked by ${blockerRef}`;
           }
           const newBody = answerOpenQuestionInMarkdown(issue.body, idx, answerText);
           await updateIssueBody(issue, newBody);
+          btnAnswer.setAttribute("aria-expanded", "false");
           await host.toast({ kind: "info", message: "Recorded answer to question" });
         };
         btnSave?.addEventListener("click", (ev) => {
@@ -7653,11 +7721,13 @@ Blocked by ${blockerRef}`;
             void submitAnswer();
           } else if (ev.key === "Escape") {
             answerRow.style.display = "none";
+            btnAnswer.setAttribute("aria-expanded", "false");
           }
         });
         btnCancel?.addEventListener("click", (ev) => {
           ev.stopPropagation();
           answerRow.style.display = "none";
+          btnAnswer.setAttribute("aria-expanded", "false");
         });
         list.appendChild(itemEl);
       });
