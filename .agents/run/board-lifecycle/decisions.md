@@ -62,7 +62,17 @@ FOLD INTO docs/issue-body-contract.md when the contract worker's output lands
 | explore-board-map / explore-voice-seam | waived — read-only mapping, no code changes | waived |
 | issue-lifecycle skill (ses_500dac19a1fa9ad474cb9429, commits 03f0b6e + c17c1f1, issue #21) | PASSED 2026-09-26 — 5 findings, all fixed (state-machine branch, section order, alignment-blocked status, L5 batching contract, issue #21 self-compliance) | queued for batch |
 | voice crash fix + 4 filed issues (ses_909742d6a8b4139607f53184, issues #17-#20) | RUNNING 2026-09-26 (dispatched, session busy) | queued for batch |
-| contract + extraction (ses_cb7138841e2593d7a1f8bdff) | pending completion | queued for batch |
+| contract + extraction (ses_cb7138841e2593d7a1f8bdff, commit 7196e06, issue #22) | RUNNING 2026-09-26 (dispatched incl. D9 doc clarifications) | queued for batch |
+| three views (ses_a666af59d1eb6423a9bc5d0c, branched from contract 7196e06) | pending completion | queued for batch |
+
+## Integration notes (for merge phase)
+- views branch `issue-lifecycle-issue-views-v1` was cut from `issue-lifecycle-issue-contract-v1`
+  (7196e06). If the contract L4 lands fixes on its branch afterwards, reconcile at merge:
+  take both sides of core.ts/labels.ts/docs, then REBUILD panel/main.js once and re-run
+  shipped-parity. Both branches regenerate the bundle; the bundle is generated, never merged
+  by hand.
+- Contract-layer files were fenced off from the views worker (core.ts, labels.ts, types.ts,
+  docs/issue-body-contract.md) to keep this collision tractable.
 
 # Issue body contract (v1 — canonical text in specs/issue-body-contract-v1.md)
 - `### Friendly Title:` — 3-6 words plain English (parseFriendlyTitle, core.ts:85)
