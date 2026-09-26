@@ -82,7 +82,7 @@ test('a) All 8 columns resolve correctly according to labels and session states'
   assert.equal(resolveIssueColumn(inProgressIssue), 'in-progress');
   assert.equal(resolveIssueColumn(inProgressIssue, runningSession), 'in-progress');
   const idleSession = { id: 's-idle', title: '#5 task', activity: 'idle' };
-  assert.equal(resolveIssueColumn(inProgressIssue, idleSession), 'in-review');
+  assert.equal(resolveIssueColumn(inProgressIssue, idleSession), 'needs-human');
 
   // 5. status:planned
   const plannedIssue = { number: 6, state: 'open', labels: [{ name: 'status:planned' }] };
@@ -117,8 +117,8 @@ test('a) All 8 columns resolve correctly according to labels and session states'
   assert.equal(resolveIssueColumn(wellFormedUnlabelled), 'todo');
   // Session running -> 'in-progress'
   assert.equal(resolveIssueColumn(wellFormedUnlabelled, runningSession), 'in-progress');
-  // Session idle -> 'in-review'
-  assert.equal(resolveIssueColumn(wellFormedUnlabelled, idleSession), 'in-review');
+  // Session idle -> 'needs-human'
+  assert.equal(resolveIssueColumn(wellFormedUnlabelled, idleSession), 'needs-human');
 });
 
 test('b) isVagueIdea issues automatically route to draft', () => {
@@ -258,14 +258,14 @@ test('d) reconciler updates status labels without loops or race conditions', asy
   assert.equal(patchedCalls.length, 0);
 
   // 3. Debounce behavior: Multiple schedule calls within debounce period collapse to 1 execution
-  sessionsMap.set(101, { id: 's-101', activity: 'idle' }); // implies in-review
+  sessionsMap.set(101, { id: 's-101', activity: 'idle' }); // implies needs-human
   reconciler.schedule([issue1]);
   reconciler.schedule([issue1]);
   reconciler.schedule([issue1]);
 
   await new Promise((resolve) => setTimeout(resolve, 50));
   assert.equal(patchedCalls.length, 1);
-  assert.deepEqual(patchedCalls[0], { issueNumber: 101, targetColumn: 'in-review' });
+  assert.deepEqual(patchedCalls[0], { issueNumber: 101, targetColumn: 'needs-human' });
 
   // 4. Race condition prevention: In-flight requests lock the issue
   patchedCalls.length = 0;

@@ -276,7 +276,7 @@ export function resolveIssueColumn(issue, sessions = []) {
   // Explicit status:in-progress label
   if (labelNames.includes('status:in-progress')) {
     if (session && session.activity === 'idle') {
-      return 'in-review';
+      return 'needs-human';
     }
     return 'in-progress';
   }
@@ -308,7 +308,7 @@ export function resolveIssueColumn(issue, sessions = []) {
       return 'in-progress';
     }
     if (session.activity === 'idle') {
-      return 'in-review';
+      return 'needs-human';
     }
   }
 
@@ -316,17 +316,17 @@ export function resolveIssueColumn(issue, sessions = []) {
   return null;
 }
 
-test('resolveIssueColumn correctly resolves status and transitions idle sessions to in-review', () => {
+test('resolveIssueColumn correctly resolves status and transitions idle sessions to needs-human', () => {
   const idleSession = [{ id: 's1', title: 'Task #10', activity: 'idle' }];
   const runningSession = [{ id: 's2', title: 'Task #11', activity: 'running' }];
 
-  // Issue with idle session goes to in-review rather than backlog
+  // Issue with idle session goes to needs-human rather than backlog
   const issueWithIdle = { number: 10, state: 'open', labels: [] };
-  assert.equal(resolveIssueColumn(issueWithIdle, idleSession), 'in-review');
+  assert.equal(resolveIssueColumn(issueWithIdle, idleSession), 'needs-human');
 
-  // Issue marked status:in-progress with idle session goes to in-review
+  // Issue marked status:in-progress with idle session goes to needs-human
   const issueProgressIdle = { number: 10, state: 'open', labels: [{ name: 'status:in-progress' }] };
-  assert.equal(resolveIssueColumn(issueProgressIdle, idleSession), 'in-review');
+  assert.equal(resolveIssueColumn(issueProgressIdle, idleSession), 'needs-human');
 
   // Issue with running session goes to in-progress
   const issueRunning = { number: 11, state: 'open', labels: [] };
@@ -823,10 +823,10 @@ test('verify Task Board live sync flow: detection, checklist update, and session
   const runningSession = [{ id: 'sess-2', title: '#2 test(board)', activity: 'running' }];
   assert.equal(resolveIssueColumn(rawIssue, runningSession), 'in-progress');
 
-  // 4. Verify completed session transitions to in-review
+  // 4. Verify completed session transitions to needs-human
   const idleSession = [{ id: 'sess-2', title: '#2 test(board)', activity: 'idle' }];
   const inProgressIssue = { ...rawIssue, labels: [{ name: 'status:in-progress' }] };
-  assert.equal(resolveIssueColumn(inProgressIssue, idleSession), 'in-review');
+  assert.equal(resolveIssueColumn(inProgressIssue, idleSession), 'needs-human');
 
   // 5. Verify closing issue moves to done
   const closedIssue = { ...rawIssue, state: 'closed' };

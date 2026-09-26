@@ -21,7 +21,7 @@ const mkProject = (id, name, directory) => ({
 });
 
 // A non-vague, unlabelled issue so column resolution is driven purely by the
-// attached session (idle -> in-review) rather than by labels or draft heuristics.
+// attached session (idle -> needs-human) rather than by labels or draft heuristics.
 const mkIssue = (repo, number = 5) => ({
   number,
   repo,
@@ -48,7 +48,7 @@ test('A) session from repo A never binds to the same-numbered issue in repo B', 
   assert.equal(findSessionForIssueByRepo(byRepo, issueB), null);
 
   // Column resolution follows the repo-matched session only.
-  assert.equal(resolveIssueColumn(issueA, findSessionForIssueByRepo(byRepo, issueA)), 'in-review');
+  assert.equal(resolveIssueColumn(issueA, findSessionForIssueByRepo(byRepo, issueA)), 'needs-human');
   assert.equal(resolveIssueColumn(issueB, findSessionForIssueByRepo(byRepo, issueB)), 'todo');
 });
 
@@ -71,7 +71,7 @@ test('A) statusReconciler transitions only the repo that owns the session', asyn
 
   const result = await reconciler.reconcile([issueA, issueB]);
 
-  assert.deepEqual(moved, [{ repo: 'acme/a', column: 'in-review' }]);
+  assert.deepEqual(moved, [{ repo: 'acme/a', column: 'needs-human' }]);
   assert.equal(result.length, 1);
   assert.equal(result[0].issueNumber, 5);
 });

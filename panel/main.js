@@ -6,6 +6,7 @@
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
   --oc-scrollbar-thumb: color-mix(in srgb, var(--oc-muted, currentColor) 40%, transparent);
@@ -14,29 +15,54 @@
 }
 * {
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+:hover, [${GUEST_SCROLLING_ATTRIBUTE}] {
   scrollbar-color: var(--oc-scrollbar-thumb) transparent;
 }
 /* Chromium's standard scrollbar properties otherwise override its pseudo-elements. */
 @supports selector(::-webkit-scrollbar) {
-  * { scrollbar-width: auto; scrollbar-color: auto; }
+  *, :hover, [${GUEST_SCROLLING_ATTRIBUTE}] { scrollbar-width: auto; scrollbar-color: auto; }
   ::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
-  :root::-webkit-scrollbar, body::-webkit-scrollbar { background: var(--oc-bg, inherit); }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: var(--oc-scrollbar-thumb);
+    background: transparent;
     border-radius: 999px;
     min-width: 24px;
     min-height: 24px;
   }
+  :hover::-webkit-scrollbar-thumb, [${GUEST_SCROLLING_ATTRIBUTE}]::-webkit-scrollbar-thumb { background: var(--oc-scrollbar-thumb); }
   ::-webkit-scrollbar-thumb:hover { background: var(--oc-scrollbar-thumb-hover); }
   ::-webkit-scrollbar-corner { background: transparent; }
   ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 }
 @media (forced-colors: active) {
-  * { scrollbar-color: auto; }
+  *, :hover, [${GUEST_SCROLLING_ATTRIBUTE}] { scrollbar-color: auto; }
   ::-webkit-scrollbar-thumb, ::-webkit-scrollbar-thumb:hover { background: CanvasText; }
 }
 `;
+  function installGuestScrollbarActivity(doc) {
+    const root = doc.documentElement;
+    if (root.hasAttribute("data-oc-scrollbar-activity"))
+      return;
+    root.setAttribute("data-oc-scrollbar-activity", "");
+    const timers = /* @__PURE__ */ new WeakMap();
+    doc.addEventListener("scroll", (event) => {
+      const target = event.target === doc ? root : event.target;
+      if (!(target instanceof Element))
+        return;
+      if (!target.hasAttribute("data-oc-scrolling"))
+        target.setAttribute("data-oc-scrolling", "");
+      const pending = timers.get(target);
+      if (pending !== void 0)
+        clearTimeout(pending);
+      timers.set(target, setTimeout(() => {
+        timers.delete(target);
+        target.removeAttribute("data-oc-scrolling");
+      }, 1e3));
+    }, { capture: true, passive: true });
+  }
+  var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
@@ -58,6 +84,8 @@
   var isGuestMessageItem = (item) => item !== null && item.kind === "message";
   var isGuestSessionItem = (item) => item !== null && item.kind === "session";
   var isGuestAttachItem = (item) => item !== null && item.kind !== "message" && item.kind !== "session";
+  var GUEST_COMMIT_SHA = /^[0-9a-f]{7,64}$/i;
+  var isGuestCommitSha = (value) => GUEST_COMMIT_SHA.test(value);
   var GUEST_TOAST_MAX = 500;
   var GUEST_CLIPBOARD_TEXT_MAX = 32e3;
   var GUEST_COMPOSE_TEXT_MAX = 16e3;
@@ -87,6 +115,7 @@
   var GUEST_ITEM_MESSAGE_TEXT_MAX = 2e5;
   var GUEST_ITEM_SESSION_MAX = 2e6;
   var GUEST_BADGE_MAX = 999;
+  var GUEST_FRAME_HEIGHT_MAX = 1e4;
   var GUEST_RESOLVE_ERROR_MAX = 500;
   var HOST_REQUEST_ERROR_CODES = [
     "HOST_UNAVAILABLE",
@@ -106,7 +135,8 @@
     "FILE_TOO_LARGE",
     "DENIED",
     "NO_MODEL",
-    "MODEL_FAILED"
+    "MODEL_FAILED",
+    "UNSUPPORTED"
   ];
   var SERVICE_STATUS_VALUES = ["stopped", "starting", "ready", "failed"];
   var hostRequestErrorCodeSet = new Set(HOST_REQUEST_ERROR_CODES);
@@ -185,6 +215,11 @@
     if (count === null || !Number.isFinite(count))
       return null;
     return Math.min(GUEST_BADGE_MAX, Math.max(0, Math.round(count)));
+  };
+  var clampFrameHeight = (height) => {
+    if (!Number.isFinite(height))
+      return 0;
+    return Math.min(GUEST_FRAME_HEIGHT_MAX, Math.max(0, Math.ceil(height)));
   };
   var guestFileScope = (path) => path.startsWith("/") || path === "~" || path.startsWith("~/") ? "filesystem" : "project";
   var isGuestFilePath = (value) => value.length > 0 && value.length <= GUEST_FILE_PATH_MAX && !value.includes("\0") && !value.includes("\\");
@@ -661,6 +696,13 @@
         id: nextId(ids),
         payload: { url }
       }),
+      openCommit: (sha) => isGuestCommitSha(sha) ? request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "open-commit",
+        id: nextId(ids),
+        payload: { sha }
+      }) : Promise.reject(new HostRequestError("HOST_REJECTED", "Commit id must be 7 to 64 hex characters.")),
       openSurface: (surfaceId) => request({
         channel: OPENCHAMBER_SDK_CHANNEL,
         v: OPENCHAMBER_SDK_API_VERSION,
@@ -881,6 +923,13 @@
         id: nextId(ids),
         payload: { count: clampBadgeCount(count) }
       }),
+      setHeight: (height) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "resize",
+        id: nextId(ids),
+        payload: { height: clampFrameHeight(height) }
+      }),
       dispose: () => {
         for (const subscriptionId of workspaceListeners.keys()) {
           post({ ...envelope, type: "workspace-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
@@ -967,6 +1016,9 @@
   var SURFACE_HEIGHT_HEADER = "x-surface-height";
   var SURFACE_TITLE_HEADER = "x-surface-title";
   var SURFACE_AGENT_ACTIVE_HEADER = "x-surface-agent-active";
+  var SURFACE_VIEWER_HEADER = "x-surface-viewer";
+  var SURFACE_FRAME_SEQ_HEADER = "x-surface-frame-seq";
+  var SURFACE_VIEWER_CONTROLS_HEADER = "x-surface-viewer-controls";
   var SURFACE_FRAME_MIMES = ["image/jpeg", "image/png"];
   var SURFACE_FRAME_WAIT_MS = 25e3;
   var SURFACE_FRAME_MAX_BYTES = 8e6;
@@ -1049,10 +1101,13 @@
     }
     if (Object(parsed) !== parsed || parsed === null)
       return null;
-    const { controller } = parsed;
+    const { controller, viewer } = parsed;
     if (!isText(controller) || !CONTROLLERS.has(controller))
       return null;
-    return { controller };
+    const notice = { controller };
+    if (controller === "user" && isText(viewer) && viewer.length > 0)
+      notice.viewer = viewer;
+    return notice;
   };
   var readSurfaceResizeRequest = (body) => {
     let parsed;
@@ -1161,6 +1216,7 @@
       }
       return;
     }
+    installGuestScrollbarActivity(document);
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = css;
@@ -3103,7 +3159,7 @@ ${placeholder}
       name: "Needs Human",
       displayName: "Needs Human",
       color: "#f85149",
-      description: "Blocked waiting on human permission, answers, or input"
+      description: "Awaiting a human: permission, answers, alignment, or validation"
     },
     "in-review": {
       id: "in-review",
@@ -3111,7 +3167,7 @@ ${placeholder}
       name: "In Review",
       displayName: "In Review",
       color: "#3fb950",
-      description: "Execution finished and awaiting human review or PR validation"
+      description: "AI step: agent reviewing its own finished work (hostile review gate)"
     },
     "done": {
       id: "done",
@@ -3288,7 +3344,7 @@ ${placeholder}
     const isSessionIdle = Boolean(session && session.activity === "idle");
     if (labelNames.includes("status:in-progress")) {
       if (isSessionIdle) {
-        return "in-review";
+        return "needs-human";
       }
       if (isSessionWaiting) {
         return "needs-human";
@@ -3339,7 +3395,7 @@ ${placeholder}
         return "needs-human";
       }
       if (isSessionIdle) {
-        return "in-review";
+        return "needs-human";
       }
     }
     return "todo";
@@ -3560,6 +3616,7 @@ ${placeholder}
   }
   var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
   var questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
+  var humanTasksSectionRegex = /^#{1,4}\s*human\s+tasks?(?:\s*:)?/i;
   var testPlanIssueHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
   var testPlanBatchHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
   var headingRegex = /^#{1,4}\s+/;
@@ -3608,10 +3665,13 @@ ${placeholder}
     const lines = body.split("\n");
     const questions = [];
     let inQuestionsSection = false;
+    let inHumanTasksSection = false;
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+      const rawLine = lines[i];
+      const line = rawLine.replace(/\r$/, "");
       if (headingRegex.test(line)) {
         inQuestionsSection = questionsSectionRegex.test(line);
+        inHumanTasksSection = humanTasksSectionRegex.test(line);
         continue;
       }
       if (inQuestionsSection) {
@@ -3622,10 +3682,10 @@ ${placeholder}
             lineIndex: i,
             completed: match[2].toLowerCase() === "x",
             text: match[4].trim(),
-            rawLine: line
+            rawLine
           });
         }
-      } else {
+      } else if (!inHumanTasksSection) {
         const match = line.match(checklistRegex);
         if (match && /^\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
           questions.push({
@@ -3633,25 +3693,55 @@ ${placeholder}
             lineIndex: i,
             completed: match[2].toLowerCase() === "x",
             text: match[4].replace(/^(?:\?|Q:|Question:)\s*/i, "").trim(),
-            rawLine: line
+            rawLine
           });
         }
       }
     }
     return questions;
   }
+  function parseHumanTasks(body) {
+    if (!body || typeof body !== "string") return [];
+    const lines = body.split("\n");
+    const tasks = [];
+    let inHumanTasksSection = false;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const line = rawLine.replace(/\r$/, "");
+      if (headingRegex.test(line)) {
+        inHumanTasksSection = humanTasksSectionRegex.test(line);
+        continue;
+      }
+      if (inHumanTasksSection) {
+        const match = line.match(checklistRegex);
+        if (match) {
+          tasks.push({
+            id: `human-task-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === "x",
+            text: match[4].trim(),
+            rawLine
+          });
+        }
+      }
+    }
+    return tasks;
+  }
   function parseSubtasks(body) {
     if (!body) return [];
     const lines = body.split("\n");
     const subtasks = [];
     let inQuestionsSection = false;
+    let inHumanTasksSection = false;
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+      const rawLine = lines[i];
+      const line = rawLine.replace(/\r$/, "");
       if (headingRegex.test(line)) {
         inQuestionsSection = questionsSectionRegex.test(line);
+        inHumanTasksSection = humanTasksSectionRegex.test(line);
         continue;
       }
-      if (inQuestionsSection) {
+      if (inQuestionsSection || inHumanTasksSection) {
         continue;
       }
       const match = line.match(checklistRegex);
@@ -3664,11 +3754,106 @@ ${placeholder}
           lineIndex: i,
           completed: match[2].toLowerCase() === "x",
           text: match[4].trim(),
-          rawLine: line
+          rawLine
         });
       }
     }
     return subtasks;
+  }
+  function collectHumanTodos(issue, session) {
+    let body = "";
+    let preHumanTasks;
+    let preOpenQuestions;
+    let issueObj = null;
+    if (typeof issue === "string") {
+      body = issue;
+    } else if (issue && typeof issue === "object") {
+      issueObj = issue;
+      body = typeof issue.body === "string" ? issue.body : "";
+      if (Array.isArray(issue.humanTasks)) {
+        preHumanTasks = issue.humanTasks;
+      }
+      if (Array.isArray(issue.openQuestions)) {
+        preOpenQuestions = issue.openQuestions;
+      }
+    }
+    const humanTasks = preHumanTasks ?? parseHumanTasks(body);
+    const uncheckedHumanTasks = humanTasks.filter((t) => !t.completed);
+    const seen = /* @__PURE__ */ new Set();
+    const todos = [];
+    for (const t of uncheckedHumanTasks) {
+      const text = t.text.trim();
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      todos.push({
+        text,
+        source: "human-task",
+        done: false
+      });
+    }
+    if (todos.length > 0) {
+      return todos;
+    }
+    const openQuestions = preOpenQuestions ?? parseOpenQuestions(body);
+    const uncheckedQuestions = openQuestions.filter((q) => !q.completed);
+    for (const q of uncheckedQuestions) {
+      const text = q.text.trim();
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      todos.push({
+        text,
+        source: "open-question",
+        done: false
+      });
+    }
+    if (todos.length > 0) {
+      return todos;
+    }
+    let activeSession = null;
+    if (Array.isArray(session)) {
+      if (issueObj && Number.isFinite(issueObj.number)) {
+        const issueNumStr = String(issueObj.number);
+        activeSession = session.find((s) => {
+          if (!s) return false;
+          if (s.items && Array.isArray(s.items) && s.items.some((it) => it && (it.id === issueNumStr || it.data?.issueNumber === issueObj.number || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers.includes(issueObj.number)))) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issueObj.number}`)) return true;
+          const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
+          if (wtName && wtName.includes(`issue-${issueObj.number}`)) return true;
+          return false;
+        }) || session[0] || null;
+      } else {
+        activeSession = session[0] || null;
+      }
+    } else if (session && typeof session === "object") {
+      activeSession = session;
+    }
+    if (activeSession) {
+      const act = typeof activeSession.activity === "string" ? activeSession.activity.trim() : "";
+      const isWaiting = act === "waiting-permission" || act === "waiting-question" || act.startsWith("waiting");
+      if (isWaiting) {
+        const rawReason = activeSession.waitingReason || activeSession.reason || activeSession.data?.waitingReason || activeSession.data?.reason || "";
+        const reason = typeof rawReason === "string" ? rawReason.trim() : "";
+        let text = "";
+        if (act === "waiting-permission") {
+          text = reason ? `Agent waiting for permission: ${reason}` : "Agent waiting for permission";
+        } else if (act === "waiting-question") {
+          text = reason ? `Agent waiting for question: ${reason}` : "Agent waiting for question";
+        } else if (act.startsWith("waiting-")) {
+          const kind = act.slice(8);
+          text = reason ? `Agent waiting for ${kind}: ${reason}` : `Agent waiting for ${kind}`;
+        } else {
+          text = reason ? `Agent waiting: ${reason}` : "Agent waiting";
+        }
+        return [{
+          text,
+          source: "session-waiting",
+          done: false
+        }];
+      }
+    }
+    return [];
   }
   function updateSubtaskInMarkdown(body, lineIndex, completed) {
     const lines = body.split("\n");
@@ -4190,11 +4375,13 @@ Instructions for the Agent:
    - Friendly Title: Start the issue body with "### Friendly Title: <3-6 words plain English title>" before the Overview.
    - Overview: Clear description of the problem, motivation, or user value.
    - Files Impacted: List candidate file paths grounded in the codebase.
-   - Actionable Subtasks Checklist: Mandatory interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
+   - Acceptance Criteria: Add a "### Acceptance Criteria:" section with interactive Markdown checkboxes (- [ ]) defining testable conditions of done for human validation.
+   - Actionable Subtasks Checklist: Mandatory "### Actionable Subtasks Checklist:" with interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
      - [ ] Reproduce with test / define contract
      - [ ] Implement core changes
      - [ ] Run test suite and verify green
    - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify.
+   - Human Tasks: Add a "### Human Tasks:" section with interactive Markdown checkboxes (- [ ]) with verb-first items (e.g. "Approve ...", "Review PR #N", "Grant access to ...", "Deploy ...") written at the moment the agent blocks on a human or hands off for validation.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
    - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
 4. If a GitHub token or gh CLI is available in the environment, you can create the issues directly using the GitHub API. Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
@@ -4825,7 +5012,8 @@ Blocked by ${blockerRef}`;
       comments: item.comments || 0,
       created_at: item.created_at || "",
       subtasks: parseSubtasks(item.body || ""),
-      openQuestions: parseOpenQuestions(item.body || "")
+      openQuestions: parseOpenQuestions(item.body || ""),
+      humanTasks: parseHumanTasks(item.body || "")
     }));
   }
   function mergeIssuePages(existing, incoming) {

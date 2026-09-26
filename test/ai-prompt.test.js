@@ -55,3 +55,31 @@ test('DEFAULT_AI_ISSUE_PROMPT requires friendly title before overview', () => {
   const overviewIdx = DEFAULT_AI_ISSUE_PROMPT.indexOf('Overview:');
   assert.ok(friendlyTitleIdx < overviewIdx, 'Friendly Title requirement must precede Overview');
 });
+
+test('DEFAULT_AI_ISSUE_PROMPT requires exact section spellings in recommended order', () => {
+  const sections = [
+    '### Friendly Title:',
+    'Overview:',
+    '### Acceptance Criteria:',
+    '### Actionable Subtasks Checklist:',
+    '### Open Questions:',
+    '### Human Tasks:',
+  ];
+
+  let prevIdx = -1;
+  for (const section of sections) {
+    const idx = DEFAULT_AI_ISSUE_PROMPT.indexOf(section);
+    assert.ok(idx >= 0, `DEFAULT_AI_ISSUE_PROMPT missing required section spelling: "${section}"`);
+    assert.ok(idx > prevIdx, `Section "${section}" (idx ${idx}) must appear after previous section (idx ${prevIdx})`);
+    prevIdx = idx;
+  }
+});
+
+test('DEFAULT_AI_ISSUE_PROMPT instructs verb-first Human Tasks written when blocking or handing off', () => {
+  assert.ok(DEFAULT_AI_ISSUE_PROMPT.includes('verb-first items'));
+  assert.ok(
+    DEFAULT_AI_ISSUE_PROMPT.includes('blocks on a human or hands off for validation'),
+    'Prompt must instruct writing Human Tasks at the moment the agent blocks or hands off'
+  );
+  assert.equal(containsEmoji(DEFAULT_AI_ISSUE_PROMPT), false, 'Prompt must strictly maintain zero emojis');
+});

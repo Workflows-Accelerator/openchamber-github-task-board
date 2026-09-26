@@ -6,6 +6,7 @@ export type {
   Subtask,
   TestItem,
   Issue,
+  HumanTodo,
   DependencyGraph,
   DependencyNode,
   DependencyEdge,

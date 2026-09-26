@@ -82,7 +82,7 @@ import type {
   NewIssueMode,
 } from './types.js';
 import { extractWorktreeName } from './types.js';
-export type { SessionInfo, ProjectItem, ColumnId, TabId, IssueGroup, NewIssueMode };
+export type { SessionInfo, ProjectItem, ColumnId, TabId, IssueGroup, NewIssueMode, HumanTodo };
 export { extractWorktreeName };
 import {
   parseOpenQuestions,
@@ -120,6 +120,9 @@ import {
   normalizeGithubIssues,
   mergeIssuePages,
   parseFriendlyTitle,
+  parseHumanTasks,
+  collectHumanTodos,
+  HumanTodo,
   TestItem,
   parseTestPlan,
   updateTestItemInMarkdown,
@@ -154,6 +157,8 @@ export {
   renderBlockerChip,
   renderBlockerChips,
   parseFriendlyTitle,
+  parseHumanTasks,
+  collectHumanTodos,
   parseTestPlan,
   updateTestItemInMarkdown,
   appendTestItemToMarkdown,

@@ -43,7 +43,8 @@ function scanDecl(src, start) {
 }
 
 const JS_FUNCS = [
-  'parseOpenQuestions', 'parseSubtasks', 'updateSubtaskInMarkdown', 'updateOpenQuestionInMarkdown',
+  'parseOpenQuestions', 'parseHumanTasks', 'parseSubtasks', 'collectHumanTodos',
+  'updateSubtaskInMarkdown', 'updateOpenQuestionInMarkdown',
   'appendSubtaskToMarkdown', 'appendOpenQuestionToMarkdown', 'serializeDraftQuestions',
   'isVagueIdea', 'formatQuestionBadge', 'getIssueTheme', 'extractTaskThemes', 'parseScratchPadThemes',
   'resolveAiIssuePrompt', 'resolveAiAlignmentPrompt', 'buildIssueAttachPayload',
@@ -56,7 +57,7 @@ const JS_FUNCS = [
   'mergeIssuePages',
   'parseFriendlyTitle',
 ];
-const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
+const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'humanTasksSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
 function extract(marker) {
   const idx = MAIN_JS.indexOf(marker);
@@ -72,7 +73,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 36);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 39);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -109,6 +110,19 @@ test('parseSubtasks / parseOpenQuestions: shipped == core', () => {
   for (const b of bodies) {
     assert.deepEqual(Shipped.parseSubtasks(b), Core.parseSubtasks(b), 'subtasks: ' + JSON.stringify(b));
     assert.deepEqual(Shipped.parseOpenQuestions(b), Core.parseOpenQuestions(b), 'questions: ' + JSON.stringify(b));
+  }
+});
+
+test('parseHumanTasks / collectHumanTodos: shipped == core', () => {
+  const bodies = [
+    '### Human Tasks:\n- [ ] Action 1\n- [x] Action 2',
+    '### Open Questions\n- [ ] Q1?\n## Next\n- [ ] C',
+    '### Human Tasks:\n- [x] Done item',
+    '',
+  ];
+  for (const b of bodies) {
+    assert.deepEqual(Shipped.parseHumanTasks(b), Core.parseHumanTasks(b), 'humanTasks: ' + JSON.stringify(b));
+    assert.deepEqual(Shipped.collectHumanTodos(b), Core.collectHumanTodos(b), 'collectHumanTodos: ' + JSON.stringify(b));
   }
 });
 

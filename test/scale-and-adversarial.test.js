@@ -161,6 +161,7 @@ test('adversarial defense: null, undefined, malformed, and huge markdown data ne
       created_at: '',
       subtasks: [],
       openQuestions: [],
+      humanTasks: [],
     },
   ]);
 
