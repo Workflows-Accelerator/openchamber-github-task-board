@@ -61,7 +61,7 @@ FOLD INTO docs/issue-body-contract.md when the contract worker's output lands
 | --- | --- | --- |
 | explore-board-map / explore-voice-seam | waived — read-only mapping, no code changes | waived |
 | issue-lifecycle skill (ses_500dac19a1fa9ad474cb9429, commits 03f0b6e + c17c1f1, issue #21) | PASSED 2026-09-26 — 5 findings, all fixed (state-machine branch, section order, alignment-blocked status, L5 batching contract, issue #21 self-compliance) | queued for batch |
-| voice crash fix + 4 filed issues (ses_909742d6a8b4139607f53184) | pending completion | queued for batch |
+| voice crash fix + 4 filed issues (ses_909742d6a8b4139607f53184, issues #17-#20) | RUNNING 2026-09-26 (dispatched, session busy) | queued for batch |
 | contract + extraction (ses_cb7138841e2593d7a1f8bdff) | pending completion | queued for batch |
 
 # Issue body contract (v1 — canonical text in specs/issue-body-contract-v1.md)
