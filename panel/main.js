@@ -5352,6 +5352,9 @@ Blocked by ${blockerRef}`;
   var elSearchInput = document.getElementById("searchInput");
   var elBtnLayoutToggle = document.getElementById("btnLayoutToggle");
   var elBtnGraphToggle = document.getElementById("btnGraphToggle");
+  var elBtnViewHuman = document.getElementById("btnViewHuman");
+  var elBtnViewAllTasks = document.getElementById("btnViewAllTasks");
+  var elBtnViewQuestions = document.getElementById("btnViewQuestions");
   var elBtnViewList = document.getElementById("btnViewList");
   var elBtnViewKanban = document.getElementById("btnViewKanban");
   var elBtnViewGraph = document.getElementById("btnViewGraph");
@@ -5399,6 +5402,9 @@ Blocked by ${blockerRef}`;
   var elStatusTabBar = document.getElementById("statusTabBar");
   var elListViewContainer = document.getElementById("listViewContainer");
   var elKanbanViewContainer = document.getElementById("kanbanViewContainer");
+  var elHumanViewContainer = document.getElementById("humanViewContainer");
+  var elAllTasksViewContainer = document.getElementById("allTasksViewContainer");
+  var elQuestionsViewContainer = document.getElementById("questionsViewContainer");
   var kanbanCardContainers = {
     "draft": document.getElementById("kCardsDraft"),
     "backlog": document.getElementById("kCardsBacklog"),
@@ -6785,6 +6791,9 @@ Blocked by ${blockerRef}`;
       if (elStatusTabBar) elStatusTabBar.style.display = "none";
       if (elKanbanViewContainer) elKanbanViewContainer.style.display = "none";
       if (elGraphViewContainer) elGraphViewContainer.style.display = "none";
+      if (elHumanViewContainer) elHumanViewContainer.style.display = "none";
+      if (elAllTasksViewContainer) elAllTasksViewContainer.style.display = "none";
+      if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = "none";
       if (elListViewContainer) {
         elListViewContainer.style.display = "flex";
         renderArchiveView(sorted);
@@ -6795,14 +6804,23 @@ Blocked by ${blockerRef}`;
     if (elKanbanViewContainer) elKanbanViewContainer.style.display = "";
     if (elListViewContainer) elListViewContainer.style.display = "";
     if (elGraphViewContainer) elGraphViewContainer.style.display = "";
+    if (elHumanViewContainer) elHumanViewContainer.style.display = "";
+    if (elAllTasksViewContainer) elAllTasksViewContainer.style.display = "";
+    if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = "";
     applyLayoutMode(false);
-    const activeLayout = document.body.getAttribute("data-layout") === "graph" ? "graph" : document.body.getAttribute("data-layout") === "kanban" ? "kanban" : "list";
+    const activeLayout = document.body.getAttribute("data-layout") === "graph" ? "graph" : document.body.getAttribute("data-layout") === "kanban" ? "kanban" : document.body.getAttribute("data-layout") === "human" ? "human" : document.body.getAttribute("data-layout") === "all-tasks" ? "all-tasks" : document.body.getAttribute("data-layout") === "questions" ? "questions" : "list";
     if (activeLayout === "list") {
       renderListView(sorted);
     } else if (activeLayout === "kanban") {
       renderKanbanView(sorted);
     } else if (activeLayout === "graph") {
       renderGraphView(sorted);
+    } else if (activeLayout === "human") {
+      renderHumanTasksView(sorted);
+    } else if (activeLayout === "all-tasks") {
+      renderAllTasksView(sorted);
+    } else if (activeLayout === "questions") {
+      renderQuestionsView(sorted);
     }
     currentRenderedLayout = activeLayout;
     updateBatchBar();
@@ -7221,7 +7239,440 @@ Blocked by ${blockerRef}`;
     });
     elKanbanViewContainer.appendChild(kanbanFragment);
   }
+  function renderHumanTasksView(filteredIssues) {
+    if (!elHumanViewContainer) return;
+    elHumanViewContainer.innerHTML = "";
+    const humanIssues = filteredIssues.filter((i) => resolveIssueColumn2(i) === "needs-human");
+    if (humanIssues.length === 0) {
+      elHumanViewContainer.innerHTML = `
+      <div class="empty-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Nothing is waiting on you</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">All tasks and sessions are moving forward.</span>
+      </div>
+    `;
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    const buildHumanCard = (issue) => {
+      const card = document.createElement("div");
+      card.className = "human-issue-card";
+      const session = getIssueSession(issue);
+      const todos = collectHumanTodos(issue, session);
+      const titles = parseFriendlyTitle(issue.body, issue.title);
+      const header = document.createElement("div");
+      header.className = "human-issue-header";
+      header.setAttribute("role", "button");
+      header.setAttribute("tabindex", "0");
+      header.setAttribute("aria-label", `Open issue #${issue.number}: ${titles.title}`);
+      const titleGroup = document.createElement("div");
+      titleGroup.className = "human-issue-title-group";
+      const titleSpan = document.createElement("div");
+      titleSpan.className = "human-issue-title";
+      titleSpan.textContent = titles.title;
+      titleGroup.appendChild(titleSpan);
+      if (titles.subtitle) {
+        const subSpan = document.createElement("div");
+        subSpan.className = "card-subtitle-tech";
+        subSpan.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
+        subSpan.textContent = titles.subtitle;
+        titleGroup.appendChild(subSpan);
+      }
+      const meta = document.createElement("div");
+      meta.className = "human-issue-meta";
+      if (isAllProjectsMode && issue.repo) {
+        const repoPill = document.createElement("span");
+        repoPill.className = "status-pill";
+        repoPill.style.fontSize = "10px";
+        repoPill.textContent = issue.repo.split("/")[1] || issue.repo;
+        meta.appendChild(repoPill);
+      }
+      const numSpan = document.createElement("span");
+      numSpan.style.cssText = "font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted);";
+      numSpan.textContent = `#${issue.number}`;
+      meta.appendChild(numSpan);
+      header.appendChild(titleGroup);
+      header.appendChild(meta);
+      const onHeaderClick = () => openDrawer(issue);
+      header.addEventListener("click", onHeaderClick);
+      header.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onHeaderClick();
+        }
+      });
+      card.appendChild(header);
+      const list = document.createElement("div");
+      list.className = "human-todo-list";
+      if (todos.length === 0) {
+        const emptyItem = document.createElement("div");
+        emptyItem.style.cssText = "font-size: 12px; color: var(--fg-muted); padding: 4px 0;";
+        emptyItem.textContent = "No specific checklist items. Review issue details in drawer.";
+        list.appendChild(emptyItem);
+      } else {
+        todos.forEach((todo) => {
+          const itemEl = document.createElement("div");
+          itemEl.className = `human-todo-item ${todo.done ? "done" : ""}`;
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "human-todo-checkbox";
+          cb.checked = todo.done;
+          cb.setAttribute("aria-label", todo.text);
+          cb.addEventListener("click", (e) => e.stopPropagation());
+          cb.addEventListener("change", async (e) => {
+            e.stopPropagation();
+            if (todo.source === "human-task") {
+              const tasks = parseHumanTasks(issue.body);
+              const target = tasks.find((t) => t.text.trim() === todo.text.trim());
+              if (target) {
+                const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
+                await updateIssueBody(issue, updatedBody);
+              }
+            } else if (todo.source === "open-question") {
+              const questions = parseOpenQuestions(issue.body);
+              const target = questions.find((q) => q.text.trim() === todo.text.trim());
+              if (target) {
+                const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
+                await updateIssueBody(issue, updatedBody);
+              }
+            } else if (todo.source === "session-waiting") {
+              cb.checked = false;
+              if (session?.id) {
+                void host.openSession(session.id);
+                await host.toast({ kind: "info", message: "Opened waiting session" });
+              }
+            }
+          });
+          const spanText = document.createElement("span");
+          spanText.className = "human-todo-text";
+          spanText.textContent = todo.text;
+          const badge = document.createElement("span");
+          badge.className = `human-todo-badge badge-${todo.source}`;
+          badge.textContent = todo.source === "human-task" ? "Human Task" : todo.source === "open-question" ? "Open Question" : "Agent Waiting";
+          itemEl.appendChild(cb);
+          itemEl.appendChild(spanText);
+          itemEl.appendChild(badge);
+          list.appendChild(itemEl);
+        });
+      }
+      card.appendChild(list);
+      return card;
+    };
+    if (isAllProjectsMode) {
+      const byRepo = {};
+      for (const issue of humanIssues) {
+        const repo = repoForIssue(issue) || "Unknown Repository";
+        if (!byRepo[repo]) byRepo[repo] = [];
+        byRepo[repo].push(issue);
+      }
+      Object.keys(byRepo).forEach((repo) => {
+        const repoGroup = document.createElement("div");
+        repoGroup.className = "human-repo-group";
+        const repoHeader = document.createElement("div");
+        repoHeader.className = "human-repo-header";
+        repoHeader.innerHTML = `
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+        <span>${escapeHtml(repo)}</span>
+      `;
+        repoGroup.appendChild(repoHeader);
+        byRepo[repo].forEach((issue) => {
+          repoGroup.appendChild(buildHumanCard(issue));
+        });
+        fragment.appendChild(repoGroup);
+      });
+    } else {
+      humanIssues.forEach((issue) => {
+        fragment.appendChild(buildHumanCard(issue));
+      });
+    }
+    elHumanViewContainer.appendChild(fragment);
+  }
+  function renderAllTasksView(filteredIssues) {
+    if (!elAllTasksViewContainer) return;
+    elAllTasksViewContainer.innerHTML = "";
+    const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn2(i) === activeTab);
+    if (listItems.length === 0) {
+      elAllTasksViewContainer.innerHTML = `
+      <div class="empty-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">No tasks match the active filters</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">Try adjusting your search query, status tab, or labels.</span>
+      </div>
+    `;
+      return;
+    }
+    const groups = {
+      draft: [],
+      backlog: [],
+      todo: [],
+      planned: [],
+      "in-progress": [],
+      "needs-human": [],
+      "in-review": [],
+      done: []
+    };
+    for (const issue of listItems) {
+      const col = resolveIssueColumn2(issue) || "backlog";
+      if (groups[col]) {
+        groups[col].push(issue);
+      } else {
+        groups.backlog.push(issue);
+      }
+    }
+    const fragment = document.createDocumentFragment();
+    STATUS_COLUMNS.forEach((colId) => {
+      if (activeTab !== "all" && activeTab !== colId) return;
+      const colIssues = groups[colId];
+      if (colIssues.length === 0) return;
+      const groupEl = document.createElement("div");
+      groupEl.className = "all-tasks-group";
+      const header = document.createElement("div");
+      header.className = "all-tasks-group-header";
+      header.innerHTML = `
+      <div class="all-tasks-group-title">
+        <span class="status-dot" style="background: ${STATUS_METADATA[colId].color}; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+        <span>${escapeHtml(STATUS_METADATA[colId].label)}</span>
+      </div>
+      <span class="status-pill">${colIssues.length}</span>
+    `;
+      groupEl.appendChild(header);
+      const cardsContainer = document.createElement("div");
+      cardsContainer.className = "all-tasks-group-cards";
+      colIssues.forEach((issue) => {
+        const card = document.createElement("div");
+        card.className = "all-task-card";
+        card.setAttribute("role", "button");
+        card.setAttribute("tabindex", "0");
+        const titles = parseFriendlyTitle(issue.body, issue.title);
+        card.setAttribute("aria-label", `Open issue #${issue.number}: ${titles.title}`);
+        const content = document.createElement("div");
+        content.className = "all-task-content";
+        const titleEl = document.createElement("div");
+        titleEl.className = "all-task-title";
+        titleEl.textContent = titles.title;
+        content.appendChild(titleEl);
+        if (titles.subtitle) {
+          const subEl = document.createElement("div");
+          subEl.className = "card-subtitle-tech";
+          subEl.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
+          subEl.textContent = titles.subtitle;
+          content.appendChild(subEl);
+        }
+        const meta = document.createElement("div");
+        meta.className = "all-task-meta";
+        if (isAllProjectsMode && issue.repo) {
+          const repoPill = document.createElement("span");
+          repoPill.className = "status-pill";
+          repoPill.style.fontSize = "10px";
+          repoPill.textContent = issue.repo.split("/")[1] || issue.repo;
+          meta.appendChild(repoPill);
+        }
+        const numSpan = document.createElement("span");
+        numSpan.style.cssText = "font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted);";
+        numSpan.textContent = `#${issue.number}`;
+        meta.appendChild(numSpan);
+        card.appendChild(content);
+        card.appendChild(meta);
+        const onCardClick = () => openDrawer(issue);
+        card.addEventListener("click", onCardClick);
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onCardClick();
+          }
+        });
+        cardsContainer.appendChild(card);
+      });
+      groupEl.appendChild(cardsContainer);
+      fragment.appendChild(groupEl);
+    });
+    elAllTasksViewContainer.appendChild(fragment);
+  }
+  function renderQuestionsView(filteredIssues) {
+    if (!elQuestionsViewContainer) return;
+    elQuestionsViewContainer.innerHTML = "";
+    const issuesWithQuestions = [];
+    for (const issue of filteredIssues) {
+      const questions = issue.openQuestions || parseOpenQuestions(issue.body || "");
+      const unanswered = questions.filter((q) => !q.completed);
+      if (unanswered.length > 0) {
+        issuesWithQuestions.push({ issue, questions: unanswered });
+      }
+    }
+    if (issuesWithQuestions.length === 0) {
+      elQuestionsViewContainer.innerHTML = `
+      <div class="empty-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">No open questions</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">All specifications and open questions have been answered.</span>
+      </div>
+    `;
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    issuesWithQuestions.forEach(({ issue, questions }) => {
+      const card = document.createElement("div");
+      card.className = "questions-issue-card";
+      const titles = parseFriendlyTitle(issue.body, issue.title);
+      const col = resolveIssueColumn2(issue) || "backlog";
+      const statusMeta = STATUS_METADATA[col];
+      const header = document.createElement("div");
+      header.className = "questions-issue-header";
+      header.setAttribute("role", "button");
+      header.setAttribute("tabindex", "0");
+      header.setAttribute("aria-label", `Open questions for issue #${issue.number}: ${titles.title}`);
+      const titleGroup = document.createElement("div");
+      titleGroup.className = "human-issue-title-group";
+      const titleSpan = document.createElement("div");
+      titleSpan.className = "human-issue-title";
+      titleSpan.textContent = titles.title;
+      titleGroup.appendChild(titleSpan);
+      if (titles.subtitle) {
+        const subSpan = document.createElement("div");
+        subSpan.className = "card-subtitle-tech";
+        subSpan.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
+        subSpan.textContent = titles.subtitle;
+        titleGroup.appendChild(subSpan);
+      }
+      const meta = document.createElement("div");
+      meta.className = "human-issue-meta";
+      if (isAllProjectsMode && issue.repo) {
+        const repoPill = document.createElement("span");
+        repoPill.className = "status-pill";
+        repoPill.style.fontSize = "10px";
+        repoPill.textContent = issue.repo.split("/")[1] || issue.repo;
+        meta.appendChild(repoPill);
+      }
+      const statusPill = document.createElement("span");
+      statusPill.className = "status-pill";
+      statusPill.style.cssText = `background: color-mix(in srgb, ${statusMeta.color} 20%, transparent); color: ${statusMeta.color}; font-size: 10.5px;`;
+      statusPill.textContent = statusMeta.label;
+      meta.appendChild(statusPill);
+      const countPill = document.createElement("span");
+      countPill.className = "status-pill status-pill-frontier";
+      countPill.style.fontSize = "10.5px";
+      countPill.textContent = `${questions.length} open`;
+      meta.appendChild(countPill);
+      const numSpan = document.createElement("span");
+      numSpan.style.cssText = "font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted);";
+      numSpan.textContent = `#${issue.number}`;
+      meta.appendChild(numSpan);
+      header.appendChild(titleGroup);
+      header.appendChild(meta);
+      const onHeaderClick = () => {
+        openDrawer(issue);
+        setTimeout(() => {
+          const elQuestions = document.getElementById("drawerQuestionsCollapsible");
+          if (elQuestions) {
+            elQuestions.classList.add("expanded");
+            elQuestions.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }, 50);
+      };
+      header.addEventListener("click", onHeaderClick);
+      header.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onHeaderClick();
+        }
+      });
+      card.appendChild(header);
+      const list = document.createElement("div");
+      list.className = "question-items-list";
+      let unresolvedIdx = 0;
+      questions.forEach((question) => {
+        const idx = unresolvedIdx;
+        unresolvedIdx++;
+        const itemEl = document.createElement("div");
+        itemEl.className = "question-view-item";
+        const row = document.createElement("div");
+        row.className = "question-view-row";
+        const leftRow = document.createElement("div");
+        leftRow.style.cssText = "display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 0;";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.className = "human-todo-checkbox";
+        cb.checked = false;
+        cb.setAttribute("aria-label", `Mark question as answered: ${question.text}`);
+        cb.addEventListener("click", (e) => e.stopPropagation());
+        cb.addEventListener("change", async (e) => {
+          e.stopPropagation();
+          const updatedBody = updateOpenQuestionInMarkdown(issue.body, question.lineIndex, cb.checked);
+          await updateIssueBody(issue, updatedBody);
+        });
+        const spanText = document.createElement("span");
+        spanText.className = "question-view-text";
+        spanText.textContent = question.text;
+        leftRow.appendChild(cb);
+        leftRow.appendChild(spanText);
+        const btnAnswer = document.createElement("button");
+        btnAnswer.className = "btn btn-xs btn-inline-answer";
+        btnAnswer.title = "Record decision or answer";
+        btnAnswer.textContent = "Answer";
+        row.appendChild(leftRow);
+        row.appendChild(btnAnswer);
+        itemEl.appendChild(row);
+        const answerRow = document.createElement("div");
+        answerRow.className = "inline-answer-row";
+        answerRow.style.cssText = "display: none; gap: 6px; margin-top: 6px;";
+        answerRow.innerHTML = `
+        <input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" />
+        <button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button>
+        <button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>
+      `;
+        itemEl.appendChild(answerRow);
+        const input = answerRow.querySelector(".input-inline-answer");
+        const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
+        const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
+        btnAnswer.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isVisible = answerRow.style.display !== "none";
+          answerRow.style.display = isVisible ? "none" : "flex";
+          if (!isVisible) {
+            input?.focus();
+          }
+        });
+        const submitAnswer = async () => {
+          const answerText = input?.value.trim();
+          if (!answerText) {
+            input?.focus();
+            return;
+          }
+          const newBody = answerOpenQuestionInMarkdown(issue.body, idx, answerText);
+          await updateIssueBody(issue, newBody);
+          await host.toast({ kind: "info", message: "Recorded answer to question" });
+        };
+        btnSave?.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          void submitAnswer();
+        });
+        input?.addEventListener("keydown", (ev) => {
+          ev.stopPropagation();
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            void submitAnswer();
+          } else if (ev.key === "Escape") {
+            answerRow.style.display = "none";
+          }
+        });
+        btnCancel?.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          answerRow.style.display = "none";
+        });
+        list.appendChild(itemEl);
+      });
+      card.appendChild(list);
+      fragment.appendChild(card);
+    });
+    elQuestionsViewContainer.appendChild(fragment);
+  }
   function updateViewModeButtons(mode) {
+    elBtnViewHuman?.classList.toggle("active", mode === "human");
+    elBtnViewHuman?.setAttribute("aria-checked", mode === "human" ? "true" : "false");
+    elBtnViewAllTasks?.classList.toggle("active", mode === "all-tasks");
+    elBtnViewAllTasks?.setAttribute("aria-checked", mode === "all-tasks" ? "true" : "false");
+    elBtnViewQuestions?.classList.toggle("active", mode === "questions");
+    elBtnViewQuestions?.setAttribute("aria-checked", mode === "questions" ? "true" : "false");
     elBtnViewList?.classList.toggle("active", mode === "list");
     elBtnViewList?.setAttribute("aria-checked", mode === "list" ? "true" : "false");
     elBtnViewKanban?.classList.toggle("active", mode === "kanban");
@@ -7229,7 +7680,19 @@ Blocked by ${blockerRef}`;
     elBtnViewGraph?.classList.toggle("active", mode === "graph");
     elBtnViewGraph?.setAttribute("aria-checked", mode === "graph" ? "true" : "false");
     if (elBtnLayoutToggle) {
-      if (mode === "list") {
+      if (mode === "human") {
+        elBtnLayoutToggle.title = "View: Human Tasks (click to switch to All Tasks)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: Human Tasks (click to switch to All Tasks)");
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+      } else if (mode === "all-tasks") {
+        elBtnLayoutToggle.title = "View: All Tasks (click to switch to Questions)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: All Tasks (click to switch to Questions)");
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>';
+      } else if (mode === "questions") {
+        elBtnLayoutToggle.title = "View: Questions (click to switch to List)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: Questions (click to switch to List)");
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
+      } else if (mode === "list") {
         elBtnLayoutToggle.title = "View: List (click to switch to Board)";
         elBtnLayoutToggle.setAttribute("aria-label", "View: List (click to switch to Board)");
         elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>';
@@ -7238,8 +7701,8 @@ Blocked by ${blockerRef}`;
         elBtnLayoutToggle.setAttribute("aria-label", "View: Board (click to switch to Graph)");
         elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>';
       } else {
-        elBtnLayoutToggle.title = "View: Graph (click to switch to List)";
-        elBtnLayoutToggle.setAttribute("aria-label", "View: Graph (click to switch to List)");
+        elBtnLayoutToggle.title = "View: Graph (click to switch to Human Tasks)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: Graph (click to switch to Human Tasks)");
         elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>';
       }
     }
@@ -7251,7 +7714,19 @@ Blocked by ${blockerRef}`;
     }
     isWideScreen = window.innerWidth >= 680;
     let newLayout = "list";
-    if (userLayoutPreference === "graph") {
+    if (userLayoutPreference === "human") {
+      newLayout = "human";
+      document.body.setAttribute("data-layout", "human");
+      updateViewModeButtons("human");
+    } else if (userLayoutPreference === "all-tasks") {
+      newLayout = "all-tasks";
+      document.body.setAttribute("data-layout", "all-tasks");
+      updateViewModeButtons("all-tasks");
+    } else if (userLayoutPreference === "questions") {
+      newLayout = "questions";
+      document.body.setAttribute("data-layout", "questions");
+      updateViewModeButtons("questions");
+    } else if (userLayoutPreference === "graph") {
       newLayout = "graph";
       document.body.setAttribute("data-layout", "graph");
       updateViewModeButtons("graph");
@@ -9353,6 +9828,18 @@ ${issue.body}
         renderViews();
       }
     });
+    elBtnViewHuman?.addEventListener("click", () => {
+      userLayoutPreference = "human";
+      applyLayoutMode();
+    });
+    elBtnViewAllTasks?.addEventListener("click", () => {
+      userLayoutPreference = "all-tasks";
+      applyLayoutMode();
+    });
+    elBtnViewQuestions?.addEventListener("click", () => {
+      userLayoutPreference = "questions";
+      applyLayoutMode();
+    });
     elBtnViewList?.addEventListener("click", () => {
       userLayoutPreference = "list";
       applyLayoutMode();
@@ -9364,6 +9851,21 @@ ${issue.body}
     elBtnViewGraph?.addEventListener("click", () => {
       userLayoutPreference = "graph";
       applyLayoutMode();
+    });
+    document.getElementById("menuItemViewHuman")?.addEventListener("click", () => {
+      userLayoutPreference = "human";
+      applyLayoutMode();
+      closeMoreMenu();
+    });
+    document.getElementById("menuItemViewAllTasks")?.addEventListener("click", () => {
+      userLayoutPreference = "all-tasks";
+      applyLayoutMode();
+      closeMoreMenu();
+    });
+    document.getElementById("menuItemViewQuestions")?.addEventListener("click", () => {
+      userLayoutPreference = "questions";
+      applyLayoutMode();
+      closeMoreMenu();
     });
     document.getElementById("menuItemViewList")?.addEventListener("click", () => {
       userLayoutPreference = "list";
@@ -9383,10 +9885,10 @@ ${issue.body}
     if (elBtnLayoutToggle) {
       elBtnLayoutToggle.addEventListener("click", () => {
         const cur = document.body.getAttribute("data-layout");
-        userLayoutPreference = cur === "kanban" ? "graph" : cur === "graph" ? "list" : "kanban";
+        userLayoutPreference = cur === "kanban" ? "graph" : cur === "graph" ? "human" : cur === "human" ? "all-tasks" : cur === "all-tasks" ? "questions" : cur === "questions" ? "list" : "kanban";
         applyLayoutMode();
         if (host?.toast) {
-          const name = userLayoutPreference === "kanban" ? "Board" : userLayoutPreference === "graph" ? "Graph" : "List";
+          const name = userLayoutPreference === "kanban" ? "Board" : userLayoutPreference === "graph" ? "Graph" : userLayoutPreference === "human" ? "Human Tasks" : userLayoutPreference === "all-tasks" ? "All Tasks" : userLayoutPreference === "questions" ? "Questions" : "List";
           void host.toast({ kind: "info", message: `Switched to ${name} view` });
         }
       });
