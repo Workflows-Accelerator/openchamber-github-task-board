@@ -1,0 +1,26 @@
+<goal>File four tracking issues on GitHub via the REST API, then fix the voice crash where TaskboardManager queries a repository literally named `__all_projects__` (HTTP 404) whenever the desktop task board is in All Projects mode — defensively, with tests, in the chambervoice repo only.</goal>
+<context_files>
+/tmp/opencode/issue-lifecycle-explore-voice/.agents/run/board-lifecycle/explore/voice-seam-map.md
+/workspace/extensions/github-task-board/.agents/run/board-lifecycle/decisions.md
+/tmp/opencode/issue-lifecycle-voice-allprojects/service/taskboard.ts
+/tmp/opencode/issue-lifecycle-voice-allprojects/service/tools.ts
+/tmp/opencode/issue-lifecycle-voice-allprojects/service/config.ts
+/tmp/opencode/issue-lifecycle-voice-allprojects/test/
+</context_files>
+<skills>
+/workspace/config/opencode/.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md
+/workspace/config/opencode/.agents/skills/build/refactoring/surgical-patch/SKILL.md
+/workspace/config/opencode/.agents/skills/build/methodology/test-driven-development/SKILL.md
+</skills>
+<scope>Code changes allowed only under /tmp/opencode/issue-lifecycle-voice-allprojects (the chambervoice repo). Never modify /workspace/extensions/github-task-board/** or /workspace/extensions/chambervoice/** outside your worktree. Also allowed: writing .agents/run/board-lifecycle/portfolio/issue-index.md in your worktree. The GitHub token at /workspace/.git-credentials is a secret: read it, never print or commit it.</scope>
+<criteria>All four issues exist on GitHub with numbered URLs recorded; TaskboardManager never issues a request whose repo path segment is `__all_projects__` or empty; a test proves each of the fixed behaviors and fails against the old code; the full chambervoice test suite is green before and after (or any pre-existing failure is recorded as baseline); every claim in the summary carries a file:line anchor.</criteria>
+<steps>
+<step>Baseline: run the chambervoice test suite (node --test test/*.test.js from your worktree) and record counts. Read the voice-seam-map.md sections on TaskboardManager, and decisions.md D6/D8 before touching anything.</step>
+<step>File four GitHub issues via the REST API against Workflows-Accelerator/openchamber-github-task-board. Authenticate by extracting the token from /workspace/.git-credentials (python or curl; never echo the token). Each issue body must follow the board's issue-body convention: a "### Friendly Title:" line (3-6 plain-English words), an Overview with file:line anchors, Current vs Expected behavior, and "### Acceptance Criteria:" checklist. Issues: (1) BUG: voice taskboard queries 404 in All Projects mode — selected_repo becomes `__all_projects__` (github-task-board/panel/main.ts:926) and TaskboardManager builds https://api.github.com/repos/__all_projects__/issues (chambervoice/service/taskboard.ts:325). (2) RISK: rate-limit backoff only on some request paths (github-task-board/panel/main.ts:1219,1281). (3) RISK: background page streaming re-renders all views and can drop input focus (github-task-board/panel/main.ts:1156,1161). (4) RISK: idle agent sessions auto-move issues to in-review (github-task-board/panel/labels.ts:403-468) — note in the body that its status semantics are under design review and it is filed-only for now.</step>
+<step>Record the four issue numbers, titles, and URLs in .agents/run/board-lifecycle/portfolio/issue-index.md and commit it (chore(portfolio): record filed lifecycle issues).</step>
+<step>Write failing tests first for issue (1), in the chambervoice test style (node --test): (a) when the stored selected_repo is `__all_projects__`, listTasks aggregates across the known repositories instead of requesting the sentinel URL; (b) a mutation (update/close/assign) attempted while the sentinel is selected returns a clear actionable error naming the problem ("board is in All Projects mode; specify a repository") instead of a 404; (c) an unknown or empty repo never produces a `repos//` or `repos/__all_projects__/` request URL. Determine "known repositories" from the guest-storage github-task-board.json structure the board writes (inspect how the board persists repo selection in github-task-board/panel/main.ts around lines 775, 926, 4615-4648 — read-only); if no repository is resolvable, return the same actionable error.</step>
+<step>Implement the smallest fix that makes those tests pass — resolve the repo set at the API-method boundary in TaskboardManager. Do not add a `repo` tool argument (that is a separate tracked decision, D8), do not refactor unrelated methods, do not change the scratchpad contract.</step>
+<step>Run the full suite again; record counts. Then run a hostile pass over your own diff: what breaks when guest-storage is missing, when the board is uninstalled, when the sentinel is written mid-call, when one of several repos returns 404/403? Fix what you find within scope; note the rest.</step>
+<step>Commit with fix(voice): ... referencing the issue (1) number. Nothing is pushed.</step>
+</steps>
+<output>Return a structured block: status; results (issue numbers filed, the fix's core change with file:line); evidence (test commands and counts before/after, and the failing-first test names); learnings (anything surprising about the storage contract or API behavior).</output>
