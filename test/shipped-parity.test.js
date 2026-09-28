@@ -44,7 +44,7 @@ function scanDecl(src, start) {
 
 const JS_FUNCS = [
   'parseOpenQuestions', 'parseHumanTasks', 'parseSubtasks', 'collectHumanTodos',
-  'updateSubtaskInMarkdown', 'updateOpenQuestionInMarkdown',
+  'updateSubtaskInMarkdown', 'updateOpenQuestionInMarkdown', 'answerOpenQuestionInMarkdown',
   'appendSubtaskToMarkdown', 'appendOpenQuestionToMarkdown', 'serializeDraftQuestions',
   'isVagueIdea', 'formatQuestionBadge', 'getIssueTheme', 'extractTaskThemes', 'parseScratchPadThemes',
   'resolveAiIssuePrompt', 'resolveAiAlignmentPrompt', 'buildIssueAttachPayload',
@@ -73,7 +73,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 39);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 40);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -140,6 +140,8 @@ test('markdown mutators: shipped == core', () => {
   assert.equal(Shipped.serializeDraftQuestions('body', ['a', 'b']), Core.serializeDraftQuestions('body', ['a', 'b']));
   assert.equal(Shipped.serializeDraftQuestions('', []), Core.serializeDraftQuestions('', []));
   assert.equal(Shipped.serializeDraftSubtasks('body', ['x']), Core.serializeDraftSubtasks('body', ['x']));
+  const answerBody = '### Open Questions:\n- [ ] Q1?\n- [ ] Q2?';
+  assert.equal(Shipped.answerOpenQuestionInMarkdown(answerBody, 0, 'My answer'), Core.answerOpenQuestionInMarkdown(answerBody, 0, 'My answer'));
 });
 
 test('isVagueIdea and formatQuestionBadge: shipped == core', () => {

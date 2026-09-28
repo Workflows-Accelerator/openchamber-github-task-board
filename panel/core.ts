@@ -75,12 +75,12 @@ export interface IssueGroup {
 
 const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
 
-const questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
-const humanTasksSectionRegex = /^#{1,4}\s*human\s+tasks?(?:\s*:)?/i;
-const testPlanIssueHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
-const testPlanBatchHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
+const questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
+const humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
+const testPlanIssueHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
+const testPlanBatchHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
 
-const headingRegex = /^#{1,4}\s+/;
+const headingRegex = /^[ \t]*#{1,6}\s+/;
 
 export function parseFriendlyTitle(
   body: string | null | undefined,
@@ -90,12 +90,13 @@ export function parseFriendlyTitle(
     return { title: defaultTitle || '', subtitle: null };
   }
 
-  const match = body.match(/(?:^|\r?\n)[ \t]*(?:#{1,4}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const match = cleanBody.match(/(?:^|\r?\n)[ \t]*(?:#{1,6}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
   if (match) {
     let extracted = match[1].trim();
     if (!extracted) {
       const matchIndex = match.index ?? 0;
-      const remainder = body.slice(matchIndex + match[0].length);
+      const remainder = cleanBody.slice(matchIndex + match[0].length);
       const lines = remainder.split(/\r?\n/);
       for (const rawLine of lines) {
         const line = rawLine.trim();
@@ -143,14 +144,15 @@ export function parseFriendlyTitle(
 
 export function parseOpenQuestions(body: string): Subtask[] {
   if (!body) return [];
-  const lines = body.split('\n');
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const lines = cleanBody.split('\n');
   const questions: Subtask[] = [];
   let inQuestionsSection = false;
   let inHumanTasksSection = false;
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
-    const line = rawLine.replace(/\r$/, '');
+    const line = rawLine.replace(/\r/g, '');
     if (headingRegex.test(line)) {
       inQuestionsSection = questionsSectionRegex.test(line);
       inHumanTasksSection = humanTasksSectionRegex.test(line);
@@ -159,24 +161,30 @@ export function parseOpenQuestions(body: string): Subtask[] {
     if (inQuestionsSection) {
       const match = line.match(checklistRegex);
       if (match) {
-        questions.push({
-          id: `question-${i}`,
-          lineIndex: i,
-          completed: match[2].toLowerCase() === 'x',
-          text: match[4].trim(),
-          rawLine,
-        });
+        const text = match[4].trim();
+        if (text) {
+          questions.push({
+            id: `question-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === 'x',
+            text,
+            rawLine,
+          });
+        }
       }
     } else if (!inHumanTasksSection) {
       const match = line.match(checklistRegex);
       if (match && /^\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
-        questions.push({
-          id: `question-${i}`,
-          lineIndex: i,
-          completed: match[2].toLowerCase() === 'x',
-          text: match[4].replace(/^(?:\?|Q:|Question:)\s*/i, '').trim(),
-          rawLine,
-        });
+        const text = match[4].replace(/^(?:\?|Q:|Question:)\s*/i, '').trim();
+        if (text) {
+          questions.push({
+            id: `question-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === 'x',
+            text,
+            rawLine,
+          });
+        }
       }
     }
   }
@@ -185,13 +193,14 @@ export function parseOpenQuestions(body: string): Subtask[] {
 
 export function parseHumanTasks(body: string | null | undefined): Subtask[] {
   if (!body || typeof body !== 'string') return [];
-  const lines = body.split('\n');
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const lines = cleanBody.split('\n');
   const tasks: Subtask[] = [];
   let inHumanTasksSection = false;
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
-    const line = rawLine.replace(/\r$/, '');
+    const line = rawLine.replace(/\r/g, '');
     if (headingRegex.test(line)) {
       inHumanTasksSection = humanTasksSectionRegex.test(line);
       continue;
@@ -199,13 +208,16 @@ export function parseHumanTasks(body: string | null | undefined): Subtask[] {
     if (inHumanTasksSection) {
       const match = line.match(checklistRegex);
       if (match) {
-        tasks.push({
-          id: `human-task-${i}`,
-          lineIndex: i,
-          completed: match[2].toLowerCase() === 'x',
-          text: match[4].trim(),
-          rawLine,
-        });
+        const text = match[4].trim();
+        if (text) {
+          tasks.push({
+            id: `human-task-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === 'x',
+            text,
+            rawLine,
+          });
+        }
       }
     }
   }
@@ -214,14 +226,15 @@ export function parseHumanTasks(body: string | null | undefined): Subtask[] {
 
 export function parseSubtasks(body: string): Subtask[] {
   if (!body) return [];
-  const lines = body.split('\n');
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const lines = cleanBody.split('\n');
   const subtasks: Subtask[] = [];
   let inQuestionsSection = false;
   let inHumanTasksSection = false;
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
-    const line = rawLine.replace(/\r$/, '');
+    const line = rawLine.replace(/\r/g, '');
     if (headingRegex.test(line)) {
       inQuestionsSection = questionsSectionRegex.test(line);
       inHumanTasksSection = humanTasksSectionRegex.test(line);
@@ -235,13 +248,16 @@ export function parseSubtasks(body: string): Subtask[] {
       if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
         continue;
       }
-      subtasks.push({
-        id: `task-${i}`,
-        lineIndex: i,
-        completed: match[2].toLowerCase() === 'x',
-        text: match[4].trim(),
-        rawLine,
-      });
+      const text = match[4].trim();
+      if (text) {
+        subtasks.push({
+          id: `task-${i}`,
+          lineIndex: i,
+          completed: match[2].toLowerCase() === 'x',
+          text,
+          rawLine,
+        });
+      }
     }
   }
   return subtasks;
@@ -325,9 +341,9 @@ export function collectHumanTodos(
         const wtName = typeof s.worktree === 'string' ? s.worktree : (s.worktree?.name || s.worktree?.branch || s.worktree?.directory || '');
         if (wtName && wtName.includes(`issue-${issueObj!.number}`)) return true;
         return false;
-      }) || session[0] || null;
+      }) || (session.length === 1 ? session[0] : null);
     } else {
-      activeSession = session[0] || null;
+      activeSession = session.length === 1 ? session[0] : null;
     }
   } else if (session && typeof session === 'object') {
     activeSession = session;

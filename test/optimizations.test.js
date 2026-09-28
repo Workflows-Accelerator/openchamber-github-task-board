@@ -255,6 +255,7 @@ export function resolveIssueColumn(issue, sessions = []) {
   }
 
   const labelNames = (issue.labels || []).map((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase());
+  if (labelNames.includes('status:needs-human')) return 'needs-human';
   if (labelNames.includes('status:in-review')) return 'in-review';
 
   // Check attached session
@@ -352,6 +353,9 @@ test('resolveIssueColumn correctly resolves status and transitions idle sessions
 export function resolveDefaultTab(issues, sessions = []) {
   if (!issues || issues.length === 0) return 'all';
 
+  const hasNeedsHuman = issues.some((i) => resolveIssueColumn(i, sessions) === 'needs-human');
+  if (hasNeedsHuman) return 'needs-human';
+
   const hasReview = issues.some((i) => resolveIssueColumn(i, sessions) === 'in-review');
   if (hasReview) return 'in-review';
 
@@ -367,14 +371,18 @@ export function resolveDefaultTab(issues, sessions = []) {
   return 'all';
 }
 
-test('resolveDefaultTab prioritizes in-review > in-progress > todo > backlog > all', () => {
+test('resolveDefaultTab prioritizes needs-human > in-review > in-progress > todo > backlog > all', () => {
+  const needsHumanIssue = { number: 0, state: 'open', labels: [{ name: 'status:needs-human' }] };
   const inReviewIssue = { number: 1, state: 'open', labels: [{ name: 'status:in-review' }] };
   const inProgressIssue = { number: 2, state: 'open', labels: [{ name: 'status:in-progress' }] };
   const todoIssue = { number: 3, state: 'open', labels: [{ name: 'status:todo' }] };
   const backlogIssue = { number: 4, state: 'open', labels: [{ name: 'status:backlog' }] };
   const doneIssue = { number: 5, state: 'closed', labels: [] };
 
-  // 1. In review takes top priority
+  // 0. Needs-human takes top priority
+  assert.equal(resolveDefaultTab([doneIssue, backlogIssue, todoIssue, inProgressIssue, inReviewIssue, needsHumanIssue]), 'needs-human');
+
+  // 1. In review takes top priority if no needs-human
   assert.equal(resolveDefaultTab([doneIssue, backlogIssue, todoIssue, inProgressIssue, inReviewIssue]), 'in-review');
 
   // 2. In progress if no review

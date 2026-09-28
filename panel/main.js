@@ -1,12 +1,11 @@
 "use strict";
 (() => {
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
-  var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLBAR_CSS = `
 :root {
   --oc-scrollbar-thumb: color-mix(in srgb, var(--oc-muted, currentColor) 40%, transparent);
@@ -15,62 +14,37 @@
 }
 * {
   scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-:hover, [${GUEST_SCROLLING_ATTRIBUTE}] {
   scrollbar-color: var(--oc-scrollbar-thumb) transparent;
 }
 /* Chromium's standard scrollbar properties otherwise override its pseudo-elements. */
 @supports selector(::-webkit-scrollbar) {
-  *, :hover, [${GUEST_SCROLLING_ATTRIBUTE}] { scrollbar-width: auto; scrollbar-color: auto; }
+  * { scrollbar-width: auto; scrollbar-color: auto; }
   ::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+  :root::-webkit-scrollbar, body::-webkit-scrollbar { background: var(--oc-bg, inherit); }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: transparent;
+    background: var(--oc-scrollbar-thumb);
     border-radius: 999px;
     min-width: 24px;
     min-height: 24px;
   }
-  :hover::-webkit-scrollbar-thumb, [${GUEST_SCROLLING_ATTRIBUTE}]::-webkit-scrollbar-thumb { background: var(--oc-scrollbar-thumb); }
   ::-webkit-scrollbar-thumb:hover { background: var(--oc-scrollbar-thumb-hover); }
   ::-webkit-scrollbar-corner { background: transparent; }
   ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 }
 @media (forced-colors: active) {
-  *, :hover, [${GUEST_SCROLLING_ATTRIBUTE}] { scrollbar-color: auto; }
+  * { scrollbar-color: auto; }
   ::-webkit-scrollbar-thumb, ::-webkit-scrollbar-thumb:hover { background: CanvasText; }
 }
 `;
-  function installGuestScrollbarActivity(doc) {
-    const root = doc.documentElement;
-    if (root.hasAttribute("data-oc-scrollbar-activity"))
-      return;
-    root.setAttribute("data-oc-scrollbar-activity", "");
-    const timers = /* @__PURE__ */ new WeakMap();
-    doc.addEventListener("scroll", (event) => {
-      const target = event.target === doc ? root : event.target;
-      if (!(target instanceof Element))
-        return;
-      if (!target.hasAttribute("data-oc-scrolling"))
-        target.setAttribute("data-oc-scrolling", "");
-      const pending = timers.get(target);
-      if (pending !== void 0)
-        clearTimeout(pending);
-      timers.set(target, setTimeout(() => {
-        timers.delete(target);
-        target.removeAttribute("data-oc-scrolling");
-      }, 1e3));
-    }, { capture: true, passive: true });
-  }
-  var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -84,8 +58,6 @@
   var isGuestMessageItem = (item) => item !== null && item.kind === "message";
   var isGuestSessionItem = (item) => item !== null && item.kind === "session";
   var isGuestAttachItem = (item) => item !== null && item.kind !== "message" && item.kind !== "session";
-  var GUEST_COMMIT_SHA = /^[0-9a-f]{7,64}$/i;
-  var isGuestCommitSha = (value) => GUEST_COMMIT_SHA.test(value);
   var GUEST_TOAST_MAX = 500;
   var GUEST_CLIPBOARD_TEXT_MAX = 32e3;
   var GUEST_COMPOSE_TEXT_MAX = 16e3;
@@ -115,7 +87,6 @@
   var GUEST_ITEM_MESSAGE_TEXT_MAX = 2e5;
   var GUEST_ITEM_SESSION_MAX = 2e6;
   var GUEST_BADGE_MAX = 999;
-  var GUEST_FRAME_HEIGHT_MAX = 1e4;
   var GUEST_RESOLVE_ERROR_MAX = 500;
   var HOST_REQUEST_ERROR_CODES = [
     "HOST_UNAVAILABLE",
@@ -135,8 +106,7 @@
     "FILE_TOO_LARGE",
     "DENIED",
     "NO_MODEL",
-    "MODEL_FAILED",
-    "UNSUPPORTED"
+    "MODEL_FAILED"
   ];
   var SERVICE_STATUS_VALUES = ["stopped", "starting", "ready", "failed"];
   var hostRequestErrorCodeSet = new Set(HOST_REQUEST_ERROR_CODES);
@@ -216,11 +186,6 @@
       return null;
     return Math.min(GUEST_BADGE_MAX, Math.max(0, Math.round(count)));
   };
-  var clampFrameHeight = (height) => {
-    if (!Number.isFinite(height))
-      return 0;
-    return Math.min(GUEST_FRAME_HEIGHT_MAX, Math.max(0, Math.ceil(height)));
-  };
   var guestFileScope = (path) => path.startsWith("/") || path === "~" || path.startsWith("~/") ? "filesystem" : "project";
   var isGuestFilePath = (value) => value.length > 0 && value.length <= GUEST_FILE_PATH_MAX && !value.includes("\0") && !value.includes("\\");
   var ATTACH_PROVIDER_ID = /^[a-z][a-z0-9-]*$/;
@@ -298,7 +263,7 @@
     return wire;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var HostRequestError = class extends Error {
     code;
     constructor(code, message) {
@@ -696,13 +661,6 @@
         id: nextId(ids),
         payload: { url }
       }),
-      openCommit: (sha) => isGuestCommitSha(sha) ? request({
-        channel: OPENCHAMBER_SDK_CHANNEL,
-        v: OPENCHAMBER_SDK_API_VERSION,
-        type: "open-commit",
-        id: nextId(ids),
-        payload: { sha }
-      }) : Promise.reject(new HostRequestError("HOST_REJECTED", "Commit id must be 7 to 64 hex characters.")),
       openSurface: (surfaceId) => request({
         channel: OPENCHAMBER_SDK_CHANNEL,
         v: OPENCHAMBER_SDK_API_VERSION,
@@ -923,13 +881,6 @@
         id: nextId(ids),
         payload: { count: clampBadgeCount(count) }
       }),
-      setHeight: (height) => request({
-        channel: OPENCHAMBER_SDK_CHANNEL,
-        v: OPENCHAMBER_SDK_API_VERSION,
-        type: "resize",
-        id: nextId(ids),
-        payload: { height: clampFrameHeight(height) }
-      }),
       dispose: () => {
         for (const subscriptionId of workspaceListeners.keys()) {
           post({ ...envelope, type: "workspace-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
@@ -955,7 +906,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1005,7 +956,7 @@
     return { requestId, action, parameters, context: readContext(context) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1016,9 +967,6 @@
   var SURFACE_HEIGHT_HEADER = "x-surface-height";
   var SURFACE_TITLE_HEADER = "x-surface-title";
   var SURFACE_AGENT_ACTIVE_HEADER = "x-surface-agent-active";
-  var SURFACE_VIEWER_HEADER = "x-surface-viewer";
-  var SURFACE_FRAME_SEQ_HEADER = "x-surface-frame-seq";
-  var SURFACE_VIEWER_CONTROLS_HEADER = "x-surface-viewer-controls";
   var SURFACE_FRAME_MIMES = ["image/jpeg", "image/png"];
   var SURFACE_FRAME_WAIT_MS = 25e3;
   var SURFACE_FRAME_MAX_BYTES = 8e6;
@@ -1101,13 +1049,10 @@
     }
     if (Object(parsed) !== parsed || parsed === null)
       return null;
-    const { controller, viewer } = parsed;
+    const { controller } = parsed;
     if (!isText(controller) || !CONTROLLERS.has(controller))
       return null;
-    const notice = { controller };
-    if (controller === "user" && isText(viewer) && viewer.length > 0)
-      notice.viewer = viewer;
-    return notice;
+    return { controller };
   };
   var readSurfaceResizeRequest = (body) => {
     let parsed;
@@ -1126,7 +1071,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1201,7 +1146,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -1216,7 +1161,6 @@
       }
       return;
     }
-    installGuestScrollbarActivity(document);
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = css;
@@ -1260,7 +1204,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1462,7 +1406,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -1510,7 +1454,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1558,7 +1502,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -1582,7 +1526,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return node;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1643,7 +1587,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -1677,7 +1621,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return target?.id ?? null;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -1712,7 +1656,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -1751,7 +1695,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -1908,7 +1852,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1952,7 +1896,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2012,7 +1956,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2037,7 +1981,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2125,7 +2069,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2167,7 +2111,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2196,7 +2140,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2242,7 +2186,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2268,7 +2212,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2311,7 +2255,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2417,7 +2361,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -3119,7 +3063,7 @@ ${placeholder}
       name: "Draft",
       displayName: "Draft",
       color: "#6e7681",
-      description: "Initial ideas or drafting phase requiring further clarification"
+      description: "Passive ideas or notes; unblocked ideas awaiting drafting or alignment"
     },
     "backlog": {
       id: "backlog",
@@ -3175,7 +3119,7 @@ ${placeholder}
       name: "Done",
       displayName: "Done",
       color: "#238636",
-      description: "Completed or closed"
+      description: "Completed and validated by a human (no agent self-close)"
     }
   };
   function isSystemLabel(labelName) {
@@ -3615,21 +3559,22 @@ ${placeholder}
     return (text || "").toString().toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, maxLen);
   }
   var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
-  var questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
-  var humanTasksSectionRegex = /^#{1,4}\s*human\s+tasks?(?:\s*:)?/i;
-  var testPlanIssueHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
-  var testPlanBatchHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
-  var headingRegex = /^#{1,4}\s+/;
+  var questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
+  var humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
+  var testPlanIssueHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
+  var testPlanBatchHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
+  var headingRegex = /^[ \t]*#{1,6}\s+/;
   function parseFriendlyTitle(body, defaultTitle) {
     if (!body || typeof body !== "string") {
       return { title: defaultTitle || "", subtitle: null };
     }
-    const match = body.match(/(?:^|\r?\n)[ \t]*(?:#{1,4}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const match = cleanBody.match(/(?:^|\r?\n)[ \t]*(?:#{1,6}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
     if (match) {
       let extracted = match[1].trim();
       if (!extracted) {
         const matchIndex = match.index ?? 0;
-        const remainder = body.slice(matchIndex + match[0].length);
+        const remainder = cleanBody.slice(matchIndex + match[0].length);
         const lines = remainder.split(/\r?\n/);
         for (const rawLine of lines) {
           const line = rawLine.trim();
@@ -3662,13 +3607,14 @@ ${placeholder}
   }
   function parseOpenQuestions(body) {
     if (!body) return [];
-    const lines = body.split("\n");
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const lines = cleanBody.split("\n");
     const questions = [];
     let inQuestionsSection = false;
     let inHumanTasksSection = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
-      const line = rawLine.replace(/\r$/, "");
+      const line = rawLine.replace(/\r/g, "");
       if (headingRegex.test(line)) {
         inQuestionsSection = questionsSectionRegex.test(line);
         inHumanTasksSection = humanTasksSectionRegex.test(line);
@@ -3677,24 +3623,30 @@ ${placeholder}
       if (inQuestionsSection) {
         const match = line.match(checklistRegex);
         if (match) {
-          questions.push({
-            id: `question-${i}`,
-            lineIndex: i,
-            completed: match[2].toLowerCase() === "x",
-            text: match[4].trim(),
-            rawLine
-          });
+          const text = match[4].trim();
+          if (text) {
+            questions.push({
+              id: `question-${i}`,
+              lineIndex: i,
+              completed: match[2].toLowerCase() === "x",
+              text,
+              rawLine
+            });
+          }
         }
       } else if (!inHumanTasksSection) {
         const match = line.match(checklistRegex);
         if (match && /^\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
-          questions.push({
-            id: `question-${i}`,
-            lineIndex: i,
-            completed: match[2].toLowerCase() === "x",
-            text: match[4].replace(/^(?:\?|Q:|Question:)\s*/i, "").trim(),
-            rawLine
-          });
+          const text = match[4].replace(/^(?:\?|Q:|Question:)\s*/i, "").trim();
+          if (text) {
+            questions.push({
+              id: `question-${i}`,
+              lineIndex: i,
+              completed: match[2].toLowerCase() === "x",
+              text,
+              rawLine
+            });
+          }
         }
       }
     }
@@ -3702,12 +3654,13 @@ ${placeholder}
   }
   function parseHumanTasks(body) {
     if (!body || typeof body !== "string") return [];
-    const lines = body.split("\n");
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const lines = cleanBody.split("\n");
     const tasks = [];
     let inHumanTasksSection = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
-      const line = rawLine.replace(/\r$/, "");
+      const line = rawLine.replace(/\r/g, "");
       if (headingRegex.test(line)) {
         inHumanTasksSection = humanTasksSectionRegex.test(line);
         continue;
@@ -3715,13 +3668,16 @@ ${placeholder}
       if (inHumanTasksSection) {
         const match = line.match(checklistRegex);
         if (match) {
-          tasks.push({
-            id: `human-task-${i}`,
-            lineIndex: i,
-            completed: match[2].toLowerCase() === "x",
-            text: match[4].trim(),
-            rawLine
-          });
+          const text = match[4].trim();
+          if (text) {
+            tasks.push({
+              id: `human-task-${i}`,
+              lineIndex: i,
+              completed: match[2].toLowerCase() === "x",
+              text,
+              rawLine
+            });
+          }
         }
       }
     }
@@ -3729,13 +3685,14 @@ ${placeholder}
   }
   function parseSubtasks(body) {
     if (!body) return [];
-    const lines = body.split("\n");
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const lines = cleanBody.split("\n");
     const subtasks = [];
     let inQuestionsSection = false;
     let inHumanTasksSection = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
-      const line = rawLine.replace(/\r$/, "");
+      const line = rawLine.replace(/\r/g, "");
       if (headingRegex.test(line)) {
         inQuestionsSection = questionsSectionRegex.test(line);
         inHumanTasksSection = humanTasksSectionRegex.test(line);
@@ -3749,13 +3706,16 @@ ${placeholder}
         if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
           continue;
         }
-        subtasks.push({
-          id: `task-${i}`,
-          lineIndex: i,
-          completed: match[2].toLowerCase() === "x",
-          text: match[4].trim(),
-          rawLine
-        });
+        const text = match[4].trim();
+        if (text) {
+          subtasks.push({
+            id: `task-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === "x",
+            text,
+            rawLine
+          });
+        }
       }
     }
     return subtasks;
@@ -3822,9 +3782,9 @@ ${placeholder}
           const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
           if (wtName && wtName.includes(`issue-${issueObj.number}`)) return true;
           return false;
-        }) || session[0] || null;
+        }) || (session.length === 1 ? session[0] : null);
       } else {
-        activeSession = session[0] || null;
+        activeSession = session.length === 1 ? session[0] : null;
       }
     } else if (session && typeof session === "object") {
       activeSession = session;
@@ -6560,7 +6520,7 @@ Blocked by ${blockerRef}`;
     const isSessionIdle = Boolean(session && session.activity === "idle");
     if (labelNames.includes("status:in-progress")) {
       if (isSessionIdle) {
-        return "in-review";
+        return "needs-human";
       }
       if (isSessionWaiting) {
         return "needs-human";
@@ -6611,7 +6571,7 @@ Blocked by ${blockerRef}`;
         return "needs-human";
       }
       if (isSessionIdle) {
-        return "in-review";
+        return "needs-human";
       }
     }
     return "todo";

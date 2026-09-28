@@ -4,6 +4,9 @@ import {
   parseHumanTasks,
   collectHumanTodos,
   normalizeGithubIssues,
+  parseFriendlyTitle,
+  parseOpenQuestions,
+  parseSubtasks,
 } from '../panel/core.ts';
 
 test('(a) parseHumanTasks parses unchecked and checked checkboxes under ### Human Tasks:', () => {
@@ -36,13 +39,18 @@ Some trailing text.
   assert.equal(tasks[4].completed, false);
 });
 
-test('(a) parseHumanTasks accepts heading spellings family and no others', () => {
+test('(a) parseHumanTasks accepts heading spellings family (h1-h6, whitespace, tabs) and rejects others', () => {
   const headings = [
     '# Human Tasks:',
     '## Human Tasks',
     '### Human Tasks:',
     '#### Human Task:',
     '### Human Task',
+    '##### Human Tasks:',
+    '###### Human Tasks:',
+    '  ### Human Tasks:',
+    '\t## Human Tasks:',
+    '   ###### Human Tasks:',
   ];
 
   for (const h of headings) {
@@ -54,7 +62,7 @@ test('(a) parseHumanTasks accepts heading spellings family and no others', () =>
 
   // Non-matching headings must not be parsed
   const nonHeadings = [
-    '##### Human Tasks:', // level 5 heading exceeds 1-4
+    '####### Human Tasks:', // level 7 heading exceeds 1-6
     '### Other Tasks:',
     '### Actionable Subtasks Checklist:',
     '### Human Todos:',
@@ -307,4 +315,162 @@ test('hostile review edge cases: cross-section isolation, CRLF in subtasks/quest
   // 4. collectHumanTodos with empty array session
   assert.deepEqual(collectHumanTodos(null, []), []);
   assert.deepEqual(collectHumanTodos({ number: 99, body: '' }, []), []);
+});
+
+test('duplicate Human Tasks sections are parsed and items collected', () => {
+  const body = `
+### Human Tasks:
+- [ ] Task from section 1
+
+### Overview
+Some text in between.
+
+### Human Tasks:
+- [ ] Task from section 2
+- [x] Done task from section 2
+- [ ] Task from section 1
+`;
+  const parsed = parseHumanTasks(body);
+  assert.equal(parsed.length, 4);
+  assert.equal(parsed[0].text, 'Task from section 1');
+  assert.equal(parsed[1].text, 'Task from section 2');
+  assert.equal(parsed[2].text, 'Done task from section 2');
+  assert.equal(parsed[3].text, 'Task from section 1');
+
+  // collectHumanTodos deduplicates across sections in order
+  const todos = collectHumanTodos(body);
+  assert.deepEqual(todos, [
+    { text: 'Task from section 1', source: 'human-task', done: false },
+    { text: 'Task from section 2', source: 'human-task', done: false },
+  ]);
+});
+
+test('parsers strip leading UTF-8 BOM (\\uFEFF)', () => {
+  const bomBody = '\uFEFF### Friendly Title: BOM Title\n\n### Human Tasks:\n- [ ] BOM human task\n\n### Open Questions:\n- [ ] BOM question?\n\n### Actionable Subtasks Checklist:\n- [ ] BOM subtask\n';
+
+  const title = parseFriendlyTitle(bomBody, 'fallback');
+  assert.equal(title.title, 'BOM Title');
+
+  const humanTasks = parseHumanTasks(bomBody);
+  assert.equal(humanTasks.length, 1);
+  assert.equal(humanTasks[0].text, 'BOM human task');
+
+  const questions = parseOpenQuestions(bomBody);
+  assert.equal(questions.length, 1);
+  assert.equal(questions[0].text, 'BOM question?');
+
+  const subtasks = parseSubtasks(bomBody);
+  assert.equal(subtasks.length, 1);
+  assert.equal(subtasks[0].text, 'BOM subtask');
+});
+
+test('parsers ignore empty and whitespace-only checklist items', () => {
+  const body = `
+### Human Tasks:
+- [ ]
+- [ ]    
+- [x] \t  
+- [ ] Valid task
+
+### Open Questions:
+- [ ]   
+- [x]
+- [ ] Valid question?
+
+### Actionable Subtasks Checklist:
+- [ ]   
+- [x] \t
+- [ ] Valid subtask
+`;
+  const tasks = parseHumanTasks(body);
+  assert.equal(tasks.length, 1);
+  assert.equal(tasks[0].text, 'Valid task');
+
+  const questions = parseOpenQuestions(body);
+  assert.equal(questions.length, 1);
+  assert.equal(questions[0].text, 'Valid question?');
+
+  const subtasks = parseSubtasks(body);
+  assert.equal(subtasks.length, 1);
+  assert.equal(subtasks[0].text, 'Valid subtask');
+});
+
+test('parsers handle mixed CRLF and stray \\r cleanly', () => {
+  const mixedBody = "### Human Tasks:\r\n- [ ] Task with\rmixed CR\r\n- [x] Task two\r\n\r### Open Questions:\r\n- [ ] Question\rwith CR?\r\n\r### Actionable Subtasks Checklist:\r\n- [ ] Subtask\rwith CR\r\n";
+
+  const tasks = parseHumanTasks(mixedBody);
+  assert.equal(tasks.length, 2);
+  assert.equal(tasks[0].text, 'Task withmixed CR');
+  assert.equal(tasks[1].text, 'Task two');
+
+  const questions = parseOpenQuestions(mixedBody);
+  assert.equal(questions.length, 1);
+  assert.equal(questions[0].text, 'Questionwith CR?');
+
+  const subtasks = parseSubtasks(mixedBody);
+  assert.equal(subtasks.length, 1);
+  assert.equal(subtasks[0].text, 'Subtaskwith CR');
+});
+
+test('parsers preserve HTML entities in checklist items', () => {
+  const body = `
+### Human Tasks:
+- [ ] Review PR &amp; approve &lt;urgent&gt;
+- [x] Check &quot;production&quot; credentials
+`;
+  const tasks = parseHumanTasks(body);
+  assert.equal(tasks.length, 2);
+  assert.equal(tasks[0].text, 'Review PR &amp; approve &lt;urgent&gt;');
+  assert.equal(tasks[1].text, 'Check &quot;production&quot; credentials');
+});
+
+test('collectHumanTodos multi-session fallback: matches bound issue and prevents cross-issue hijack', () => {
+  const issue10 = { number: 10, body: '### Overview\nWork in progress' };
+
+  // Multiple sessions bound to other issues — must NOT hijack session[0]
+  const otherSessions = [
+    { id: 's-42', title: 'Fix bug #42', activity: 'waiting-permission', reason: 'Access DB' },
+    { id: 's-99', title: 'Feature #99', activity: 'waiting-question', reason: 'Pick port' },
+  ];
+  const todosNoMatch = collectHumanTodos(issue10, otherSessions);
+  assert.deepEqual(todosNoMatch, [], 'Multiple non-matching sessions must not hijack session[0]');
+
+  // Single session fallback DOES apply when session.length === 1
+  const singleSession = [
+    { id: 's-generic', activity: 'waiting-permission', reason: 'Run build' },
+  ];
+  const todosSingle = collectHumanTodos(issue10, singleSession);
+  assert.deepEqual(todosSingle, [
+    { text: 'Agent waiting for permission: Run build', source: 'session-waiting', done: false },
+  ]);
+
+  // Multiple sessions where one matches by title
+  const sessionsWithMatchingTitle = [
+    { id: 's-42', title: 'Fix bug #42', activity: 'waiting-permission', reason: 'Access DB' },
+    { id: 's-10', title: 'Task #10 implementation', activity: 'waiting-question', reason: 'Confirm schema' },
+  ];
+  const todosTitleMatch = collectHumanTodos(issue10, sessionsWithMatchingTitle);
+  assert.deepEqual(todosTitleMatch, [
+    { text: 'Agent waiting for question: Confirm schema', source: 'session-waiting', done: false },
+  ]);
+
+  // Multiple sessions where one matches by worktree
+  const sessionsWithMatchingWorktree = [
+    { id: 's-42', title: 'Unrelated', activity: 'waiting-permission', worktree: 'user/issue-42' },
+    { id: 's-10', title: 'Unrelated', activity: 'waiting-permission', reason: 'Need token', worktree: { name: 'issue-10-core' } },
+  ];
+  const todosWorktreeMatch = collectHumanTodos(issue10, sessionsWithMatchingWorktree);
+  assert.deepEqual(todosWorktreeMatch, [
+    { text: 'Agent waiting for permission: Need token', source: 'session-waiting', done: false },
+  ]);
+
+  // Multiple sessions where one matches by items
+  const sessionsWithMatchingItems = [
+    { id: 's-42', title: 'Unrelated', activity: 'waiting-permission', items: [{ id: '42' }] },
+    { id: 's-10', title: 'Unrelated', activity: 'waiting-permission', reason: 'Approve run', items: [{ id: '10' }] },
+  ];
+  const todosItemsMatch = collectHumanTodos(issue10, sessionsWithMatchingItems);
+  assert.deepEqual(todosItemsMatch, [
+    { text: 'Agent waiting for permission: Approve run', source: 'session-waiting', done: false },
+  ]);
 });

@@ -29,18 +29,19 @@ Checkboxes `- [ ]`. The definition of done, phrased testably. This is what the h
 Checkboxes `- [ ]`. The agent's own work steps (parse: `parseSubtasks`, `panel/core.ts`).
 
 ### 2.5 `### Open Questions:`
-Checkboxes `- [ ]`, each phrased as a question needing human alignment. Unchecked = unanswered. Answering writes the answer inline and checks the box (`answerOpenQuestionInMarkdown`, `panel/core.ts`). Unanswered questions appear in the Questions view REGARDLESS of the issue's status column.
+Checkboxes `- [ ]`, each phrased as a question needing human alignment. Items must be **self-contained prose** (chambervoice reads raw issue bodies over REST and sees no drawer metadata). Unchecked = unanswered. Answering writes the answer inline and checks the box (`answerOpenQuestionInMarkdown`, `panel/core.ts`). Unanswered questions appear in the Questions view REGARDLESS of the issue's status column.
 
 ### 2.6 `### Human Tasks:` (NEW in v1 — decision D1)
 Checkboxes `- [ ]`. Each item is ONE concrete action a human must take. Rules:
 - Verb first: "Approve ...", "Grant access to ...", "Answer: ...", "Review PR #N", "Merge ...", "Deploy ...", "Run ...".
-- Resolvable by a human without further context in one sitting.
+- Resolvable by a human without further context in one sitting; written as **self-contained prose** (voice reads raw issue bodies over REST without drawer metadata).
 - Written/updated by the agent AT THE MOMENT it blocks on a human or hands off for validation — not before, not after.
 - Checked = the human did it. The agent may remove stale items once they no longer apply, but never checks a box on the human's behalf.
 Parser: `parseHumanTasks` (`panel/core.ts`). Extraction: `collectHumanTodos` (`panel/core.ts`), see Section 3.
 
 ### 2.7 `## Test Plan (Issue)` / `## Test Plan (Batch)` and `Blocked by #N`
 Existing conventions (test plans: `panel/main.ts` and `panel/core.ts`; dependency edges: `panel/core.ts` dependency parsing). Unchanged in v1.
+- **Cross-repo dependencies**: Cross-repo dependencies must use **full URLs** (e.g. `Blocked by https://github.com/owner/repo/issues/123`), never `#N` shorthand which causes wrong-repo links.
 
 ## 3. Human to-do extraction — `collectHumanTodos(issue, session?)`
 
@@ -107,9 +108,10 @@ Human to-do list scope (decision D3): every issue in `needs-human` (any waiting 
 
 Columns (`panel/types.ts`): draft, backlog, todo, planned, in-progress, in-review, needs-human, done.
 
+- **draft** — passive ideas or notes awaiting drafting or alignment. Passive ideas stay in `status:draft` (they surface via the Questions view when questions exist).
 - **in-progress** — agent session actively working.
 - **in-review** — THE AI STEP: the agent is reviewing its own finished work (hostile review gate). Set by explicit `status:in-review` label. REWRITES the old meaning "awaiting human review or PR validation" (`panel/labels.ts`).
-- **needs-human** — anything awaiting a human: permission, answers/alignment, or final validation. This is the human work queue.
+- **needs-human** — anything awaiting a human: permission, answers/alignment, or final validation. Issues actively blocked awaiting alignment sit in `status:needs-human` (not draft). This is the human work queue.
 - **done** — validated by a human. No agent closes its own issue.
 
 Auto-transitions (`panel/labels.ts`, reconciler `StatusReconciler`):

@@ -61,6 +61,29 @@ test('8-stage status label constants and metadata exist', () => {
   }
 });
 
+test('STATUS_METADATA descriptions align with issue-body-contract v1', () => {
+  const draftMeta = STATUS_METADATA['draft'];
+  assert.ok(
+    draftMeta.description.toLowerCase().includes('passive ideas') ||
+    draftMeta.description.toLowerCase().includes('notes'),
+    'draft description must state passive ideas/notes'
+  );
+
+  const doneMeta = STATUS_METADATA['done'];
+  assert.ok(
+    doneMeta.description.toLowerCase().includes('human') &&
+    (doneMeta.description.toLowerCase().includes('no agent self-close') || doneMeta.description.toLowerCase().includes('validated')),
+    'done description must reflect human validation, no agent self-close'
+  );
+
+  const inReviewMeta = STATUS_METADATA['in-review'];
+  assert.ok(
+    inReviewMeta.description.toLowerCase().includes('hostile review') ||
+    inReviewMeta.description.toLowerCase().includes('ai step'),
+    'in-review description must reflect AI review step'
+  );
+});
+
 test('a) All 8 columns resolve correctly according to labels and session states', () => {
   // 1. Closed or status:done -> 'done'
   const closedIssue = { number: 1, state: 'closed', labels: [] };

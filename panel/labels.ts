@@ -104,7 +104,7 @@ export const STATUS_METADATA: Record<ColumnId, StatusLabelMetadata> = {
     name: 'Draft',
     displayName: 'Draft',
     color: '#6e7681',
-    description: 'Initial ideas or drafting phase requiring further clarification',
+    description: 'Passive ideas or notes; unblocked ideas awaiting drafting or alignment',
   },
   'backlog': {
     id: 'backlog',
@@ -160,7 +160,7 @@ export const STATUS_METADATA: Record<ColumnId, StatusLabelMetadata> = {
     name: 'Done',
     displayName: 'Done',
     color: '#238636',
-    description: 'Completed or closed',
+    description: 'Completed and validated by a human (no agent self-close)',
   },
 };
 

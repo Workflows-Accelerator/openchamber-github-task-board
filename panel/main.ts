@@ -1772,7 +1772,7 @@ export function resolveIssueColumn(
   // Explicit status:in-progress label
   if (labelNames.includes('status:in-progress')) {
     if (isSessionIdle) {
-      return 'in-review';
+      return 'needs-human';
     }
     if (isSessionWaiting) {
       return 'needs-human';
@@ -1833,7 +1833,7 @@ export function resolveIssueColumn(
       return 'needs-human';
     }
     if (isSessionIdle) {
-      return 'in-review';
+      return 'needs-human';
     }
   }
 
