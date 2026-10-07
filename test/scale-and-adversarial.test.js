@@ -155,7 +155,6 @@ test('adversarial defense: null, undefined, malformed, and huge markdown data ne
       state: 'open',
       html_url: '',
       labels: [],
-      user: undefined,
       assignees: [],
       comments: 0,
       created_at: '',
