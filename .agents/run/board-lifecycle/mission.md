@@ -44,7 +44,7 @@ ALL RESOLVED — see decisions.md (D1-D8, aligned 2026-09-26). Remaining fork: n
 
 ## Workstream status (updated 2026-10-07)
 
-State: building (batch 2 bounded repair 1 after both L4 HALTs); awaiting_human (batch 1). Alignment: CONFIRMED for lifecycle + D11 efficiency decisions; no approval for feature/freshness loss. See decisions.md, specs/rate-limit-manager-review.md and status-l4-halts-2026-10-07.md.
+State: building (voice repair 3 + board repair-2 L4 review in flight); awaiting_human (batch 1). Alignment: CONFIRMED for lifecycle + D11 efficiency decisions; no approval for feature/freshness loss. See decisions.md, specs/rate-limit-manager-review.md and status-l4-halts-2026-10-07.md.
 
 | Track | Where | Session | State |
 | --- | --- | --- | --- |
@@ -57,25 +57,28 @@ State: building (batch 2 bounded repair 1 after both L4 HALTs); awaiting_human (
 | Board V2 + D11 hostile review | board root (read-only), l4-board-v2-ratelimit.md | ses_af99b63ee4e5d43f2caed88c ended | HALT, 14 reported findings; simulation evidence caveats recorded |
 | Board V2 + D11 repair 1 | .worktrees/team-dev-v2-binding-ratelimit-review-repair, fix/v2-binding-ratelimit-review-repair, 00ac1b9 | ses_5872aebae42f0424f9288287 ended | Claims F-01..F-14 fixed, 265 tests; NOT accepted; manager checked commit/diff/clean state |
 | Board repair 1 hostile review | same worktree (read-only), briefs/board-v2-repair-1-l4.md | ses_3c63be63d8cbb73cde19dac3 ended | PROCEED-WITH-CONDITIONS; 14 originals verified; 4 residual: D-01 storage JSON (HIGH), D-02 sentinel PATCH, D-03 304 page skip, D-04 silent truncation |
-| Board repair 2 bounded fixes | same worktree at 00ac1b9, briefs/board-v2-repair-2-fixes.md | ses_5c0356f5e154169806b9fdea | Running; engineer; exactly D-01..D-04 with production-path red/green tests |
+| Board repair 2 bounded fixes | same worktree at 00ac1b9, briefs/board-v2-repair-2-fixes.md | ses_5c0356f5e154169806b9fdea ended | 4 fixes committed bea33c0/0c3b60a/f2583e2/147d8dd + tests a8014aa + docs bca2bc9; 269 tests claimed; manager checked chain/diff/clean state; NOT accepted |
+| Board repair 2 hostile review | same worktree (read-only), briefs/board-v2-repair-2-l4.md | ses_edc44a2c528758b04a5d3a20 | Running; engineer; delta 00ac1b9..bca2bc9 + collateral sweep of F-01..F-14 |
 | Voice V2 + D11 efficiency build | chambervoice root feat/v2-compat-and-ratelimit, cd6ab18 | ses_6a5a8749c6759270a40cbafd ended | NOT accepted; 437 tests green but actual protocol defects found |
 | Voice V2 + D11 hostile review | chambervoice root (read-only), l4-voice-v2-ratelimit.md | ses_fc89160228e764868dff56b1 ended | HALT; positive real reply proof missing |
 | Voice V2 + D11 repair 1 | chambervoice/.worktrees/team-dev-v2-ratelimit-review-repair, fix/v2-ratelimit-review-repair, 252225a | ses_1797615df11da447fd7d5863 ended | Claims 9 findings + extras fixed, 453 tests; NOT accepted; manager checked commit/diff/clean state |
 | Voice repair 1 hostile review | same worktree (read-only), briefs/voice-v2-repair-1-l4.md | ses_e8f6110f2851bb374fe3c0bd ended | PROCEED-WITH-CONDITIONS; 3 residual defects: integer field type, 404 masking fall-through, partial-cache poisoning |
 | Voice repair 2 bounded fixes | same worktree at 252225a, briefs/voice-v2-repair-2-fixes.md | ses_e0f2d7ad18363e33a02e08a4 ended | 3 fixes committed f58e11b/67f955f/d582374 + docs a5ddb77; 459 tests claimed; manager checked chain/diff/clean state; NOT accepted |
-| Voice repair 2 hostile review | same worktree (read-only), briefs/voice-v2-repair-2-l4.md | ses_6d098c99a8d60ed4cbb8364e | Running; engineer; delta 252225a..a5ddb77 + collateral sweep |
+| Voice repair 2 hostile review | same worktree (read-only), briefs/voice-v2-repair-2-l4.md | ses_6d098c99a8d60ed4cbb8364e ended | PROCEED-WITH-CONDITIONS; 3 fixes verified + 9-item collateral sweep PASS + red/green on base; 1 residual: external form field type rejected (MEDIUM), blocks L5 |
+| Voice repair 3 bounded fix | same worktree at a5ddb77, briefs/voice-v2-repair-3-fix.md | ses_de7b947c163f3c1c57b71b9f | Running; engineer; exactly the external-field skip with red/green test |
 | Visual polish + focus drop #19 | board | — | Parked behind current frontier |
 | Voice human_todo + explicit repo argument | chambervoice | — | Deferred (D8); no redesign approval assumed |
 
 Proof index: verifications/proof.md. Active repair briefs: briefs/voice-v2-ratelimit-repair-1.md and briefs/board-v2-ratelimit-repair-1.md. All report receipts must exclude login secrets, tokens, and cookies.
 
 ### Immediate next moves
-1. Await repair wakes; do not duplicate or re-prompt ended sessions. Next delegate after each build must be fresh read-only hostile review of its exact commit.
-2. Fold in real trade-offs (GitHub deletion/transfer detection, SDK conditional transport) before alignment decisions; no silent no-loss claim or new polling/timeout policy.
-3. Positive form/permission reply proof is NOT RUN: empty pending lists prove discovery only. Safe isolated actual V2 fixtures may be planned/run within worker brief bounds; shared-host session mutation is NOT authorized.
-4. Batch 1 verdicts are pending (l5-batch-1.md); do not repeat the full ask. Root served checkouts contain rejected batch 2 code, so original preview is not validated. Batch 2 human review waits for all L4 members.
-5. Only the USER closes/moves issues to Done and pushes. Prior text promising agent closure is superseded.
-6. The worktree skill's hardcoded DB path is adapted to HOME at use time, per manager guardrail; shared skill file is NOT to be edited. Manager shell denial on git check-ignore recorded; worktree preparation delegated without a manager workaround.
+1. Running: board repair-2 L4 review ses_edc44a2c528758b04a5d3a20 (read-only, delta 00ac1b9..bca2bc9) and voice repair-3 ses_de7b947c163f3c1c57b71b9f (external-field skip, red/green). Do not duplicate or re-prompt ended sessions.
+2. When voice repair-3 returns: fresh L4 delta review of its exact commits before any acceptance (third and final bounded fix round; if another defect round appears, stop and ask the user).
+3. Fold in real trade-offs (GitHub deletion/transfer detection, SDK conditional transport) before alignment decisions; no silent no-loss claim or new polling/timeout policy.
+4. Positive form/permission reply proof is NOT RUN: empty pending lists prove discovery only. Safe isolated actual V2 fixtures may be planned/run within worker brief bounds; shared-host session mutation is NOT authorized.
+5. Batch 1 verdicts are pending (l5-batch-1.md); do not repeat the full ask. Root served checkouts contain rejected batch 2 code, so original preview is not validated. Batch 2 human review waits for all L4 members passing, then ONE ask with numbered click-through + blind spots + the two open trade-off decisions (deletion/transfer freshness; PAT for conditional reads).
+6. Only the USER closes/moves issues to Done and pushes. Prior text promising agent closure is superseded.
+7. The worktree skill's hardcoded DB path is adapted to HOME at use time, per manager guardrail; shared skill file is NOT to be edited. Manager shell denial on git check-ignore recorded; worktree preparation delegated without a manager workaround.
 
 ## Roadmap beyond this iteration
 

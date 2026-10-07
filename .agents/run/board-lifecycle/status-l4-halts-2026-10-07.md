@@ -58,6 +58,18 @@
 - Builder-disclosed residual: V2 form type `external` (display URL field) still omitted from answer whitelist — reviewer must decide residual defect vs correct non-input handling.
 - Fresh hostile review ses_6d098c99a8d60ed4cbb8364e (engineer) dispatched via briefs/voice-v2-repair-2-l4.md: delta review + collateral sweep of the 9 previously verified repairs. Positive live reply proof remains NOT RUN by design (shared host database/roster); no live session mutation is authorized.
 
+## Voice repair 2 L4 result (ses_6d098c99a8d60ed4cbb8364e) — 2026-10-07
+- Verdict: PROCEED-WITH-CONDITIONS. Report verifications/l4-voice-v2-repair-2.md; supporting artifacts verifications/voice-v2-repair-2-l4/ (oracle-audit.md).
+- Verified: all 3 repairs (integer form type; dead-V1-404 removal with typed NOT_FOUND and collection-404-only fallback; per-repo generation-protected cache + canCache aggregate guard). 9-item collateral sweep of repair-1 findings PASS. Red/green reproduced by scratch runs at base 252225a. 459 tests executed green; tsc clean; service/main.js parity; panel/live bundles byte-identical to base.
+- Residual defect (Finding 1, MEDIUM): `f.type === 'external'` (non-input display URL field, protocol form.d.ts) is missing from the replyQuestion whitelist at service/host-client.ts:1067-1080 → any form containing an informational link throws UNSUPPORTED_FORM_FIELD and is unanswerable over voice; answer-slot alignment also shifts if external fields are not skipped. Reviewer states L5 promotion requires the fix.
+- Builder "NOT VERIFIED: nothing relevant" style claims rejected; reviewer enumerated NOT RUN gaps itself (no live form/permission reply proof on shared host, no browser UI verification).
+- Bounded fix ses_de7b947c163f3c1c57b71b9f dispatched (engineer) via briefs/voice-v2-repair-3-fix.md: exactly the external-field skip with red/green test against real HostClient paths, no scope expansion. Fresh L4 delta review required after. This is voice's third and final bounded fix round under convergence budget (9→3→1 defects); if a further defect round appears, stop and ask the user.
+
+## Board repair 2 receipt (bea33c0/0c3b60a/f2583e2/147d8dd, tests a8014aa, docs bca2bc9)
+- Manager verified commit chain on 00ac1b9, clean tracked state, diff scoped to panel/core.ts, panel/main.ts, test/, regenerated panel/main.js, worktree run artifacts.
+- Builder claims exactly 4 fixes D-01..D-04 with production-path red/green tests (test-app-harness.js production-bundle harness). 269 tests claimed green. NOT accepted.
+- Fresh hostile review ses_edc44a2c528758b04a5d3a20 (engineer) dispatched via briefs/board-v2-repair-2-l4.md: delta 00ac1b9..bca2bc9 + collateral sweep of the 14 F-01..F-14 repairs, with explicit instruction to scrutinize whether harness SDK mocks faithfully reproduce isJsonValue strictness. Reviewer "NOT VERIFIED: nothing relevant" claims not accepted; gaps must be enumerated.
+
 ## Issue receipt limitation
 - Manager attempted allowlisted `gh issue list --repo Workflows-Accelerator/openchamber-github-task-board --state open --limit 30 --json number,title,labels,url`; shell exit 127, gh not installed.
 - No remote issue receipt/status update made at this boundary. Do not route around manager shell denial using REST/execute. Existing repair workers explicitly own no issue writes; avoid spawning a duplicate repo worker. Remote receipt sync remains pending a bounded worker dispatch after current app workers end, or restored gh availability.
