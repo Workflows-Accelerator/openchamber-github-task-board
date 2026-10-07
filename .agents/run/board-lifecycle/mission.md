@@ -55,7 +55,8 @@ State: building (batch 2 bounded repair 1 after both L4 HALTs); awaiting_human (
 | GitHub efficiency audit and D11 choices | specs/rate-limit-manager-review.md | ses_a9897235d8cb1b41183c8bab ended | Audit received; estimates not measured; choices approved |
 | Board V2 binding + D11 efficiency build | board root feat/v2-binding-and-ratelimit, 656cc4f | ses_068d6622598dc3b1059dbd91 ended | NOT accepted; 253 tests reported, root still serves experimental build |
 | Board V2 + D11 hostile review | board root (read-only), l4-board-v2-ratelimit.md | ses_af99b63ee4e5d43f2caed88c ended | HALT, 14 reported findings; simulation evidence caveats recorded |
-| Board V2 + D11 repair 1 | .worktrees/team-dev-v2-binding-ratelimit-review-repair, fix/v2-binding-ratelimit-review-repair | ses_5872aebae42f0424f9288287 | Running; engineer and auto-accept verified; isolated app owner |
+| Board V2 + D11 repair 1 | .worktrees/team-dev-v2-binding-ratelimit-review-repair, fix/v2-binding-ratelimit-review-repair, 00ac1b9 | ses_5872aebae42f0424f9288287 ended | Claims F-01..F-14 fixed, 265 tests; NOT accepted; manager checked commit/diff/clean state |
+| Board repair 1 hostile review | same worktree (read-only), briefs/board-v2-repair-1-l4.md | ses_3c63be63d8cbb73cde19dac3 | Running; engineer; must classify production tests vs simulate* enactments |
 | Voice V2 + D11 efficiency build | chambervoice root feat/v2-compat-and-ratelimit, cd6ab18 | ses_6a5a8749c6759270a40cbafd ended | NOT accepted; 437 tests green but actual protocol defects found |
 | Voice V2 + D11 hostile review | chambervoice root (read-only), l4-voice-v2-ratelimit.md | ses_fc89160228e764868dff56b1 ended | HALT; positive real reply proof missing |
 | Voice V2 + D11 repair 1 | chambervoice/.worktrees/team-dev-v2-ratelimit-review-repair, fix/v2-ratelimit-review-repair | ses_1797615df11da447fd7d5863 | Running; engineer and auto-accept verified; isolated app owner |

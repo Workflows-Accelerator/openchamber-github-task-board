@@ -26,6 +26,12 @@
 - Fresh bounded repair dispatched: ses_1797615df11da447fd7d5863, requested engineer; session.list confirms 9router/engineer, permission * allow, busy, exact isolated location. Brief briefs/voice-v2-ratelimit-repair-1.md. A missing surgical-patch transclusion was corrected on disk immediately after dispatch; worker must use build/refactoring/surgical-patch path.
 - No shared-host positive reply fixtures under this repair authority. Safe isolated real V2 fixture may run only without shared DB/session/service effects; otherwise report blocker/plan. Live empty GET lists don't prove reply success.
 
+## Board repair 1 receipt (00ac1b9)
+- Manager verified log 00ac1b9 on 656cc4f, clean tracked state, diff limited to .gitignore/panel core+main+bundle/test.
+- Builder claims all 14 findings fixed; 265 tests green. NOT accepted. Fresh hostile review ses_3c63be63d8cbb73cde19dac3 (engineer) dispatched via briefs/board-v2-repair-1-l4.md.
+- Manager oracle concern: test/review-repairs.test.js imports real core.ts helpers but main.ts behaviors are still local simulate* enactments (pageStream, coldStartFetch, loadComments, request). Reviewer must mark simulation-only proofs UNKNOWN and require production-path tests where orchestration is implicated.
+- Builder-reported trade-offs needing USER decision later, not silently accepted: (a) GitHub since= cannot see deleted/transferred issues, so idle refresh misses removals without manual full refresh; (b) SDK host proxy drops custom headers, so non-PAT users get plain GETs and no 304 quota savings (correct but unoptimized). Neither is a defect by itself; no new polling/auth is approved to close them.
+
 ## Issue receipt limitation
 - Manager attempted allowlisted `gh issue list --repo Workflows-Accelerator/openchamber-github-task-board --state open --limit 30 --json number,title,labels,url`; shell exit 127, gh not installed.
 - No remote issue receipt/status update made at this boundary. Do not route around manager shell denial using REST/execute. Existing repair workers explicitly own no issue writes; avoid spawning a duplicate repo worker. Remote receipt sync remains pending a bounded worker dispatch after current app workers end, or restored gh availability.
