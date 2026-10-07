@@ -70,6 +70,20 @@
 - Builder claims exactly 4 fixes D-01..D-04 with production-path red/green tests (test-app-harness.js production-bundle harness). 269 tests claimed green. NOT accepted.
 - Fresh hostile review ses_edc44a2c528758b04a5d3a20 (engineer) dispatched via briefs/board-v2-repair-2-l4.md: delta 00ac1b9..bca2bc9 + collateral sweep of the 14 F-01..F-14 repairs, with explicit instruction to scrutinize whether harness SDK mocks faithfully reproduce isJsonValue strictness. Reviewer "NOT VERIFIED: nothing relevant" claims not accepted; gaps must be enumerated.
 
+## Board repair 2 L4 result (ses_edc44a2c528758b04a5d3a20) — 2026-10-07
+- Verdict: PROCEED (zero residual). Report l4-board-v2-repair-2.md + board-v2-repair-2-l4/ (disposition-matrix.md, test-oracle-matrix.md, hostile-verification.test.js), committed on fix branch as 4353672 (artifacts were written into the worktree run dir, not the root's; carried into root by integration merge).
+- All four D-01..D-04 verified fixed with red at 00ac1b9 / green at HEAD; F-01..F-14 collateral intact. 269/269 green; manager independently reproduced node --test in the worktree before accepting the review.
+- NOT RUN enumerated by reviewer: browser webview iframe (L3), real GitHub mutations, remote publishing, human subjective UX (L5).
+
+## Voice repair 3 receipt + L4 result (a7e3ac9) — 2026-10-07
+- Repair 3 ses_de7b947c163f3c1c57b71b9f ended at a7e3ac9: external fields filtered in normalizeQuestionRequest (pending.questions shows only answerable fields), inputFields iteration in replyQuestion (slot alignment preserved with external fields interspersed), external keys stripped from object-format answers. 460 tests green; service/main.js rebuilt; panel/live bundles zero diff.
+- Fresh L4 ses_2baffff1f2bb7cbf79f5d8be: PROCEED, zero residual. Red reproduced at a5ddb77, green at a7e3ac9, adversarial permutations pass, 12-repair collateral sweep PASS. Report l4-voice-v2-repair-3.md + voice-v2-repair-3-l4/ in root run dir.
+- Convergence budget respected (9->3->1->0): no fourth round needed.
+
+## Integration merges (Batch 2 quorum reached)
+- Dispatched board integration: fix/v2-binding-ratelimit-review-repair (4353672) -> feat/v2-binding-and-ratelimit at ROOT checkout (served preview branch), and voice integration: fix/v2-ratelimit-review-repair (a7e3ac9) -> feat/v2-compat-and-ratelimit at ROOT checkout. Preview integration only; master untouched until user verdicts; nothing pushed. Rationale: L5 contract = human reviews the merged result through one running preview; served roots currently run pre-repair code.
+- Manager shell denial recorded: `git show <branch>:.gitignore` rejected (not in the inspection allowlist). Fix-branch .gitignore contents therefore NOT inspected by manager; the merge brief's union policy + mandatory conflict reporting cover the gap. No workaround attempted.
+
 ## Issue receipt limitation
 - Manager attempted allowlisted `gh issue list --repo Workflows-Accelerator/openchamber-github-task-board --state open --limit 30 --json number,title,labels,url`; shell exit 127, gh not installed.
 - No remote issue receipt/status update made at this boundary. Do not route around manager shell denial using REST/execute. Existing repair workers explicitly own no issue writes; avoid spawning a duplicate repo worker. Remote receipt sync remains pending a bounded worker dispatch after current app workers end, or restored gh availability.

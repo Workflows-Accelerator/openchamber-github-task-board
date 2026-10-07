@@ -1,6 +1,6 @@
 # Board lifecycle verification index
 
-Updated: 2026-10-07. Status: INCOMPLETE — human validation and batch 2 proof still pending.
+Updated: 2026-10-07. Status: INCOMPLETE — L5 human validation pending. Both Batch 2 chains pass L4 (PROCEED); integration merges into the served preview branches in flight before the single Batch 2 ask.
 
 ## Batch 1 — contract, three views, voice All Projects fix, lifecycle skill
 
@@ -44,6 +44,13 @@ Builder ses_068d6622598dc3b1059dbd91 ended at 656cc4f, base 9f651db. Manager ins
 - L5: BLOCKED until repair, new L4 and real-path proof. Existing Batch 1 request also targets a preview now serving experimental Batch 2 code; no user verdict presumed.
 
 Repair 1: ses_1797615df11da447fd7d5863 ended at 252225a (base cd6ab18) — claims 9 findings fixed, 453 tests; manager verified commit/diff/clean state; NOT accepted. Hostile review ses_e8f6110f2851bb374fe3c0bd: PROCEED-WITH-CONDITIONS (3 residual defects); bounded fix ses_e0f2d7ad18363e33a02e08a4 running via briefs/voice-v2-repair-2-fixes.md. Board repair 1: ses_5872aebae42f0424f9288287 ended at 00ac1b9 (base 656cc4f) — claims F-01..F-14 fixed, 265 tests; NOT accepted; hostile review ses_3c63be63d8cbb73cde19dac3: PROCEED-WITH-CONDITIONS (4 residual defects D-01..D-04, incl. HIGH storage JSON rejection); bounded fix ses_5c0356f5e154169806b9fdea running via briefs/board-v2-repair-2-fixes.md. Neither repair chain may merge, push, close issues, change registered root or approve unrelated live permissions/forms. Fresh L4 required after each bounded fix before any human review request.
+
+## Batch 2 convergence — final L4 state (supersedes the in-flight wording above)
+
+- Voice chain: repair 2 (f58e11b/67f955f/d582374, docs a5ddb77) reviewed PROCEED-WITH-CONDITIONS by ses_6d098c99a8d60ed4cbb8364e (1 residual: external form field type). Repair 3 ses_de7b947c163f3c1c57b71b9f ended at a7e3ac9 — single surgical fix (external fields filtered in normalizeQuestionRequest, replyQuestion inputFields iteration, object-answer key strip). Fresh L4 ses_2baffff1f2bb7cbf79f5d8be: **PROCEED, zero residual findings**. Red proof reproduced at base a5ddb77 (3!==2 question count; UNSUPPORTED_FORM_FIELD), green at a7e3ac9; independent adversarial permutations (external first/middle/end/multiple) pass; collateral sweep of 12 prior repairs PASS. Report l4-voice-v2-repair-3.md; artifacts voice-v2-repair-3-l4/ (reproduction-audit.md, oracle-audit.md, test-oracle-matrix.md, live-evidence.md).
+- Board chain: repair 2 (bea33c0/0c3b60a/f2583e2/147d8dd, tests a8014aa, docs bca2bc9) reviewed **PROCEED (zero residual)** by ses_edc44a2c528758b04a5d3a20: D-01 storage JSON rejection, D-02 sentinel PATCH guard, D-03 page-1-304 multi-page validation, D-04 truncation flag + watermark guard all verified fixed with red/green at 00ac1b9; F-01..F-14 collateral intact. 269/269 tests green — manager independently reproduced `node --test test/*.test.js` in the worktree. Report l4-board-v2-repair-2.md + artifacts board-v2-repair-2-l4/ committed on the fix branch (4353672) and carried into the root tree by the integration merge. Reviewer learning: repair-1's production-orchestration mock (querySelector null) broke real DOM rendering; builder's test-app-harness.js is the accepted production-bundle harness standard.
+- **Batch 2 quorum reached**: both members passed L4. L5 = AWAITING HUMAN; one combined ask after the integration merges land in the served preview branches (fix chains are NOT yet what the served roots run).
+- NOT RUN (both chains, unchanged): real iframe/webview browser E2E; real GitHub mutations; positive live form/permission reply proof (shared host DB/session roster — design limitation; disposable-fixture-contract.md outstanding); end-to-end measured quota savings.
 
 ## Recovery proof conditions
 - Next dispatch after each completed repair is fresh read-only hostile review of exact commit. No resumed ended workers.
