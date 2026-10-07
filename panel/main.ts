@@ -151,6 +151,7 @@ import {
   buildIncrementalIssuesPath,
   syncIncrementalRepoIssues,
   getSessionIssueRepo,
+  parseRepoFullName,
 } from './core.js';
 export type { TestItem };
 export {
@@ -499,6 +500,13 @@ function hideBanner(): void {
 const dirGitCache = new Map<string, { owner: string; repo: string } | null>();
 const issueCache = new Map<string, { timestamp: number; issues: Issue[] }>();
 const ISSUE_CACHE_TTL_MS = 60000; // 60s cache
+const DRAWER_COMMENTS_CACHE_TTL_MS = 60_000;
+interface CachedComments {
+  timestamp: number;
+  comments: any[];
+}
+const commentsCache = new Map<string, CachedComments>();
+let drawerGeneration = 0;
 
 // Subscription manager: watch only the active project (avoids 32 limit)
 let unsubSessions: (() => void) | null = null;
@@ -789,6 +797,8 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
   // Flush pending scratchpad save for previous active repository before switching
   flushScratchpadSave();
 
+  drawerGeneration++;
+  commentsCache.clear();
   userSelectedTab = false;
   isAllProjectsMode = false;
   allProjectsRepoRefs = [];
@@ -983,6 +993,24 @@ function getWorkspaceRootProject(): ProjectItem | null {
 
 let workspaceGitToken: string | null = null;
 const issueListEtagCache = new Map<string, string>();
+interface CachedPage {
+  etag?: string;
+  items: any[];
+  timestamp: number;
+}
+const pageBodyCache = new Map<string, CachedPage>();
+const MAX_PAGE_CACHE_ENTRIES = 100;
+
+function setCachedPage(path: string, items: any[], etag?: string): void {
+  if (pageBodyCache.size >= MAX_PAGE_CACHE_ENTRIES) {
+    const oldest = pageBodyCache.keys().next().value;
+    if (oldest) pageBodyCache.delete(oldest);
+  }
+  pageBodyCache.set(path, { items, etag, timestamp: Date.now() });
+}
+
+const repoIncrementalEtagCache = new Map<string, string>();
+const repoSyncWatermarks = new Map<string, number>();
 let lastSyncTimestamp: number = Date.now();
 
 async function getWorkspaceGitToken(): Promise<string | null> {
@@ -1107,9 +1135,18 @@ async function githubRequest(
         const rlErr = rateLimitErrorFromResponse(directRes.status, directRes.headers, errBody);
         if (rlErr) throw rlErr;
       }
+      if (directRes.status === 401) {
+        throw new Error('GitHub PAT authentication failed (401)');
+      }
+      if (method !== 'GET') {
+        let errText = '';
+        try { errText = await directRes.clone().text(); } catch {}
+        throw new Error(`GitHub ${method} ${path} failed (${directRes.status}): ${errText}`);
+      }
       addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, 'warn');
     } catch (err: any) {
       if (err && err.rateLimited) throw err;
+      if (method !== 'GET') throw err;
       addLog(`Direct PAT fetch failed (${err.message}), falling back to host proxy...`, 'warn');
     }
   }
@@ -1205,24 +1242,39 @@ async function streamRemainingPages(
   while (page <= MAX_PAGES && currentRepo === repo && activeStreamEpoch === epoch) {
     try {
       const pagePath = `/repos/${repo}/issues?state=all&per_page=100&page=${page}`;
-      const pageEtag = !force ? issueListEtagCache.get(pagePath) : undefined;
-      const nextRaw = await githubRequestWithRetry(
+      const cachedPage = !force ? pageBodyCache.get(pagePath) : undefined;
+      const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : undefined);
+      const canSendEtag = Boolean(pageEtag && cachedPage?.items);
+
+      let nextRaw = await githubRequestWithRetry(
         'GET',
         pagePath,
         undefined,
         undefined,
-        pageEtag ? { 'If-None-Match': pageEtag } : undefined
+        canSendEtag && pageEtag ? { 'If-None-Match': pageEtag } : undefined
       );
 
+      let nextItems: any[] = [];
       if (nextRaw && (nextRaw.notModified || nextRaw.status === 304)) {
-        page++;
-        continue;
+        if (cachedPage && cachedPage.items && cachedPage.items.length > 0) {
+          nextItems = cachedPage.items;
+          addLog(`Stream page ${page} -> 304 Not Modified (using cached page body)`, 'succ');
+        } else {
+          // Unconditional retry once without ETag
+          nextRaw = await githubRequestWithRetry('GET', pagePath);
+          nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
+        }
+      } else {
+        nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
       }
+
       if (nextRaw?.etag) {
         issueListEtagCache.set(pagePath, nextRaw.etag);
       }
+      if (nextItems.length > 0) {
+        setCachedPage(pagePath, nextItems, nextRaw?.etag || pageEtag);
+      }
 
-      const nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
       if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
 
       const nextIssues = normalizeGithubIssues(nextItems);
@@ -1231,7 +1283,7 @@ async function streamRemainingPages(
       issues = mergeIssuePages(issues, nextIssues);
       issueCache.set(repo, { timestamp: Date.now(), issues });
       if (host?.storage) {
-        void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any);
+        void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any).catch(() => {});
       }
       renderViews();
       statusReconciler.schedule(issues);
@@ -1291,11 +1343,13 @@ async function fetchIssues(force: boolean = false): Promise<void> {
   try {
     addLog(`Fetching issues for ${currentRepo}...`);
     const page1Path = `/repos/${currentRepo}/issues?state=all&per_page=100&page=1`;
-    const page1Etag = !force ? issueListEtagCache.get(page1Path) : undefined;
-    const page1Headers = page1Etag ? { 'If-None-Match': page1Etag } : undefined;
+    const cachedPage1 = !force ? pageBodyCache.get(page1Path) : undefined;
+    const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(page1Path) : undefined);
+    const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || issues.length > 0));
+    const page1Headers = canSendEtag && page1Etag ? { 'If-None-Match': page1Etag } : undefined;
 
     // Page 1: Standard core issues endpoint (5,000 req/hr rate limit pool)
-    const page1Raw = await githubRequestWithRetry(
+    let page1Raw = await githubRequestWithRetry(
       'GET',
       page1Path,
       undefined,
@@ -1303,24 +1357,32 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       page1Headers
     );
 
+    let page1Items: any[] = [];
     if (page1Raw && (page1Raw.notModified || page1Raw.status === 304)) {
-      addLog(`Page 1 for ${currentRepo} -> 304 Not Modified (using cached issues)`, 'succ');
+      addLog(`Page 1 for ${currentRepo} -> 304 Not Modified`, 'succ');
       lastSyncTimestamp = Date.now();
-      if (issues.length > 0) {
-        renderViews();
-        statusReconciler.schedule(issues);
-        return;
+      repoSyncWatermarks.set(currentRepo, Date.now());
+      if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
+        page1Items = cachedPage1.items;
+      } else {
+        // Cold start 304 without usable body: retry unconditionally once
+        addLog(`Page 1 for ${currentRepo} -> 304 with no cached body; retrying unconditionally`, 'warn');
+        page1Raw = await githubRequestWithRetry('GET', page1Path);
+        page1Items = Array.isArray(page1Raw) ? page1Raw : (page1Raw?.items || []);
       }
+    } else {
+      page1Items = Array.isArray(page1Raw) ? page1Raw : (page1Raw?.items || []);
     }
 
     if (page1Raw?.etag) {
       issueListEtagCache.set(page1Path, page1Raw.etag);
     }
+    if (page1Items.length > 0) {
+      setCachedPage(page1Path, page1Items, page1Raw?.etag || page1Etag);
+    }
 
-    const page1Items = Array.isArray(page1Raw) ? page1Raw : (page1Raw?.items || []);
     const page1Issues = normalizeGithubIssues(page1Items);
-
-    issues = page1Issues;
+    issues = issues.length > 0 ? mergeIssuePages(issues, page1Issues) : page1Issues;
 
     // Cache results in memory and persistent storage
     issueCache.set(currentRepo, {
@@ -1328,9 +1390,10 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       issues,
     });
     if (host?.storage) {
-      void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any);
+      void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any).catch(() => {});
     }
     lastSyncTimestamp = Date.now();
+    repoSyncWatermarks.set(currentRepo, Date.now());
 
     addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, 'succ');
     if (!userSelectedTab) {
@@ -1339,8 +1402,8 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     renderViews();
     statusReconciler.schedule(issues);
 
-    // Background streaming for remaining pages if 100 items returned
-    if (page1Items.length >= 100) {
+    // Background streaming for remaining pages if 100 items returned or later pages exist
+    if (page1Items.length >= 100 || issues.length >= 100) {
       void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch, force);
     }
   } catch (err: any) {
@@ -1366,50 +1429,75 @@ async function fetchIssues(force: boolean = false): Promise<void> {
 // repo cannot exhaust the API budget. Returns normalized issues only.
 async function fetchAllRepoIssuePages(repo: string, epoch: number, force: boolean = false): Promise<Issue[]> {
   const page1Path = `/repos/${repo}/issues?state=all&per_page=100&page=1`;
-  const page1Etag = !force ? issueListEtagCache.get(page1Path) : undefined;
-  const firstRaw = await githubRequestWithRetry(
+  const cachedPage1 = !force ? pageBodyCache.get(page1Path) : undefined;
+  const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(page1Path) : undefined);
+  const cachedRepoIssues = issueCache.get(repo)?.issues;
+  const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || (cachedRepoIssues && cachedRepoIssues.length > 0)));
+
+  let firstRaw = await githubRequestWithRetry(
     'GET',
     page1Path,
     undefined,
     undefined,
-    page1Etag ? { 'If-None-Match': page1Etag } : undefined
+    canSendEtag && page1Etag ? { 'If-None-Match': page1Etag } : undefined
   );
 
+  let firstItems: any[] = [];
   if (firstRaw && (firstRaw.notModified || firstRaw.status === 304)) {
-    const cached = issueCache.get(repo)?.issues;
-    if (cached && cached.length > 0) {
-      return cached;
+    if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
+      firstItems = cachedPage1.items;
+    } else {
+      firstRaw = await githubRequestWithRetry('GET', page1Path);
+      firstItems = Array.isArray(firstRaw) ? firstRaw : (firstRaw?.items || []);
     }
+  } else {
+    firstItems = Array.isArray(firstRaw) ? firstRaw : (firstRaw?.items || []);
   }
 
   if (firstRaw?.etag) {
     issueListEtagCache.set(page1Path, firstRaw.etag);
   }
+  if (firstItems.length > 0) {
+    setCachedPage(page1Path, firstItems, firstRaw?.etag || page1Etag);
+  }
 
-  const firstItems = Array.isArray(firstRaw) ? firstRaw : (firstRaw?.items || []);
   let repoIssues = normalizeGithubIssues(firstItems);
-
   if (firstItems.length < 100) return repoIssues;
 
   let page = 2;
   while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
     const pagePath = `/repos/${repo}/issues?state=all&per_page=100&page=${page}`;
-    const pageEtag = !force ? issueListEtagCache.get(pagePath) : undefined;
-    const nextRaw = await githubRequestWithRetry(
+    const cachedPage = !force ? pageBodyCache.get(pagePath) : undefined;
+    const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : undefined);
+    const canSendPageEtag = Boolean(pageEtag && cachedPage?.items);
+
+    let nextRaw = await githubRequestWithRetry(
       'GET',
       pagePath,
       undefined,
       undefined,
-      pageEtag ? { 'If-None-Match': pageEtag } : undefined
+      canSendPageEtag && pageEtag ? { 'If-None-Match': pageEtag } : undefined
     );
+
+    let nextItems: any[] = [];
     if (nextRaw && (nextRaw.notModified || nextRaw.status === 304)) {
-      page++;
-      continue;
+      if (cachedPage && cachedPage.items && cachedPage.items.length > 0) {
+        nextItems = cachedPage.items;
+      } else {
+        nextRaw = await githubRequestWithRetry('GET', pagePath);
+        nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
+      }
+    } else {
+      nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
     }
+
     if (nextRaw?.etag) {
       issueListEtagCache.set(pagePath, nextRaw.etag);
     }
-    const nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
+    if (nextItems.length > 0) {
+      setCachedPage(pagePath, nextItems, nextRaw?.etag || pageEtag);
+    }
+
     if (nextItems.length === 0) break;
     repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
     if (nextItems.length < 100) break;
@@ -1478,7 +1566,16 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
     issues = aggregateProjectIssues(sources);
     issueCache.set(cacheKey, { timestamp: Date.now(), issues });
     if (host?.storage) {
-      void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues } as any);
+      void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues } as any).catch(() => {});
+    }
+    for (const src of sources) {
+      if (src.repo && src.issues) {
+        issueCache.set(src.repo, { timestamp: Date.now(), issues: src.issues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${src.repo}`, { timestamp: Date.now(), issues: src.issues } as any).catch(() => {});
+        }
+        repoSyncWatermarks.set(src.repo, Date.now());
+      }
     }
     lastSyncTimestamp = Date.now();
 
@@ -1504,13 +1601,18 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
   }
 }
 
+let isIdleSyncing = false;
+let pendingIdleRefresh = false;
+
 // Incremental sync for idle session transitions: fetches only issues changed since last sync
-async function syncRepoIncremental(repo: string, sinceIso: string): Promise<void> {
-  const path = buildIncrementalIssuesPath(repo, sinceIso);
-  const etag = issueListEtagCache.get(path);
+async function syncRepoIncremental(repo: string, sinceIso: string, watermarkTime: number): Promise<boolean> {
+  const cleanRepo = parseRepoFullName(repo) || repo;
+  const etag = repoIncrementalEtagCache.get(cleanRepo);
+  const epoch = activeStreamEpoch;
+
   try {
     const result = await syncIncrementalRepoIssues({
-      repo,
+      repo: cleanRepo,
       since: sinceIso,
       currentIssues: issues,
       etag,
@@ -1518,31 +1620,85 @@ async function syncRepoIncremental(repo: string, sinceIso: string): Promise<void
         githubRequestWithRetry(method, reqPath, body, query, headers),
     });
 
-    if (result.etag) {
-      issueListEtagCache.set(path, result.etag);
+    if (result.etag && !result.truncated) {
+      repoIncrementalEtagCache.set(cleanRepo, result.etag);
+    } else if (result.truncated) {
+      repoIncrementalEtagCache.delete(cleanRepo);
+    }
+
+    if (result.truncated) {
+      addLog(`Incremental sync for ${cleanRepo} truncated at 1,000 changes. Watermark preserved for retry.`, 'warn');
+      if (host?.toast) {
+        void host.toast({
+          kind: 'info',
+          message: `Incremental sync for ${cleanRepo} exceeded 1,000 changes. Consider manual refresh.`,
+        });
+      }
+    } else {
+      // Update per-repo watermark only upon complete, untruncated sync
+      repoSyncWatermarks.set(cleanRepo, watermarkTime);
     }
 
     if (!result.modified) {
-      addLog(`Incremental sync for ${repo}: no changes`);
-      return;
+      addLog(`Incremental sync for ${cleanRepo}: no changes`);
+      return true;
     }
 
-    issues = result.issues;
-    issueCache.set(repo, { timestamp: Date.now(), issues });
-    if (host?.storage) {
-      void host.storage.set(`cached_issues_${repo}`, { timestamp: Date.now(), issues } as any);
+    // Scope guard: if user switched repositories or mode during fetch
+    if (!isAllProjectsMode && currentRepo !== cleanRepo) {
+      addLog(`Scope switched away from ${cleanRepo}; updating background cache only`, 'info');
+      const existingCached = issueCache.get(cleanRepo)?.issues || [];
+      const updated = mergeIssuePages(existingCached, result.issues.filter((i) => (getIssueRepoFullName(i) || i.repo)?.toLowerCase() === cleanRepo.toLowerCase()));
+      issueCache.set(cleanRepo, { timestamp: Date.now(), issues: updated });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: updated } as any).catch(() => {});
+      }
+      return true;
     }
+
+    if (activeStreamEpoch !== epoch) return true;
+
+    issues = result.issues;
+
     if (isAllProjectsMode) {
+      // In all projects mode, save aggregated collection ONLY to ALL_PROJECTS_CACHE_KEY (prevents F-06)
       issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
       if (host?.storage) {
-        void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any);
+        void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any).catch(() => {});
+      }
+      // Populate single-repo cache with only items belonging to cleanRepo
+      const repoOnlyIssues = issues.filter((i) => (getIssueRepoFullName(i) || i.repo)?.toLowerCase() === cleanRepo.toLowerCase());
+      if (repoOnlyIssues.length > 0) {
+        issueCache.set(cleanRepo, { timestamp: Date.now(), issues: repoOnlyIssues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: repoOnlyIssues } as any).catch(() => {});
+        }
+      }
+    } else {
+      issueCache.set(cleanRepo, { timestamp: Date.now(), issues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues } as any).catch(() => {});
       }
     }
+
     renderViews();
     statusReconciler.schedule(issues);
-    addLog(`Incremental sync for ${repo}: updated ${result.changedCount} issue(s)`, 'succ');
+
+    // If active issue in drawer was updated by this sync, re-render drawer without clearing comments
+    if (activeIssue) {
+      const activeRepo = repoForIssue(activeIssue);
+      const updatedActive = issues.find((i) => i.number === activeIssue!.number && repoForIssue(i) === activeRepo);
+      if (updatedActive) {
+        activeIssue = updatedActive;
+        renderDrawer(activeIssue, true);
+      }
+    }
+
+    addLog(`Incremental sync for ${cleanRepo}: updated ${result.changedCount} issue(s)`, 'succ');
+    return true;
   } catch (err: any) {
-    addLog(`Incremental sync failed for ${repo}: ${err.message}`, 'warn');
+    addLog(`Incremental sync failed for ${cleanRepo}: ${err.message}`, 'warn');
+    return false;
   }
 }
 
@@ -1553,47 +1709,59 @@ async function handleIdleRefresh(currentSessions: any[], previousSessions: any[]
   });
   if (idleSessions.length === 0) return;
 
-  const sinceTime = lastSyncTimestamp;
-  const sinceIso = new Date(sinceTime).toISOString();
-  lastSyncTimestamp = Date.now();
+  if (isIdleSyncing) {
+    pendingIdleRefresh = true;
+    addLog('Idle refresh already in progress; queuing trailing sync', 'info');
+    return;
+  }
 
-  addLog(`Session became idle — incremental sync for changes since ${sinceIso}...`);
+  isIdleSyncing = true;
+  try {
+    do {
+      pendingIdleRefresh = false;
+      const watermarkStart = Date.now();
+      // D11 B1: In All Projects mode, refresh all configured repos in current scope
+      const reposToSync: string[] = isAllProjectsMode
+        ? (allProjectsRepoRefs.length > 0 ? allProjectsRepoRefs.map((r) => r.repo) : (currentRepo ? [currentRepo] : []))
+        : (currentRepo ? [currentRepo] : []);
 
-  if (!isAllProjectsMode) {
-    if (!currentRepo) return;
-    await syncRepoIncremental(currentRepo, sinceIso);
-  } else {
-    const targetRepos = new Set<string>();
-    for (const s of idleSessions) {
-      const items = Array.isArray(s.items) ? s.items : [];
-      for (const item of items) {
-        const r = getSessionIssueRepo(item);
-        if (r) targetRepos.add(r);
+      addLog(`Session idle — incremental sync across ${reposToSync.length} repo(s)...`);
+
+      for (const repo of reposToSync) {
+        const cleanRepo = parseRepoFullName(repo) || repo;
+        const prevWatermark = repoSyncWatermarks.get(cleanRepo);
+        const sinceTime = prevWatermark ? Math.max(0, prevWatermark - 10_000) : (watermarkStart - 60_000);
+        const sinceIso = new Date(sinceTime).toISOString();
+        await syncRepoIncremental(cleanRepo, sinceIso, watermarkStart);
       }
-    }
-    const reposToSync = targetRepos.size > 0
-      ? Array.from(targetRepos)
-      : allProjectsRepoRefs.map((r) => r.repo);
-
-    for (const repo of reposToSync) {
-      await syncRepoIncremental(repo, sinceIso);
-    }
+      lastSyncTimestamp = Date.now();
+    } while (pendingIdleRefresh);
+  } finally {
+    isIdleSyncing = false;
   }
 }
 
 // In the aggregated view a PATCH must target the issue's own repository.
 function repoForIssue(issue: Issue | null | undefined): string {
-  if (issue && isAllProjectsMode && issue.repo) return issue.repo;
+  if (issue?.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY) return issue.repo;
+  if (isAllProjectsMode) return '';
   return currentRepo;
 }
 
 async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
+  const repo = repoForIssue(issue);
+  if (!repo) {
+    addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+    if (host?.toast) {
+      void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+    }
+    return;
+  }
   issue.body = newBody;
   issue.subtasks = parseSubtasks(newBody);
   issue.openQuestions = parseOpenQuestions(newBody);
   issue.humanTasks = parseHumanTasks(newBody);
-  const repo = repoForIssue(issue);
-  if (repo) issueCache.delete(repo);
+  issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
     renderDrawer(issue, true);
@@ -1616,7 +1784,15 @@ async function updateIssueStatus(
   options?: { newPriorityGroup?: string }
 ): Promise<void> {
   const repo = repoForIssue(issue);
-  if (!issue || !repo) return;
+  if (!issue || !repo) {
+    if (issue && !repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+      if (host?.toast) {
+        void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+      }
+    }
+    return;
+  }
   const prevLabels = [...(issue.labels || [])];
   const prevState = issue.state;
 
@@ -1631,7 +1807,7 @@ async function updateIssueStatus(
     filteredLabels.push(`status:${targetColumn}`);
   }
 
-  if (options?.newPriorityGroup && options.newPriorityGroup !== 'none') {
+  if (options?.newPriorityGroup !== undefined) {
     filteredLabels = updatePriorityLabels(filteredLabels, options.newPriorityGroup);
   }
 
@@ -1782,9 +1958,14 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
   issue.state = newState;
   issue.labels = clean.map((name) => ({ name }));
   const archiveRepo = repoForIssue(issue);
-  if (archiveRepo) {
-    issueCache.delete(archiveRepo);
+  if (!archiveRepo) {
+    addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+    if (host?.toast) {
+      void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+    }
+    return;
   }
+  issueCache.delete(archiveRepo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
     renderDrawer(issue, true);
@@ -2756,7 +2937,7 @@ function renderKanbanView(filteredIssues: Issue[]): void {
       const subEl = (e.target as HTMLElement)?.closest?.('.kanban-subgroup') as HTMLElement | null;
       const subgroupId = subEl?.dataset?.subgroupId;
 
-      const newPriorityGroup = (currentGroupBy === 'priority' && subgroupId && subgroupId !== 'none')
+      const newPriorityGroup = (currentGroupBy === 'priority' && subgroupId)
         ? subgroupId
         : undefined;
 
@@ -4203,8 +4384,9 @@ function renderDrawerDependencies(issue: Issue): void {
 // ==========================================
 
 function openDrawer(issue: Issue): void {
+  drawerGeneration++;
   activeIssue = issue;
-  renderDrawer(issue);
+  renderDrawer(issue, false, drawerGeneration, true);
   elDrawerScrim.classList.add('active');
   elTaskDrawer.classList.add('active');
   document.body.classList.add('drawer-open');
@@ -4214,6 +4396,7 @@ function openDrawer(issue: Issue): void {
 }
 
 function closeDrawer(): void {
+  drawerGeneration++;
   activeIssue = null;
   elDrawerScrim.classList.remove('active');
   elTaskDrawer.classList.remove('active');
@@ -4290,6 +4473,15 @@ async function addTagToIssue(issue: Issue, tagName: string): Promise<void> {
   const currentNames = issue.labels.map((l) => l.name);
   if (currentNames.some((n) => n.toLowerCase() === clean.toLowerCase())) return;
 
+  const repo = repoForIssue(issue);
+  if (!repo) {
+    addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+    if (host?.toast) {
+      void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+    }
+    return;
+  }
+
   const newNames = [...currentNames, clean];
   issue.labels.push({ name: clean });
   renderDrawerLabels(issue);
@@ -4297,7 +4489,7 @@ async function addTagToIssue(issue: Issue, tagName: string): Promise<void> {
 
   try {
     addLog(`Adding label "${clean}" to #${issue.number}...`);
-    await githubRequestWithRetry('PATCH', `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
+    await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       labels: newNames,
     });
     await host.toast({ kind: 'success', message: `Added label "${clean}" to #${issue.number}` });
@@ -4308,6 +4500,15 @@ async function addTagToIssue(issue: Issue, tagName: string): Promise<void> {
 }
 
 async function removeTagFromIssue(issue: Issue, tagName: string): Promise<void> {
+  const repo = repoForIssue(issue);
+  if (!repo) {
+    addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+    if (host?.toast) {
+      void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+    }
+    return;
+  }
+
   const target = tagName.trim().toLowerCase();
   const newLabels = issue.labels.filter((l) => l.name.toLowerCase() !== target);
   issue.labels = newLabels;
@@ -4316,7 +4517,7 @@ async function removeTagFromIssue(issue: Issue, tagName: string): Promise<void> 
 
   try {
     addLog(`Removing label "${tagName}" from #${issue.number}...`);
-    await githubRequestWithRetry('PATCH', `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
+    await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       labels: newLabels.map((l) => l.name),
     });
     await host.toast({ kind: 'info', message: `Removed label "${tagName}" from #${issue.number}` });
@@ -4326,7 +4527,7 @@ async function removeTagFromIssue(issue: Issue, tagName: string): Promise<void> 
   }
 }
 
-function renderDrawer(issue: Issue, skipComments: boolean = false): void {
+function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number = drawerGeneration, forceFreshComments: boolean = false): void {
   elDrawerIssueNumber.textContent = `#${issue.number}`;
   elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : '';
   elDrawerGithubLink.href = issue.html_url;
@@ -4429,7 +4630,7 @@ function renderDrawer(issue: Issue, skipComments: boolean = false): void {
   });
 
   if (!skipComments) {
-    void loadComments(issue.number);
+    void loadComments(issue.number, gen, forceFreshComments);
   }
   renderDrawerDependencies(issue);
   renderRelatedIssues(issue);
@@ -4701,13 +4902,6 @@ function renderTestPlans(issue: Issue): void {
   }
 }
 
-const DRAWER_COMMENTS_CACHE_TTL_MS = 60_000;
-interface CachedComments {
-  timestamp: number;
-  comments: any[];
-}
-const commentsCache = new Map<string, CachedComments>();
-
 function renderCommentsList(comments: any[]): void {
   elCommentCountBadge.textContent = String(comments.length);
 
@@ -4733,19 +4927,30 @@ function renderCommentsList(comments: any[]): void {
     .join('');
 }
 
-async function loadComments(issueNumber: number, force: boolean = false): Promise<void> {
+async function loadComments(
+  issueNumber: number,
+  expectedGen: number = drawerGeneration,
+  force: boolean = false
+): Promise<void> {
   const commentIssue = activeIssue && activeIssue.number === issueNumber
     ? activeIssue
     : issues.find((i) => i.number === issueNumber) || null;
   const repo = repoForIssue(commentIssue);
-  const cacheKey = `${(repo || '').toLowerCase()}#${issueNumber}`;
+  if (!repo) return;
+  const cacheKey = `${repo.toLowerCase()}#${issueNumber}`;
 
   if (!force && commentsCache.has(cacheKey)) {
     const cached = commentsCache.get(cacheKey)!;
     if (Date.now() - cached.timestamp < DRAWER_COMMENTS_CACHE_TTL_MS) {
-      renderCommentsList(cached.comments);
+      if (drawerGeneration === expectedGen && activeIssue && activeIssue.number === issueNumber && repoForIssue(activeIssue) === repo) {
+        renderCommentsList(cached.comments);
+      }
       return;
     }
+  }
+
+  if (drawerGeneration !== expectedGen || !activeIssue || activeIssue.number !== issueNumber) {
+    return;
   }
 
   elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-muted); font-size: 11.5px;">Loading comments...</div>';
@@ -4753,9 +4958,14 @@ async function loadComments(issueNumber: number, force: boolean = false): Promis
     const comments: any[] = await githubRequestWithRetry('GET', `/repos/${repo}/issues/${issueNumber}/comments`);
     const list = Array.isArray(comments) ? comments : [];
     commentsCache.set(cacheKey, { timestamp: Date.now(), comments: list });
-    renderCommentsList(list);
+
+    if (drawerGeneration === expectedGen && activeIssue && activeIssue.number === issueNumber && repoForIssue(activeIssue) === repo) {
+      renderCommentsList(list);
+    }
   } catch {
-    elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
+    if (drawerGeneration === expectedGen && activeIssue && activeIssue.number === issueNumber && repoForIssue(activeIssue) === repo) {
+      elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
+    }
   }
 }
 
@@ -5844,9 +6054,16 @@ async function submitNewIssue(): Promise<void> {
 
   elBtnNewIssueSubmit.disabled = true;
   elBtnNewIssueSubmit.textContent = 'Creating...';
+  const targetRepo = currentRepo;
+  if (!targetRepo) {
+    elBtnNewIssueSubmit.disabled = false;
+    elBtnNewIssueSubmit.textContent = 'Create Issue';
+    return;
+  }
+
   try {
-    addLog(`Creating issue in ${currentRepo}: "${title}"...`);
-    const created: any = await githubRequestWithRetry('POST', `/repos/${currentRepo}/issues`, {
+    addLog(`Creating issue in ${targetRepo}: "${title}"...`);
+    const created: any = await githubRequestWithRetry('POST', `/repos/${targetRepo}/issues`, {
       title,
       body,
       labels: initialLabels,
@@ -5856,14 +6073,29 @@ async function submitNewIssue(): Promise<void> {
     closeNewIssueModal();
 
     if (created && created.number) {
-      const normalizedCreated = normalizeGithubIssues([{ ...created, repo: currentRepo }]);
-      issues = mergeIssuePages(issues, normalizedCreated);
-      issueCache.set(currentRepo, { timestamp: Date.now(), issues });
-      if (host?.storage) {
-        void host.storage.set(`cached_issues_${currentRepo}`, { timestamp: Date.now(), issues } as any);
+      const normalizedCreated = normalizeGithubIssues([{ ...created, repo: targetRepo }]);
+      normalizedCreated.forEach((i) => {
+        i.repo = targetRepo;
+      });
+
+      if (currentRepo === targetRepo || isAllProjectsMode) {
+        issues = mergeIssuePages(issues, normalizedCreated);
+        renderViews();
+        statusReconciler.schedule(issues);
       }
-      renderViews();
-      statusReconciler.schedule(issues);
+
+      const existingCached = issueCache.get(targetRepo)?.issues || [];
+      const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
+      issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues } as any).catch(() => {});
+      }
+      if (isAllProjectsMode) {
+        issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any).catch(() => {});
+        }
+      }
     }
   } catch (err: any) {
     addLog(`Failed to create issue: ${err.message}`, 'error');
@@ -6159,11 +6391,15 @@ function initEvents(): void {
 
   // Refresh
   const refreshTasks = () => {
+    commentsCache.clear();
+    pageBodyCache.clear();
+    issueListEtagCache.clear();
+    repoIncrementalEtagCache.clear();
     if (isAllProjectsMode) {
       // Rescan projects first so newly linked repos are included, then refetch.
       void discoverWorkspaceRepositories().then(() => fetchAllProjectIssues(true));
     } else {
-      void fetchIssues();
+      void fetchIssues(true);
       void discoverWorkspaceRepositories();
     }
   };
@@ -6553,7 +6789,15 @@ function initEvents(): void {
   if (elDrawerPrioritySelect) {
     elDrawerPrioritySelect.addEventListener('change', async () => {
       const priorityRepo = repoForIssue(activeIssue);
-      if (!activeIssue || !priorityRepo) return;
+      if (!activeIssue || !priorityRepo) {
+        if (activeIssue && !priorityRepo) {
+          addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, 'warn');
+          if (host?.toast) {
+            void host.toast({ kind: 'error', message: `Cannot update #${activeIssue.number}: repository unknown` });
+          }
+        }
+        return;
+      }
       const val = elDrawerPrioritySelect.value;
       const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
       activeIssue.labels = updatedLabels.map((name) => ({ name }));
@@ -6578,9 +6822,16 @@ function initEvents(): void {
         const filteredLabels = activeIssue.labels
           .map((l) => (typeof l === 'string' ? l : l.name || ''))
           .filter((name) => !name.startsWith('status:'));
-        activeIssue.labels = filteredLabels.map((name) => ({ name }));
         const statusRepo = repoForIssue(activeIssue);
-        if (statusRepo) issueCache.delete(statusRepo);
+        if (!statusRepo) {
+          addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, 'warn');
+          if (host?.toast) {
+            void host.toast({ kind: 'error', message: `Cannot update #${activeIssue.number}: repository unknown` });
+          }
+          return;
+        }
+        activeIssue.labels = filteredLabels.map((name) => ({ name }));
+        issueCache.delete(statusRepo);
         renderViews();
         renderDrawer(activeIssue, true);
         void githubRequestWithRetry('PATCH', `/repos/${statusRepo}/issues/${activeIssue.number}`, {
@@ -6596,7 +6847,15 @@ function initEvents(): void {
   if (elDrawerComplexitySelect) {
     elDrawerComplexitySelect.addEventListener('change', async () => {
       const complexityRepo = repoForIssue(activeIssue);
-      if (!activeIssue || !complexityRepo) return;
+      if (!activeIssue || !complexityRepo) {
+        if (activeIssue && !complexityRepo) {
+          addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, 'warn');
+          if (host?.toast) {
+            void host.toast({ kind: 'error', message: `Cannot update #${activeIssue.number}: repository unknown` });
+          }
+        }
+        return;
+      }
       const val = elDrawerComplexitySelect.value;
       const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
       activeIssue.labels = updatedLabels.map((name) => ({ name }));

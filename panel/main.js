@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
@@ -64,13 +64,13 @@
   }
   var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
   var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
@@ -128,7 +128,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -359,7 +359,7 @@
     return wire;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
   var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
@@ -1109,7 +1109,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1159,7 +1159,7 @@
     return { requestId, action, parameters, context: readContext(context) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1280,7 +1280,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1355,7 +1355,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -1414,7 +1414,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1616,7 +1616,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -1664,7 +1664,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1712,7 +1712,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -1736,7 +1736,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return node;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1797,7 +1797,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -1831,7 +1831,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return target?.id ?? null;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -1866,7 +1866,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -1905,7 +1905,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -2062,7 +2062,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2106,7 +2106,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2166,7 +2166,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2191,7 +2191,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2279,7 +2279,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2321,7 +2321,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2350,7 +2350,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2396,7 +2396,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2422,7 +2422,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2465,7 +2465,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2571,7 +2571,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -4710,7 +4710,15 @@ ${issue.body || ""}`.slice(0, 15e3);
     const titlesPreview = issues2.map((i) => `#${i.number}`).join(", ");
     const title = `[${issues2.length} Issues] ${titlesPreview}`.slice(0, 150);
     const primaryUrl = (issues2[0]?.html_url || (repo ? `https://github.com/${repo}/issues` : "")).slice(0, 1e3);
-    const resolvedRepo = extractRepo(repo) || extractRepo(issues2[0]?.repo) || extractRepo(issues2[0]?.repository_url) || extractRepo(issues2[0]?.html_url);
+    const issueEntries = issues2.map((i) => {
+      const itemRepo = extractRepo(i.repo) || extractRepo(i?.repository_url) || extractRepo(i.html_url) || extractRepo(repo);
+      return {
+        number: i.number,
+        ...itemRepo ? { repo: itemRepo } : {}
+      };
+    });
+    const distinctRepos = new Set(issueEntries.map((e) => e.repo).filter(Boolean));
+    const uniformRepo = distinctRepos.size === 1 ? Array.from(distinctRepos)[0] : extractRepo(repo) || null;
     let text = `## Attached GitHub Issues (${issues2.length} items)
 `;
     if (repo) text += `Repository: ${repo}
@@ -4753,7 +4761,8 @@ ${issue.body.trim()}
         issueNumbers: numbers,
         count: issues2.length,
         isMulti: true,
-        ...resolvedRepo ? { repo: resolvedRepo } : {}
+        issues: issueEntries,
+        ...uniformRepo ? { repo: uniformRepo } : {}
       }
     };
   }
@@ -5253,35 +5262,85 @@ Blocked by ${blockerRef}`;
   }
   function normalizeGithubIssues(rawItems) {
     if (!rawItems || !Array.isArray(rawItems)) return [];
-    return rawItems.filter((item) => item && !item.pull_request).map((item) => ({
-      number: item.number,
-      title: item.title || "",
-      body: item.body || "",
-      state: item.state || "open",
-      html_url: item.html_url || "",
-      labels: item.labels || [],
-      user: item.user,
-      assignees: item.assignees || [],
-      comments: item.comments || 0,
-      created_at: item.created_at || "",
-      subtasks: parseSubtasks(item.body || ""),
-      openQuestions: parseOpenQuestions(item.body || ""),
-      humanTasks: parseHumanTasks(item.body || "")
-    }));
+    const parseRepo = (val) => {
+      if (!val || typeof val !== "string") return null;
+      const apiMatch = /api\.github\.com\/repos\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (apiMatch) return `${apiMatch[1]}/${apiMatch[2].replace(/\.git$/, "")}`;
+      const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, "")}`;
+      const cleaned = val.trim().replace(/\.git$/, "");
+      if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+      return null;
+    };
+    return rawItems.filter((item) => item && !item.pull_request).map((item) => {
+      const repo = parseRepo(item.repo) || parseRepo(item.repository_url) || parseRepo(item.html_url) || void 0;
+      return {
+        number: item.number,
+        title: item.title || "",
+        body: item.body || "",
+        state: item.state || "open",
+        html_url: item.html_url || "",
+        labels: (item.labels || []).map((l) => typeof l === "string" ? { name: l } : { name: l.name, ...l.color ? { color: l.color } : {} }),
+        ...item.user ? { user: { login: item.user.login, ...item.user.avatar_url ? { avatar_url: item.user.avatar_url } : {} } } : {},
+        assignees: (item.assignees || []).map((a) => ({ login: a.login, ...a.avatar_url ? { avatar_url: a.avatar_url } : {} })),
+        comments: item.comments || 0,
+        created_at: item.created_at || "",
+        subtasks: parseSubtasks(item.body || ""),
+        openQuestions: parseOpenQuestions(item.body || ""),
+        humanTasks: parseHumanTasks(item.body || ""),
+        ...repo ? { repo } : {},
+        ...item.projectId ? { projectId: item.projectId } : {},
+        ...item.projectName ? { projectName: item.projectName } : {}
+      };
+    });
   }
   function mergeIssuePages(existing, incoming) {
     const map = /* @__PURE__ */ new Map();
+    const parseRepo = (val) => {
+      if (!val || typeof val !== "string") return null;
+      const apiMatch = /api\.github\.com\/repos\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (apiMatch) return `${apiMatch[1]}/${apiMatch[2].replace(/\.git$/, "")}`;
+      const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, "")}`;
+      const cleaned = val.trim().replace(/\.git$/, "");
+      if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+      return null;
+    };
+    const getIssueKey = (issue) => {
+      const rawRepo = issue.repo ?? issue.projectRepo;
+      const repo = (parseRepo(rawRepo) || parseRepo(issue.html_url) || "").toLowerCase().trim();
+      return repo ? `${repo}#${issue.number}` : String(issue.number);
+    };
     if (Array.isArray(existing)) {
       for (const issue of existing) {
         if (issue && Number.isFinite(issue.number)) {
-          map.set(issue.number, issue);
+          map.set(getIssueKey(issue), issue);
         }
       }
     }
     if (Array.isArray(incoming)) {
       for (const issue of incoming) {
         if (issue && Number.isFinite(issue.number)) {
-          map.set(issue.number, issue);
+          let key = getIssueKey(issue);
+          let prev = map.get(key);
+          if (!prev && key.includes("#")) {
+            const bareKey = String(issue.number);
+            const bareIssue = map.get(bareKey);
+            if (bareIssue && !(bareIssue.repo || parseRepo(bareIssue.html_url))) {
+              prev = bareIssue;
+              map.delete(bareKey);
+            }
+          }
+          const repo = issue.repo || prev?.repo;
+          const projectId = issue.projectId || prev?.projectId;
+          const projectName = issue.projectName || prev?.projectName;
+          map.set(key, {
+            ...prev || {},
+            ...issue,
+            ...repo ? { repo } : {},
+            ...projectId ? { projectId } : {},
+            ...projectName ? { projectName } : {}
+          });
         }
       }
     }
@@ -5392,6 +5451,15 @@ Blocked by ${blockerRef}`;
   }
   function getSessionIssueRepo(item) {
     if (!item) return null;
+    if (Array.isArray(item.data?.issues)) {
+      const repos = /* @__PURE__ */ new Set();
+      for (const entry of item.data.issues) {
+        const r = parseRepoFullName(entry?.repo) || parseRepoFullName(entry?.projectRepo);
+        if (r) repos.add(r);
+      }
+      if (repos.size === 1) return Array.from(repos)[0];
+      if (repos.size > 1) return null;
+    }
     const explicit = item.repo ?? item.projectRepo ?? item.data?.repo;
     const fromExplicit = parseRepoFullName(explicit);
     if (fromExplicit) return fromExplicit;
@@ -5409,6 +5477,19 @@ Blocked by ${blockerRef}`;
     const items = Array.isArray(session.items) ? session.items : [];
     for (const item of items) {
       if (!item) continue;
+      let handledPerIssue = false;
+      if (Array.isArray(item.data?.issues)) {
+        for (const entry of item.data.issues) {
+          if (!entry) continue;
+          const entryRepo = parseRepoFullName(entry.repo) || parseRepoFullName(entry.projectRepo);
+          const entryNum = Number(entry.number ?? entry.issueNumber);
+          if (entryRepo && Number.isFinite(entryNum) && entryNum > 0) {
+            keys.add(`${entryRepo.toLowerCase()}#${entryNum}`);
+            handledPerIssue = true;
+          }
+        }
+      }
+      if (handledPerIssue) continue;
       const repo = getSessionIssueRepo(item);
       if (!repo) continue;
       const numbers = /* @__PURE__ */ new Set();
@@ -5533,28 +5614,47 @@ Blocked by ${blockerRef}`;
   }
   async function syncIncrementalRepoIssues(options) {
     const { repo, since, currentIssues, etag, requestFn } = options;
-    const path = buildIncrementalIssuesPath(repo, since);
-    const headers = etag ? { "If-None-Match": etag } : void 0;
-    const res = await requestFn("GET", path, void 0, void 0, headers);
-    if (res && (res.notModified || res.status === 304)) {
+    const MAX_INCREMENTAL_PAGES = 10;
+    let page = 1;
+    const allItems = [];
+    let newEtag = etag;
+    let truncated = false;
+    while (page <= MAX_INCREMENTAL_PAGES) {
+      const path = buildIncrementalIssuesPath(repo, since, page);
+      const headers = page === 1 && etag ? { "If-None-Match": etag } : void 0;
+      const res = await requestFn("GET", path, void 0, void 0, headers);
+      if (page === 1 && res && (res.notModified || res.status === 304)) {
+        return {
+          issues: currentIssues,
+          modified: false,
+          changedCount: 0,
+          etag: res.etag || etag,
+          truncated: false
+        };
+      }
+      if (page === 1 && (res?.etag || typeof res === "object" && res && res.etag)) {
+        newEtag = res?.etag || res.etag;
+      }
+      const items = Array.isArray(res) ? res : res?.items || res?.data || [];
+      if (items.length === 0) break;
+      allItems.push(...items);
+      if (items.length < 100) break;
+      if (page === MAX_INCREMENTAL_PAGES) {
+        truncated = true;
+        break;
+      }
+      page++;
+    }
+    if (allItems.length === 0) {
       return {
         issues: currentIssues,
         modified: false,
         changedCount: 0,
-        etag: res.etag || etag
+        etag: newEtag,
+        truncated: false
       };
     }
-    const items = Array.isArray(res) ? res : res?.items || res?.data || [];
-    const newEtag = res?.etag || (typeof res === "object" && res ? res.etag : void 0) || etag;
-    if (items.length === 0) {
-      return {
-        issues: currentIssues,
-        modified: false,
-        changedCount: 0,
-        etag: newEtag
-      };
-    }
-    const rawChanged = normalizeGithubIssues(items);
+    const rawChanged = normalizeGithubIssues(allItems);
     const cleanRepo = parseRepoFullName(repo) || repo;
     const changed = rawChanged.map((issue) => ({
       ...issue,
@@ -5565,7 +5665,8 @@ Blocked by ${blockerRef}`;
       issues: merged,
       modified: true,
       changedCount: changed.length,
-      etag: newEtag
+      etag: newEtag,
+      truncated
     };
   }
 
@@ -5812,6 +5913,9 @@ Blocked by ${blockerRef}`;
   var dirGitCache = /* @__PURE__ */ new Map();
   var issueCache = /* @__PURE__ */ new Map();
   var ISSUE_CACHE_TTL_MS = 6e4;
+  var DRAWER_COMMENTS_CACHE_TTL_MS = 6e4;
+  var commentsCache = /* @__PURE__ */ new Map();
+  var drawerGeneration = 0;
   var unsubSessions = null;
   var unsubWorktrees = null;
   var activeWatchedProjectId = null;
@@ -6044,6 +6148,8 @@ Blocked by ${blockerRef}`;
       return;
     }
     flushScratchpadSave();
+    drawerGeneration++;
+    commentsCache.clear();
     userSelectedTab = false;
     isAllProjectsMode = false;
     allProjectsRepoRefs = [];
@@ -6206,6 +6312,17 @@ Blocked by ${blockerRef}`;
   }
   var workspaceGitToken = null;
   var issueListEtagCache = /* @__PURE__ */ new Map();
+  var pageBodyCache = /* @__PURE__ */ new Map();
+  var MAX_PAGE_CACHE_ENTRIES = 100;
+  function setCachedPage(path, items, etag) {
+    if (pageBodyCache.size >= MAX_PAGE_CACHE_ENTRIES) {
+      const oldest = pageBodyCache.keys().next().value;
+      if (oldest) pageBodyCache.delete(oldest);
+    }
+    pageBodyCache.set(path, { items, etag, timestamp: Date.now() });
+  }
+  var repoIncrementalEtagCache = /* @__PURE__ */ new Map();
+  var repoSyncWatermarks = /* @__PURE__ */ new Map();
   var lastSyncTimestamp = Date.now();
   async function getWorkspaceGitToken() {
     if (workspaceGitToken) return workspaceGitToken;
@@ -6312,9 +6429,21 @@ Blocked by ${blockerRef}`;
           const rlErr = rateLimitErrorFromResponse(directRes.status, directRes.headers, errBody);
           if (rlErr) throw rlErr;
         }
+        if (directRes.status === 401) {
+          throw new Error("GitHub PAT authentication failed (401)");
+        }
+        if (method !== "GET") {
+          let errText = "";
+          try {
+            errText = await directRes.clone().text();
+          } catch {
+          }
+          throw new Error(`GitHub ${method} ${path} failed (${directRes.status}): ${errText}`);
+        }
         addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, "warn");
       } catch (err) {
         if (err && err.rateLimited) throw err;
+        if (method !== "GET") throw err;
         addLog(`Direct PAT fetch failed (${err.message}), falling back to host proxy...`, "warn");
       }
     }
@@ -6392,29 +6521,42 @@ Blocked by ${blockerRef}`;
     while (page <= MAX_PAGES && currentRepo === repo && activeStreamEpoch === epoch) {
       try {
         const pagePath = `/repos/${repo}/issues?state=all&per_page=100&page=${page}`;
-        const pageEtag = !force ? issueListEtagCache.get(pagePath) : void 0;
-        const nextRaw = await githubRequestWithRetry(
+        const cachedPage = !force ? pageBodyCache.get(pagePath) : void 0;
+        const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : void 0);
+        const canSendEtag = Boolean(pageEtag && cachedPage?.items);
+        let nextRaw = await githubRequestWithRetry(
           "GET",
           pagePath,
           void 0,
           void 0,
-          pageEtag ? { "If-None-Match": pageEtag } : void 0
+          canSendEtag && pageEtag ? { "If-None-Match": pageEtag } : void 0
         );
+        let nextItems = [];
         if (nextRaw && (nextRaw.notModified || nextRaw.status === 304)) {
-          page++;
-          continue;
+          if (cachedPage && cachedPage.items && cachedPage.items.length > 0) {
+            nextItems = cachedPage.items;
+            addLog(`Stream page ${page} -> 304 Not Modified (using cached page body)`, "succ");
+          } else {
+            nextRaw = await githubRequestWithRetry("GET", pagePath);
+            nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
+          }
+        } else {
+          nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
         }
         if (nextRaw?.etag) {
           issueListEtagCache.set(pagePath, nextRaw.etag);
         }
-        const nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
+        if (nextItems.length > 0) {
+          setCachedPage(pagePath, nextItems, nextRaw?.etag || pageEtag);
+        }
         if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
         const nextIssues = normalizeGithubIssues(nextItems);
         if (currentRepo !== repo || activeStreamEpoch !== epoch) break;
         issues = mergeIssuePages(issues, nextIssues);
         issueCache.set(repo, { timestamp: Date.now(), issues });
         if (host?.storage) {
-          void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+          void host.storage.set(storageKey, { timestamp: Date.now(), issues }).catch(() => {
+          });
         }
         renderViews();
         statusReconciler.schedule(issues);
@@ -6467,45 +6609,57 @@ Blocked by ${blockerRef}`;
     try {
       addLog(`Fetching issues for ${currentRepo}...`);
       const page1Path = `/repos/${currentRepo}/issues?state=all&per_page=100&page=1`;
-      const page1Etag = !force ? issueListEtagCache.get(page1Path) : void 0;
-      const page1Headers = page1Etag ? { "If-None-Match": page1Etag } : void 0;
-      const page1Raw = await githubRequestWithRetry(
+      const cachedPage1 = !force ? pageBodyCache.get(page1Path) : void 0;
+      const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(page1Path) : void 0);
+      const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || issues.length > 0));
+      const page1Headers = canSendEtag && page1Etag ? { "If-None-Match": page1Etag } : void 0;
+      let page1Raw = await githubRequestWithRetry(
         "GET",
         page1Path,
         void 0,
         void 0,
         page1Headers
       );
+      let page1Items = [];
       if (page1Raw && (page1Raw.notModified || page1Raw.status === 304)) {
-        addLog(`Page 1 for ${currentRepo} -> 304 Not Modified (using cached issues)`, "succ");
+        addLog(`Page 1 for ${currentRepo} -> 304 Not Modified`, "succ");
         lastSyncTimestamp = Date.now();
-        if (issues.length > 0) {
-          renderViews();
-          statusReconciler.schedule(issues);
-          return;
+        repoSyncWatermarks.set(currentRepo, Date.now());
+        if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
+          page1Items = cachedPage1.items;
+        } else {
+          addLog(`Page 1 for ${currentRepo} -> 304 with no cached body; retrying unconditionally`, "warn");
+          page1Raw = await githubRequestWithRetry("GET", page1Path);
+          page1Items = Array.isArray(page1Raw) ? page1Raw : page1Raw?.items || [];
         }
+      } else {
+        page1Items = Array.isArray(page1Raw) ? page1Raw : page1Raw?.items || [];
       }
       if (page1Raw?.etag) {
         issueListEtagCache.set(page1Path, page1Raw.etag);
       }
-      const page1Items = Array.isArray(page1Raw) ? page1Raw : page1Raw?.items || [];
+      if (page1Items.length > 0) {
+        setCachedPage(page1Path, page1Items, page1Raw?.etag || page1Etag);
+      }
       const page1Issues = normalizeGithubIssues(page1Items);
-      issues = page1Issues;
+      issues = issues.length > 0 ? mergeIssuePages(issues, page1Issues) : page1Issues;
       issueCache.set(currentRepo, {
         timestamp: Date.now(),
         issues
       });
       if (host?.storage) {
-        void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+        void host.storage.set(storageKey, { timestamp: Date.now(), issues }).catch(() => {
+        });
       }
       lastSyncTimestamp = Date.now();
+      repoSyncWatermarks.set(currentRepo, Date.now());
       addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, "succ");
       if (!userSelectedTab) {
         selectTab(resolveDefaultTab2(issues));
       }
       renderViews();
       statusReconciler.schedule(issues);
-      if (page1Items.length >= 100) {
+      if (page1Items.length >= 100 || issues.length >= 100) {
         void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch, force);
       }
     } catch (err) {
@@ -6526,45 +6680,66 @@ Blocked by ${blockerRef}`;
   }
   async function fetchAllRepoIssuePages(repo, epoch, force = false) {
     const page1Path = `/repos/${repo}/issues?state=all&per_page=100&page=1`;
-    const page1Etag = !force ? issueListEtagCache.get(page1Path) : void 0;
-    const firstRaw = await githubRequestWithRetry(
+    const cachedPage1 = !force ? pageBodyCache.get(page1Path) : void 0;
+    const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(page1Path) : void 0);
+    const cachedRepoIssues = issueCache.get(repo)?.issues;
+    const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || cachedRepoIssues && cachedRepoIssues.length > 0));
+    let firstRaw = await githubRequestWithRetry(
       "GET",
       page1Path,
       void 0,
       void 0,
-      page1Etag ? { "If-None-Match": page1Etag } : void 0
+      canSendEtag && page1Etag ? { "If-None-Match": page1Etag } : void 0
     );
+    let firstItems = [];
     if (firstRaw && (firstRaw.notModified || firstRaw.status === 304)) {
-      const cached = issueCache.get(repo)?.issues;
-      if (cached && cached.length > 0) {
-        return cached;
+      if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
+        firstItems = cachedPage1.items;
+      } else {
+        firstRaw = await githubRequestWithRetry("GET", page1Path);
+        firstItems = Array.isArray(firstRaw) ? firstRaw : firstRaw?.items || [];
       }
+    } else {
+      firstItems = Array.isArray(firstRaw) ? firstRaw : firstRaw?.items || [];
     }
     if (firstRaw?.etag) {
       issueListEtagCache.set(page1Path, firstRaw.etag);
     }
-    const firstItems = Array.isArray(firstRaw) ? firstRaw : firstRaw?.items || [];
+    if (firstItems.length > 0) {
+      setCachedPage(page1Path, firstItems, firstRaw?.etag || page1Etag);
+    }
     let repoIssues = normalizeGithubIssues(firstItems);
     if (firstItems.length < 100) return repoIssues;
     let page = 2;
     while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
       const pagePath = `/repos/${repo}/issues?state=all&per_page=100&page=${page}`;
-      const pageEtag = !force ? issueListEtagCache.get(pagePath) : void 0;
-      const nextRaw = await githubRequestWithRetry(
+      const cachedPage = !force ? pageBodyCache.get(pagePath) : void 0;
+      const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : void 0);
+      const canSendPageEtag = Boolean(pageEtag && cachedPage?.items);
+      let nextRaw = await githubRequestWithRetry(
         "GET",
         pagePath,
         void 0,
         void 0,
-        pageEtag ? { "If-None-Match": pageEtag } : void 0
+        canSendPageEtag && pageEtag ? { "If-None-Match": pageEtag } : void 0
       );
+      let nextItems = [];
       if (nextRaw && (nextRaw.notModified || nextRaw.status === 304)) {
-        page++;
-        continue;
+        if (cachedPage && cachedPage.items && cachedPage.items.length > 0) {
+          nextItems = cachedPage.items;
+        } else {
+          nextRaw = await githubRequestWithRetry("GET", pagePath);
+          nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
+        }
+      } else {
+        nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
       }
       if (nextRaw?.etag) {
         issueListEtagCache.set(pagePath, nextRaw.etag);
       }
-      const nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
+      if (nextItems.length > 0) {
+        setCachedPage(pagePath, nextItems, nextRaw?.etag || pageEtag);
+      }
       if (nextItems.length === 0) break;
       repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
       if (nextItems.length < 100) break;
@@ -6624,7 +6799,18 @@ Blocked by ${blockerRef}`;
       issues = aggregateProjectIssues(sources);
       issueCache.set(cacheKey, { timestamp: Date.now(), issues });
       if (host?.storage) {
-        void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues });
+        void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues }).catch(() => {
+        });
+      }
+      for (const src of sources) {
+        if (src.repo && src.issues) {
+          issueCache.set(src.repo, { timestamp: Date.now(), issues: src.issues });
+          if (host?.storage) {
+            void host.storage.set(`cached_issues_${src.repo}`, { timestamp: Date.now(), issues: src.issues }).catch(() => {
+            });
+          }
+          repoSyncWatermarks.set(src.repo, Date.now());
+        }
       }
       lastSyncTimestamp = Date.now();
       if (!userSelectedTab) selectTab(resolveDefaultTab2(issues));
@@ -6647,40 +6833,89 @@ Blocked by ${blockerRef}`;
       }
     }
   }
-  async function syncRepoIncremental(repo, sinceIso) {
-    const path = buildIncrementalIssuesPath(repo, sinceIso);
-    const etag = issueListEtagCache.get(path);
+  var isIdleSyncing = false;
+  var pendingIdleRefresh = false;
+  async function syncRepoIncremental(repo, sinceIso, watermarkTime) {
+    const cleanRepo = parseRepoFullName(repo) || repo;
+    const etag = repoIncrementalEtagCache.get(cleanRepo);
+    const epoch = activeStreamEpoch;
     try {
       const result = await syncIncrementalRepoIssues({
-        repo,
+        repo: cleanRepo,
         since: sinceIso,
         currentIssues: issues,
         etag,
         requestFn: (method, reqPath, body, query, headers) => githubRequestWithRetry(method, reqPath, body, query, headers)
       });
-      if (result.etag) {
-        issueListEtagCache.set(path, result.etag);
+      if (result.etag && !result.truncated) {
+        repoIncrementalEtagCache.set(cleanRepo, result.etag);
+      } else if (result.truncated) {
+        repoIncrementalEtagCache.delete(cleanRepo);
+      }
+      if (result.truncated) {
+        addLog(`Incremental sync for ${cleanRepo} truncated at 1,000 changes. Watermark preserved for retry.`, "warn");
+        if (host?.toast) {
+          void host.toast({
+            kind: "info",
+            message: `Incremental sync for ${cleanRepo} exceeded 1,000 changes. Consider manual refresh.`
+          });
+        }
+      } else {
+        repoSyncWatermarks.set(cleanRepo, watermarkTime);
       }
       if (!result.modified) {
-        addLog(`Incremental sync for ${repo}: no changes`);
-        return;
+        addLog(`Incremental sync for ${cleanRepo}: no changes`);
+        return true;
       }
+      if (!isAllProjectsMode && currentRepo !== cleanRepo) {
+        addLog(`Scope switched away from ${cleanRepo}; updating background cache only`, "info");
+        const existingCached = issueCache.get(cleanRepo)?.issues || [];
+        const updated = mergeIssuePages(existingCached, result.issues.filter((i) => (getIssueRepoFullName(i) || i.repo)?.toLowerCase() === cleanRepo.toLowerCase()));
+        issueCache.set(cleanRepo, { timestamp: Date.now(), issues: updated });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: updated }).catch(() => {
+          });
+        }
+        return true;
+      }
+      if (activeStreamEpoch !== epoch) return true;
       issues = result.issues;
-      issueCache.set(repo, { timestamp: Date.now(), issues });
-      if (host?.storage) {
-        void host.storage.set(`cached_issues_${repo}`, { timestamp: Date.now(), issues });
-      }
       if (isAllProjectsMode) {
         issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
         if (host?.storage) {
-          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues });
+          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+          });
+        }
+        const repoOnlyIssues = issues.filter((i) => (getIssueRepoFullName(i) || i.repo)?.toLowerCase() === cleanRepo.toLowerCase());
+        if (repoOnlyIssues.length > 0) {
+          issueCache.set(cleanRepo, { timestamp: Date.now(), issues: repoOnlyIssues });
+          if (host?.storage) {
+            void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: repoOnlyIssues }).catch(() => {
+            });
+          }
+        }
+      } else {
+        issueCache.set(cleanRepo, { timestamp: Date.now(), issues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues }).catch(() => {
+          });
         }
       }
       renderViews();
       statusReconciler.schedule(issues);
-      addLog(`Incremental sync for ${repo}: updated ${result.changedCount} issue(s)`, "succ");
+      if (activeIssue) {
+        const activeRepo = repoForIssue(activeIssue);
+        const updatedActive = issues.find((i) => i.number === activeIssue.number && repoForIssue(i) === activeRepo);
+        if (updatedActive) {
+          activeIssue = updatedActive;
+          renderDrawer(activeIssue, true);
+        }
+      }
+      addLog(`Incremental sync for ${cleanRepo}: updated ${result.changedCount} issue(s)`, "succ");
+      return true;
     } catch (err) {
-      addLog(`Incremental sync failed for ${repo}: ${err.message}`, "warn");
+      addLog(`Incremental sync failed for ${cleanRepo}: ${err.message}`, "warn");
+      return false;
     }
   }
   async function handleIdleRefresh(currentSessions, previousSessions) {
@@ -6689,39 +6924,50 @@ Blocked by ${blockerRef}`;
       return s.activity === "idle" && (!prev || prev.activity !== "idle");
     });
     if (idleSessions.length === 0) return;
-    const sinceTime = lastSyncTimestamp;
-    const sinceIso = new Date(sinceTime).toISOString();
-    lastSyncTimestamp = Date.now();
-    addLog(`Session became idle \u2014 incremental sync for changes since ${sinceIso}...`);
-    if (!isAllProjectsMode) {
-      if (!currentRepo) return;
-      await syncRepoIncremental(currentRepo, sinceIso);
-    } else {
-      const targetRepos = /* @__PURE__ */ new Set();
-      for (const s of idleSessions) {
-        const items = Array.isArray(s.items) ? s.items : [];
-        for (const item of items) {
-          const r = getSessionIssueRepo(item);
-          if (r) targetRepos.add(r);
+    if (isIdleSyncing) {
+      pendingIdleRefresh = true;
+      addLog("Idle refresh already in progress; queuing trailing sync", "info");
+      return;
+    }
+    isIdleSyncing = true;
+    try {
+      do {
+        pendingIdleRefresh = false;
+        const watermarkStart = Date.now();
+        const reposToSync = isAllProjectsMode ? allProjectsRepoRefs.length > 0 ? allProjectsRepoRefs.map((r) => r.repo) : currentRepo ? [currentRepo] : [] : currentRepo ? [currentRepo] : [];
+        addLog(`Session idle \u2014 incremental sync across ${reposToSync.length} repo(s)...`);
+        for (const repo of reposToSync) {
+          const cleanRepo = parseRepoFullName(repo) || repo;
+          const prevWatermark = repoSyncWatermarks.get(cleanRepo);
+          const sinceTime = prevWatermark ? Math.max(0, prevWatermark - 1e4) : watermarkStart - 6e4;
+          const sinceIso = new Date(sinceTime).toISOString();
+          await syncRepoIncremental(cleanRepo, sinceIso, watermarkStart);
         }
-      }
-      const reposToSync = targetRepos.size > 0 ? Array.from(targetRepos) : allProjectsRepoRefs.map((r) => r.repo);
-      for (const repo of reposToSync) {
-        await syncRepoIncremental(repo, sinceIso);
-      }
+        lastSyncTimestamp = Date.now();
+      } while (pendingIdleRefresh);
+    } finally {
+      isIdleSyncing = false;
     }
   }
   function repoForIssue(issue) {
-    if (issue && isAllProjectsMode && issue.repo) return issue.repo;
+    if (issue?.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY) return issue.repo;
+    if (isAllProjectsMode) return "";
     return currentRepo;
   }
   async function updateIssueBody(issue, newBody) {
+    const repo = repoForIssue(issue);
+    if (!repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
+    }
     issue.body = newBody;
     issue.subtasks = parseSubtasks(newBody);
     issue.openQuestions = parseOpenQuestions(newBody);
     issue.humanTasks = parseHumanTasks(newBody);
-    const repo = repoForIssue(issue);
-    if (repo) issueCache.delete(repo);
+    issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue, true);
@@ -6738,7 +6984,15 @@ Blocked by ${blockerRef}`;
   }
   async function updateIssueStatus(issue, targetColumn, options) {
     const repo = repoForIssue(issue);
-    if (!issue || !repo) return;
+    if (!issue || !repo) {
+      if (issue && !repo) {
+        addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+        if (host?.toast) {
+          void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+        }
+      }
+      return;
+    }
     const prevLabels = [...issue.labels || []];
     const prevState = issue.state;
     const currentLabels = (issue.labels || []).map((l) => typeof l === "string" ? l : l.name || "");
@@ -6750,7 +7004,7 @@ Blocked by ${blockerRef}`;
     } else {
       filteredLabels.push(`status:${targetColumn}`);
     }
-    if (options?.newPriorityGroup && options.newPriorityGroup !== "none") {
+    if (options?.newPriorityGroup !== void 0) {
       filteredLabels = updatePriorityLabels(filteredLabels, options.newPriorityGroup);
     }
     issue.state = newState;
@@ -6874,9 +7128,14 @@ Blocked by ${blockerRef}`;
     issue.state = newState;
     issue.labels = clean.map((name) => ({ name }));
     const archiveRepo = repoForIssue(issue);
-    if (archiveRepo) {
-      issueCache.delete(archiveRepo);
+    if (!archiveRepo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
     }
+    issueCache.delete(archiveRepo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue, true);
@@ -7629,7 +7888,7 @@ Blocked by ${blockerRef}`;
         if (!issue) return;
         const subEl = e.target?.closest?.(".kanban-subgroup");
         const subgroupId = subEl?.dataset?.subgroupId;
-        const newPriorityGroup = currentGroupBy === "priority" && subgroupId && subgroupId !== "none" ? subgroupId : void 0;
+        const newPriorityGroup = currentGroupBy === "priority" && subgroupId ? subgroupId : void 0;
         await updateIssueStatus(issue, col.id, { newPriorityGroup });
       });
       let displayIssues = colIssues;
@@ -8837,8 +9096,9 @@ Blocked by ${blockerRef}`;
     }
   }
   function openDrawer(issue) {
+    drawerGeneration++;
     activeIssue = issue;
-    renderDrawer(issue);
+    renderDrawer(issue, false, drawerGeneration, true);
     elDrawerScrim.classList.add("active");
     elTaskDrawer.classList.add("active");
     document.body.classList.add("drawer-open");
@@ -8847,6 +9107,7 @@ Blocked by ${blockerRef}`;
     }
   }
   function closeDrawer() {
+    drawerGeneration++;
     activeIssue = null;
     elDrawerScrim.classList.remove("active");
     elTaskDrawer.classList.remove("active");
@@ -8907,13 +9168,21 @@ Blocked by ${blockerRef}`;
     if (!clean) return;
     const currentNames = issue.labels.map((l) => l.name);
     if (currentNames.some((n) => n.toLowerCase() === clean.toLowerCase())) return;
+    const repo = repoForIssue(issue);
+    if (!repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
+    }
     const newNames = [...currentNames, clean];
     issue.labels.push({ name: clean });
     renderDrawerLabels(issue);
     renderViews();
     try {
       addLog(`Adding label "${clean}" to #${issue.number}...`);
-      await githubRequestWithRetry("PATCH", `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
+      await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         labels: newNames
       });
       await host.toast({ kind: "success", message: `Added label "${clean}" to #${issue.number}` });
@@ -8923,6 +9192,14 @@ Blocked by ${blockerRef}`;
     }
   }
   async function removeTagFromIssue(issue, tagName) {
+    const repo = repoForIssue(issue);
+    if (!repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
+    }
     const target = tagName.trim().toLowerCase();
     const newLabels = issue.labels.filter((l) => l.name.toLowerCase() !== target);
     issue.labels = newLabels;
@@ -8930,7 +9207,7 @@ Blocked by ${blockerRef}`;
     renderViews();
     try {
       addLog(`Removing label "${tagName}" from #${issue.number}...`);
-      await githubRequestWithRetry("PATCH", `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
+      await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         labels: newLabels.map((l) => l.name)
       });
       await host.toast({ kind: "info", message: `Removed label "${tagName}" from #${issue.number}` });
@@ -8939,7 +9216,7 @@ Blocked by ${blockerRef}`;
       await host.toast({ kind: "error", message: `Failed to remove label: ${err.message}` });
     }
   }
-  function renderDrawer(issue, skipComments = false) {
+  function renderDrawer(issue, skipComments = false, gen = drawerGeneration, forceFreshComments = false) {
     elDrawerIssueNumber.textContent = `#${issue.number}`;
     elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : "";
     elDrawerGithubLink.href = issue.html_url;
@@ -9022,7 +9299,7 @@ Blocked by ${blockerRef}`;
       }
     });
     if (!skipComments) {
-      void loadComments(issue.number);
+      void loadComments(issue.number, gen, forceFreshComments);
     }
     renderDrawerDependencies(issue);
     renderRelatedIssues(issue);
@@ -9247,8 +9524,6 @@ Blocked by ${blockerRef}`;
       });
     }
   }
-  var DRAWER_COMMENTS_CACHE_TTL_MS = 6e4;
-  var commentsCache = /* @__PURE__ */ new Map();
   function renderCommentsList(comments) {
     elCommentCountBadge.textContent = String(comments.length);
     if (!comments || comments.length === 0) {
@@ -9269,25 +9544,35 @@ Blocked by ${blockerRef}`;
       `;
     }).join("");
   }
-  async function loadComments(issueNumber, force = false) {
+  async function loadComments(issueNumber, expectedGen = drawerGeneration, force = false) {
     const commentIssue = activeIssue && activeIssue.number === issueNumber ? activeIssue : issues.find((i) => i.number === issueNumber) || null;
     const repo = repoForIssue(commentIssue);
-    const cacheKey = `${(repo || "").toLowerCase()}#${issueNumber}`;
+    if (!repo) return;
+    const cacheKey = `${repo.toLowerCase()}#${issueNumber}`;
     if (!force && commentsCache.has(cacheKey)) {
       const cached = commentsCache.get(cacheKey);
       if (Date.now() - cached.timestamp < DRAWER_COMMENTS_CACHE_TTL_MS) {
-        renderCommentsList(cached.comments);
+        if (drawerGeneration === expectedGen && activeIssue && activeIssue.number === issueNumber && repoForIssue(activeIssue) === repo) {
+          renderCommentsList(cached.comments);
+        }
         return;
       }
+    }
+    if (drawerGeneration !== expectedGen || !activeIssue || activeIssue.number !== issueNumber) {
+      return;
     }
     elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-muted); font-size: 11.5px;">Loading comments...</div>';
     try {
       const comments = await githubRequestWithRetry("GET", `/repos/${repo}/issues/${issueNumber}/comments`);
       const list = Array.isArray(comments) ? comments : [];
       commentsCache.set(cacheKey, { timestamp: Date.now(), comments: list });
-      renderCommentsList(list);
+      if (drawerGeneration === expectedGen && activeIssue && activeIssue.number === issueNumber && repoForIssue(activeIssue) === repo) {
+        renderCommentsList(list);
+      }
     } catch {
-      elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
+      if (drawerGeneration === expectedGen && activeIssue && activeIssue.number === issueNumber && repoForIssue(activeIssue) === repo) {
+        elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
+      }
     }
   }
   function renderRelatedIssues(issue) {
@@ -10218,9 +10503,15 @@ ${issue.body}
     }
     elBtnNewIssueSubmit.disabled = true;
     elBtnNewIssueSubmit.textContent = "Creating...";
+    const targetRepo = currentRepo;
+    if (!targetRepo) {
+      elBtnNewIssueSubmit.disabled = false;
+      elBtnNewIssueSubmit.textContent = "Create Issue";
+      return;
+    }
     try {
-      addLog(`Creating issue in ${currentRepo}: "${title}"...`);
-      const created = await githubRequestWithRetry("POST", `/repos/${currentRepo}/issues`, {
+      addLog(`Creating issue in ${targetRepo}: "${title}"...`);
+      const created = await githubRequestWithRetry("POST", `/repos/${targetRepo}/issues`, {
         title,
         body,
         labels: initialLabels
@@ -10229,14 +10520,29 @@ ${issue.body}
       await host.toast({ kind: "success", message: `Created #${created.number} on GitHub` });
       closeNewIssueModal();
       if (created && created.number) {
-        const normalizedCreated = normalizeGithubIssues([{ ...created, repo: currentRepo }]);
-        issues = mergeIssuePages(issues, normalizedCreated);
-        issueCache.set(currentRepo, { timestamp: Date.now(), issues });
-        if (host?.storage) {
-          void host.storage.set(`cached_issues_${currentRepo}`, { timestamp: Date.now(), issues });
+        const normalizedCreated = normalizeGithubIssues([{ ...created, repo: targetRepo }]);
+        normalizedCreated.forEach((i) => {
+          i.repo = targetRepo;
+        });
+        if (currentRepo === targetRepo || isAllProjectsMode) {
+          issues = mergeIssuePages(issues, normalizedCreated);
+          renderViews();
+          statusReconciler.schedule(issues);
         }
-        renderViews();
-        statusReconciler.schedule(issues);
+        const existingCached = issueCache.get(targetRepo)?.issues || [];
+        const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
+        issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues }).catch(() => {
+          });
+        }
+        if (isAllProjectsMode) {
+          issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+          if (host?.storage) {
+            void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+            });
+          }
+        }
       }
     } catch (err) {
       addLog(`Failed to create issue: ${err.message}`, "error");
@@ -10464,10 +10770,14 @@ ${issue.body}
       }
     });
     const refreshTasks = () => {
+      commentsCache.clear();
+      pageBodyCache.clear();
+      issueListEtagCache.clear();
+      repoIncrementalEtagCache.clear();
       if (isAllProjectsMode) {
         void discoverWorkspaceRepositories().then(() => fetchAllProjectIssues(true));
       } else {
-        void fetchIssues();
+        void fetchIssues(true);
         void discoverWorkspaceRepositories();
       }
     };
@@ -10813,7 +11123,15 @@ ${issue.body}
     if (elDrawerPrioritySelect) {
       elDrawerPrioritySelect.addEventListener("change", async () => {
         const priorityRepo = repoForIssue(activeIssue);
-        if (!activeIssue || !priorityRepo) return;
+        if (!activeIssue || !priorityRepo) {
+          if (activeIssue && !priorityRepo) {
+            addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, "warn");
+            if (host?.toast) {
+              void host.toast({ kind: "error", message: `Cannot update #${activeIssue.number}: repository unknown` });
+            }
+          }
+          return;
+        }
         const val = elDrawerPrioritySelect.value;
         const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
         activeIssue.labels = updatedLabels.map((name) => ({ name }));
@@ -10835,9 +11153,16 @@ ${issue.body}
         const val = elDrawerStatusSelect.value;
         if (val === "none") {
           const filteredLabels = activeIssue.labels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.startsWith("status:"));
-          activeIssue.labels = filteredLabels.map((name) => ({ name }));
           const statusRepo = repoForIssue(activeIssue);
-          if (statusRepo) issueCache.delete(statusRepo);
+          if (!statusRepo) {
+            addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, "warn");
+            if (host?.toast) {
+              void host.toast({ kind: "error", message: `Cannot update #${activeIssue.number}: repository unknown` });
+            }
+            return;
+          }
+          activeIssue.labels = filteredLabels.map((name) => ({ name }));
+          issueCache.delete(statusRepo);
           renderViews();
           renderDrawer(activeIssue, true);
           void githubRequestWithRetry("PATCH", `/repos/${statusRepo}/issues/${activeIssue.number}`, {
@@ -10852,7 +11177,15 @@ ${issue.body}
     if (elDrawerComplexitySelect) {
       elDrawerComplexitySelect.addEventListener("change", async () => {
         const complexityRepo = repoForIssue(activeIssue);
-        if (!activeIssue || !complexityRepo) return;
+        if (!activeIssue || !complexityRepo) {
+          if (activeIssue && !complexityRepo) {
+            addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, "warn");
+            if (host?.toast) {
+              void host.toast({ kind: "error", message: `Cannot update #${activeIssue.number}: repository unknown` });
+            }
+          }
+          return;
+        }
         const val = elDrawerComplexitySelect.value;
         const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
         activeIssue.labels = updatedLabels.map((name) => ({ name }));
