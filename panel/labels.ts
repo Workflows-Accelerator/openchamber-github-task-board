@@ -104,7 +104,7 @@ export const STATUS_METADATA: Record<ColumnId, StatusLabelMetadata> = {
     name: 'Draft',
     displayName: 'Draft',
     color: '#6e7681',
-    description: 'Initial ideas or drafting phase requiring further clarification',
+    description: 'Passive ideas or notes; unblocked ideas awaiting drafting or alignment',
   },
   'backlog': {
     id: 'backlog',
@@ -144,7 +144,7 @@ export const STATUS_METADATA: Record<ColumnId, StatusLabelMetadata> = {
     name: 'Needs Human',
     displayName: 'Needs Human',
     color: '#f85149',
-    description: 'Blocked waiting on human permission, answers, or input',
+    description: 'Awaiting a human: permission, answers, alignment, or validation',
   },
   'in-review': {
     id: 'in-review',
@@ -152,7 +152,7 @@ export const STATUS_METADATA: Record<ColumnId, StatusLabelMetadata> = {
     name: 'In Review',
     displayName: 'In Review',
     color: '#3fb950',
-    description: 'Execution finished and awaiting human review or PR validation',
+    description: 'AI step: agent reviewing its own finished work (hostile review gate)',
   },
   'done': {
     id: 'done',
@@ -160,7 +160,7 @@ export const STATUS_METADATA: Record<ColumnId, StatusLabelMetadata> = {
     name: 'Done',
     displayName: 'Done',
     color: '#238636',
-    description: 'Completed or closed',
+    description: 'Completed and validated by a human (no agent self-close)',
   },
 };
 
@@ -401,7 +401,7 @@ export function resolveIssueColumn(
   // Explicit status:in-progress label
   if (labelNames.includes('status:in-progress')) {
     if (isSessionIdle) {
-      return 'in-review';
+      return 'needs-human';
     }
     if (isSessionWaiting) {
       return 'needs-human';
@@ -450,6 +450,9 @@ export function resolveIssueColumn(
     if (isSessionWaiting) {
       return 'needs-human';
     }
+    if (isSessionIdle) {
+      return 'needs-human';
+    }
     return 'draft';
   }
 
@@ -462,7 +465,7 @@ export function resolveIssueColumn(
       return 'needs-human';
     }
     if (isSessionIdle) {
-      return 'in-review';
+      return 'needs-human';
     }
   }
 

@@ -61,6 +61,29 @@ test('8-stage status label constants and metadata exist', () => {
   }
 });
 
+test('STATUS_METADATA descriptions align with issue-body-contract v1', () => {
+  const draftMeta = STATUS_METADATA['draft'];
+  assert.ok(
+    draftMeta.description.toLowerCase().includes('passive ideas') ||
+    draftMeta.description.toLowerCase().includes('notes'),
+    'draft description must state passive ideas/notes'
+  );
+
+  const doneMeta = STATUS_METADATA['done'];
+  assert.ok(
+    doneMeta.description.toLowerCase().includes('human') &&
+    (doneMeta.description.toLowerCase().includes('no agent self-close') || doneMeta.description.toLowerCase().includes('validated')),
+    'done description must reflect human validation, no agent self-close'
+  );
+
+  const inReviewMeta = STATUS_METADATA['in-review'];
+  assert.ok(
+    inReviewMeta.description.toLowerCase().includes('hostile review') ||
+    inReviewMeta.description.toLowerCase().includes('ai step'),
+    'in-review description must reflect AI review step'
+  );
+});
+
 test('a) All 8 columns resolve correctly according to labels and session states', () => {
   // 1. Closed or status:done -> 'done'
   const closedIssue = { number: 1, state: 'closed', labels: [] };
@@ -82,7 +105,7 @@ test('a) All 8 columns resolve correctly according to labels and session states'
   assert.equal(resolveIssueColumn(inProgressIssue), 'in-progress');
   assert.equal(resolveIssueColumn(inProgressIssue, runningSession), 'in-progress');
   const idleSession = { id: 's-idle', title: '#5 task', activity: 'idle' };
-  assert.equal(resolveIssueColumn(inProgressIssue, idleSession), 'in-review');
+  assert.equal(resolveIssueColumn(inProgressIssue, idleSession), 'needs-human');
 
   // 5. status:planned
   const plannedIssue = { number: 6, state: 'open', labels: [{ name: 'status:planned' }] };
@@ -103,6 +126,7 @@ test('a) All 8 columns resolve correctly according to labels and session states'
   const draftIssue = { number: 9, state: 'open', labels: [{ name: 'status:draft' }] };
   assert.equal(resolveIssueColumn(draftIssue), 'draft');
   assert.equal(resolveIssueColumn(draftIssue, runningSession), 'in-progress');
+  assert.equal(resolveIssueColumn(draftIssue, idleSession), 'needs-human');
 
   // Session-derived for unlabelled well-formed issue
   const wellFormedUnlabelled = {
@@ -117,8 +141,8 @@ test('a) All 8 columns resolve correctly according to labels and session states'
   assert.equal(resolveIssueColumn(wellFormedUnlabelled), 'todo');
   // Session running -> 'in-progress'
   assert.equal(resolveIssueColumn(wellFormedUnlabelled, runningSession), 'in-progress');
-  // Session idle -> 'in-review'
-  assert.equal(resolveIssueColumn(wellFormedUnlabelled, idleSession), 'in-review');
+  // Session idle -> 'needs-human'
+  assert.equal(resolveIssueColumn(wellFormedUnlabelled, idleSession), 'needs-human');
 });
 
 test('b) isVagueIdea issues automatically route to draft', () => {
@@ -169,6 +193,10 @@ test('b) isVagueIdea issues automatically route to draft', () => {
   // But if a session is actively running on a vague idea, it routes to 'in-progress'
   const runningSession = { id: 's-run', title: '#20 task', activity: 'running' };
   assert.equal(resolveIssueColumn(emptyIssue, runningSession), 'in-progress');
+
+  // If a session on a vague idea goes idle, it routes to 'needs-human'
+  const idleSession = { id: 's-idle', title: '#20 task', activity: 'idle' };
+  assert.equal(resolveIssueColumn(emptyIssue, idleSession), 'needs-human');
 });
 
 test('c) waiting-permission and waiting-question map to needs-human', () => {
@@ -258,14 +286,14 @@ test('d) reconciler updates status labels without loops or race conditions', asy
   assert.equal(patchedCalls.length, 0);
 
   // 3. Debounce behavior: Multiple schedule calls within debounce period collapse to 1 execution
-  sessionsMap.set(101, { id: 's-101', activity: 'idle' }); // implies in-review
+  sessionsMap.set(101, { id: 's-101', activity: 'idle' }); // implies needs-human
   reconciler.schedule([issue1]);
   reconciler.schedule([issue1]);
   reconciler.schedule([issue1]);
 
   await new Promise((resolve) => setTimeout(resolve, 50));
   assert.equal(patchedCalls.length, 1);
-  assert.deepEqual(patchedCalls[0], { issueNumber: 101, targetColumn: 'in-review' });
+  assert.deepEqual(patchedCalls[0], { issueNumber: 101, targetColumn: 'needs-human' });
 
   // 4. Race condition prevention: In-flight requests lock the issue
   patchedCalls.length = 0;

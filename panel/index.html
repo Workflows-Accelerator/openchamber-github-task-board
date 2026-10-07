@@ -398,11 +398,14 @@
       .view-mode-btn { padding: 3px 6px; }
     }
 
-    /* Switch between List, Kanban, and Graph when data-layout is set */
+    /* Switch between List, Kanban, Graph, Human, All Tasks, and Questions when data-layout is set */
     body[data-layout="kanban"] .status-tabs { display: none; }
     body[data-layout="kanban"] .list-view { display: none; }
     body[data-layout="kanban"] .kanban-view { display: flex; }
     body[data-layout="kanban"] .graph-view { display: none; }
+    body[data-layout="kanban"] .human-view { display: none; }
+    body[data-layout="kanban"] .all-tasks-view { display: none; }
+    body[data-layout="kanban"] .questions-view { display: none; }
 
     /* Mode 3: Dependency Graph Waterfall View */
     .graph-view {
@@ -419,6 +422,33 @@
     body[data-layout="graph"] .list-view { display: none; }
     body[data-layout="graph"] .kanban-view { display: none; }
     body[data-layout="graph"] .graph-view { display: flex; }
+    body[data-layout="graph"] .human-view { display: none; }
+    body[data-layout="graph"] .all-tasks-view { display: none; }
+    body[data-layout="graph"] .questions-view { display: none; }
+
+    body[data-layout="human"] .status-tabs { display: none; }
+    body[data-layout="human"] .list-view { display: none; }
+    body[data-layout="human"] .kanban-view { display: none; }
+    body[data-layout="human"] .graph-view { display: none; }
+    body[data-layout="human"] .human-view { display: flex; }
+    body[data-layout="human"] .all-tasks-view { display: none; }
+    body[data-layout="human"] .questions-view { display: none; }
+
+    body[data-layout="all-tasks"] .status-tabs { display: none; }
+    body[data-layout="all-tasks"] .list-view { display: none; }
+    body[data-layout="all-tasks"] .kanban-view { display: none; }
+    body[data-layout="all-tasks"] .graph-view { display: none; }
+    body[data-layout="all-tasks"] .human-view { display: none; }
+    body[data-layout="all-tasks"] .all-tasks-view { display: flex; }
+    body[data-layout="all-tasks"] .questions-view { display: none; }
+
+    body[data-layout="questions"] .status-tabs { display: none; }
+    body[data-layout="questions"] .list-view { display: none; }
+    body[data-layout="questions"] .kanban-view { display: none; }
+    body[data-layout="questions"] .graph-view { display: none; }
+    body[data-layout="questions"] .human-view { display: none; }
+    body[data-layout="questions"] .all-tasks-view { display: none; }
+    body[data-layout="questions"] .questions-view { display: flex; }
 
     /* Graph Toolbar & Controls */
     .graph-topbar {
@@ -621,6 +651,13 @@
     }
     @keyframes graphDash {
       to { stroke-dashoffset: -20; }
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .spin-fast {
+      animation: spin 1s linear infinite;
     }
 
     /* Waterfall Layers */
@@ -2329,6 +2366,350 @@
       gap: 8px;
     }
 
+    /* Mode 4: Human Tasks View */
+    .human-view {
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 12px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .human-repo-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .human-repo-header {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .human-issue-card {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .human-issue-card:hover {
+      border-color: var(--border-hover, var(--border));
+    }
+
+    .human-issue-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      border-radius: var(--rad-sm);
+      padding: 2px 4px;
+      margin: -2px -4px;
+      transition: background 0.12s ease;
+    }
+    .human-issue-header:hover {
+      background: var(--surf-hover);
+    }
+    .human-issue-header:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .human-issue-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .human-issue-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--fg);
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .human-issue-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .human-todo-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .human-todo-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: var(--rad-sm);
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+      font-size: 12.5px;
+      line-height: 1.4;
+      color: var(--fg);
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .human-todo-item:hover {
+      background: var(--surf-hover);
+      border-color: var(--border);
+    }
+    .human-todo-item.done {
+      opacity: 0.55;
+    }
+    .human-todo-item.done .human-todo-text {
+      text-decoration: line-through;
+    }
+
+    .human-todo-checkbox {
+      margin-top: 2px;
+      cursor: pointer;
+      width: 15px;
+      height: 15px;
+      accent-color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    .human-todo-text {
+      flex: 1;
+      min-width: 0;
+      word-break: break-word;
+    }
+
+    .human-todo-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      flex-shrink: 0;
+      user-select: none;
+    }
+    .badge-human-task {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+    }
+    .badge-open-question {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .badge-session-waiting {
+      background: rgba(168, 85, 247, 0.15);
+      color: #c084fc;
+      border: 1px solid rgba(168, 85, 247, 0.3);
+    }
+
+    /* Mode 5: All Tasks View */
+    .all-tasks-view {
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 12px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .all-tasks-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .all-tasks-group-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .all-tasks-group-title {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .all-tasks-group-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-top: 4px;
+    }
+
+    .all-task-card {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad-sm);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: all 0.15s ease;
+    }
+    .all-task-card:hover {
+      background: var(--surf-hover);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .all-task-card:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .all-task-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .all-task-title {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--fg);
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .all-task-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* Mode 6: Questions View */
+    .questions-view {
+      flex: 1;
+      min-width: 0;
+      overflow-y: auto;
+      padding: 12px 14px;
+      display: none;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .questions-issue-card {
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: var(--rad);
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: border-color 0.15s ease;
+    }
+    .questions-issue-card:hover {
+      border-color: var(--border-hover, var(--border));
+    }
+
+    .questions-issue-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      border-radius: var(--rad-sm);
+      padding: 2px 4px;
+      margin: -2px -4px;
+      transition: background 0.12s ease;
+    }
+    .questions-issue-header:hover {
+      background: var(--surf-hover);
+    }
+    .questions-issue-header:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .question-items-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .question-view-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 10px;
+      background: var(--bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--rad-sm);
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .question-view-item:hover {
+      background: var(--surf-hover);
+      border-color: var(--border);
+    }
+
+    .question-view-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .question-view-text {
+      flex: 1;
+      font-size: 12.5px;
+      line-height: 1.4;
+      color: var(--fg);
+      word-break: break-word;
+    }
+
     /* Empty State */
     .empty-box {
       padding: 30px 16px;
@@ -2378,17 +2759,29 @@
         <svg class="icon" id="iconRefresh" viewBox="0 0 24 24"><path d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
       </button>
 
-      <!-- 3-Way Segmented View Switcher (List / Board / Graph) -->
+      <!-- Segmented View Switcher -->
       <div class="view-mode-group toolbar-btn-optional" id="viewModeGroup" role="radiogroup" aria-label="View Layout">
-        <button class="view-mode-btn active" data-mode="list" id="btnViewList" title="List View" role="radio" aria-checked="true">
+        <button class="view-mode-btn" data-mode="human" id="btnViewHuman" title="Human Tasks View" aria-label="Human Tasks View" role="radio" aria-checked="false">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span class="view-mode-label">Human Tasks</span>
+        </button>
+        <button class="view-mode-btn" data-mode="all-tasks" id="btnViewAllTasks" title="All Tasks View" aria-label="All Tasks View" role="radio" aria-checked="false">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+          <span class="view-mode-label">All Tasks</span>
+        </button>
+        <button class="view-mode-btn" data-mode="questions" id="btnViewQuestions" title="Questions View" aria-label="Questions View" role="radio" aria-checked="false">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
+          <span class="view-mode-label">Questions</span>
+        </button>
+        <button class="view-mode-btn active" data-mode="list" id="btnViewList" title="List View" aria-label="List View" role="radio" aria-checked="true">
           <svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
           <span class="view-mode-label">List</span>
         </button>
-        <button class="view-mode-btn" data-mode="kanban" id="btnViewKanban" title="Board View (Kanban)" role="radio" aria-checked="false">
+        <button class="view-mode-btn" data-mode="kanban" id="btnViewKanban" title="Board View (Kanban)" aria-label="Board View (Kanban)" role="radio" aria-checked="false">
           <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>
           <span class="view-mode-label">Board</span>
         </button>
-        <button class="view-mode-btn" data-mode="graph" id="btnViewGraph" title="Waterfall Dependency Graph" role="radio" aria-checked="false">
+        <button class="view-mode-btn" data-mode="graph" id="btnViewGraph" title="Waterfall Dependency Graph" aria-label="Waterfall Dependency Graph" role="radio" aria-checked="false">
           <svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>
           <span class="view-mode-label">Graph</span>
         </button>
@@ -2428,6 +2821,18 @@
         <div class="popover more-popover" id="moreMenuPopover" role="menu" aria-label="Views and diagnostics" style="position: absolute; top: 32px; right: 0; left: auto; width: 190px; z-index: 150; display: none;">
           <div class="popover-head">Views & Diagnostics</div>
           <div class="popover-list">
+            <div class="popover-item" id="menuItemViewHuman" role="menuitem" tabindex="0">
+              <span class="popover-item-title">Human Tasks</span>
+              <span class="popover-item-sub">Tasks waiting on human</span>
+            </div>
+            <div class="popover-item" id="menuItemViewAllTasks" role="menuitem" tabindex="0">
+              <span class="popover-item-title">All Tasks</span>
+              <span class="popover-item-sub">Friendly intake by status</span>
+            </div>
+            <div class="popover-item" id="menuItemViewQuestions" role="menuitem" tabindex="0">
+              <span class="popover-item-title">Questions</span>
+              <span class="popover-item-sub">Open questions alignment</span>
+            </div>
             <div class="popover-item" id="menuItemViewList" role="menuitem" tabindex="0">
               <span class="popover-item-title">List View</span>
               <span class="popover-item-sub">Vertical tasks list</span>
@@ -2536,10 +2941,10 @@
   <div class="view-container">
 
     <!-- Mode 1: Responsive List View (Vertical stack for panel) -->
-    <main class="list-view" id="listViewContainer"></main>
+    <main class="list-view" id="listViewContainer" aria-label="Tasks List View"></main>
 
     <!-- Mode 2: Multi-Column Kanban View (Wide canvas for page mode) -->
-    <main class="kanban-view" id="kanbanViewContainer">
+    <main class="kanban-view" id="kanbanViewContainer" aria-label="Tasks Kanban Board">
       <!-- Draft -->
       <div class="kanban-col" data-column="draft">
         <div class="kanban-col-header">
@@ -2607,7 +3012,7 @@
     </main>
 
     <!-- Mode 3: Dependency Graph Waterfall View -->
-    <main class="graph-view" id="graphViewContainer">
+    <main class="graph-view" id="graphViewContainer" aria-label="Tasks Dependency Graph">
       <div class="graph-topbar" id="graphTopbar">
         <div class="graph-theme-pills" id="graphThemePills"></div>
         <div class="graph-controls">
@@ -2658,6 +3063,15 @@
         </div>
       </div>
     </main>
+
+    <!-- Mode 4: Human Tasks View -->
+    <main class="human-view" id="humanViewContainer" aria-label="Human Tasks View" style="display: none;"></main>
+
+    <!-- Mode 5: All Tasks View -->
+    <main class="all-tasks-view" id="allTasksViewContainer" aria-label="All Tasks View" style="display: none;"></main>
+
+    <!-- Mode 6: Questions View -->
+    <main class="questions-view" id="questionsViewContainer" aria-label="Questions View" style="display: none;"></main>
 
   <!-- Slide-Over Drawer Scrim (kept for DOM reference, inert) -->
   <div class="drawer-scrim" id="drawerScrim"></div>

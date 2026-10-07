@@ -25,6 +25,12 @@ export interface Subtask {
   rawLine: string;
 }
 
+export interface HumanTodo {
+  text: string;
+  source: 'human-task' | 'open-question' | 'session-waiting';
+  done: boolean;
+}
+
 export interface TestItem {
   text: string;
   completed: boolean;
@@ -45,6 +51,7 @@ export interface Issue {
   created_at: string;
   subtasks: Subtask[];
   openQuestions?: Subtask[];
+  humanTasks?: Subtask[];
   // Set on issues aggregated from multiple projects/repositories.
   projectId?: string;
   projectName?: string;
@@ -68,11 +75,12 @@ export interface IssueGroup {
 
 const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
 
-const questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
-const testPlanIssueHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
-const testPlanBatchHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
+const questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
+const humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
+const testPlanIssueHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
+const testPlanBatchHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
 
-const headingRegex = /^#{1,4}\s+/;
+const headingRegex = /^[ ]{0,3}#{1,6}\s+/;
 
 export function parseFriendlyTitle(
   body: string | null | undefined,
@@ -82,12 +90,13 @@ export function parseFriendlyTitle(
     return { title: defaultTitle || '', subtitle: null };
   }
 
-  const match = body.match(/(?:^|\r?\n)[ \t]*(?:#{1,4}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const match = cleanBody.match(/(?:^|\r?\n)[ \t]*(?:#{1,6}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
   if (match) {
     let extracted = match[1].trim();
     if (!extracted) {
       const matchIndex = match.index ?? 0;
-      const remainder = body.slice(matchIndex + match[0].length);
+      const remainder = cleanBody.slice(matchIndex + match[0].length);
       const lines = remainder.split(/\r?\n/);
       for (const rawLine of lines) {
         const line = rawLine.trim();
@@ -135,56 +144,124 @@ export function parseFriendlyTitle(
 
 export function parseOpenQuestions(body: string): Subtask[] {
   if (!body) return [];
-  const lines = body.split('\n');
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const lines = cleanBody.split('\n');
   const questions: Subtask[] = [];
   let inQuestionsSection = false;
+  let inHumanTasksSection = false;
+  let inCodeFence = false;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (headingRegex.test(line)) {
+    const rawLine = lines[i];
+    const line = rawLine.replace(/\r/g, '');
+    if (/^[ \t]*(?:```|~~~)/.test(line)) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
+
+    if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
       inQuestionsSection = questionsSectionRegex.test(line);
+      inHumanTasksSection = humanTasksSectionRegex.test(line);
       continue;
     }
     if (inQuestionsSection) {
       const match = line.match(checklistRegex);
       if (match) {
-        questions.push({
-          id: `question-${i}`,
-          lineIndex: i,
-          completed: match[2].toLowerCase() === 'x',
-          text: match[4].trim(),
-          rawLine: line,
-        });
+        const text = match[4].trim();
+        if (text) {
+          questions.push({
+            id: `question-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === 'x',
+            text,
+            rawLine,
+          });
+        }
       }
-    } else {
+    } else if (!inHumanTasksSection) {
       const match = line.match(checklistRegex);
       if (match && /^\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
-        questions.push({
-          id: `question-${i}`,
-          lineIndex: i,
-          completed: match[2].toLowerCase() === 'x',
-          text: match[4].replace(/^(?:\?|Q:|Question:)\s*/i, '').trim(),
-          rawLine: line,
-        });
+        const text = match[4].replace(/^(?:\?|Q:|Question:)\s*/i, '').trim();
+        if (text) {
+          questions.push({
+            id: `question-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === 'x',
+            text,
+            rawLine,
+          });
+        }
       }
     }
   }
   return questions;
 }
 
-export function parseSubtasks(body: string): Subtask[] {
-  if (!body) return [];
-  const lines = body.split('\n');
-  const subtasks: Subtask[] = [];
-  let inQuestionsSection = false;
+export function parseHumanTasks(body: string | null | undefined): Subtask[] {
+  if (!body || typeof body !== 'string') return [];
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const lines = cleanBody.split('\n');
+  const tasks: Subtask[] = [];
+  let inHumanTasksSection = false;
+  let inCodeFence = false;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
-    if (headingRegex.test(line)) {
-      inQuestionsSection = questionsSectionRegex.test(line);
+    const rawLine = lines[i];
+    const line = rawLine.replace(/\r/g, '');
+    if (/^[ \t]*(?:```|~~~)/.test(line)) {
+      inCodeFence = !inCodeFence;
       continue;
     }
-    if (inQuestionsSection) {
+    if (inCodeFence) continue;
+
+    if (headingRegex.test(line) || humanTasksSectionRegex.test(line) || questionsSectionRegex.test(line)) {
+      inHumanTasksSection = humanTasksSectionRegex.test(line);
+      continue;
+    }
+    if (inHumanTasksSection) {
+      const match = line.match(checklistRegex);
+      if (match) {
+        const text = match[4].trim();
+        if (text) {
+          tasks.push({
+            id: `human-task-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === 'x',
+            text,
+            rawLine,
+          });
+        }
+      }
+    }
+  }
+  return tasks;
+}
+
+export function parseSubtasks(body: string): Subtask[] {
+  if (!body) return [];
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const lines = cleanBody.split('\n');
+  const subtasks: Subtask[] = [];
+  let inQuestionsSection = false;
+  let inHumanTasksSection = false;
+  let inCodeFence = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const line = rawLine.replace(/\r/g, '');
+    if (/^[ \t]*(?:```|~~~)/.test(line)) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
+
+    if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
+      inQuestionsSection = questionsSectionRegex.test(line);
+      inHumanTasksSection = humanTasksSectionRegex.test(line);
+      continue;
+    }
+    if (inQuestionsSection || inHumanTasksSection) {
       continue;
     }
     const match = line.match(checklistRegex);
@@ -192,16 +269,162 @@ export function parseSubtasks(body: string): Subtask[] {
       if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
         continue;
       }
-      subtasks.push({
-        id: `task-${i}`,
-        lineIndex: i,
-        completed: match[2].toLowerCase() === 'x',
-        text: match[4].trim(),
-        rawLine: line,
-      });
+      const text = match[4].trim();
+      if (text) {
+        subtasks.push({
+          id: `task-${i}`,
+          lineIndex: i,
+          completed: match[2].toLowerCase() === 'x',
+          text,
+          rawLine,
+        });
+      }
     }
   }
   return subtasks;
+}
+
+export function collectHumanTodos(
+  issue: Issue | string | null | undefined,
+  session?: any
+): HumanTodo[] {
+  let body = '';
+  let preHumanTasks: Subtask[] | undefined;
+  let preOpenQuestions: Subtask[] | undefined;
+  let issueObj: Issue | null = null;
+
+  if (typeof issue === 'string') {
+    body = issue;
+  } else if (issue && typeof issue === 'object') {
+    issueObj = issue;
+    body = typeof issue.body === 'string' ? issue.body : '';
+    if (Array.isArray(issue.humanTasks)) {
+      preHumanTasks = issue.humanTasks;
+    }
+    if (Array.isArray(issue.openQuestions)) {
+      preOpenQuestions = issue.openQuestions;
+    }
+  }
+
+  // 1. Unchecked ### Human Tasks: items first, in body order
+  const humanTasks = preHumanTasks ?? parseHumanTasks(body);
+  const uncheckedHumanTasks = humanTasks.filter((t) => !t.completed);
+
+  const seen = new Set<string>();
+  const todos: HumanTodo[] = [];
+
+  for (const t of uncheckedHumanTasks) {
+    const text = t.text.trim();
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    todos.push({
+      text,
+      source: 'human-task',
+      done: false,
+    });
+  }
+
+  if (todos.length > 0) {
+    return todos;
+  }
+
+  // 2. If (1) is empty: unchecked ### Open Questions: items (source open-question)
+  const openQuestions = preOpenQuestions ?? parseOpenQuestions(body);
+  const uncheckedQuestions = openQuestions.filter((q) => !q.completed);
+
+  for (const q of uncheckedQuestions) {
+    const text = q.text.trim();
+    if (!text || seen.has(text)) continue;
+    seen.add(text);
+    todos.push({
+      text,
+      source: 'open-question',
+      done: false,
+    });
+  }
+
+  if (todos.length > 0) {
+    return todos;
+  }
+
+  // 3. If an attached agent session is in a waiting* state and (1)+(2) yield nothing:
+  // one synthesized item from the waiting reason (source session-waiting)
+  const isBoundToOther = (s: any, currentNum: number): boolean => {
+    if (!s || !currentNum) return false;
+    const currentStr = String(currentNum);
+    if (Array.isArray(s.items)) {
+      for (const it of s.items) {
+        if (!it) continue;
+        if (it.id === currentStr) return false;
+        const otherNum = it.data?.issueNumber || (Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers[0]) || (Number.isFinite(Number(it.id)) ? Number(it.id) : null);
+        if (otherNum && Number(otherNum) !== currentNum) return true;
+      }
+    }
+    if (typeof s.title === 'string') {
+      const match = s.title.match(/#(\d+)/);
+      if (match && Number(match[1]) !== currentNum) return true;
+    }
+    const wtName = typeof s.worktree === 'string' ? s.worktree : (s.worktree?.name || s.worktree?.branch || s.worktree?.directory || '');
+    if (wtName) {
+      const match = wtName.match(/issue-(\d+)/);
+      if (match && Number(match[1]) !== currentNum) return true;
+    }
+    return false;
+  };
+
+  let activeSession: any = null;
+  if (Array.isArray(session)) {
+    if (issueObj && Number.isFinite(issueObj.number)) {
+      const issueNumStr = String(issueObj.number);
+      activeSession = session.find((s: any) => {
+        if (!s) return false;
+        if (s.items && Array.isArray(s.items) && s.items.some((it: any) => it && (it.id === issueNumStr || it.data?.issueNumber === issueObj!.number || (Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers.includes(issueObj!.number))))) {
+          return true;
+        }
+        if (s.title && s.title.includes(`#${issueObj!.number}`)) return true;
+        const wtName = typeof s.worktree === 'string' ? s.worktree : (s.worktree?.name || s.worktree?.branch || s.worktree?.directory || '');
+        if (wtName && wtName.includes(`issue-${issueObj!.number}`)) return true;
+        return false;
+      }) || (session.length === 1 && !isBoundToOther(session[0], issueObj.number) ? session[0] : null);
+    } else {
+      activeSession = session.length === 1 ? session[0] : null;
+    }
+  } else if (session && typeof session === 'object') {
+    if (issueObj && Number.isFinite(issueObj.number) && isBoundToOther(session, issueObj.number)) {
+      activeSession = null;
+    } else {
+      activeSession = session;
+    }
+  }
+
+  if (activeSession) {
+    const act = typeof activeSession.activity === 'string' ? activeSession.activity.trim() : '';
+    const isWaiting = act === 'waiting-permission' || act === 'waiting-question' || act.startsWith('waiting');
+    if (isWaiting) {
+      const rawReason = activeSession.waitingReason || activeSession.reason || activeSession.data?.waitingReason || activeSession.data?.reason || '';
+      const reason = typeof rawReason === 'string' ? rawReason.trim() : '';
+
+      let text = '';
+      if (act === 'waiting-permission') {
+        text = reason ? `Agent waiting for permission: ${reason}` : 'Agent waiting for permission';
+      } else if (act === 'waiting-question') {
+        text = reason ? `Agent waiting for question: ${reason}` : 'Agent waiting for question';
+      } else if (act.startsWith('waiting-')) {
+        const kind = act.slice(8);
+        text = reason ? `Agent waiting for ${kind}: ${reason}` : `Agent waiting for ${kind}`;
+      } else {
+        text = reason ? `Agent waiting: ${reason}` : 'Agent waiting';
+      }
+
+      return [{
+        text,
+        source: 'session-waiting',
+        done: false,
+      }];
+    }
+  }
+
+  return [];
 }
 
 export function updateSubtaskInMarkdown(body: string, lineIndex: number, completed: boolean): string {
@@ -310,10 +533,17 @@ export function parseTestPlan(body: string | null | undefined): { issueTests: Te
 
   const lines = body.split('\n');
   let currentScope: 'issue' | 'batch' | null = null;
+  let inCodeFence = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (headingRegex.test(line)) {
+    if (/^[ \t]*(?:```|~~~)/.test(line)) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
+
+    if (headingRegex.test(line) || testPlanIssueHeadingRegex.test(line) || testPlanBatchHeadingRegex.test(line)) {
       if (testPlanIssueHeadingRegex.test(line)) {
         currentScope = 'issue';
       } else if (testPlanBatchHeadingRegex.test(line)) {
@@ -863,11 +1093,13 @@ Instructions for the Agent:
    - Friendly Title: Start the issue body with "### Friendly Title: <3-6 words plain English title>" before the Overview.
    - Overview: Clear description of the problem, motivation, or user value.
    - Files Impacted: List candidate file paths grounded in the codebase.
-   - Actionable Subtasks Checklist: Mandatory interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
+   - Acceptance Criteria: Add a "### Acceptance Criteria:" section with interactive Markdown checkboxes (- [ ]) defining testable conditions of done for human validation.
+   - Actionable Subtasks Checklist: Mandatory "### Actionable Subtasks Checklist:" with interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
      - [ ] Reproduce with test / define contract
      - [ ] Implement core changes
      - [ ] Run test suite and verify green
    - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify.
+   - Human Tasks: Add a "### Human Tasks:" section with interactive Markdown checkboxes (- [ ]) with verb-first items (e.g. "Approve ...", "Review PR #N", "Grant access to ...", "Deploy ...") written at the moment the agent blocks on a human or hands off for validation.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
    - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
 4. If a GitHub token or gh CLI is available in the environment, you can create the issues directly using the GitHub API. Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
@@ -1640,6 +1872,7 @@ export function normalizeGithubIssues(rawItems: any[]): Issue[] {
       created_at: item.created_at || '',
       subtasks: parseSubtasks(item.body || ''),
       openQuestions: parseOpenQuestions(item.body || ''),
+      humanTasks: parseHumanTasks(item.body || ''),
     }));
 }
 

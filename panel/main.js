@@ -6,6 +6,7 @@
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
   --oc-scrollbar-thumb: color-mix(in srgb, var(--oc-muted, currentColor) 40%, transparent);
@@ -14,35 +15,118 @@
 }
 * {
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+:hover, [${GUEST_SCROLLING_ATTRIBUTE}] {
   scrollbar-color: var(--oc-scrollbar-thumb) transparent;
 }
 /* Chromium's standard scrollbar properties otherwise override its pseudo-elements. */
 @supports selector(::-webkit-scrollbar) {
-  * { scrollbar-width: auto; scrollbar-color: auto; }
+  *, :hover, [${GUEST_SCROLLING_ATTRIBUTE}] { scrollbar-width: auto; scrollbar-color: auto; }
   ::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
-  :root::-webkit-scrollbar, body::-webkit-scrollbar { background: var(--oc-bg, inherit); }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: var(--oc-scrollbar-thumb);
+    background: transparent;
     border-radius: 999px;
     min-width: 24px;
     min-height: 24px;
   }
+  :hover::-webkit-scrollbar-thumb, [${GUEST_SCROLLING_ATTRIBUTE}]::-webkit-scrollbar-thumb { background: var(--oc-scrollbar-thumb); }
   ::-webkit-scrollbar-thumb:hover { background: var(--oc-scrollbar-thumb-hover); }
   ::-webkit-scrollbar-corner { background: transparent; }
   ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 }
 @media (forced-colors: active) {
-  * { scrollbar-color: auto; }
+  *, :hover, [${GUEST_SCROLLING_ATTRIBUTE}] { scrollbar-color: auto; }
   ::-webkit-scrollbar-thumb, ::-webkit-scrollbar-thumb:hover { background: CanvasText; }
 }
 `;
+  function installGuestScrollbarActivity(doc) {
+    const root = doc.documentElement;
+    if (root.hasAttribute("data-oc-scrollbar-activity"))
+      return;
+    root.setAttribute("data-oc-scrollbar-activity", "");
+    const timers = /* @__PURE__ */ new WeakMap();
+    doc.addEventListener("scroll", (event) => {
+      const target = event.target === doc ? root : event.target;
+      if (!(target instanceof Element))
+        return;
+      if (!target.hasAttribute("data-oc-scrolling"))
+        target.setAttribute("data-oc-scrolling", "");
+      const pending = timers.get(target);
+      if (pending !== void 0)
+        clearTimeout(pending);
+      timers.set(target, setTimeout(() => {
+        timers.delete(target);
+        target.removeAttribute("data-oc-scrolling");
+      }, 1e3));
+    }, { capture: true, passive: true });
+  }
+  var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  var GUEST_FILE_EDITORS_MAX = 8;
+  var GUEST_FILE_EDITOR_TITLE_MAX = 60;
+  var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
+  var GUEST_FILE_EDITOR_PATTERN_MAX = 128;
+  var GUEST_FILE_EDITOR_CONTENT_MAX = 2e7;
+  var GUEST_FILE_EDITOR_VERSION_MAX = 256;
+  var isFileEditorPattern = (value) => value.length > 0 && value.length <= GUEST_FILE_EDITOR_PATTERN_MAX && !/[/\\\0]/.test(value) && /[^*?]/.test(value);
+  var patternExpressions = /* @__PURE__ */ new Map();
+  var patternExpression = (pattern) => {
+    const cached = patternExpressions.get(pattern);
+    if (cached)
+      return cached;
+    const source = pattern.split("").map((character) => {
+      if (character === "*")
+        return ".*";
+      if (character === "?")
+        return ".";
+      return character.replace(/[\\^$.|+()[\]{}]/g, "\\$&");
+    }).join("");
+    const expression = new RegExp(`^${source}$`, "is");
+    patternExpressions.set(pattern, expression);
+    return expression;
+  };
+  var matchesFileEditorPattern = (fileName, pattern) => isFileEditorPattern(pattern) && patternExpression(pattern).test(fileName);
+  var fileEditorPayloadSize = (value) => "bytes" in value ? value.bytes.byteLength : value.content.length;
+  var sameFileEditorDocument = (left, right) => {
+    if (left.path !== right.path || left.readOnly !== right.readOnly)
+      return false;
+    if (left.encoding === "text" || right.encoding === "text") {
+      return left.encoding === "text" && right.encoding === "text" && left.content === right.content;
+    }
+    if (left.bytes.byteLength !== right.bytes.byteLength)
+      return false;
+    for (let index = 0; index < left.bytes.byteLength; index += 1) {
+      if (left.bytes[index] !== right.bytes[index])
+        return false;
+    }
+    return true;
+  };
+  var createFileSaveTracker = (initialVersion) => {
+    let saved = initialVersion;
+    let live = initialVersion;
+    return {
+      /** A new live version; `edited` is true when it differs from the previous one. */
+      observe: (version) => {
+        const edited = version !== live;
+        live = version;
+        return { edited, dirty: version !== saved };
+      },
+      /** Records a written version; returns whether the live state is still dirty. */
+      markSaved: (version) => {
+        saved = version;
+        return live !== version;
+      }
+    };
+  };
 
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
@@ -58,6 +142,8 @@
   var isGuestMessageItem = (item) => item !== null && item.kind === "message";
   var isGuestSessionItem = (item) => item !== null && item.kind === "session";
   var isGuestAttachItem = (item) => item !== null && item.kind !== "message" && item.kind !== "session";
+  var GUEST_COMMIT_SHA = /^[0-9a-f]{7,64}$/i;
+  var isGuestCommitSha = (value) => GUEST_COMMIT_SHA.test(value);
   var GUEST_TOAST_MAX = 500;
   var GUEST_CLIPBOARD_TEXT_MAX = 32e3;
   var GUEST_COMPOSE_TEXT_MAX = 16e3;
@@ -87,6 +173,7 @@
   var GUEST_ITEM_MESSAGE_TEXT_MAX = 2e5;
   var GUEST_ITEM_SESSION_MAX = 2e6;
   var GUEST_BADGE_MAX = 999;
+  var GUEST_FRAME_HEIGHT_MAX = 1e4;
   var GUEST_RESOLVE_ERROR_MAX = 500;
   var HOST_REQUEST_ERROR_CODES = [
     "HOST_UNAVAILABLE",
@@ -106,7 +193,8 @@
     "FILE_TOO_LARGE",
     "DENIED",
     "NO_MODEL",
-    "MODEL_FAILED"
+    "MODEL_FAILED",
+    "UNSUPPORTED"
   ];
   var SERVICE_STATUS_VALUES = ["stopped", "starting", "ready", "failed"];
   var hostRequestErrorCodeSet = new Set(HOST_REQUEST_ERROR_CODES);
@@ -186,6 +274,11 @@
       return null;
     return Math.min(GUEST_BADGE_MAX, Math.max(0, Math.round(count)));
   };
+  var clampFrameHeight = (height) => {
+    if (!Number.isFinite(height))
+      return 0;
+    return Math.min(GUEST_FRAME_HEIGHT_MAX, Math.max(0, Math.ceil(height)));
+  };
   var guestFileScope = (path) => path.startsWith("/") || path === "~" || path.startsWith("~/") ? "filesystem" : "project";
   var isGuestFilePath = (value) => value.length > 0 && value.length <= GUEST_FILE_PATH_MAX && !value.includes("\0") && !value.includes("\\");
   var ATTACH_PROVIDER_ID = /^[a-z][a-z0-9-]*$/;
@@ -219,7 +312,10 @@
     "session-lifecycle",
     "item",
     "resolve",
-    "action"
+    "action",
+    "file-open",
+    "file-snapshot",
+    "file-saved"
   ]);
   var asWireRecord = (data) => Object(data) === data ? data : null;
   var isNonEmptyString = (value) => String(value) === value && value.length > 0;
@@ -264,6 +360,8 @@
   };
 
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
+  var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
     code;
     constructor(code, message) {
@@ -294,6 +392,11 @@
     const itemListeners = /* @__PURE__ */ new Set();
     let resolveHandler = null;
     let actionHandler = null;
+    const fileOpenListeners = /* @__PURE__ */ new Set();
+    const fileSavedListeners = /* @__PURE__ */ new Set();
+    let fileSnapshotHandler = null;
+    let lastFile = null;
+    let saveShortcutInstalled = false;
     const pending = /* @__PURE__ */ new Map();
     const workspaceListeners = /* @__PURE__ */ new Map();
     let disposed = false;
@@ -415,6 +518,48 @@
         });
         return;
       }
+      if (message.type === "file-open") {
+        const next = message.payload;
+        if (lastFile && sameFileEditorDocument(lastFile, next))
+          return;
+        lastFile = next;
+        emit(fileOpenListeners, message.payload);
+        return;
+      }
+      if (message.type === "file-saved") {
+        emit(fileSavedListeners, message.payload.version);
+        return;
+      }
+      if (message.type === "file-snapshot") {
+        const answer = (payload) => {
+          if (!disposed)
+            post({
+              channel: OPENCHAMBER_SDK_CHANNEL,
+              v: OPENCHAMBER_SDK_API_VERSION,
+              type: "file-snapshot-result",
+              id: message.id,
+              payload
+            });
+        };
+        const fail = (text) => answer({ error: (text.trim() || "Could not read the edited file.").slice(0, GUEST_RESOLVE_ERROR_MAX) });
+        const handler = fileSnapshotHandler;
+        if (!handler) {
+          fail("This extension does not edit files.");
+          return;
+        }
+        Promise.resolve().then(() => handler(message.payload.purpose)).then((snapshot) => {
+          if (fileEditorPayloadSize(snapshot) > GUEST_FILE_EDITOR_CONTENT_MAX) {
+            fail(`The file is over ${GUEST_FILE_EDITOR_CONTENT_MAX} ${"bytes" in snapshot ? "bytes" : "characters"}.`);
+            return;
+          }
+          if (snapshot.version.length > GUEST_FILE_EDITOR_VERSION_MAX) {
+            fail(`The snapshot version is over ${GUEST_FILE_EDITOR_VERSION_MAX} characters.`);
+            return;
+          }
+          answer({ snapshot: "bytes" in snapshot ? { bytes: snapshot.bytes, version: snapshot.version } : { content: snapshot.content, version: snapshot.version } });
+        }, (error) => fail(error instanceof Error ? error.message : String(error)));
+        return;
+      }
       if (message.type === "resolve") {
         const answer = (payload) => {
           post({
@@ -468,6 +613,17 @@
     };
     const request = (message) => send(message).then(() => void 0);
     const envelope = { channel: OPENCHAMBER_SDK_CHANNEL, v: OPENCHAMBER_SDK_API_VERSION };
+    const notify = (message) => {
+      if (!disposed && target.parent !== target)
+        post(message);
+    };
+    const requestFileSave = () => notify({ ...envelope, type: "file-save" });
+    const onSaveShortcut = (event) => {
+      if (!isKeyEvent(event) || !isSaveShortcut(event))
+        return;
+      event.preventDefault();
+      requestFileSave();
+    };
     const requireIdentity = (value, maximum = 1024) => {
       if (!value.trim() || value.length > maximum)
         throw new HostRequestError("HOST_REJECTED", `Identity must contain 1 to ${maximum} characters.`);
@@ -661,6 +817,13 @@
         id: nextId(ids),
         payload: { url }
       }),
+      openCommit: (sha) => isGuestCommitSha(sha) ? request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "open-commit",
+        id: nextId(ids),
+        payload: { sha }
+      }) : Promise.reject(new HostRequestError("HOST_REJECTED", "Commit id must be 7 to 64 hex characters.")),
       openSurface: (surfaceId) => request({
         channel: OPENCHAMBER_SDK_CHANNEL,
         v: OPENCHAMBER_SDK_API_VERSION,
@@ -881,6 +1044,41 @@
         id: nextId(ids),
         payload: { count: clampBadgeCount(count) }
       }),
+      setHeight: (height) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "resize",
+        id: nextId(ids),
+        payload: { height: clampFrameHeight(height) }
+      }),
+      onFileOpen: (listener) => {
+        fileOpenListeners.add(listener);
+        if (!saveShortcutInstalled) {
+          saveShortcutInstalled = true;
+          target.addEventListener("keydown", onSaveShortcut, true);
+        }
+        if (lastFile)
+          listener(lastFile);
+        return () => {
+          fileOpenListeners.delete(listener);
+        };
+      },
+      onFileSnapshot: (handler) => {
+        fileSnapshotHandler = handler;
+        return () => {
+          if (fileSnapshotHandler === handler)
+            fileSnapshotHandler = null;
+        };
+      },
+      onFileSaved: (listener) => {
+        fileSavedListeners.add(listener);
+        return () => {
+          fileSavedListeners.delete(listener);
+        };
+      },
+      reportFileChange: (change) => notify({ ...envelope, type: "file-change", payload: { dirty: change.dirty, edited: change.edited } }),
+      requestFileSave,
+      reportFileUnsupported: () => notify({ ...envelope, type: "file-unsupported" }),
       dispose: () => {
         for (const subscriptionId of workspaceListeners.keys()) {
           post({ ...envelope, type: "workspace-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
@@ -889,6 +1087,11 @@
         disposed = true;
         resolveHandler = null;
         actionHandler = null;
+        fileSnapshotHandler = null;
+        fileOpenListeners.clear();
+        fileSavedListeners.clear();
+        if (saveShortcutInstalled)
+          target.removeEventListener("keydown", onSaveShortcut, true);
         target.removeEventListener("message", onMessage);
         for (const waiter of pending.values()) {
           clearTimeout(waiter.timer);
@@ -967,6 +1170,9 @@
   var SURFACE_HEIGHT_HEADER = "x-surface-height";
   var SURFACE_TITLE_HEADER = "x-surface-title";
   var SURFACE_AGENT_ACTIVE_HEADER = "x-surface-agent-active";
+  var SURFACE_VIEWER_HEADER = "x-surface-viewer";
+  var SURFACE_FRAME_SEQ_HEADER = "x-surface-frame-seq";
+  var SURFACE_VIEWER_CONTROLS_HEADER = "x-surface-viewer-controls";
   var SURFACE_FRAME_MIMES = ["image/jpeg", "image/png"];
   var SURFACE_FRAME_WAIT_MS = 25e3;
   var SURFACE_FRAME_MAX_BYTES = 8e6;
@@ -1049,10 +1255,13 @@
     }
     if (Object(parsed) !== parsed || parsed === null)
       return null;
-    const { controller } = parsed;
+    const { controller, viewer } = parsed;
     if (!isText(controller) || !CONTROLLERS.has(controller))
       return null;
-    return { controller };
+    const notice = { controller };
+    if (controller === "user" && isText(viewer) && viewer.length > 0)
+      notice.viewer = viewer;
+    return notice;
   };
   var readSurfaceResizeRequest = (body) => {
     let parsed;
@@ -1161,6 +1370,7 @@
       }
       return;
     }
+    installGuestScrollbarActivity(document);
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = css;
@@ -3063,7 +3273,7 @@ ${placeholder}
       name: "Draft",
       displayName: "Draft",
       color: "#6e7681",
-      description: "Initial ideas or drafting phase requiring further clarification"
+      description: "Passive ideas or notes; unblocked ideas awaiting drafting or alignment"
     },
     "backlog": {
       id: "backlog",
@@ -3103,7 +3313,7 @@ ${placeholder}
       name: "Needs Human",
       displayName: "Needs Human",
       color: "#f85149",
-      description: "Blocked waiting on human permission, answers, or input"
+      description: "Awaiting a human: permission, answers, alignment, or validation"
     },
     "in-review": {
       id: "in-review",
@@ -3111,7 +3321,7 @@ ${placeholder}
       name: "In Review",
       displayName: "In Review",
       color: "#3fb950",
-      description: "Execution finished and awaiting human review or PR validation"
+      description: "AI step: agent reviewing its own finished work (hostile review gate)"
     },
     "done": {
       id: "done",
@@ -3119,7 +3329,7 @@ ${placeholder}
       name: "Done",
       displayName: "Done",
       color: "#238636",
-      description: "Completed or closed"
+      description: "Completed and validated by a human (no agent self-close)"
     }
   };
   function isSystemLabel(labelName) {
@@ -3288,7 +3498,7 @@ ${placeholder}
     const isSessionIdle = Boolean(session && session.activity === "idle");
     if (labelNames.includes("status:in-progress")) {
       if (isSessionIdle) {
-        return "in-review";
+        return "needs-human";
       }
       if (isSessionWaiting) {
         return "needs-human";
@@ -3329,6 +3539,9 @@ ${placeholder}
       if (isSessionWaiting) {
         return "needs-human";
       }
+      if (isSessionIdle) {
+        return "needs-human";
+      }
       return "draft";
     }
     if (session) {
@@ -3339,7 +3552,7 @@ ${placeholder}
         return "needs-human";
       }
       if (isSessionIdle) {
-        return "in-review";
+        return "needs-human";
       }
     }
     return "todo";
@@ -3559,20 +3772,22 @@ ${placeholder}
     return (text || "").toString().toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, maxLen);
   }
   var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
-  var questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
-  var testPlanIssueHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
-  var testPlanBatchHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
-  var headingRegex = /^#{1,4}\s+/;
+  var questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
+  var humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
+  var testPlanIssueHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
+  var testPlanBatchHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
+  var headingRegex = /^[ ]{0,3}#{1,6}\s+/;
   function parseFriendlyTitle(body, defaultTitle) {
     if (!body || typeof body !== "string") {
       return { title: defaultTitle || "", subtitle: null };
     }
-    const match = body.match(/(?:^|\r?\n)[ \t]*(?:#{1,4}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const match = cleanBody.match(/(?:^|\r?\n)[ \t]*(?:#{1,6}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
     if (match) {
       let extracted = match[1].trim();
       if (!extracted) {
         const matchIndex = match.index ?? 0;
-        const remainder = body.slice(matchIndex + match[0].length);
+        const remainder = cleanBody.slice(matchIndex + match[0].length);
         const lines = remainder.split(/\r?\n/);
         for (const rawLine of lines) {
           const line = rawLine.trim();
@@ -3605,53 +3820,116 @@ ${placeholder}
   }
   function parseOpenQuestions(body) {
     if (!body) return [];
-    const lines = body.split("\n");
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const lines = cleanBody.split("\n");
     const questions = [];
     let inQuestionsSection = false;
+    let inHumanTasksSection = false;
+    let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (headingRegex.test(line)) {
+      const rawLine = lines[i];
+      const line = rawLine.replace(/\r/g, "");
+      if (/^[ \t]*(?:```|~~~)/.test(line)) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+      if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
         inQuestionsSection = questionsSectionRegex.test(line);
+        inHumanTasksSection = humanTasksSectionRegex.test(line);
         continue;
       }
       if (inQuestionsSection) {
         const match = line.match(checklistRegex);
         if (match) {
-          questions.push({
-            id: `question-${i}`,
-            lineIndex: i,
-            completed: match[2].toLowerCase() === "x",
-            text: match[4].trim(),
-            rawLine: line
-          });
+          const text = match[4].trim();
+          if (text) {
+            questions.push({
+              id: `question-${i}`,
+              lineIndex: i,
+              completed: match[2].toLowerCase() === "x",
+              text,
+              rawLine
+            });
+          }
         }
-      } else {
+      } else if (!inHumanTasksSection) {
         const match = line.match(checklistRegex);
         if (match && /^\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
-          questions.push({
-            id: `question-${i}`,
-            lineIndex: i,
-            completed: match[2].toLowerCase() === "x",
-            text: match[4].replace(/^(?:\?|Q:|Question:)\s*/i, "").trim(),
-            rawLine: line
-          });
+          const text = match[4].replace(/^(?:\?|Q:|Question:)\s*/i, "").trim();
+          if (text) {
+            questions.push({
+              id: `question-${i}`,
+              lineIndex: i,
+              completed: match[2].toLowerCase() === "x",
+              text,
+              rawLine
+            });
+          }
         }
       }
     }
     return questions;
   }
-  function parseSubtasks(body) {
-    if (!body) return [];
-    const lines = body.split("\n");
-    const subtasks = [];
-    let inQuestionsSection = false;
+  function parseHumanTasks(body) {
+    if (!body || typeof body !== "string") return [];
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const lines = cleanBody.split("\n");
+    const tasks = [];
+    let inHumanTasksSection = false;
+    let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (headingRegex.test(line)) {
-        inQuestionsSection = questionsSectionRegex.test(line);
+      const rawLine = lines[i];
+      const line = rawLine.replace(/\r/g, "");
+      if (/^[ \t]*(?:```|~~~)/.test(line)) {
+        inCodeFence = !inCodeFence;
         continue;
       }
-      if (inQuestionsSection) {
+      if (inCodeFence) continue;
+      if (headingRegex.test(line) || humanTasksSectionRegex.test(line) || questionsSectionRegex.test(line)) {
+        inHumanTasksSection = humanTasksSectionRegex.test(line);
+        continue;
+      }
+      if (inHumanTasksSection) {
+        const match = line.match(checklistRegex);
+        if (match) {
+          const text = match[4].trim();
+          if (text) {
+            tasks.push({
+              id: `human-task-${i}`,
+              lineIndex: i,
+              completed: match[2].toLowerCase() === "x",
+              text,
+              rawLine
+            });
+          }
+        }
+      }
+    }
+    return tasks;
+  }
+  function parseSubtasks(body) {
+    if (!body) return [];
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const lines = cleanBody.split("\n");
+    const subtasks = [];
+    let inQuestionsSection = false;
+    let inHumanTasksSection = false;
+    let inCodeFence = false;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const line = rawLine.replace(/\r/g, "");
+      if (/^[ \t]*(?:```|~~~)/.test(line)) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+      if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
+        inQuestionsSection = questionsSectionRegex.test(line);
+        inHumanTasksSection = humanTasksSectionRegex.test(line);
+        continue;
+      }
+      if (inQuestionsSection || inHumanTasksSection) {
         continue;
       }
       const match = line.match(checklistRegex);
@@ -3659,16 +3937,140 @@ ${placeholder}
         if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
           continue;
         }
-        subtasks.push({
-          id: `task-${i}`,
-          lineIndex: i,
-          completed: match[2].toLowerCase() === "x",
-          text: match[4].trim(),
-          rawLine: line
-        });
+        const text = match[4].trim();
+        if (text) {
+          subtasks.push({
+            id: `task-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === "x",
+            text,
+            rawLine
+          });
+        }
       }
     }
     return subtasks;
+  }
+  function collectHumanTodos(issue, session) {
+    let body = "";
+    let preHumanTasks;
+    let preOpenQuestions;
+    let issueObj = null;
+    if (typeof issue === "string") {
+      body = issue;
+    } else if (issue && typeof issue === "object") {
+      issueObj = issue;
+      body = typeof issue.body === "string" ? issue.body : "";
+      if (Array.isArray(issue.humanTasks)) {
+        preHumanTasks = issue.humanTasks;
+      }
+      if (Array.isArray(issue.openQuestions)) {
+        preOpenQuestions = issue.openQuestions;
+      }
+    }
+    const humanTasks = preHumanTasks ?? parseHumanTasks(body);
+    const uncheckedHumanTasks = humanTasks.filter((t) => !t.completed);
+    const seen = /* @__PURE__ */ new Set();
+    const todos = [];
+    for (const t of uncheckedHumanTasks) {
+      const text = t.text.trim();
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      todos.push({
+        text,
+        source: "human-task",
+        done: false
+      });
+    }
+    if (todos.length > 0) {
+      return todos;
+    }
+    const openQuestions = preOpenQuestions ?? parseOpenQuestions(body);
+    const uncheckedQuestions = openQuestions.filter((q) => !q.completed);
+    for (const q of uncheckedQuestions) {
+      const text = q.text.trim();
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      todos.push({
+        text,
+        source: "open-question",
+        done: false
+      });
+    }
+    if (todos.length > 0) {
+      return todos;
+    }
+    const isBoundToOther = (s, currentNum) => {
+      if (!s || !currentNum) return false;
+      const currentStr = String(currentNum);
+      if (Array.isArray(s.items)) {
+        for (const it of s.items) {
+          if (!it) continue;
+          if (it.id === currentStr) return false;
+          const otherNum = it.data?.issueNumber || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers[0] || (Number.isFinite(Number(it.id)) ? Number(it.id) : null);
+          if (otherNum && Number(otherNum) !== currentNum) return true;
+        }
+      }
+      if (typeof s.title === "string") {
+        const match = s.title.match(/#(\d+)/);
+        if (match && Number(match[1]) !== currentNum) return true;
+      }
+      const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
+      if (wtName) {
+        const match = wtName.match(/issue-(\d+)/);
+        if (match && Number(match[1]) !== currentNum) return true;
+      }
+      return false;
+    };
+    let activeSession = null;
+    if (Array.isArray(session)) {
+      if (issueObj && Number.isFinite(issueObj.number)) {
+        const issueNumStr = String(issueObj.number);
+        activeSession = session.find((s) => {
+          if (!s) return false;
+          if (s.items && Array.isArray(s.items) && s.items.some((it) => it && (it.id === issueNumStr || it.data?.issueNumber === issueObj.number || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers.includes(issueObj.number)))) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issueObj.number}`)) return true;
+          const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
+          if (wtName && wtName.includes(`issue-${issueObj.number}`)) return true;
+          return false;
+        }) || (session.length === 1 && !isBoundToOther(session[0], issueObj.number) ? session[0] : null);
+      } else {
+        activeSession = session.length === 1 ? session[0] : null;
+      }
+    } else if (session && typeof session === "object") {
+      if (issueObj && Number.isFinite(issueObj.number) && isBoundToOther(session, issueObj.number)) {
+        activeSession = null;
+      } else {
+        activeSession = session;
+      }
+    }
+    if (activeSession) {
+      const act = typeof activeSession.activity === "string" ? activeSession.activity.trim() : "";
+      const isWaiting = act === "waiting-permission" || act === "waiting-question" || act.startsWith("waiting");
+      if (isWaiting) {
+        const rawReason = activeSession.waitingReason || activeSession.reason || activeSession.data?.waitingReason || activeSession.data?.reason || "";
+        const reason = typeof rawReason === "string" ? rawReason.trim() : "";
+        let text = "";
+        if (act === "waiting-permission") {
+          text = reason ? `Agent waiting for permission: ${reason}` : "Agent waiting for permission";
+        } else if (act === "waiting-question") {
+          text = reason ? `Agent waiting for question: ${reason}` : "Agent waiting for question";
+        } else if (act.startsWith("waiting-")) {
+          const kind = act.slice(8);
+          text = reason ? `Agent waiting for ${kind}: ${reason}` : `Agent waiting for ${kind}`;
+        } else {
+          text = reason ? `Agent waiting: ${reason}` : "Agent waiting";
+        }
+        return [{
+          text,
+          source: "session-waiting",
+          done: false
+        }];
+      }
+    }
+    return [];
   }
   function updateSubtaskInMarkdown(body, lineIndex, completed) {
     const lines = body.split("\n");
@@ -3774,9 +4176,15 @@ ${questionsBlock}`;
     if (!body || typeof body !== "string") return result;
     const lines = body.split("\n");
     let currentScope = null;
+    let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (headingRegex.test(line)) {
+      if (/^[ \t]*(?:```|~~~)/.test(line)) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+      if (headingRegex.test(line) || testPlanIssueHeadingRegex.test(line) || testPlanBatchHeadingRegex.test(line)) {
         if (testPlanIssueHeadingRegex.test(line)) {
           currentScope = "issue";
         } else if (testPlanBatchHeadingRegex.test(line)) {
@@ -4190,11 +4598,13 @@ Instructions for the Agent:
    - Friendly Title: Start the issue body with "### Friendly Title: <3-6 words plain English title>" before the Overview.
    - Overview: Clear description of the problem, motivation, or user value.
    - Files Impacted: List candidate file paths grounded in the codebase.
-   - Actionable Subtasks Checklist: Mandatory interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
+   - Acceptance Criteria: Add a "### Acceptance Criteria:" section with interactive Markdown checkboxes (- [ ]) defining testable conditions of done for human validation.
+   - Actionable Subtasks Checklist: Mandatory "### Actionable Subtasks Checklist:" with interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
      - [ ] Reproduce with test / define contract
      - [ ] Implement core changes
      - [ ] Run test suite and verify green
    - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify.
+   - Human Tasks: Add a "### Human Tasks:" section with interactive Markdown checkboxes (- [ ]) with verb-first items (e.g. "Approve ...", "Review PR #N", "Grant access to ...", "Deploy ...") written at the moment the agent blocks on a human or hands off for validation.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
    - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
 4. If a GitHub token or gh CLI is available in the environment, you can create the issues directly using the GitHub API. Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
@@ -4825,7 +5235,8 @@ Blocked by ${blockerRef}`;
       comments: item.comments || 0,
       created_at: item.created_at || "",
       subtasks: parseSubtasks(item.body || ""),
-      openQuestions: parseOpenQuestions(item.body || "")
+      openQuestions: parseOpenQuestions(item.body || ""),
+      humanTasks: parseHumanTasks(item.body || "")
     }));
   }
   function mergeIssuePages(existing, incoming) {
@@ -5164,6 +5575,9 @@ Blocked by ${blockerRef}`;
   var elSearchInput = document.getElementById("searchInput");
   var elBtnLayoutToggle = document.getElementById("btnLayoutToggle");
   var elBtnGraphToggle = document.getElementById("btnGraphToggle");
+  var elBtnViewHuman = document.getElementById("btnViewHuman");
+  var elBtnViewAllTasks = document.getElementById("btnViewAllTasks");
+  var elBtnViewQuestions = document.getElementById("btnViewQuestions");
   var elBtnViewList = document.getElementById("btnViewList");
   var elBtnViewKanban = document.getElementById("btnViewKanban");
   var elBtnViewGraph = document.getElementById("btnViewGraph");
@@ -5211,6 +5625,9 @@ Blocked by ${blockerRef}`;
   var elStatusTabBar = document.getElementById("statusTabBar");
   var elListViewContainer = document.getElementById("listViewContainer");
   var elKanbanViewContainer = document.getElementById("kanbanViewContainer");
+  var elHumanViewContainer = document.getElementById("humanViewContainer");
+  var elAllTasksViewContainer = document.getElementById("allTasksViewContainer");
+  var elQuestionsViewContainer = document.getElementById("questionsViewContainer");
   var kanbanCardContainers = {
     "draft": document.getElementById("kCardsDraft"),
     "backlog": document.getElementById("kCardsBacklog"),
@@ -6077,6 +6494,7 @@ Blocked by ${blockerRef}`;
     issue.body = newBody;
     issue.subtasks = parseSubtasks(newBody);
     issue.openQuestions = parseOpenQuestions(newBody);
+    issue.humanTasks = parseHumanTasks(newBody);
     const repo = repoForIssue(issue);
     if (repo) issueCache.delete(repo);
     renderViews();
@@ -6365,7 +6783,7 @@ Blocked by ${blockerRef}`;
     const isSessionIdle = Boolean(session && session.activity === "idle");
     if (labelNames.includes("status:in-progress")) {
       if (isSessionIdle) {
-        return "in-review";
+        return "needs-human";
       }
       if (isSessionWaiting) {
         return "needs-human";
@@ -6406,6 +6824,9 @@ Blocked by ${blockerRef}`;
       if (isSessionWaiting) {
         return "needs-human";
       }
+      if (isSessionIdle) {
+        return "needs-human";
+      }
       return "draft";
     }
     if (session) {
@@ -6416,7 +6837,7 @@ Blocked by ${blockerRef}`;
         return "needs-human";
       }
       if (isSessionIdle) {
-        return "in-review";
+        return "needs-human";
       }
     }
     return "todo";
@@ -6497,6 +6918,15 @@ Blocked by ${blockerRef}`;
     }
     if (elKanbanViewContainer) {
       elKanbanViewContainer.innerHTML = `<div class="empty-box" style="margin: auto;">${escapeHtml(message)}</div>`;
+    }
+    if (elHumanViewContainer) {
+      elHumanViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+    }
+    if (elAllTasksViewContainer) {
+      elAllTasksViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+    }
+    if (elQuestionsViewContainer) {
+      elQuestionsViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
     }
   }
   function renderArchiveView(archivedIssues) {
@@ -6597,6 +7027,9 @@ Blocked by ${blockerRef}`;
       if (elStatusTabBar) elStatusTabBar.style.display = "none";
       if (elKanbanViewContainer) elKanbanViewContainer.style.display = "none";
       if (elGraphViewContainer) elGraphViewContainer.style.display = "none";
+      if (elHumanViewContainer) elHumanViewContainer.style.display = "none";
+      if (elAllTasksViewContainer) elAllTasksViewContainer.style.display = "none";
+      if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = "none";
       if (elListViewContainer) {
         elListViewContainer.style.display = "flex";
         renderArchiveView(sorted);
@@ -6607,14 +7040,31 @@ Blocked by ${blockerRef}`;
     if (elKanbanViewContainer) elKanbanViewContainer.style.display = "";
     if (elListViewContainer) elListViewContainer.style.display = "";
     if (elGraphViewContainer) elGraphViewContainer.style.display = "";
+    if (elHumanViewContainer) elHumanViewContainer.style.display = "";
+    if (elAllTasksViewContainer) elAllTasksViewContainer.style.display = "";
+    if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = "";
     applyLayoutMode(false);
-    const activeLayout = document.body.getAttribute("data-layout") === "graph" ? "graph" : document.body.getAttribute("data-layout") === "kanban" ? "kanban" : "list";
+    const activeLayout = document.body.getAttribute("data-layout") === "graph" ? "graph" : document.body.getAttribute("data-layout") === "kanban" ? "kanban" : document.body.getAttribute("data-layout") === "human" ? "human" : document.body.getAttribute("data-layout") === "all-tasks" ? "all-tasks" : document.body.getAttribute("data-layout") === "questions" ? "questions" : "list";
+    if (currentRenderedLayout && currentRenderedLayout !== activeLayout) {
+      if (currentRenderedLayout === "human" && elHumanViewContainer) elHumanViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "all-tasks" && elAllTasksViewContainer) elAllTasksViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "questions" && elQuestionsViewContainer) elQuestionsViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "kanban" && elKanbanViewContainer) elKanbanViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "list" && elListViewContainer) elListViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "graph" && elGraphViewContainer) elGraphViewContainer.innerHTML = "";
+    }
     if (activeLayout === "list") {
       renderListView(sorted);
     } else if (activeLayout === "kanban") {
       renderKanbanView(sorted);
     } else if (activeLayout === "graph") {
       renderGraphView(sorted);
+    } else if (activeLayout === "human") {
+      renderHumanTasksView(sorted);
+    } else if (activeLayout === "all-tasks") {
+      renderAllTasksView(sorted);
+    } else if (activeLayout === "questions") {
+      renderQuestionsView(sorted);
     }
     currentRenderedLayout = activeLayout;
     updateBatchBar();
@@ -6825,6 +7275,15 @@ Blocked by ${blockerRef}`;
     elListViewContainer.innerHTML = "";
     const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn2(i) === activeTab);
     if (listItems.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elListViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading issues...</span>
+        </div>
+      `;
+        return;
+      }
       elListViewContainer.innerHTML = `
       <div class="empty-box">
         <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
@@ -7033,7 +7492,483 @@ Blocked by ${blockerRef}`;
     });
     elKanbanViewContainer.appendChild(kanbanFragment);
   }
+  function renderHumanTasksView(filteredIssues) {
+    if (!elHumanViewContainer) return;
+    elHumanViewContainer.innerHTML = "";
+    const humanIssues = filteredIssues.filter((i) => resolveIssueColumn2(i) === "needs-human");
+    if (humanIssues.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elHumanViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading human tasks...</span>
+        </div>
+      `;
+        return;
+      }
+      elHumanViewContainer.innerHTML = `
+      <div class="empty-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Nothing is waiting on you</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">All tasks and sessions are moving forward.</span>
+      </div>
+    `;
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    const buildHumanCard = (issue) => {
+      const card = document.createElement("div");
+      card.className = "human-issue-card";
+      const session = getIssueSession(issue);
+      const todos = collectHumanTodos(issue, session);
+      const titles = parseFriendlyTitle(issue.body, issue.title);
+      const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
+      const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+      const header = document.createElement("div");
+      header.className = "human-issue-header";
+      header.setAttribute("role", "button");
+      header.setAttribute("tabindex", "0");
+      header.setAttribute("aria-label", `Open issue #${issue.number}: ${displayTitle}`);
+      const titleGroup = document.createElement("div");
+      titleGroup.className = "human-issue-title-group";
+      const titleSpan = document.createElement("div");
+      titleSpan.className = "human-issue-title";
+      titleSpan.textContent = displayTitle;
+      titleGroup.appendChild(titleSpan);
+      if (displaySubtitle) {
+        const subSpan = document.createElement("div");
+        subSpan.className = "card-subtitle-tech";
+        subSpan.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
+        subSpan.textContent = displaySubtitle;
+        titleGroup.appendChild(subSpan);
+      }
+      const meta = document.createElement("div");
+      meta.className = "human-issue-meta";
+      const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+      if (isAllProjectsMode && repoName) {
+        const repoPill = document.createElement("span");
+        repoPill.className = "status-pill";
+        repoPill.style.fontSize = "10px";
+        repoPill.textContent = repoName.split("/")[1] || repoName;
+        meta.appendChild(repoPill);
+      }
+      const numSpan = document.createElement("span");
+      numSpan.style.cssText = "font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted);";
+      numSpan.textContent = `#${issue.number}`;
+      meta.appendChild(numSpan);
+      header.appendChild(titleGroup);
+      header.appendChild(meta);
+      const onHeaderClick = () => openDrawer(issue);
+      header.addEventListener("click", onHeaderClick);
+      header.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onHeaderClick();
+        }
+      });
+      card.appendChild(header);
+      const list = document.createElement("div");
+      list.className = "human-todo-list";
+      if (todos.length === 0) {
+        const emptyItem = document.createElement("div");
+        emptyItem.style.cssText = "font-size: 12px; color: var(--fg-muted); padding: 4px 0;";
+        emptyItem.textContent = "No specific checklist items. Review issue details in drawer.";
+        list.appendChild(emptyItem);
+      } else {
+        todos.forEach((todo) => {
+          const itemEl = document.createElement("div");
+          itemEl.className = `human-todo-item ${todo.done ? "done" : ""}`;
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "human-todo-checkbox";
+          cb.checked = todo.done;
+          cb.setAttribute("aria-label", todo.text);
+          cb.addEventListener("click", (e) => e.stopPropagation());
+          cb.addEventListener("change", async (e) => {
+            e.stopPropagation();
+            if (todo.source === "human-task") {
+              const tasks = parseHumanTasks(issue.body);
+              const target = tasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || tasks.find((t) => t.text.trim() === todo.text.trim());
+              if (target) {
+                const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
+                await updateIssueBody(issue, updatedBody);
+              }
+            } else if (todo.source === "open-question") {
+              const questions = parseOpenQuestions(issue.body);
+              const target = questions.find((q) => q.completed !== cb.checked && q.text.trim() === todo.text.trim()) || questions.find((q) => q.text.trim() === todo.text.trim());
+              if (target) {
+                const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
+                await updateIssueBody(issue, updatedBody);
+              }
+            } else if (todo.source === "session-waiting") {
+              cb.checked = false;
+              if (session?.id) {
+                void host.openSession(session.id);
+                await host.toast({ kind: "info", message: "Opened waiting session" });
+              }
+            }
+          });
+          const spanText = document.createElement("span");
+          spanText.className = "human-todo-text";
+          spanText.textContent = todo.text;
+          const badge = document.createElement("span");
+          badge.className = `human-todo-badge badge-${todo.source}`;
+          badge.textContent = todo.source === "human-task" ? "Human Task" : todo.source === "open-question" ? "Open Question" : "Agent Waiting";
+          itemEl.appendChild(cb);
+          itemEl.appendChild(spanText);
+          itemEl.appendChild(badge);
+          list.appendChild(itemEl);
+        });
+      }
+      card.appendChild(list);
+      return card;
+    };
+    if (isAllProjectsMode) {
+      const byRepo = {};
+      for (const issue of humanIssues) {
+        const repo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : "Unknown Repository");
+        if (!byRepo[repo]) byRepo[repo] = [];
+        byRepo[repo].push(issue);
+      }
+      Object.keys(byRepo).forEach((repo) => {
+        const repoGroup = document.createElement("div");
+        repoGroup.className = "human-repo-group";
+        const repoHeader = document.createElement("div");
+        repoHeader.className = "human-repo-header";
+        repoHeader.innerHTML = `
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+        <span>${escapeHtml(repo)}</span>
+      `;
+        repoGroup.appendChild(repoHeader);
+        byRepo[repo].forEach((issue) => {
+          repoGroup.appendChild(buildHumanCard(issue));
+        });
+        fragment.appendChild(repoGroup);
+      });
+    } else {
+      humanIssues.forEach((issue) => {
+        fragment.appendChild(buildHumanCard(issue));
+      });
+    }
+    elHumanViewContainer.appendChild(fragment);
+  }
+  function renderAllTasksView(filteredIssues) {
+    if (!elAllTasksViewContainer) return;
+    elAllTasksViewContainer.innerHTML = "";
+    if (filteredIssues.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elAllTasksViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading tasks...</span>
+        </div>
+      `;
+        return;
+      }
+      elAllTasksViewContainer.innerHTML = `
+      <div class="empty-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">No tasks match the active filters</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">Try adjusting your search query, status tab, or labels.</span>
+      </div>
+    `;
+      return;
+    }
+    const groups = {
+      draft: [],
+      backlog: [],
+      todo: [],
+      planned: [],
+      "in-progress": [],
+      "needs-human": [],
+      "in-review": [],
+      done: []
+    };
+    for (const issue of filteredIssues) {
+      const col = resolveIssueColumn2(issue);
+      if (col && groups[col]) {
+        groups[col].push(issue);
+      }
+    }
+    const fragment = document.createDocumentFragment();
+    STATUS_COLUMNS.forEach((colId) => {
+      const colIssues = groups[colId];
+      if (colIssues.length === 0) return;
+      const groupEl = document.createElement("div");
+      groupEl.className = "all-tasks-group";
+      groupEl.setAttribute("role", "region");
+      groupEl.setAttribute("aria-label", `${STATUS_METADATA[colId].label} (${colIssues.length} tasks)`);
+      const header = document.createElement("div");
+      header.className = "all-tasks-group-header";
+      header.innerHTML = `
+      <div class="all-tasks-group-title" role="heading" aria-level="2">
+        <span class="status-dot" style="background: ${STATUS_METADATA[colId].color}; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
+        <span>${escapeHtml(STATUS_METADATA[colId].label)}</span>
+      </div>
+      <span class="status-pill">${colIssues.length}</span>
+    `;
+      groupEl.appendChild(header);
+      const cardsContainer = document.createElement("div");
+      cardsContainer.className = "all-tasks-group-cards";
+      colIssues.forEach((issue) => {
+        const card = document.createElement("div");
+        card.className = "all-task-card";
+        card.setAttribute("role", "button");
+        card.setAttribute("tabindex", "0");
+        const titles = parseFriendlyTitle(issue.body, issue.title);
+        const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
+        const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+        card.setAttribute("aria-label", `Open issue #${issue.number}: ${displayTitle}`);
+        const content = document.createElement("div");
+        content.className = "all-task-content";
+        const titleEl = document.createElement("div");
+        titleEl.className = "all-task-title";
+        titleEl.textContent = displayTitle;
+        content.appendChild(titleEl);
+        if (displaySubtitle) {
+          const subEl = document.createElement("div");
+          subEl.className = "card-subtitle-tech";
+          subEl.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
+          subEl.textContent = displaySubtitle;
+          content.appendChild(subEl);
+        }
+        const meta = document.createElement("div");
+        meta.className = "all-task-meta";
+        const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+        if (isAllProjectsMode && repoName) {
+          const repoPill = document.createElement("span");
+          repoPill.className = "status-pill";
+          repoPill.style.fontSize = "10px";
+          repoPill.textContent = repoName.split("/")[1] || repoName;
+          meta.appendChild(repoPill);
+        }
+        const numSpan = document.createElement("span");
+        numSpan.style.cssText = "font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted);";
+        numSpan.textContent = `#${issue.number}`;
+        meta.appendChild(numSpan);
+        card.appendChild(content);
+        card.appendChild(meta);
+        const onCardClick = () => openDrawer(issue);
+        card.addEventListener("click", onCardClick);
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onCardClick();
+          }
+        });
+        cardsContainer.appendChild(card);
+      });
+      groupEl.appendChild(cardsContainer);
+      fragment.appendChild(groupEl);
+    });
+    elAllTasksViewContainer.appendChild(fragment);
+  }
+  function renderQuestionsView(filteredIssues) {
+    if (!elQuestionsViewContainer) return;
+    elQuestionsViewContainer.innerHTML = "";
+    const issuesWithQuestions = [];
+    for (const issue of filteredIssues) {
+      const questions = parseOpenQuestions(issue.body || "");
+      const unanswered = questions.filter((q) => !q.completed);
+      if (unanswered.length > 0) {
+        issuesWithQuestions.push({ issue, questions: unanswered });
+      }
+    }
+    if (issuesWithQuestions.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elQuestionsViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading questions...</span>
+        </div>
+      `;
+        return;
+      }
+      elQuestionsViewContainer.innerHTML = `
+      <div class="empty-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">No open questions</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">All specifications and open questions have been answered.</span>
+      </div>
+    `;
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    issuesWithQuestions.forEach(({ issue, questions }) => {
+      const card = document.createElement("div");
+      card.className = "questions-issue-card";
+      card.setAttribute("role", "region");
+      const titles = parseFriendlyTitle(issue.body, issue.title);
+      const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
+      const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+      card.setAttribute("aria-label", `Issue #${issue.number}: ${displayTitle}`);
+      const col = resolveIssueColumn2(issue) || "backlog";
+      const statusMeta = STATUS_METADATA[col];
+      const header = document.createElement("div");
+      header.className = "questions-issue-header";
+      header.setAttribute("role", "button");
+      header.setAttribute("tabindex", "0");
+      header.setAttribute("aria-label", `Open questions for issue #${issue.number}: ${displayTitle}`);
+      const titleGroup = document.createElement("div");
+      titleGroup.className = "human-issue-title-group";
+      const titleSpan = document.createElement("div");
+      titleSpan.className = "human-issue-title";
+      titleSpan.textContent = displayTitle;
+      titleGroup.appendChild(titleSpan);
+      if (displaySubtitle) {
+        const subSpan = document.createElement("div");
+        subSpan.className = "card-subtitle-tech";
+        subSpan.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
+        subSpan.textContent = displaySubtitle;
+        titleGroup.appendChild(subSpan);
+      }
+      const meta = document.createElement("div");
+      meta.className = "human-issue-meta";
+      const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+      if (isAllProjectsMode && repoName) {
+        const repoPill = document.createElement("span");
+        repoPill.className = "status-pill";
+        repoPill.style.fontSize = "10px";
+        repoPill.textContent = repoName.split("/")[1] || repoName;
+        meta.appendChild(repoPill);
+      }
+      const statusPill = document.createElement("span");
+      statusPill.className = "status-pill";
+      statusPill.style.cssText = `background: color-mix(in srgb, ${statusMeta.color} 20%, transparent); color: ${statusMeta.color}; font-size: 10.5px;`;
+      statusPill.textContent = statusMeta.label;
+      meta.appendChild(statusPill);
+      const countPill = document.createElement("span");
+      countPill.className = "status-pill status-pill-frontier";
+      countPill.style.fontSize = "10.5px";
+      countPill.textContent = `${questions.length} open`;
+      meta.appendChild(countPill);
+      const numSpan = document.createElement("span");
+      numSpan.style.cssText = "font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted);";
+      numSpan.textContent = `#${issue.number}`;
+      meta.appendChild(numSpan);
+      header.appendChild(titleGroup);
+      header.appendChild(meta);
+      const onHeaderClick = () => {
+        openDrawer(issue);
+        setTimeout(() => {
+          const elQuestions = document.getElementById("drawerQuestionsContainer");
+          if (elQuestions) {
+            elQuestions.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }, 50);
+      };
+      header.addEventListener("click", onHeaderClick);
+      header.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onHeaderClick();
+        }
+      });
+      card.appendChild(header);
+      const list = document.createElement("div");
+      list.className = "question-items-list";
+      let unresolvedIdx = 0;
+      questions.forEach((question) => {
+        const idx = unresolvedIdx;
+        unresolvedIdx++;
+        const itemEl = document.createElement("div");
+        itemEl.className = "question-view-item";
+        const row = document.createElement("div");
+        row.className = "question-view-row";
+        const leftRow = document.createElement("div");
+        leftRow.style.cssText = "display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 0;";
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.className = "human-todo-checkbox";
+        cb.checked = false;
+        cb.setAttribute("aria-label", `Mark question as answered: ${question.text}`);
+        cb.addEventListener("click", (e) => e.stopPropagation());
+        cb.addEventListener("change", async (e) => {
+          e.stopPropagation();
+          const currentQuestions = parseOpenQuestions(issue.body);
+          const target = currentQuestions.find((q) => q.completed !== cb.checked && q.text.trim() === question.text.trim()) || currentQuestions.find((q) => q.text.trim() === question.text.trim()) || question;
+          const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
+          await updateIssueBody(issue, updatedBody);
+        });
+        const spanText = document.createElement("span");
+        spanText.className = "question-view-text";
+        spanText.textContent = question.text;
+        leftRow.appendChild(cb);
+        leftRow.appendChild(spanText);
+        const btnAnswer = document.createElement("button");
+        btnAnswer.className = "btn btn-xs btn-inline-answer";
+        btnAnswer.title = "Record decision or answer";
+        btnAnswer.setAttribute("aria-expanded", "false");
+        btnAnswer.setAttribute("aria-label", `Answer question: ${question.text}`);
+        btnAnswer.textContent = "Answer";
+        row.appendChild(leftRow);
+        row.appendChild(btnAnswer);
+        itemEl.appendChild(row);
+        const answerRow = document.createElement("div");
+        answerRow.className = "inline-answer-row";
+        answerRow.style.cssText = "display: none; gap: 6px; margin-top: 6px;";
+        answerRow.innerHTML = `
+        <input type="text" class="form-ctrl input-inline-answer" aria-label="Answer for: ${escapeHtml(question.text)}" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" />
+        <button class="btn btn-xs btn-primary btn-submit-inline-answer" aria-label="Save answer">Save</button>
+        <button class="btn btn-xs btn-cancel-inline-answer" aria-label="Cancel answer">Cancel</button>
+      `;
+        itemEl.appendChild(answerRow);
+        const input = answerRow.querySelector(".input-inline-answer");
+        const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
+        const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
+        btnAnswer.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isVisible = answerRow.style.display !== "none";
+          answerRow.style.display = isVisible ? "none" : "flex";
+          btnAnswer.setAttribute("aria-expanded", isVisible ? "false" : "true");
+          if (!isVisible) {
+            input?.focus();
+          }
+        });
+        const submitAnswer = async () => {
+          const answerText = input?.value.trim();
+          if (!answerText) {
+            input?.focus();
+            return;
+          }
+          const newBody = answerOpenQuestionInMarkdown(issue.body, idx, answerText);
+          await updateIssueBody(issue, newBody);
+          btnAnswer.setAttribute("aria-expanded", "false");
+          await host.toast({ kind: "info", message: "Recorded answer to question" });
+        };
+        btnSave?.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          void submitAnswer();
+        });
+        input?.addEventListener("keydown", (ev) => {
+          ev.stopPropagation();
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            void submitAnswer();
+          } else if (ev.key === "Escape") {
+            answerRow.style.display = "none";
+            btnAnswer.setAttribute("aria-expanded", "false");
+          }
+        });
+        btnCancel?.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          answerRow.style.display = "none";
+          btnAnswer.setAttribute("aria-expanded", "false");
+        });
+        list.appendChild(itemEl);
+      });
+      card.appendChild(list);
+      fragment.appendChild(card);
+    });
+    elQuestionsViewContainer.appendChild(fragment);
+  }
   function updateViewModeButtons(mode) {
+    elBtnViewHuman?.classList.toggle("active", mode === "human");
+    elBtnViewHuman?.setAttribute("aria-checked", mode === "human" ? "true" : "false");
+    elBtnViewAllTasks?.classList.toggle("active", mode === "all-tasks");
+    elBtnViewAllTasks?.setAttribute("aria-checked", mode === "all-tasks" ? "true" : "false");
+    elBtnViewQuestions?.classList.toggle("active", mode === "questions");
+    elBtnViewQuestions?.setAttribute("aria-checked", mode === "questions" ? "true" : "false");
     elBtnViewList?.classList.toggle("active", mode === "list");
     elBtnViewList?.setAttribute("aria-checked", mode === "list" ? "true" : "false");
     elBtnViewKanban?.classList.toggle("active", mode === "kanban");
@@ -7041,7 +7976,19 @@ Blocked by ${blockerRef}`;
     elBtnViewGraph?.classList.toggle("active", mode === "graph");
     elBtnViewGraph?.setAttribute("aria-checked", mode === "graph" ? "true" : "false");
     if (elBtnLayoutToggle) {
-      if (mode === "list") {
+      if (mode === "human") {
+        elBtnLayoutToggle.title = "View: Human Tasks (click to switch to All Tasks)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: Human Tasks (click to switch to All Tasks)");
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+      } else if (mode === "all-tasks") {
+        elBtnLayoutToggle.title = "View: All Tasks (click to switch to Questions)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: All Tasks (click to switch to Questions)");
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>';
+      } else if (mode === "questions") {
+        elBtnLayoutToggle.title = "View: Questions (click to switch to List)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: Questions (click to switch to List)");
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
+      } else if (mode === "list") {
         elBtnLayoutToggle.title = "View: List (click to switch to Board)";
         elBtnLayoutToggle.setAttribute("aria-label", "View: List (click to switch to Board)");
         elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>';
@@ -7050,8 +7997,8 @@ Blocked by ${blockerRef}`;
         elBtnLayoutToggle.setAttribute("aria-label", "View: Board (click to switch to Graph)");
         elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>';
       } else {
-        elBtnLayoutToggle.title = "View: Graph (click to switch to List)";
-        elBtnLayoutToggle.setAttribute("aria-label", "View: Graph (click to switch to List)");
+        elBtnLayoutToggle.title = "View: Graph (click to switch to Human Tasks)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: Graph (click to switch to Human Tasks)");
         elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>';
       }
     }
@@ -7063,7 +8010,19 @@ Blocked by ${blockerRef}`;
     }
     isWideScreen = window.innerWidth >= 680;
     let newLayout = "list";
-    if (userLayoutPreference === "graph") {
+    if (userLayoutPreference === "human") {
+      newLayout = "human";
+      document.body.setAttribute("data-layout", "human");
+      updateViewModeButtons("human");
+    } else if (userLayoutPreference === "all-tasks") {
+      newLayout = "all-tasks";
+      document.body.setAttribute("data-layout", "all-tasks");
+      updateViewModeButtons("all-tasks");
+    } else if (userLayoutPreference === "questions") {
+      newLayout = "questions";
+      document.body.setAttribute("data-layout", "questions");
+      updateViewModeButtons("questions");
+    } else if (userLayoutPreference === "graph") {
       newLayout = "graph";
       document.body.setAttribute("data-layout", "graph");
       updateViewModeButtons("graph");
@@ -9165,6 +10124,18 @@ ${issue.body}
         renderViews();
       }
     });
+    elBtnViewHuman?.addEventListener("click", () => {
+      userLayoutPreference = "human";
+      applyLayoutMode();
+    });
+    elBtnViewAllTasks?.addEventListener("click", () => {
+      userLayoutPreference = "all-tasks";
+      applyLayoutMode();
+    });
+    elBtnViewQuestions?.addEventListener("click", () => {
+      userLayoutPreference = "questions";
+      applyLayoutMode();
+    });
     elBtnViewList?.addEventListener("click", () => {
       userLayoutPreference = "list";
       applyLayoutMode();
@@ -9176,6 +10147,21 @@ ${issue.body}
     elBtnViewGraph?.addEventListener("click", () => {
       userLayoutPreference = "graph";
       applyLayoutMode();
+    });
+    document.getElementById("menuItemViewHuman")?.addEventListener("click", () => {
+      userLayoutPreference = "human";
+      applyLayoutMode();
+      closeMoreMenu();
+    });
+    document.getElementById("menuItemViewAllTasks")?.addEventListener("click", () => {
+      userLayoutPreference = "all-tasks";
+      applyLayoutMode();
+      closeMoreMenu();
+    });
+    document.getElementById("menuItemViewQuestions")?.addEventListener("click", () => {
+      userLayoutPreference = "questions";
+      applyLayoutMode();
+      closeMoreMenu();
     });
     document.getElementById("menuItemViewList")?.addEventListener("click", () => {
       userLayoutPreference = "list";
@@ -9195,10 +10181,10 @@ ${issue.body}
     if (elBtnLayoutToggle) {
       elBtnLayoutToggle.addEventListener("click", () => {
         const cur = document.body.getAttribute("data-layout");
-        userLayoutPreference = cur === "kanban" ? "graph" : cur === "graph" ? "list" : "kanban";
+        userLayoutPreference = cur === "kanban" ? "graph" : cur === "graph" ? "human" : cur === "human" ? "all-tasks" : cur === "all-tasks" ? "questions" : cur === "questions" ? "list" : "kanban";
         applyLayoutMode();
         if (host?.toast) {
-          const name = userLayoutPreference === "kanban" ? "Board" : userLayoutPreference === "graph" ? "Graph" : "List";
+          const name = userLayoutPreference === "kanban" ? "Board" : userLayoutPreference === "graph" ? "Graph" : userLayoutPreference === "human" ? "Human Tasks" : userLayoutPreference === "all-tasks" ? "All Tasks" : userLayoutPreference === "questions" ? "Questions" : "List";
           void host.toast({ kind: "info", message: `Switched to ${name} view` });
         }
       });

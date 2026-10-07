@@ -43,7 +43,8 @@ function scanDecl(src, start) {
 }
 
 const JS_FUNCS = [
-  'parseOpenQuestions', 'parseSubtasks', 'updateSubtaskInMarkdown', 'updateOpenQuestionInMarkdown',
+  'parseOpenQuestions', 'parseHumanTasks', 'parseSubtasks', 'collectHumanTodos',
+  'updateSubtaskInMarkdown', 'updateOpenQuestionInMarkdown', 'answerOpenQuestionInMarkdown',
   'appendSubtaskToMarkdown', 'appendOpenQuestionToMarkdown', 'serializeDraftQuestions',
   'isVagueIdea', 'formatQuestionBadge', 'getIssueTheme', 'extractTaskThemes', 'parseScratchPadThemes',
   'resolveAiIssuePrompt', 'resolveAiAlignmentPrompt', 'buildIssueAttachPayload',
@@ -56,7 +57,7 @@ const JS_FUNCS = [
   'mergeIssuePages',
   'parseFriendlyTitle',
 ];
-const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
+const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'humanTasksSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
 function extract(marker) {
   const idx = MAIN_JS.indexOf(marker);
@@ -72,7 +73,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 36);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 40);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -112,6 +113,19 @@ test('parseSubtasks / parseOpenQuestions: shipped == core', () => {
   }
 });
 
+test('parseHumanTasks / collectHumanTodos: shipped == core', () => {
+  const bodies = [
+    '### Human Tasks:\n- [ ] Action 1\n- [x] Action 2',
+    '### Open Questions\n- [ ] Q1?\n## Next\n- [ ] C',
+    '### Human Tasks:\n- [x] Done item',
+    '',
+  ];
+  for (const b of bodies) {
+    assert.deepEqual(Shipped.parseHumanTasks(b), Core.parseHumanTasks(b), 'humanTasks: ' + JSON.stringify(b));
+    assert.deepEqual(Shipped.collectHumanTodos(b), Core.collectHumanTodos(b), 'collectHumanTodos: ' + JSON.stringify(b));
+  }
+});
+
 test('markdown mutators: shipped == core', () => {
   const body = '### Open Questions\n- [ ] Q1?\n- [ ] Q2?\n### Tasks\n- [ ] T1';
   for (const [li, done] of [[0, true], [1, true], [3, true], [9, true]]) {
@@ -126,6 +140,8 @@ test('markdown mutators: shipped == core', () => {
   assert.equal(Shipped.serializeDraftQuestions('body', ['a', 'b']), Core.serializeDraftQuestions('body', ['a', 'b']));
   assert.equal(Shipped.serializeDraftQuestions('', []), Core.serializeDraftQuestions('', []));
   assert.equal(Shipped.serializeDraftSubtasks('body', ['x']), Core.serializeDraftSubtasks('body', ['x']));
+  const answerBody = '### Open Questions:\n- [ ] Q1?\n- [ ] Q2?';
+  assert.equal(Shipped.answerOpenQuestionInMarkdown(answerBody, 0, 'My answer'), Core.answerOpenQuestionInMarkdown(answerBody, 0, 'My answer'));
 });
 
 test('isVagueIdea and formatQuestionBadge: shipped == core', () => {
