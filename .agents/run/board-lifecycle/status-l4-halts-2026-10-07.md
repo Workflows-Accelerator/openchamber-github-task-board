@@ -45,6 +45,13 @@
 - Latency measured: All Projects cold fan-out 1.6s at 200ms/repo, 0ms warm cache. Positive live reply proof still NOT RUN; disposable-fixture-contract.md documents the isolated plan.
 - Bounded fix ses_e0f2d7ad18363e33a02e08a4 dispatched (engineer) via briefs/voice-v2-repair-2-fixes.md: exactly the 3 defects, red/green tests, no scope expansion. Fresh L4 required after.
 
+## Board repair 1 L4 result (ses_3c63be63d8cbb73cde19dac3)
+- Verdict PROCEED-WITH-CONDITIONS on 00ac1b9. All 14 original findings F-01..F-14 verified repaired or properly bounded. Test-oracle audit confirmed manager concern: 7 of 12 builder tests were copied simulations; reviewer authored production-orchestration.test.js executing shipped panel/main.js to close the gap. 11 hostile production tests green.
+- 4 residual defects (reviewer-reproduced): D-01 HIGH normalizeGithubIssues emits `user: undefined`, SDK strict JSON validation rejects it and host.storage.set throws HOST_REJECTED on cache writes; D-02 MEDIUM unknown-repo issues resolve to __all_projects__ sentinel and send invalid PATCH; D-03 MEDIUM page-1 304 with non-empty in-memory list substitutes aggregate cache and skips page 2+ validation; D-04 LOW incremental sync silently stops at 10 pages without truncation flag/watermark guard.
+- Measured request counts per scenario now on record (cold start 304: 2 reqs, paging 145 with page2 304: 1 req restoring 45 items, >100 incremental: 2 reqs merging 150, All Projects idle 3 repos: 3 reqs, drawer race: no stale render, manual refresh: caches cleared). These are fixture measurements, not production traffic.
+- Bounded fix ses_5c0356f5e154169806b9fdea dispatched (engineer) via briefs/board-v2-repair-2-fixes.md: exactly D-01..D-04, production-path red/green tests required (simulations rejected). Fresh L4 required after.
+- Known non-defect gaps unchanged and awaiting user decision: since= omits deletions/transfers (manual Refresh reconciles); SDK host proxy drops conditional headers (non-PAT users degrade to plain GET, correct without quota savings).
+
 ## Issue receipt limitation
 - Manager attempted allowlisted `gh issue list --repo Workflows-Accelerator/openchamber-github-task-board --state open --limit 30 --json number,title,labels,url`; shell exit 127, gh not installed.
 - No remote issue receipt/status update made at this boundary. Do not route around manager shell denial using REST/execute. Existing repair workers explicitly own no issue writes; avoid spawning a duplicate repo worker. Remote receipt sync remains pending a bounded worker dispatch after current app workers end, or restored gh availability.
