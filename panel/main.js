@@ -6,6 +6,7 @@
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
   --oc-scrollbar-thumb: color-mix(in srgb, var(--oc-muted, currentColor) 40%, transparent);
@@ -14,35 +15,118 @@
 }
 * {
   scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+:hover, [${GUEST_SCROLLING_ATTRIBUTE}] {
   scrollbar-color: var(--oc-scrollbar-thumb) transparent;
 }
 /* Chromium's standard scrollbar properties otherwise override its pseudo-elements. */
 @supports selector(::-webkit-scrollbar) {
-  * { scrollbar-width: auto; scrollbar-color: auto; }
+  *, :hover, [${GUEST_SCROLLING_ATTRIBUTE}] { scrollbar-width: auto; scrollbar-color: auto; }
   ::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
-  :root::-webkit-scrollbar, body::-webkit-scrollbar { background: var(--oc-bg, inherit); }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb {
-    background: var(--oc-scrollbar-thumb);
+    background: transparent;
     border-radius: 999px;
     min-width: 24px;
     min-height: 24px;
   }
+  :hover::-webkit-scrollbar-thumb, [${GUEST_SCROLLING_ATTRIBUTE}]::-webkit-scrollbar-thumb { background: var(--oc-scrollbar-thumb); }
   ::-webkit-scrollbar-thumb:hover { background: var(--oc-scrollbar-thumb-hover); }
   ::-webkit-scrollbar-corner { background: transparent; }
   ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
 }
 @media (forced-colors: active) {
-  * { scrollbar-color: auto; }
+  *, :hover, [${GUEST_SCROLLING_ATTRIBUTE}] { scrollbar-color: auto; }
   ::-webkit-scrollbar-thumb, ::-webkit-scrollbar-thumb:hover { background: CanvasText; }
 }
 `;
+  function installGuestScrollbarActivity(doc) {
+    const root = doc.documentElement;
+    if (root.hasAttribute("data-oc-scrollbar-activity"))
+      return;
+    root.setAttribute("data-oc-scrollbar-activity", "");
+    const timers = /* @__PURE__ */ new WeakMap();
+    doc.addEventListener("scroll", (event) => {
+      const target = event.target === doc ? root : event.target;
+      if (!(target instanceof Element))
+        return;
+      if (!target.hasAttribute("data-oc-scrolling"))
+        target.setAttribute("data-oc-scrolling", "");
+      const pending = timers.get(target);
+      if (pending !== void 0)
+        clearTimeout(pending);
+      timers.set(target, setTimeout(() => {
+        timers.delete(target);
+        target.removeAttribute("data-oc-scrolling");
+      }, 1e3));
+    }, { capture: true, passive: true });
+  }
+  var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  var GUEST_FILE_EDITORS_MAX = 8;
+  var GUEST_FILE_EDITOR_TITLE_MAX = 60;
+  var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
+  var GUEST_FILE_EDITOR_PATTERN_MAX = 128;
+  var GUEST_FILE_EDITOR_CONTENT_MAX = 2e7;
+  var GUEST_FILE_EDITOR_VERSION_MAX = 256;
+  var isFileEditorPattern = (value) => value.length > 0 && value.length <= GUEST_FILE_EDITOR_PATTERN_MAX && !/[/\\\0]/.test(value) && /[^*?]/.test(value);
+  var patternExpressions = /* @__PURE__ */ new Map();
+  var patternExpression = (pattern) => {
+    const cached = patternExpressions.get(pattern);
+    if (cached)
+      return cached;
+    const source = pattern.split("").map((character) => {
+      if (character === "*")
+        return ".*";
+      if (character === "?")
+        return ".";
+      return character.replace(/[\\^$.|+()[\]{}]/g, "\\$&");
+    }).join("");
+    const expression = new RegExp(`^${source}$`, "is");
+    patternExpressions.set(pattern, expression);
+    return expression;
+  };
+  var matchesFileEditorPattern = (fileName, pattern) => isFileEditorPattern(pattern) && patternExpression(pattern).test(fileName);
+  var fileEditorPayloadSize = (value) => "bytes" in value ? value.bytes.byteLength : value.content.length;
+  var sameFileEditorDocument = (left, right) => {
+    if (left.path !== right.path || left.readOnly !== right.readOnly)
+      return false;
+    if (left.encoding === "text" || right.encoding === "text") {
+      return left.encoding === "text" && right.encoding === "text" && left.content === right.content;
+    }
+    if (left.bytes.byteLength !== right.bytes.byteLength)
+      return false;
+    for (let index = 0; index < left.bytes.byteLength; index += 1) {
+      if (left.bytes[index] !== right.bytes[index])
+        return false;
+    }
+    return true;
+  };
+  var createFileSaveTracker = (initialVersion) => {
+    let saved = initialVersion;
+    let live = initialVersion;
+    return {
+      /** A new live version; `edited` is true when it differs from the previous one. */
+      observe: (version) => {
+        const edited = version !== live;
+        live = version;
+        return { edited, dirty: version !== saved };
+      },
+      /** Records a written version; returns whether the live state is still dirty. */
+      markSaved: (version) => {
+        saved = version;
+        return live !== version;
+      }
+    };
+  };
 
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
@@ -58,6 +142,8 @@
   var isGuestMessageItem = (item) => item !== null && item.kind === "message";
   var isGuestSessionItem = (item) => item !== null && item.kind === "session";
   var isGuestAttachItem = (item) => item !== null && item.kind !== "message" && item.kind !== "session";
+  var GUEST_COMMIT_SHA = /^[0-9a-f]{7,64}$/i;
+  var isGuestCommitSha = (value) => GUEST_COMMIT_SHA.test(value);
   var GUEST_TOAST_MAX = 500;
   var GUEST_CLIPBOARD_TEXT_MAX = 32e3;
   var GUEST_COMPOSE_TEXT_MAX = 16e3;
@@ -87,6 +173,7 @@
   var GUEST_ITEM_MESSAGE_TEXT_MAX = 2e5;
   var GUEST_ITEM_SESSION_MAX = 2e6;
   var GUEST_BADGE_MAX = 999;
+  var GUEST_FRAME_HEIGHT_MAX = 1e4;
   var GUEST_RESOLVE_ERROR_MAX = 500;
   var HOST_REQUEST_ERROR_CODES = [
     "HOST_UNAVAILABLE",
@@ -106,7 +193,8 @@
     "FILE_TOO_LARGE",
     "DENIED",
     "NO_MODEL",
-    "MODEL_FAILED"
+    "MODEL_FAILED",
+    "UNSUPPORTED"
   ];
   var SERVICE_STATUS_VALUES = ["stopped", "starting", "ready", "failed"];
   var hostRequestErrorCodeSet = new Set(HOST_REQUEST_ERROR_CODES);
@@ -186,6 +274,11 @@
       return null;
     return Math.min(GUEST_BADGE_MAX, Math.max(0, Math.round(count)));
   };
+  var clampFrameHeight = (height) => {
+    if (!Number.isFinite(height))
+      return 0;
+    return Math.min(GUEST_FRAME_HEIGHT_MAX, Math.max(0, Math.ceil(height)));
+  };
   var guestFileScope = (path) => path.startsWith("/") || path === "~" || path.startsWith("~/") ? "filesystem" : "project";
   var isGuestFilePath = (value) => value.length > 0 && value.length <= GUEST_FILE_PATH_MAX && !value.includes("\0") && !value.includes("\\");
   var ATTACH_PROVIDER_ID = /^[a-z][a-z0-9-]*$/;
@@ -219,7 +312,10 @@
     "session-lifecycle",
     "item",
     "resolve",
-    "action"
+    "action",
+    "file-open",
+    "file-snapshot",
+    "file-saved"
   ]);
   var asWireRecord = (data) => Object(data) === data ? data : null;
   var isNonEmptyString = (value) => String(value) === value && value.length > 0;
@@ -264,6 +360,8 @@
   };
 
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
+  var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
     code;
     constructor(code, message) {
@@ -294,6 +392,11 @@
     const itemListeners = /* @__PURE__ */ new Set();
     let resolveHandler = null;
     let actionHandler = null;
+    const fileOpenListeners = /* @__PURE__ */ new Set();
+    const fileSavedListeners = /* @__PURE__ */ new Set();
+    let fileSnapshotHandler = null;
+    let lastFile = null;
+    let saveShortcutInstalled = false;
     const pending = /* @__PURE__ */ new Map();
     const workspaceListeners = /* @__PURE__ */ new Map();
     let disposed = false;
@@ -415,6 +518,48 @@
         });
         return;
       }
+      if (message.type === "file-open") {
+        const next = message.payload;
+        if (lastFile && sameFileEditorDocument(lastFile, next))
+          return;
+        lastFile = next;
+        emit(fileOpenListeners, message.payload);
+        return;
+      }
+      if (message.type === "file-saved") {
+        emit(fileSavedListeners, message.payload.version);
+        return;
+      }
+      if (message.type === "file-snapshot") {
+        const answer = (payload) => {
+          if (!disposed)
+            post({
+              channel: OPENCHAMBER_SDK_CHANNEL,
+              v: OPENCHAMBER_SDK_API_VERSION,
+              type: "file-snapshot-result",
+              id: message.id,
+              payload
+            });
+        };
+        const fail = (text) => answer({ error: (text.trim() || "Could not read the edited file.").slice(0, GUEST_RESOLVE_ERROR_MAX) });
+        const handler = fileSnapshotHandler;
+        if (!handler) {
+          fail("This extension does not edit files.");
+          return;
+        }
+        Promise.resolve().then(() => handler(message.payload.purpose)).then((snapshot) => {
+          if (fileEditorPayloadSize(snapshot) > GUEST_FILE_EDITOR_CONTENT_MAX) {
+            fail(`The file is over ${GUEST_FILE_EDITOR_CONTENT_MAX} ${"bytes" in snapshot ? "bytes" : "characters"}.`);
+            return;
+          }
+          if (snapshot.version.length > GUEST_FILE_EDITOR_VERSION_MAX) {
+            fail(`The snapshot version is over ${GUEST_FILE_EDITOR_VERSION_MAX} characters.`);
+            return;
+          }
+          answer({ snapshot: "bytes" in snapshot ? { bytes: snapshot.bytes, version: snapshot.version } : { content: snapshot.content, version: snapshot.version } });
+        }, (error) => fail(error instanceof Error ? error.message : String(error)));
+        return;
+      }
       if (message.type === "resolve") {
         const answer = (payload) => {
           post({
@@ -468,6 +613,17 @@
     };
     const request = (message) => send(message).then(() => void 0);
     const envelope = { channel: OPENCHAMBER_SDK_CHANNEL, v: OPENCHAMBER_SDK_API_VERSION };
+    const notify = (message) => {
+      if (!disposed && target.parent !== target)
+        post(message);
+    };
+    const requestFileSave = () => notify({ ...envelope, type: "file-save" });
+    const onSaveShortcut = (event) => {
+      if (!isKeyEvent(event) || !isSaveShortcut(event))
+        return;
+      event.preventDefault();
+      requestFileSave();
+    };
     const requireIdentity = (value, maximum = 1024) => {
       if (!value.trim() || value.length > maximum)
         throw new HostRequestError("HOST_REJECTED", `Identity must contain 1 to ${maximum} characters.`);
@@ -661,6 +817,13 @@
         id: nextId(ids),
         payload: { url }
       }),
+      openCommit: (sha) => isGuestCommitSha(sha) ? request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "open-commit",
+        id: nextId(ids),
+        payload: { sha }
+      }) : Promise.reject(new HostRequestError("HOST_REJECTED", "Commit id must be 7 to 64 hex characters.")),
       openSurface: (surfaceId) => request({
         channel: OPENCHAMBER_SDK_CHANNEL,
         v: OPENCHAMBER_SDK_API_VERSION,
@@ -881,6 +1044,41 @@
         id: nextId(ids),
         payload: { count: clampBadgeCount(count) }
       }),
+      setHeight: (height) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "resize",
+        id: nextId(ids),
+        payload: { height: clampFrameHeight(height) }
+      }),
+      onFileOpen: (listener) => {
+        fileOpenListeners.add(listener);
+        if (!saveShortcutInstalled) {
+          saveShortcutInstalled = true;
+          target.addEventListener("keydown", onSaveShortcut, true);
+        }
+        if (lastFile)
+          listener(lastFile);
+        return () => {
+          fileOpenListeners.delete(listener);
+        };
+      },
+      onFileSnapshot: (handler) => {
+        fileSnapshotHandler = handler;
+        return () => {
+          if (fileSnapshotHandler === handler)
+            fileSnapshotHandler = null;
+        };
+      },
+      onFileSaved: (listener) => {
+        fileSavedListeners.add(listener);
+        return () => {
+          fileSavedListeners.delete(listener);
+        };
+      },
+      reportFileChange: (change) => notify({ ...envelope, type: "file-change", payload: { dirty: change.dirty, edited: change.edited } }),
+      requestFileSave,
+      reportFileUnsupported: () => notify({ ...envelope, type: "file-unsupported" }),
       dispose: () => {
         for (const subscriptionId of workspaceListeners.keys()) {
           post({ ...envelope, type: "workspace-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
@@ -889,6 +1087,11 @@
         disposed = true;
         resolveHandler = null;
         actionHandler = null;
+        fileSnapshotHandler = null;
+        fileOpenListeners.clear();
+        fileSavedListeners.clear();
+        if (saveShortcutInstalled)
+          target.removeEventListener("keydown", onSaveShortcut, true);
         target.removeEventListener("message", onMessage);
         for (const waiter of pending.values()) {
           clearTimeout(waiter.timer);
@@ -967,6 +1170,9 @@
   var SURFACE_HEIGHT_HEADER = "x-surface-height";
   var SURFACE_TITLE_HEADER = "x-surface-title";
   var SURFACE_AGENT_ACTIVE_HEADER = "x-surface-agent-active";
+  var SURFACE_VIEWER_HEADER = "x-surface-viewer";
+  var SURFACE_FRAME_SEQ_HEADER = "x-surface-frame-seq";
+  var SURFACE_VIEWER_CONTROLS_HEADER = "x-surface-viewer-controls";
   var SURFACE_FRAME_MIMES = ["image/jpeg", "image/png"];
   var SURFACE_FRAME_WAIT_MS = 25e3;
   var SURFACE_FRAME_MAX_BYTES = 8e6;
@@ -1049,10 +1255,13 @@
     }
     if (Object(parsed) !== parsed || parsed === null)
       return null;
-    const { controller } = parsed;
+    const { controller, viewer } = parsed;
     if (!isText(controller) || !CONTROLLERS.has(controller))
       return null;
-    return { controller };
+    const notice = { controller };
+    if (controller === "user" && isText(viewer) && viewer.length > 0)
+      notice.viewer = viewer;
+    return notice;
   };
   var readSurfaceResizeRequest = (body) => {
     let parsed;
@@ -1161,6 +1370,7 @@
       }
       return;
     }
+    installGuestScrollbarActivity(document);
     const style = document.createElement("style");
     style.id = STYLE_ID;
     style.textContent = css;
@@ -3329,6 +3539,9 @@ ${placeholder}
       if (isSessionWaiting) {
         return "needs-human";
       }
+      if (isSessionIdle) {
+        return "needs-human";
+      }
       return "draft";
     }
     if (session) {
@@ -3563,7 +3776,7 @@ ${placeholder}
   var humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
   var testPlanIssueHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
   var testPlanBatchHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
-  var headingRegex = /^[ \t]*#{1,6}\s+/;
+  var headingRegex = /^[ ]{0,3}#{1,6}\s+/;
   function parseFriendlyTitle(body, defaultTitle) {
     if (!body || typeof body !== "string") {
       return { title: defaultTitle || "", subtitle: null };
@@ -3612,10 +3825,16 @@ ${placeholder}
     const questions = [];
     let inQuestionsSection = false;
     let inHumanTasksSection = false;
+    let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
       const line = rawLine.replace(/\r/g, "");
-      if (headingRegex.test(line)) {
+      if (/^[ \t]*(?:```|~~~)/.test(line)) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+      if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
         inQuestionsSection = questionsSectionRegex.test(line);
         inHumanTasksSection = humanTasksSectionRegex.test(line);
         continue;
@@ -3658,10 +3877,16 @@ ${placeholder}
     const lines = cleanBody.split("\n");
     const tasks = [];
     let inHumanTasksSection = false;
+    let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
       const line = rawLine.replace(/\r/g, "");
-      if (headingRegex.test(line)) {
+      if (/^[ \t]*(?:```|~~~)/.test(line)) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+      if (headingRegex.test(line) || humanTasksSectionRegex.test(line) || questionsSectionRegex.test(line)) {
         inHumanTasksSection = humanTasksSectionRegex.test(line);
         continue;
       }
@@ -3690,10 +3915,16 @@ ${placeholder}
     const subtasks = [];
     let inQuestionsSection = false;
     let inHumanTasksSection = false;
+    let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
       const line = rawLine.replace(/\r/g, "");
-      if (headingRegex.test(line)) {
+      if (/^[ \t]*(?:```|~~~)/.test(line)) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+      if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
         inQuestionsSection = questionsSectionRegex.test(line);
         inHumanTasksSection = humanTasksSectionRegex.test(line);
         continue;
@@ -3769,6 +4000,28 @@ ${placeholder}
     if (todos.length > 0) {
       return todos;
     }
+    const isBoundToOther = (s, currentNum) => {
+      if (!s || !currentNum) return false;
+      const currentStr = String(currentNum);
+      if (Array.isArray(s.items)) {
+        for (const it of s.items) {
+          if (!it) continue;
+          if (it.id === currentStr) return false;
+          const otherNum = it.data?.issueNumber || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers[0] || (Number.isFinite(Number(it.id)) ? Number(it.id) : null);
+          if (otherNum && Number(otherNum) !== currentNum) return true;
+        }
+      }
+      if (typeof s.title === "string") {
+        const match = s.title.match(/#(\d+)/);
+        if (match && Number(match[1]) !== currentNum) return true;
+      }
+      const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
+      if (wtName) {
+        const match = wtName.match(/issue-(\d+)/);
+        if (match && Number(match[1]) !== currentNum) return true;
+      }
+      return false;
+    };
     let activeSession = null;
     if (Array.isArray(session)) {
       if (issueObj && Number.isFinite(issueObj.number)) {
@@ -3782,12 +4035,16 @@ ${placeholder}
           const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
           if (wtName && wtName.includes(`issue-${issueObj.number}`)) return true;
           return false;
-        }) || (session.length === 1 ? session[0] : null);
+        }) || (session.length === 1 && !isBoundToOther(session[0], issueObj.number) ? session[0] : null);
       } else {
         activeSession = session.length === 1 ? session[0] : null;
       }
     } else if (session && typeof session === "object") {
-      activeSession = session;
+      if (issueObj && Number.isFinite(issueObj.number) && isBoundToOther(session, issueObj.number)) {
+        activeSession = null;
+      } else {
+        activeSession = session;
+      }
     }
     if (activeSession) {
       const act = typeof activeSession.activity === "string" ? activeSession.activity.trim() : "";
@@ -3919,9 +4176,15 @@ ${questionsBlock}`;
     if (!body || typeof body !== "string") return result;
     const lines = body.split("\n");
     let currentScope = null;
+    let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      if (headingRegex.test(line)) {
+      if (/^[ \t]*(?:```|~~~)/.test(line)) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+      if (headingRegex.test(line) || testPlanIssueHeadingRegex.test(line) || testPlanBatchHeadingRegex.test(line)) {
         if (testPlanIssueHeadingRegex.test(line)) {
           currentScope = "issue";
         } else if (testPlanBatchHeadingRegex.test(line)) {
@@ -6559,6 +6822,9 @@ Blocked by ${blockerRef}`;
         return "in-progress";
       }
       if (isSessionWaiting) {
+        return "needs-human";
+      }
+      if (isSessionIdle) {
         return "needs-human";
       }
       return "draft";

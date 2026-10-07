@@ -473,4 +473,136 @@ test('collectHumanTodos multi-session fallback: matches bound issue and prevents
   assert.deepEqual(todosItemsMatch, [
     { text: 'Agent waiting for permission: Approve run', source: 'session-waiting', done: false },
   ]);
+
+  // Single session bound to another issue must NOT hijack via single-session fallback
+  const singleBoundSession = [
+    { id: 's-42', title: 'Fix bug #42', activity: 'waiting-permission', reason: 'Access DB' },
+  ];
+  const todosWrong = collectHumanTodos(issue10, singleBoundSession);
+  assert.deepEqual(todosWrong, [], 'Single session bound to another issue must not hijack issue 10');
+
+  // Single session object bound to another issue must NOT hijack issue 10
+  const singleBoundObj = { id: 's-42', title: 'Fix bug #42', activity: 'waiting-permission', reason: 'Access DB' };
+  const todosWrongObj = collectHumanTodos(issue10, singleBoundObj);
+  assert.deepEqual(todosWrongObj, [], 'Direct session object bound to another issue must not hijack issue 10');
+});
+
+test('parsers ignore checklist items and pseudo-headings inside fenced code blocks', () => {
+  const body = `### Overview
+Here is sample code:
+\`\`\`markdown
+# Human Tasks:
+- [ ] Task inside backticks code fence
+# Open Questions:
+- [ ] Question inside backticks?
+### Actionable Subtasks Checklist:
+- [ ] Subtask inside backticks
+\`\`\`
+
+~~~
+# Human Tasks:
+- [ ] Task inside tildes fence
+~~~
+
+### Human Tasks:
+- [ ] Real human task
+\`\`\`bash
+# Not a real heading
+- [ ] Code checklist inside human tasks
+\`\`\`
+- [ ] Second real human task
+
+### Open Questions:
+- [ ] Real question?
+\`\`\`
+- [ ] Fake question in fence
+\`\`\`
+
+### Actionable Subtasks Checklist:
+- [ ] Real subtask
+\`\`\`
+- [ ] Fake subtask in fence
+\`\`\`
+`;
+
+  const humanTasks = parseHumanTasks(body);
+  assert.equal(humanTasks.length, 2);
+  assert.equal(humanTasks[0].text, 'Real human task');
+  assert.equal(humanTasks[1].text, 'Second real human task');
+
+  const questions = parseOpenQuestions(body);
+  assert.equal(questions.length, 1);
+  assert.equal(questions[0].text, 'Real question?');
+
+  const subtasks = parseSubtasks(body);
+  assert.equal(subtasks.length, 1);
+  assert.equal(subtasks[0].text, 'Real subtask');
+});
+
+test('parsers preserve items after indented comments or indented code blocks (CommonMark 4+ spaces)', () => {
+  const body = `### Human Tasks:
+- [ ] Task 1
+    # Indented comment or list continuation
+- [ ] Task 2
+
+### Open Questions:
+- [ ] Question 1?
+    # Note on question
+- [ ] Question 2?
+
+### Actionable Subtasks Checklist:
+- [ ] Subtask 1
+    # Code comment
+- [ ] Subtask 2
+`;
+
+  const humanTasks = parseHumanTasks(body);
+  assert.equal(humanTasks.length, 2);
+  assert.equal(humanTasks[0].text, 'Task 1');
+  assert.equal(humanTasks[1].text, 'Task 2');
+
+  const questions = parseOpenQuestions(body);
+  assert.equal(questions.length, 2);
+  assert.equal(questions[0].text, 'Question 1?');
+  assert.equal(questions[1].text, 'Question 2?');
+
+  const subtasks = parseSubtasks(body);
+  assert.equal(subtasks.length, 2);
+  assert.equal(subtasks[0].text, 'Subtask 1');
+  assert.equal(subtasks[1].text, 'Subtask 2');
+});
+
+test('parsers accept numeric string items like "- [ ] 0" without dropping them as empty', () => {
+  const body = `### Human Tasks:
+- [ ] 0
+- [ ] 1
+
+### Open Questions:
+- [ ] 0
+- [ ] 1
+
+### Actionable Subtasks Checklist:
+- [ ] 0
+- [ ] 1
+`;
+
+  const humanTasks = parseHumanTasks(body);
+  assert.equal(humanTasks.length, 2);
+  assert.equal(humanTasks[0].text, '0');
+  assert.equal(humanTasks[1].text, '1');
+
+  const questions = parseOpenQuestions(body);
+  assert.equal(questions.length, 2);
+  assert.equal(questions[0].text, '0');
+  assert.equal(questions[1].text, '1');
+
+  const subtasks = parseSubtasks(body);
+  assert.equal(subtasks.length, 2);
+  assert.equal(subtasks[0].text, '0');
+  assert.equal(subtasks[1].text, '1');
+
+  const todos = collectHumanTodos(body);
+  assert.equal(todos.length, 2);
+  assert.equal(todos[0].text, '0');
+  assert.equal(todos[1].text, '1');
 });

@@ -80,7 +80,7 @@ const humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
 const testPlanIssueHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
 const testPlanBatchHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
 
-const headingRegex = /^[ \t]*#{1,6}\s+/;
+const headingRegex = /^[ ]{0,3}#{1,6}\s+/;
 
 export function parseFriendlyTitle(
   body: string | null | undefined,
@@ -149,11 +149,18 @@ export function parseOpenQuestions(body: string): Subtask[] {
   const questions: Subtask[] = [];
   let inQuestionsSection = false;
   let inHumanTasksSection = false;
+  let inCodeFence = false;
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const line = rawLine.replace(/\r/g, '');
-    if (headingRegex.test(line)) {
+    if (/^[ \t]*(?:```|~~~)/.test(line)) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
+
+    if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
       inQuestionsSection = questionsSectionRegex.test(line);
       inHumanTasksSection = humanTasksSectionRegex.test(line);
       continue;
@@ -197,11 +204,18 @@ export function parseHumanTasks(body: string | null | undefined): Subtask[] {
   const lines = cleanBody.split('\n');
   const tasks: Subtask[] = [];
   let inHumanTasksSection = false;
+  let inCodeFence = false;
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const line = rawLine.replace(/\r/g, '');
-    if (headingRegex.test(line)) {
+    if (/^[ \t]*(?:```|~~~)/.test(line)) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
+
+    if (headingRegex.test(line) || humanTasksSectionRegex.test(line) || questionsSectionRegex.test(line)) {
       inHumanTasksSection = humanTasksSectionRegex.test(line);
       continue;
     }
@@ -231,11 +245,18 @@ export function parseSubtasks(body: string): Subtask[] {
   const subtasks: Subtask[] = [];
   let inQuestionsSection = false;
   let inHumanTasksSection = false;
+  let inCodeFence = false;
 
   for (let i = 0; i < lines.length; i++) {
     const rawLine = lines[i];
     const line = rawLine.replace(/\r/g, '');
-    if (headingRegex.test(line)) {
+    if (/^[ \t]*(?:```|~~~)/.test(line)) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
+
+    if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
       inQuestionsSection = questionsSectionRegex.test(line);
       inHumanTasksSection = humanTasksSectionRegex.test(line);
       continue;
@@ -328,6 +349,29 @@ export function collectHumanTodos(
 
   // 3. If an attached agent session is in a waiting* state and (1)+(2) yield nothing:
   // one synthesized item from the waiting reason (source session-waiting)
+  const isBoundToOther = (s: any, currentNum: number): boolean => {
+    if (!s || !currentNum) return false;
+    const currentStr = String(currentNum);
+    if (Array.isArray(s.items)) {
+      for (const it of s.items) {
+        if (!it) continue;
+        if (it.id === currentStr) return false;
+        const otherNum = it.data?.issueNumber || (Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers[0]) || (Number.isFinite(Number(it.id)) ? Number(it.id) : null);
+        if (otherNum && Number(otherNum) !== currentNum) return true;
+      }
+    }
+    if (typeof s.title === 'string') {
+      const match = s.title.match(/#(\d+)/);
+      if (match && Number(match[1]) !== currentNum) return true;
+    }
+    const wtName = typeof s.worktree === 'string' ? s.worktree : (s.worktree?.name || s.worktree?.branch || s.worktree?.directory || '');
+    if (wtName) {
+      const match = wtName.match(/issue-(\d+)/);
+      if (match && Number(match[1]) !== currentNum) return true;
+    }
+    return false;
+  };
+
   let activeSession: any = null;
   if (Array.isArray(session)) {
     if (issueObj && Number.isFinite(issueObj.number)) {
@@ -341,12 +385,16 @@ export function collectHumanTodos(
         const wtName = typeof s.worktree === 'string' ? s.worktree : (s.worktree?.name || s.worktree?.branch || s.worktree?.directory || '');
         if (wtName && wtName.includes(`issue-${issueObj!.number}`)) return true;
         return false;
-      }) || (session.length === 1 ? session[0] : null);
+      }) || (session.length === 1 && !isBoundToOther(session[0], issueObj.number) ? session[0] : null);
     } else {
       activeSession = session.length === 1 ? session[0] : null;
     }
   } else if (session && typeof session === 'object') {
-    activeSession = session;
+    if (issueObj && Number.isFinite(issueObj.number) && isBoundToOther(session, issueObj.number)) {
+      activeSession = null;
+    } else {
+      activeSession = session;
+    }
   }
 
   if (activeSession) {
@@ -485,10 +533,17 @@ export function parseTestPlan(body: string | null | undefined): { issueTests: Te
 
   const lines = body.split('\n');
   let currentScope: 'issue' | 'batch' | null = null;
+  let inCodeFence = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (headingRegex.test(line)) {
+    if (/^[ \t]*(?:```|~~~)/.test(line)) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
+
+    if (headingRegex.test(line) || testPlanIssueHeadingRegex.test(line) || testPlanBatchHeadingRegex.test(line)) {
       if (testPlanIssueHeadingRegex.test(line)) {
         currentScope = 'issue';
       } else if (testPlanBatchHeadingRegex.test(line)) {

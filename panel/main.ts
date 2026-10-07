@@ -1821,6 +1821,9 @@ export function resolveIssueColumn(
     if (isSessionWaiting) {
       return 'needs-human';
     }
+    if (isSessionIdle) {
+      return 'needs-human';
+    }
     return 'draft';
   }
 

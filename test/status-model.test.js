@@ -126,6 +126,7 @@ test('a) All 8 columns resolve correctly according to labels and session states'
   const draftIssue = { number: 9, state: 'open', labels: [{ name: 'status:draft' }] };
   assert.equal(resolveIssueColumn(draftIssue), 'draft');
   assert.equal(resolveIssueColumn(draftIssue, runningSession), 'in-progress');
+  assert.equal(resolveIssueColumn(draftIssue, idleSession), 'needs-human');
 
   // Session-derived for unlabelled well-formed issue
   const wellFormedUnlabelled = {
@@ -192,6 +193,10 @@ test('b) isVagueIdea issues automatically route to draft', () => {
   // But if a session is actively running on a vague idea, it routes to 'in-progress'
   const runningSession = { id: 's-run', title: '#20 task', activity: 'running' };
   assert.equal(resolveIssueColumn(emptyIssue, runningSession), 'in-progress');
+
+  // If a session on a vague idea goes idle, it routes to 'needs-human'
+  const idleSession = { id: 's-idle', title: '#20 task', activity: 'idle' };
+  assert.equal(resolveIssueColumn(emptyIssue, idleSession), 'needs-human');
 });
 
 test('c) waiting-permission and waiting-question map to needs-human', () => {
