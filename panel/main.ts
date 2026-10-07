@@ -1740,17 +1740,25 @@ async function handleIdleRefresh(currentSessions: any[], previousSessions: any[]
 
 // In the aggregated view a PATCH must target the issue's own repository.
 function repoForIssue(issue: Issue | null | undefined): string {
-  if (issue && isAllProjectsMode && issue.repo) return issue.repo;
+  if (issue?.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY) return issue.repo;
+  if (isAllProjectsMode) return '';
   return currentRepo;
 }
 
 async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
+  const repo = repoForIssue(issue);
+  if (!repo) {
+    addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+    if (host?.toast) {
+      void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+    }
+    return;
+  }
   issue.body = newBody;
   issue.subtasks = parseSubtasks(newBody);
   issue.openQuestions = parseOpenQuestions(newBody);
   issue.humanTasks = parseHumanTasks(newBody);
-  const repo = repoForIssue(issue);
-  if (repo) issueCache.delete(repo);
+  issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
     renderDrawer(issue, true);
@@ -1773,7 +1781,15 @@ async function updateIssueStatus(
   options?: { newPriorityGroup?: string }
 ): Promise<void> {
   const repo = repoForIssue(issue);
-  if (!issue || !repo) return;
+  if (!issue || !repo) {
+    if (issue && !repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+      if (host?.toast) {
+        void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+      }
+    }
+    return;
+  }
   const prevLabels = [...(issue.labels || [])];
   const prevState = issue.state;
 
@@ -1939,9 +1955,14 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
   issue.state = newState;
   issue.labels = clean.map((name) => ({ name }));
   const archiveRepo = repoForIssue(issue);
-  if (archiveRepo) {
-    issueCache.delete(archiveRepo);
+  if (!archiveRepo) {
+    addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+    if (host?.toast) {
+      void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+    }
+    return;
   }
+  issueCache.delete(archiveRepo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
     renderDrawer(issue, true);
@@ -4449,6 +4470,15 @@ async function addTagToIssue(issue: Issue, tagName: string): Promise<void> {
   const currentNames = issue.labels.map((l) => l.name);
   if (currentNames.some((n) => n.toLowerCase() === clean.toLowerCase())) return;
 
+  const repo = repoForIssue(issue);
+  if (!repo) {
+    addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+    if (host?.toast) {
+      void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+    }
+    return;
+  }
+
   const newNames = [...currentNames, clean];
   issue.labels.push({ name: clean });
   renderDrawerLabels(issue);
@@ -4456,7 +4486,7 @@ async function addTagToIssue(issue: Issue, tagName: string): Promise<void> {
 
   try {
     addLog(`Adding label "${clean}" to #${issue.number}...`);
-    await githubRequestWithRetry('PATCH', `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
+    await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       labels: newNames,
     });
     await host.toast({ kind: 'success', message: `Added label "${clean}" to #${issue.number}` });
@@ -4467,6 +4497,15 @@ async function addTagToIssue(issue: Issue, tagName: string): Promise<void> {
 }
 
 async function removeTagFromIssue(issue: Issue, tagName: string): Promise<void> {
+  const repo = repoForIssue(issue);
+  if (!repo) {
+    addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
+    if (host?.toast) {
+      void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
+    }
+    return;
+  }
+
   const target = tagName.trim().toLowerCase();
   const newLabels = issue.labels.filter((l) => l.name.toLowerCase() !== target);
   issue.labels = newLabels;
@@ -4475,7 +4514,7 @@ async function removeTagFromIssue(issue: Issue, tagName: string): Promise<void> 
 
   try {
     addLog(`Removing label "${tagName}" from #${issue.number}...`);
-    await githubRequestWithRetry('PATCH', `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
+    await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       labels: newLabels.map((l) => l.name),
     });
     await host.toast({ kind: 'info', message: `Removed label "${tagName}" from #${issue.number}` });
@@ -6747,7 +6786,15 @@ function initEvents(): void {
   if (elDrawerPrioritySelect) {
     elDrawerPrioritySelect.addEventListener('change', async () => {
       const priorityRepo = repoForIssue(activeIssue);
-      if (!activeIssue || !priorityRepo) return;
+      if (!activeIssue || !priorityRepo) {
+        if (activeIssue && !priorityRepo) {
+          addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, 'warn');
+          if (host?.toast) {
+            void host.toast({ kind: 'error', message: `Cannot update #${activeIssue.number}: repository unknown` });
+          }
+        }
+        return;
+      }
       const val = elDrawerPrioritySelect.value;
       const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
       activeIssue.labels = updatedLabels.map((name) => ({ name }));
@@ -6772,9 +6819,16 @@ function initEvents(): void {
         const filteredLabels = activeIssue.labels
           .map((l) => (typeof l === 'string' ? l : l.name || ''))
           .filter((name) => !name.startsWith('status:'));
-        activeIssue.labels = filteredLabels.map((name) => ({ name }));
         const statusRepo = repoForIssue(activeIssue);
-        if (statusRepo) issueCache.delete(statusRepo);
+        if (!statusRepo) {
+          addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, 'warn');
+          if (host?.toast) {
+            void host.toast({ kind: 'error', message: `Cannot update #${activeIssue.number}: repository unknown` });
+          }
+          return;
+        }
+        activeIssue.labels = filteredLabels.map((name) => ({ name }));
+        issueCache.delete(statusRepo);
         renderViews();
         renderDrawer(activeIssue, true);
         void githubRequestWithRetry('PATCH', `/repos/${statusRepo}/issues/${activeIssue.number}`, {
@@ -6790,7 +6844,15 @@ function initEvents(): void {
   if (elDrawerComplexitySelect) {
     elDrawerComplexitySelect.addEventListener('change', async () => {
       const complexityRepo = repoForIssue(activeIssue);
-      if (!activeIssue || !complexityRepo) return;
+      if (!activeIssue || !complexityRepo) {
+        if (activeIssue && !complexityRepo) {
+          addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, 'warn');
+          if (host?.toast) {
+            void host.toast({ kind: 'error', message: `Cannot update #${activeIssue.number}: repository unknown` });
+          }
+        }
+        return;
+      }
       const val = elDrawerComplexitySelect.value;
       const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
       activeIssue.labels = updatedLabels.map((name) => ({ name }));
