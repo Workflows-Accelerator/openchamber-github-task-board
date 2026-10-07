@@ -32,6 +32,12 @@
 - Manager oracle concern: test/review-repairs.test.js imports real core.ts helpers but main.ts behaviors are still local simulate* enactments (pageStream, coldStartFetch, loadComments, request). Reviewer must mark simulation-only proofs UNKNOWN and require production-path tests where orchestration is implicated.
 - Builder-reported trade-offs needing USER decision later, not silently accepted: (a) GitHub since= cannot see deleted/transferred issues, so idle refresh misses removals without manual full refresh; (b) SDK host proxy drops custom headers, so non-PAT users get plain GETs and no 304 quota savings (correct but unoptimized). Neither is a defect by itself; no new polling/auth is approved to close them.
 
+## Voice repair 1 receipt (252225a)
+- Manager verified log 252225a on cd6ab18, clean tracked state, diff scoped to service host-client/taskboard, tests, run artifacts, .gitignore. panel/main.js delta is +7/-7 esbuild comment paths only (worktree-symlink build noise); no behavior change expected but reviewer confirms.
+- Builder claims 9 L4 findings plus archive-flag and permission-session-resolution extras fixed; npm run verify 453 tests green. NOT accepted. Fresh hostile review ses_e8f6110f2851bb374fe3c0bd (engineer) dispatched via briefs/voice-v2-repair-1-l4.md.
+- Manager scrutiny targets: (a) real V2 protocol oracle, not fixture shapes; (b) the repair replaced Issue #17 fast-path with unconditional sequential all-repo search — correct but possibly always-fan-out, which conflicts with D11 approved SAFE known-repo lookup; reviewer quantifies request/latency cost and whether trustworthy uniqueness caching survives; (c) positive live form/permission reply proof remains NOT RUN, correctly so — isolated fixture plan documented only.
+- Rejected shortcuts restated to reviewer: no limit=100/200 session caps, no issue-number<100 heuristics.
+
 ## Issue receipt limitation
 - Manager attempted allowlisted `gh issue list --repo Workflows-Accelerator/openchamber-github-task-board --state open --limit 30 --json number,title,labels,url`; shell exit 127, gh not installed.
 - No remote issue receipt/status update made at this boundary. Do not route around manager shell denial using REST/execute. Existing repair workers explicitly own no issue writes; avoid spawning a duplicate repo worker. Remote receipt sync remains pending a bounded worker dispatch after current app workers end, or restored gh availability.
