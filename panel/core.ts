@@ -2399,6 +2399,7 @@ export interface IncrementalSyncResult {
   modified: boolean;
   changedCount: number;
   etag?: string;
+  truncated?: boolean;
 }
 
 export async function syncIncrementalRepoIssues(options: {
@@ -2413,6 +2414,7 @@ export async function syncIncrementalRepoIssues(options: {
   let page = 1;
   const allItems: any[] = [];
   let newEtag: string | undefined = etag;
+  let truncated = false;
 
   while (page <= MAX_INCREMENTAL_PAGES) {
     const path = buildIncrementalIssuesPath(repo, since, page);
@@ -2425,6 +2427,7 @@ export async function syncIncrementalRepoIssues(options: {
         modified: false,
         changedCount: 0,
         etag: res.etag || etag,
+        truncated: false,
       };
     }
 
@@ -2437,6 +2440,10 @@ export async function syncIncrementalRepoIssues(options: {
 
     allItems.push(...items);
     if (items.length < 100) break;
+    if (page === MAX_INCREMENTAL_PAGES) {
+      truncated = true;
+      break;
+    }
     page++;
   }
 
@@ -2446,6 +2453,7 @@ export async function syncIncrementalRepoIssues(options: {
       modified: false,
       changedCount: 0,
       etag: newEtag,
+      truncated: false,
     };
   }
 
@@ -2462,6 +2470,7 @@ export async function syncIncrementalRepoIssues(options: {
     modified: true,
     changedCount: changed.length,
     etag: newEtag,
+    truncated,
   };
 }
 

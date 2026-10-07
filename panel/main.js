@@ -5280,9 +5280,9 @@ Blocked by ${blockerRef}`;
         body: item.body || "",
         state: item.state || "open",
         html_url: item.html_url || "",
-        labels: item.labels || [],
-        user: item.user,
-        assignees: item.assignees || [],
+        labels: (item.labels || []).map((l) => typeof l === "string" ? { name: l } : { name: l.name, ...l.color ? { color: l.color } : {} }),
+        ...item.user ? { user: { login: item.user.login, ...item.user.avatar_url ? { avatar_url: item.user.avatar_url } : {} } } : {},
+        assignees: (item.assignees || []).map((a) => ({ login: a.login, ...a.avatar_url ? { avatar_url: a.avatar_url } : {} })),
         comments: item.comments || 0,
         created_at: item.created_at || "",
         subtasks: parseSubtasks(item.body || ""),
@@ -5618,6 +5618,7 @@ Blocked by ${blockerRef}`;
     let page = 1;
     const allItems = [];
     let newEtag = etag;
+    let truncated = false;
     while (page <= MAX_INCREMENTAL_PAGES) {
       const path = buildIncrementalIssuesPath(repo, since, page);
       const headers = page === 1 && etag ? { "If-None-Match": etag } : void 0;
@@ -5627,7 +5628,8 @@ Blocked by ${blockerRef}`;
           issues: currentIssues,
           modified: false,
           changedCount: 0,
-          etag: res.etag || etag
+          etag: res.etag || etag,
+          truncated: false
         };
       }
       if (page === 1 && (res?.etag || typeof res === "object" && res && res.etag)) {
@@ -5637,6 +5639,10 @@ Blocked by ${blockerRef}`;
       if (items.length === 0) break;
       allItems.push(...items);
       if (items.length < 100) break;
+      if (page === MAX_INCREMENTAL_PAGES) {
+        truncated = true;
+        break;
+      }
       page++;
     }
     if (allItems.length === 0) {
@@ -5644,7 +5650,8 @@ Blocked by ${blockerRef}`;
         issues: currentIssues,
         modified: false,
         changedCount: 0,
-        etag: newEtag
+        etag: newEtag,
+        truncated: false
       };
     }
     const rawChanged = normalizeGithubIssues(allItems);
@@ -5658,7 +5665,8 @@ Blocked by ${blockerRef}`;
       issues: merged,
       modified: true,
       changedCount: changed.length,
-      etag: newEtag
+      etag: newEtag,
+      truncated
     };
   }
 
@@ -6547,7 +6555,8 @@ Blocked by ${blockerRef}`;
         issues = mergeIssuePages(issues, nextIssues);
         issueCache.set(repo, { timestamp: Date.now(), issues });
         if (host?.storage) {
-          void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+          void host.storage.set(storageKey, { timestamp: Date.now(), issues }).catch(() => {
+          });
         }
         renderViews();
         statusReconciler.schedule(issues);
@@ -6616,12 +6625,6 @@ Blocked by ${blockerRef}`;
         addLog(`Page 1 for ${currentRepo} -> 304 Not Modified`, "succ");
         lastSyncTimestamp = Date.now();
         repoSyncWatermarks.set(currentRepo, Date.now());
-        if (issues.length > 0) {
-          if (cachedPage1) setCachedPage(page1Path, cachedPage1.items, page1Raw.etag || page1Etag);
-          renderViews();
-          statusReconciler.schedule(issues);
-          return;
-        }
         if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
           page1Items = cachedPage1.items;
         } else {
@@ -6639,13 +6642,14 @@ Blocked by ${blockerRef}`;
         setCachedPage(page1Path, page1Items, page1Raw?.etag || page1Etag);
       }
       const page1Issues = normalizeGithubIssues(page1Items);
-      issues = page1Issues;
+      issues = issues.length > 0 ? mergeIssuePages(issues, page1Issues) : page1Issues;
       issueCache.set(currentRepo, {
         timestamp: Date.now(),
         issues
       });
       if (host?.storage) {
-        void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+        void host.storage.set(storageKey, { timestamp: Date.now(), issues }).catch(() => {
+        });
       }
       lastSyncTimestamp = Date.now();
       repoSyncWatermarks.set(currentRepo, Date.now());
@@ -6655,7 +6659,7 @@ Blocked by ${blockerRef}`;
       }
       renderViews();
       statusReconciler.schedule(issues);
-      if (page1Items.length >= 100) {
+      if (page1Items.length >= 100 || issues.length >= 100) {
         void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch, force);
       }
     } catch (err) {
@@ -6689,9 +6693,6 @@ Blocked by ${blockerRef}`;
     );
     let firstItems = [];
     if (firstRaw && (firstRaw.notModified || firstRaw.status === 304)) {
-      if (cachedRepoIssues && cachedRepoIssues.length > 0) {
-        return cachedRepoIssues;
-      }
       if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
         firstItems = cachedPage1.items;
       } else {
@@ -6798,13 +6799,15 @@ Blocked by ${blockerRef}`;
       issues = aggregateProjectIssues(sources);
       issueCache.set(cacheKey, { timestamp: Date.now(), issues });
       if (host?.storage) {
-        void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues });
+        void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues }).catch(() => {
+        });
       }
       for (const src of sources) {
         if (src.repo && src.issues) {
           issueCache.set(src.repo, { timestamp: Date.now(), issues: src.issues });
           if (host?.storage) {
-            void host.storage.set(`cached_issues_${src.repo}`, { timestamp: Date.now(), issues: src.issues });
+            void host.storage.set(`cached_issues_${src.repo}`, { timestamp: Date.now(), issues: src.issues }).catch(() => {
+            });
           }
           repoSyncWatermarks.set(src.repo, Date.now());
         }
@@ -6844,10 +6847,22 @@ Blocked by ${blockerRef}`;
         etag,
         requestFn: (method, reqPath, body, query, headers) => githubRequestWithRetry(method, reqPath, body, query, headers)
       });
-      if (result.etag) {
+      if (result.etag && !result.truncated) {
         repoIncrementalEtagCache.set(cleanRepo, result.etag);
+      } else if (result.truncated) {
+        repoIncrementalEtagCache.delete(cleanRepo);
       }
-      repoSyncWatermarks.set(cleanRepo, watermarkTime);
+      if (result.truncated) {
+        addLog(`Incremental sync for ${cleanRepo} truncated at 1,000 changes. Watermark preserved for retry.`, "warn");
+        if (host?.toast) {
+          void host.toast({
+            kind: "info",
+            message: `Incremental sync for ${cleanRepo} exceeded 1,000 changes. Consider manual refresh.`
+          });
+        }
+      } else {
+        repoSyncWatermarks.set(cleanRepo, watermarkTime);
+      }
       if (!result.modified) {
         addLog(`Incremental sync for ${cleanRepo}: no changes`);
         return true;
@@ -6858,7 +6873,8 @@ Blocked by ${blockerRef}`;
         const updated = mergeIssuePages(existingCached, result.issues.filter((i) => (getIssueRepoFullName(i) || i.repo)?.toLowerCase() === cleanRepo.toLowerCase()));
         issueCache.set(cleanRepo, { timestamp: Date.now(), issues: updated });
         if (host?.storage) {
-          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: updated });
+          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: updated }).catch(() => {
+          });
         }
         return true;
       }
@@ -6867,19 +6883,22 @@ Blocked by ${blockerRef}`;
       if (isAllProjectsMode) {
         issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
         if (host?.storage) {
-          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues });
+          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+          });
         }
         const repoOnlyIssues = issues.filter((i) => (getIssueRepoFullName(i) || i.repo)?.toLowerCase() === cleanRepo.toLowerCase());
         if (repoOnlyIssues.length > 0) {
           issueCache.set(cleanRepo, { timestamp: Date.now(), issues: repoOnlyIssues });
           if (host?.storage) {
-            void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: repoOnlyIssues });
+            void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: repoOnlyIssues }).catch(() => {
+            });
           }
         }
       } else {
         issueCache.set(cleanRepo, { timestamp: Date.now(), issues });
         if (host?.storage) {
-          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues });
+          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues }).catch(() => {
+          });
         }
       }
       renderViews();
@@ -6931,16 +6950,24 @@ Blocked by ${blockerRef}`;
     }
   }
   function repoForIssue(issue) {
-    if (issue && isAllProjectsMode && issue.repo) return issue.repo;
+    if (issue?.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY) return issue.repo;
+    if (isAllProjectsMode) return "";
     return currentRepo;
   }
   async function updateIssueBody(issue, newBody) {
+    const repo = repoForIssue(issue);
+    if (!repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
+    }
     issue.body = newBody;
     issue.subtasks = parseSubtasks(newBody);
     issue.openQuestions = parseOpenQuestions(newBody);
     issue.humanTasks = parseHumanTasks(newBody);
-    const repo = repoForIssue(issue);
-    if (repo) issueCache.delete(repo);
+    issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue, true);
@@ -6957,7 +6984,15 @@ Blocked by ${blockerRef}`;
   }
   async function updateIssueStatus(issue, targetColumn, options) {
     const repo = repoForIssue(issue);
-    if (!issue || !repo) return;
+    if (!issue || !repo) {
+      if (issue && !repo) {
+        addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+        if (host?.toast) {
+          void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+        }
+      }
+      return;
+    }
     const prevLabels = [...issue.labels || []];
     const prevState = issue.state;
     const currentLabels = (issue.labels || []).map((l) => typeof l === "string" ? l : l.name || "");
@@ -7093,9 +7128,14 @@ Blocked by ${blockerRef}`;
     issue.state = newState;
     issue.labels = clean.map((name) => ({ name }));
     const archiveRepo = repoForIssue(issue);
-    if (archiveRepo) {
-      issueCache.delete(archiveRepo);
+    if (!archiveRepo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
     }
+    issueCache.delete(archiveRepo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue, true);
@@ -9128,13 +9168,21 @@ Blocked by ${blockerRef}`;
     if (!clean) return;
     const currentNames = issue.labels.map((l) => l.name);
     if (currentNames.some((n) => n.toLowerCase() === clean.toLowerCase())) return;
+    const repo = repoForIssue(issue);
+    if (!repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
+    }
     const newNames = [...currentNames, clean];
     issue.labels.push({ name: clean });
     renderDrawerLabels(issue);
     renderViews();
     try {
       addLog(`Adding label "${clean}" to #${issue.number}...`);
-      await githubRequestWithRetry("PATCH", `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
+      await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         labels: newNames
       });
       await host.toast({ kind: "success", message: `Added label "${clean}" to #${issue.number}` });
@@ -9144,6 +9192,14 @@ Blocked by ${blockerRef}`;
     }
   }
   async function removeTagFromIssue(issue, tagName) {
+    const repo = repoForIssue(issue);
+    if (!repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
+    }
     const target = tagName.trim().toLowerCase();
     const newLabels = issue.labels.filter((l) => l.name.toLowerCase() !== target);
     issue.labels = newLabels;
@@ -9151,7 +9207,7 @@ Blocked by ${blockerRef}`;
     renderViews();
     try {
       addLog(`Removing label "${tagName}" from #${issue.number}...`);
-      await githubRequestWithRetry("PATCH", `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
+      await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         labels: newLabels.map((l) => l.name)
       });
       await host.toast({ kind: "info", message: `Removed label "${tagName}" from #${issue.number}` });
@@ -10477,12 +10533,14 @@ ${issue.body}
         const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
         issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
         if (host?.storage) {
-          void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues });
+          void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues }).catch(() => {
+          });
         }
         if (isAllProjectsMode) {
           issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
           if (host?.storage) {
-            void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues });
+            void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+            });
           }
         }
       }
@@ -11065,7 +11123,15 @@ ${issue.body}
     if (elDrawerPrioritySelect) {
       elDrawerPrioritySelect.addEventListener("change", async () => {
         const priorityRepo = repoForIssue(activeIssue);
-        if (!activeIssue || !priorityRepo) return;
+        if (!activeIssue || !priorityRepo) {
+          if (activeIssue && !priorityRepo) {
+            addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, "warn");
+            if (host?.toast) {
+              void host.toast({ kind: "error", message: `Cannot update #${activeIssue.number}: repository unknown` });
+            }
+          }
+          return;
+        }
         const val = elDrawerPrioritySelect.value;
         const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
         activeIssue.labels = updatedLabels.map((name) => ({ name }));
@@ -11087,9 +11153,16 @@ ${issue.body}
         const val = elDrawerStatusSelect.value;
         if (val === "none") {
           const filteredLabels = activeIssue.labels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.startsWith("status:"));
-          activeIssue.labels = filteredLabels.map((name) => ({ name }));
           const statusRepo = repoForIssue(activeIssue);
-          if (statusRepo) issueCache.delete(statusRepo);
+          if (!statusRepo) {
+            addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, "warn");
+            if (host?.toast) {
+              void host.toast({ kind: "error", message: `Cannot update #${activeIssue.number}: repository unknown` });
+            }
+            return;
+          }
+          activeIssue.labels = filteredLabels.map((name) => ({ name }));
+          issueCache.delete(statusRepo);
           renderViews();
           renderDrawer(activeIssue, true);
           void githubRequestWithRetry("PATCH", `/repos/${statusRepo}/issues/${activeIssue.number}`, {
@@ -11104,7 +11177,15 @@ ${issue.body}
     if (elDrawerComplexitySelect) {
       elDrawerComplexitySelect.addEventListener("change", async () => {
         const complexityRepo = repoForIssue(activeIssue);
-        if (!activeIssue || !complexityRepo) return;
+        if (!activeIssue || !complexityRepo) {
+          if (activeIssue && !complexityRepo) {
+            addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, "warn");
+            if (host?.toast) {
+              void host.toast({ kind: "error", message: `Cannot update #${activeIssue.number}: repository unknown` });
+            }
+          }
+          return;
+        }
         const val = elDrawerComplexitySelect.value;
         const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
         activeIssue.labels = updatedLabels.map((name) => ({ name }));

@@ -1283,7 +1283,7 @@ async function streamRemainingPages(
       issues = mergeIssuePages(issues, nextIssues);
       issueCache.set(repo, { timestamp: Date.now(), issues });
       if (host?.storage) {
-        void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any);
+        void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any).catch(() => {});
       }
       renderViews();
       statusReconciler.schedule(issues);
@@ -1390,7 +1390,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       issues,
     });
     if (host?.storage) {
-      void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any);
+      void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any).catch(() => {});
     }
     lastSyncTimestamp = Date.now();
     repoSyncWatermarks.set(currentRepo, Date.now());
@@ -1566,13 +1566,13 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
     issues = aggregateProjectIssues(sources);
     issueCache.set(cacheKey, { timestamp: Date.now(), issues });
     if (host?.storage) {
-      void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues } as any);
+      void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues } as any).catch(() => {});
     }
     for (const src of sources) {
       if (src.repo && src.issues) {
         issueCache.set(src.repo, { timestamp: Date.now(), issues: src.issues });
         if (host?.storage) {
-          void host.storage.set(`cached_issues_${src.repo}`, { timestamp: Date.now(), issues: src.issues } as any);
+          void host.storage.set(`cached_issues_${src.repo}`, { timestamp: Date.now(), issues: src.issues } as any).catch(() => {});
         }
         repoSyncWatermarks.set(src.repo, Date.now());
       }
@@ -1620,12 +1620,24 @@ async function syncRepoIncremental(repo: string, sinceIso: string, watermarkTime
         githubRequestWithRetry(method, reqPath, body, query, headers),
     });
 
-    if (result.etag) {
+    if (result.etag && !result.truncated) {
       repoIncrementalEtagCache.set(cleanRepo, result.etag);
+    } else if (result.truncated) {
+      repoIncrementalEtagCache.delete(cleanRepo);
     }
 
-    // Update per-repo watermark only upon successful completion
-    repoSyncWatermarks.set(cleanRepo, watermarkTime);
+    if (result.truncated) {
+      addLog(`Incremental sync for ${cleanRepo} truncated at 1,000 changes. Watermark preserved for retry.`, 'warn');
+      if (host?.toast) {
+        void host.toast({
+          kind: 'info',
+          message: `Incremental sync for ${cleanRepo} exceeded 1,000 changes. Consider manual refresh.`,
+        });
+      }
+    } else {
+      // Update per-repo watermark only upon complete, untruncated sync
+      repoSyncWatermarks.set(cleanRepo, watermarkTime);
+    }
 
     if (!result.modified) {
       addLog(`Incremental sync for ${cleanRepo}: no changes`);
@@ -1639,7 +1651,7 @@ async function syncRepoIncremental(repo: string, sinceIso: string, watermarkTime
       const updated = mergeIssuePages(existingCached, result.issues.filter((i) => (getIssueRepoFullName(i) || i.repo)?.toLowerCase() === cleanRepo.toLowerCase()));
       issueCache.set(cleanRepo, { timestamp: Date.now(), issues: updated });
       if (host?.storage) {
-        void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: updated } as any);
+        void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: updated } as any).catch(() => {});
       }
       return true;
     }
@@ -1652,20 +1664,20 @@ async function syncRepoIncremental(repo: string, sinceIso: string, watermarkTime
       // In all projects mode, save aggregated collection ONLY to ALL_PROJECTS_CACHE_KEY (prevents F-06)
       issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
       if (host?.storage) {
-        void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any);
+        void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any).catch(() => {});
       }
       // Populate single-repo cache with only items belonging to cleanRepo
       const repoOnlyIssues = issues.filter((i) => (getIssueRepoFullName(i) || i.repo)?.toLowerCase() === cleanRepo.toLowerCase());
       if (repoOnlyIssues.length > 0) {
         issueCache.set(cleanRepo, { timestamp: Date.now(), issues: repoOnlyIssues });
         if (host?.storage) {
-          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: repoOnlyIssues } as any);
+          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: repoOnlyIssues } as any).catch(() => {});
         }
       }
     } else {
       issueCache.set(cleanRepo, { timestamp: Date.now(), issues });
       if (host?.storage) {
-        void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues } as any);
+        void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues } as any).catch(() => {});
       }
     }
 
@@ -6076,12 +6088,12 @@ async function submitNewIssue(): Promise<void> {
       const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
       issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
       if (host?.storage) {
-        void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues } as any);
+        void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues } as any).catch(() => {});
       }
       if (isAllProjectsMode) {
         issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
         if (host?.storage) {
-          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any);
+          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any).catch(() => {});
         }
       }
     }
