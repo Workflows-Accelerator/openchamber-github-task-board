@@ -44,7 +44,7 @@ ALL RESOLVED — see decisions.md (D1-D8, aligned 2026-09-26). Remaining fork: n
 
 ## Workstream status (updated 2026-10-07)
 
-State: proving (batch 2); awaiting_human (batch 1). Alignment: CONFIRMED for lifecycle + D11 efficiency decisions; see decisions.md and specs/rate-limit-manager-review.md.
+State: building (batch 2 bounded repair 1 after both L4 HALTs); awaiting_human (batch 1). Alignment: CONFIRMED for lifecycle + D11 efficiency decisions; no approval for feature/freshness loss. See decisions.md, specs/rate-limit-manager-review.md and status-l4-halts-2026-10-07.md.
 
 | Track | Where | Session | State |
 | --- | --- | --- | --- |
@@ -53,21 +53,24 @@ State: proving (batch 2); awaiting_human (batch 1). Alignment: CONFIRMED for lif
 | Lifecycle skill #21 | config/opencode | ended | L4 passed; Batch 1 human verdict pending |
 | V2 compatibility audit | verifications/v2-compat-audit.md | ses_ecdfe3aa6e23d79b33d843f7 ended | Received; runtime reply tests missing |
 | GitHub efficiency audit and D11 choices | specs/rate-limit-manager-review.md | ses_a9897235d8cb1b41183c8bab ended | Audit received; estimates not measured; choices approved |
-| Board V2 binding + D11 efficiency | board main checkout on feat/v2-binding-and-ratelimit | ses_068d6622598dc3b1059dbd91 | Running; owns app edits; do not switch branch or touch its edits |
-| Voice V2 + D11 efficiency | chambervoice feat/v2-compat-and-ratelimit, cd6ab18 | ses_6a5a8749c6759270a40cbafd ended | Build received, NOT accepted; 437 tests reported; live GET checks only |
-| Voice V2 + D11 hostile review | chambervoice same checkout (read-only) | ses_fc89160228e764868dff56b1 | Running; engineer tier verified in session record |
+| Board V2 binding + D11 efficiency build | board root feat/v2-binding-and-ratelimit, 656cc4f | ses_068d6622598dc3b1059dbd91 ended | NOT accepted; 253 tests reported, root still serves experimental build |
+| Board V2 + D11 hostile review | board root (read-only), l4-board-v2-ratelimit.md | ses_af99b63ee4e5d43f2caed88c ended | HALT, 14 reported findings; simulation evidence caveats recorded |
+| Board V2 + D11 repair 1 | .worktrees/team-dev-v2-binding-ratelimit-review-repair, fix/v2-binding-ratelimit-review-repair | ses_5872aebae42f0424f9288287 | Running; engineer and auto-accept verified; isolated app owner |
+| Voice V2 + D11 efficiency build | chambervoice root feat/v2-compat-and-ratelimit, cd6ab18 | ses_6a5a8749c6759270a40cbafd ended | NOT accepted; 437 tests green but actual protocol defects found |
+| Voice V2 + D11 hostile review | chambervoice root (read-only), l4-voice-v2-ratelimit.md | ses_fc89160228e764868dff56b1 ended | HALT; positive real reply proof missing |
+| Voice V2 + D11 repair 1 | chambervoice/.worktrees/team-dev-v2-ratelimit-review-repair, fix/v2-ratelimit-review-repair | ses_1797615df11da447fd7d5863 | Running; engineer and auto-accept verified; isolated app owner |
 | Visual polish + focus drop #19 | board | — | Parked behind current frontier |
 | Voice human_todo + explicit repo argument | chambervoice | — | Deferred (D8); no redesign approval assumed |
 
-Proof index: verifications/proof.md. Current reviewer brief: briefs/voice-v2-ratelimit-l4.md. All report receipts must exclude login secrets, tokens, and cookies.
+Proof index: verifications/proof.md. Active repair briefs: briefs/voice-v2-ratelimit-repair-1.md and briefs/board-v2-ratelimit-repair-1.md. All report receipts must exclude login secrets, tokens, and cookies.
 
 ### Immediate next moves
-1. Wait for voice L4 wake; fix only confirmed findings with a fresh written brief and isolated worktree. No duplicate workers and no resuming ended sessions.
-2. Board completion gets its own hostile-review dispatch. Do not merge batch 2 or call it done based on green mocks.
-3. Positive form/permission reply proof is NOT RUN: empty pending lists prove discovery only. Use a disposable safe fixture, never an unrelated live user request.
-4. Batch 1 verdicts are pending (l5-batch-1.md); do not repeat the full ask. Batch 2 human review waits for all L4 members.
+1. Await repair wakes; do not duplicate or re-prompt ended sessions. Next delegate after each build must be fresh read-only hostile review of its exact commit.
+2. Fold in real trade-offs (GitHub deletion/transfer detection, SDK conditional transport) before alignment decisions; no silent no-loss claim or new polling/timeout policy.
+3. Positive form/permission reply proof is NOT RUN: empty pending lists prove discovery only. Safe isolated actual V2 fixtures may be planned/run within worker brief bounds; shared-host session mutation is NOT authorized.
+4. Batch 1 verdicts are pending (l5-batch-1.md); do not repeat the full ask. Root served checkouts contain rejected batch 2 code, so original preview is not validated. Batch 2 human review waits for all L4 members.
 5. Only the USER closes/moves issues to Done and pushes. Prior text promising agent closure is superseded.
-6. The worktree skill's hardcoded DB path is adapted to HOME at use time, per manager guardrail; shared skill file is NOT to be edited.
+6. The worktree skill's hardcoded DB path is adapted to HOME at use time, per manager guardrail; shared skill file is NOT to be edited. Manager shell denial on git check-ignore recorded; worktree preparation delegated without a manager workaround.
 
 ## Roadmap beyond this iteration
 

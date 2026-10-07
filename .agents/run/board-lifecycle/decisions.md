@@ -73,6 +73,19 @@ main.ts conflicts keeping the contract's idle->needs-human resolution; then REBU
 panel/main.js once from merged sources and re-run shipped-parity + full suite. Never merge
 the bundle by hand.
 
+## D11. Request efficiency (aligned 2026-10-07)
+- Incremental idle refresh across current scope: only changed issues, using since and conditional reads where actually supported. NOT targeted-only issue/repo refresh that misses other people's edits.
+- Voice task reuse up to 30 seconds approved.
+- No-loss bundle: conditional reads, comment reuse without feature loss, one PATCH for status/priority drag, optimistic create without full refetch, bounded retry defense, safe known-repo lookup. No hidden additional freshness loss or numeric-issue guessing.
+- No timer polling exists; adaptive-polling option dropped.
+- Source: specs/rate-limit-manager-review.md. Measured request savings and real browser conditional transport remain UNKNOWN.
+
+## Gate ledger correction (2026-10-07)
+- Batch 1 contract/views/status and voice crash local integration landed, L4 passed as indexed in verifications/proof.md; human review pending, not Done. Older RUNNING rows above are historical.
+- Batch 2 voice cd6ab18 and board 656cc4f: both independent hostile reviews HALT. No integration/acceptance; repair 1 dispatched into isolated worktrees. Worker/model/session details: status-l4-halts-2026-10-07.md.
+- Per-issue human verdicts remain required. Agent closure/push prohibited. Do not infer approval from old batch request or green synthetic tests.
+- Unsupported conditional transport or incremental deletion/transfer loss is a potential alignment fork, not approved new polling/auth/freshness policy; workers must report evidence/options.
+
 # Issue body contract (v1 — canonical text in specs/issue-body-contract-v1.md)
 - `### Friendly Title:` — 3-6 words plain English (parseFriendlyTitle, core.ts:85)
 - Overview / description block

@@ -1,0 +1,38 @@
+# Batch 2 L4 halts and recovery — 2026-10-07
+
+## State and acceptance
+- Batch 1: awaiting original human review verdicts; none received. Do not repeat the full ask.
+- Batch 2: HALT for both members; no merge/push/issue closure authorized. Builder success assertions are rejected.
+- Repeated wakes for the same session are duplicates, not new work.
+
+## Board
+- Build: 656cc4f, base 9f651db, root feat/v2-binding-and-ratelimit.
+- L4: ses_af99b63ee4e5d43f2caed88c, engineer tier verified previously; finished, HALT. Report verifications/l4-board-v2-ratelimit.md and adversarial artifacts board-v2-l4/.
+- Report's 'catastrophic data loss' means local collection/display/cache omission or wrong repository attribution, NOT empirical evidence of deleted GitHub issues.
+- Findings: raw-number merge collisions, 304 page loss/cold-empty handling, >100 changed-item truncation, targeted-only refresh violates D11, multi-repo cache poisoning, stale response after scope switch, comment completion race and unapproved refresh staleness, SDK lacks header transport, optimistic repo attribution, cross-repo attach, priority none behavior.
+- Reviewer says all findings empirically proven, but inspection shows ETag tests copy simulateStreamRemainingPages/simulateFetchIssuesPage1_304 rather than execute the actual caller. These are credible source-backed hypotheses, NOT L3 proof. Repair reviewer must test production orchestration, not repeat source-copy tests.
+- Per-repo cursor/watermark correctness, failed sync retention, overlapping idles/loads/mutations, auth identity cache scoping, retries/transport fallback remain explicit concerns even where not in final findings matrix.
+- Main root continues serving rejected build; application tracked state clean. Untracked .opencode/ and .worktrees/ not owned by manager. Do not silently switch served root or merge a repair.
+- git worktree add created .worktrees/team-dev-v2-binding-ratelimit-review-repair at 656cc4f, branch fix/v2-binding-ratelimit-review-repair.
+- Fresh bounded repair ses_5872aebae42f0424f9288287 dispatched from briefs/board-v2-ratelimit-repair-1.md; session.list confirms 9router/engineer, permission * allow, busy, exact isolated location. Worker preparation scoped to its worktree (ignore/dependency symlink/HOME-adapted registration).
+
+## Voice
+- Build: cd6ab18, base 235d1ec, root feat/v2-compat-and-ratelimit.
+- L4: ses_fc89160228e764868dff56b1 ended, HALT. Report verifications/l4-voice-v2-ratelimit.md.
+- Findings: actual action/resources permissions, real multiselect/value mapping/field keys, empty list fallback and swallowed errors, complete cursor pagination, direct model lookup, partially warmed bare-number ambiguity, invalidation race.
+- Reviewer suggestions to cap at 100/200 sessions or guess by issue number <100 are rejected: they merely move the truncation/ambiguity boundary. Estimated latency is not verified timeout behavior; don't silently change approved serial policy or drop slow repos.
+- git worktree add created /workspace/extensions/chambervoice/.worktrees/team-dev-v2-ratelimit-review-repair, branch fix/v2-ratelimit-review-repair at cd6ab18.
+- git check-ignore rejected by manager shell. Ignore status unverified; no workaround attempt. Worker preparation scoped to THIS worktree (ignore rule, dependency symlink, HOME-adapted DB registration), following loaded management skill. No secret copying by manager.
+- Fresh bounded repair dispatched: ses_1797615df11da447fd7d5863, requested engineer; session.list confirms 9router/engineer, permission * allow, busy, exact isolated location. Brief briefs/voice-v2-ratelimit-repair-1.md. A missing surgical-patch transclusion was corrected on disk immediately after dispatch; worker must use build/refactoring/surgical-patch path.
+- No shared-host positive reply fixtures under this repair authority. Safe isolated real V2 fixture may run only without shared DB/session/service effects; otherwise report blocker/plan. Live empty GET lists don't prove reply success.
+
+## Issue receipt limitation
+- Manager attempted allowlisted `gh issue list --repo Workflows-Accelerator/openchamber-github-task-board --state open --limit 30 --json number,title,labels,url`; shell exit 127, gh not installed.
+- No remote issue receipt/status update made at this boundary. Do not route around manager shell denial using REST/execute. Existing repair workers explicitly own no issue writes; avoid spawning a duplicate repo worker. Remote receipt sync remains pending a bounded worker dispatch after current app workers end, or restored gh availability.
+
+## Recovery and proof
+1. Board repair is in its own isolated worktree and brief; no duplicate sessions.
+2. Every completed repair gets a fresh hostile-review delegate, exact mandatory hostile prompt in brief, before any acceptance.
+3. Batch 2 review waits for both members passing L4 and adequate real user-path evidence; known blind spots must be stated.
+4. Only the USER closes/moves Done or pushes. No PRs, push, reset, rebase or arbitrary manager shell commands.
+5. Board and voice roots are serving experimental commits, not local master. Surface that caveat before asking human to click through Batch 1; do not claim the old batch is what currently loads.
