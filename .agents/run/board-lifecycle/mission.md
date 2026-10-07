@@ -60,7 +60,8 @@ State: building (batch 2 bounded repair 1 after both L4 HALTs); awaiting_human (
 | Voice V2 + D11 efficiency build | chambervoice root feat/v2-compat-and-ratelimit, cd6ab18 | ses_6a5a8749c6759270a40cbafd ended | NOT accepted; 437 tests green but actual protocol defects found |
 | Voice V2 + D11 hostile review | chambervoice root (read-only), l4-voice-v2-ratelimit.md | ses_fc89160228e764868dff56b1 ended | HALT; positive real reply proof missing |
 | Voice V2 + D11 repair 1 | chambervoice/.worktrees/team-dev-v2-ratelimit-review-repair, fix/v2-ratelimit-review-repair, 252225a | ses_1797615df11da447fd7d5863 ended | Claims 9 findings + extras fixed, 453 tests; NOT accepted; manager checked commit/diff/clean state |
-| Voice repair 1 hostile review | same worktree (read-only), briefs/voice-v2-repair-1-l4.md | ses_e8f6110f2851bb374fe3c0bd | Running; engineer; must verify protocol oracle and fan-out vs D11 safe lookup |
+| Voice repair 1 hostile review | same worktree (read-only), briefs/voice-v2-repair-1-l4.md | ses_e8f6110f2851bb374fe3c0bd ended | PROCEED-WITH-CONDITIONS; 3 residual defects: integer field type, 404 masking fall-through, partial-cache poisoning |
+| Voice repair 2 bounded fixes | same worktree at 252225a, briefs/voice-v2-repair-2-fixes.md | ses_e0f2d7ad18363e33a02e08a4 | Running; engineer; exactly 3 fixes with red/green tests |
 | Visual polish + focus drop #19 | board | — | Parked behind current frontier |
 | Voice human_todo + explicit repo argument | chambervoice | — | Deferred (D8); no redesign approval assumed |
 

@@ -38,6 +38,13 @@
 - Manager scrutiny targets: (a) real V2 protocol oracle, not fixture shapes; (b) the repair replaced Issue #17 fast-path with unconditional sequential all-repo search — correct but possibly always-fan-out, which conflicts with D11 approved SAFE known-repo lookup; reviewer quantifies request/latency cost and whether trustworthy uniqueness caching survives; (c) positive live form/permission reply proof remains NOT RUN, correctly so — isolated fixture plan documented only.
 - Rejected shortcuts restated to reviewer: no limit=100/200 session caps, no issue-number<100 heuristics.
 
+## Voice repair 1 L4 result (ses_e8f6110f2851bb374fe3c0bd)
+- Verdict PROCEED-WITH-CONDITIONS on 252225a. 9 original findings verified repaired: 453 tests, build parity, live pagination of 1365 sessions in 954ms, archived mapping from time.archived, terminal-null on empty lists with zero dead-route calls, Issue #17 collision safety restored open+closed.
+- 3 residual defects (reviewer-reproduced): (1) host-client.ts:1073 form whitelist omits V2 `type:"integer"` -> valid forms throw UNSUPPORTED_FORM_FIELD; (2) replyQuestion/replyPermission 404 on missing/expired V2 entity falls through to dead V1 routes masking the error; (3) getTasks All Projects caches a partial list 30s when one repo fails.
+- Reviewer noise confirmed: panel/main.js delta comment-only; service bundle zero-diff on rebuild. Dead code noticed, not changed (knownIssueRepos map unread after sequential search).
+- Latency measured: All Projects cold fan-out 1.6s at 200ms/repo, 0ms warm cache. Positive live reply proof still NOT RUN; disposable-fixture-contract.md documents the isolated plan.
+- Bounded fix ses_e0f2d7ad18363e33a02e08a4 dispatched (engineer) via briefs/voice-v2-repair-2-fixes.md: exactly the 3 defects, red/green tests, no scope expansion. Fresh L4 required after.
+
 ## Issue receipt limitation
 - Manager attempted allowlisted `gh issue list --repo Workflows-Accelerator/openchamber-github-task-board --state open --limit 30 --json number,title,labels,url`; shell exit 127, gh not installed.
 - No remote issue receipt/status update made at this boundary. Do not route around manager shell denial using REST/execute. Existing repair workers explicitly own no issue writes; avoid spawning a duplicate repo worker. Remote receipt sync remains pending a bounded worker dispatch after current app workers end, or restored gh availability.
