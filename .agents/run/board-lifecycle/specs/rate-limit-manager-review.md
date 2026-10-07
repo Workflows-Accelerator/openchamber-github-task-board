@@ -21,6 +21,13 @@ Checked against the l4r worktree with grep (main.ts). Corrections to the worker'
 4. All req/hr figures are estimates from the code, not measurements. The worst case (about 1,950 req/hr,
    with 10 repos and 5 looping agents) depends on the assumption of 60 idles/hr per agent.
 
+## D11 — user decision (2026-10-07)
+- Idle refresh: B1, refetch only the issues changed since the last sync (`since=` + If-None-Match).
+- Voice: a 30-second task cache is approved.
+- The no-loss bundle (A + C + F + voice repo lookup instead of fan-out) is approved. Dispatch it AFTER
+  the views merge lands on board master. Board worker and voice worker run in parallel (different repos).
+- Option E is dropped (nothing polls on a timer).
+
 ## Proposed bundles for the user
 - Zero-loss: A (conditional requests) + C (comment cache, merge the double PATCH, no full refetch after
   create) + F (#18 retry on every call site) + voice looks up the repo from known issues instead of
