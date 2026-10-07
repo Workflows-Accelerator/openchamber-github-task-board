@@ -44,7 +44,7 @@ ALL RESOLVED — see decisions.md (D1-D8, aligned 2026-09-26). Remaining fork: n
 
 ## Workstream status (updated 2026-10-07)
 
-State: integrating (batch 2 L4-approved chains merging into served preview branches); awaiting_human (batch 1 + batch 2 asks). Alignment: CONFIRMED for lifecycle + D11 efficiency decisions; no approval for feature/freshness loss. See decisions.md, specs/rate-limit-manager-review.md and status-l4-halts-2026-10-07.md.
+State: awaiting_human (Batch 2 ask SENT 2026-10-07 — both chains L4-approved and merged into the served preview; Batch 1 + Batch 2 verdicts and two trade-off decisions pending). Alignment: CONFIRMED for lifecycle + D11 efficiency decisions; no approval for feature/freshness loss. See decisions.md, specs/rate-limit-manager-review.md and status-l4-halts-2026-10-07.md.
 
 | Track | Where | Session | State |
 | --- | --- | --- | --- |
@@ -67,18 +67,20 @@ State: integrating (batch 2 L4-approved chains merging into served preview branc
 | Voice repair 2 hostile review | same worktree (read-only), briefs/voice-v2-repair-2-l4.md | ses_6d098c99a8d60ed4cbb8364e ended | PROCEED-WITH-CONDITIONS; 3 fixes verified + 9-item collateral sweep PASS + red/green on base; 1 residual: external form field type rejected (MEDIUM), blocks L5 |
 | Voice repair 3 bounded fix | same worktree at a5ddb77, briefs/voice-v2-repair-3-fix.md | ses_de7b947c163f3c1c57b71b9f ended | single external-field fix at a7e3ac9 (normalizeQuestionRequest + replyQuestion inputFields + object-answer strip); red reproduced at a5ddb77, 460 tests green |
 | Voice repair 3 hostile review | same worktree (read-only), briefs/voice-v2-repair-3-l4.md | ses_2baffff1f2bb7cbf79f5d8be ended | PROCEED (zero residual); red/green reproduced by reviewer, adversarial permutations pass, 12-repair collateral sweep PASS; report l4-voice-v2-repair-3.md + voice-v2-repair-3-l4/ in root run dir |
+| Board integration merge | root checkout feat/v2-binding-and-ratelimit, briefs/integrate-board-batch2.md | ses_6b6bdf39c2559568f4e0307f ended | merge 8938494 (fix tip 4353672, zero conflicts) + bundle rebuild 66a734a; manager reproduced 269/269 in served root and diff scope 617d198..66a734a = fix chain only; engineer tier verified; preview branch now serves reviewed code |
+| Voice integration merge | root checkout feat/v2-compat-and-ratelimit, briefs/integrate-voice-batch2.md | ses_93e9a89078ce4f3019d32046 ended | merge 7c6f816 (fix tip a7e3ac9, zero conflicts); manager reproduced 460/460 in served root and diff scope cd6ab18..7c6f816 = fix chain only; engineer tier verified; preview branch now serves reviewed code |
 | Visual polish + focus drop #19 | board | — | Parked behind current frontier |
 | Voice human_todo + explicit repo argument | chambervoice | — | Deferred (D8); no redesign approval assumed |
 
 Proof index: verifications/proof.md. Active repair briefs: briefs/voice-v2-ratelimit-repair-1.md and briefs/board-v2-ratelimit-repair-1.md. All report receipts must exclude login secrets, tokens, and cookies.
 
 ### Immediate next moves
-1. Both Batch 2 members passed L4 (quorum reached). Integration merges dispatched: board fix/v2-binding-ratelimit-review-repair (4353672) -> feat/v2-binding-and-ratelimit at root; voice fix/v2-ratelimit-review-repair (a7e3ac9) -> feat/v2-compat-and-ratelimit at root. Rationale: L5 contract requires the human to review the merged result through one running preview; the served roots currently serve pre-repair code, so an ask before merge would validate the wrong build. master stays untouched until verdicts; nothing is pushed.
-2. When both merges land and gates re-run green, send ONE Batch 2 ask (l5-batch-2.md): numbered plain-language click-through for board + voice, known blind spots, and the two open decisions (deletion/transfer freshness gap; PAT for conditional reads). Do not repeat the Batch 1 ask; those verdicts remain pending.
-3. After verdicts: passing members merge onward to local master; worktrees torn down per worktree skill (branches kept; only the user pushes, closes issues, or moves them to Done).
+1. Integration merges COMPLETED and manager-verified: board 8938494+66a734a and voice 7c6f816 are now what the served preview roots load. Served roots still run the preview branches (feat/v2-binding-and-ratelimit / feat/v2-compat-and-ratelimit), NOT local master — master waits for verdicts; nothing is pushed.
+2. NOW: send ONE Batch 2 ask (l5-batch-2.md): numbered plain-language click-through for board + voice, known blind spots, and the two open decisions (deletion/transfer freshness gap; PAT for conditional reads). Do not repeat the Batch 1 ask; those verdicts remain pending (l5-batch-1.md).
+3. After verdicts: passing members merge onward to local master; worktrees torn down per worktree skill (branches kept; only the user pushes, closes issues, or moves them to Done). Bounced members return to In Progress with the user's note.
 4. Positive form/permission reply proof is NOT RUN: empty pending lists prove discovery only. Safe isolated actual V2 fixtures may be planned/run within worker brief bounds (disposable-fixture-contract.md); shared-host session mutation is NOT authorized.
 5. No silent no-loss claim or new polling/timeout policy for the two trade-offs; they go to the user as explicit options in the ask.
-6. The worktree skill's hardcoded DB path is adapted to HOME at use time, per manager guardrail; shared skill file is NOT to be edited. Manager shell denial on git check-ignore recorded; worktree preparation delegated without a manager workaround.
+6. The worktree skill's hardcoded DB path is adapted to HOME at use time, per manager guardrail; shared skill file is NOT to be edited. Manager shell denials recorded (git check-ignore, git show <branch>:<path>).
 
 ## Roadmap beyond this iteration
 

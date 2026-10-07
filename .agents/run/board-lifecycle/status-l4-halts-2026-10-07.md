@@ -80,8 +80,11 @@
 - Fresh L4 ses_2baffff1f2bb7cbf79f5d8be: PROCEED, zero residual. Red reproduced at a5ddb77, green at a7e3ac9, adversarial permutations pass, 12-repair collateral sweep PASS. Report l4-voice-v2-repair-3.md + voice-v2-repair-3-l4/ in root run dir.
 - Convergence budget respected (9->3->1->0): no fourth round needed.
 
-## Integration merges (Batch 2 quorum reached)
-- Dispatched board integration: fix/v2-binding-ratelimit-review-repair (4353672) -> feat/v2-binding-and-ratelimit at ROOT checkout (served preview branch), and voice integration: fix/v2-ratelimit-review-repair (a7e3ac9) -> feat/v2-compat-and-ratelimit at ROOT checkout. Preview integration only; master untouched until user verdicts; nothing pushed. Rationale: L5 contract = human reviews the merged result through one running preview; served roots currently run pre-repair code.
+## Integration merges (Batch 2 quorum reached) — COMPLETED 2026-10-07
+- Board: ses_6b6bdf39c2559568f4e0307f (engineer, verified) merged fix/v2-binding-ratelimit-review-repair (4353672) -> feat/v2-binding-and-ratelimit as 8938494, zero conflicts (ort), then bundle rebuild 66a734a. Gates: typecheck 0 errors, node --test 269/269 (worker claim), manager independently reproduced 269/269 in the served root and diff scope 617d198..66a734a matches the fix chain exactly (panel core+main+bundle, test additions incl. test-app-harness.js, run artifacts l4-board-v2-repair-2.md + board-v2-repair-2-l4/ + board-v2-repair-2/, .gitignore union).
+- Voice: ses_93e9a89078ce4f3019d32046 (engineer, verified) merged fix/v2-ratelimit-review-repair (a7e3ac9) -> feat/v2-compat-and-ratelimit as 7c6f816, zero conflicts. Gates: npm run verify clean (460/460 worker claim), npm run build parity (service/main.js byte-equal to a7e3ac9 bundle; live/* byte-identical to base), manager independently reproduced 460/460 in the served root and diff scope cd6ab18..7c6f816 matches the fix chain exactly (service host-client/taskboard, tests incl. v2-ratelimit-repair.test.js, run artifacts, .gitignore union).
+- Preview integration only: master branches untouched until user verdicts; nothing pushed; no issue operations; no worktree teardown. Rationale: L5 contract = human reviews the merged result through one running preview; served roots ran pre-repair code before this merge.
+- Both duplicate wakes (each merge session reported twice) treated as single jobs per run rule.
 - Manager shell denial recorded: `git show <branch>:.gitignore` rejected (not in the inspection allowlist). Fix-branch .gitignore contents therefore NOT inspected by manager; the merge brief's union policy + mandatory conflict reporting cover the gap. No workaround attempted.
 
 ## Issue receipt limitation

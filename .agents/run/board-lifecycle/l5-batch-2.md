@@ -1,8 +1,8 @@
 # L5 human validation — Batch 2 ask (SINGLE ask)
 
-Status: READY TO SEND once both integration merges land and their gates re-run green in the served roots. Batch 2 L4 quorum reached (both members PROCEED). Send ONCE. Batch 1 verdicts (l5-batch-1.md) remain pending — do NOT repeat that ask; the user may answer both in one sitting but each verdict is per issue.
+Status: SENT 2026-10-07 (single ask; do NOT resend). Both members L4 PROCEED and both integration merges landed with gates re-run green in the served roots. Batch 1 verdicts (l5-batch-1.md) remain pending — do NOT repeat that ask; the user may answer both in one sitting but each verdict is per issue.
 
-What changed since the draft: both members passed hostile review with zero residual findings; the reviewed chains are being merged into the served preview branches (board: fix/v2-binding-ratelimit-review-repair -> feat/v2-binding-and-ratelimit; voice: fix/v2-ratelimit-review-repair -> feat/v2-compat-and-ratelimit) so what loads in the app is the code that was reviewed. Local master is untouched until verdicts; nothing has been pushed.
+What changed since the draft: both members passed hostile review with zero residual findings; the reviewed chains were merged into the served preview branches (board: fix/v2-binding-ratelimit-review-repair -> feat/v2-binding-and-ratelimit as 8938494 + bundle 66a734a; voice: fix/v2-ratelimit-review-repair -> feat/v2-compat-and-ratelimit as 7c6f816) so what loads in the app is the code that was reviewed. Local master is untouched until verdicts; nothing has been pushed.
 
 ## Members (verdicts are per member/issue)
 
