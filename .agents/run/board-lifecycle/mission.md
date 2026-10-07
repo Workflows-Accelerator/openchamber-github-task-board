@@ -42,16 +42,32 @@ Concretely, the user named these deliverables:
 
 ALL RESOLVED — see decisions.md (D1-D8, aligned 2026-09-26). Remaining fork: none.
 
-## Workstream status (updated 2026-09-26)
+## Workstream status (updated 2026-10-07)
+
+State: proving (batch 2); awaiting_human (batch 1). Alignment: CONFIRMED for lifecycle + D11 efficiency decisions; see decisions.md and specs/rate-limit-manager-review.md.
 
 | Track | Where | Session | State |
 | --- | --- | --- | --- |
-| Voice crash fix + file 4 issues | chambervoice | ses_909742d6a8b4139607f53184 | running |
-| Contract v1 + Human Tasks extraction + D3 semantics | github-task-board | ses_cb7138841e2593d7a1f8bdff | running |
-| issue-lifecycle skill | config/opencode skills library | ses_500dac19a1fa9ad474cb9429 | running |
-| Three simplified views (Human Tasks / All Tasks / Questions) | github-task-board | — | next, after contract lands |
-| Visual polish ("amazing visual") | github-task-board | — | after views exist |
-| Voice `human_todo` + multi-project routing | chambervoice | — | next iteration (D8) |
+| Voice All Projects crash #17 | chambervoice local master, 21fd1d1 | ended | Batch 1 human verdict pending |
+| Contract #22/status #20 + views #23 | board local master, 9f651db, final hardening 4194652 | ses_9623172ae6d79b9821e636bc ended | 244 tests reported green; Batch 1 human verdict pending |
+| Lifecycle skill #21 | config/opencode | ended | L4 passed; Batch 1 human verdict pending |
+| V2 compatibility audit | verifications/v2-compat-audit.md | ses_ecdfe3aa6e23d79b33d843f7 ended | Received; runtime reply tests missing |
+| GitHub efficiency audit and D11 choices | specs/rate-limit-manager-review.md | ses_a9897235d8cb1b41183c8bab ended | Audit received; estimates not measured; choices approved |
+| Board V2 binding + D11 efficiency | board main checkout on feat/v2-binding-and-ratelimit | ses_068d6622598dc3b1059dbd91 | Running; owns app edits; do not switch branch or touch its edits |
+| Voice V2 + D11 efficiency | chambervoice feat/v2-compat-and-ratelimit, cd6ab18 | ses_6a5a8749c6759270a40cbafd ended | Build received, NOT accepted; 437 tests reported; live GET checks only |
+| Voice V2 + D11 hostile review | chambervoice same checkout (read-only) | ses_fc89160228e764868dff56b1 | Running; engineer tier verified in session record |
+| Visual polish + focus drop #19 | board | — | Parked behind current frontier |
+| Voice human_todo + explicit repo argument | chambervoice | — | Deferred (D8); no redesign approval assumed |
+
+Proof index: verifications/proof.md. Current reviewer brief: briefs/voice-v2-ratelimit-l4.md. All report receipts must exclude login secrets, tokens, and cookies.
+
+### Immediate next moves
+1. Wait for voice L4 wake; fix only confirmed findings with a fresh written brief and isolated worktree. No duplicate workers and no resuming ended sessions.
+2. Board completion gets its own hostile-review dispatch. Do not merge batch 2 or call it done based on green mocks.
+3. Positive form/permission reply proof is NOT RUN: empty pending lists prove discovery only. Use a disposable safe fixture, never an unrelated live user request.
+4. Batch 1 verdicts are pending (l5-batch-1.md); do not repeat the full ask. Batch 2 human review waits for all L4 members.
+5. Only the USER closes/moves issues to Done and pushes. Prior text promising agent closure is superseded.
+6. The worktree skill's hardcoded DB path is adapted to HOME at use time, per manager guardrail; shared skill file is NOT to be edited.
 
 ## Roadmap beyond this iteration
 
