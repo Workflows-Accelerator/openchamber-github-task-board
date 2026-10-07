@@ -1362,12 +1362,6 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       addLog(`Page 1 for ${currentRepo} -> 304 Not Modified`, 'succ');
       lastSyncTimestamp = Date.now();
       repoSyncWatermarks.set(currentRepo, Date.now());
-      if (issues.length > 0) {
-        if (cachedPage1) setCachedPage(page1Path, cachedPage1.items, page1Raw.etag || page1Etag);
-        renderViews();
-        statusReconciler.schedule(issues);
-        return;
-      }
       if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
         page1Items = cachedPage1.items;
       } else {
@@ -1388,7 +1382,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     }
 
     const page1Issues = normalizeGithubIssues(page1Items);
-    issues = page1Issues;
+    issues = issues.length > 0 ? mergeIssuePages(issues, page1Issues) : page1Issues;
 
     // Cache results in memory and persistent storage
     issueCache.set(currentRepo, {
@@ -1408,8 +1402,8 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     renderViews();
     statusReconciler.schedule(issues);
 
-    // Background streaming for remaining pages if 100 items returned
-    if (page1Items.length >= 100) {
+    // Background streaming for remaining pages if 100 items returned or later pages exist
+    if (page1Items.length >= 100 || issues.length >= 100) {
       void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch, force);
     }
   } catch (err: any) {
@@ -1450,9 +1444,6 @@ async function fetchAllRepoIssuePages(repo: string, epoch: number, force: boolea
 
   let firstItems: any[] = [];
   if (firstRaw && (firstRaw.notModified || firstRaw.status === 304)) {
-    if (cachedRepoIssues && cachedRepoIssues.length > 0) {
-      return cachedRepoIssues;
-    }
     if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
       firstItems = cachedPage1.items;
     } else {
