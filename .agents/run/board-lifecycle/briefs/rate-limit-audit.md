@@ -1,0 +1,23 @@
+<goal>Produce a quantitative audit of every GitHub API request the task board (and chambervoice's taskboard tool) makes and why — identifying waste, measuring realistic worst-case request rates, and laying out 3-5 efficiency options with explicit feature-loss trade-offs so the human can decide. Analysis only; change nothing.</goal>
+<context_files>
+/workspace/extensions/github-task-board/.worktrees/team-dev-contract-l4r/panel/main.ts
+/workspace/extensions/github-task-board/.worktrees/team-dev-contract-l4r/panel/core.ts
+/workspace/extensions/github-task-board/.worktrees/team-dev-contract-l4r/panel/git.ts
+/workspace/extensions/chambervoice/service/taskboard.ts
+/workspace/extensions/github-task-board/.agents/run/board-lifecycle/verifications/l4-02-crashfix.md
+</context_files>
+<skills>
+/workspace/config/opencode/.agents/skills/build/domain/performance-optimization/SKILL.md
+/workspace/config/opencode/.agents/skills/plan/context/source-driven-development/SKILL.md
+</skills>
+<scope>READ-ONLY. Analyze the code as it exists on branch issue-lifecycle-issue-contract-l4r (read the worktree copy under .worktrees/team-dev-contract-l4r — the main checkout is being merged concurrently, do not analyze it). Your only write is the report at /workspace/extensions/github-task-board/.agents/run/board-lifecycle/specs/rate-limit-audit.md plus your reply. No code changes.</scope>
+<criteria>Every request site enumerated with file:line and trigger; a request-rate model (requests/hour) for at least three realistic configurations (1 repo × 30 issues active; 3 repos × 100 issues; multi-repo all-projects mode with several live sessions) covering worst case and typical case; waste clearly separated from necessary traffic; 3-5 options each with: what it changes, requests saved (estimate), which features degrade or die (explicitly!), implementation cost, and risk; nothing hand-waved — every number traceable to code.</criteria>
+<steps>
+<step>Inventory every GitHub request site in the panel code: githubRequest vs githubRequestWithRetry call sites (main.ts ~1219,1281 region per issue #18), streamRemainingPages background pagination (main.ts ~1156), the StatusReconciler PATCH write-backs (labels.ts 568-648) and their debounce, issue body PATCHes from checkbox toggles, comment fetches, label/repo listing, and anything else hitting api.github.com. For each: trigger (load, timer, focus, user action, session event), payload, and whether it is cached.</step>
+<step>Map the caching and dedupe layers that already exist (commit 213fef8 rate-limit caching; the 'refresh inside the window costs zero requests' logic at core.ts:1778; in-flight keys in StatusReconciler; any localStorage/sessionStorage caches, ETag/If-None-Match use or absence). Quantify what they already save and where they leak.</step>
+<step>Find the waste: redundant refetches (e.g. full refetch after a single checkbox toggle), refetch storms on window focus or repo switch, polling while the panel is hidden, per-issue fetches that GraphQL could batch, unconditional list refetches where a conditional request would return 304, and any request made repeatedly whose response cannot have changed.</step>
+<step>Also inventory chambervoice-side traffic: how many GitHub calls one voice query costs now (getTasks across N repos after the All Projects aggregation change), and what a voice-driven workflow would cost per minute of conversation.</step>
+<step>Build the rate model: requests/hour per configuration under current behavior. Assume GitHub REST secondary limits (~100 concurrent/600 per hour per user for secondary; 5000/hr core) and state assumptions.</step>
+<step>Write 3-5 options, each with explicit feature impact. Ideas to evaluate (not endorse): (A) conditional requests (ETag/If-None-Match) everywhere cheap; (B) adaptive polling — back off when panel hidden or board idle, tighten on interaction; (C) event-driven updates from local session telemetry (the board already learns status from sessions — zero GitHub reads for status) + manual refresh button; (D) batch via GraphQL; (E) write-through cache with stale-while-revalidate and explicit 'stale' badges. For each: what the user loses (e.g. 'live updates degrade from N-second to M-second freshness'). The human explicitly wants to be asked before losing any feature.</step>
+</steps>
+<output>Return a structured block: status; results (the request-site table summary, the three-configuration rate model, the ranked options with one-line feature-impact each); evidence (file:line anchors for every claim); learnings (the three most wasteful behaviors found).</output>
