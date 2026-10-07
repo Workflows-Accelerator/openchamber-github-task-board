@@ -52,6 +52,12 @@
 - Bounded fix ses_5c0356f5e154169806b9fdea dispatched (engineer) via briefs/board-v2-repair-2-fixes.md: exactly D-01..D-04, production-path red/green tests required (simulations rejected). Fresh L4 required after.
 - Known non-defect gaps unchanged and awaiting user decision: since= omits deletions/transfers (manual Refresh reconciles); SDK host proxy drops conditional headers (non-PAT users degrade to plain GET, correct without quota savings).
 
+## Voice repair 2 receipt (f58e11b/67f955f/d582374, docs a5ddb77)
+- Manager verified commit chain on 252225a, clean tracked state, diff scoped to service host-client/taskboard, tests, run artifacts; panel/main.js untouched (zero churn as claimed).
+- Builder claims exactly 3 fixes: integer form type (red/green), dead-V1-404 fall-through removal (typed NOT_FOUND, legacy fallback only on pre-V2 collection 404), partial-cache poisoning (per-repo generation-protected cache + aggregate canCache guard, failed repo retries). 459 tests claimed green. NOT accepted.
+- Builder-disclosed residual: V2 form type `external` (display URL field) still omitted from answer whitelist — reviewer must decide residual defect vs correct non-input handling.
+- Fresh hostile review ses_6d098c99a8d60ed4cbb8364e (engineer) dispatched via briefs/voice-v2-repair-2-l4.md: delta review + collateral sweep of the 9 previously verified repairs. Positive live reply proof remains NOT RUN by design (shared host database/roster); no live session mutation is authorized.
+
 ## Issue receipt limitation
 - Manager attempted allowlisted `gh issue list --repo Workflows-Accelerator/openchamber-github-task-board --state open --limit 30 --json number,title,labels,url`; shell exit 127, gh not installed.
 - No remote issue receipt/status update made at this boundary. Do not route around manager shell denial using REST/execute. Existing repair workers explicitly own no issue writes; avoid spawning a duplicate repo worker. Remote receipt sync remains pending a bounded worker dispatch after current app workers end, or restored gh availability.

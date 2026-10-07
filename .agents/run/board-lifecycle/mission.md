@@ -62,7 +62,8 @@ State: building (batch 2 bounded repair 1 after both L4 HALTs); awaiting_human (
 | Voice V2 + D11 hostile review | chambervoice root (read-only), l4-voice-v2-ratelimit.md | ses_fc89160228e764868dff56b1 ended | HALT; positive real reply proof missing |
 | Voice V2 + D11 repair 1 | chambervoice/.worktrees/team-dev-v2-ratelimit-review-repair, fix/v2-ratelimit-review-repair, 252225a | ses_1797615df11da447fd7d5863 ended | Claims 9 findings + extras fixed, 453 tests; NOT accepted; manager checked commit/diff/clean state |
 | Voice repair 1 hostile review | same worktree (read-only), briefs/voice-v2-repair-1-l4.md | ses_e8f6110f2851bb374fe3c0bd ended | PROCEED-WITH-CONDITIONS; 3 residual defects: integer field type, 404 masking fall-through, partial-cache poisoning |
-| Voice repair 2 bounded fixes | same worktree at 252225a, briefs/voice-v2-repair-2-fixes.md | ses_e0f2d7ad18363e33a02e08a4 | Running; engineer; exactly 3 fixes with red/green tests |
+| Voice repair 2 bounded fixes | same worktree at 252225a, briefs/voice-v2-repair-2-fixes.md | ses_e0f2d7ad18363e33a02e08a4 ended | 3 fixes committed f58e11b/67f955f/d582374 + docs a5ddb77; 459 tests claimed; manager checked chain/diff/clean state; NOT accepted |
+| Voice repair 2 hostile review | same worktree (read-only), briefs/voice-v2-repair-2-l4.md | ses_6d098c99a8d60ed4cbb8364e | Running; engineer; delta 252225a..a5ddb77 + collateral sweep |
 | Visual polish + focus drop #19 | board | — | Parked behind current frontier |
 | Voice human_todo + explicit repo argument | chambervoice | — | Deferred (D8); no redesign approval assumed |
 
