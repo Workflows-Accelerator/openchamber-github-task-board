@@ -87,6 +87,37 @@ test('A) session keying uses explicit repo and ignores repo-less items', () => {
   assert.equal(findSessionForIssueByRepo(explicit, { number: 9 }), null);
 });
 
+test('A) V2 session binding: item projection { id, data: { issueNumber, repo } } binds without top-level url/repo', () => {
+  const v2ProjectedSession = {
+    id: 'sess-v2',
+    activity: 'idle',
+    title: '#15 task',
+    items: [
+      {
+        id: '15',
+        data: {
+          issueNumber: 15,
+          repo: 'Workflows-Accelerator/openchamber-github-task-board',
+        },
+      },
+    ],
+  };
+  const index = buildSessionIndexByRepo([v2ProjectedSession]);
+  const matched = findSessionForIssueByRepo(index, {
+    number: 15,
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+  });
+  assert.ok(matched, 'V2 projected item must bind via data.repo and data.issueNumber');
+  assert.equal(matched.id, 'sess-v2');
+
+  // Cross-repo isolation check
+  const crossRepoMatch = findSessionForIssueByRepo(index, {
+    number: 15,
+    repo: 'other-owner/other-repo',
+  });
+  assert.equal(crossRepoMatch, null, 'Session must never bind across different repositories');
+});
+
 test('B) resolveWorkspaceRootProject pins exact /workspace and never fabricates a root', () => {
   const exact = resolveWorkspaceRootProject([
     mkProject('a', 'Alpha', '/workspace/alpha'),

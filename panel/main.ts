@@ -148,6 +148,9 @@ import {
   isSecondaryRateLimit,
   retryWithBackoff,
   mapWithConcurrency,
+  buildIncrementalIssuesPath,
+  syncIncrementalRepoIssues,
+  getSessionIssueRepo,
 } from './core.js';
 export type { TestItem };
 export {
@@ -528,14 +531,13 @@ async function watchActiveProject(projectId: string): Promise<void> {
       if (activeIssue) renderDrawer(activeIssue);
       statusReconciler.schedule(issues);
 
-      // When a session finishes / becomes idle, bust issue cache and fetch fresh state from GitHub
+      // When a session finishes / becomes idle, incrementally fetch issues changed since last sync
       const becameIdle = sessions.some((s) => {
         const prev = prevSessions.find((p) => p.id === s.id);
         return s.activity === 'idle' && (!prev || prev.activity !== 'idle');
       });
-      if (becameIdle && currentRepo) {
-        issueCache.delete(currentRepo);
-        void fetchIssues(true);
+      if (becameIdle) {
+        void handleIdleRefresh(sessions, prevSessions);
       }
     });
     unsubWorktrees = await host.onWorktrees(projectId, (wtSnap) => {
@@ -980,6 +982,8 @@ function getWorkspaceRootProject(): ProjectItem | null {
 }
 
 let workspaceGitToken: string | null = null;
+const issueListEtagCache = new Map<string, string>();
+let lastSyncTimestamp: number = Date.now();
 
 async function getWorkspaceGitToken(): Promise<string | null> {
   if (workspaceGitToken) return workspaceGitToken;
@@ -1054,7 +1058,8 @@ async function githubRequest(
   method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
   path: string,
   body?: any,
-  query?: Record<string, string>
+  query?: Record<string, string>,
+  headers?: Record<string, string>
 ): Promise<any> {
   addLog(`API ${method} ${path}`);
 
@@ -1074,15 +1079,25 @@ async function githubRequest(
           'Accept': 'application/vnd.github.v3+json',
           'Authorization': `Bearer ${pat.trim()}`,
           ...(body ? { 'Content-Type': 'application/json' } : {}),
+          ...(headers || {}),
         },
         body: body ? JSON.stringify(body) : undefined,
       });
+      if (directRes.status === 304) {
+        addLog(`API ${method} ${path} -> 304 Not Modified (via workspace PAT)`, 'succ');
+        return { notModified: true, status: 304, etag: directRes.headers.get('etag') || undefined };
+      }
       if (directRes.ok) {
         addLog(`API ${method} ${path} -> ${directRes.status} OK (via workspace PAT)`, 'succ');
         hideBanner();
         const rem = directRes.headers.get('x-ratelimit-remaining');
         if (rem !== null) lastRateLimitRemaining = parseInt(rem, 10);
-        return directRes.json();
+        const data = await directRes.json();
+        const etag = directRes.headers.get('etag');
+        if (etag && data && typeof data === 'object') {
+          Object.defineProperty(data, 'etag', { value: etag, configurable: true, writable: true });
+        }
+        return data;
       }
       if (directRes.status === 403 || directRes.status === 429) {
         let errBody = '';
@@ -1107,6 +1122,10 @@ async function githubRequest(
       query,
       body: body ? JSON.stringify(body) : undefined,
     });
+    if (res.status === 304) {
+      addLog(`API ${method} ${path} -> 304 Not Modified`, 'succ');
+      return { notModified: true, status: 304 };
+    }
     if (res.status >= 200 && res.status < 300) {
       addLog(`API ${method} ${path} -> ${res.status}`, 'succ');
       hideBanner();
@@ -1115,7 +1134,12 @@ async function githubRequest(
         const rem = resHeaders['x-ratelimit-remaining'];
         if (rem) lastRateLimitRemaining = parseInt(rem, 10);
       }
-      return typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+      const parsed = typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+      const resEtag = resHeaders ? (resHeaders['etag'] || resHeaders['ETag']) : undefined;
+      if (resEtag && parsed && typeof parsed === 'object') {
+        Object.defineProperty(parsed, 'etag', { value: resEtag, configurable: true, writable: true });
+      }
+      return parsed;
     }
     if (res.status === 403 || res.status === 429) {
       const rlErr = rateLimitErrorFromResponse(res.status, (res as any).headers, res.body);
@@ -1144,21 +1168,60 @@ async function githubRequest(
   }
 }
 
+// GitHub request with bounded retry/backoff for rate-limit responses.
+function githubRequestWithRetry(
+  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  path: string,
+  body?: any,
+  query?: Record<string, string>,
+  headers?: Record<string, string>
+): Promise<any> {
+  return retryWithBackoff(() => githubRequest(method, path, body, query, headers), {
+    maxAttempts: RATE_LIMIT_MAX_ATTEMPTS,
+    isRetryable: (err: any) => Boolean(err && err.rateLimited),
+    getRetryAfterMs: (err: any) => Number(err?.retryAfterMs) || 0,
+    onRetry: (attempt, delayMs) => addLog(`Rate limited; retrying (${attempt + 1}) in ${Math.round(delayMs / 1000)}s...`, 'warn'),
+  });
+}
+
 async function promptCustomToken(): Promise<void> {
   const token = window.prompt('Enter GitHub Personal Access Token (with repo access):');
   if (token && token.trim()) {
     await host.storage.set('custom_github_token', token.trim());
     await host.toast({ kind: 'success', message: 'Saved token! Refreshing...' });
-    void fetchIssues();
+    void fetchIssues(true);
   }
 }
 
-async function streamRemainingPages(repo: string, storageKey: string, startPage: number, epoch: number): Promise<void> {
+async function streamRemainingPages(
+  repo: string,
+  storageKey: string,
+  startPage: number,
+  epoch: number,
+  force: boolean = false
+): Promise<void> {
   let page = startPage;
   const MAX_PAGES = 10; // Supports up to 1,000 issues while keeping memory bounded
   while (page <= MAX_PAGES && currentRepo === repo && activeStreamEpoch === epoch) {
     try {
-      const nextRaw = await githubRequest('GET', `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
+      const pagePath = `/repos/${repo}/issues?state=all&per_page=100&page=${page}`;
+      const pageEtag = !force ? issueListEtagCache.get(pagePath) : undefined;
+      const nextRaw = await githubRequestWithRetry(
+        'GET',
+        pagePath,
+        undefined,
+        undefined,
+        pageEtag ? { 'If-None-Match': pageEtag } : undefined
+      );
+
+      if (nextRaw && (nextRaw.notModified || nextRaw.status === 304)) {
+        page++;
+        continue;
+      }
+      if (nextRaw?.etag) {
+        issueListEtagCache.set(pagePath, nextRaw.etag);
+      }
+
       const nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
       if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
 
@@ -1227,11 +1290,32 @@ async function fetchIssues(force: boolean = false): Promise<void> {
 
   try {
     addLog(`Fetching issues for ${currentRepo}...`);
+    const page1Path = `/repos/${currentRepo}/issues?state=all&per_page=100&page=1`;
+    const page1Etag = !force ? issueListEtagCache.get(page1Path) : undefined;
+    const page1Headers = page1Etag ? { 'If-None-Match': page1Etag } : undefined;
+
     // Page 1: Standard core issues endpoint (5,000 req/hr rate limit pool)
-    const page1Raw = await githubRequest(
+    const page1Raw = await githubRequestWithRetry(
       'GET',
-      `/repos/${currentRepo}/issues?state=all&per_page=100&page=1`
+      page1Path,
+      undefined,
+      undefined,
+      page1Headers
     );
+
+    if (page1Raw && (page1Raw.notModified || page1Raw.status === 304)) {
+      addLog(`Page 1 for ${currentRepo} -> 304 Not Modified (using cached issues)`, 'succ');
+      lastSyncTimestamp = Date.now();
+      if (issues.length > 0) {
+        renderViews();
+        statusReconciler.schedule(issues);
+        return;
+      }
+    }
+
+    if (page1Raw?.etag) {
+      issueListEtagCache.set(page1Path, page1Raw.etag);
+    }
 
     const page1Items = Array.isArray(page1Raw) ? page1Raw : (page1Raw?.items || []);
     const page1Issues = normalizeGithubIssues(page1Items);
@@ -1246,6 +1330,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     if (host?.storage) {
       void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any);
     }
+    lastSyncTimestamp = Date.now();
 
     addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, 'succ');
     if (!userSelectedTab) {
@@ -1256,7 +1341,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
 
     // Background streaming for remaining pages if 100 items returned
     if (page1Items.length >= 100) {
-      void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch);
+      void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch, force);
     }
   } catch (err: any) {
     addLog(`Failed to fetch fresh issues: ${err.message}`, 'error');
@@ -1277,20 +1362,30 @@ async function fetchIssues(force: boolean = false): Promise<void> {
   }
 }
 
-// GitHub request with bounded retry/backoff for rate-limit responses.
-function githubRequestWithRetry(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', path: string): Promise<any> {
-  return retryWithBackoff(() => githubRequest(method, path), {
-    maxAttempts: RATE_LIMIT_MAX_ATTEMPTS,
-    isRetryable: (err: any) => Boolean(err && err.rateLimited),
-    getRetryAfterMs: (err: any) => Number(err?.retryAfterMs) || 0,
-    onRetry: (attempt, delayMs) => addLog(`Rate limited; retrying (${attempt + 1}) in ${Math.round(delayMs / 1000)}s...`, 'warn'),
-  });
-}
-
 // Fetch every page of issues for one repository, capped so a single runaway
 // repo cannot exhaust the API budget. Returns normalized issues only.
-async function fetchAllRepoIssuePages(repo: string, epoch: number): Promise<Issue[]> {
-  const firstRaw = await githubRequestWithRetry('GET', `/repos/${repo}/issues?state=all&per_page=100&page=1`);
+async function fetchAllRepoIssuePages(repo: string, epoch: number, force: boolean = false): Promise<Issue[]> {
+  const page1Path = `/repos/${repo}/issues?state=all&per_page=100&page=1`;
+  const page1Etag = !force ? issueListEtagCache.get(page1Path) : undefined;
+  const firstRaw = await githubRequestWithRetry(
+    'GET',
+    page1Path,
+    undefined,
+    undefined,
+    page1Etag ? { 'If-None-Match': page1Etag } : undefined
+  );
+
+  if (firstRaw && (firstRaw.notModified || firstRaw.status === 304)) {
+    const cached = issueCache.get(repo)?.issues;
+    if (cached && cached.length > 0) {
+      return cached;
+    }
+  }
+
+  if (firstRaw?.etag) {
+    issueListEtagCache.set(page1Path, firstRaw.etag);
+  }
+
   const firstItems = Array.isArray(firstRaw) ? firstRaw : (firstRaw?.items || []);
   let repoIssues = normalizeGithubIssues(firstItems);
 
@@ -1298,7 +1393,22 @@ async function fetchAllRepoIssuePages(repo: string, epoch: number): Promise<Issu
 
   let page = 2;
   while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
-    const nextRaw = await githubRequestWithRetry('GET', `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
+    const pagePath = `/repos/${repo}/issues?state=all&per_page=100&page=${page}`;
+    const pageEtag = !force ? issueListEtagCache.get(pagePath) : undefined;
+    const nextRaw = await githubRequestWithRetry(
+      'GET',
+      pagePath,
+      undefined,
+      undefined,
+      pageEtag ? { 'If-None-Match': pageEtag } : undefined
+    );
+    if (nextRaw && (nextRaw.notModified || nextRaw.status === 304)) {
+      page++;
+      continue;
+    }
+    if (nextRaw?.etag) {
+      issueListEtagCache.set(pagePath, nextRaw.etag);
+    }
     const nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
     if (nextItems.length === 0) break;
     repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
@@ -1349,7 +1459,7 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
       projectId: ref.projectId,
       projectName: ref.projectName,
       repo: ref.repo,
-      issues: await fetchAllRepoIssuePages(ref.repo, epoch),
+      issues: await fetchAllRepoIssuePages(ref.repo, epoch, force),
     }));
     if (activeStreamEpoch !== epoch) return;
 
@@ -1370,6 +1480,7 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
     if (host?.storage) {
       void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues } as any);
     }
+    lastSyncTimestamp = Date.now();
 
     if (!userSelectedTab) selectTab(resolveDefaultTab(issues));
     renderViews();
@@ -1393,6 +1504,83 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
   }
 }
 
+// Incremental sync for idle session transitions: fetches only issues changed since last sync
+async function syncRepoIncremental(repo: string, sinceIso: string): Promise<void> {
+  const path = buildIncrementalIssuesPath(repo, sinceIso);
+  const etag = issueListEtagCache.get(path);
+  try {
+    const result = await syncIncrementalRepoIssues({
+      repo,
+      since: sinceIso,
+      currentIssues: issues,
+      etag,
+      requestFn: (method, reqPath, body, query, headers) =>
+        githubRequestWithRetry(method, reqPath, body, query, headers),
+    });
+
+    if (result.etag) {
+      issueListEtagCache.set(path, result.etag);
+    }
+
+    if (!result.modified) {
+      addLog(`Incremental sync for ${repo}: no changes`);
+      return;
+    }
+
+    issues = result.issues;
+    issueCache.set(repo, { timestamp: Date.now(), issues });
+    if (host?.storage) {
+      void host.storage.set(`cached_issues_${repo}`, { timestamp: Date.now(), issues } as any);
+    }
+    if (isAllProjectsMode) {
+      issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any);
+      }
+    }
+    renderViews();
+    statusReconciler.schedule(issues);
+    addLog(`Incremental sync for ${repo}: updated ${result.changedCount} issue(s)`, 'succ');
+  } catch (err: any) {
+    addLog(`Incremental sync failed for ${repo}: ${err.message}`, 'warn');
+  }
+}
+
+async function handleIdleRefresh(currentSessions: any[], previousSessions: any[]): Promise<void> {
+  const idleSessions = currentSessions.filter((s) => {
+    const prev = previousSessions.find((p) => p.id === s.id);
+    return s.activity === 'idle' && (!prev || prev.activity !== 'idle');
+  });
+  if (idleSessions.length === 0) return;
+
+  const sinceTime = lastSyncTimestamp;
+  const sinceIso = new Date(sinceTime).toISOString();
+  lastSyncTimestamp = Date.now();
+
+  addLog(`Session became idle — incremental sync for changes since ${sinceIso}...`);
+
+  if (!isAllProjectsMode) {
+    if (!currentRepo) return;
+    await syncRepoIncremental(currentRepo, sinceIso);
+  } else {
+    const targetRepos = new Set<string>();
+    for (const s of idleSessions) {
+      const items = Array.isArray(s.items) ? s.items : [];
+      for (const item of items) {
+        const r = getSessionIssueRepo(item);
+        if (r) targetRepos.add(r);
+      }
+    }
+    const reposToSync = targetRepos.size > 0
+      ? Array.from(targetRepos)
+      : allProjectsRepoRefs.map((r) => r.repo);
+
+    for (const repo of reposToSync) {
+      await syncRepoIncremental(repo, sinceIso);
+    }
+  }
+}
+
 // In the aggregated view a PATCH must target the issue's own repository.
 function repoForIssue(issue: Issue | null | undefined): string {
   if (issue && isAllProjectsMode && issue.repo) return issue.repo;
@@ -1408,11 +1596,11 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   if (repo) issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
-    renderDrawer(issue);
+    renderDrawer(issue, true);
   }
 
   try {
-    await githubRequest('PATCH', `/repos/${repo}/issues/${issue.number}`, {
+    await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       body: newBody,
     });
     await host.toast({ kind: 'info', message: `Updated issue #${issue.number}` });
@@ -1422,14 +1610,18 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   }
 }
 
-async function updateIssueStatus(issue: Issue, targetColumn: ColumnId): Promise<void> {
+async function updateIssueStatus(
+  issue: Issue,
+  targetColumn: ColumnId,
+  options?: { newPriorityGroup?: string }
+): Promise<void> {
   const repo = repoForIssue(issue);
   if (!issue || !repo) return;
   const prevLabels = [...(issue.labels || [])];
   const prevState = issue.state;
 
   const currentLabels = (issue.labels || []).map((l: any) => (typeof l === 'string' ? l : l.name || ''));
-  const filteredLabels = currentLabels.filter((name) => !name.startsWith('status:'));
+  let filteredLabels = currentLabels.filter((name) => !name.startsWith('status:'));
 
   let newState: 'open' | 'closed' = 'open';
   if (targetColumn === 'done') {
@@ -1439,16 +1631,20 @@ async function updateIssueStatus(issue: Issue, targetColumn: ColumnId): Promise<
     filteredLabels.push(`status:${targetColumn}`);
   }
 
+  if (options?.newPriorityGroup && options.newPriorityGroup !== 'none') {
+    filteredLabels = updatePriorityLabels(filteredLabels, options.newPriorityGroup);
+  }
+
   issue.state = newState;
   issue.labels = filteredLabels.map((name) => ({ name }));
   issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
-    renderDrawer(issue);
+    renderDrawer(issue, true);
   }
 
   try {
-    await githubRequest('PATCH', `/repos/${repo}/issues/${issue.number}`, {
+    await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       state: newState,
       labels: filteredLabels,
     });
@@ -1460,7 +1656,7 @@ async function updateIssueStatus(issue: Issue, targetColumn: ColumnId): Promise<
     issue.labels = prevLabels;
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
-      renderDrawer(issue);
+      renderDrawer(issue, true);
     }
     addLog(`Failed to move #${issue.number}: ${err.message}`, 'error');
     await host.toast({ kind: 'error', message: `Failed to move #${issue.number}` });
@@ -1591,11 +1787,11 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
   }
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
-    renderDrawer(issue);
+    renderDrawer(issue, true);
   }
 
   try {
-    await githubRequest('PATCH', `/repos/${archiveRepo}/issues/${issue.number}`, {
+    await githubRequestWithRetry('PATCH', `/repos/${archiveRepo}/issues/${issue.number}`, {
       state: newState,
       labels: clean,
     });
@@ -1609,7 +1805,7 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
     issue.labels = prevLabels;
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
-      renderDrawer(issue);
+      renderDrawer(issue, true);
     }
     addLog(`Failed to update archive state: ${err.message}`, 'error');
     await host.toast({ kind: 'error', message: `Failed to archive #${issue.number}: ${err.message}` });
@@ -2560,20 +2756,11 @@ function renderKanbanView(filteredIssues: Issue[]): void {
       const subEl = (e.target as HTMLElement)?.closest?.('.kanban-subgroup') as HTMLElement | null;
       const subgroupId = subEl?.dataset?.subgroupId;
 
-      await updateIssueStatus(issue, col.id);
+      const newPriorityGroup = (currentGroupBy === 'priority' && subgroupId && subgroupId !== 'none')
+        ? subgroupId
+        : undefined;
 
-      if (currentGroupBy === 'priority' && subgroupId && subgroupId !== 'none') {
-        const updatedLabels = updatePriorityLabels(issue.labels, subgroupId);
-        issue.labels = updatedLabels.map((name) => ({ name }));
-        const dropRepo = repoForIssue(issue);
-        if (dropRepo) issueCache.delete(dropRepo);
-        renderViews();
-        try {
-          await githubRequest('PATCH', `/repos/${dropRepo}/issues/${issue.number}`, {
-            labels: updatedLabels,
-          });
-        } catch {}
-      }
+      await updateIssueStatus(issue, col.id, { newPriorityGroup });
     });
 
     let displayIssues = colIssues;
@@ -4050,7 +4237,7 @@ async function loadRepoLabels(): Promise<void> {
     return;
   }
   try {
-    const list: any[] = await githubRequest('GET', `/repos/${repo}/labels?per_page=100`);
+    const list: any[] = await githubRequestWithRetry('GET', `/repos/${repo}/labels?per_page=100`);
     if (Array.isArray(list)) {
       repoLabelsCache.set(repo, list);
       populateLabelsDatalist(list);
@@ -4110,7 +4297,7 @@ async function addTagToIssue(issue: Issue, tagName: string): Promise<void> {
 
   try {
     addLog(`Adding label "${clean}" to #${issue.number}...`);
-    await githubRequest('PATCH', `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
+    await githubRequestWithRetry('PATCH', `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
       labels: newNames,
     });
     await host.toast({ kind: 'success', message: `Added label "${clean}" to #${issue.number}` });
@@ -4129,7 +4316,7 @@ async function removeTagFromIssue(issue: Issue, tagName: string): Promise<void> 
 
   try {
     addLog(`Removing label "${tagName}" from #${issue.number}...`);
-    await githubRequest('PATCH', `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
+    await githubRequestWithRetry('PATCH', `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
       labels: newLabels.map((l) => l.name),
     });
     await host.toast({ kind: 'info', message: `Removed label "${tagName}" from #${issue.number}` });
@@ -4139,7 +4326,7 @@ async function removeTagFromIssue(issue: Issue, tagName: string): Promise<void> 
   }
 }
 
-function renderDrawer(issue: Issue): void {
+function renderDrawer(issue: Issue, skipComments: boolean = false): void {
   elDrawerIssueNumber.textContent = `#${issue.number}`;
   elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : '';
   elDrawerGithubLink.href = issue.html_url;
@@ -4241,7 +4428,9 @@ function renderDrawer(issue: Issue): void {
     }
   });
 
-  void loadComments(issue.number);
+  if (!skipComments) {
+    void loadComments(issue.number);
+  }
   renderDrawerDependencies(issue);
   renderRelatedIssues(issue);
 }
@@ -4393,7 +4582,7 @@ function renderQuestions(issue: Issue): void {
           await updateIssueBody(targetIssue, newBody);
           await host.toast({ kind: 'info', message: 'Recorded answer to question' });
           if (activeIssue && activeIssue.number === targetIssue.number) {
-            renderDrawer(targetIssue);
+            renderDrawer(targetIssue, true);
           }
         };
 
@@ -4512,35 +4701,59 @@ function renderTestPlans(issue: Issue): void {
   }
 }
 
-async function loadComments(issueNumber: number): Promise<void> {
-  elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-muted); font-size: 11.5px;">Loading comments...</div>';
+const DRAWER_COMMENTS_CACHE_TTL_MS = 60_000;
+interface CachedComments {
+  timestamp: number;
+  comments: any[];
+}
+const commentsCache = new Map<string, CachedComments>();
+
+function renderCommentsList(comments: any[]): void {
+  elCommentCountBadge.textContent = String(comments.length);
+
+  if (!comments || comments.length === 0) {
+    elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">No comments yet.</div>';
+    return;
+  }
+
+  elDrawerCommentsContainer.innerHTML = comments
+    .map((c) => {
+      const author = c.user ? c.user.login : 'user';
+      const date = new Date(c.created_at).toLocaleDateString();
+      return `
+        <div class="check-item" style="flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; width: 100%; font-size: 11px; color: var(--fg-muted);">
+            <strong>@${escapeHtml(author)}</strong>
+            <span>${date}</span>
+          </div>
+          <div class="md-rendered" style="font-size: 12px; width: 100%;">${renderMarkdown(c.body)}</div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
+async function loadComments(issueNumber: number, force: boolean = false): Promise<void> {
   const commentIssue = activeIssue && activeIssue.number === issueNumber
     ? activeIssue
     : issues.find((i) => i.number === issueNumber) || null;
-  try {
-    const comments: any[] = await githubRequest('GET', `/repos/${repoForIssue(commentIssue)}/issues/${issueNumber}/comments`);
-    elCommentCountBadge.textContent = String(comments.length);
+  const repo = repoForIssue(commentIssue);
+  const cacheKey = `${(repo || '').toLowerCase()}#${issueNumber}`;
 
-    if (!comments || comments.length === 0) {
-      elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">No comments yet.</div>';
+  if (!force && commentsCache.has(cacheKey)) {
+    const cached = commentsCache.get(cacheKey)!;
+    if (Date.now() - cached.timestamp < DRAWER_COMMENTS_CACHE_TTL_MS) {
+      renderCommentsList(cached.comments);
       return;
     }
+  }
 
-    elDrawerCommentsContainer.innerHTML = comments
-      .map((c) => {
-        const author = c.user ? c.user.login : 'user';
-        const date = new Date(c.created_at).toLocaleDateString();
-        return `
-          <div class="check-item" style="flex-direction: column; gap: 4px;">
-            <div style="display: flex; justify-content: space-between; width: 100%; font-size: 11px; color: var(--fg-muted);">
-              <strong>@${escapeHtml(author)}</strong>
-              <span>${date}</span>
-            </div>
-            <div class="md-rendered" style="font-size: 12px; width: 100%;">${renderMarkdown(c.body)}</div>
-          </div>
-        `;
-      })
-      .join('');
+  elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-muted); font-size: 11.5px;">Loading comments...</div>';
+  try {
+    const comments: any[] = await githubRequestWithRetry('GET', `/repos/${repo}/issues/${issueNumber}/comments`);
+    const list = Array.isArray(comments) ? comments : [];
+    commentsCache.set(cacheKey, { timestamp: Date.now(), comments: list });
+    renderCommentsList(list);
   } catch {
     elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
   }
@@ -5633,7 +5846,7 @@ async function submitNewIssue(): Promise<void> {
   elBtnNewIssueSubmit.textContent = 'Creating...';
   try {
     addLog(`Creating issue in ${currentRepo}: "${title}"...`);
-    const created: any = await githubRequest('POST', `/repos/${currentRepo}/issues`, {
+    const created: any = await githubRequestWithRetry('POST', `/repos/${currentRepo}/issues`, {
       title,
       body,
       labels: initialLabels,
@@ -5641,8 +5854,17 @@ async function submitNewIssue(): Promise<void> {
     addLog(`Created issue #${created.number}: ${created.title}`, 'succ');
     await host.toast({ kind: 'success', message: `Created #${created.number} on GitHub` });
     closeNewIssueModal();
-    issueCache.delete(currentRepo);
-    void fetchIssues(true);
+
+    if (created && created.number) {
+      const normalizedCreated = normalizeGithubIssues([{ ...created, repo: currentRepo }]);
+      issues = mergeIssuePages(issues, normalizedCreated);
+      issueCache.set(currentRepo, { timestamp: Date.now(), issues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${currentRepo}`, { timestamp: Date.now(), issues } as any);
+      }
+      renderViews();
+      statusReconciler.schedule(issues);
+    }
   } catch (err: any) {
     addLog(`Failed to create issue: ${err.message}`, 'error');
     await host.toast({ kind: 'error', message: `Failed to create issue: ${err.message || 'Unknown error'}` });
@@ -6336,10 +6558,10 @@ function initEvents(): void {
       const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
       activeIssue.labels = updatedLabels.map((name) => ({ name }));
       issueCache.delete(priorityRepo);
-      renderDrawer(activeIssue);
+      renderDrawer(activeIssue, true);
       renderViews();
       try {
-        await githubRequest('PATCH', `/repos/${priorityRepo}/issues/${activeIssue.number}`, {
+        await githubRequestWithRetry('PATCH', `/repos/${priorityRepo}/issues/${activeIssue.number}`, {
           labels: updatedLabels,
         });
         await host.toast({ kind: 'info', message: `Updated priority on #${activeIssue.number} to ${val}` });
@@ -6360,8 +6582,8 @@ function initEvents(): void {
         const statusRepo = repoForIssue(activeIssue);
         if (statusRepo) issueCache.delete(statusRepo);
         renderViews();
-        renderDrawer(activeIssue);
-        void githubRequest('PATCH', `/repos/${statusRepo}/issues/${activeIssue.number}`, {
+        renderDrawer(activeIssue, true);
+        void githubRequestWithRetry('PATCH', `/repos/${statusRepo}/issues/${activeIssue.number}`, {
           labels: filteredLabels,
         });
       } else {
@@ -6379,10 +6601,10 @@ function initEvents(): void {
       const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
       activeIssue.labels = updatedLabels.map((name) => ({ name }));
       issueCache.delete(complexityRepo);
-      renderDrawer(activeIssue);
+      renderDrawer(activeIssue, true);
       renderViews();
       try {
-        await githubRequest('PATCH', `/repos/${complexityRepo}/issues/${activeIssue.number}`, {
+        await githubRequestWithRetry('PATCH', `/repos/${complexityRepo}/issues/${activeIssue.number}`, {
           labels: updatedLabels,
         });
         await host.toast({ kind: 'info', message: `Updated complexity on #${activeIssue.number} to ${val}` });

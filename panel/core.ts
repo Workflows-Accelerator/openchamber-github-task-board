@@ -1154,11 +1154,25 @@ export function resolveAiAlignmentPrompt({
   return template.replace(/\{repo\}/g, repo || '').replace(/\{userInput\}/g, (userInput || '').trim());
 }
 
-export function buildIssueAttachPayload(issue: Issue) {
+export function buildIssueAttachPayload(issue: Issue, repoOverride?: string) {
   const numStr = String(issue.number);
   const title = `#${issue.number} ${issue.title || ''}`.slice(0, 150);
   const url = (issue.html_url || '').slice(0, 1000);
   const text = `Context from GitHub Issue #${issue.number}: ${issue.title || ''}\n\n${issue.body || ''}`.slice(0, 15000);
+  const extractRepo = (val: string | null | undefined): string | null => {
+    if (!val || typeof val !== 'string') return null;
+    const apiMatch = /api\.github\.com\/repos\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+    if (apiMatch) return `${apiMatch[1]}/${apiMatch[2].replace(/\.git$/, '')}`;
+    const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+    if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, '')}`;
+    const cleaned = val.trim().replace(/\.git$/, '');
+    if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+    return null;
+  };
+  const repo = extractRepo(repoOverride) ||
+    extractRepo(issue.repo) ||
+    extractRepo((issue as any)?.repository_url) ||
+    extractRepo(issue.html_url);
   return {
     providerId: 'github-task-board',
     id: numStr,
@@ -1168,29 +1182,48 @@ export function buildIssueAttachPayload(issue: Issue) {
     ...(issue.user?.login ? { author: String(issue.user.login) } : {}),
     data: {
       issueNumber: issue.number,
+      ...(repo ? { repo } : {}),
     },
   };
 }
 
 export function buildMultiIssueAttachPayload(issues: Issue[], repo: string = '') {
+  const extractRepo = (val: string | null | undefined): string | null => {
+    if (!val || typeof val !== 'string') return null;
+    const apiMatch = /api\.github\.com\/repos\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+    if (apiMatch) return `${apiMatch[1]}/${apiMatch[2].replace(/\.git$/, '')}`;
+    const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+    if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, '')}`;
+    const cleaned = val.trim().replace(/\.git$/, '');
+    if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+    return null;
+  };
+
   if (!issues || issues.length === 0) {
+    const resolvedEmptyRepo = extractRepo(repo);
     return {
       providerId: 'github-task-board',
       id: 'bundle-empty',
       title: 'No Issues Selected',
       url: repo ? `https://github.com/${repo}/issues` : '',
       text: 'No issues attached.',
-      data: { issueNumbers: [], count: 0, isMulti: true },
+      data: {
+        issueNumbers: [],
+        count: 0,
+        isMulti: true,
+        ...(resolvedEmptyRepo ? { repo: resolvedEmptyRepo } : {}),
+      },
     };
   }
   if (issues.length === 1) {
-    return buildIssueAttachPayload(issues[0]);
+    return buildIssueAttachPayload(issues[0], repo);
   }
   const numbers = issues.map((i) => i.number);
   const id = `bundle-${numbers.join('-')}`.slice(0, 120);
   const titlesPreview = issues.map((i) => `#${i.number}`).join(', ');
   const title = `[${issues.length} Issues] ${titlesPreview}`.slice(0, 150);
   const primaryUrl = (issues[0]?.html_url || (repo ? `https://github.com/${repo}/issues` : '')).slice(0, 1000);
+  const resolvedRepo = extractRepo(repo) || extractRepo(issues[0]?.repo) || extractRepo((issues[0] as any)?.repository_url) || extractRepo(issues[0]?.html_url);
 
   let text = `## Attached GitHub Issues (${issues.length} items)\n`;
   if (repo) text += `Repository: ${repo}\n\n`;
@@ -1222,6 +1255,7 @@ export function buildMultiIssueAttachPayload(issues: Issue[], repo: string = '')
       issueNumbers: numbers,
       count: issues.length,
       isMulti: true,
+      ...(resolvedRepo ? { repo: resolvedRepo } : {}),
     },
   };
 }
@@ -2031,6 +2065,8 @@ export function readCachedIssueCollection(
 // Extracts owner/repo from a GitHub URL or a plain "owner/repo" string.
 export function parseRepoFullName(value: string | null | undefined): string | null {
   if (!value || typeof value !== 'string') return null;
+  const apiMatch = /api\.github\.com\/repos\/([^/\s]+)\/([^/\s#?]+)/i.exec(value);
+  if (apiMatch) return `${apiMatch[1]}/${apiMatch[2].replace(/\.git$/, '')}`;
   const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(value);
   if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, '')}`;
   const cleaned = value.trim().replace(/\.git$/, '');
@@ -2252,6 +2288,78 @@ export async function mapWithConcurrency<T, R>(
 
   await Promise.all(Array.from({ length: concurrency }, () => runner()));
   return results;
+}
+
+// ==========================================
+// Incremental Issue Synchronization & ETags
+// ==========================================
+
+export function buildIncrementalIssuesPath(
+  repo: string,
+  since: string | Date | number,
+  page: number = 1
+): string {
+  const cleanRepo = parseRepoFullName(repo) || (typeof repo === 'string' ? repo.trim() : '');
+  const sinceIso = typeof since === 'string'
+    ? since
+    : new Date(since).toISOString();
+  return `/repos/${cleanRepo}/issues?state=all&since=${encodeURIComponent(sinceIso)}&per_page=100&page=${page}`;
+}
+
+export interface IncrementalSyncResult {
+  issues: Issue[];
+  modified: boolean;
+  changedCount: number;
+  etag?: string;
+}
+
+export async function syncIncrementalRepoIssues(options: {
+  repo: string;
+  since: string | Date | number;
+  currentIssues: Issue[];
+  etag?: string;
+  requestFn: (method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', path: string, body?: any, query?: any, headers?: Record<string, string>) => Promise<any>;
+}): Promise<IncrementalSyncResult> {
+  const { repo, since, currentIssues, etag, requestFn } = options;
+  const path = buildIncrementalIssuesPath(repo, since);
+  const headers = etag ? { 'If-None-Match': etag } : undefined;
+  const res = await requestFn('GET', path, undefined, undefined, headers);
+
+  if (res && (res.notModified || res.status === 304)) {
+    return {
+      issues: currentIssues,
+      modified: false,
+      changedCount: 0,
+      etag: res.etag || etag,
+    };
+  }
+
+  const items = Array.isArray(res) ? res : (res?.items || res?.data || []);
+  const newEtag = res?.etag || (typeof res === 'object' && res ? (res as any).etag : undefined) || etag;
+
+  if (items.length === 0) {
+    return {
+      issues: currentIssues,
+      modified: false,
+      changedCount: 0,
+      etag: newEtag,
+    };
+  }
+
+  const rawChanged = normalizeGithubIssues(items);
+  const cleanRepo = parseRepoFullName(repo) || repo;
+  const changed = rawChanged.map((issue) => ({
+    ...issue,
+    repo: issue.repo || cleanRepo,
+  }));
+
+  const merged = mergeIssuePages(currentIssues, changed);
+  return {
+    issues: merged,
+    modified: true,
+    changedCount: changed.length,
+    etag: newEtag,
+  };
 }
 
 

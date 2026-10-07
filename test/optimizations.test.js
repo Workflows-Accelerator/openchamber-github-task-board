@@ -183,7 +183,7 @@ test('buildIssueAttachPayload constructs valid OpenChamber attach payload', () =
   assert.ok(payload.text.includes('Context from GitHub Issue #8'));
   assert.ok(payload.text.includes('Details about the attach chip'));
   assert.equal(payload.author, 'octocat');
-  assert.deepEqual(payload.data, { issueNumber: 8 });
+  assert.deepEqual(payload.data, { issueNumber: 8, repo: 'owner/repo' });
 });
 
 test('buildMultiIssueAttachPayload consolidates multiple issues into a single rich chip payload', () => {
