@@ -1,6 +1,6 @@
 # Board lifecycle verification index
 
-Updated: 2026-10-08. Status: INCOMPLETE — human click-through verdicts received: item 1 (distinct icons) PASS, items 2/3/4 BOUNCED (friendly titles, empty queues, repo picker) → repair-1 running; item 5 (regression sweep) not yet checked. D12 passed L4 + L4-2 and LANDED on served feat (c2fb739); live served-panel CSP/304 proof in progress (L3 pending, likely halting for the user's origins-approval click). Historical in-flight statements below are superseded by later sections and mission.md receipts. No issue closure or push authorized.
+Updated: 2026-10-08. Status: SHIPPED & PUBLISHED v1.2.0 — All click-through fixes (D14-D16) and community PR #25 page-size fallback ported and published to GitHub master (caf3700) via clean fast-forward. Extension bumped to 1.2.0. Full test suite: 318/318 passing, 0 typecheck errors, bundle byte-parity clean. D12 direct-origins caching active in served build (L3 Branch B observed; final live 304 capture awaits human origins approval click in Settings -> Extensions). Historical in-flight statements below are superseded by later sections and mission.md receipts. No issues closed by agents.
 
 ## Batch 1 — contract, three views, voice All Projects fix, lifecycle skill
 
