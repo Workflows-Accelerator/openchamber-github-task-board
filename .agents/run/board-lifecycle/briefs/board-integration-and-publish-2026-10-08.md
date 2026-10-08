@@ -6,7 +6,7 @@ context:
 - Root checkout /workspace/extensions/github-task-board is on `feat/v2-binding-and-ratelimit` (the served preview branch).
 - Both branches passed independent hostile reviews (L4 PROCEED):
   - `fix/clickthrough-titles-queues-picker` @ 3115d45 (D14, D15, D16, SV-01, F-01 lookarounds; 297 tests = 289 + 11)
-  - `fix/issue-page-size-fallback` @ 001791a (PR #25 port + F-01/F-02, 5/5 fetch paths, package.json 1.2.0, README update docs, attribution; 304 tests = 289 + 15)
+  - `fix/issue-page-size-fallback` @ 0010ce9 (PR #25 port + F-01/F-02, 5/5 fetch paths, package.json 1.2.0, README update docs, attribution; 304 tests = 289 + 15)
 - Baseline before either branch was 289 tests. Combined expectation is 315 tests (289 + 11 + 15 = 315).
 - Master was verified: 0 behind / 23 ahead of origin/master; all 70 remote commits are ancestors. A plain `git push origin master` will cleanly fast-forward.
 - The manager's shell is policy-denied `git merge` and `git push`; you are the sanctioned executor.
