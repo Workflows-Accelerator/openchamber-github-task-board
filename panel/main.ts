@@ -7245,15 +7245,13 @@ host.onSession(async (rawSess) => {
 
     if (!isManualRepoOverride) {
       const sessDir = sess.directory || sess.location?.directory;
-      if (sessDir && sessDir !== currentDirectory) {
+      if (sessDir) {
         currentDirectory = sessDir;
-        await autoResolveRepoForActiveContext(sess);
-        return;
       }
       if (Array.isArray(sess.items) && sess.items.length > 0) {
         for (const it of sess.items) {
           const itemRepo = getSessionIssueRepo(it) || it.data?.repo || (typeof it.url === 'string' ? parseRepoFullName(it.url) : null);
-          if (itemRepo && itemRepo !== currentRepo && !isAllProjectsMode) {
+          if (itemRepo && itemRepo !== currentRepo) {
             setRepository(itemRepo, `active session item: ${sess.title || sess.id}`);
             return;
           }

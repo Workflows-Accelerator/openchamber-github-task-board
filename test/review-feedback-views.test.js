@@ -372,3 +372,20 @@ test('F-01: Custom repo input marks manual override, survives background events,
   assert.equal(app.getState().isManualRepoOverride, false, 'isManualRepoOverride must reset to false on session change');
   assert.equal(app.getState().currentRepo, 'org/session-2-repo', 'Repository must reset to new session repo on session change');
 });
+
+test('F-02: Switching sessions while in All Projects mode resolves the new session own repo from sess.items', async () => {
+  const { app, emitSession } = createTestApp();
+  // Start on session 1
+  await emitSession({ id: 'ses_1', title: 'Session 1', items: [{ id: '1', data: { repo: 'org/repo-1' } }] });
+  assert.equal(app.getState().currentRepo, 'org/repo-1');
+
+  // Put into All Projects mode
+  app.setState({ isAllProjectsMode: true, currentRepo: '__all_projects__' });
+  assert.equal(app.getState().isAllProjectsMode, true);
+
+  // Active session identity changes to ses_2 with its own item repo
+  await emitSession({ id: 'ses_2', title: 'Session 2', items: [{ id: '2', data: { repo: 'org/session-2-repo' } }] });
+
+  // In pre-fix code, !isAllProjectsMode guard prevented resolving org/session-2-repo from sess.items
+  assert.equal(app.getState().currentRepo, 'org/session-2-repo', 'Active session items repository must take precedence on session change even when in All Projects mode');
+});
