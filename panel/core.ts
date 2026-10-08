@@ -2417,7 +2417,23 @@ export type IssuePageRequest = (
 
 // A cut-off answer fails to parse; a newer host refuses it by code.
 export function isOversizedAnswer(err: any): boolean {
-  return err instanceof SyntaxError || err?.code === 'RESPONSE_TOO_LARGE';
+  if (!err) return false;
+  if (err.code === 'RESPONSE_TOO_LARGE' || (typeof err.message === 'string' && err.message.includes('RESPONSE_TOO_LARGE'))) {
+    return true;
+  }
+  if (err instanceof SyntaxError || err.name === 'SyntaxError') {
+    const msg = typeof err.message === 'string' ? err.message : '';
+    if (msg.includes('position 0') || msg.includes("token '<'") || msg.includes('token <')) {
+      return false;
+    }
+    return (
+      msg.includes('position 256000') ||
+      msg.includes('Unexpected end of JSON') ||
+      msg.includes('Unterminated string') ||
+      msg.includes('Unexpected end of data')
+    );
+  }
+  return false;
 }
 
 // One page of a repo's issues at the page size `pageSizes` holds for that
@@ -2431,18 +2447,27 @@ export async function fetchIssuePage(
   onShrink?: (pageSize: number) => void,
   headers?: Record<string, string>
 ): Promise<{ items: any[]; pageSize: number; raw?: any }> {
-  const read = async (pageSize: number) => {
-    const raw = await request('GET', `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`, undefined, undefined, headers);
+  const read = async (pageSize: number, reqHeaders?: Record<string, string>) => {
+    const raw = await request('GET', `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`, undefined, undefined, reqHeaders);
     return { items: Array.isArray(raw) ? raw : (raw?.items || []), pageSize, raw };
   };
   const pageSize = pageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
   try {
-    return await read(pageSize);
+    return await read(pageSize, headers);
   } catch (err: any) {
     if (page !== 1 || pageSize === SMALL_ISSUE_PAGE_SIZE || !isOversizedAnswer(err)) throw err;
     pageSizes.set(repo, SMALL_ISSUE_PAGE_SIZE);
     onShrink?.(SMALL_ISSUE_PAGE_SIZE);
-    return read(SMALL_ISSUE_PAGE_SIZE);
+    let retryHeaders: Record<string, string> | undefined;
+    if (headers) {
+      retryHeaders = { ...headers };
+      delete retryHeaders['If-None-Match'];
+      delete retryHeaders['if-none-match'];
+      if (Object.keys(retryHeaders).length === 0) {
+        retryHeaders = undefined;
+      }
+    }
+    return read(SMALL_ISSUE_PAGE_SIZE, retryHeaders);
   }
 }
 
@@ -2502,9 +2527,10 @@ export async function syncIncrementalRepoIssues(options: {
         pageSize = SMALL_ISSUE_PAGE_SIZE;
         pageSizes?.set(cleanRepo, SMALL_ISSUE_PAGE_SIZE);
         onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+        newEtag = undefined;
         maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
         path = buildIncrementalIssuesPath(cleanRepo, since, page, pageSize);
-        res = await requestFn('GET', path, undefined, undefined, headers);
+        res = await requestFn('GET', path, undefined, undefined, undefined);
       } else {
         throw err;
       }

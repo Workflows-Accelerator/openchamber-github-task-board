@@ -1421,7 +1421,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       issueListEtagCache.set(page1Path, page1Raw.etag);
     }
     if (page1Items.length > 0) {
-      setCachedPage(page1Path, page1Items, page1Raw?.etag || page1Etag);
+      setCachedPage(page1Path, page1Items, page1Raw?.etag || (pageSize === initialPageSize ? page1Etag : undefined));
     }
 
     const page1Issues = normalizeGithubIssues(page1Items);
@@ -1511,7 +1511,7 @@ async function fetchAllRepoIssuePages(repo: string, epoch: number, force: boolea
     issueListEtagCache.set(page1Path, firstRaw.etag);
   }
   if (firstItems.length > 0) {
-    setCachedPage(page1Path, firstItems, firstRaw?.etag || page1Etag);
+    setCachedPage(page1Path, firstItems, firstRaw?.etag || (pageSize === initialPageSize ? page1Etag : undefined));
   }
 
   let repoIssues = normalizeGithubIssues(firstItems);

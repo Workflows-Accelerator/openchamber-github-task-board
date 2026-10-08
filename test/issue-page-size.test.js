@@ -77,7 +77,16 @@ test('other failures, and oversized later pages, are not retried', async () => {
 
 test('isOversizedAnswer correctly classifies SyntaxError and RESPONSE_TOO_LARGE', () => {
   assert.equal(isOversizedAnswer(new SyntaxError('Unexpected token in JSON at position 256000')), true);
+  assert.equal(isOversizedAnswer(new SyntaxError('Unterminated string in JSON at position 256000')), true);
+  assert.equal(isOversizedAnswer(new SyntaxError('Unterminated string in JSON at position 17 (line 1 column 18)')), true);
+  assert.equal(isOversizedAnswer(new SyntaxError('Unexpected end of JSON input')), true);
   assert.equal(isOversizedAnswer({ code: 'RESPONSE_TOO_LARGE' }), true);
+  assert.equal(isOversizedAnswer(new Error('RESPONSE_TOO_LARGE: maximum size exceeded')), true);
+
+  // F-01: HTML error pages and non-truncation syntax errors must return false
+  assert.equal(isOversizedAnswer(new SyntaxError('Unexpected token < in JSON at position 0')), false);
+  assert.equal(isOversizedAnswer(new SyntaxError('Unexpected token \'<\', "<!DOCTYPE "... is not valid JSON')), false);
+  assert.equal(isOversizedAnswer(new SyntaxError('Unexpected number in JSON at position 5')), false);
   assert.equal(isOversizedAnswer(new Error('Not Found')), false);
   assert.equal(isOversizedAnswer({ status: 500 }), false);
   assert.equal(isOversizedAnswer(null), false);
@@ -324,16 +333,68 @@ test('boundary conditions: 0 issues, exactly 20 issues, and 21 issues with SMALL
   assert.equal(res21.items.length, 1);
 });
 
-test('non-truncation SyntaxError on page 1 retries once at 20 and then throws if still failing', async () => {
+test('F-01: HTML error body or non-truncation SyntaxError on page 1 does not retry and leaves page size at 100', async () => {
   const sizes = new Map();
   let attempts = 0;
-  const syntaxErrorHost = async () => {
+  const htmlErrorHost = async () => {
     attempts++;
     throw new SyntaxError('Unexpected token < in JSON at position 0');
   };
-  await assert.rejects(fetchIssuePage('owner/syntax-err', 1, syntaxErrorHost, sizes), SyntaxError);
-  assert.equal(attempts, 2, 'Must attempt at 100 and then once at 20 before throwing');
-  assert.equal(sizes.get('owner/syntax-err'), 20);
+  await assert.rejects(fetchIssuePage('owner/html-err', 1, htmlErrorHost, sizes), SyntaxError);
+  assert.equal(attempts, 1, 'Must NOT retry on non-truncation SyntaxError (HTML 502 error body)');
+  assert.equal(sizes.has('owner/html-err'), false, 'Must NOT shrink page size on non-truncation SyntaxError');
+});
+
+test('F-02: fetchIssuePage strips If-None-Match header when falling back to SMALL_ISSUE_PAGE_SIZE', async () => {
+  const sizes = new Map();
+  const headersSeen = [];
+  const request = async (_method, path, _body, _query, headers) => {
+    headersSeen.push({ path, headers });
+    if (perPage(path) > 20) {
+      throw new SyntaxError('Unterminated string in JSON at position 256000');
+    }
+    return issues(20);
+  };
+
+  const initialHeaders = {
+    'If-None-Match': '"etag-100-items"',
+    'Authorization': 'token test-pat',
+  };
+
+  const result = await fetchIssuePage('owner/repo', 1, request, sizes, undefined, initialHeaders);
+  assert.equal(result.pageSize, 20);
+  assert.equal(headersSeen.length, 2);
+  assert.equal(headersSeen[0].headers?.['If-None-Match'], '"etag-100-items"');
+  assert.equal(headersSeen[1].headers?.['If-None-Match'], undefined, 'Must strip If-None-Match on retry at smaller page size');
+  assert.equal(headersSeen[1].headers?.['Authorization'], 'token test-pat', 'Must preserve non-conditional headers');
+});
+
+test('F-02: syncIncrementalRepoIssues strips If-None-Match header when retrying page 1 at SMALL_ISSUE_PAGE_SIZE', async () => {
+  const sizes = new Map();
+  const headersSeen = [];
+  const mockRequestFn = async (_method, path, _body, _query, headers) => {
+    headersSeen.push({ path, headers });
+    if (perPage(path) > 20) {
+      throw new SyntaxError('Unterminated string in JSON at position 256000');
+    }
+    return [
+      { number: 1, title: 'Issue 1', state: 'open', updated_at: '2026-10-08T12:00:00Z' },
+    ];
+  };
+
+  const result = await syncIncrementalRepoIssues({
+    repo: 'owner/etag-repo',
+    since: '2026-10-08T10:00:00Z',
+    currentIssues: [],
+    etag: '"etag-100-items"',
+    pageSizes: sizes,
+    requestFn: mockRequestFn,
+  });
+
+  assert.equal(result.modified, true);
+  assert.equal(headersSeen.length, 2);
+  assert.equal(headersSeen[0].headers?.['If-None-Match'], '"etag-100-items"');
+  assert.equal(headersSeen[1].headers?.['If-None-Match'], undefined, 'Must strip If-None-Match on retry at smaller page size in syncIncrementalRepoIssues');
 });
 
 

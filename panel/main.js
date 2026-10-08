@@ -5626,21 +5626,41 @@ Blocked by ${blockerRef}`;
   var SMALL_ISSUE_PAGE_SIZE = 20;
   var MAX_ISSUES_PER_REPO = 1e3;
   function isOversizedAnswer(err) {
-    return err instanceof SyntaxError || err?.code === "RESPONSE_TOO_LARGE";
+    if (!err) return false;
+    if (err.code === "RESPONSE_TOO_LARGE" || typeof err.message === "string" && err.message.includes("RESPONSE_TOO_LARGE")) {
+      return true;
+    }
+    if (err instanceof SyntaxError || err.name === "SyntaxError") {
+      const msg = typeof err.message === "string" ? err.message : "";
+      if (msg.includes("position 0") || msg.includes("token '<'") || msg.includes("token <")) {
+        return false;
+      }
+      return msg.includes("position 256000") || msg.includes("Unexpected end of JSON") || msg.includes("Unterminated string") || msg.includes("Unexpected end of data");
+    }
+    return false;
   }
   async function fetchIssuePage(repo, page, request, pageSizes, onShrink, headers) {
-    const read = async (pageSize2) => {
-      const raw = await request("GET", `/repos/${repo}/issues?state=all&per_page=${pageSize2}&page=${page}`, void 0, void 0, headers);
+    const read = async (pageSize2, reqHeaders) => {
+      const raw = await request("GET", `/repos/${repo}/issues?state=all&per_page=${pageSize2}&page=${page}`, void 0, void 0, reqHeaders);
       return { items: Array.isArray(raw) ? raw : raw?.items || [], pageSize: pageSize2, raw };
     };
     const pageSize = pageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
     try {
-      return await read(pageSize);
+      return await read(pageSize, headers);
     } catch (err) {
       if (page !== 1 || pageSize === SMALL_ISSUE_PAGE_SIZE || !isOversizedAnswer(err)) throw err;
       pageSizes.set(repo, SMALL_ISSUE_PAGE_SIZE);
       onShrink?.(SMALL_ISSUE_PAGE_SIZE);
-      return read(SMALL_ISSUE_PAGE_SIZE);
+      let retryHeaders;
+      if (headers) {
+        retryHeaders = { ...headers };
+        delete retryHeaders["If-None-Match"];
+        delete retryHeaders["if-none-match"];
+        if (Object.keys(retryHeaders).length === 0) {
+          retryHeaders = void 0;
+        }
+      }
+      return read(SMALL_ISSUE_PAGE_SIZE, retryHeaders);
     }
   }
   function buildIncrementalIssuesPath(repo, since, page = 1, pageSize = FULL_ISSUE_PAGE_SIZE) {
@@ -5668,9 +5688,10 @@ Blocked by ${blockerRef}`;
           pageSize = SMALL_ISSUE_PAGE_SIZE;
           pageSizes?.set(cleanRepo, SMALL_ISSUE_PAGE_SIZE);
           onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+          newEtag = void 0;
           maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
           path = buildIncrementalIssuesPath(cleanRepo, since, page, pageSize);
-          res = await requestFn("GET", path, void 0, void 0, headers);
+          res = await requestFn("GET", path, void 0, void 0, void 0);
         } else {
           throw err;
         }
@@ -6716,7 +6737,7 @@ Blocked by ${blockerRef}`;
         issueListEtagCache.set(page1Path, page1Raw.etag);
       }
       if (page1Items.length > 0) {
-        setCachedPage(page1Path, page1Items, page1Raw?.etag || page1Etag);
+        setCachedPage(page1Path, page1Items, page1Raw?.etag || (pageSize === initialPageSize ? page1Etag : void 0));
       }
       const page1Issues = normalizeGithubIssues(page1Items);
       issues = issues.length > 0 ? mergeIssuePages(issues, page1Issues) : page1Issues;
@@ -6792,7 +6813,7 @@ Blocked by ${blockerRef}`;
       issueListEtagCache.set(page1Path, firstRaw.etag);
     }
     if (firstItems.length > 0) {
-      setCachedPage(page1Path, firstItems, firstRaw?.etag || page1Etag);
+      setCachedPage(page1Path, firstItems, firstRaw?.etag || (pageSize === initialPageSize ? page1Etag : void 0));
     }
     let repoIssues = normalizeGithubIssues(firstItems);
     if (firstItems.length < pageSize) return repoIssues;
