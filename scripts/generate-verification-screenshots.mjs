@@ -325,28 +325,95 @@ window.__MOCK_ISSUES__ = ${JSON.stringify(mockIssues)};
 
   // Automation runner after panel boots
   window.addEventListener('load', () => {
-    setTimeout(() => {
-      const mode = '${params.mode || ''}';
-      const popover = '${params.popover || ''}';
+    const mode = '${params.mode || ''}';
+    const popover = '${params.popover || ''}';
+    const empty = '${params.empty || ''}';
 
-      if (mode === 'human') {
-        document.getElementById('btnViewHuman')?.click();
+    let interactionAttempted = false;
+
+    const pollInterval = setInterval(() => {
+      // 1. Perform interaction once the trigger element is present
+      if (!interactionAttempted) {
+        if (mode === 'human') {
+          const btn = document.getElementById('btnViewHuman');
+          if (btn) {
+            btn.click();
+            interactionAttempted = true;
+          }
+        } else if (mode === 'all-tasks') {
+          const btn = document.getElementById('btnViewAllTasks');
+          if (btn) {
+            btn.click();
+            interactionAttempted = true;
+          }
+        } else if (mode === 'questions') {
+          const btn = document.getElementById('btnViewQuestions');
+          if (btn) {
+            btn.click();
+            interactionAttempted = true;
+          }
+        } else if (mode === 'list') {
+          const btn = document.getElementById('btnViewList');
+          if (btn) {
+            btn.click();
+            interactionAttempted = true;
+          }
+        } else if (popover === 'repo') {
+          const btn = document.getElementById('btnRepoSelect');
+          if (btn) {
+            btn.click();
+            const vc = document.querySelector('.view-container');
+            if (vc) vc.style.visibility = 'hidden';
+            interactionAttempted = true;
+          }
+        } else {
+          interactionAttempted = true;
+        }
+      }
+
+      // 2. Check DOM readiness according to the expected target container
+      let isReady = false;
+      if (empty) {
+        const box = document.querySelector('.empty-box');
+        if (box) {
+          if (empty === 'inaccessible' && box.classList.contains('empty-state-inaccessible')) isReady = true;
+          else if (empty === 'failed' && box.classList.contains('empty-state-failed')) isReady = true;
+          else if (empty === 'empty' && box.classList.contains('empty-state-empty')) isReady = true;
+          else if (!['inaccessible', 'failed', 'empty'].includes(empty)) isReady = true;
+        }
+      } else if (popover === 'repo') {
+        const popoverEl = document.getElementById('repoPopover');
+        const currentSessionOpt = document.querySelector('.current-session-option');
+        if (popoverEl && popoverEl.classList.contains('active') && currentSessionOpt) {
+          isReady = true;
+        }
       } else if (mode === 'all-tasks') {
-        document.getElementById('btnViewAllTasks')?.click();
+        const container = document.getElementById('allTasksViewContainer');
+        if (container && container.querySelector('.all-task-card') && !container.textContent.includes('Connecting repo...')) {
+          isReady = true;
+        }
+      } else if (mode === 'human') {
+        const container = document.getElementById('humanViewContainer');
+        if (container && container.querySelector('.human-issue-card') && !container.textContent.includes('Connecting repo...')) {
+          isReady = true;
+        }
       } else if (mode === 'questions') {
-        document.getElementById('btnViewQuestions')?.click();
-      } else if (mode === 'list') {
-        document.getElementById('btnViewList')?.click();
+        const container = document.getElementById('questionsViewContainer');
+        if (container && container.querySelector('.questions-issue-card') && !container.textContent.includes('Connecting repo...')) {
+          isReady = true;
+        }
+      } else {
+        const anyCard = document.querySelector('.all-task-card, .human-issue-card, .questions-issue-card, .issue-card');
+        if (anyCard && !document.body.textContent.includes('Connecting repo...')) {
+          isReady = true;
+        }
       }
 
-      if (popover === 'repo') {
-        const btn = document.getElementById('btnRepoSelect');
-        if (btn) btn.click();
-        const vc = document.querySelector('.view-container');
-        if (vc) vc.style.visibility = 'hidden';
+      if (isReady && interactionAttempted) {
+        document.body.dataset.readyForCapture = 'true';
+        clearInterval(pollInterval);
       }
-      document.body.dataset.readyForCapture = 'true';
-    }, 400);
+    }, 50);
   });
 })();
 </script>
@@ -391,36 +458,43 @@ server.listen(PORT, '127.0.0.1', async () => {
     {
       name: '01-all-tasks-view.png',
       url: `http://127.0.0.1:${PORT}/?mode=all-tasks`,
+      selector: 'body[data-ready-for-capture="true"] #allTasksViewContainer .all-task-card',
       desc: 'All Tasks view with friendly titles, (No friendly title) placeholder on #22, and distinct checklist icon in toolbar',
     },
     {
       name: '02-human-tasks-view.png',
       url: `http://127.0.0.1:${PORT}/?mode=human`,
+      selector: 'body[data-ready-for-capture="true"] #humanViewContainer .human-issue-card',
       desc: 'Human Tasks view populated with checklist items from issues #21 and #23, source badges, and session binding',
     },
     {
       name: '03-questions-view.png',
       url: `http://127.0.0.1:${PORT}/?mode=questions`,
+      selector: 'body[data-ready-for-capture="true"] #questionsViewContainer .questions-issue-card',
       desc: 'Questions view populated with open questions extracted from issues #21, #23, and #24',
     },
     {
       name: '04-repo-selector-popover.png',
       url: `http://127.0.0.1:${PORT}/?popover=repo`,
+      selector: 'body[data-ready-for-capture="true"] #repoPopover.active .current-session-option',
       desc: 'Repository dropdown popover open showing Current session [default] anchor (D13), All Projects, and workspace repos',
     },
     {
       name: '05-empty-state-inaccessible.png',
       url: `http://127.0.0.1:${PORT}/?empty=inaccessible`,
+      selector: 'body[data-ready-for-capture="true"] .empty-box.empty-state-inaccessible',
       desc: 'Empty state: Inaccessible repository with lock icon and warning styling',
     },
     {
       name: '06-empty-state-failed.png',
       url: `http://127.0.0.1:${PORT}/?empty=failed`,
+      selector: 'body[data-ready-for-capture="true"] .empty-box.empty-state-failed',
       desc: 'Empty state: Failed repository with alert icon and error styling',
     },
     {
       name: '07-empty-state-empty.png',
       url: `http://127.0.0.1:${PORT}/?empty=empty`,
+      selector: 'body[data-ready-for-capture="true"] .empty-box.empty-state-empty',
       desc: 'Empty state: Zero issues repository with inbox tray icon',
     },
   ];
@@ -429,7 +503,7 @@ server.listen(PORT, '127.0.0.1', async () => {
     for (const cap of captures) {
       const outPath = path.join(SCREENSHOTS_DIR, cap.name);
       console.log(`Capturing ${cap.name}...`);
-      const cmd = `obscura fetch "${cap.url}" --allow-private-network --wait 3 -s "${outPath}"`;
+      const cmd = `obscura fetch "${cap.url}" --allow-private-network --selector "${cap.selector}" -s "${outPath}"`;
       const { stdout, stderr } = await execAsync(cmd);
       if (stdout) console.log(stdout.trim());
       if (stderr) console.error(stderr.trim());
