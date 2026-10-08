@@ -367,3 +367,86 @@ test('SV-01: Switching session while in All Projects mode exits to that session 
   assert.equal(app.getState().isManualRepoOverride, false, 'must reset manual repo override');
   assert.equal(app.getState().currentRepo, 'org/session-repo', 'must follow session repository');
 });
+
+// ==========================================
+// 6. Finding F-01 (LOW): Link Parsing & Security Regressions
+// ==========================================
+test('F-01: formatTaskTextWithLinks does not wrap markdown link labels with URLs or shorthand in nested <a> tags', () => {
+  // Label containing GitHub issue URL
+  const urlInLabel = '[https://github.com/owner/repo/issues/1](https://example.com)';
+  const htmlUrlInLabel = formatTaskTextWithLinks(urlInLabel, 'other/repo');
+  assert.equal(
+    htmlUrlInLabel,
+    '<a href="https://example.com" target="_blank" rel="noopener noreferrer" class="task-link">https://github.com/owner/repo/issues/1</a>',
+    'markdown link label with URL must not produce nested <a>'
+  );
+  assert.equal((htmlUrlInLabel.match(/<a\b/g) || []).length, 1, 'must contain exactly one <a> tag');
+
+  // Label containing cross-repo issue shorthand
+  const shorthandInLabel = '[owner/repo#1](https://example.com)';
+  const htmlShorthand = formatTaskTextWithLinks(shorthandInLabel, 'other/repo');
+  assert.equal(
+    htmlShorthand,
+    '<a href="https://example.com" target="_blank" rel="noopener noreferrer" class="task-link">owner/repo#1</a>',
+    'markdown link label with shorthand must not produce nested <a>'
+  );
+  assert.equal((htmlShorthand.match(/<a\b/g) || []).length, 1, 'must contain exactly one <a> tag');
+
+  // Label containing URL with surrounding text
+  const complexLabel = '[See https://github.com/owner/repo/issues/1 for info](https://example.com)';
+  const htmlComplex = formatTaskTextWithLinks(complexLabel, 'other/repo');
+  assert.equal(
+    htmlComplex,
+    '<a href="https://example.com" target="_blank" rel="noopener noreferrer" class="task-link">See https://github.com/owner/repo/issues/1 for info</a>',
+    'complex markdown link label with URL must not produce nested <a>'
+  );
+  assert.equal((htmlComplex.match(/<a\b/g) || []).length, 1, 'must contain exactly one <a> tag');
+});
+
+test('F-01: formatTaskTextWithLinks links multiple adjacent issue URLs separated by whitespace independently', () => {
+  const adjacent = 'https://github.com/owner/repo/issues/1 https://github.com/owner/repo/issues/2';
+  const htmlAdjacent = formatTaskTextWithLinks(adjacent);
+  assert.ok(
+    htmlAdjacent.includes('<a href="https://github.com/owner/repo/issues/1" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">https://github.com/owner/repo/issues/1</a>'),
+    'first adjacent URL must be converted to link'
+  );
+  assert.ok(
+    htmlAdjacent.includes('<a href="https://github.com/owner/repo/issues/2" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">https://github.com/owner/repo/issues/2</a>'),
+    'second adjacent URL must be converted to link'
+  );
+  assert.equal((htmlAdjacent.match(/<a\b/g) || []).length, 2, 'must link both adjacent URLs');
+
+  // Whitespace variants: newline and tab
+  const wsAdjacent = 'https://github.com/owner/repo/issues/1\nhttps://github.com/owner/repo/issues/2\thttps://github.com/owner/repo/issues/3';
+  const htmlWs = formatTaskTextWithLinks(wsAdjacent);
+  assert.equal((htmlWs.match(/<a\b/g) || []).length, 3, 'must link all 3 whitespace-separated URLs');
+});
+
+test('F-01: formatTaskTextWithLinks bare URL links correctly and preserves security invariants', () => {
+  // Bare issue URL links correctly
+  const bare = 'Check issue https://github.com/owner/repo/issues/42 today.';
+  const htmlBare = formatTaskTextWithLinks(bare);
+  assert.ok(
+    htmlBare.includes('<a href="https://github.com/owner/repo/issues/42" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">https://github.com/owner/repo/issues/42</a>'),
+    'bare issue URL must link'
+  );
+
+  // javascript: scheme is blocked
+  const jsLink = '[click](javascript:alert(1))';
+  const htmlJs = formatTaskTextWithLinks(jsLink);
+  assert.ok(!htmlJs.includes('<a href="javascript:'), 'javascript: scheme must be blocked');
+  assert.equal(htmlJs, '[click](javascript:alert(1))', 'javascript scheme link remains unlinked');
+
+  // quote breakout is blocked
+  const quoteBreakout = '[click](https://evil.com/x"onmouseover="alert(1))';
+  const htmlQuote = formatTaskTextWithLinks(quoteBreakout);
+  assert.ok(!htmlQuote.includes(' onmouseover='), 'attribute breakout must not create unescaped onmouseover attribute');
+  assert.ok(!htmlQuote.includes('" onmouseover="'), 'attribute breakout must not break out of href');
+  assert.ok(htmlQuote.includes('&quot;onmouseover=&quot;'), 'quotes must be entity-escaped in attribute');
+
+  // HTML entities are escaped before linking
+  const scriptTag = '<script>alert("xss")</script>';
+  const htmlScript = formatTaskTextWithLinks(scriptTag);
+  assert.ok(!htmlScript.includes('<script>'), 'raw script tags must not be emitted');
+  assert.equal(htmlScript, '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;', 'html entities must be escaped');
+});

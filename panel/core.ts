@@ -182,12 +182,12 @@ export function formatTaskTextWithLinks(text: string | null | undefined, current
   });
 
   // 2. Convert full GitHub issue URLs: https://github.com/:owner/:repo/issues/:num
-  escaped = escaped.replace(/(^|[^"'])(https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/issues\/\d+)([^"']|$)/g, (_match, prefix, url, suffix) => {
-    return `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">${url}</a>${suffix}`;
+  escaped = escaped.replace(/(?<![\w/])(https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/issues\/\d+)(?![^<]*<\/a>)(?![/\w])/g, (_match, url) => {
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">${url}</a>`;
   });
 
   // 3. Convert cross-repo issue references: owner/repo#123
-  escaped = escaped.replace(/\b([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)#(\d+)\b/g, (match, repo, num) => {
+  escaped = escaped.replace(/(?<![\w/])([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)#(\d+)\b(?![^<]*<\/a>)/g, (match, repo, num) => {
     if (currentRepo && repo.toLowerCase() === currentRepo.toLowerCase()) {
       return match;
     }
