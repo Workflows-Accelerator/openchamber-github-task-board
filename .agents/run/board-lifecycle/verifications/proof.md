@@ -100,3 +100,21 @@ Status: L4 PASSED (PROCEED-WITH-CONDITIONS, 1 LOW finding). Worktree `.worktrees
 - **L5 Human Validation:** AWAITING BATCH / HUMAN (Cannot be waived because capability grant introduces user-facing permission prompt in OpenChamber Settings -> Extensions).
 - **Secret Wall Compliance:** PASS (Zero tokens, prefixes, credentials, or sensitive headers in diffs, tests, or logs).
 
+## D17 Capability Declaration & Repo Scan Fallback (v1.2.1)
+
+- **Target:** Branch `fix/capability-and-repo-scan` (commit `4932da3`, base `caf3700`).
+- **Verdicts:** Spec: `PASS` | Quality: `APPROVED` | Operational Recommendation: `PROCEED`.
+- **Root Cause & Diagnosis:**
+  1. OpenChamber SDK parser (`openChamberManifestSchema`) requires declared capabilities under `openchamber.contributes.capabilities`. Having them only at root `openchamber.capabilities` caused OpenChamber to treat capabilities as empty/undefined, triggering `NOT_GRANTED: The user has not allowed this capability for the extension` when calling `host.listProjects()` (which is gated on `"sessions"`).
+  2. In `panel/main.ts`, if `host.listProjects()` threw, `autoResolveRepoForActiveContext()` was skipped, and even if called with empty `allProjects`, `targetProject` was null, leading to early abort before inspecting `currentDirectory` git config.
+- **Changes Applied:**
+  1. `package.json`: Version bumped to `1.2.1`. Added `"capabilities": ["sessions", "prompt", "files"]` under `openchamber.contributes`.
+  2. `panel/main.ts`: In `discoverWorkspaceRepositories()`, catch block now logs warning and calls `renderRepoPopoverList()` and `autoResolveRepoForActiveContext()`. In `autoResolveRepoForActiveContext()`, checks `currentDirectory` git config and previous storage even when `targetProject` is null.
+  3. `panel/main.js`: Rebuilt and byte-parity verified.
+  4. `test/repo-detector.test.js`: Added manifest capability validation test using `parseManifest` and fallback repository resolution test simulating `host.listProjects()` failure.
+- **L0 Static:** PASS (`npm run typecheck` clean, 0 errors; bundle rebuilt).
+- **L1 Unit / Regression:** PASS (`node --test test/*.test.js` exit 0, 320/320 tests passed, 0 failures, 0 flakes).
+- **L4 Hostile Review:** PASS. Error handling verified resilient; zero token or secret exposure.
+- **L5 Human Validation:** Awaiting batch review / user approval for master merge and push.
+
+

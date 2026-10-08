@@ -104,6 +104,13 @@ In All Projects mode, Human Tasks / Questions (and the to-do views generally) gr
 show related issues in other repositories as plain full-URL links (consistent with D9). User values the
 "everything waiting on me" view; the current empty "nothing to show" state is a load failure, not truth.
 
+## D17. OpenChamber Manifest Capabilities & Repo Scan Fallback (aligned 2026-10-08)
+- In `package.json`, OpenChamber expects declared capabilities under `openchamber.contributes.capabilities` (`["sessions", "prompt", "files"]`). Placing them only under root `openchamber.capabilities` leaves `contributes.capabilities` undefined, causing OpenChamber to deny `sessions` capability required for `host.listProjects()` (wire message `workspace-read`) with error: `Project scan error: The user has not allowed this capability for the extension.`
+- Note: `"projects"` is NOT a valid capability in OpenChamber SDK (`DECLARED_GUEST_CAPABILITIES` only permits `"prompt"`, `"sessions"`, `"files"`, `"model"`). Manifest validation rejects `"projects"` with `invalid-capabilities`. `host.listProjects()` is strictly gated by `"sessions"`.
+- Resilient fallback in `panel/main.ts`: If `host.listProjects()` fails (capability not granted, guest unauthorized, host rejection), `discoverWorkspaceRepositories()` must catch gracefully and still proceed to `renderRepoPopoverList()` and `autoResolveRepoForActiveContext()`.
+- Direct context discovery in `autoResolveRepoForActiveContext()`: When `targetProject` is null (empty `allProjects`), do NOT abort with "Select Repo" before checking: (1) `inspectGitConfigInDir(currentDirectory)` directly; (2) active session items (`getSessionLinkedRepo(activeSession)`); (3) stored custom/previous repo.
+- Version bump to 1.2.1 for the fix release.
+
 ## Gate ledger correction (2026-10-07)
 - Batch 1 contract/views/status and voice crash local integration landed, L4 passed as indexed in verifications/proof.md; human review pending, not Done. Older RUNNING rows above are historical.
 - Batch 2 voice cd6ab18 and board 656cc4f: both independent hostile reviews HALT. No integration/acceptance; repair 1 dispatched into isolated worktrees. Worker/model/session details: status-l4-halts-2026-10-07.md.
