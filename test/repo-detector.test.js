@@ -152,7 +152,7 @@ test('fallback repository resolution discovers repo from currentDirectory when w
         }
         throw new Error('File not found');
       }
-      return { kind: 'projects', state: 'synced', projects: [] };
+      return { status: 200, body: '[]' };
     },
   });
 
@@ -167,14 +167,14 @@ test('fallback repository resolution discovers repo from currentDirectory when w
   });
 
   try {
-    // Wait for ready message and initial scan cycle to finish
-    await new Promise((r) => setTimeout(r, 20));
+    // Avoid background fetchIssues network attempt in test
+    app.fetchIssues = async () => {};
 
     // Trigger directory change to /workspace/fallback-dir where git config exists
     await emitDirectory('/workspace/fallback-dir');
 
     // Wait for autoResolveRepoForActiveContext to finish
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 60));
 
     // Verify that even with listProjects() failing, repo resolves from currentDirectory
     assert.equal(app.getState().currentRepo, 'fallback-owner/fallback-repo');
