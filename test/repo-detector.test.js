@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createTestApp } from './test-app-harness.js';
 import {
   parseGitdirContent,
   extractParentRepoRootFromGitdir,
@@ -114,4 +115,73 @@ test('verifying gitdir parsing with /.git/worktrees/ resolves parent remote', ()
     repo: 'openchamber-github-task-board',
   });
 });
+
+test('manifest validates declared capabilities under openchamber.contributes', async () => {
+  const fs = await import('node:fs');
+  const path = await import('node:path');
+  const { parseManifest } = await import('/workspace/extensions/github-task-board/node_modules/@openchamber/sdk/dist/parse.js');
+  const pkgPath = path.resolve(import.meta.dirname, '../package.json');
+  const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf8'));
+
+  const parsed = parseManifest(pkg);
+  assert.equal(parsed.ok, true, 'parseManifest must succeed');
+  assert.equal(pkg.version, '1.2.1');
+  assert.deepEqual(pkg.openchamber.contributes.capabilities, ['sessions', 'prompt', 'files']);
+});
+
+test('fallback repository resolution discovers repo from currentDirectory when workspace projects list fails or is empty', async () => {
+  const mockFiles = new Map();
+  const mockConfig = `
+[core]
+\trepositoryformatversion = 0
+\tfilemode = true
+[remote "origin"]
+\turl = git@github.com:fallback-owner/fallback-repo.git
+`;
+  mockFiles.set('/workspace/fallback-dir/.git/config', mockConfig);
+
+  const { app, emitDirectory } = createTestApp({
+    onRequest: (payload) => {
+      // Simulate host.listProjects() (workspace-read) throwing capability or scan error
+      if (payload && payload.kind === 'projects') {
+        throw new Error('The user has not allowed this capability for the extension.');
+      }
+      if (payload && payload.path) {
+        if (mockFiles.has(payload.path)) {
+          return { path: payload.path, content: mockFiles.get(payload.path) };
+        }
+        throw new Error('File not found');
+      }
+      return { kind: 'projects', state: 'synced', projects: [] };
+    },
+  });
+
+  // Mock global fetch so issue loading does not stall or attempt network
+  const origFetch = global.fetch;
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => null },
+    json: async () => [],
+    text: async () => '[]',
+  });
+
+  try {
+    // Wait for ready message and initial scan cycle to finish
+    await new Promise((r) => setTimeout(r, 20));
+
+    // Trigger directory change to /workspace/fallback-dir where git config exists
+    await emitDirectory('/workspace/fallback-dir');
+
+    // Wait for autoResolveRepoForActiveContext to finish
+    await new Promise((r) => setTimeout(r, 50));
+
+    // Verify that even with listProjects() failing, repo resolves from currentDirectory
+    assert.equal(app.getState().currentRepo, 'fallback-owner/fallback-repo');
+  } finally {
+    global.fetch = origFetch;
+  }
+});
+
+
 
