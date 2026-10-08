@@ -61,17 +61,17 @@ Repair 1: ses_1797615df11da447fd7d5863 ended at 252225a (base cd6ab18) — claim
 
 ## D12 Direct-Origins Caching Activation (feat/d12-origins-etag)
 
-- **Target:** Branch `feat/d12-origins-etag` (HEAD `cd851e4`, base `f849dce`).
-- **Verdicts:** Spec: `PASS` | Quality: `NEEDS-FIXES` (Repair 1 Complete) | Operational Recommendation: `PROCEED-WITH-CONDITIONS`.
+- **Target:** Branch `feat/d12-origins-etag` (HEAD `7a44a93`, review-1 base `2461bd5`, branch base `f849dce`).
+- **Verdicts:** Spec: `PASS` | Quality: `APPROVED` | Operational Recommendation: `PROCEED`.
 - **L0 Static:** PASS (`npm run typecheck` exit 0, 0 errors; manifest schema `parseManifestJson` verified).
-- **L1 Unit / Regression:** PASS (`node --test test/*.test.js` exit 0, 289/289 passed: 283 baseline + 6 new real-oracle tests; red/green mutation probes verified).
+- **L1 Unit / Regression:** PASS (`node --test test/*.test.js` exit 0, 289/289 passed: 283 baseline + 6 new real-oracle tests; red/green mutation and 9 URL-trickery probes verified).
 - **L2 Integration:** PASS (Manifest schema parsed, catalog 5s cache TTL verified, host `effectiveGrants` and CSP `routes.js:873` mechanisms audited against installed `@openchamber/web`).
 - **L3 The User's Way (Served Panel):** NOT RUN (Empirical served CSP and real `api.github.com` 304 network capture deferred to post-merge integration; synthetic tests do not substitute for real browser proof).
-- **L4 Hostile Review:** PASS with conditions (Report: `verifications/d12-origins-cache/l4-review.md`). Four findings catalogued; all four resolved in Repair 1 (`verifications/d12-origins-cache/repair-1-evidence.md`):
+- **L4 Hostile Review:** PASS (Iteration 1: `verifications/d12-origins-cache/l4-review.md` PROCEED-WITH-CONDITIONS; Repair 1: `verifications/d12-origins-cache/repair-1-evidence.md`; Iteration 2: `verifications/d12-origins-cache/l4-review-2.md` PROCEED). All four findings verified resolved:
   1. HIGH (F-01): Host capability approval prerequisite made prominent in recipe and proof. OpenChamber CSP `connect-src` requires human user to navigate to Settings -> Extensions -> Task Board -> Approve `origins` before reloading the panel.
   2. MEDIUM (F-02): Recipe corrected to trigger non-forced fetch (repo re-selection via popover after TTL or session idle event transition). Explicit warning documented that manual "Refresh" button calls `refreshTasks()`, clearing ETag caches and forcing `200 OK` (304 impossible via button).
   3. LOW (F-03): Timer-polling myth eliminated from D12 artifacts. Panel code has 0 interval timers (D11 enforced); idle sync is event-driven only.
-  4. LOW (F-04): Surgical origin guard added in `panel/main.ts:1120`, strictly confining direct token dispatch to `url.origin === 'https://api.github.com'` and falling back to `host.request` for unapproved origins. Red/green mutation probe verified in `test/d12-origins-cache.test.js`.
+  4. LOW (F-04): Surgical origin guard in `panel/main.ts:1120` strictly confines direct token dispatch to `url.origin === 'https://api.github.com'` and falls back to `host.request` for unapproved origins. Red/green mutation probe and 9 adversarial URL trickery probes verified.
 - **L5 Human Validation:** AWAITING BATCH / HUMAN (Cannot be waived because capability grant introduces user-facing permission prompt in OpenChamber Settings -> Extensions).
 - **Secret Wall Compliance:** PASS (Zero tokens, prefixes, credentials, or sensitive headers in diffs, tests, or logs).
 
