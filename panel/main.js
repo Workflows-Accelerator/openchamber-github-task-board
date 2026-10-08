@@ -5622,22 +5622,59 @@ Blocked by ${blockerRef}`;
     await Promise.all(Array.from({ length: concurrency }, () => runner()));
     return results;
   }
-  function buildIncrementalIssuesPath(repo, since, page = 1) {
+  var FULL_ISSUE_PAGE_SIZE = 100;
+  var SMALL_ISSUE_PAGE_SIZE = 20;
+  var MAX_ISSUES_PER_REPO = 1e3;
+  function isOversizedAnswer(err) {
+    return err instanceof SyntaxError || err?.code === "RESPONSE_TOO_LARGE";
+  }
+  async function fetchIssuePage(repo, page, request, pageSizes, onShrink, headers) {
+    const read = async (pageSize2) => {
+      const raw = await request("GET", `/repos/${repo}/issues?state=all&per_page=${pageSize2}&page=${page}`, void 0, void 0, headers);
+      return { items: Array.isArray(raw) ? raw : raw?.items || [], pageSize: pageSize2, raw };
+    };
+    const pageSize = pageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    try {
+      return await read(pageSize);
+    } catch (err) {
+      if (page !== 1 || pageSize === SMALL_ISSUE_PAGE_SIZE || !isOversizedAnswer(err)) throw err;
+      pageSizes.set(repo, SMALL_ISSUE_PAGE_SIZE);
+      onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+      return read(SMALL_ISSUE_PAGE_SIZE);
+    }
+  }
+  function buildIncrementalIssuesPath(repo, since, page = 1, pageSize = FULL_ISSUE_PAGE_SIZE) {
     const cleanRepo = parseRepoFullName(repo) || (typeof repo === "string" ? repo.trim() : "");
     const sinceIso = typeof since === "string" ? since : new Date(since).toISOString();
-    return `/repos/${cleanRepo}/issues?state=all&since=${encodeURIComponent(sinceIso)}&per_page=100&page=${page}`;
+    return `/repos/${cleanRepo}/issues?state=all&since=${encodeURIComponent(sinceIso)}&per_page=${pageSize}&page=${page}`;
   }
   async function syncIncrementalRepoIssues(options) {
-    const { repo, since, currentIssues, etag, requestFn } = options;
-    const MAX_INCREMENTAL_PAGES = 10;
+    const { repo, since, currentIssues, etag, pageSizes, onShrink, requestFn } = options;
+    const cleanRepo = parseRepoFullName(repo) || (typeof repo === "string" ? repo.trim() : "");
+    let pageSize = options.pageSize ?? (pageSizes?.get(cleanRepo) ?? FULL_ISSUE_PAGE_SIZE);
+    let maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
     let page = 1;
     const allItems = [];
     let newEtag = etag;
     let truncated = false;
-    while (page <= MAX_INCREMENTAL_PAGES) {
-      const path = buildIncrementalIssuesPath(repo, since, page);
+    while (page <= maxPages) {
+      let path = buildIncrementalIssuesPath(cleanRepo, since, page, pageSize);
       const headers = page === 1 && etag ? { "If-None-Match": etag } : void 0;
-      const res = await requestFn("GET", path, void 0, void 0, headers);
+      let res;
+      try {
+        res = await requestFn("GET", path, void 0, void 0, headers);
+      } catch (err) {
+        if (page === 1 && pageSize !== SMALL_ISSUE_PAGE_SIZE && isOversizedAnswer(err)) {
+          pageSize = SMALL_ISSUE_PAGE_SIZE;
+          pageSizes?.set(cleanRepo, SMALL_ISSUE_PAGE_SIZE);
+          onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+          maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+          path = buildIncrementalIssuesPath(cleanRepo, since, page, pageSize);
+          res = await requestFn("GET", path, void 0, void 0, headers);
+        } else {
+          throw err;
+        }
+      }
       if (page === 1 && res && (res.notModified || res.status === 304)) {
         return {
           issues: currentIssues,
@@ -5653,8 +5690,8 @@ Blocked by ${blockerRef}`;
       const items = Array.isArray(res) ? res : res?.items || res?.data || [];
       if (items.length === 0) break;
       allItems.push(...items);
-      if (items.length < 100) break;
-      if (page === MAX_INCREMENTAL_PAGES) {
+      if (items.length < pageSize) break;
+      if (page === maxPages) {
         truncated = true;
         break;
       }
@@ -5670,7 +5707,6 @@ Blocked by ${blockerRef}`;
       };
     }
     const rawChanged = normalizeGithubIssues(allItems);
-    const cleanRepo = parseRepoFullName(repo) || repo;
     const changed = rawChanged.map((issue) => ({
       ...issue,
       repo: issue.repo || cleanRepo
@@ -5695,7 +5731,7 @@ Blocked by ${blockerRef}`;
   var isAllProjectsMode = false;
   var allProjectsRepoRefs = [];
   var ALL_PROJECTS_CACHE_KEY = "__all_projects__";
-  var MAX_PROJECT_ISSUE_PAGES = 10;
+  var issuePageSizes = /* @__PURE__ */ new Map();
   var MAX_CONCURRENT_REPO_FETCHES = 4;
   var RATE_LIMIT_MAX_ATTEMPTS = 3;
   var workspaceRootNoticeShown = false;
@@ -6549,12 +6585,18 @@ Blocked by ${blockerRef}`;
       void fetchIssues(true);
     }
   }
+  function fetchRepoIssuePage(repo, page, request = githubRequestWithRetry, headers) {
+    return fetchIssuePage(repo, page, request, issuePageSizes, (pageSize) => {
+      addLog(`Issue page for ${repo} is too large for the host; reading ${pageSize} per page`, "warn");
+    }, headers);
+  }
   async function streamRemainingPages(repo, storageKey, startPage, epoch, force = false) {
     let page = startPage;
-    const MAX_PAGES = 10;
-    while (page <= MAX_PAGES && currentRepo === repo && activeStreamEpoch === epoch) {
+    const pageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+    while (page <= maxPages && currentRepo === repo && activeStreamEpoch === epoch) {
       try {
-        const pagePath = `/repos/${repo}/issues?state=all&per_page=100&page=${page}`;
+        const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
         const cachedPage = !force ? pageBodyCache.get(pagePath) : void 0;
         const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : void 0);
         const canSendEtag = Boolean(pageEtag && cachedPage?.items);
@@ -6595,7 +6637,7 @@ Blocked by ${blockerRef}`;
         renderViews();
         statusReconciler.schedule(issues);
         addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
-        if (nextItems.length < 100) break;
+        if (nextItems.length < pageSize) break;
         page++;
       } catch (err) {
         addLog(`Background streaming stopped at page ${page}: ${err.message}`, "warn");
@@ -6642,19 +6684,21 @@ Blocked by ${blockerRef}`;
     if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
     try {
       addLog(`Fetching issues for ${currentRepo}...`);
-      const page1Path = `/repos/${currentRepo}/issues?state=all&per_page=100&page=1`;
-      const cachedPage1 = !force ? pageBodyCache.get(page1Path) : void 0;
-      const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(page1Path) : void 0);
+      const initialPageSize = issuePageSizes.get(currentRepo) ?? FULL_ISSUE_PAGE_SIZE;
+      const initialPage1Path = `/repos/${currentRepo}/issues?state=all&per_page=${initialPageSize}&page=1`;
+      const cachedPage1 = !force ? pageBodyCache.get(initialPage1Path) : void 0;
+      const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(initialPage1Path) : void 0);
       const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || issues.length > 0));
       const page1Headers = canSendEtag && page1Etag ? { "If-None-Match": page1Etag } : void 0;
-      let page1Raw = await githubRequestWithRetry(
-        "GET",
-        page1Path,
-        void 0,
-        void 0,
+      const { items: page1FetchedItems, pageSize, raw: page1FetchedRaw } = await fetchRepoIssuePage(
+        currentRepo,
+        1,
+        githubRequestWithRetry,
         page1Headers
       );
-      let page1Items = [];
+      const page1Path = `/repos/${currentRepo}/issues?state=all&per_page=${pageSize}&page=1`;
+      let page1Raw = page1FetchedRaw;
+      let page1Items = page1FetchedItems;
       if (page1Raw && (page1Raw.notModified || page1Raw.status === 304)) {
         addLog(`Page 1 for ${currentRepo} -> 304 Not Modified`, "succ");
         lastSyncTimestamp = Date.now();
@@ -6663,11 +6707,10 @@ Blocked by ${blockerRef}`;
           page1Items = cachedPage1.items;
         } else {
           addLog(`Page 1 for ${currentRepo} -> 304 with no cached body; retrying unconditionally`, "warn");
-          page1Raw = await githubRequestWithRetry("GET", page1Path);
-          page1Items = Array.isArray(page1Raw) ? page1Raw : page1Raw?.items || [];
+          const retryRes = await fetchRepoIssuePage(currentRepo, 1, githubRequestWithRetry);
+          page1Raw = retryRes.raw;
+          page1Items = retryRes.items;
         }
-      } else {
-        page1Items = Array.isArray(page1Raw) ? page1Raw : page1Raw?.items || [];
       }
       if (page1Raw?.etag) {
         issueListEtagCache.set(page1Path, page1Raw.etag);
@@ -6697,7 +6740,7 @@ Blocked by ${blockerRef}`;
       }
       renderViews();
       statusReconciler.schedule(issues);
-      if (page1Items.length >= 100 || issues.length >= 100) {
+      if (page1Items.length >= pageSize || issues.length >= pageSize) {
         void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch, force);
       }
     } catch (err) {
@@ -6721,28 +6764,29 @@ Blocked by ${blockerRef}`;
     }
   }
   async function fetchAllRepoIssuePages(repo, epoch, force = false) {
-    const page1Path = `/repos/${repo}/issues?state=all&per_page=100&page=1`;
-    const cachedPage1 = !force ? pageBodyCache.get(page1Path) : void 0;
-    const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(page1Path) : void 0);
+    const initialPageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    const initialPage1Path = `/repos/${repo}/issues?state=all&per_page=${initialPageSize}&page=1`;
+    const cachedPage1 = !force ? pageBodyCache.get(initialPage1Path) : void 0;
+    const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(initialPage1Path) : void 0);
     const cachedRepoIssues = issueCache.get(repo)?.issues;
     const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || cachedRepoIssues && cachedRepoIssues.length > 0));
-    let firstRaw = await githubRequestWithRetry(
-      "GET",
-      page1Path,
-      void 0,
-      void 0,
+    const { items: firstRawItems, pageSize, raw: firstRawRes } = await fetchRepoIssuePage(
+      repo,
+      1,
+      githubRequestWithRetry,
       canSendEtag && page1Etag ? { "If-None-Match": page1Etag } : void 0
     );
-    let firstItems = [];
+    let firstRaw = firstRawRes;
+    let firstItems = firstRawItems;
+    const page1Path = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=1`;
     if (firstRaw && (firstRaw.notModified || firstRaw.status === 304)) {
       if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
         firstItems = cachedPage1.items;
       } else {
-        firstRaw = await githubRequestWithRetry("GET", page1Path);
-        firstItems = Array.isArray(firstRaw) ? firstRaw : firstRaw?.items || [];
+        const retryRes = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
+        firstRaw = retryRes.raw;
+        firstItems = retryRes.items;
       }
-    } else {
-      firstItems = Array.isArray(firstRaw) ? firstRaw : firstRaw?.items || [];
     }
     if (firstRaw?.etag) {
       issueListEtagCache.set(page1Path, firstRaw.etag);
@@ -6751,10 +6795,11 @@ Blocked by ${blockerRef}`;
       setCachedPage(page1Path, firstItems, firstRaw?.etag || page1Etag);
     }
     let repoIssues = normalizeGithubIssues(firstItems);
-    if (firstItems.length < 100) return repoIssues;
+    if (firstItems.length < pageSize) return repoIssues;
     let page = 2;
-    while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
-      const pagePath = `/repos/${repo}/issues?state=all&per_page=100&page=${page}`;
+    const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+    while (page <= maxPages && activeStreamEpoch === epoch) {
+      const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
       const cachedPage = !force ? pageBodyCache.get(pagePath) : void 0;
       const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : void 0);
       const canSendPageEtag = Boolean(pageEtag && cachedPage?.items);
@@ -6784,7 +6829,7 @@ Blocked by ${blockerRef}`;
       }
       if (nextItems.length === 0) break;
       repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
-      if (nextItems.length < 100) break;
+      if (nextItems.length < pageSize) break;
       page++;
     }
     return repoIssues;
@@ -6891,6 +6936,10 @@ Blocked by ${blockerRef}`;
         since: sinceIso,
         currentIssues: issues,
         etag,
+        pageSizes: issuePageSizes,
+        onShrink: (shrunkSize) => {
+          addLog(`Issue page for ${cleanRepo} is too large for the host; reading ${shrunkSize} per page`, "warn");
+        },
         requestFn: (method, reqPath, body, query, headers) => githubRequestWithRetry(method, reqPath, body, query, headers)
       });
       if (result.etag && !result.truncated) {

@@ -2397,19 +2397,70 @@ export async function mapWithConcurrency<T, R>(
 }
 
 // ==========================================
+// Issue List Pagination & Page Size Fallback
+// ==========================================
+
+// Issue list pages ask for GitHub's maximum of 100. A host that cannot carry
+// that much in one answer (older OpenChamber versions cut proxied answers off
+// at 256 000 characters) gets SMALL_ISSUE_PAGE_SIZE for that repo instead.
+export const FULL_ISSUE_PAGE_SIZE = 100;
+export const SMALL_ISSUE_PAGE_SIZE = 20;
+export const MAX_ISSUES_PER_REPO = 1000;
+
+export type IssuePageRequest = (
+  method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
+  path: string,
+  body?: any,
+  query?: any,
+  headers?: Record<string, string>
+) => Promise<any>;
+
+// A cut-off answer fails to parse; a newer host refuses it by code.
+export function isOversizedAnswer(err: any): boolean {
+  return err instanceof SyntaxError || err?.code === 'RESPONSE_TOO_LARGE';
+}
+
+// One page of a repo's issues at the page size `pageSizes` holds for that
+// repo. Only page 1 may switch to the small size: later page numbers count in
+// the size page 1 was read with.
+export async function fetchIssuePage(
+  repo: string,
+  page: number,
+  request: (method: any, path: string, body?: any, query?: any, headers?: Record<string, string>) => Promise<any>,
+  pageSizes: Map<string, number>,
+  onShrink?: (pageSize: number) => void,
+  headers?: Record<string, string>
+): Promise<{ items: any[]; pageSize: number; raw?: any }> {
+  const read = async (pageSize: number) => {
+    const raw = await request('GET', `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`, undefined, undefined, headers);
+    return { items: Array.isArray(raw) ? raw : (raw?.items || []), pageSize, raw };
+  };
+  const pageSize = pageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+  try {
+    return await read(pageSize);
+  } catch (err: any) {
+    if (page !== 1 || pageSize === SMALL_ISSUE_PAGE_SIZE || !isOversizedAnswer(err)) throw err;
+    pageSizes.set(repo, SMALL_ISSUE_PAGE_SIZE);
+    onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+    return read(SMALL_ISSUE_PAGE_SIZE);
+  }
+}
+
+// ==========================================
 // Incremental Issue Synchronization & ETags
 // ==========================================
 
 export function buildIncrementalIssuesPath(
   repo: string,
   since: string | Date | number,
-  page: number = 1
+  page: number = 1,
+  pageSize: number = FULL_ISSUE_PAGE_SIZE
 ): string {
   const cleanRepo = parseRepoFullName(repo) || (typeof repo === 'string' ? repo.trim() : '');
   const sinceIso = typeof since === 'string'
     ? since
     : new Date(since).toISOString();
-  return `/repos/${cleanRepo}/issues?state=all&since=${encodeURIComponent(sinceIso)}&per_page=100&page=${page}`;
+  return `/repos/${cleanRepo}/issues?state=all&since=${encodeURIComponent(sinceIso)}&per_page=${pageSize}&page=${page}`;
 }
 
 export interface IncrementalSyncResult {
@@ -2425,19 +2476,39 @@ export async function syncIncrementalRepoIssues(options: {
   since: string | Date | number;
   currentIssues: Issue[];
   etag?: string;
+  pageSizes?: Map<string, number>;
+  pageSize?: number;
+  onShrink?: (pageSize: number) => void;
   requestFn: (method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', path: string, body?: any, query?: any, headers?: Record<string, string>) => Promise<any>;
 }): Promise<IncrementalSyncResult> {
-  const { repo, since, currentIssues, etag, requestFn } = options;
-  const MAX_INCREMENTAL_PAGES = 10;
+  const { repo, since, currentIssues, etag, pageSizes, onShrink, requestFn } = options;
+  const cleanRepo = parseRepoFullName(repo) || (typeof repo === 'string' ? repo.trim() : '');
+  let pageSize = options.pageSize ?? (pageSizes?.get(cleanRepo) ?? FULL_ISSUE_PAGE_SIZE);
+  let maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
   let page = 1;
   const allItems: any[] = [];
   let newEtag: string | undefined = etag;
   let truncated = false;
 
-  while (page <= MAX_INCREMENTAL_PAGES) {
-    const path = buildIncrementalIssuesPath(repo, since, page);
+  while (page <= maxPages) {
+    let path = buildIncrementalIssuesPath(cleanRepo, since, page, pageSize);
     const headers = (page === 1 && etag) ? { 'If-None-Match': etag } : undefined;
-    const res = await requestFn('GET', path, undefined, undefined, headers);
+    let res: any;
+
+    try {
+      res = await requestFn('GET', path, undefined, undefined, headers);
+    } catch (err: any) {
+      if (page === 1 && pageSize !== SMALL_ISSUE_PAGE_SIZE && isOversizedAnswer(err)) {
+        pageSize = SMALL_ISSUE_PAGE_SIZE;
+        pageSizes?.set(cleanRepo, SMALL_ISSUE_PAGE_SIZE);
+        onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+        maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+        path = buildIncrementalIssuesPath(cleanRepo, since, page, pageSize);
+        res = await requestFn('GET', path, undefined, undefined, headers);
+      } else {
+        throw err;
+      }
+    }
 
     if (page === 1 && res && (res.notModified || res.status === 304)) {
       return {
@@ -2457,8 +2528,8 @@ export async function syncIncrementalRepoIssues(options: {
     if (items.length === 0) break;
 
     allItems.push(...items);
-    if (items.length < 100) break;
-    if (page === MAX_INCREMENTAL_PAGES) {
+    if (items.length < pageSize) break;
+    if (page === maxPages) {
       truncated = true;
       break;
     }
@@ -2476,7 +2547,6 @@ export async function syncIncrementalRepoIssues(options: {
   }
 
   const rawChanged = normalizeGithubIssues(allItems);
-  const cleanRepo = parseRepoFullName(repo) || repo;
   const changed = rawChanged.map((issue) => ({
     ...issue,
     repo: issue.repo || cleanRepo,
