@@ -13,6 +13,138 @@ export function isJsonValue(value) {
   return false;
 }
 
+function matchesSelector(element, selector) {
+  if (!element || !selector) return false;
+  const attrMatch = selector.match(/^([a-zA-Z0-9_.-]*?)\[([a-zA-Z0-9_-]+)(?:=(?:"([^"]*)"|'([^']*)'|([^\]]+)))?\]$/);
+  if (attrMatch) {
+    const [, base, attrName, val1, val2, val3] = attrMatch;
+    const attrVal = val1 ?? val2 ?? val3;
+    if (base && !matchesSelector(element, base)) return false;
+    if (!element.hasAttribute || !element.hasAttribute(attrName)) return false;
+    if (attrVal !== undefined && element.getAttribute(attrName) !== attrVal) return false;
+    return true;
+  }
+  if (selector.startsWith('.')) {
+    const classes = selector.slice(1).split('.');
+    return classes.every((cls) => element.classList?.contains?.(cls));
+  }
+  if (selector.startsWith('#')) {
+    const id = selector.slice(1);
+    return element.id === id || element.getAttribute?.('id') === id;
+  }
+  if (element.tagName && element.tagName.toLowerCase() === selector.toLowerCase()) {
+    return true;
+  }
+  return false;
+}
+
+function serializeElement(node) {
+  if (!node) return '';
+  if (typeof node === 'string') return node;
+  const tag = (node.tagName || 'DIV').toLowerCase();
+  if (tag === 'fragment') {
+    return (node.children || []).map(serializeElement).join('');
+  }
+  const attrs = [];
+  const classes = node.className;
+  if (classes) {
+    attrs.push(`class="${classes}"`);
+  }
+  if (node.id) {
+    attrs.push(`id="${node.id}"`);
+  }
+  if (node.getAttributeNames) {
+    for (const name of node.getAttributeNames()) {
+      if (name === 'class' || name === 'id') continue;
+      const v = node.getAttribute(name);
+      if (v !== null && v !== undefined) {
+        attrs.push(`${name}="${v}"`);
+      }
+    }
+  }
+  const attrStr = attrs.length > 0 ? ' ' + attrs.join(' ') : '';
+  const inner = node.innerHTML;
+  return `<${tag}${attrStr}>${inner}</${tag}>`;
+}
+
+function findNextTag(html, tagName, startPos) {
+  let pos = startPos;
+  while (pos < html.length) {
+    const idx = html.indexOf(`<${tagName}`, pos);
+    if (idx === -1) return -1;
+    const charAfter = html[idx + 1 + tagName.length];
+    if (!charAfter || /[\s>/]/.test(charAfter)) {
+      return idx;
+    }
+    pos = idx + 1;
+  }
+  return -1;
+}
+
+function parseHtmlChildren(html, createElement) {
+  if (!html || typeof html !== 'string') return [];
+  const children = [];
+  const tagRegex = /<([a-zA-Z0-9-]+)((?:\s+[\w:-]+(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+))?)*)\s*(\/?)>/g;
+  let match;
+
+  while ((match = tagRegex.exec(html)) !== null) {
+    const tagName = match[1].toLowerCase();
+    const rawAttrs = match[2];
+    const isSelfClosing = match[3] === '/' || ['input', 'img', 'br', 'hr', 'meta', 'link'].includes(tagName);
+    const tagEndIndex = tagRegex.lastIndex;
+
+    let innerContent = '';
+    let endIndex = tagEndIndex;
+
+    if (!isSelfClosing) {
+      const closeTag = `</${tagName}>`;
+      let depth = 1;
+      let searchPos = tagEndIndex;
+      while (depth > 0 && searchPos < html.length) {
+        const nextOpen = findNextTag(html, tagName, searchPos);
+        const nextClose = html.indexOf(closeTag, searchPos);
+        if (nextClose === -1) {
+          searchPos = html.length;
+          break;
+        }
+        if (nextOpen !== -1 && nextOpen < nextClose) {
+          depth++;
+          searchPos = nextOpen + 1 + tagName.length;
+        } else {
+          depth--;
+          if (depth === 0) {
+            innerContent = html.slice(tagEndIndex, nextClose);
+            endIndex = nextClose + closeTag.length;
+          } else {
+            searchPos = nextClose + closeTag.length;
+          }
+        }
+      }
+      tagRegex.lastIndex = endIndex;
+    }
+
+    const child = createElement(tagName);
+    const attrRegex = /([a-zA-Z0-9_-]+)(?:\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+)))?/g;
+    let am;
+    while ((am = attrRegex.exec(rawAttrs)) !== null) {
+      const attrName = am[1];
+      const attrVal = am[2] ?? am[3] ?? am[4] ?? '';
+      child.setAttribute(attrName, attrVal);
+      if (attrName === 'class') {
+        child.className = attrVal;
+      }
+      if (attrName === 'id') {
+        child.id = attrVal;
+      }
+    }
+    if (innerContent) {
+      child.innerHTML = innerContent;
+    }
+    children.push(child);
+  }
+  return children;
+}
+
 export function createTestApp(options = {}) {
   const createElement = (tag = 'div') => {
     const listeners = new Map();
@@ -28,6 +160,15 @@ export function createTestApp(options = {}) {
         remove: function (...cls) { cls.forEach((c) => this._classes.delete(c)); },
         contains: function (c) { return this._classes.has(c); },
         toggle: function (c) { if (this._classes.has(c)) this._classes.delete(c); else this._classes.add(c); },
+      },
+      get className() {
+        return Array.from(this.classList._classes).join(' ');
+      },
+      set className(val) {
+        this.classList._classes.clear();
+        if (val) {
+          String(val).split(/\s+/).filter(Boolean).forEach((c) => this.classList._classes.add(c));
+        }
       },
       style: {
         setProperty: () => {},
@@ -58,15 +199,38 @@ export function createTestApp(options = {}) {
         el.dispatchEvent({ type: 'click', target: el, preventDefault: () => {} });
       },
       setAttribute: function (name, value) {
-        attributes.set(name, String(value));
+        const strVal = String(value);
+        attributes.set(name, strVal);
+        if (name === 'class') {
+          el.className = strVal;
+        }
+        if (name === 'id') {
+          el.id = strVal;
+        }
       },
       getAttribute: function (name) {
+        if (name === 'class') {
+          const c = el.className;
+          return c ? c : (attributes.get('class') || null);
+        }
         return attributes.has(name) ? attributes.get(name) : null;
+      },
+      getAttributeNames: function () {
+        const keys = new Set(attributes.keys());
+        if (el.classList._classes.size > 0) keys.add('class');
+        if (el.id) keys.add('id');
+        return Array.from(keys);
       },
       removeAttribute: function (name) {
         attributes.delete(name);
+        if (name === 'class') {
+          el.classList._classes.clear();
+        }
       },
       hasAttribute: function (name) {
+        if (name === 'class') {
+          return el.classList._classes.size > 0 || attributes.has('class');
+        }
         return attributes.has(name);
       },
       contains: function (target) {
@@ -77,6 +241,14 @@ export function createTestApp(options = {}) {
         return false;
       },
       appendChild: function (child) {
+        if (!child) return child;
+        if (child.tagName === 'FRAGMENT') {
+          for (const c of child.children) {
+            el.children.push(c);
+          }
+          child.children = [];
+          return child;
+        }
         el.children.push(child);
         return child;
       },
@@ -88,9 +260,10 @@ export function createTestApp(options = {}) {
       querySelectorAll: function (sel) {
         const results = [];
         for (const c of el.children) {
-          if (sel.startsWith('.') && c.classList.contains(sel.slice(1))) results.push(c);
+          if (matchesSelector(c, sel)) results.push(c);
           if (c.querySelectorAll) results.push(...c.querySelectorAll(sel));
         }
+        if (results.length > 0) return results;
         if (innerHTMLValue && sel === '.popover-item') {
           const regex = /<div[^>]*class="[^"]*popover-item[^"]*"[^>]*data-project-id="([^"]*)"(?:[^>]*data-repo="([^"]*)")?[^>]*>/g;
           let m;
@@ -106,7 +279,7 @@ export function createTestApp(options = {}) {
       },
       querySelector: function (sel) {
         for (const c of el.children) {
-          if (sel.startsWith('.') && c.classList.contains(sel.slice(1))) return c;
+          if (matchesSelector(c, sel)) return c;
           if (c.querySelector) {
             const match = c.querySelector(sel);
             if (match) return match;
@@ -130,11 +303,14 @@ export function createTestApp(options = {}) {
       getBoundingClientRect: () => ({ top: 0, left: 0, width: 100, height: 100, bottom: 100, right: 100 }),
       cloneNode: function () { return createElement(tag); },
       get innerHTML() {
-        return innerHTMLValue;
+        if (innerHTMLValue) return innerHTMLValue;
+        if (el.children.length === 0) return el.textContent || '';
+        return el.children.map((c) => serializeElement(c)).join('');
       },
       set innerHTML(val) {
         innerHTMLValue = String(val);
         childCache.clear();
+        el.children = parseHtmlChildren(innerHTMLValue, createElement);
       },
       textContent: '',
       value: '',
@@ -345,6 +521,10 @@ export function createTestApp(options = {}) {
       submitNewIssue,
       setRepository,
       renderEmptyState,
+      renderRepoPopoverList,
+      renderHumanTasksView,
+      renderQuestionsView,
+      renderViews,
       openDrawer,
       closeDrawer,
       renderDrawer,
@@ -357,6 +537,9 @@ export function createTestApp(options = {}) {
         currentRepo,
         isManualRepoOverride,
         activeSessionId,
+        currentActiveSession,
+        currentSessionRepo,
+        lastSyncErrorState,
         currentDirectory,
         allProjects,
         isAllProjectsMode,
@@ -378,6 +561,9 @@ export function createTestApp(options = {}) {
         if (updates.currentRepo !== undefined) currentRepo = updates.currentRepo;
         if (updates.isManualRepoOverride !== undefined) isManualRepoOverride = updates.isManualRepoOverride;
         if (updates.activeSessionId !== undefined) activeSessionId = updates.activeSessionId;
+        if (updates.currentActiveSession !== undefined) currentActiveSession = updates.currentActiveSession;
+        if (updates.currentSessionRepo !== undefined) currentSessionRepo = updates.currentSessionRepo;
+        if (updates.lastSyncErrorState !== undefined) lastSyncErrorState = updates.lastSyncErrorState;
         if (updates.currentDirectory !== undefined) currentDirectory = updates.currentDirectory;
         if (updates.allProjects !== undefined) allProjects = updates.allProjects;
         if (updates.isAllProjectsMode !== undefined) isAllProjectsMode = updates.isAllProjectsMode;

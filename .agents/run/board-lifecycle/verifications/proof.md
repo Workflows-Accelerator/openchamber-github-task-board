@@ -67,6 +67,16 @@ Status: BUILT, NOT ACCEPTED. Worktree .worktrees/team-dev-d12-origins-etag, bran
 - Correction receipt on issue 24 reportedly posted by builder: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/24#issuecomment-6067461817 (not independently fetched). Checkboxes unchanged by brief.
 - NOT manager-verified: typecheck/build, five tests' authenticity, token hygiene, installed manifest reload behavior, live CSP and network 304. Worktree report read was policy-denied, recorded without retry; the authorized independent reviewer reads its own artifacts and returns evidence.
 
+## Click-through repair 1 — friendly titles, repo picker, all projects grouping (D14, D15, D16)
+
+Status: L4 PASSED (PROCEED-WITH-CONDITIONS, 1 LOW finding). Worktree `.worktrees/team-dev-clickthrough-titles-queues-picker`, branch `fix/clickthrough-titles-queues-picker` at commit `7f440af`.
+- L0: `npm run typecheck` PASS (0 errors), `npm run build` PASS (59ms), `git diff --exit-code panel/main.js` PASS (byte parity).
+- L1: `node --test test/*.test.js` PASS, 294 pass / 0 fail / 0 flaked. Production bundle IIFE executed via VM harness (`test-app-harness.js`).
+- L2: Live issue bodies #23 and #24 fetched directly from GitHub API and proved well-formed with friendly titles and queues. Stale storage cache JSON inspected and verified as cause of click-through preview lock.
+- L3: All 6 screenshots captured via `obscura fetch` against live bundle serving in local HTTP preview server.
+- L4: Hostile review completed by dynamic-agent, report `verifications/clickthrough-2026-10-08/l4-review.md`. Mutation probes for D14 title fallback and D15 inline session repo verified red/green. Link rendering XSS audited; finding F-01 (LOW, non-blocking): sequential regex wrapping inside existing anchor tags.
+- L5: PENDING HUMAN VALIDATION on served preview.
+
 ## Recovery proof conditions
 - Next dispatch after each completed repair is fresh read-only hostile review of exact commit. No resumed ended workers.
 - Do not accept reviewer shortcuts of arbitrary page limits or small-issue-number uniqueness heuristics.

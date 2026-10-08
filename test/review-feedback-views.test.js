@@ -109,7 +109,7 @@ test('Friendly Titles: resolveSimplifiedViewTitle correctly resolves friendly ti
   assert.equal(resolved.isPlaceholder, false);
 });
 
-test('Friendly Titles: resolveSimplifiedViewTitle uses quiet explicit placeholder when body lacks Friendly Title', () => {
+test('Friendly Titles: resolveSimplifiedViewTitle falls back to issue title when body lacks Friendly Title (D14)', () => {
   const issueWithoutFriendly = {
     number: 22,
     title: 'fix(core): resolve race condition on scratchpad debounce',
@@ -117,12 +117,12 @@ test('Friendly Titles: resolveSimplifiedViewTitle uses quiet explicit placeholde
   };
 
   const resolved = resolveSimplifiedViewTitle(issueWithoutFriendly);
-  assert.equal(resolved.displayTitle, '(No friendly title)');
-  assert.equal(resolved.displaySubtitle, 'fix(core): resolve race condition on scratchpad debounce');
-  assert.equal(resolved.isPlaceholder, true);
+  assert.equal(resolved.displayTitle, 'fix(core): resolve race condition on scratchpad debounce');
+  assert.equal(resolved.displaySubtitle, null);
+  assert.equal(resolved.isPlaceholder, false);
 });
 
-test('Friendly Titles: resolveSimplifiedViewTitle handles empty titles and missing bodies safely', () => {
+test('Friendly Titles: resolveSimplifiedViewTitle handles empty titles and missing bodies safely (D14)', () => {
   const issueEmpty = {
     number: 99,
     title: '',
@@ -130,9 +130,9 @@ test('Friendly Titles: resolveSimplifiedViewTitle handles empty titles and missi
   };
 
   const resolved = resolveSimplifiedViewTitle(issueEmpty);
-  assert.equal(resolved.displayTitle, '(No friendly title)');
-  assert.equal(resolved.displaySubtitle, 'Issue #99');
-  assert.equal(resolved.isPlaceholder, true);
+  assert.equal(resolved.displayTitle, 'Issue #99');
+  assert.equal(resolved.displaySubtitle, null);
+  assert.equal(resolved.isPlaceholder, false);
 });
 
 // ==========================================
