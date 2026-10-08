@@ -1,6 +1,6 @@
 # Board lifecycle verification index
 
-Updated: 2026-10-07. Status: INCOMPLETE — L5 human validation pending. Both Batch 2 chains pass L4 (PROCEED); integration merges into the served preview branches in flight before the single Batch 2 ask.
+Updated: 2026-10-08. Status: INCOMPLETE — human validation pending on served previews; D12 hostile review running, real served-panel CSP/304 proof NOT RUN. Historical in-flight statements below are superseded by later sections and mission.md receipts. No issue closure or push authorized.
 
 ## Batch 1 — contract, three views, voice All Projects fix, lifecycle skill
 
@@ -51,6 +51,19 @@ Repair 1: ses_1797615df11da447fd7d5863 ended at 252225a (base cd6ab18) — claim
 - Board chain: repair 2 (bea33c0/0c3b60a/f2583e2/147d8dd, tests a8014aa, docs bca2bc9) reviewed **PROCEED (zero residual)** by ses_edc44a2c528758b04a5d3a20: D-01 storage JSON rejection, D-02 sentinel PATCH guard, D-03 page-1-304 multi-page validation, D-04 truncation flag + watermark guard all verified fixed with red/green at 00ac1b9; F-01..F-14 collateral intact. 269/269 tests green — manager independently reproduced `node --test test/*.test.js` in the worktree. Report l4-board-v2-repair-2.md + artifacts board-v2-repair-2-l4/ committed on the fix branch (4353672) and carried into the root tree by the integration merge. Reviewer learning: repair-1's production-orchestration mock (querySelector null) broke real DOM rendering; builder's test-app-harness.js is the accepted production-bundle harness standard.
 - **Batch 2 quorum reached**: both members passed L4. L5 = AWAITING HUMAN; one combined ask after the integration merges land in the served preview branches (fix chains are NOT yet what the served roots run).
 - NOT RUN (both chains, unchanged): real iframe/webview browser E2E; real GitHub mutations; positive live form/permission reply proof (shared host DB/session roster — design limitation; disposable-fixture-contract.md outstanding); end-to-end measured quota savings.
+
+## D12 — direct-origins caching activation (2026-10-08)
+
+Status: BUILT, NOT ACCEPTED. Worktree .worktrees/team-dev-d12-origins-etag, branch feat/d12-origins-etag at 4c688e2, base f849dce. Only manifest/test/report changes reported; no permanent production source/bundle edits. Existing capabilities retained, origins appended; contributes.origins only https://api.github.com. Manager inspected the narrow manifest diff and clean git status/history.
+
+- L0: builder reports typecheck exit 0 and build/rebuilt bundle parity exit 0; independent reviewer verification IN PROGRESS, not manager-run.
+- L1: manager executed `node --test --test-reporter=dot test/*.test.js` in the worktree: exit 0, 288 pass marks, no failures (283 baseline + 5 new tests). This reproduces test execution, not test-oracle authenticity. Builder describes missing-token, fetch/network-CSP rejection, 401 proxy fallback and mocked ETag/304 tests; independent review required.
+- L2: NOT RUN for D12 activation through current installed host. Host schema/effective CSP wiring under independent review; an old source audit is not current runtime proof.
+- L3: NOT RUN — no effective CSP observed in the real served iframe and no actual api.github.com 304 captured through that iframe. Mocked 304 and a verification recipe do not satisfy D12. This binding condition remains PENDING.
+- L4: IN PROGRESS — ses_b5ec593cd5ccb426c1e75aeb (engineer; tier/location verified); brief ../briefs/board-d12-origins-cache-l4-2026-10-08.md. Review covers scope, host origin/schema activation/reload prerequisites, real test oracles via mutation probes, proxy fallback, safe evidence and feasibility of the live recipe. Reports in worktree verifications/d12-origins-cache/l4-review.md and its canonical proof.md.
+- L5: NOT WAIVED YET — eligible only if confirmed internal-config scope/no workflow or UI changes, with written reason. Pending board/voice user verdicts remain required regardless of D12.
+- Correction receipt on issue 24 reportedly posted by builder: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/24#issuecomment-6067461817 (not independently fetched). Checkboxes unchanged by brief.
+- NOT manager-verified: typecheck/build, five tests' authenticity, token hygiene, installed manifest reload behavior, live CSP and network 304. Worktree report read was policy-denied, recorded without retry; the authorized independent reviewer reads its own artifacts and returns evidence.
 
 ## Recovery proof conditions
 - Next dispatch after each completed repair is fresh read-only hostile review of exact commit. No resumed ended workers.
