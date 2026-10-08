@@ -161,6 +161,25 @@ If working on a project without a remote git repository, the extension prompts y
 
 ---
 
+## Releases & In-App Updates
+
+OpenChamber notifies users when an installed extension has an update available by detecting version increments in `package.json`. Updates surface directly in OpenChamber's extension management interface.
+
+### Version History
+
+#### 1.2.0
+- **Page-size Fallback (Community PR #25)**: Graceful fallback from 100 to 20 issues per page when host response truncation or `RESPONSE_TOO_LARGE` occurs, maintaining the 1,000 issue repository cap across all fetch paths (Contributed by Bohdan Triapitsyn, @btriapitsyn).
+- **Direct Origins & ETag Caching (D12)**: Direct GitHub API transport with `If-None-Match` and `304 Not Modified` caching via `capabilities: ["origins"]`.
+- **Three Simplified Views (D2)**: Dedicated views for Human Tasks, All Tasks (friendly titles grouped by status), and Questions.
+- **V2 Session Binding**: Robust session-to-repo and issue mapping preserving context across worktrees and conversation projects.
+- **Incremental Idle Sync & Watermarks (D11)**: Background synchronization with `since=` parameter avoiding redundant full refetches on idle session transitions.
+
+#### 1.1.0
+- In-app extension updates documented via `package.json` versioning.
+- Milestone tracking and enhanced dependency visualization.
+
+---
+
 ## Architectural Principles
 
 1. **Doubt-Driven Engineering:** Every layout change, parser, and state transition is verified with empirical automated tests. Work is assumed broken until proven by real assertions.
