@@ -82,6 +82,12 @@ Queue data status: issue #24 is live with real Human Tasks + Open Questions + st
 - PR #25 PORT L4-2 COMPLETE 2026-10-08 (ses_ccbe85d93b04ea7bd6c35d51, engineer): VERDICT HALT (Spec Compliance: FAIL, Quality: NEEDS-FIXES). Reviewer caught F-01 over-narrowing: probe '{"error": "not found"' returned false because V8 throws "Expected ',' or '}' after property value", and mid-array truncation throws "after array element". Hardcoded patterns missed real truncation cases. F-02 verified resolved.
 - PR #25 PORT REPAIR-2 COMPLETE 2026-10-08 (ses_44b6a8d9dcc49b70c65ce821, engineer): commit 0010ce9. isOversizedAnswer updated with comprehensive V8 premature-termination patterns. Probes verified: truncation probes all TRUE ({"error":"not found", [{"id":1},{"id":2, Unterminated string, RESPONSE_TOO_LARGE); non-truncation probes all FALSE (<!DOCTYPE html>, {"invalid":foo}, {"a":undefined}). Gates: typecheck 0, build clean (480.8kb, byte parity verified), 304/304 tests passed. Tree clean.
 - PR #25 PORT L4-3 COMPLETE 2026-10-08 (ses_8f723cf0ddcb9445c038ba85, engineer): VERDICT PROCEED (Spec PASS, Quality APPROVED). F-01 & F-02 verified resolved in 0010ce9. Probes 18/18 PASS. Gates: typecheck 0, build clean (byte-parity verified), 304/304 tests passed. Evidence: l4-review-3.md. BOTH fix streams fully approved and ready for integration.
+- V1.2.1 RELEASE & PUBLISH COMPLETE 2026-10-08 (ses_3c97e552f7413772f29518f9, worker, root):
+  - Local `master` fast-forwarded `caf3700..6f781be` (version 1.2.1).
+  - Pushed to GitHub: `git push origin master` `caf3700..6f781be` (clean fast-forward PASS).
+  - Served preview branch `feat/v2-binding-and-ratelimit` merged with `master` -> `9b2151d`.
+  - Typecheck: PASS (0 errors), tests: PASS (320/320 passed, 0 failures).
+  - Worktree `.worktrees/team-dev-fix-capability-and-repo-scan` removed and pruned cleanly.
 - CAPABILITY & REPO SCAN FIX COMPLETE 2026-10-08 (ses_2e99ca1da0cb21c2978d2b54, worker, worktree .worktrees/team-dev-fix-capability-and-repo-scan @ 4932da3):
   - Root cause resolved: OpenChamber parser requires `capabilities` under `openchamber.contributes.capabilities`. Declared `["sessions", "prompt", "files"]` (NOTE: `"projects"` is invalid in SDK schema; `host.listProjects()` is gated by `"sessions"`).
   - Version bumped to `1.2.1` in `package.json`.
