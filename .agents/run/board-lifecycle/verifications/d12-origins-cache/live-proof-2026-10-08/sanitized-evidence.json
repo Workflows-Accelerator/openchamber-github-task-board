@@ -1,0 +1,33 @@
+{
+  "timestamp": "2026-10-08T21:16:14Z",
+  "branch": "Branch B (Approval Pending)",
+  "panel_csp": {
+    "status": 200,
+    "method": "GET",
+    "redacted_url": "http://127.0.0.1:3000/api/guests/github-task-board/panel/index.html",
+    "connect_src_allowed_origins": [
+      "127.0.0.1:3000/api/guests/github-task-board/"
+    ],
+    "direct_github_origin_allowed": false
+  },
+  "observed_direct_fetch": {
+    "attempted": true,
+    "method": "GET",
+    "redacted_url": "https://api.github.com/repos/<owner>/<repo>/issues?state=all&per_page=100&page=1",
+    "blocked_by_security_policy": true,
+    "fallback_invoked": true
+  },
+  "observed_fallback_request": {
+    "method": "GET",
+    "redacted_path": "/repos/<owner>/<repo>/issues?state=all&per_page=100&page=1",
+    "proxy_route": "POST /api/guests/github-task-board/request",
+    "proxy_status": 401,
+    "payload_present": true,
+    "etag_present": false
+  },
+  "panel_ui_state": {
+    "shell_retained": true,
+    "error_banner_displayed": true,
+    "crashed": false
+  }
+}
