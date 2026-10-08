@@ -86,6 +86,24 @@ Declare `capabilities: ["origins"]` + `contributes.origins: ["https://api.github
 ## D13. Repo manual-override lifetime: FOLLOW THE SESSION (user, 2026-10-08)
 Current-session repository is the default. A manual repo pick is scoped to the current session context: when the active session changes, selection resets to the new session's repository automatically. Explicit switching stays easy within a session context; the "Current session" control remains the anchor back to the default. (Manager had recommended keeping the manual pick; the user chose follow-the-session — this decision is authoritative.)
 
+## D14. Missing friendly title falls back to the ISSUE TITLE (user, 2026-10-08)
+The "(No friendly title)" placeholder is REJECTED — it should never appear. When an issue body has no
+Friendly Title line, the simplified lists show the issue's own (technical) title. Separate known defect:
+every issue currently shows the placeholder even though all 12 live bodies carry Friendly Titles —
+a live parsing/data-path bug under investigation; the fixture-based tests passed, so production-path
+truth is unproven. (D14 supersedes the placeholder behavior built in fix/review-feedback-views.)
+
+## D15. Repo selector shows the SESSION'S REPO INLINE (user, 2026-10-08)
+The picker must always display which repository the current session is linked to (e.g. "Session repo:
+github-task-board"), with the actively picked repo visibly distinct. The current anchor wording is not
+clear enough. Also reported: the picker showed a cache/rate-limit message during click-through; that
+state must look intentional and explain what to do.
+
+## D16. Cross-repo links: GROUP BY REPO + FULL URLS (user, 2026-10-08)
+In All Projects mode, Human Tasks / Questions (and the to-do views generally) group by repository and
+show related issues in other repositories as plain full-URL links (consistent with D9). User values the
+"everything waiting on me" view; the current empty "nothing to show" state is a load failure, not truth.
+
 ## Gate ledger correction (2026-10-07)
 - Batch 1 contract/views/status and voice crash local integration landed, L4 passed as indexed in verifications/proof.md; human review pending, not Done. Older RUNNING rows above are historical.
 - Batch 2 voice cd6ab18 and board 656cc4f: both independent hostile reviews HALT. No integration/acceptance; repair 1 dispatched into isolated worktrees. Worker/model/session details: status-l4-halts-2026-10-07.md.
