@@ -25,36 +25,28 @@ const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8
 // 1. Icon Distinction & Accessibility
 // ==========================================
 test('Icons: All Tasks view-mode button has distinct checklist SVG icon compared to List', () => {
-  // Extract #btnViewAllTasks SVG
-  const allTasksMatch = INDEX_HTML.match(/id="btnViewAllTasks"[^>]*>([\s\S]*?)<\/button>/);
-  assert.ok(allTasksMatch, '#btnViewAllTasks must exist in index.html');
-  const allTasksSvg = allTasksMatch[1];
+  const { elements } = createTestApp();
 
-  // Extract #btnViewList SVG
-  const listMatch = INDEX_HTML.match(/id="btnViewList"[^>]*>([\s\S]*?)<\/button>/);
-  assert.ok(listMatch, '#btnViewList must exist in index.html');
-  const listSvg = listMatch[1];
+  const allTasksBtn = elements.get('btnViewAllTasks');
+  const listBtn = elements.get('btnViewList');
+  const humanBtn = elements.get('btnViewHuman');
+  const questionsBtn = elements.get('btnViewQuestions');
 
-  // Extract #btnViewHuman SVG
-  const humanMatch = INDEX_HTML.match(/id="btnViewHuman"[^>]*>([\s\S]*?)<\/button>/);
-  assert.ok(humanMatch, '#btnViewHuman must exist in index.html');
-  const humanSvg = humanMatch[1];
+  assert.ok(allTasksBtn, '#btnViewAllTasks must exist in runtime DOM');
+  assert.ok(listBtn, '#btnViewList must exist in runtime DOM');
+  assert.ok(humanBtn, '#btnViewHuman must exist in runtime DOM');
+  assert.ok(questionsBtn, '#btnViewQuestions must exist in runtime DOM');
 
-  // Extract #btnViewQuestions SVG
-  const questionsMatch = INDEX_HTML.match(/id="btnViewQuestions"[^>]*>([\s\S]*?)<\/button>/);
-  assert.ok(questionsMatch, '#btnViewQuestions must exist in index.html');
-  const questionsSvg = questionsMatch[1];
-
-  // Extract path data
-  const extractPath = (svg) => {
-    const m = svg.match(/<path\s+d="([^"]+)"/);
+  // Extract path data from runtime elements
+  const extractPath = (el) => {
+    const m = el.innerHTML.match(/<path\s+d="([^"]+)"/);
     return m ? m[1] : '';
   };
 
-  const pathAllTasks = extractPath(allTasksSvg);
-  const pathList = extractPath(listSvg);
-  const pathHuman = extractPath(humanSvg);
-  const pathQuestions = extractPath(questionsSvg);
+  const pathAllTasks = extractPath(allTasksBtn);
+  const pathList = extractPath(listBtn);
+  const pathHuman = extractPath(humanBtn);
+  const pathQuestions = extractPath(questionsBtn);
 
   assert.ok(pathAllTasks, 'All Tasks must have a valid SVG path');
   assert.ok(pathList, 'List must have a valid SVG path');
@@ -74,18 +66,30 @@ test('Icons: All Tasks view-mode button has distinct checklist SVG icon compared
     'All Tasks icon must contain checklist checkmark coordinates'
   );
 
-  // Assert accessible attributes are preserved
-  assert.ok(allTasksMatch[0].includes('title="All Tasks View"'), 'All Tasks button has title');
-  assert.ok(allTasksMatch[0].includes('aria-label="All Tasks View"'), 'All Tasks button has aria-label');
-  assert.ok(allTasksMatch[0].includes('role="radio"'), 'All Tasks button has role="radio"');
-  assert.ok(allTasksMatch[0].includes('aria-checked='), 'All Tasks button has aria-checked');
+  // Assert accessible attributes are preserved in runtime DOM
+  assert.equal(allTasksBtn.title, 'All Tasks View', 'All Tasks button has title');
+  assert.equal(allTasksBtn.getAttribute('aria-label'), 'All Tasks View', 'All Tasks button has aria-label');
+  assert.equal(allTasksBtn.getAttribute('role'), 'radio', 'All Tasks button has role="radio"');
+  assert.equal(allTasksBtn.getAttribute('aria-checked'), 'false', 'All Tasks button has aria-checked');
 });
 
 test('Icons: sidebar layout toggle icon updates with distinct checklist SVG in all-tasks mode', () => {
+  const { elements } = createTestApp();
+
+  // Trigger switch to all-tasks mode via button click in runtime DOM
+  elements.get('btnViewAllTasks').click();
+
+  const btnLayoutToggle = elements.get('btnLayoutToggle');
+  assert.ok(btnLayoutToggle, 'btnLayoutToggle element exists');
+  assert.equal(btnLayoutToggle.title, 'View: All Tasks (click to switch to Questions)');
+  assert.equal(btnLayoutToggle.getAttribute('aria-label'), 'View: All Tasks (click to switch to Questions)');
   assert.ok(
-    MAIN_TS.includes("mode === 'all-tasks'") &&
-      MAIN_TS.includes('M22 7h-9v2h9V7zm0 8h-9v2h9v-2z'),
-    'main.ts updateViewModeButtons must set checklist SVG for all-tasks mode'
+    btnLayoutToggle.innerHTML.includes('M22 7h-9v2h9V7zm0 8h-9v2h9v-2z'),
+    'Sidebar toggle button must render distinct checklist SVG in all-tasks mode'
+  );
+  assert.ok(
+    btnLayoutToggle.innerHTML.includes('M5.54 11L2 7.46'),
+    'Sidebar toggle button must include checklist checkmark coordinates'
   );
 });
 
@@ -278,58 +282,115 @@ test('Cross-Repo Isolation: sessionRepoKeys handles V2 data.repo projection clea
 // ==========================================
 // 5. Issue 24 & Decision D13 (Session Follow & Repository Switching)
 // ==========================================
-test('Decision D13: popover provides Current session anchor back to default', () => {
-  assert.ok(
-    INDEX_HTML.includes('.current-session-option'),
-    'index.html must style .current-session-option'
-  );
-  assert.ok(
-    MAIN_TS.includes('current-session-option') &&
-      MAIN_TS.includes('isManualRepoOverride = false'),
-    'main.ts popover must provide Current session option resetting isManualRepoOverride'
-  );
+test('Decision D13: popover provides Current session anchor back to default', async () => {
+  const { app, elements, emitSession } = createTestApp();
+  app.setState({
+    allProjects: [{ id: 'proj_1', name: 'Test Proj', directory: '/workspace', gitRepo: { owner: 'org', repo: 'default-repo' } }],
+  });
+  await emitSession({ id: 'ses_1', title: 'Session 1', items: [{ id: '1', data: { repo: 'org/default-repo' } }] });
+  assert.equal(app.getState().currentRepo, 'org/default-repo');
+  assert.equal(app.getState().isManualRepoOverride, false);
+
+  // User sets manual override
+  elements.get('inputCustomRepo').value = 'custom/manual-repo';
+  elements.get('btnSaveCustomRepo').click();
+  assert.equal(app.getState().currentRepo, 'custom/manual-repo');
+  assert.equal(app.getState().isManualRepoOverride, true);
+
+  // User clicks "Current session" option in popover to anchor back to default
+  const currentSessionOpt = elements.get('detectedReposList').querySelector('.current-session-option');
+  assert.ok(currentSessionOpt, 'Current session option element must exist in popover DOM');
+  currentSessionOpt.click();
+  await new Promise((r) => setTimeout(r, 25));
+
+  assert.equal(app.getState().isManualRepoOverride, false, 'Clicking Current session option must reset isManualRepoOverride');
+  assert.equal(app.getState().currentRepo, 'org/default-repo', 'Repository must restore to active session default repo');
 });
 
-test('Decision D13: active session change resets manual repository override automatically', () => {
-  assert.ok(
-    MAIN_TS.includes('activeSessionId !== sess.id') &&
-      MAIN_TS.includes('isManualRepoOverride = false'),
-    'main.ts host.onSession must reset isManualRepoOverride on active session change per D13'
-  );
+test('Decision D13: active session change resets manual repository override automatically', async () => {
+  const { app, elements, emitSession } = createTestApp();
+  await emitSession({ id: 'ses_1', title: 'Session 1', items: [{ id: '1', data: { repo: 'org/ses1-repo' } }] });
+  assert.equal(app.getState().currentRepo, 'org/ses1-repo');
+
+  // Set manual override
+  elements.get('inputCustomRepo').value = 'custom/override-repo';
+  elements.get('btnSaveCustomRepo').click();
+  assert.equal(app.getState().isManualRepoOverride, true);
+  assert.equal(app.getState().currentRepo, 'custom/override-repo');
+
+  // Background update on same session does not reset
+  await emitSession({ id: 'ses_1', title: 'Session 1 Renamed', items: [{ id: '1', data: { repo: 'org/ses1-repo' } }] });
+  assert.equal(app.getState().isManualRepoOverride, true, 'Same session update must preserve manual override');
+  assert.equal(app.getState().currentRepo, 'custom/override-repo');
+
+  // Session changes to ses_2 -> resets override automatically per D13
+  await emitSession({ id: 'ses_2', title: 'Session 2', items: [{ id: '2', data: { repo: 'org/ses2-repo' } }] });
+  assert.equal(app.getState().isManualRepoOverride, false, 'Active session change must reset isManualRepoOverride');
+  assert.equal(app.getState().currentRepo, 'org/ses2-repo', 'Active session change must follow new session repo');
 });
 
 test('Empty States: Empty, Inaccessible, and Failed repository states are visually distinguishable', () => {
-  assert.ok(
-    INDEX_HTML.includes('.empty-box.empty-state-inaccessible svg') &&
-      INDEX_HTML.includes('.empty-box.empty-state-failed svg') &&
-      INDEX_HTML.includes('.empty-box.empty-state-empty svg'),
-    'index.html must provide distinct color styles for inaccessible, failed, and empty states'
-  );
+  const { app, elements } = createTestApp();
+  const listContainer = elements.get('listViewContainer');
 
-  assert.ok(
-    MAIN_TS.includes('empty-state-inaccessible') &&
-      MAIN_TS.includes('Repository Inaccessible') &&
-      MAIN_TS.includes('empty-state-failed') &&
-      MAIN_TS.includes('Failed to Load Repository') &&
-      MAIN_TS.includes('empty-state-empty') &&
-      MAIN_TS.includes('No Issues in Repository'),
-    'main.ts renderEmptyState must distinguish empty, inaccessible, and failed states with distinct titles and icons'
-  );
+  // 1. Inaccessible
+  app.renderEmptyState('Must have push access (HTTP 403 Forbidden)', 'inaccessible');
+  const inaccessibleHtml = listContainer.innerHTML;
+  assert.ok(inaccessibleHtml.includes('empty-state-inaccessible'), 'renders empty-state-inaccessible class');
+  assert.ok(inaccessibleHtml.includes('Repository Inaccessible'), 'renders title Repository Inaccessible');
+  assert.ok(inaccessibleHtml.includes('Must have push access'), 'renders error message');
+  assert.ok(inaccessibleHtml.includes('<svg'), 'renders icon SVG');
+
+  // 2. Failed
+  app.renderEmptyState('Internal Server Error (HTTP 500)', 'failed');
+  const failedHtml = listContainer.innerHTML;
+  assert.ok(failedHtml.includes('empty-state-failed'), 'renders empty-state-failed class');
+  assert.ok(failedHtml.includes('Failed to Load Repository'), 'renders title Failed to Load Repository');
+  assert.ok(failedHtml.includes('Internal Server Error'), 'renders error message');
+  assert.ok(failedHtml.includes('<svg'), 'renders icon SVG');
+
+  // 3. Empty
+  app.renderEmptyState('No open issues in repo', 'empty');
+  const emptyHtml = listContainer.innerHTML;
+  assert.ok(emptyHtml.includes('empty-state-empty'), 'renders empty-state-empty class');
+  assert.ok(emptyHtml.includes('No Issues in Repository'), 'renders title No Issues in Repository');
+  assert.ok(emptyHtml.includes('No open issues in repo'), 'renders empty message');
+  assert.ok(emptyHtml.includes('<svg'), 'renders icon SVG');
+
+  // Visual distinction across all three
+  assert.notEqual(inaccessibleHtml, failedHtml, 'Inaccessible state must differ from Failed state');
+  assert.notEqual(inaccessibleHtml, emptyHtml, 'Inaccessible state must differ from Empty state');
+  assert.notEqual(failedHtml, emptyHtml, 'Failed state must differ from Empty state');
 });
 
 // ==========================================
 // 6. Ground Truth: Refresh Trigger (No Timer Polling per D11)
 // ==========================================
-test('Refresh Trigger: No setInterval / timer polling exists in panel codebase (D11 enforced)', () => {
-  // Disallow any setInterval in main.ts
+test('Refresh Trigger: No setInterval / timer polling exists in panel codebase (D11 enforced)', async () => {
+  const { app, mockWindow } = createTestApp();
+
+  // Runtime assertion: panel boot must never register any setInterval timer
+  assert.equal(
+    mockWindow.__setIntervalCalls.length,
+    0,
+    'Panel runtime must not register any setInterval polling loops (Decision D11)'
+  );
+
+  // Runtime event execution: verify idle refresh executes without registering setInterval timers
+  await app.handleIdleRefresh([], []);
+  assert.equal(
+    mockWindow.__setIntervalCalls.length,
+    0,
+    'handleIdleRefresh must operate strictly without setInterval timer polling'
+  );
+
+  // Secondary structural check: codebase contains zero setInterval occurrences
   const setIntervalMatches = MAIN_TS.match(/setInterval\s*\(/g);
   assert.equal(
     setIntervalMatches,
     null,
     'main.ts must not contain any setInterval polling loops (Decision D11)'
   );
-
-  // Assert idle refresh trigger is strictly event-driven via host.onSessions
   assert.ok(
     MAIN_TS.includes('becameIdle') && MAIN_TS.includes('handleIdleRefresh('),
     'Idle refresh must be event-driven via host.onSessions becameIdle transition'
@@ -337,7 +398,7 @@ test('Refresh Trigger: No setInterval / timer polling exists in panel codebase (
 });
 
 // ==========================================
-// 7. Defects Reproduction Tests
+// 7. Defects F-01 & F-02 Reproduction Tests
 // ==========================================
 test('F-01: Custom repo input marks manual override, survives background events, and resets on active session change', async () => {
   const { app, elements, emitSession, emitDirectory } = createTestApp();
