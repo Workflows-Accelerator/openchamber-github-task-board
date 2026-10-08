@@ -1986,6 +1986,45 @@ export async function retryWithBackoff<T>(
   throw lastErr;
 }
 
+// Issue list pages ask for GitHub's maximum of 100. A host that cannot carry
+// that much in one answer (older OpenChamber versions cut proxied answers off
+// at 256 000 characters) gets SMALL_ISSUE_PAGE_SIZE for that repo instead.
+export const FULL_ISSUE_PAGE_SIZE = 100;
+export const SMALL_ISSUE_PAGE_SIZE = 20;
+export const MAX_ISSUES_PER_REPO = 1000;
+
+export type IssuePageRequest = (method: 'GET', path: string) => Promise<any>;
+
+// A cut-off answer fails to parse; a newer host refuses it by code.
+export function isOversizedAnswer(err: any): boolean {
+  return err instanceof SyntaxError || err?.code === 'RESPONSE_TOO_LARGE';
+}
+
+// One page of a repo's issues at the page size `pageSizes` holds for that
+// repo. Only page 1 may switch to the small size: later page numbers count in
+// the size page 1 was read with.
+export async function fetchIssuePage(
+  repo: string,
+  page: number,
+  request: IssuePageRequest,
+  pageSizes: Map<string, number>,
+  onShrink?: (pageSize: number) => void,
+): Promise<{ items: any[]; pageSize: number }> {
+  const read = async (pageSize: number) => {
+    const raw = await request('GET', `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`);
+    return { items: Array.isArray(raw) ? raw : (raw?.items || []), pageSize };
+  };
+  const pageSize = pageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+  try {
+    return await read(pageSize);
+  } catch (err) {
+    if (page !== 1 || pageSize === SMALL_ISSUE_PAGE_SIZE || !isOversizedAnswer(err)) throw err;
+    pageSizes.set(repo, SMALL_ISSUE_PAGE_SIZE);
+    onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+    return read(SMALL_ISSUE_PAGE_SIZE);
+  }
+}
+
 export interface ConcurrencyResult<T, R> {
   item: T;
   status: 'fulfilled' | 'rejected';

@@ -4670,6 +4670,27 @@ Blocked by ${blockerRef}`;
     }
     throw lastErr;
   }
+  var FULL_ISSUE_PAGE_SIZE = 100;
+  var SMALL_ISSUE_PAGE_SIZE = 20;
+  var MAX_ISSUES_PER_REPO = 1e3;
+  function isOversizedAnswer(err) {
+    return err instanceof SyntaxError || err?.code === "RESPONSE_TOO_LARGE";
+  }
+  async function fetchIssuePage(repo, page, request, pageSizes, onShrink) {
+    const read = async (pageSize2) => {
+      const raw = await request("GET", `/repos/${repo}/issues?state=all&per_page=${pageSize2}&page=${page}`);
+      return { items: Array.isArray(raw) ? raw : raw?.items || [], pageSize: pageSize2 };
+    };
+    const pageSize = pageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    try {
+      return await read(pageSize);
+    } catch (err) {
+      if (page !== 1 || pageSize === SMALL_ISSUE_PAGE_SIZE || !isOversizedAnswer(err)) throw err;
+      pageSizes.set(repo, SMALL_ISSUE_PAGE_SIZE);
+      onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+      return read(SMALL_ISSUE_PAGE_SIZE);
+    }
+  }
   async function mapWithConcurrency(items, limit, worker) {
     const list = Array.isArray(items) ? items : [];
     const results = new Array(list.length);
@@ -4699,7 +4720,7 @@ Blocked by ${blockerRef}`;
   var isAllProjectsMode = false;
   var allProjectsRepoRefs = [];
   var ALL_PROJECTS_CACHE_KEY = "__all_projects__";
-  var MAX_PROJECT_ISSUE_PAGES = 10;
+  var issuePageSizes = /* @__PURE__ */ new Map();
   var MAX_CONCURRENT_REPO_FETCHES = 4;
   var RATE_LIMIT_MAX_ATTEMPTS = 3;
   var workspaceRootNoticeShown = false;
@@ -5455,13 +5476,18 @@ Blocked by ${blockerRef}`;
       void fetchIssues();
     }
   }
+  function fetchRepoIssuePage(repo, page, request = githubRequest) {
+    return fetchIssuePage(repo, page, request, issuePageSizes, (pageSize) => {
+      addLog(`Issue page for ${repo} is too large for the host; reading ${pageSize} per page`, "warn");
+    });
+  }
   async function streamRemainingPages(repo, storageKey, startPage, epoch) {
     let page = startPage;
-    const MAX_PAGES = 10;
-    while (page <= MAX_PAGES && currentRepo === repo && activeStreamEpoch === epoch) {
+    const pageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+    while (page <= maxPages && currentRepo === repo && activeStreamEpoch === epoch) {
       try {
-        const nextRaw = await githubRequest("GET", `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
-        const nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
+        const { items: nextItems } = await fetchRepoIssuePage(repo, page);
         if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
         const nextIssues = normalizeGithubIssues(nextItems);
         if (currentRepo !== repo || activeStreamEpoch !== epoch) break;
@@ -5473,7 +5499,7 @@ Blocked by ${blockerRef}`;
         renderViews();
         statusReconciler.schedule(issues);
         addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
-        if (nextItems.length < 100) break;
+        if (nextItems.length < pageSize) break;
         page++;
       } catch (err) {
         addLog(`Background streaming stopped at page ${page}: ${err.message}`, "warn");
@@ -5520,11 +5546,7 @@ Blocked by ${blockerRef}`;
     if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
     try {
       addLog(`Fetching issues for ${currentRepo}...`);
-      const page1Raw = await githubRequest(
-        "GET",
-        `/repos/${currentRepo}/issues?state=all&per_page=100&page=1`
-      );
-      const page1Items = Array.isArray(page1Raw) ? page1Raw : page1Raw?.items || [];
+      const { items: page1Items, pageSize } = await fetchRepoIssuePage(currentRepo, 1);
       const page1Issues = normalizeGithubIssues(page1Items);
       issues = page1Issues;
       issueCache.set(currentRepo, {
@@ -5540,7 +5562,7 @@ Blocked by ${blockerRef}`;
       }
       renderViews();
       statusReconciler.schedule(issues);
-      if (page1Items.length >= 100) {
+      if (page1Items.length >= pageSize) {
         void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch);
       }
     } catch (err) {
@@ -5568,17 +5590,16 @@ Blocked by ${blockerRef}`;
     });
   }
   async function fetchAllRepoIssuePages(repo, epoch) {
-    const firstRaw = await githubRequestWithRetry("GET", `/repos/${repo}/issues?state=all&per_page=100&page=1`);
-    const firstItems = Array.isArray(firstRaw) ? firstRaw : firstRaw?.items || [];
+    const { items: firstItems, pageSize } = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
     let repoIssues = normalizeGithubIssues(firstItems);
-    if (firstItems.length < 100) return repoIssues;
+    if (firstItems.length < pageSize) return repoIssues;
     let page = 2;
-    while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
-      const nextRaw = await githubRequestWithRetry("GET", `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
-      const nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
+    const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+    while (page <= maxPages && activeStreamEpoch === epoch) {
+      const { items: nextItems } = await fetchRepoIssuePage(repo, page, githubRequestWithRetry);
       if (nextItems.length === 0) break;
       repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
-      if (nextItems.length < 100) break;
+      if (nextItems.length < pageSize) break;
       page++;
     }
     return repoIssues;

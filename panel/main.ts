@@ -143,6 +143,10 @@ import {
   parseRetryAfterMs,
   isSecondaryRateLimit,
   retryWithBackoff,
+  fetchIssuePage,
+  FULL_ISSUE_PAGE_SIZE,
+  MAX_ISSUES_PER_REPO,
+  type IssuePageRequest,
   mapWithConcurrency,
 } from './core.js';
 export type { TestItem };
@@ -186,7 +190,8 @@ interface ProjectRepoRef {
 }
 let allProjectsRepoRefs: ProjectRepoRef[] = [];
 const ALL_PROJECTS_CACHE_KEY = '__all_projects__';
-const MAX_PROJECT_ISSUE_PAGES = 10;
+// Page size per repo for the issue list; see fetchIssuePage in core.ts.
+const issuePageSizes = new Map<string, number>();
 const MAX_CONCURRENT_REPO_FETCHES = 4;
 const RATE_LIMIT_MAX_ATTEMPTS = 3;
 let workspaceRootNoticeShown = false;
@@ -1118,13 +1123,23 @@ async function promptCustomToken(): Promise<void> {
   }
 }
 
+function fetchRepoIssuePage(
+  repo: string,
+  page: number,
+  request: IssuePageRequest = githubRequest,
+): Promise<{ items: any[]; pageSize: number }> {
+  return fetchIssuePage(repo, page, request, issuePageSizes, (pageSize) => {
+    addLog(`Issue page for ${repo} is too large for the host; reading ${pageSize} per page`, 'warn');
+  });
+}
+
 async function streamRemainingPages(repo: string, storageKey: string, startPage: number, epoch: number): Promise<void> {
   let page = startPage;
-  const MAX_PAGES = 10; // Supports up to 1,000 issues while keeping memory bounded
-  while (page <= MAX_PAGES && currentRepo === repo && activeStreamEpoch === epoch) {
+  const pageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+  const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize); // keeps memory bounded
+  while (page <= maxPages && currentRepo === repo && activeStreamEpoch === epoch) {
     try {
-      const nextRaw = await githubRequest('GET', `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
-      const nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
+      const { items: nextItems } = await fetchRepoIssuePage(repo, page);
       if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
 
       const nextIssues = normalizeGithubIssues(nextItems);
@@ -1139,7 +1154,7 @@ async function streamRemainingPages(repo: string, storageKey: string, startPage:
       statusReconciler.schedule(issues);
       addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
 
-      if (nextItems.length < 100) break;
+      if (nextItems.length < pageSize) break;
       page++;
     } catch (err: any) {
       addLog(`Background streaming stopped at page ${page}: ${err.message}`, 'warn');
@@ -1193,12 +1208,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
   try {
     addLog(`Fetching issues for ${currentRepo}...`);
     // Page 1: Standard core issues endpoint (5,000 req/hr rate limit pool)
-    const page1Raw = await githubRequest(
-      'GET',
-      `/repos/${currentRepo}/issues?state=all&per_page=100&page=1`
-    );
-
-    const page1Items = Array.isArray(page1Raw) ? page1Raw : (page1Raw?.items || []);
+    const { items: page1Items, pageSize } = await fetchRepoIssuePage(currentRepo, 1);
     const page1Issues = normalizeGithubIssues(page1Items);
 
     issues = page1Issues;
@@ -1219,8 +1229,8 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     renderViews();
     statusReconciler.schedule(issues);
 
-    // Background streaming for remaining pages if 100 items returned
-    if (page1Items.length >= 100) {
+    // Background streaming for remaining pages if page 1 came back full
+    if (page1Items.length >= pageSize) {
       void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch);
     }
   } catch (err: any) {
@@ -1255,19 +1265,18 @@ function githubRequestWithRetry(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELE
 // Fetch every page of issues for one repository, capped so a single runaway
 // repo cannot exhaust the API budget. Returns normalized issues only.
 async function fetchAllRepoIssuePages(repo: string, epoch: number): Promise<Issue[]> {
-  const firstRaw = await githubRequestWithRetry('GET', `/repos/${repo}/issues?state=all&per_page=100&page=1`);
-  const firstItems = Array.isArray(firstRaw) ? firstRaw : (firstRaw?.items || []);
+  const { items: firstItems, pageSize } = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
   let repoIssues = normalizeGithubIssues(firstItems);
 
-  if (firstItems.length < 100) return repoIssues;
+  if (firstItems.length < pageSize) return repoIssues;
 
   let page = 2;
-  while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
-    const nextRaw = await githubRequestWithRetry('GET', `/repos/${repo}/issues?state=all&per_page=100&page=${page}`);
-    const nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
+  const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+  while (page <= maxPages && activeStreamEpoch === epoch) {
+    const { items: nextItems } = await fetchRepoIssuePage(repo, page, githubRequestWithRetry);
     if (nextItems.length === 0) break;
     repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
-    if (nextItems.length < 100) break;
+    if (nextItems.length < pageSize) break;
     page++;
   }
   return repoIssues;
