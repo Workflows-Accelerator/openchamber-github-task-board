@@ -188,3 +188,68 @@ test('D12 Direct Activation: direct fetch sends ETag / If-None-Match and handles
   const issueHostRequests = hostRequests.filter((r) => r.path === '/repos/owner/repo/issues');
   assert.equal(issueHostRequests.length, 0, 'host.request must NOT be called when direct fetch succeeds with 304');
 });
+
+// ==========================================
+// D12 Origin Guard (Defense-in-Depth for Token Authorization)
+// ==========================================
+test('D12 Origin Guard: direct fetch confines token to https://api.github.com and falls back to host.request for non-approved origins', async () => {
+  const hostRequests = [];
+  const { app } = createTestApp({
+    onRequest: (payload) => {
+      hostRequests.push(payload);
+      return {
+        status: 200,
+        body: JSON.stringify([{ id: 999, title: `From Host Proxy (${payload.path})` }]),
+      };
+    },
+  });
+
+  app.setWorkspaceGitToken('stub-workspace-token');
+
+  let directFetchAttempted = false;
+  let targetUrl = null;
+  global.fetch = async (url, opts) => {
+    directFetchAttempted = true;
+    targetUrl = url;
+    return {
+      status: 200,
+      ok: true,
+      headers: new Headers(),
+      json: async () => [{ id: 666, title: 'From Unsafe Direct Fetch' }],
+    };
+  };
+
+  const untrustedUrls = [
+    '//not-github.com/api/v1/repos',
+    '//api.github.com.attacker.com/repos',
+  ];
+
+  for (const untrustedUrl of untrustedUrls) {
+    directFetchAttempted = false;
+    targetUrl = null;
+
+    const res = await app.githubRequest('GET', untrustedUrl);
+
+    assert.equal(
+      directFetchAttempted,
+      false,
+      `Direct fetch must NOT be attempted for non-approved origin: ${targetUrl || untrustedUrl}`
+    );
+    assert.ok(
+      Array.isArray(res),
+      'Result should be parsed issue array from host proxy fallback'
+    );
+    assert.equal(
+      res[0]?.title,
+      `From Host Proxy (${untrustedUrl})`,
+      'Should return data from host proxy fallback'
+    );
+  }
+
+  const fallbackRequests = hostRequests.filter((r) => untrustedUrls.includes(r.path));
+  assert.equal(
+    fallbackRequests.length,
+    untrustedUrls.length,
+    'host.request fallback must be invoked for each non-approved origin'
+  );
+});

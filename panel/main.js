@@ -6421,56 +6421,60 @@ Blocked by ${blockerRef}`;
     if (pat && typeof pat === "string") {
       try {
         const url = new URL(path, "https://api.github.com/");
-        if (query) {
-          Object.entries(query).forEach(([k, v2]) => url.searchParams.set(k, v2));
-        }
-        const directRes = await fetch(url.toString(), {
-          method,
-          headers: {
-            "Accept": "application/vnd.github.v3+json",
-            "Authorization": `Bearer ${pat.trim()}`,
-            ...body ? { "Content-Type": "application/json" } : {},
-            ...headers || {}
-          },
-          body: body ? JSON.stringify(body) : void 0
-        });
-        if (directRes.status === 304) {
-          addLog(`API ${method} ${path} -> 304 Not Modified (via workspace PAT)`, "succ");
-          return { notModified: true, status: 304, etag: directRes.headers.get("etag") || void 0 };
-        }
-        if (directRes.ok) {
-          addLog(`API ${method} ${path} -> ${directRes.status} OK (via workspace PAT)`, "succ");
-          hideBanner();
-          const rem = directRes.headers.get("x-ratelimit-remaining");
-          if (rem !== null) lastRateLimitRemaining = parseInt(rem, 10);
-          const data = await directRes.json();
-          const etag = directRes.headers.get("etag");
-          if (etag && data && typeof data === "object") {
-            Object.defineProperty(data, "etag", { value: etag, configurable: true, writable: true });
+        if (url.origin === "https://api.github.com") {
+          if (query) {
+            Object.entries(query).forEach(([k, v2]) => url.searchParams.set(k, v2));
           }
-          return data;
-        }
-        if (directRes.status === 403 || directRes.status === 429) {
-          let errBody = "";
-          try {
-            errBody = await directRes.clone().text();
-          } catch {
+          const directRes = await fetch(url.toString(), {
+            method,
+            headers: {
+              "Accept": "application/vnd.github.v3+json",
+              "Authorization": `Bearer ${pat.trim()}`,
+              ...body ? { "Content-Type": "application/json" } : {},
+              ...headers || {}
+            },
+            body: body ? JSON.stringify(body) : void 0
+          });
+          if (directRes.status === 304) {
+            addLog(`API ${method} ${path} -> 304 Not Modified (via workspace PAT)`, "succ");
+            return { notModified: true, status: 304, etag: directRes.headers.get("etag") || void 0 };
           }
-          const rlErr = rateLimitErrorFromResponse(directRes.status, directRes.headers, errBody);
-          if (rlErr) throw rlErr;
-        }
-        if (directRes.status === 401) {
-          throw new Error("GitHub PAT authentication failed (401)");
-        }
-        if (method !== "GET") {
-          let errText = "";
-          try {
-            errText = await directRes.clone().text();
-          } catch {
+          if (directRes.ok) {
+            addLog(`API ${method} ${path} -> ${directRes.status} OK (via workspace PAT)`, "succ");
+            hideBanner();
+            const rem = directRes.headers.get("x-ratelimit-remaining");
+            if (rem !== null) lastRateLimitRemaining = parseInt(rem, 10);
+            const data = await directRes.json();
+            const etag = directRes.headers.get("etag");
+            if (etag && data && typeof data === "object") {
+              Object.defineProperty(data, "etag", { value: etag, configurable: true, writable: true });
+            }
+            return data;
           }
-          throw new Error(`GitHub ${method} ${path} failed (${directRes.status}): ${errText}`);
+          if (directRes.status === 403 || directRes.status === 429) {
+            let errBody = "";
+            try {
+              errBody = await directRes.clone().text();
+            } catch {
+            }
+            const rlErr = rateLimitErrorFromResponse(directRes.status, directRes.headers, errBody);
+            if (rlErr) throw rlErr;
+          }
+          if (directRes.status === 401) {
+            throw new Error("GitHub PAT authentication failed (401)");
+          }
+          if (method !== "GET") {
+            let errText = "";
+            try {
+              errText = await directRes.clone().text();
+            } catch {
+            }
+            throw new Error(`GitHub ${method} ${path} failed (${directRes.status}): ${errText}`);
+          }
+          addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, "warn");
+        } else {
+          addLog(`Direct PAT fetch rejected for origin ${url.origin}; falling back to host proxy...`, "warn");
         }
-        addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, "warn");
       } catch (err) {
         if (err && err.rateLimited) throw err;
         if (method !== "GET") throw err;
