@@ -58,3 +58,20 @@ Repair 1: ses_1797615df11da447fd7d5863 ended at 252225a (base cd6ab18) — claim
 - Per-repo watermark/failure/overlap, auth cache scope, forced freshness and duplicate-mutation transport behavior remain explicit checks.
 - Isolated real V2 reply fixtures may be used only without shared session/DB/service effects; no real shared-host session creation/reply is authorized in repair brief.
 - State receipt: status-l4-halts-2026-10-07.md. Nothing pushed, merged from Batch 2, closed or human-approved.
+
+## D12 Direct-Origins Caching Activation (feat/d12-origins-etag)
+
+- **Target:** Branch `feat/d12-origins-etag` (HEAD `4c688e2`, base `f849dce`).
+- **Verdicts:** Spec: `PASS` | Quality: `NEEDS-FIXES` | Operational Recommendation: `PROCEED-WITH-CONDITIONS`.
+- **L0 Static:** PASS (`npm run typecheck` exit 0, 0 errors; manifest schema `parseManifestJson` verified).
+- **L1 Unit / Regression:** PASS (`node --test test/*.test.js` exit 0, 288/288 passed; 5 new real-oracle tests; 3 red/green mutation probes verified).
+- **L2 Integration:** PASS (Manifest schema parsed, catalog 5s cache TTL verified, host `effectiveGrants` and CSP `routes.js:873` mechanisms audited against installed `@openchamber/web`).
+- **L3 The User's Way (Served Panel):** NOT RUN (Empirical served CSP and real `api.github.com` 304 network capture deferred to post-merge integration; synthetic tests do not substitute for real browser proof).
+- **L4 Hostile Review:** PASS with conditions (Report: `verifications/d12-origins-cache/l4-review.md`). Four findings catalogued:
+  1. HIGH: Host capability approval prerequisite omitted in builder report; `origins` CSP requires user approval via Settings -> Extensions before server injects origin into `connect-src`.
+  2. MEDIUM: Recipe Step C.2 prescribes manual "Refresh" button, which wipes cache (`refreshTasks` clears `pageBodyCache`/`issueListEtagCache`) and forces `force=true` (304 impossible via button).
+  3. LOW: Recipe claims 60s idle check interval when no timer polling exists (D11 enforced).
+  4. LOW: Pre-existing `new URL` unvalidated origin defense-in-depth noted.
+- **L5 Human Validation:** AWAITING BATCH / HUMAN (Cannot be waived because capability grant introduces user-facing permission prompt in OpenChamber Settings -> Extensions).
+- **Secret Wall Compliance:** PASS (Zero tokens, prefixes, credentials, or sensitive headers in diffs, tests, or logs).
+
