@@ -150,6 +150,12 @@ import {
   mapWithConcurrency,
   buildIncrementalIssuesPath,
   syncIncrementalRepoIssues,
+  FULL_ISSUE_PAGE_SIZE,
+  SMALL_ISSUE_PAGE_SIZE,
+  MAX_ISSUES_PER_REPO,
+  isOversizedAnswer,
+  fetchIssuePage,
+  type IssuePageRequest,
   getSessionIssueRepo,
   parseRepoFullName,
   sessionRepoKeys,
@@ -202,7 +208,7 @@ interface ProjectRepoRef {
 }
 let allProjectsRepoRefs: ProjectRepoRef[] = [];
 const ALL_PROJECTS_CACHE_KEY = '__all_projects__';
-const MAX_PROJECT_ISSUE_PAGES = 10;
+const issuePageSizes = new Map<string, number>();
 const MAX_CONCURRENT_REPO_FETCHES = 4;
 const RATE_LIMIT_MAX_ATTEMPTS = 3;
 let workspaceRootNoticeShown = false;
@@ -1319,6 +1325,17 @@ async function promptCustomToken(): Promise<void> {
   }
 }
 
+function fetchRepoIssuePage(
+  repo: string,
+  page: number,
+  request: (method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', path: string, body?: any, query?: any, headers?: Record<string, string>) => Promise<any> = githubRequestWithRetry,
+  headers?: Record<string, string>
+): Promise<{ items: any[]; pageSize: number; raw?: any }> {
+  return fetchIssuePage(repo, page, request, issuePageSizes, (pageSize) => {
+    addLog(`Issue page for ${repo} is too large for the host; reading ${pageSize} per page`, 'warn');
+  }, headers);
+}
+
 async function streamRemainingPages(
   repo: string,
   storageKey: string,
@@ -1327,10 +1344,11 @@ async function streamRemainingPages(
   force: boolean = false
 ): Promise<void> {
   let page = startPage;
-  const MAX_PAGES = 10; // Supports up to 1,000 issues while keeping memory bounded
-  while (page <= MAX_PAGES && currentRepo === repo && activeStreamEpoch === epoch) {
+  const pageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+  const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize); // Supports up to 1,000 issues while keeping memory bounded
+  while (page <= maxPages && currentRepo === repo && activeStreamEpoch === epoch) {
     try {
-      const pagePath = `/repos/${repo}/issues?state=all&per_page=100&page=${page}`;
+      const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
       const cachedPage = !force ? pageBodyCache.get(pagePath) : undefined;
       const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : undefined);
       const canSendEtag = Boolean(pageEtag && cachedPage?.items);
@@ -1378,7 +1396,7 @@ async function streamRemainingPages(
       statusReconciler.schedule(issues);
       addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
 
-      if (nextItems.length < 100) break;
+      if (nextItems.length < pageSize) break;
       page++;
     } catch (err: any) {
       addLog(`Background streaming stopped at page ${page}: ${err.message}`, 'warn');
@@ -1431,22 +1449,24 @@ async function fetchIssues(force: boolean = false): Promise<void> {
 
   try {
     addLog(`Fetching issues for ${currentRepo}...`);
-    const page1Path = `/repos/${currentRepo}/issues?state=all&per_page=100&page=1`;
-    const cachedPage1 = !force ? pageBodyCache.get(page1Path) : undefined;
-    const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(page1Path) : undefined);
+    const initialPageSize = issuePageSizes.get(currentRepo) ?? FULL_ISSUE_PAGE_SIZE;
+    const initialPage1Path = `/repos/${currentRepo}/issues?state=all&per_page=${initialPageSize}&page=1`;
+    const cachedPage1 = !force ? pageBodyCache.get(initialPage1Path) : undefined;
+    const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(initialPage1Path) : undefined);
     const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || issues.length > 0));
     const page1Headers = canSendEtag && page1Etag ? { 'If-None-Match': page1Etag } : undefined;
 
-    // Page 1: Standard core issues endpoint (5,000 req/hr rate limit pool)
-    let page1Raw = await githubRequestWithRetry(
-      'GET',
-      page1Path,
-      undefined,
-      undefined,
+    // Page 1: Standard core issues endpoint (5,000 req/hr rate limit pool) with page-size fallback
+    const { items: page1FetchedItems, pageSize, raw: page1FetchedRaw } = await fetchRepoIssuePage(
+      currentRepo,
+      1,
+      githubRequestWithRetry,
       page1Headers
     );
+    const page1Path = `/repos/${currentRepo}/issues?state=all&per_page=${pageSize}&page=1`;
+    let page1Raw = page1FetchedRaw;
+    let page1Items: any[] = page1FetchedItems;
 
-    let page1Items: any[] = [];
     if (page1Raw && (page1Raw.notModified || page1Raw.status === 304)) {
       addLog(`Page 1 for ${currentRepo} -> 304 Not Modified`, 'succ');
       lastSyncTimestamp = Date.now();
@@ -1456,18 +1476,17 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       } else {
         // Cold start 304 without usable body: retry unconditionally once
         addLog(`Page 1 for ${currentRepo} -> 304 with no cached body; retrying unconditionally`, 'warn');
-        page1Raw = await githubRequestWithRetry('GET', page1Path);
-        page1Items = Array.isArray(page1Raw) ? page1Raw : (page1Raw?.items || []);
+        const retryRes = await fetchRepoIssuePage(currentRepo, 1, githubRequestWithRetry);
+        page1Raw = retryRes.raw;
+        page1Items = retryRes.items;
       }
-    } else {
-      page1Items = Array.isArray(page1Raw) ? page1Raw : (page1Raw?.items || []);
     }
 
     if (page1Raw?.etag) {
       issueListEtagCache.set(page1Path, page1Raw.etag);
     }
     if (page1Items.length > 0) {
-      setCachedPage(page1Path, page1Items, page1Raw?.etag || page1Etag);
+      setCachedPage(page1Path, page1Items, page1Raw?.etag || (pageSize === initialPageSize ? page1Etag : undefined));
     }
 
     const page1Issues = normalizeGithubIssues(page1Items);
@@ -1497,7 +1516,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     statusReconciler.schedule(issues);
 
     // Background streaming for remaining pages if 100 items returned or later pages exist
-    if (page1Items.length >= 100 || issues.length >= 100) {
+    if (page1Items.length >= pageSize || issues.length >= pageSize) {
       void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch, force);
     }
   } catch (err: any) {
@@ -1540,45 +1559,47 @@ async function fetchIssues(force: boolean = false): Promise<void> {
 // Fetch every page of issues for one repository, capped so a single runaway
 // repo cannot exhaust the API budget. Returns normalized issues only.
 async function fetchAllRepoIssuePages(repo: string, epoch: number, force: boolean = false): Promise<Issue[]> {
-  const page1Path = `/repos/${repo}/issues?state=all&per_page=100&page=1`;
-  const cachedPage1 = !force ? pageBodyCache.get(page1Path) : undefined;
-  const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(page1Path) : undefined);
+  const initialPageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+  const initialPage1Path = `/repos/${repo}/issues?state=all&per_page=${initialPageSize}&page=1`;
+  const cachedPage1 = !force ? pageBodyCache.get(initialPage1Path) : undefined;
+  const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(initialPage1Path) : undefined);
   const cachedRepoIssues = issueCache.get(repo)?.issues;
   const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || (cachedRepoIssues && cachedRepoIssues.length > 0)));
 
-  let firstRaw = await githubRequestWithRetry(
-    'GET',
-    page1Path,
-    undefined,
-    undefined,
+  const { items: firstRawItems, pageSize, raw: firstRawRes } = await fetchRepoIssuePage(
+    repo,
+    1,
+    githubRequestWithRetry,
     canSendEtag && page1Etag ? { 'If-None-Match': page1Etag } : undefined
   );
+  let firstRaw = firstRawRes;
+  let firstItems: any[] = firstRawItems;
+  const page1Path = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=1`;
 
-  let firstItems: any[] = [];
   if (firstRaw && (firstRaw.notModified || firstRaw.status === 304)) {
     if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
       firstItems = cachedPage1.items;
     } else {
-      firstRaw = await githubRequestWithRetry('GET', page1Path);
-      firstItems = Array.isArray(firstRaw) ? firstRaw : (firstRaw?.items || []);
+      const retryRes = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
+      firstRaw = retryRes.raw;
+      firstItems = retryRes.items;
     }
-  } else {
-    firstItems = Array.isArray(firstRaw) ? firstRaw : (firstRaw?.items || []);
   }
 
   if (firstRaw?.etag) {
     issueListEtagCache.set(page1Path, firstRaw.etag);
   }
   if (firstItems.length > 0) {
-    setCachedPage(page1Path, firstItems, firstRaw?.etag || page1Etag);
+    setCachedPage(page1Path, firstItems, firstRaw?.etag || (pageSize === initialPageSize ? page1Etag : undefined));
   }
 
   let repoIssues = normalizeGithubIssues(firstItems);
-  if (firstItems.length < 100) return repoIssues;
+  if (firstItems.length < pageSize) return repoIssues;
 
   let page = 2;
-  while (page <= MAX_PROJECT_ISSUE_PAGES && activeStreamEpoch === epoch) {
-    const pagePath = `/repos/${repo}/issues?state=all&per_page=100&page=${page}`;
+  const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+  while (page <= maxPages && activeStreamEpoch === epoch) {
+    const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
     const cachedPage = !force ? pageBodyCache.get(pagePath) : undefined;
     const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : undefined);
     const canSendPageEtag = Boolean(pageEtag && cachedPage?.items);
@@ -1612,7 +1633,7 @@ async function fetchAllRepoIssuePages(repo: string, epoch: number, force: boolea
 
     if (nextItems.length === 0) break;
     repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
-    if (nextItems.length < 100) break;
+    if (nextItems.length < pageSize) break;
     page++;
   }
   return repoIssues;
@@ -1747,6 +1768,10 @@ async function syncRepoIncremental(repo: string, sinceIso: string, watermarkTime
       since: sinceIso,
       currentIssues: issues,
       etag,
+      pageSizes: issuePageSizes,
+      onShrink: (shrunkSize) => {
+        addLog(`Issue page for ${cleanRepo} is too large for the host; reading ${shrunkSize} per page`, 'warn');
+      },
       requestFn: (method, reqPath, body, query, headers) =>
         githubRequestWithRetry(method, reqPath, body, query, headers),
     });
