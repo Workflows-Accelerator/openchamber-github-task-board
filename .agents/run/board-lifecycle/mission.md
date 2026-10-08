@@ -42,9 +42,21 @@ Concretely, the user named these deliverables:
 
 ALL RESOLVED — see decisions.md (D1-D8, aligned 2026-09-26). Remaining fork: none.
 
-## Workstream status (updated 2026-10-07)
+## Workstream status (updated 2026-10-08)
 
-State: awaiting_human (Batch 2 ask SENT 2026-10-07 — both chains L4-approved and merged into the served preview; Batch 1 + Batch 2 verdicts and two trade-off decisions pending). Alignment: CONFIRMED for lifecycle + D11 efficiency decisions; no approval for feature/freshness loss. See decisions.md, specs/rate-limit-manager-review.md and status-l4-halts-2026-10-07.md.
+State: exploring/building after human bounce. User observed icon/title/empty-queue/repo-loading defects; views #23 returned to In Progress, contract #22 proof incomplete, board V2 repository loading reopened for investigation. Voice verdict pending. Incremental since refresh accepted with manual Refresh removal caveat; auth reuse and manual override lifetime unresolved. Approved scope and evidence: feedback-2026-10-08.md. Batch asks already sent; do NOT repeat original full asks. Nothing pushed or merged onward to master. Alignment: CONFIRMED for requested fixes only, no silent feature/freshness/auth policy changes.
+
+## Wave-2 dispatch (2026-10-08, all running)
+
+| Work | Session | Tier | Location | Brief |
+| --- | --- | --- | --- | --- |
+| Board fixes: icons, friendly titles, queue gating, repo discovery (#23/#24) | ses_6b7c1c2086f540092b39965b | engineer | board .worktrees/team-dev-review-feedback-views (fix/review-feedback-views @ 3598c9e) | briefs/board-review-feedback-2026-10-08.md |
+| GitHub credential + conditional-read audit (read-only) | ses_2f30a7d4930d543b364a0519 | engineer | chambervoice .worktrees/team-dev-audit-github-credential-transport (audit/github-credential-transport @ 7c6f816) | briefs/auth-credential-audit-2026-10-08.md |
+| Issue bodies: friendly titles x12 + #23 Human Tasks/Open Questions handoff | ses_574e2da4ff0beecffa94a67a | worker | root checkout (gh-only, edits no code) | briefs/issue-friendly-titles-2026-10-08.md |
+
+Dispatch incident (recorded for method): first spawn attempt of both code workers carried unresolved brief pointers — three brief writes batched in one parallel block reported success but did not persist (read-back showed absent; git status confirmed nothing). Both spawned sessions died immediately ("Session not found" afterwards), performed zero work, worktrees untouched (verified). Recovery: re-wrote briefs with immediate read-back; one read raced its own write (file confirmed on re-read); dispatched with absolute [@path] pointers; all three sessions verified present with intended tier and location. Lesson: verify brief files readable before delegate; never batch multiple writes into one directory in one block.
+
+Queue data status: issue #24 is live with real Human Tasks + Open Questions + status:needs-human (created via gh this wave). #23 sections land via the issue worker; #23 deliberately keeps no needs-human label while a worker actively fixes it — per D3 its Human Tasks enter the Human Tasks view at needs-human hand-off, and its Open Question is visible in the Questions view at any status. No label churn.
 
 | Track | Where | Session | State |
 | --- | --- | --- | --- |
