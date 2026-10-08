@@ -7499,7 +7499,6 @@ Blocked by ${blockerRef}`;
       elQuestionsViewContainer.innerHTML = html;
     }
   }
-  window.renderEmptyState = renderEmptyState;
   function renderArchiveView(archivedIssues) {
     elListViewContainer.innerHTML = "";
     const banner = document.createElement("div");

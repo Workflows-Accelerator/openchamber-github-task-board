@@ -2413,7 +2413,6 @@ function renderEmptyState(
     elQuestionsViewContainer.innerHTML = html;
   }
 }
-(window as any).renderEmptyState = renderEmptyState;
 
 function renderArchiveView(archivedIssues: Issue[]): void {
   elListViewContainer.innerHTML = '';
