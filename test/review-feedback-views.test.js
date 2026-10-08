@@ -15,6 +15,7 @@ import {
   getSessionIssueRepo,
   sessionRepoKeys,
 } from '../panel/core.ts';
+import { createTestApp } from './test-app-harness.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_HTML = fs.readFileSync(path.join(here, '..', 'panel', 'index.html'), 'utf8');
@@ -333,4 +334,41 @@ test('Refresh Trigger: No setInterval / timer polling exists in panel codebase (
     MAIN_TS.includes('becameIdle') && MAIN_TS.includes('handleIdleRefresh('),
     'Idle refresh must be event-driven via host.onSessions becameIdle transition'
   );
+});
+
+// ==========================================
+// 7. Defects Reproduction Tests
+// ==========================================
+test('F-01: Custom repo input marks manual override, survives background events, and resets on active session change', async () => {
+  const { app, elements, emitSession, emitDirectory } = createTestApp();
+  // Session 1 is active with repo 'org/default-repo'
+  await emitSession({ id: 'ses_1', title: 'Session 1', items: [{ id: '1', data: { repo: 'org/default-repo' } }] });
+  assert.equal(app.getState().currentRepo, 'org/default-repo');
+  assert.equal(app.getState().isManualRepoOverride, false);
+
+  // User enters custom repo via input and clicks Save
+  elements.get('inputCustomRepo').value = 'custom-user/custom-repo';
+  elements.get('btnSaveCustomRepo').click();
+
+  assert.equal(app.getState().currentRepo, 'custom-user/custom-repo');
+  assert.equal(app.getState().isManualRepoOverride, true, 'isManualRepoOverride must be true after saving custom repo');
+
+  // Background event 1: session metadata update on same session must NOT overwrite manual repo
+  await emitSession({ id: 'ses_1', title: 'Session 1 (renamed)', items: [{ id: '1', data: { repo: 'org/default-repo' } }] });
+  assert.equal(app.getState().currentRepo, 'custom-user/custom-repo', 'Custom repo must survive background session metadata update');
+
+  // Background event 2: directory change must NOT overwrite manual repo
+  await emitDirectory('/workspace/other-dir');
+  assert.equal(app.getState().currentRepo, 'custom-user/custom-repo', 'Custom repo must survive background directory change');
+
+  // Also test Enter key submission on inputCustomRepo
+  elements.get('inputCustomRepo').value = 'another-user/another-custom-repo';
+  elements.get('inputCustomRepo').dispatchEvent({ type: 'keydown', key: 'Enter' });
+  assert.equal(app.getState().currentRepo, 'another-user/another-custom-repo', 'Enter key must save custom repo');
+  assert.equal(app.getState().isManualRepoOverride, true);
+
+  // When active session changes to ses_2, manual override must reset per D13
+  await emitSession({ id: 'ses_2', title: 'Session 2', items: [{ id: '2', data: { repo: 'org/session-2-repo' } }] });
+  assert.equal(app.getState().isManualRepoOverride, false, 'isManualRepoOverride must reset to false on session change');
+  assert.equal(app.getState().currentRepo, 'org/session-2-repo', 'Repository must reset to new session repo on session change');
 });

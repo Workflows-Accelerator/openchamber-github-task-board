@@ -6073,7 +6073,7 @@ Blocked by ${blockerRef}`;
     }
   }
   async function autoResolveRepoForActiveContext(activeSession) {
-    if (isAllProjectsMode && isManualRepoOverride) return;
+    if (isManualRepoOverride) return;
     let worktreeMatchedProject = null;
     if (currentDirectory && currentDirectory.includes("/workspace/.local/share/opencode/worktree/")) {
       try {
@@ -10746,11 +10746,18 @@ ${issue.body}
         closeRepoPopover();
       }
     });
-    elBtnSaveCustomRepo.addEventListener("click", () => {
+    const saveCustomRepo = () => {
       const custom = elInputCustomRepo.value.trim();
       if (custom && custom.includes("/")) {
+        isManualRepoOverride = true;
         setRepository(custom, "custom-input");
         closeRepoPopover();
+      }
+    };
+    elBtnSaveCustomRepo.addEventListener("click", saveCustomRepo);
+    elInputCustomRepo.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        saveCustomRepo();
       }
     });
     let searchDebounceTimer = null;

@@ -680,8 +680,8 @@ async function discoverWorkspaceRepositories(): Promise<void> {
 }
 
 async function autoResolveRepoForActiveContext(activeSession?: any): Promise<void> {
-  // Never steal focus from the aggregated All Projects view when manual override is active.
-  if (isAllProjectsMode && isManualRepoOverride) return;
+  // Never steal focus when manual override is active.
+  if (isManualRepoOverride) return;
 
   // If currentDirectory is inside /workspace/.local/share/opencode/worktree/,
   // extract parent repository root from .git file and match that project in allProjects first,
@@ -6329,11 +6329,19 @@ function initEvents(): void {
     }
   });
 
-  elBtnSaveCustomRepo.addEventListener('click', () => {
+  const saveCustomRepo = () => {
     const custom = elInputCustomRepo.value.trim();
     if (custom && custom.includes('/')) {
+      isManualRepoOverride = true;
       setRepository(custom, 'custom-input');
       closeRepoPopover();
+    }
+  };
+
+  elBtnSaveCustomRepo.addEventListener('click', saveCustomRepo);
+  elInputCustomRepo.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      saveCustomRepo();
     }
   });
 
