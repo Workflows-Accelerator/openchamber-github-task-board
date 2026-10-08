@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
@@ -64,13 +64,13 @@
   }
   var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
   var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
@@ -128,7 +128,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -359,7 +359,7 @@
     return wire;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
   var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
@@ -1109,7 +1109,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1159,7 +1159,7 @@
     return { requestId, action, parameters, context: readContext(context) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1280,7 +1280,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1355,7 +1355,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -1414,7 +1414,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1616,7 +1616,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -1664,7 +1664,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1712,7 +1712,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -1736,7 +1736,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return node;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1797,7 +1797,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -1831,7 +1831,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return target?.id ?? null;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -1866,7 +1866,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -1905,7 +1905,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -2062,7 +2062,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2106,7 +2106,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2166,7 +2166,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2191,7 +2191,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2279,7 +2279,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2321,7 +2321,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2350,7 +2350,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2396,7 +2396,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2422,7 +2422,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2465,7 +2465,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2571,7 +2571,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -3816,6 +3816,21 @@ ${placeholder}
     return {
       title: defaultTitle || "",
       subtitle: null
+    };
+  }
+  function resolveSimplifiedViewTitle(issue) {
+    const titles = parseFriendlyTitle(issue.body, "__DEFAULT_TITLE_SENTINEL__");
+    if (titles.subtitle === "__DEFAULT_TITLE_SENTINEL__" && titles.title.trim()) {
+      return {
+        displayTitle: titles.title.trim(),
+        displaySubtitle: issue.title?.trim() || null,
+        isPlaceholder: false
+      };
+    }
+    return {
+      displayTitle: "(No friendly title)",
+      displaySubtitle: issue.title?.trim() || `Issue #${issue.number}`,
+      isPlaceholder: true
     };
   }
   function parseOpenQuestions(body) {
@@ -5675,6 +5690,7 @@ Blocked by ${blockerRef}`;
   var currentProject = null;
   var currentDirectory = "";
   var currentRepo = "";
+  var isManualRepoOverride = false;
   var allProjects = [];
   var isAllProjectsMode = false;
   var allProjectsRepoRefs = [];
@@ -6056,8 +6072,8 @@ Blocked by ${blockerRef}`;
       isDiscoveringRepos = false;
     }
   }
-  async function autoResolveRepoForActiveContext() {
-    if (isAllProjectsMode) return;
+  async function autoResolveRepoForActiveContext(activeSession) {
+    if (isAllProjectsMode && isManualRepoOverride) return;
     let worktreeMatchedProject = null;
     if (currentDirectory && currentDirectory.includes("/workspace/.local/share/opencode/worktree/")) {
       try {
@@ -6119,16 +6135,15 @@ Blocked by ${blockerRef}`;
       setRepository(storedLink.trim(), `stored-project-link: ${targetProject.name}`);
       return;
     }
-    if (sessions && sessions.length > 0) {
-      for (const sess of sessions) {
-        if (sess.items) {
+    const candidateSessions = activeSession ? [activeSession, ...sessions || []] : sessions || [];
+    if (candidateSessions.length > 0) {
+      for (const sess of candidateSessions) {
+        if (Array.isArray(sess.items)) {
           for (const it of sess.items) {
-            if (it.url && it.url.includes("github.com/")) {
-              const m = it.url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-              if (m) {
-                setRepository(`${m[1]}/${m[2]}`, `session-item: ${sess.title}`);
-                return;
-              }
+            const discoveredRepo = getSessionIssueRepo(it) || it.data?.repo || (typeof it.url === "string" ? parseRepoFullName(it.url) : null);
+            if (discoveredRepo) {
+              setRepository(discoveredRepo, `session-item: ${sess.title || sess.id}`);
+              return;
             }
           }
         }
@@ -6141,7 +6156,7 @@ Blocked by ${blockerRef}`;
     showBanner(actionText, "Select Repo", () => {
       openRepoPopover();
     });
-    renderEmptyState(`No GitHub repository linked to project "${targetProject.name}". Click "Select Repo" above to link a repository.`);
+    renderEmptyState(`No GitHub repository linked to project "${targetProject.name}". Click "Select Repo" above to link a repository.`, "empty");
   }
   function setRepository(repo, source, force = false) {
     if (!force && currentRepo === repo) {
@@ -6206,9 +6221,24 @@ Blocked by ${blockerRef}`;
         </div>
       `;
     }).join("");
+    const currentSessionOptionHtml = `
+    <div class="repo-option current-session-option ${!isManualRepoOverride && !isAllProjectsMode ? "is-active" : ""}" data-current-session="true">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <span>Current session</span>
+        ${!isManualRepoOverride && !isAllProjectsMode ? '<span style="color: var(--succ); font-size: 10px; font-weight: 500;">[default]</span>' : ""}
+      </div>
+    </div>
+  `;
     const allProjectsOptionHtml = isAllProjectsMode ? `<div class="repo-option all-projects-option is-active" data-all-projects="true"><span>All Projects</span><span style="color: var(--prim); font-size: 10px; font-weight: 500;">[active]</span></div>` : `<div class="repo-option all-projects-option" data-all-projects="true"><span>All Projects</span></div>`;
-    elDetectedReposList.innerHTML = allProjectsOptionHtml + projectItemsHtml;
+    elDetectedReposList.innerHTML = currentSessionOptionHtml + allProjectsOptionHtml + projectItemsHtml;
+    elDetectedReposList.querySelector(".current-session-option")?.addEventListener("click", async () => {
+      isManualRepoOverride = false;
+      addLog("Reset repository to current session default [D13]");
+      closeRepoPopover();
+      await autoResolveRepoForActiveContext();
+    });
     elDetectedReposList.querySelector(".all-projects-option")?.addEventListener("click", () => {
+      isManualRepoOverride = true;
       void selectAllProjects();
     });
     elDetectedReposList.querySelectorAll(".popover-item").forEach((item) => {
@@ -6217,9 +6247,9 @@ Blocked by ${blockerRef}`;
         const repo = item.getAttribute("data-repo");
         const proj = allProjects.find((p) => p.id === projId);
         if (repo) {
-          if (currentProject) {
-            await host.storage.set(`repo_${currentProject.id}`, repo);
-            currentProject.linkedRepo = repo;
+          isManualRepoOverride = true;
+          if (proj) {
+            currentProject = proj;
           }
           setRepository(repo, `selected from ${proj?.name || "project"}`);
           closeRepoPopover();
@@ -6654,6 +6684,10 @@ Blocked by ${blockerRef}`;
       lastSyncTimestamp = Date.now();
       repoSyncWatermarks.set(currentRepo, Date.now());
       addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, "succ");
+      if (issues.length === 0) {
+        renderEmptyState(`No open issues in ${currentRepo}. Create an issue or push tasks to get started.`, "empty");
+        return;
+      }
       if (!userSelectedTab) {
         selectTab(resolveDefaultTab2(issues));
       }
@@ -6669,7 +6703,11 @@ Blocked by ${blockerRef}`;
           void host.toast({ kind: "info", message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
         }
       } else {
-        renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || "Check GitHub integration tokens"}`);
+        const isAccessError = err?.status === 401 || err?.status === 403 || err?.status === 404 || /401|403|404|token|auth|permission|not found|bad credentials|denied/i.test(err?.message || "");
+        renderEmptyState(
+          `Failed to load issues for ${currentRepo}: ${err?.message || "Check GitHub integration tokens"}`,
+          isAccessError ? "inaccessible" : "failed"
+        );
       }
     } finally {
       if (activeStreamEpoch === streamEpoch) {
@@ -6824,7 +6862,11 @@ Blocked by ${blockerRef}`;
           void host.toast({ kind: "info", message: `Offline / Rate-limited. Showing ${issues.length} aggregated issues.` });
         }
       } else {
-        renderEmptyState(`Failed to load aggregated issues: ${err.message || "Check GitHub integration tokens"}`);
+        const isAccessError = err?.status === 401 || err?.status === 403 || err?.status === 404 || /401|403|404|token|auth|permission|not found|bad credentials|denied/i.test(err?.message || "");
+        renderEmptyState(
+          `Failed to load aggregated issues: ${err?.message || "Check GitHub integration tokens"}`,
+          isAccessError ? "inaccessible" : "failed"
+        );
       }
     } finally {
       if (activeStreamEpoch === epoch) {
@@ -7221,10 +7263,24 @@ Blocked by ${blockerRef}`;
   }
   function getIssueSession(issue) {
     if (!issue) return null;
+    const targetRepo = issue.repo || currentRepo;
     if (isAllProjectsMode) {
       return findSessionForIssueByRepo(sessionIndexByRepo, issue) || null;
     }
-    return sessionIndex.get(issue.number) || null;
+    if (targetRepo) {
+      const issueWithRepo = issue.repo ? issue : { ...issue, repo: targetRepo };
+      const repoMatch = findSessionForIssueByRepo(sessionIndexByRepo, issueWithRepo);
+      if (repoMatch) return repoMatch;
+    }
+    const numMatch = sessionIndex.get(issue.number);
+    if (numMatch && targetRepo) {
+      const keys = sessionRepoKeys(numMatch);
+      if (keys.length > 0) {
+        const matchFound = keys.some((k) => k.startsWith(`${targetRepo.toLowerCase()}#`));
+        if (!matchFound) return null;
+      }
+    }
+    return numMatch || null;
   }
   function resolveIssueColumn2(issue, sessionOverride) {
     if (!issue) return null;
@@ -7239,7 +7295,14 @@ Blocked by ${blockerRef}`;
     if (sessionOverride !== void 0) {
       if (Array.isArray(sessionOverride)) {
         const issueNumStr = String(issue.number);
+        const targetRepo = issue.repo || currentRepo;
         session = sessionOverride.find((s) => {
+          if (targetRepo) {
+            const keys = sessionRepoKeys(s);
+            if (keys.length > 0 && !keys.some((k) => k.startsWith(`${targetRepo.toLowerCase()}#`))) {
+              return false;
+            }
+          }
           if (s.items && s.items.some(
             (it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number || it.data && Array.isArray(it.data.issueNumbers) && it.data.issueNumbers.includes(issue.number)
           )) {
@@ -7399,23 +7462,44 @@ Blocked by ${blockerRef}`;
     ).length;
     void host.setBadge(blockedCount > 0 ? blockedCount : null);
   }
-  function renderEmptyState(message) {
+  function renderEmptyState(message, kind = "empty") {
+    const kindClass = kind === "inaccessible" ? "empty-state-inaccessible" : kind === "failed" ? "empty-state-failed" : "empty-state-empty";
+    let iconSvg = "";
+    let title = "";
+    if (kind === "inaccessible") {
+      iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>';
+      title = "Repository Inaccessible";
+    } else if (kind === "failed") {
+      iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+      title = "Failed to Load Repository";
+    } else {
+      iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5v-3h3.56c.69 1.19 1.97 2 3.45 2s2.75-.81 3.45-2H19v3zm0-5h-4.99c0 1.1-.9 2-2.01 2s-2.01-.9-2.01-2H5V5h14v9z"/></svg>';
+      title = "No Issues in Repository";
+    }
+    const html = `
+    <div class="empty-box ${kindClass}">
+      ${iconSvg}
+      <span style="font-weight: 500; font-size: 13px; color: var(--fg);">${escapeHtml(title)}</span>
+      <span style="color: var(--fg-muted); font-size: 11.5px; max-width: 380px;">${escapeHtml(message)}</span>
+    </div>
+  `;
     if (elListViewContainer) {
-      elListViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+      elListViewContainer.innerHTML = html;
     }
     if (elKanbanViewContainer) {
-      elKanbanViewContainer.innerHTML = `<div class="empty-box" style="margin: auto;">${escapeHtml(message)}</div>`;
+      elKanbanViewContainer.innerHTML = html;
     }
     if (elHumanViewContainer) {
-      elHumanViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+      elHumanViewContainer.innerHTML = html;
     }
     if (elAllTasksViewContainer) {
-      elAllTasksViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+      elAllTasksViewContainer.innerHTML = html;
     }
     if (elQuestionsViewContainer) {
-      elQuestionsViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+      elQuestionsViewContainer.innerHTML = html;
     }
   }
+  window.renderEmptyState = renderEmptyState;
   function renderArchiveView(archivedIssues) {
     elListViewContainer.innerHTML = "";
     const banner = document.createElement("div");
@@ -7970,7 +8054,13 @@ Blocked by ${blockerRef}`;
   function renderHumanTasksView(filteredIssues) {
     if (!elHumanViewContainer) return;
     elHumanViewContainer.innerHTML = "";
-    const humanIssues = filteredIssues.filter((i) => resolveIssueColumn2(i) === "needs-human");
+    const humanIssues = filteredIssues.filter((i) => {
+      if (resolveIssueColumn2(i) === "done") return false;
+      if (resolveIssueColumn2(i) === "needs-human") return true;
+      const session = getIssueSession(i);
+      const todos = collectHumanTodos(i, session);
+      return todos.some((t) => !t.done);
+    });
     if (humanIssues.length === 0) {
       if (isLoading && issues.length === 0) {
         elHumanViewContainer.innerHTML = `
@@ -7982,7 +8072,7 @@ Blocked by ${blockerRef}`;
         return;
       }
       elHumanViewContainer.innerHTML = `
-      <div class="empty-box">
+      <div class="empty-box empty-state-empty">
         <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
         <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Nothing is waiting on you</span>
         <span style="color: var(--fg-muted); font-size: 11.5px;">All tasks and sessions are moving forward.</span>
@@ -7996,9 +8086,7 @@ Blocked by ${blockerRef}`;
       card.className = "human-issue-card";
       const session = getIssueSession(issue);
       const todos = collectHumanTodos(issue, session);
-      const titles = parseFriendlyTitle(issue.body, issue.title);
-      const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
-      const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+      const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
       const header = document.createElement("div");
       header.className = "human-issue-header";
       header.setAttribute("role", "button");
@@ -8009,6 +8097,10 @@ Blocked by ${blockerRef}`;
       const titleSpan = document.createElement("div");
       titleSpan.className = "human-issue-title";
       titleSpan.textContent = displayTitle;
+      if (isPlaceholder) {
+        titleSpan.style.fontStyle = "italic";
+        titleSpan.style.color = "var(--fg-muted)";
+      }
       titleGroup.appendChild(titleSpan);
       if (displaySubtitle) {
         const subSpan = document.createElement("div");
@@ -8190,15 +8282,17 @@ Blocked by ${blockerRef}`;
         card.className = "all-task-card";
         card.setAttribute("role", "button");
         card.setAttribute("tabindex", "0");
-        const titles = parseFriendlyTitle(issue.body, issue.title);
-        const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
-        const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+        const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
         card.setAttribute("aria-label", `Open issue #${issue.number}: ${displayTitle}`);
         const content = document.createElement("div");
         content.className = "all-task-content";
         const titleEl = document.createElement("div");
         titleEl.className = "all-task-title";
         titleEl.textContent = displayTitle;
+        if (isPlaceholder) {
+          titleEl.style.fontStyle = "italic";
+          titleEl.style.color = "var(--fg-muted)";
+        }
         content.appendChild(titleEl);
         if (displaySubtitle) {
           const subEl = document.createElement("div");
@@ -8273,9 +8367,7 @@ Blocked by ${blockerRef}`;
       const card = document.createElement("div");
       card.className = "questions-issue-card";
       card.setAttribute("role", "region");
-      const titles = parseFriendlyTitle(issue.body, issue.title);
-      const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
-      const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+      const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
       card.setAttribute("aria-label", `Issue #${issue.number}: ${displayTitle}`);
       const col = resolveIssueColumn2(issue) || "backlog";
       const statusMeta = STATUS_METADATA[col];
@@ -8289,6 +8381,10 @@ Blocked by ${blockerRef}`;
       const titleSpan = document.createElement("div");
       titleSpan.className = "human-issue-title";
       titleSpan.textContent = displayTitle;
+      if (isPlaceholder) {
+        titleSpan.style.fontStyle = "italic";
+        titleSpan.style.color = "var(--fg-muted)";
+      }
       titleGroup.appendChild(titleSpan);
       if (displaySubtitle) {
         const subSpan = document.createElement("div");
@@ -8458,7 +8554,7 @@ Blocked by ${blockerRef}`;
       } else if (mode === "all-tasks") {
         elBtnLayoutToggle.title = "View: All Tasks (click to switch to Questions)";
         elBtnLayoutToggle.setAttribute("aria-label", "View: All Tasks (click to switch to Questions)");
-        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>';
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M22 7h-9v2h9V7zm0 8h-9v2h9v-2zM5.54 11L2 7.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 11zm0 8L2 15.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 19z"/></svg>';
       } else if (mode === "questions") {
         elBtnLayoutToggle.title = "View: Questions (click to switch to List)";
         elBtnLayoutToggle.setAttribute("aria-label", "View: Questions (click to switch to List)");
@@ -11411,13 +11507,37 @@ ${issue.body}
       await autoResolveRepoForActiveContext();
     }
   });
-  host.onSession(async (sess) => {
+  var activeSessionId = null;
+  host.onSession(async (rawSess) => {
+    const sess = rawSess;
     if (sess) {
       addLog(`Active session: "${sess.title}" (${sess.id})`);
-      const matched = sessions.find((s) => s.id === sess.id);
-      if (matched && matched.directory && matched.directory !== currentDirectory) {
-        currentDirectory = matched.directory;
-        await autoResolveRepoForActiveContext();
+      const sessionChanged = activeSessionId !== null && activeSessionId !== sess.id;
+      activeSessionId = sess.id;
+      if (sessionChanged) {
+        isManualRepoOverride = false;
+      }
+      if (!isManualRepoOverride) {
+        const sessDir = sess.directory || sess.location?.directory;
+        if (sessDir && sessDir !== currentDirectory) {
+          currentDirectory = sessDir;
+          await autoResolveRepoForActiveContext(sess);
+          return;
+        }
+        if (Array.isArray(sess.items) && sess.items.length > 0) {
+          for (const it of sess.items) {
+            const itemRepo = getSessionIssueRepo(it) || it.data?.repo || (typeof it.url === "string" ? parseRepoFullName(it.url) : null);
+            if (itemRepo && itemRepo !== currentRepo && !isAllProjectsMode) {
+              setRepository(itemRepo, `active session item: ${sess.title || sess.id}`);
+              return;
+            }
+          }
+        }
+        const matched = sessions.find((s) => s.id === sess.id);
+        if (matched && matched.directory && matched.directory !== currentDirectory) {
+          currentDirectory = matched.directory;
+        }
+        await autoResolveRepoForActiveContext(sess);
       }
     }
   });

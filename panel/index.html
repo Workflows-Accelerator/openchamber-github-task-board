@@ -2131,7 +2131,8 @@
       top: 42px;
       left: 10px;
       width: 280px;
-      background: var(--surf);
+      background: var(--surf, #16181b);
+      background-color: #16181b;
       border: 1px solid var(--border);
       border-radius: var(--rad);
       box-shadow: 0 10px 25px rgba(0,0,0,0.5);
@@ -2143,6 +2144,7 @@
     #repoPopover {
       width: 380px;
       max-width: calc(100vw - 20px);
+      background-color: #16181b;
     }
     #repoPopover .popover-list {
       max-height: 280px;
@@ -2152,8 +2154,8 @@
       animation: popoverSlideIn 0.16s cubic-bezier(0.16, 1, 0.3, 1);
     }
     @keyframes popoverSlideIn {
-      from { opacity: 0; transform: translateY(-6px); }
-      to { opacity: 1; transform: translateY(0); }
+      from { transform: translateY(-4px); }
+      to { transform: translateY(0); }
     }
     .popover-head {
       padding: 8px 10px;
@@ -2181,7 +2183,8 @@
     .popover-item:hover {
       background: var(--surf-hover);
     }
-    .all-projects-option {
+    .all-projects-option,
+    .current-session-option {
       padding: 7px 10px;
       display: flex;
       align-items: center;
@@ -2194,10 +2197,12 @@
       background: var(--surf-muted);
       transition: background 0.15s ease;
     }
-    .all-projects-option:hover {
+    .all-projects-option:hover,
+    .current-session-option:hover {
       background: var(--surf-hover);
     }
-    .all-projects-option.is-active {
+    .all-projects-option.is-active,
+    .current-session-option.is-active {
       color: var(--prim);
     }
     .popover-item-title {
@@ -2725,6 +2730,15 @@
     .empty-box svg {
       color: var(--fg-faint);
     }
+    .empty-box.empty-state-inaccessible svg {
+      color: var(--warn, #e3b341);
+    }
+    .empty-box.empty-state-failed svg {
+      color: var(--err, #f85149);
+    }
+    .empty-box.empty-state-empty svg {
+      color: var(--fg-faint);
+    }
   </style>
 </head>
 <body>
@@ -2766,7 +2780,7 @@
           <span class="view-mode-label">Human Tasks</span>
         </button>
         <button class="view-mode-btn" data-mode="all-tasks" id="btnViewAllTasks" title="All Tasks View" aria-label="All Tasks View" role="radio" aria-checked="false">
-          <svg class="icon" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+          <svg class="icon" viewBox="0 0 24 24"><path d="M22 7h-9v2h9V7zm0 8h-9v2h9v-2zM5.54 11L2 7.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 11zm0 8L2 15.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 19z"/></svg>
           <span class="view-mode-label">All Tasks</span>
         </button>
         <button class="view-mode-btn" data-mode="questions" id="btnViewQuestions" title="Questions View" aria-label="Questions View" role="radio" aria-checked="false">

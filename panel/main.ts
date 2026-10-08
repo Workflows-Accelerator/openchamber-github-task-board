@@ -152,6 +152,8 @@ import {
   syncIncrementalRepoIssues,
   getSessionIssueRepo,
   parseRepoFullName,
+  sessionRepoKeys,
+  resolveSimplifiedViewTitle,
 } from './core.js';
 export type { TestItem };
 export {
@@ -162,6 +164,7 @@ export {
   renderBlockerChip,
   renderBlockerChips,
   parseFriendlyTitle,
+  resolveSimplifiedViewTitle,
   parseHumanTasks,
   collectHumanTodos,
   parseTestPlan,
@@ -187,6 +190,7 @@ const host = connectHost();
 let currentProject: ProjectItem | null = null;
 let currentDirectory: string = '';
 let currentRepo: string = '';
+let isManualRepoOverride: boolean = false;
 let allProjects: ProjectItem[] = [];
 let isAllProjectsMode: boolean = false;
 interface ProjectRepoRef {
@@ -675,9 +679,9 @@ async function discoverWorkspaceRepositories(): Promise<void> {
   }
 }
 
-async function autoResolveRepoForActiveContext(): Promise<void> {
-  // Never steal focus from the aggregated All Projects view.
-  if (isAllProjectsMode) return;
+async function autoResolveRepoForActiveContext(activeSession?: any): Promise<void> {
+  // Never steal focus from the aggregated All Projects view when manual override is active.
+  if (isAllProjectsMode && isManualRepoOverride) return;
 
   // If currentDirectory is inside /workspace/.local/share/opencode/worktree/,
   // extract parent repository root from .git file and match that project in allProjects first,
@@ -758,16 +762,15 @@ async function autoResolveRepoForActiveContext(): Promise<void> {
   }
 
   // Step 4: Check if any session in this project has linked items
-  if (sessions && sessions.length > 0) {
-    for (const sess of sessions) {
-      if (sess.items) {
+  const candidateSessions = activeSession ? [activeSession, ...(sessions || [])] : (sessions || []);
+  if (candidateSessions.length > 0) {
+    for (const sess of candidateSessions) {
+      if (Array.isArray(sess.items)) {
         for (const it of sess.items) {
-          if (it.url && it.url.includes('github.com/')) {
-            const m = it.url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-            if (m) {
-              setRepository(`${m[1]}/${m[2]}`, `session-item: ${sess.title}`);
-              return;
-            }
+          const discoveredRepo = getSessionIssueRepo(it) || it.data?.repo || (typeof it.url === 'string' ? parseRepoFullName(it.url) : null);
+          if (discoveredRepo) {
+            setRepository(discoveredRepo, `session-item: ${sess.title || sess.id}`);
+            return;
           }
         }
       }
@@ -786,7 +789,7 @@ async function autoResolveRepoForActiveContext(): Promise<void> {
   showBanner(actionText, 'Select Repo', () => {
     openRepoPopover();
   });
-  renderEmptyState(`No GitHub repository linked to project "${targetProject.name}". Click "Select Repo" above to link a repository.`);
+  renderEmptyState(`No GitHub repository linked to project "${targetProject.name}". Click "Select Repo" above to link a repository.`, 'empty');
 }
 
 function setRepository(repo: string, source: string, force: boolean = false): void {
@@ -861,13 +864,30 @@ function renderRepoPopoverList(): void {
     })
     .join('');
 
+  const currentSessionOptionHtml = `
+    <div class="repo-option current-session-option ${!isManualRepoOverride && !isAllProjectsMode ? 'is-active' : ''}" data-current-session="true">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <span>Current session</span>
+        ${!isManualRepoOverride && !isAllProjectsMode ? '<span style="color: var(--succ); font-size: 10px; font-weight: 500;">[default]</span>' : ''}
+      </div>
+    </div>
+  `;
+
   const allProjectsOptionHtml = isAllProjectsMode
     ? `<div class="repo-option all-projects-option is-active" data-all-projects="true"><span>All Projects</span><span style="color: var(--prim); font-size: 10px; font-weight: 500;">[active]</span></div>`
     : `<div class="repo-option all-projects-option" data-all-projects="true"><span>All Projects</span></div>`;
 
-  elDetectedReposList.innerHTML = allProjectsOptionHtml + projectItemsHtml;
+  elDetectedReposList.innerHTML = currentSessionOptionHtml + allProjectsOptionHtml + projectItemsHtml;
+
+  elDetectedReposList.querySelector<HTMLElement>('.current-session-option')?.addEventListener('click', async () => {
+    isManualRepoOverride = false;
+    addLog('Reset repository to current session default [D13]');
+    closeRepoPopover();
+    await autoResolveRepoForActiveContext();
+  });
 
   elDetectedReposList.querySelector<HTMLElement>('.all-projects-option')?.addEventListener('click', () => {
+    isManualRepoOverride = true;
     void selectAllProjects();
   });
 
@@ -878,9 +898,9 @@ function renderRepoPopoverList(): void {
       const proj = allProjects.find((p) => p.id === projId);
 
       if (repo) {
-        if (currentProject) {
-          await host.storage.set(`repo_${currentProject.id}`, repo);
-          currentProject.linkedRepo = repo;
+        isManualRepoOverride = true;
+        if (proj) {
+          currentProject = proj;
         }
         setRepository(repo, `selected from ${proj?.name || 'project'}`);
         closeRepoPopover();
@@ -1396,6 +1416,10 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     repoSyncWatermarks.set(currentRepo, Date.now());
 
     addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, 'succ');
+    if (issues.length === 0) {
+      renderEmptyState(`No open issues in ${currentRepo}. Create an issue or push tasks to get started.`, 'empty');
+      return;
+    }
     if (!userSelectedTab) {
       selectTab(resolveDefaultTab(issues));
     }
@@ -1414,7 +1438,12 @@ async function fetchIssues(force: boolean = false): Promise<void> {
         void host.toast({ kind: 'info', message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
       }
     } else {
-      renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || 'Check GitHub integration tokens'}`);
+      const isAccessError = err?.status === 401 || err?.status === 403 || err?.status === 404 ||
+        /401|403|404|token|auth|permission|not found|bad credentials|denied/i.test(err?.message || '');
+      renderEmptyState(
+        `Failed to load issues for ${currentRepo}: ${err?.message || 'Check GitHub integration tokens'}`,
+        isAccessError ? 'inaccessible' : 'failed'
+      );
     }
   } finally {
     // Only the newest fetch may clear the spinner; a superseded one must not.
@@ -1590,7 +1619,12 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
         void host.toast({ kind: 'info', message: `Offline / Rate-limited. Showing ${issues.length} aggregated issues.` });
       }
     } else {
-      renderEmptyState(`Failed to load aggregated issues: ${err.message || 'Check GitHub integration tokens'}`);
+      const isAccessError = err?.status === 401 || err?.status === 403 || err?.status === 404 ||
+        /401|403|404|token|auth|permission|not found|bad credentials|denied/i.test(err?.message || '');
+      renderEmptyState(
+        `Failed to load aggregated issues: ${err?.message || 'Check GitHub integration tokens'}`,
+        isAccessError ? 'inaccessible' : 'failed'
+      );
     }
   } finally {
     // Only the newest fetch may clear the spinner; a superseded one must not.
@@ -2070,12 +2104,26 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[
 
 function getIssueSession(issue: Issue): SessionInfo | null {
   if (!issue) return null;
+  const targetRepo = issue.repo || currentRepo;
   // In the aggregated view attribution must be repo-qualified so a session from
   // repo A never binds to a same-numbered issue in repo B.
   if (isAllProjectsMode) {
     return findSessionForIssueByRepo(sessionIndexByRepo, issue) || null;
   }
-  return sessionIndex.get(issue.number) || null;
+  if (targetRepo) {
+    const issueWithRepo = issue.repo ? issue : { ...issue, repo: targetRepo };
+    const repoMatch = findSessionForIssueByRepo(sessionIndexByRepo, issueWithRepo);
+    if (repoMatch) return repoMatch;
+  }
+  const numMatch = sessionIndex.get(issue.number);
+  if (numMatch && targetRepo) {
+    const keys = sessionRepoKeys(numMatch);
+    if (keys.length > 0) {
+      const matchFound = keys.some((k) => k.startsWith(`${targetRepo.toLowerCase()}#`));
+      if (!matchFound) return null;
+    }
+  }
+  return numMatch || null;
 }
 
 export function resolveIssueColumn(
@@ -2097,8 +2145,15 @@ export function resolveIssueColumn(
   if (sessionOverride !== undefined) {
     if (Array.isArray(sessionOverride)) {
       const issueNumStr = String(issue.number);
+      const targetRepo = issue.repo || currentRepo;
       session =
         sessionOverride.find((s) => {
+          if (targetRepo) {
+            const keys = sessionRepoKeys(s);
+            if (keys.length > 0 && !keys.some((k) => k.startsWith(`${targetRepo.toLowerCase()}#`))) {
+              return false;
+            }
+          }
           if (
             s.items &&
             s.items.some(
@@ -2316,23 +2371,49 @@ function updateBadgeCounts(): void {
 // Rendering: Dual View Engine & Archive
 // ==========================================
 
-function renderEmptyState(message: string): void {
+function renderEmptyState(
+  message: string,
+  kind: 'empty' | 'inaccessible' | 'failed' = 'empty'
+): void {
+  const kindClass = kind === 'inaccessible' ? 'empty-state-inaccessible' : kind === 'failed' ? 'empty-state-failed' : 'empty-state-empty';
+  let iconSvg = '';
+  let title = '';
+  if (kind === 'inaccessible') {
+    iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>';
+    title = 'Repository Inaccessible';
+  } else if (kind === 'failed') {
+    iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+    title = 'Failed to Load Repository';
+  } else {
+    iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5v-3h3.56c.69 1.19 1.97 2 3.45 2s2.75-.81 3.45-2H19v3zm0-5h-4.99c0 1.1-.9 2-2.01 2s-2.01-.9-2.01-2H5V5h14v9z"/></svg>';
+    title = 'No Issues in Repository';
+  }
+
+  const html = `
+    <div class="empty-box ${kindClass}">
+      ${iconSvg}
+      <span style="font-weight: 500; font-size: 13px; color: var(--fg);">${escapeHtml(title)}</span>
+      <span style="color: var(--fg-muted); font-size: 11.5px; max-width: 380px;">${escapeHtml(message)}</span>
+    </div>
+  `;
+
   if (elListViewContainer) {
-    elListViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+    elListViewContainer.innerHTML = html;
   }
   if (elKanbanViewContainer) {
-    elKanbanViewContainer.innerHTML = `<div class="empty-box" style="margin: auto;">${escapeHtml(message)}</div>`;
+    elKanbanViewContainer.innerHTML = html;
   }
   if (elHumanViewContainer) {
-    elHumanViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+    elHumanViewContainer.innerHTML = html;
   }
   if (elAllTasksViewContainer) {
-    elAllTasksViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+    elAllTasksViewContainer.innerHTML = html;
   }
   if (elQuestionsViewContainer) {
-    elQuestionsViewContainer.innerHTML = `<div class="empty-box">${escapeHtml(message)}</div>`;
+    elQuestionsViewContainer.innerHTML = html;
   }
 }
+(window as any).renderEmptyState = renderEmptyState;
 
 function renderArchiveView(archivedIssues: Issue[]): void {
   elListViewContainer.innerHTML = '';
@@ -3032,8 +3113,14 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
   if (!elHumanViewContainer) return;
   elHumanViewContainer.innerHTML = '';
 
-  // Filter issues in needs-human status
-  const humanIssues = filteredIssues.filter((i) => resolveIssueColumn(i) === 'needs-human');
+  // Filter issues in needs-human status or with uncompleted human todos
+  const humanIssues = filteredIssues.filter((i) => {
+    if (resolveIssueColumn(i) === 'done') return false;
+    if (resolveIssueColumn(i) === 'needs-human') return true;
+    const session = getIssueSession(i);
+    const todos = collectHumanTodos(i, session);
+    return todos.some((t) => !t.done);
+  });
 
   if (humanIssues.length === 0) {
     if (isLoading && issues.length === 0) {
@@ -3046,7 +3133,7 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
       return;
     }
     elHumanViewContainer.innerHTML = `
-      <div class="empty-box">
+      <div class="empty-box empty-state-empty">
         <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
         <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Nothing is waiting on you</span>
         <span style="color: var(--fg-muted); font-size: 11.5px;">All tasks and sessions are moving forward.</span>
@@ -3064,9 +3151,7 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
 
     const session = getIssueSession(issue);
     const todos = collectHumanTodos(issue, session);
-    const titles = parseFriendlyTitle(issue.body, issue.title);
-    const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
-    const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+    const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
 
     // Header (clickable to open drawer, keyboard accessible)
     const header = document.createElement('div');
@@ -3081,6 +3166,10 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
     const titleSpan = document.createElement('div');
     titleSpan.className = 'human-issue-title';
     titleSpan.textContent = displayTitle;
+    if (isPlaceholder) {
+      titleSpan.style.fontStyle = 'italic';
+      titleSpan.style.color = 'var(--fg-muted)';
+    }
     titleGroup.appendChild(titleSpan);
 
     if (displaySubtitle) {
@@ -3302,9 +3391,7 @@ function renderAllTasksView(filteredIssues: Issue[]): void {
       card.className = 'all-task-card';
       card.setAttribute('role', 'button');
       card.setAttribute('tabindex', '0');
-      const titles = parseFriendlyTitle(issue.body, issue.title);
-      const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
-      const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+      const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
       card.setAttribute('aria-label', `Open issue #${issue.number}: ${displayTitle}`);
 
       const content = document.createElement('div');
@@ -3313,6 +3400,10 @@ function renderAllTasksView(filteredIssues: Issue[]): void {
       const titleEl = document.createElement('div');
       titleEl.className = 'all-task-title';
       titleEl.textContent = displayTitle;
+      if (isPlaceholder) {
+        titleEl.style.fontStyle = 'italic';
+        titleEl.style.color = 'var(--fg-muted)';
+      }
       content.appendChild(titleEl);
 
       if (displaySubtitle) {
@@ -3402,9 +3493,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
     card.className = 'questions-issue-card';
     card.setAttribute('role', 'region');
 
-    const titles = parseFriendlyTitle(issue.body, issue.title);
-    const displayTitle = titles.title.trim() || issue.title?.trim() || `Issue #${issue.number}`;
-    const displaySubtitle = titles.subtitle && titles.subtitle.trim() !== displayTitle ? titles.subtitle.trim() : null;
+    const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
     card.setAttribute('aria-label', `Issue #${issue.number}: ${displayTitle}`);
 
     const col = resolveIssueColumn(issue) || 'backlog';
@@ -3423,6 +3512,10 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
     const titleSpan = document.createElement('div');
     titleSpan.className = 'human-issue-title';
     titleSpan.textContent = displayTitle;
+    if (isPlaceholder) {
+      titleSpan.style.fontStyle = 'italic';
+      titleSpan.style.color = 'var(--fg-muted)';
+    }
     titleGroup.appendChild(titleSpan);
 
     if (displaySubtitle) {
@@ -3633,7 +3726,7 @@ function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph' | 'human' | 'al
     } else if (mode === 'all-tasks') {
       elBtnLayoutToggle.title = 'View: All Tasks (click to switch to Questions)';
       elBtnLayoutToggle.setAttribute('aria-label', 'View: All Tasks (click to switch to Questions)');
-      elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>';
+      elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M22 7h-9v2h9V7zm0 8h-9v2h9v-2zM5.54 11L2 7.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 11zm0 8L2 15.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 19z"/></svg>';
     } else if (mode === 'questions') {
       elBtnLayoutToggle.title = 'View: Questions (click to switch to List)';
       elBtnLayoutToggle.setAttribute('aria-label', 'View: Questions (click to switch to List)');
@@ -7129,14 +7222,41 @@ host.onDirectory(async (dir) => {
   }
 });
 
+let activeSessionId: string | null = null;
+
 // React to session change (when user switches chat sessions)
-host.onSession(async (sess) => {
+host.onSession(async (rawSess) => {
+  const sess = rawSess as any;
   if (sess) {
     addLog(`Active session: "${sess.title}" (${sess.id})`);
-    const matched = sessions.find((s) => s.id === sess.id);
-    if (matched && matched.directory && matched.directory !== currentDirectory) {
-      currentDirectory = matched.directory;
-      await autoResolveRepoForActiveContext();
+    const sessionChanged = activeSessionId !== null && activeSessionId !== sess.id;
+    activeSessionId = sess.id;
+    if (sessionChanged) {
+      // D13: When the active session changes, selection resets to the new session's repository automatically.
+      isManualRepoOverride = false;
+    }
+
+    if (!isManualRepoOverride) {
+      const sessDir = sess.directory || sess.location?.directory;
+      if (sessDir && sessDir !== currentDirectory) {
+        currentDirectory = sessDir;
+        await autoResolveRepoForActiveContext(sess);
+        return;
+      }
+      if (Array.isArray(sess.items) && sess.items.length > 0) {
+        for (const it of sess.items) {
+          const itemRepo = getSessionIssueRepo(it) || it.data?.repo || (typeof it.url === 'string' ? parseRepoFullName(it.url) : null);
+          if (itemRepo && itemRepo !== currentRepo && !isAllProjectsMode) {
+            setRepository(itemRepo, `active session item: ${sess.title || sess.id}`);
+            return;
+          }
+        }
+      }
+      const matched = sessions.find((s) => s.id === sess.id);
+      if (matched && matched.directory && matched.directory !== currentDirectory) {
+        currentDirectory = matched.directory;
+      }
+      await autoResolveRepoForActiveContext(sess);
     }
   }
 });

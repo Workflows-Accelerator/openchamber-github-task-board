@@ -142,6 +142,24 @@ export function parseFriendlyTitle(
   };
 }
 
+export function resolveSimplifiedViewTitle(
+  issue: { number: number; title?: string | null; body?: string | null }
+): { displayTitle: string; displaySubtitle: string | null; isPlaceholder: boolean } {
+  const titles = parseFriendlyTitle(issue.body, '__DEFAULT_TITLE_SENTINEL__');
+  if (titles.subtitle === '__DEFAULT_TITLE_SENTINEL__' && titles.title.trim()) {
+    return {
+      displayTitle: titles.title.trim(),
+      displaySubtitle: issue.title?.trim() || null,
+      isPlaceholder: false,
+    };
+  }
+  return {
+    displayTitle: '(No friendly title)',
+    displaySubtitle: issue.title?.trim() || `Issue #${issue.number}`,
+    isPlaceholder: true,
+  };
+}
+
 export function parseOpenQuestions(body: string): Subtask[] {
   if (!body) return [];
   const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
