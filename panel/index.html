@@ -2205,6 +2205,29 @@
     .current-session-option.is-active {
       color: var(--prim);
     }
+    .popover-item.is-active,
+    .popover-item.selected-repo,
+    .all-projects-option.is-active,
+    .current-session-option.is-active {
+      background: var(--surf-hover);
+      border-left: 2px solid var(--succ);
+    }
+    .session-repo-inline {
+      font-size: 10.5px;
+      font-weight: normal;
+      font-family: var(--font-mono);
+      color: var(--fg-muted);
+    }
+    .cross-repo-link,
+    .task-link {
+      color: var(--prim);
+      text-decoration: none;
+      word-break: break-all;
+    }
+    .cross-repo-link:hover,
+    .task-link:hover {
+      text-decoration: underline;
+    }
     .popover-item-title {
       font-size: 12px;
       font-weight: 500;
@@ -2382,13 +2405,15 @@
       gap: 12px;
     }
 
-    .human-repo-group {
+    .human-repo-group,
+    .questions-repo-group {
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
 
-    .human-repo-header {
+    .human-repo-header,
+    .questions-repo-header {
       position: sticky;
       top: 0;
       z-index: 3;
@@ -2731,6 +2756,9 @@
       color: var(--fg-faint);
     }
     .empty-box.empty-state-inaccessible svg {
+      color: var(--warn, #e3b341);
+    }
+    .empty-box.empty-state-rate-limited svg {
       color: var(--warn, #e3b341);
     }
     .empty-box.empty-state-failed svg {

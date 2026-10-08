@@ -3821,17 +3821,41 @@ ${placeholder}
   function resolveSimplifiedViewTitle(issue) {
     const titles = parseFriendlyTitle(issue.body, "__DEFAULT_TITLE_SENTINEL__");
     if (titles.subtitle === "__DEFAULT_TITLE_SENTINEL__" && titles.title.trim()) {
+      const friendly = titles.title.trim();
+      const tech = issue.title?.trim() || null;
       return {
-        displayTitle: titles.title.trim(),
-        displaySubtitle: issue.title?.trim() || null,
+        displayTitle: friendly,
+        displaySubtitle: tech && tech !== friendly ? tech : null,
         isPlaceholder: false
       };
     }
+    const fallbackTitle = issue.title?.trim() || `Issue #${issue.number}`;
     return {
-      displayTitle: "(No friendly title)",
-      displaySubtitle: issue.title?.trim() || `Issue #${issue.number}`,
-      isPlaceholder: true
+      displayTitle: fallbackTitle,
+      displaySubtitle: null,
+      isPlaceholder: false
     };
+  }
+  function escapeHtmlInternal(str) {
+    return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function formatTaskTextWithLinks(text, currentRepo2) {
+    if (!text || typeof text !== "string") return "";
+    let escaped = escapeHtmlInternal(text);
+    escaped = escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_match, label, url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="task-link">${label}</a>`;
+    });
+    escaped = escaped.replace(/(^|[^"'])(https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/issues\/\d+)([^"']|$)/g, (_match, prefix, url, suffix) => {
+      return `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">${url}</a>${suffix}`;
+    });
+    escaped = escaped.replace(/\b([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)#(\d+)\b/g, (match, repo, num) => {
+      if (currentRepo2 && repo.toLowerCase() === currentRepo2.toLowerCase()) {
+        return match;
+      }
+      const fullUrl = `https://github.com/${repo}/issues/${num}`;
+      return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">${fullUrl}</a>`;
+    });
+    return escaped;
   }
   function parseOpenQuestions(body) {
     if (!body) return [];
@@ -5729,6 +5753,9 @@ Blocked by ${blockerRef}`;
   var currentRenderedLayout = null;
   var lastRateLimitRemaining = null;
   var activeStreamEpoch = 0;
+  var currentSessionRepo = null;
+  var currentActiveSession = null;
+  var lastSyncErrorState = null;
   var collapsedGroupKeys = /* @__PURE__ */ new Set();
   function toggleGroupCollapse(key) {
     if (collapsedGroupKeys.has(key)) {
@@ -6072,7 +6099,38 @@ Blocked by ${blockerRef}`;
       isDiscoveringRepos = false;
     }
   }
+  function getSessionLinkedRepo(activeSession) {
+    const sess = activeSession || currentActiveSession;
+    if (sess && Array.isArray(sess.items) && sess.items.length > 0) {
+      for (const it of sess.items) {
+        const repo = getSessionIssueRepo(it) || it.data?.repo || (typeof it.url === "string" ? parseRepoFullName(it.url) : null);
+        if (repo) return repo;
+      }
+    }
+    if (currentProject) {
+      const pRepo = currentProject.linkedRepo || (currentProject.gitRepo ? `${currentProject.gitRepo.owner}/${currentProject.gitRepo.repo}` : null);
+      if (pRepo) return pRepo;
+    }
+    if (currentDirectory) {
+      const cleanDir = currentDirectory.replace(/\/+$/, "");
+      const matched = allProjects.find((p) => {
+        if (!p.directory) return false;
+        const cleanP = p.directory.replace(/\/+$/, "");
+        return cleanP === cleanDir || cleanDir.startsWith(cleanP + "/");
+      });
+      if (matched) {
+        const pRepo = matched.linkedRepo || (matched.gitRepo ? `${matched.gitRepo.owner}/${matched.gitRepo.repo}` : null);
+        if (pRepo) return pRepo;
+      }
+    }
+    if (currentSessionRepo) return currentSessionRepo;
+    if (!isManualRepoOverride && !isAllProjectsMode && currentRepo) return currentRepo;
+    return null;
+  }
   async function autoResolveRepoForActiveContext(activeSession) {
+    if (activeSession) {
+      currentActiveSession = activeSession;
+    }
     if (isManualRepoOverride) return;
     let worktreeMatchedProject = null;
     if (currentDirectory && currentDirectory.includes("/workspace/.local/share/opencode/worktree/")) {
@@ -6121,18 +6179,22 @@ Blocked by ${blockerRef}`;
         const full = `${dirRemote.owner}/${dirRemote.repo}`;
         targetProject.gitRepo = dirRemote;
         targetProject.linkedRepo = full;
+        currentSessionRepo = full;
         setRepository(full, `directory: ${targetProject.name}`);
         return;
       }
     }
     if (targetProject.gitRepo) {
       const full = `${targetProject.gitRepo.owner}/${targetProject.gitRepo.repo}`;
+      currentSessionRepo = full;
       setRepository(full, `project-git: ${targetProject.name}`);
       return;
     }
     const storedLink = await host.storage.get(`repo_${targetProject.id}`);
     if (typeof storedLink === "string" && storedLink.includes("/")) {
-      setRepository(storedLink.trim(), `stored-project-link: ${targetProject.name}`);
+      const cleanStored = storedLink.trim();
+      currentSessionRepo = cleanStored;
+      setRepository(cleanStored, `stored-project-link: ${targetProject.name}`);
       return;
     }
     const candidateSessions = activeSession ? [activeSession, ...sessions || []] : sessions || [];
@@ -6142,6 +6204,7 @@ Blocked by ${blockerRef}`;
           for (const it of sess.items) {
             const discoveredRepo = getSessionIssueRepo(it) || it.data?.repo || (typeof it.url === "string" ? parseRepoFullName(it.url) : null);
             if (discoveredRepo) {
+              currentSessionRepo = discoveredRepo;
               setRepository(discoveredRepo, `session-item: ${sess.title || sess.id}`);
               return;
             }
@@ -6196,41 +6259,53 @@ Blocked by ${blockerRef}`;
     void fetchIssues();
   }
   function renderRepoPopoverList() {
-    if (allProjects.length === 0) {
-      elDetectedReposList.innerHTML = `
+    const sessionRepo = getSessionLinkedRepo();
+    const sessionRepoDisplay = sessionRepo ? `Session repo: ${escapeHtml(sessionRepo)}` : "Session repo: none linked";
+    const projectItemsHtml = allProjects.length === 0 ? `
       <div style="padding: 10px; color: var(--fg-faint); font-size: 11px;">
         No workspace projects found. Enter custom repo below.
       </div>
-    `;
-      return;
-    }
-    const projectItemsHtml = allProjects.map((p) => {
+    ` : allProjects.map((p) => {
       const isCurrentProject = p.id === currentProject?.id;
       const repoName = p.linkedRepo || (p.gitRepo ? `${p.gitRepo.owner}/${p.gitRepo.repo}` : null);
       const isSelectedRepo = !isAllProjectsMode && repoName && repoName === currentRepo;
+      const activeBadge = isSelectedRepo ? '<span class="status-pill status-pill-picked" style="color: var(--succ); font-size: 10px; font-weight: 600;">[picked]</span>' : "";
       return `
-        <div class="popover-item" data-project-id="${escapeHtml(p.id)}" data-repo="${escapeHtml(repoName || "")}">
+        <div class="popover-item ${isSelectedRepo ? "is-active selected-repo" : ""}" data-project-id="${escapeHtml(p.id)}" data-repo="${escapeHtml(repoName || "")}">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 5px;">
               <span class="popover-item-title">${escapeHtml(p.name)}</span>
               ${isCurrentProject ? '<span class="status-pill" style="font-size: 9px; padding: 0 4px;">active</span>' : ""}
             </div>
-            ${isSelectedRepo ? '<span style="color: var(--succ); font-size: 11px; font-weight: 500;">[active]</span>' : ""}
+            ${activeBadge}
           </div>
           <span class="popover-item-sub">${repoName ? escapeHtml(repoName) : '<span style="color: var(--warn); font-style: italic;">No repo linked \u2022 click to link</span>'}</span>
         </div>
       `;
     }).join("");
+    const statusNoticeHtml = lastSyncErrorState ? `
+      <div class="popover-status-notice ${escapeHtml(lastSyncErrorState.kind)}" style="margin: 6px 10px; padding: 8px 10px; background: color-mix(in srgb, var(--warn, #e3b341) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn, #e3b341) 30%, transparent); border-radius: var(--rad, 6px); font-size: 11px;">
+        <div style="font-weight: 600; color: var(--fg); margin-bottom: 2px;">
+          ${lastSyncErrorState.kind === "rate-limited" ? "API Rate-Limited (Showing Cached Issues)" : "Offline / Cached State"}
+        </div>
+        <div style="color: var(--fg-muted); line-height: 1.35; font-size: 10.5px;">
+          ${lastSyncErrorState.kind === "rate-limited" ? "GitHub rate limit reached. Showing local cache. Enter a Personal Access Token below to increase limits." : "Unable to reach GitHub. Showing local cache. Check connection or enter a token below."}
+        </div>
+      </div>
+    ` : "";
     const currentSessionOptionHtml = `
-    <div class="repo-option current-session-option ${!isManualRepoOverride && !isAllProjectsMode ? "is-active" : ""}" data-current-session="true">
+    <div class="repo-option current-session-option ${!isManualRepoOverride && !isAllProjectsMode ? "is-active selected-repo" : ""}" data-current-session="true">
       <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-        <span>Current session</span>
-        ${!isManualRepoOverride && !isAllProjectsMode ? '<span style="color: var(--succ); font-size: 10px; font-weight: 500;">[default]</span>' : ""}
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <span>Current session</span>
+          <span class="session-repo-inline">${sessionRepoDisplay}</span>
+        </div>
+        ${!isManualRepoOverride && !isAllProjectsMode ? '<span class="status-pill status-pill-active" style="color: var(--succ); font-size: 10px; font-weight: 600;">[active default]</span>' : ""}
       </div>
     </div>
   `;
-    const allProjectsOptionHtml = isAllProjectsMode ? `<div class="repo-option all-projects-option is-active" data-all-projects="true"><span>All Projects</span><span style="color: var(--prim); font-size: 10px; font-weight: 500;">[active]</span></div>` : `<div class="repo-option all-projects-option" data-all-projects="true"><span>All Projects</span></div>`;
-    elDetectedReposList.innerHTML = currentSessionOptionHtml + allProjectsOptionHtml + projectItemsHtml;
+    const allProjectsOptionHtml = isAllProjectsMode ? `<div class="repo-option all-projects-option is-active selected-repo" data-all-projects="true"><span>All Projects</span><span style="color: var(--prim); font-size: 10px; font-weight: 600;">[active]</span></div>` : `<div class="repo-option all-projects-option" data-all-projects="true"><span>All Projects</span></div>`;
+    elDetectedReposList.innerHTML = statusNoticeHtml + currentSessionOptionHtml + allProjectsOptionHtml + projectItemsHtml;
     elDetectedReposList.querySelector(".current-session-option")?.addEventListener("click", async () => {
       isManualRepoOverride = false;
       addLog("Reset repository to current session default [D13]");
@@ -6397,6 +6472,7 @@ Blocked by ${blockerRef}`;
     const err = new Error(
       `GitHub rate limit (HTTP ${status})${retryAfterMs > 0 ? `; retry after ${Math.ceil(retryAfterMs / 1e3)}s` : ""}.`
     );
+    err.status = status;
     err.rateLimited = true;
     err.retryAfterMs = retryAfterMs;
     return err;
@@ -6673,6 +6749,7 @@ Blocked by ${blockerRef}`;
       }
       const page1Issues = normalizeGithubIssues(page1Items);
       issues = issues.length > 0 ? mergeIssuePages(issues, page1Issues) : page1Issues;
+      lastSyncErrorState = null;
       issueCache.set(currentRepo, {
         timestamp: Date.now(),
         issues
@@ -6698,15 +6775,24 @@ Blocked by ${blockerRef}`;
       }
     } catch (err) {
       addLog(`Failed to fetch fresh issues: ${err.message}`, "error");
+      const isRateLimited = Boolean(err?.rateLimited) || err?.status === 403 && /rate limit/i.test(err?.message || "") || /rate limit/i.test(err?.message || "");
+      lastSyncErrorState = {
+        kind: isRateLimited ? "rate-limited" : "offline",
+        message: err?.message || (isRateLimited ? "GitHub API rate limit exceeded." : "Failed to fetch fresh issues."),
+        timestamp: Date.now()
+      };
       if (issues.length > 0) {
         if (host?.toast) {
-          void host.toast({ kind: "info", message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
+          void host.toast({
+            kind: "info",
+            message: isRateLimited ? `API Rate-limited. Showing ${issues.length} cached issues.` : `Offline / Rate-limited. Showing ${issues.length} cached issues.`
+          });
         }
       } else {
         const isAccessError = err?.status === 401 || err?.status === 403 || err?.status === 404 || /401|403|404|token|auth|permission|not found|bad credentials|denied/i.test(err?.message || "");
         renderEmptyState(
-          `Failed to load issues for ${currentRepo}: ${err?.message || "Check GitHub integration tokens"}`,
-          isAccessError ? "inaccessible" : "failed"
+          isRateLimited ? `GitHub API rate limit exceeded for ${currentRepo}. Add a GitHub Personal Access Token to increase limits.` : `Failed to load issues for ${currentRepo}: ${err?.message || "Check GitHub integration tokens"}`,
+          isRateLimited ? "rate-limited" : isAccessError ? "inaccessible" : "failed"
         );
       }
     } finally {
@@ -6835,6 +6921,7 @@ Blocked by ${blockerRef}`;
         throw new Error("All repository requests failed");
       }
       issues = aggregateProjectIssues(sources);
+      lastSyncErrorState = null;
       issueCache.set(cacheKey, { timestamp: Date.now(), issues });
       if (host?.storage) {
         void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues }).catch(() => {
@@ -6857,15 +6944,24 @@ Blocked by ${blockerRef}`;
       addLog(`Aggregated ${issues.length} deduplicated issues across ${sources.length} repositories`, "succ");
     } catch (err) {
       addLog(`Failed to fetch all-project issues: ${err.message}`, "error");
+      const isRateLimited = Boolean(err?.rateLimited) || err?.status === 403 && /rate limit/i.test(err?.message || "") || /rate limit/i.test(err?.message || "");
+      lastSyncErrorState = {
+        kind: isRateLimited ? "rate-limited" : "offline",
+        message: err?.message || (isRateLimited ? "GitHub API rate limit exceeded." : "Failed to fetch all-project issues."),
+        timestamp: Date.now()
+      };
       if (issues.length > 0) {
         if (host?.toast) {
-          void host.toast({ kind: "info", message: `Offline / Rate-limited. Showing ${issues.length} aggregated issues.` });
+          void host.toast({
+            kind: "info",
+            message: isRateLimited ? `API Rate-limited. Showing ${issues.length} aggregated issues.` : `Offline / Rate-limited. Showing ${issues.length} aggregated issues.`
+          });
         }
       } else {
         const isAccessError = err?.status === 401 || err?.status === 403 || err?.status === 404 || /401|403|404|token|auth|permission|not found|bad credentials|denied/i.test(err?.message || "");
         renderEmptyState(
-          `Failed to load aggregated issues: ${err?.message || "Check GitHub integration tokens"}`,
-          isAccessError ? "inaccessible" : "failed"
+          isRateLimited ? `GitHub API rate limit exceeded. Add a GitHub Personal Access Token to increase limits.` : `Failed to load aggregated issues: ${err?.message || "Check GitHub integration tokens"}`,
+          isRateLimited ? "rate-limited" : isAccessError ? "inaccessible" : "failed"
         );
       }
     } finally {
@@ -7463,7 +7559,7 @@ Blocked by ${blockerRef}`;
     void host.setBadge(blockedCount > 0 ? blockedCount : null);
   }
   function renderEmptyState(message, kind = "empty") {
-    const kindClass = kind === "inaccessible" ? "empty-state-inaccessible" : kind === "failed" ? "empty-state-failed" : "empty-state-empty";
+    const kindClass = kind === "inaccessible" ? "empty-state-inaccessible" : kind === "failed" ? "empty-state-failed" : kind === "rate-limited" ? "empty-state-rate-limited" : "empty-state-empty";
     let iconSvg = "";
     let title = "";
     if (kind === "inaccessible") {
@@ -7472,6 +7568,9 @@ Blocked by ${blockerRef}`;
     } else if (kind === "failed") {
       iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
       title = "Failed to Load Repository";
+    } else if (kind === "rate-limited") {
+      iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
+      title = "API Rate-Limited";
     } else {
       iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5v-3h3.56c.69 1.19 1.97 2 3.45 2s2.75-.81 3.45-2H19v3zm0-5h-4.99c0 1.1-.9 2-2.01 2s-2.01-.9-2.01-2H5V5h14v9z"/></svg>';
       title = "No Issues in Repository";
@@ -8086,6 +8185,7 @@ Blocked by ${blockerRef}`;
       const session = getIssueSession(issue);
       const todos = collectHumanTodos(issue, session);
       const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
+      const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
       const header = document.createElement("div");
       header.className = "human-issue-header";
       header.setAttribute("role", "button");
@@ -8176,7 +8276,7 @@ Blocked by ${blockerRef}`;
           });
           const spanText = document.createElement("span");
           spanText.className = "human-todo-text";
-          spanText.textContent = todo.text;
+          spanText.innerHTML = formatTaskTextWithLinks(todo.text, issueRepo);
           const badge = document.createElement("span");
           badge.className = `human-todo-badge badge-${todo.source}`;
           badge.textContent = todo.source === "human-task" ? "Human Task" : todo.source === "open-question" ? "Open Question" : "Agent Waiting";
@@ -8362,7 +8462,7 @@ Blocked by ${blockerRef}`;
       return;
     }
     const fragment = document.createDocumentFragment();
-    issuesWithQuestions.forEach(({ issue, questions }) => {
+    const buildQuestionCard = ({ issue, questions }) => {
       const card = document.createElement("div");
       card.className = "questions-issue-card";
       card.setAttribute("role", "region");
@@ -8437,6 +8537,7 @@ Blocked by ${blockerRef}`;
       card.appendChild(header);
       const list = document.createElement("div");
       list.className = "question-items-list";
+      const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
       let unresolvedIdx = 0;
       questions.forEach((question) => {
         const idx = unresolvedIdx;
@@ -8462,7 +8563,7 @@ Blocked by ${blockerRef}`;
         });
         const spanText = document.createElement("span");
         spanText.className = "question-view-text";
-        spanText.textContent = question.text;
+        spanText.innerHTML = formatTaskTextWithLinks(question.text, issueRepo);
         leftRow.appendChild(cb);
         leftRow.appendChild(spanText);
         const btnAnswer = document.createElement("button");
@@ -8528,8 +8629,35 @@ Blocked by ${blockerRef}`;
         list.appendChild(itemEl);
       });
       card.appendChild(list);
-      fragment.appendChild(card);
-    });
+      return card;
+    };
+    if (isAllProjectsMode) {
+      const byRepo = {};
+      for (const item of issuesWithQuestions) {
+        const repo = getIssueRepoFullName(item.issue) || (item.issue.repo && item.issue.repo !== ALL_PROJECTS_CACHE_KEY ? item.issue.repo : "Unknown Repository");
+        if (!byRepo[repo]) byRepo[repo] = [];
+        byRepo[repo].push(item);
+      }
+      Object.keys(byRepo).forEach((repo) => {
+        const repoGroup = document.createElement("div");
+        repoGroup.className = "questions-repo-group";
+        const repoHeader = document.createElement("div");
+        repoHeader.className = "questions-repo-header";
+        repoHeader.innerHTML = `
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+        <span>${escapeHtml(repo)}</span>
+      `;
+        repoGroup.appendChild(repoHeader);
+        byRepo[repo].forEach((item) => {
+          repoGroup.appendChild(buildQuestionCard(item));
+        });
+        fragment.appendChild(repoGroup);
+      });
+    } else {
+      issuesWithQuestions.forEach((item) => {
+        fragment.appendChild(buildQuestionCard(item));
+      });
+    }
     elQuestionsViewContainer.appendChild(fragment);
   }
   function updateViewModeButtons(mode) {
@@ -11518,10 +11646,12 @@ ${issue.body}
     const sess = rawSess;
     if (sess) {
       addLog(`Active session: "${sess.title}" (${sess.id})`);
+      currentActiveSession = sess;
       const sessionChanged = activeSessionId !== null && activeSessionId !== sess.id;
       activeSessionId = sess.id;
       if (sessionChanged) {
         isManualRepoOverride = false;
+        isAllProjectsMode = false;
       }
       if (!isManualRepoOverride) {
         const sessDir = sess.directory || sess.location?.directory;

@@ -9,7 +9,7 @@ const execAsync = promisify(exec);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
-const SCREENSHOTS_DIR = path.resolve(ROOT_DIR, '.agents/run/board-lifecycle/verifications/feedback-2026-10-08/screenshots');
+const SCREENSHOTS_DIR = path.resolve(ROOT_DIR, '.agents/run/board-lifecycle/verifications/clickthrough-2026-10-08/screenshots');
 
 fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
 
@@ -19,6 +19,7 @@ const mockIssues = [
   {
     id: 1021,
     number: 21,
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
     title: 'feat(skill): implement unified issue-lifecycle skill and validation gates',
     body: `### Friendly Title: Universal Issue Lifecycle Skill
 
@@ -26,10 +27,12 @@ const mockIssues = [
 
 ### Human Tasks:
 - [ ] Verify issue-lifecycle skill transclusions against live prompt
-- [ ] Approve L5 human review gate batch for issue #21
+- [ ] Review external dependency in other-org/external-repo#99 before proceeding
+- [ ] Track voice discussion at https://github.com/Workflows-Accelerator/chambervoice/issues/12
 
 ### Open Questions:
 - [ ] Should archived issues be excluded from default voice agenda scans?
+- [ ] Review cross-project query in other-org/external-repo#100
 
 ### Actionable Subtasks Checklist:
 - [x] Standardize issue-body contract v1
@@ -49,8 +52,9 @@ const mockIssues = [
   {
     id: 1022,
     number: 22,
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
     title: 'fix(core): resolve race condition on scratchpad debounce',
-    body: `**Overview:** Scratchpad was saving simultaneously on rapid keydown bursts.
+    body: `**Overview:** Scratchpad was saving simultaneously on rapid keydown bursts. Body intentionally lacks Friendly Title to verify D14 fallback.
 
 ### Actionable Subtasks Checklist:
 - [x] Add flushScratchpadSave on blur and modal dismiss
@@ -70,6 +74,7 @@ const mockIssues = [
   {
     id: 1023,
     number: 23,
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
     title: 'feat(board): implement simplified views and layout toggle',
     body: `### Friendly Title: Simplified Review and Intake Views
 
@@ -100,6 +105,7 @@ const mockIssues = [
   {
     id: 1024,
     number: 24,
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
     title: 'fix(repo): anchor repository selection to active session with easy switching',
     body: `### Friendly Title: Reliable Session Repository Discovery
 
@@ -122,50 +128,42 @@ const mockIssues = [
     updated_at: '2026-10-08T09:30:00Z',
     comments: 0,
     html_url: 'https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/24'
-  },
-  {
-    id: 1025,
-    number: 25,
-    title: 'perf(cache): declare origins capability for direct 304 caching',
-    body: `### Friendly Title: Direct Origins GitHub Caching
+  }
+];
 
-**Overview:** Enable direct fetch caching to api.github.com to leverage 304 Not Modified without proxy overhead.`,
+const mockChamberVoiceIssues = [
+  {
+    id: 2012,
+    number: 12,
+    repo: 'Workflows-Accelerator/chambervoice',
+    title: 'feat(voice): streaming audio transcription buffer',
+    body: `### Friendly Title: Streaming Voice Engine
+
+**Overview:** Voice pipeline streaming buffer integration.
+
+### Human Tasks:
+- [ ] Verify latency bounds in production preview
+- [ ] Coordinate with task board in Workflows-Accelerator/openchamber-github-task-board#21
+
+### Open Questions:
+- [ ] Should voice triage pause automatically on agent questions?`,
     state: 'open',
     labels: [
-      { name: 'status:in-review', color: '9c27b0' },
-      { name: 'priority:high', color: 'e91e63' },
-      { name: 'theme:cache', color: '607d8b' }
+      { name: 'status:needs-human', color: 'ff9800' },
+      { name: 'priority:high', color: 'e91e63' }
     ],
-    user: { login: 'perf-agent' },
-    created_at: '2026-10-08T07:00:00Z',
-    updated_at: '2026-10-08T09:40:00Z',
-    comments: 3,
-    html_url: 'https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/25'
-  },
-  {
-    id: 1026,
-    number: 26,
-    title: 'fix(session): prevent cross-repo session collision on identical issue numbers',
-    body: `### Friendly Title: Cross-Repository Session Isolation
-
-**Overview:** Multi-repo boards must never attach session of #24 in repo A to #24 in repo B.`,
-    state: 'open',
-    labels: [
-      { name: 'status:planned', color: '607d8b' },
-      { name: 'priority:low', color: '9e9e9e' },
-      { name: 'theme:session', color: '3f51b5' }
-    ],
-    user: { login: 'sec-agent' },
-    created_at: '2026-10-08T08:00:00Z',
-    updated_at: '2026-10-08T09:45:00Z',
+    user: { login: 'voice-agent' },
+    created_at: '2026-10-07T10:00:00Z',
+    updated_at: '2026-10-08T09:00:00Z',
     comments: 1,
-    html_url: 'https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/26'
+    html_url: 'https://github.com/Workflows-Accelerator/chambervoice/issues/12'
   }
 ];
 
 const mockParentScript = (params) => `
 <script>
 window.__MOCK_ISSUES__ = ${JSON.stringify(mockIssues)};
+window.__MOCK_CHAMBERVOICE_ISSUES__ = ${JSON.stringify(mockChamberVoiceIssues)};
 
 (function() {
   const mockStorageMap = new Map();
@@ -185,15 +183,6 @@ window.__MOCK_ISSUES__ = ${JSON.stringify(mockIssues)};
       directory: '/workspace/extensions/github-task-board',
       items: [
         { id: '23', data: { issueNumber: 23, repo: 'Workflows-Accelerator/openchamber-github-task-board' } }
-      ]
-    },
-    {
-      id: 'ses_main_21',
-      title: 'Universal Skill Gate Run',
-      activity: 'waiting-question',
-      directory: '/workspace/extensions/github-task-board',
-      items: [
-        { id: '21', data: { issueNumber: 21, repo: 'Workflows-Accelerator/openchamber-github-task-board' } }
       ]
     }
   ];
@@ -285,7 +274,14 @@ window.__MOCK_ISSUES__ = ${JSON.stringify(mockIssues)};
           }
         } else if (data.type === 'request') {
           const empty = '${params.empty || ''}';
-          if (empty === 'inaccessible') {
+          const reqPath = data.payload?.path || '';
+          if (empty === 'rate-limited') {
+            reply(data.id, {
+              status: 403,
+              body: JSON.stringify({ message: 'API rate limit exceeded for Workflows-Accelerator/openchamber-github-task-board' }),
+              headers: { 'x-ratelimit-remaining': '0' }
+            }, true);
+          } else if (empty === 'inaccessible') {
             reply(data.id, {
               status: 403,
               body: JSON.stringify({ message: 'Must have push access to repository (HTTP 403 Forbidden)' }),
@@ -302,6 +298,12 @@ window.__MOCK_ISSUES__ = ${JSON.stringify(mockIssues)};
               status: 200,
               body: JSON.stringify([]),
               headers: { 'x-ratelimit-remaining': '4999', etag: '"mock-etag-empty"' }
+            });
+          } else if (reqPath.includes('chambervoice')) {
+            reply(data.id, {
+              status: 200,
+              body: JSON.stringify(window.__MOCK_CHAMBERVOICE_ISSUES__),
+              headers: { 'x-ratelimit-remaining': '4999', etag: '"mock-etag-cv"' }
             });
           } else {
             reply(data.id, {
@@ -323,18 +325,33 @@ window.__MOCK_ISSUES__ = ${JSON.stringify(mockIssues)};
     console.error('Failed to set mock parent:', e);
   }
 
-  // Automation runner after panel boots
   window.addEventListener('load', () => {
     const mode = '${params.mode || ''}';
     const popover = '${params.popover || ''}';
     const empty = '${params.empty || ''}';
+    const allProjects = '${params.allProjects || ''}';
 
     let interactionAttempted = false;
 
     const pollInterval = setInterval(() => {
-      // 1. Perform interaction once the trigger element is present
       if (!interactionAttempted) {
-        if (mode === 'human') {
+        if (allProjects === 'true') {
+          const popoverItems = document.querySelectorAll('#detectedReposList .popover-item');
+          const allProj = document.querySelector('#detectedReposList .all-projects-option');
+          if (allProj && popoverItems.length > 0) {
+            interactionAttempted = true;
+            allProj.click();
+            setTimeout(() => {
+              if (mode === 'human') {
+                const btnH = document.getElementById('btnViewHuman');
+                if (btnH) btnH.click();
+              } else if (mode === 'questions') {
+                const btnQ = document.getElementById('btnViewQuestions');
+                if (btnQ) btnQ.click();
+              }
+            }, 50);
+          }
+        } else if (mode === 'human') {
           const btn = document.getElementById('btnViewHuman');
           if (btn) {
             btn.click();
@@ -371,15 +388,27 @@ window.__MOCK_ISSUES__ = ${JSON.stringify(mockIssues)};
         }
       }
 
-      // 2. Check DOM readiness according to the expected target container
       let isReady = false;
-      if (empty) {
+      if (empty === 'rate-limited') {
+        const box = document.querySelector('.empty-box.empty-state-rate-limited');
+        if (box) isReady = true;
+      } else if (empty) {
         const box = document.querySelector('.empty-box');
         if (box) {
           if (empty === 'inaccessible' && box.classList.contains('empty-state-inaccessible')) isReady = true;
           else if (empty === 'failed' && box.classList.contains('empty-state-failed')) isReady = true;
           else if (empty === 'empty' && box.classList.contains('empty-state-empty')) isReady = true;
-          else if (!['inaccessible', 'failed', 'empty'].includes(empty)) isReady = true;
+        }
+      } else if (allProjects === 'true') {
+        if (mode === 'human') {
+          const grp = document.querySelector('.human-repo-group');
+          if (grp) isReady = true;
+        } else if (mode === 'questions') {
+          const grp = document.querySelector('.questions-repo-group');
+          if (grp) isReady = true;
+        } else {
+          const anyGroup = document.querySelector('.human-repo-group, .questions-repo-group, .task-group');
+          if (anyGroup) isReady = true;
         }
       } else if (popover === 'repo') {
         const popoverEl = document.getElementById('repoPopover');
@@ -427,7 +456,8 @@ const server = http.createServer((req, res) => {
     const params = {
       mode: url.searchParams.get('mode'),
       popover: url.searchParams.get('popover'),
-      empty: url.searchParams.get('empty')
+      empty: url.searchParams.get('empty'),
+      allProjects: url.searchParams.get('allProjects'),
     };
 
     const injected = rawIndex.replace(
@@ -456,10 +486,10 @@ server.listen(PORT, '127.0.0.1', async () => {
 
   const captures = [
     {
-      name: '01-all-tasks-view.png',
+      name: '01-all-tasks-d14-fallback.png',
       url: `http://127.0.0.1:${PORT}/?mode=all-tasks`,
       selector: 'body[data-ready-for-capture="true"] #allTasksViewContainer .all-task-card',
-      desc: 'All Tasks view with friendly titles, (No friendly title) placeholder on #22, and distinct checklist icon in toolbar',
+      desc: 'D14: All Tasks view with friendly titles where present and fallback directly to issue.title on issue #22 without placeholder',
     },
     {
       name: '02-human-tasks-view.png',
@@ -474,28 +504,22 @@ server.listen(PORT, '127.0.0.1', async () => {
       desc: 'Questions view populated with open questions extracted from issues #21, #23, and #24',
     },
     {
-      name: '04-repo-selector-popover.png',
+      name: '04-repo-popover-d15-picked-and-notice.png',
       url: `http://127.0.0.1:${PORT}/?popover=repo`,
       selector: 'body[data-ready-for-capture="true"] #repoPopover.active .current-session-option',
-      desc: 'Repository dropdown popover open showing Current session [default] anchor (D13), All Projects, and workspace repos',
+      desc: 'D15: Repository dropdown popover showing inline session repo, [picked] badge on active repo, and [active default] anchor',
     },
     {
-      name: '05-empty-state-inaccessible.png',
-      url: `http://127.0.0.1:${PORT}/?empty=inaccessible`,
-      selector: 'body[data-ready-for-capture="true"] .empty-box.empty-state-inaccessible',
-      desc: 'Empty state: Inaccessible repository with lock icon and warning styling',
+      name: '05-all-projects-d16-grouping.png',
+      url: `http://127.0.0.1:${PORT}/?mode=human&allProjects=true`,
+      selector: 'body[data-ready-for-capture="true"] #humanViewContainer .human-repo-group',
+      desc: 'D16: All Projects mode grouping Human Tasks by repository with full-URL cross-repo issue links',
     },
     {
-      name: '06-empty-state-failed.png',
-      url: `http://127.0.0.1:${PORT}/?empty=failed`,
-      selector: 'body[data-ready-for-capture="true"] .empty-box.empty-state-failed',
-      desc: 'Empty state: Failed repository with alert icon and error styling',
-    },
-    {
-      name: '07-empty-state-empty.png',
-      url: `http://127.0.0.1:${PORT}/?empty=empty`,
-      selector: 'body[data-ready-for-capture="true"] .empty-box.empty-state-empty',
-      desc: 'Empty state: Zero issues repository with inbox tray icon',
+      name: '06-empty-state-rate-limited.png',
+      url: `http://127.0.0.1:${PORT}/?empty=rate-limited`,
+      selector: 'body[data-ready-for-capture="true"] .empty-box.empty-state-rate-limited',
+      desc: 'D15: Empty state for API Rate-Limited repository with clock icon and actionable Personal Access Token guidance',
     },
   ];
 
@@ -503,14 +527,14 @@ server.listen(PORT, '127.0.0.1', async () => {
     for (const cap of captures) {
       const outPath = path.join(SCREENSHOTS_DIR, cap.name);
       console.log(`Capturing ${cap.name}...`);
-      const cmd = `obscura fetch "${cap.url}" --allow-private-network --selector "${cap.selector}" -s "${outPath}"`;
+      const cmd = `obscura fetch "${cap.url}" --allow-private-network --wait 10 --selector "${cap.selector}" -s "${outPath}"`;
       const { stdout, stderr } = await execAsync(cmd);
       if (stdout) console.log(stdout.trim());
       if (stderr) console.error(stderr.trim());
       const stats = fs.statSync(outPath);
       console.log(`Saved ${cap.name} (${stats.size} bytes)`);
     }
-    console.log('All screenshots captured successfully.');
+    console.log('All verification screenshots captured successfully.');
   } catch (err) {
     console.error('Capture failed:', err);
     process.exitCode = 1;

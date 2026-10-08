@@ -147,17 +147,55 @@ export function resolveSimplifiedViewTitle(
 ): { displayTitle: string; displaySubtitle: string | null; isPlaceholder: boolean } {
   const titles = parseFriendlyTitle(issue.body, '__DEFAULT_TITLE_SENTINEL__');
   if (titles.subtitle === '__DEFAULT_TITLE_SENTINEL__' && titles.title.trim()) {
+    const friendly = titles.title.trim();
+    const tech = issue.title?.trim() || null;
     return {
-      displayTitle: titles.title.trim(),
-      displaySubtitle: issue.title?.trim() || null,
+      displayTitle: friendly,
+      displaySubtitle: tech && tech !== friendly ? tech : null,
       isPlaceholder: false,
     };
   }
+  const fallbackTitle = issue.title?.trim() || `Issue #${issue.number}`;
   return {
-    displayTitle: '(No friendly title)',
-    displaySubtitle: issue.title?.trim() || `Issue #${issue.number}`,
-    isPlaceholder: true,
+    displayTitle: fallbackTitle,
+    displaySubtitle: null,
+    isPlaceholder: false,
   };
+}
+
+function escapeHtmlInternal(str: string): string {
+  return (str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+export function formatTaskTextWithLinks(text: string | null | undefined, currentRepo?: string): string {
+  if (!text || typeof text !== 'string') return '';
+  let escaped = escapeHtmlInternal(text);
+
+  // 1. Convert markdown links: [label](https://...)
+  escaped = escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_match, label, url) => {
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="task-link">${label}</a>`;
+  });
+
+  // 2. Convert full GitHub issue URLs: https://github.com/:owner/:repo/issues/:num
+  escaped = escaped.replace(/(^|[^"'])(https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/issues\/\d+)([^"']|$)/g, (_match, prefix, url, suffix) => {
+    return `${prefix}<a href="${url}" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">${url}</a>${suffix}`;
+  });
+
+  // 3. Convert cross-repo issue references: owner/repo#123
+  escaped = escaped.replace(/\b([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)#(\d+)\b/g, (match, repo, num) => {
+    if (currentRepo && repo.toLowerCase() === currentRepo.toLowerCase()) {
+      return match;
+    }
+    const fullUrl = `https://github.com/${repo}/issues/${num}`;
+    return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">${fullUrl}</a>`;
+  });
+
+  return escaped;
 }
 
 export function parseOpenQuestions(body: string): Subtask[] {
