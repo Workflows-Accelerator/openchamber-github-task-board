@@ -26,7 +26,8 @@
       "sessions",
       "prompt",
       "files",
-      "filesystem"
+      "filesystem",
+      "origins"
     ],
     "contributes": {
       "panel": {
@@ -39,6 +40,9 @@
       "attach": true,
       "filesystem": [
         "/workspace/**"
+      ],
+      "origins": [
+        "https://api.github.com"
       ],
       "integration": {
         "name": "GitHub",
