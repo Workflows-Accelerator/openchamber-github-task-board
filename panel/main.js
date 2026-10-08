@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLBAR_CSS = `
 :root {
   --oc-scrollbar-thumb: color-mix(in srgb, var(--oc-muted, currentColor) 40%, transparent);
@@ -38,13 +38,13 @@
 }
 `;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -263,7 +263,7 @@
     return wire;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var HostRequestError = class extends Error {
     code;
     constructor(code, message) {
@@ -906,7 +906,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -981,7 +981,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -1039,7 +1039,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1241,7 +1241,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -1289,7 +1289,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1337,7 +1337,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -1361,7 +1361,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return node;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1422,7 +1422,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -1456,7 +1456,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return target?.id ?? null;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -1491,7 +1491,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -1530,7 +1530,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -1687,7 +1687,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1731,7 +1731,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1791,7 +1791,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -1816,7 +1816,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -1904,7 +1904,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1946,7 +1946,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1975,7 +1975,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2021,7 +2021,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2047,7 +2047,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2090,7 +2090,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2196,7 +2196,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -2498,8 +2498,8 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   function escapeHtml(str) {
     return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
-  function slugify(text) {
-    return text.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/[\s_-]+/g, "-").slice(0, 30);
+  function slugify(text, maxLen = 60) {
+    return (text || "").toString().toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, maxLen);
   }
   function sanitizeHexColor(color) {
     if (!color) return null;
@@ -2592,6 +2592,142 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   }
 
   // panel/labels.ts
+  function extractWorktreeName(wt) {
+    if (!wt) return "";
+    if (typeof wt === "string") return wt;
+    if (typeof wt === "object") {
+      return wt.name || wt.branch || wt.directory || "";
+    }
+    return "";
+  }
+  function checkVague(issue) {
+    if (!issue) return true;
+    const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labels.includes("status:needs-alignment")) {
+      return true;
+    }
+    const openQuestions = issue.openQuestions || [];
+    const hasUnansweredQuestions = openQuestions.some((q) => !q.completed);
+    if (hasUnansweredQuestions) {
+      return true;
+    }
+    const body = issue.body || "";
+    const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+    const subtaskCount = (issue.subtasks || []).length;
+    return subtaskCount === 0 && wordCount < 20;
+  }
+  function extractTheme(issue) {
+    if (!issue || !issue.labels || issue.labels.length === 0) return "No Theme";
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name.toLowerCase().startsWith("theme:")) {
+        const themeName = name.slice(6).trim();
+        if (themeName) return themeName;
+      }
+    }
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      const lower = name.toLowerCase();
+      if (name && !lower.startsWith("status:") && !lower.startsWith("priority:") && !lower.startsWith("complexity:") && !lower.startsWith("theme:") && !["archived", "archive"].includes(lower)) {
+        return name;
+      }
+    }
+    return "No Theme";
+  }
+  var STATUS_DRAFT = "status:draft";
+  var STATUS_BACKLOG = "status:backlog";
+  var STATUS_TODO = "status:todo";
+  var STATUS_PLANNED = "status:planned";
+  var STATUS_IN_PROGRESS = "status:in-progress";
+  var STATUS_NEEDS_HUMAN = "status:needs-human";
+  var STATUS_IN_REVIEW = "status:in-review";
+  var STATUS_DONE = "status:done";
+  var STATUS_LABELS = [
+    STATUS_DRAFT,
+    STATUS_BACKLOG,
+    STATUS_TODO,
+    STATUS_PLANNED,
+    STATUS_IN_PROGRESS,
+    STATUS_NEEDS_HUMAN,
+    STATUS_IN_REVIEW,
+    STATUS_DONE
+  ];
+  var STATUS_COLUMNS = [
+    "draft",
+    "backlog",
+    "todo",
+    "planned",
+    "in-progress",
+    "needs-human",
+    "in-review",
+    "done"
+  ];
+  var STATUS_METADATA = {
+    "draft": {
+      id: "draft",
+      label: STATUS_DRAFT,
+      name: "Draft",
+      displayName: "Draft",
+      color: "#6e7681",
+      description: "Initial ideas or drafting phase requiring further clarification"
+    },
+    "backlog": {
+      id: "backlog",
+      label: STATUS_BACKLOG,
+      name: "Backlog",
+      displayName: "Backlog",
+      color: "#8b949e",
+      description: "Prioritized ideas and incoming work not yet scheduled"
+    },
+    "todo": {
+      id: "todo",
+      label: STATUS_TODO,
+      name: "To Do",
+      displayName: "To Do",
+      color: "#d29922",
+      description: "Well-formed work ready to be picked up"
+    },
+    "planned": {
+      id: "planned",
+      label: STATUS_PLANNED,
+      name: "Planned",
+      displayName: "Planned",
+      color: "#58a6ff",
+      description: "Scheduled or queued for execution"
+    },
+    "in-progress": {
+      id: "in-progress",
+      label: STATUS_IN_PROGRESS,
+      name: "In Progress",
+      displayName: "In Progress",
+      color: "#bc8cff",
+      description: "Actively being worked on by an agent or human"
+    },
+    "needs-human": {
+      id: "needs-human",
+      label: STATUS_NEEDS_HUMAN,
+      name: "Needs Human",
+      displayName: "Needs Human",
+      color: "#f85149",
+      description: "Blocked waiting on human permission, answers, or input"
+    },
+    "in-review": {
+      id: "in-review",
+      label: STATUS_IN_REVIEW,
+      name: "In Review",
+      displayName: "In Review",
+      color: "#3fb950",
+      description: "Execution finished and awaiting human review or PR validation"
+    },
+    "done": {
+      id: "done",
+      label: STATUS_DONE,
+      name: "Done",
+      displayName: "Done",
+      color: "#238636",
+      description: "Completed or closed"
+    }
+  };
   function isSystemLabel(labelName) {
     if (!labelName || typeof labelName !== "string") return false;
     const lower = labelName.trim().toLowerCase();
@@ -2702,6 +2838,264 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     }
     return scored.sort((a, b) => b.score - a.score || b.issue.number - a.issue.number).slice(0, limit).map((s) => s.issue);
   }
+  function isIssueClosed(issue) {
+    if (!issue) return false;
+    if (typeof issue.state === "string" && issue.state.toLowerCase() === "closed") {
+      return true;
+    }
+    if (issue.state_reason === "completed") {
+      return true;
+    }
+    const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labelNames.includes("status:done") || labelNames.includes("status:closed") || labelNames.includes("closed") || labelNames.includes("done")) {
+      return true;
+    }
+    return false;
+  }
+  function resolveIssueColumn(issue, sessionOrList) {
+    if (!issue) return null;
+    if (isIssueClosed(issue)) {
+      return "done";
+    }
+    const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labelNames.includes("status:done")) return "done";
+    if (labelNames.includes("status:in-review")) return "in-review";
+    if (labelNames.includes("status:needs-human")) return "needs-human";
+    let session = null;
+    if (sessionOrList) {
+      if (Array.isArray(sessionOrList)) {
+        const issueNumStr = String(issue.number);
+        session = sessionOrList.find((s) => {
+          if (s.items && s.items.some(
+            (it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number || it.data && Array.isArray(it.data.issueNumbers) && it.data.issueNumbers.includes(issue.number)
+          )) {
+            return true;
+          }
+          if (s.data && (s.data.issueNumber === issue.number || Array.isArray(s.data.issueNumbers) && s.data.issueNumbers.includes(issue.number))) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issue.number}`)) {
+            return true;
+          }
+          const wtStrings = typeof s.worktree === "string" ? [s.worktree] : s.worktree ? [s.worktree.name, s.worktree.branch, s.worktree.directory].filter(Boolean) : [];
+          if (wtStrings.some((str) => String(str).includes(`issue-${issue.number}`))) {
+            return true;
+          }
+          return false;
+        }) || null;
+      } else {
+        session = sessionOrList;
+      }
+    }
+    const isSessionRunning = Boolean(session && session.activity === "running");
+    const isSessionWaiting = Boolean(
+      session && (session.activity === "waiting-permission" || session.activity === "waiting-question" || session.activity.startsWith("waiting"))
+    );
+    const isSessionIdle = Boolean(session && session.activity === "idle");
+    if (labelNames.includes("status:in-progress")) {
+      if (isSessionIdle) {
+        return "in-review";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "in-progress";
+    }
+    if (labelNames.includes("status:planned")) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "planned";
+    }
+    if (labelNames.includes("status:todo")) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "todo";
+    }
+    if (labelNames.includes("status:backlog")) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "backlog";
+    }
+    if (labelNames.includes("status:draft") || checkVague(issue)) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "draft";
+    }
+    if (session) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      if (isSessionIdle) {
+        return "in-review";
+      }
+    }
+    return "todo";
+  }
+  function resolveDefaultTab(issues2, sessionOrList) {
+    if (!issues2 || issues2.length === 0) return "all";
+    const hasNeedsHuman = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "needs-human");
+    if (hasNeedsHuman) return "needs-human";
+    const hasReview = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "in-review");
+    if (hasReview) return "in-review";
+    const hasProgress = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "in-progress");
+    if (hasProgress) return "in-progress";
+    const hasTodo = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "todo");
+    if (hasTodo) return "todo";
+    const hasPlanned = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "planned");
+    if (hasPlanned) return "planned";
+    const hasBacklog = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "backlog");
+    if (hasBacklog) return "backlog";
+    const hasDraft = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "draft");
+    if (hasDraft) return "draft";
+    return "all";
+  }
+  function groupIssuesBy(issuesList, groupBy, sessionOrList) {
+    if (groupBy === "priority") {
+      const groups2 = [
+        { id: "critical", title: "Critical", issues: [] },
+        { id: "important", title: "Important", issues: [] },
+        { id: "useful", title: "Useful", issues: [] },
+        { id: "optional", title: "Optional", issues: [] },
+        { id: "none", title: "No Priority", issues: [] }
+      ];
+      const map2 = new Map(groups2.map((g) => [g.id, g]));
+      for (const issue of issuesList) {
+        const p = getIssuePriority(issue) || "none";
+        map2.get(p)?.issues.push(issue);
+      }
+      return groups2;
+    }
+    if (groupBy === "theme" || groupBy === "tag") {
+      const map2 = /* @__PURE__ */ new Map();
+      for (const issue of issuesList) {
+        const theme = extractTheme(issue);
+        if (!map2.has(theme)) {
+          map2.set(theme, { id: theme, title: theme, issues: [] });
+        }
+        map2.get(theme).issues.push(issue);
+      }
+      if (map2.size === 0) {
+        map2.set("No Theme", { id: "No Theme", title: "No Theme", issues: [] });
+      }
+      return Array.from(map2.values());
+    }
+    const groups = [
+      { id: "draft", title: "Draft", issues: [] },
+      { id: "backlog", title: "Backlog", issues: [] },
+      { id: "todo", title: "To Do", issues: [] },
+      { id: "planned", title: "Planned", issues: [] },
+      { id: "in-progress", title: "In Progress", issues: [] },
+      { id: "needs-human", title: "Needs Human", issues: [] },
+      { id: "in-review", title: "In Review", issues: [] },
+      { id: "done", title: "Done", issues: [] }
+    ];
+    const map = new Map(groups.map((g) => [g.id, g]));
+    for (const issue of issuesList) {
+      const col = resolveIssueColumn(issue, sessionOrList);
+      if (col && map.has(col)) {
+        map.get(col).issues.push(issue);
+      }
+    }
+    return groups;
+  }
+  var StatusReconciler = class {
+    inFlight = /* @__PURE__ */ new Set();
+    lastReconciled = /* @__PURE__ */ new Map();
+    timer = null;
+    debounceMs;
+    updateStatus;
+    getSession;
+    onReconciled;
+    constructor(options) {
+      this.debounceMs = options.debounceMs ?? 300;
+      this.updateStatus = options.updateStatus;
+      this.getSession = options.getSession;
+      this.onReconciled = options.onReconciled;
+    }
+    // Repo-qualified key so two same-numbered issues in different repositories
+    // are tracked independently and never block or overwrite each other.
+    keyFor(issue) {
+      const repo = issue && typeof issue.repo === "string" ? issue.repo.trim().toLowerCase() : "";
+      if (repo && Number.isFinite(issue?.number)) return `${repo}#${issue.number}`;
+      return `#${issue?.number}`;
+    }
+    schedule(issues2) {
+      if (this.timer) {
+        clearTimeout(this.timer);
+      }
+      this.timer = setTimeout(() => {
+        this.timer = null;
+        void this.reconcile(issues2);
+      }, this.debounceMs);
+    }
+    async reconcile(issues2) {
+      const reconciled = [];
+      if (!issues2 || !Array.isArray(issues2)) return reconciled;
+      for (const issue of issues2) {
+        if (!issue || !issue.number) continue;
+        const session = this.getSession ? this.getSession(issue) : null;
+        if (!session) continue;
+        const targetCol = resolveIssueColumn(issue, session);
+        if (!targetCol) continue;
+        if (issue.state === "closed" && targetCol === "done") continue;
+        const currentLabels = (issue.labels || []).map(
+          (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
+        );
+        const currentStatus = currentLabels.find((n) => n.startsWith("status:"))?.replace("status:", "").trim();
+        if (currentStatus === targetCol) continue;
+        const key = this.keyFor(issue);
+        if (this.inFlight.has(key)) continue;
+        if (this.lastReconciled.get(key) === targetCol) continue;
+        this.inFlight.add(key);
+        this.lastReconciled.set(key, targetCol);
+        try {
+          await this.updateStatus(issue, targetCol);
+          reconciled.push({ issueNumber: issue.number, target: targetCol });
+          this.onReconciled?.(issue, targetCol);
+        } catch (err) {
+          this.lastReconciled.delete(key);
+        } finally {
+          this.inFlight.delete(key);
+        }
+      }
+      return reconciled;
+    }
+    clear() {
+      if (this.timer) {
+        clearTimeout(this.timer);
+        this.timer = null;
+      }
+      this.inFlight.clear();
+      this.lastReconciled.clear();
+    }
+    isInFlight(issueOrNumber) {
+      const key = typeof issueOrNumber === "number" ? `#${issueOrNumber}` : this.keyFor(issueOrNumber);
+      return this.inFlight.has(key);
+    }
+    getLastReconciled(issueOrNumber) {
+      const key = typeof issueOrNumber === "number" ? `#${issueOrNumber}` : this.keyFor(issueOrNumber);
+      return this.lastReconciled.get(key);
+    }
+  };
 
   // panel/git.ts
   function parseGitHubRemoteUrl(raw) {
@@ -2736,9 +3130,28 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     const generic = content.match(/gh[pousr]_[A-Za-z0-9_]+/);
     return generic ? generic[0] : null;
   }
+  function parseGitdirContent(content) {
+    if (!content || typeof content !== "string") return null;
+    const match = content.match(/^gitdir:\s*(.+)$/m);
+    return match ? match[1].trim() : null;
+  }
+  function extractParentRepoRootFromGitdir(gitdirPath) {
+    if (!gitdirPath || typeof gitdirPath !== "string") return null;
+    if (!gitdirPath.includes("/.git/worktrees/")) return null;
+    return gitdirPath.split("/.git/worktrees/")[0];
+  }
+  function resolveParentRemoteFromGitdir(gitdirContent, readConfigFileFn) {
+    const path = parseGitdirContent(gitdirContent);
+    if (!path) return null;
+    const parentRepoRoot = extractParentRepoRootFromGitdir(path);
+    if (!parentRepoRoot) return null;
+    const config = readConfigFileFn(`${parentRepoRoot}/.git/config`);
+    if (!config) return null;
+    return parseGitRemoteFromConfig(config);
+  }
 
   // panel/types.ts
-  function extractWorktreeName(wt) {
+  function extractWorktreeName2(wt) {
     if (!wt) return "";
     if (typeof wt === "string") return wt;
     if (typeof wt === "object") {
@@ -2748,9 +3161,54 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   }
 
   // panel/core.ts
+  function slugify2(text, maxLen = 60) {
+    return (text || "").toString().toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, maxLen);
+  }
   var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
   var questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
+  var testPlanIssueHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
+  var testPlanBatchHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
   var headingRegex = /^#{1,4}\s+/;
+  function parseFriendlyTitle(body, defaultTitle) {
+    if (!body || typeof body !== "string") {
+      return { title: defaultTitle || "", subtitle: null };
+    }
+    const match = body.match(/(?:^|\r?\n)[ \t]*(?:#{1,4}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
+    if (match) {
+      let extracted = match[1].trim();
+      if (!extracted) {
+        const matchIndex = match.index ?? 0;
+        const remainder = body.slice(matchIndex + match[0].length);
+        const lines = remainder.split(/\r?\n/);
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line) continue;
+          if (line.startsWith("#") || /^\*\*(?:overview|description|details|context|background|about|tasks?|subtasks?|questions?):?\*\*/i.test(line) || /^[-*+]\s+/.test(line) || /^\d+\.\s+/.test(line)) {
+            break;
+          }
+          extracted = line;
+          break;
+        }
+      }
+      if (extracted) {
+        extracted = extracted.replace(/^<([^>]+)>$/, "$1").replace(/^["'](.*)["']$/, "$1").trim();
+        if (extracted.toLowerCase() === "3-6 words plain english title" || extracted.toLowerCase() === "<3-6 words plain english title>") {
+          return {
+            title: defaultTitle || "",
+            subtitle: null
+          };
+        }
+        return {
+          title: extracted,
+          subtitle: defaultTitle || null
+        };
+      }
+    }
+    return {
+      title: defaultTitle || "",
+      subtitle: null
+    };
+  }
   function parseOpenQuestions(body) {
     if (!body) return [];
     const lines = body.split("\n");
@@ -2832,6 +3290,25 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   function updateOpenQuestionInMarkdown(body, lineIndex, completed) {
     return updateSubtaskInMarkdown(body, lineIndex, completed);
   }
+  function answerOpenQuestionInMarkdown(body, questionIndex, answerText) {
+    if (!body) return "";
+    const cleanAnswer = (answerText || "").trim().replace(/\r?\n+/g, " ");
+    const questions = parseOpenQuestions(body);
+    const unresolved = questions.filter((q) => !q.completed);
+    if (questionIndex < 0 || questionIndex >= unresolved.length) {
+      return body;
+    }
+    const target = unresolved[questionIndex];
+    const lines = body.split("\n");
+    const line = lines[target.lineIndex];
+    if (!line) return body;
+    const match = line.match(checklistRegex);
+    if (!match) return body;
+    const lineEnding = match[4].endsWith("\r") ? "\r" : "";
+    const questionContent = match[4].replace(/\r$/, "").replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, "").trimEnd();
+    lines[target.lineIndex] = `${match[1]}x${match[3]}${questionContent} *(Answer: ${cleanAnswer})*${lineEnding}`;
+    return lines.join("\n");
+  }
   function appendSubtaskToMarkdown(body, text) {
     const cleanText = text.trim();
     if (!cleanText) return body;
@@ -2894,6 +3371,167 @@ ${questionsBlock}`;
 ### Open Questions:
 
 ${questionsBlock}`;
+  }
+  function parseTestPlan(body) {
+    const result = {
+      issueTests: [],
+      batchTests: []
+    };
+    if (!body || typeof body !== "string") return result;
+    const lines = body.split("\n");
+    let currentScope = null;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (headingRegex.test(line)) {
+        if (testPlanIssueHeadingRegex.test(line)) {
+          currentScope = "issue";
+        } else if (testPlanBatchHeadingRegex.test(line)) {
+          currentScope = "batch";
+        } else {
+          currentScope = null;
+        }
+        continue;
+      }
+      if (currentScope) {
+        const match = line.match(checklistRegex);
+        if (match) {
+          const item = {
+            text: match[4].trim(),
+            completed: match[2].toLowerCase() === "x",
+            lineIndex: i,
+            scope: currentScope
+          };
+          if (currentScope === "issue") {
+            result.issueTests.push(item);
+          } else {
+            result.batchTests.push(item);
+          }
+        }
+      }
+    }
+    return result;
+  }
+  function updateTestItemInMarkdown(body, lineIndex, completed) {
+    if (!body) return "";
+    return updateSubtaskInMarkdown(body, lineIndex, completed);
+  }
+  function appendTestItemToMarkdown(body, text, scope) {
+    const cleanText = (text || "").trim();
+    if (!cleanText) return body || "";
+    const header = scope === "issue" ? "## Test Plan (Issue)" : "## Test Plan (Batch)";
+    const targetRegex = scope === "issue" ? testPlanIssueHeadingRegex : testPlanBatchHeadingRegex;
+    const lineEnding = typeof body === "string" && body.includes("\r\n") ? "\r" : "";
+    if (!body || typeof body !== "string") {
+      return `${header}
+- [ ] ${cleanText}`;
+    }
+    const lines = body.split("\n");
+    let targetHeaderIndex = -1;
+    let nextHeaderIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (targetRegex.test(lines[i])) {
+        targetHeaderIndex = i;
+        for (let j = i + 1; j < lines.length; j++) {
+          if (/^#{1,6}\s+/.test(lines[j])) {
+            nextHeaderIndex = j;
+            break;
+          }
+        }
+        break;
+      }
+    }
+    if (targetHeaderIndex !== -1) {
+      const sectionEnd = nextHeaderIndex !== -1 ? nextHeaderIndex : lines.length;
+      let lastChecklistIndex = -1;
+      for (let i = targetHeaderIndex + 1; i < sectionEnd; i++) {
+        if (checklistRegex.test(lines[i])) {
+          lastChecklistIndex = i;
+        }
+      }
+      if (lastChecklistIndex !== -1) {
+        lines.splice(lastChecklistIndex + 1, 0, `- [ ] ${cleanText}${lineEnding}`);
+        return lines.join("\n");
+      }
+      lines.splice(targetHeaderIndex + 1, 0, `- [ ] ${cleanText}${lineEnding}`);
+      return lines.join("\n");
+    }
+    return `${body.trimEnd()}
+
+${header}
+- [ ] ${cleanText}`;
+  }
+  function serializeTestPlan(items, scope) {
+    const header = scope === "issue" ? "## Test Plan (Issue)" : "## Test Plan (Batch)";
+    const cleanItems = (items || []).filter((item) => item && typeof item.text === "string" && item.text.trim());
+    if (cleanItems.length === 0) {
+      return header;
+    }
+    const lines = cleanItems.map((item) => `- [${item.completed ? "x" : " "}] ${item.text.trim()}`);
+    return `${header}
+${lines.join("\n")}`;
+  }
+  function getIssueBatch(issue) {
+    if (!issue || !issue.labels || !Array.isArray(issue.labels) || issue.labels.length === 0) return null;
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l?.name || "").trim();
+      if (name.toLowerCase().startsWith("batch:")) {
+        const batchName = name.slice(6).trim();
+        if (batchName) return batchName;
+      }
+    }
+    return null;
+  }
+  function isBatchReadyForReview(batchName, allIssues) {
+    const normalizedBatch = (batchName || "").trim().toLowerCase();
+    if (!normalizedBatch || !Array.isArray(allIssues)) {
+      return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
+    }
+    const seenNumbers = /* @__PURE__ */ new Set();
+    const batchIssues = [];
+    for (const issue of allIssues) {
+      if (!issue || typeof issue.number !== "number") continue;
+      if (seenNumbers.has(issue.number)) continue;
+      let belongsToBatch = false;
+      if (Array.isArray(issue.labels)) {
+        for (const l of issue.labels) {
+          const name = (typeof l === "string" ? l : l?.name || "").trim();
+          if (name.toLowerCase().startsWith("batch:")) {
+            if (name.slice(6).trim().toLowerCase() === normalizedBatch) {
+              belongsToBatch = true;
+              break;
+            }
+          }
+        }
+      }
+      if (belongsToBatch) {
+        seenNumbers.add(issue.number);
+        batchIssues.push(issue);
+      }
+    }
+    const total = batchIssues.length;
+    if (total === 0) {
+      return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
+    }
+    let inReviewCount = 0;
+    const outstandingIssues = [];
+    for (const issue of batchIssues) {
+      const isClosed = typeof issue.state === "string" && issue.state.toLowerCase() === "closed" || issue.state_reason === "completed" || issue.state_reason === "not_planned";
+      const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l?.name || "").toLowerCase());
+      const isDone = isClosed || labelNames.includes("status:done") || labelNames.includes("status:closed") || labelNames.includes("done") || labelNames.includes("closed") || issue.column === "done" || issue.status === "done";
+      const isInReview = !isDone && (labelNames.includes("status:in-review") || labelNames.includes("in-review") || issue.column === "in-review" || issue.status === "in-review");
+      if (isInReview) {
+        inReviewCount++;
+      } else if (!isDone) {
+        outstandingIssues.push(issue.number);
+      }
+    }
+    const ready = total > 0 && outstandingIssues.length === 0;
+    return {
+      ready,
+      total,
+      inReview: inReviewCount,
+      outstandingIssues
+    };
   }
   function isVagueIdea(issue) {
     if (!issue) return true;
@@ -3005,6 +3643,146 @@ ${questionsBlock}`;
       totalQuestions
     };
   }
+  function getIssuePrimaryTag(issue) {
+    if (!issue || !issue.labels) return "task";
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name && !name.startsWith("status:") && !name.startsWith("priority:") && !name.startsWith("complexity:") && !name.startsWith("theme:") && !["archived", "archive"].includes(name.toLowerCase())) {
+        return name;
+      }
+    }
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name.startsWith("theme:")) {
+        return name.replace("theme:", "");
+      }
+    }
+    return "task";
+  }
+  function buildWorktreeBranchName(options) {
+    const mode = options.mode || "issue";
+    if (mode === "tag") {
+      const tag = options.customTag || getIssuePrimaryTag(options.issue);
+      return `worktree-tag-${slugify2(tag || "task")}`.slice(0, 80);
+    }
+    if (mode === "theme") {
+      const rawTheme = options.theme || getIssueTheme(options.issue);
+      const theme = rawTheme && rawTheme !== "No Theme" ? rawTheme : "task";
+      const batch = options.batch || getIssueBatch(options.issue);
+      const themeSlug = slugify2(theme, 30);
+      if (batch) {
+        return `${themeSlug}-${slugify2(batch, 30)}`.slice(0, 80);
+      }
+      const issueToken = `issue-${options.issue?.number}`;
+      const prefix = `${themeSlug}-${issueToken}-`;
+      const remaining = Math.max(10, 80 - prefix.length);
+      const branchSlug2 = slugify2(options.issue?.title || "task", remaining);
+      return `${prefix}${branchSlug2}`.slice(0, 80);
+    }
+    const branchSlug = slugify2(options.issue?.title || "task");
+    return `issue-${options.issue?.number}-${branchSlug}`.slice(0, 80);
+  }
+  function findThemeWorktree(worktrees2, themeOrIssue, batch, projectId) {
+    if (!Array.isArray(worktrees2) || worktrees2.length === 0) return null;
+    let theme = null;
+    let issueBatch = batch || null;
+    if (typeof themeOrIssue === "string") {
+      theme = themeOrIssue.trim();
+    } else if (themeOrIssue && typeof themeOrIssue === "object") {
+      theme = getIssueTheme(themeOrIssue);
+      if (!issueBatch) {
+        issueBatch = getIssueBatch(themeOrIssue);
+      }
+    }
+    if (!theme || theme === "No Theme") return null;
+    const themeSlug = slugify2(theme);
+    const themeLower = theme.toLowerCase();
+    const batchSlug = issueBatch ? slugify2(issueBatch) : null;
+    const batchLower = issueBatch ? issueBatch.toLowerCase() : null;
+    const themeBatchSlug = batchSlug ? `${themeSlug}-${batchSlug}` : null;
+    const themeBatchLower = batchLower ? `${themeLower}-${batchLower}` : null;
+    const getCandidateNames = (wt) => {
+      if (!wt) return [];
+      if (typeof wt === "string") return [wt];
+      const dirBasename = typeof wt.directory === "string" ? wt.directory.split("/").filter(Boolean).pop() || "" : "";
+      const cleanBranch = typeof wt.branch === "string" ? wt.branch.replace(/^refs\/heads\//, "").replace(/^heads\//, "").replace(/^origin\//, "") : "";
+      return [
+        wt.name,
+        wt.branch,
+        cleanBranch,
+        dirBasename
+      ].filter(Boolean);
+    };
+    if (themeBatchSlug || themeBatchLower) {
+      for (const wt of worktrees2) {
+        if (!wt) continue;
+        if (projectId && wt.projectId && wt.projectId !== projectId) continue;
+        const names = getCandidateNames(wt);
+        for (const n of names) {
+          const nStr = String(n).trim();
+          const nSlug = slugify2(nStr);
+          const nLower = nStr.toLowerCase();
+          if (themeBatchSlug && nSlug === themeBatchSlug || themeBatchLower && nLower === themeBatchLower || themeBatchSlug && (nSlug === `worktree-tag-${themeBatchSlug}` || nSlug === `theme-${themeBatchSlug}`) || themeBatchLower && (nLower === `worktree-tag-${themeBatchLower}` || nLower === `theme-${themeBatchLower}`)) {
+            return wt;
+          }
+        }
+      }
+    }
+    for (const wt of worktrees2) {
+      if (!wt) continue;
+      if (projectId && wt.projectId && wt.projectId !== projectId) continue;
+      const names = getCandidateNames(wt);
+      for (const n of names) {
+        const nStr = String(n).trim();
+        const nSlug = slugify2(nStr);
+        const nLower = nStr.toLowerCase();
+        if (nSlug === themeSlug || nLower === themeLower || nSlug === `worktree-tag-${themeSlug}` || nSlug === `theme-${themeSlug}` || nLower === `theme:${themeLower}` || nLower === `worktree-tag-${themeLower}`) {
+          return wt;
+        }
+      }
+    }
+    return null;
+  }
+  function buildLaunchSessionPayload(options) {
+    const { issue, projectId, useWorktree = false, branchName, baseBranch, prompt } = options;
+    let existingWorktree = options.existingWorktree;
+    if (!existingWorktree && options.worktrees && options.worktrees.length > 0) {
+      existingWorktree = findThemeWorktree(options.worktrees, issue, void 0, projectId);
+    }
+    let worktreePayload = false;
+    let directory = void 0;
+    if (existingWorktree) {
+      worktreePayload = {
+        kind: "existing",
+        name: existingWorktree.name || existingWorktree.branch || "",
+        directory: existingWorktree.directory || ""
+      };
+      if (existingWorktree.directory) {
+        directory = existingWorktree.directory;
+      }
+    } else if (useWorktree) {
+      const cleanBranch2 = branchName ? branchName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
+      if (cleanBranch2) {
+        worktreePayload = { kind: "new", name: cleanBranch2, baseBranch };
+      }
+    }
+    const cleanBranch = branchName ? branchName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
+    const branchForData = existingWorktree ? existingWorktree.branch || existingWorktree.name : useWorktree && cleanBranch ? cleanBranch : void 0;
+    return {
+      projectId,
+      worktree: worktreePayload,
+      ...directory ? { directory } : {},
+      providerId: "github-task-board",
+      id: String(issue.number),
+      title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
+      url: (issue.html_url || "").slice(0, 1e3),
+      text: prompt || "",
+      data: {
+        issueNumber: issue.number,
+        ...branchForData ? { branch: branchForData } : {}
+      }
+    };
+  }
   var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
 
 Input Objective / User Mind-Dump:
@@ -3015,6 +3793,7 @@ Instructions for the Agent:
 2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture.
 3. Every generated issue must follow this exact structure tailored for the OpenChamber Task Board:
    - Title: Conventional commit format (e.g. "feat(auth): add remember-me token refresh" or "fix(ui): prevent horizontal overflow in mobile table").
+   - Friendly Title: Start the issue body with "### Friendly Title: <3-6 words plain English title>" before the Overview.
    - Overview: Clear description of the problem, motivation, or user value.
    - Files Impacted: List candidate file paths grounded in the codebase.
    - Actionable Subtasks Checklist: Mandatory interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
@@ -3144,6 +3923,44 @@ ${issue.body.trim()}
       }
     };
   }
+  function mergeSessionItems(existingItems, newItems) {
+    const result = Array.isArray(existingItems) ? [...existingItems] : [];
+    const incoming = Array.isArray(newItems) ? newItems : newItems ? [newItems] : [];
+    for (const item of incoming) {
+      if (!item) continue;
+      const itemId = item.id ? String(item.id) : null;
+      const itemNum = item.data?.issueNumber != null ? Number(item.data.issueNumber) : itemId && /^\d+$/.test(itemId) ? parseInt(itemId, 10) : null;
+      const existingIdx = result.findIndex((existing) => {
+        if (!existing) return false;
+        if (itemId && existing.id && String(existing.id) === itemId) return true;
+        if (itemNum != null && (existing.data?.issueNumber != null && Number(existing.data.issueNumber) === itemNum || existing.id && String(existing.id) === String(itemNum))) {
+          return true;
+        }
+        return false;
+      });
+      if (existingIdx >= 0) {
+        const existing = result[existingIdx];
+        const mergedData = { ...existing.data || {}, ...item.data || {} };
+        if (Array.isArray(existing.data?.issueNumbers) || Array.isArray(item.data?.issueNumbers)) {
+          const combined = /* @__PURE__ */ new Set([
+            ...Array.isArray(existing.data?.issueNumbers) ? existing.data.issueNumbers : [],
+            ...Array.isArray(item.data?.issueNumbers) ? item.data.issueNumbers : []
+          ]);
+          mergedData.issueNumbers = Array.from(combined);
+        }
+        result[existingIdx] = { ...existing, ...item, data: mergedData };
+      } else {
+        result.push(item);
+      }
+    }
+    return result;
+  }
+  function attachIssueToSession(session, issueOrPayload) {
+    if (!session) return session;
+    const payload = issueOrPayload && typeof issueOrPayload === "object" && "providerId" in issueOrPayload ? issueOrPayload : issueOrPayload && typeof issueOrPayload === "object" && "number" in issueOrPayload ? buildIssueAttachPayload(issueOrPayload) : issueOrPayload;
+    session.items = mergeSessionItems(session.items, payload);
+    return session;
+  }
   function buildConsolidatedIssuePrompt(selectedIssues) {
     if (!selectedIssues || selectedIssues.length === 0) return "";
     const issueNumbers = selectedIssues.map((i) => `#${i.number}`).join(", ");
@@ -3263,6 +4080,15 @@ Blocked by ${blockerRef}`;
       newLines.push(line);
     }
     return newLines.join("\n").trim();
+  }
+  function renderBlockerChip(target, blocker) {
+    const targetNum = typeof target === "number" ? target : target.number;
+    return `<span class="graph-badge-blocked-item">#${blocker} <button class="btn-remove-blocker" data-target="${targetNum}" data-blocker="${blocker}" title="Remove dependency">&times;</button></span>`;
+  }
+  function renderBlockerChips(target, blockers) {
+    if (!blockers || blockers.length === 0) return "";
+    const targetNum = typeof target === "number" ? target : target.number;
+    return blockers.map((b) => renderBlockerChip(targetNum, b)).join(" ");
   }
   function extractIssueReferences(body, selfNumber) {
     if (!body || typeof body !== "string") return [];
@@ -3506,6 +4332,384 @@ Blocked by ${blockerRef}`;
     }
     return false;
   }
+  function buildSessionIndex(sessions2) {
+    const index = /* @__PURE__ */ new Map();
+    if (!sessions2 || !Array.isArray(sessions2)) return index;
+    const activityPriority = (act) => {
+      if (act === "running") return 4;
+      if (act === "waiting-permission" || act === "waiting-question" || typeof act === "string" && act.startsWith("waiting")) return 3;
+      if (act === "idle") return 2;
+      return 1;
+    };
+    const register = (issueNum, session) => {
+      if (!Number.isFinite(issueNum) || issueNum <= 0) return;
+      const existing = index.get(issueNum);
+      if (!existing) {
+        index.set(issueNum, session);
+      } else {
+        const existingPrio = activityPriority(existing.activity || "");
+        const newPrio = activityPriority(session.activity || "");
+        if (newPrio > existingPrio) {
+          index.set(issueNum, session);
+        }
+      }
+    };
+    for (const s of sessions2) {
+      if (!s) continue;
+      if (Array.isArray(s.items)) {
+        for (const item of s.items) {
+          if (!item) continue;
+          if (item.id && /^\d+$/.test(item.id)) {
+            register(parseInt(item.id, 10), s);
+          }
+          if (item.data?.issueNumber != null) {
+            register(parseInt(String(item.data.issueNumber), 10), s);
+          }
+          if (Array.isArray(item.data?.issueNumbers)) {
+            for (const n of item.data.issueNumbers) {
+              register(parseInt(String(n), 10), s);
+            }
+          }
+        }
+      }
+      if (s.data?.issueNumber != null) {
+        register(parseInt(String(s.data.issueNumber), 10), s);
+      }
+      if (Array.isArray(s.data?.issueNumbers)) {
+        for (const n of s.data.issueNumbers) {
+          register(parseInt(String(n), 10), s);
+        }
+      }
+      if (typeof s.title === "string") {
+        const matches = s.title.matchAll(/#(\d+)(?=[^0-9]|$)/g);
+        for (const m of matches) {
+          register(parseInt(m[1], 10), s);
+        }
+      }
+      const wtStrings = [];
+      if (typeof s.worktree === "string") {
+        wtStrings.push(s.worktree);
+      } else if (s.worktree && typeof s.worktree === "object") {
+        if (s.worktree.name) wtStrings.push(String(s.worktree.name));
+        if (s.worktree.branch) wtStrings.push(String(s.worktree.branch));
+        if (s.worktree.directory) wtStrings.push(String(s.worktree.directory));
+      }
+      for (const wtStr of wtStrings) {
+        const wtMatches = wtStr.matchAll(/(?:^|[^a-zA-Z0-9])issue-(\d+)(?=[^0-9]|$)/gi);
+        for (const m of wtMatches) {
+          register(parseInt(m[1], 10), s);
+        }
+      }
+    }
+    return index;
+  }
+  function scopeDoneIssues(doneIssues, limit = 25, showAll = false) {
+    if (!doneIssues || !Array.isArray(doneIssues)) {
+      return { visible: [], total: 0, remaining: 0 };
+    }
+    const total = doneIssues.length;
+    if (showAll || total <= limit) {
+      return { visible: doneIssues, total, remaining: 0 };
+    }
+    return {
+      visible: doneIssues.slice(0, limit),
+      total,
+      remaining: total - limit
+    };
+  }
+  function normalizeGithubIssues(rawItems) {
+    if (!rawItems || !Array.isArray(rawItems)) return [];
+    return rawItems.filter((item) => item && !item.pull_request).map((item) => ({
+      number: item.number,
+      title: item.title || "",
+      body: item.body || "",
+      state: item.state || "open",
+      html_url: item.html_url || "",
+      labels: item.labels || [],
+      user: item.user,
+      assignees: item.assignees || [],
+      comments: item.comments || 0,
+      created_at: item.created_at || "",
+      subtasks: parseSubtasks(item.body || ""),
+      openQuestions: parseOpenQuestions(item.body || "")
+    }));
+  }
+  function mergeIssuePages(existing, incoming) {
+    const map = /* @__PURE__ */ new Map();
+    if (Array.isArray(existing)) {
+      for (const issue of existing) {
+        if (issue && Number.isFinite(issue.number)) {
+          map.set(issue.number, issue);
+        }
+      }
+    }
+    if (Array.isArray(incoming)) {
+      for (const issue of incoming) {
+        if (issue && Number.isFinite(issue.number)) {
+          map.set(issue.number, issue);
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.number - a.number);
+  }
+  function getProjectRepoFullName(project) {
+    if (!project) return null;
+    const linked = typeof project.linkedRepo === "string" ? project.linkedRepo.trim() : "";
+    if (linked && linked.includes("/")) return linked;
+    if (project.gitRepo && project.gitRepo.owner && project.gitRepo.repo) {
+      return `${project.gitRepo.owner}/${project.gitRepo.repo}`;
+    }
+    return null;
+  }
+  function getIssueRepoFullName(issue) {
+    if (!issue) return null;
+    return parseRepoFullName(issue.repo) || parseRepoFullName(issue.html_url) || null;
+  }
+  function aggregateProjectIssues(sources) {
+    const byKey = /* @__PURE__ */ new Map();
+    const list = Array.isArray(sources) ? sources : [];
+    for (const source of list) {
+      if (!source) continue;
+      const repo = typeof source.repo === "string" ? source.repo.trim() : "";
+      const incoming = Array.isArray(source.issues) ? source.issues : [];
+      for (const issue of incoming) {
+        if (!issue || !Number.isFinite(issue.number)) continue;
+        const key = `${repo.toLowerCase()}#${issue.number}`;
+        byKey.set(key, {
+          ...issue,
+          projectId: source.projectId,
+          projectName: source.projectName,
+          repo: issue.repo || repo
+        });
+      }
+    }
+    return Array.from(byKey.values());
+  }
+  function groupIssuesByProject(issues2, projects) {
+    const list = Array.isArray(issues2) ? issues2.filter(Boolean) : [];
+    const projectList = Array.isArray(projects) ? projects.filter(Boolean) : [];
+    const byId = /* @__PURE__ */ new Map();
+    const byRepo = /* @__PURE__ */ new Map();
+    const projectGroups = /* @__PURE__ */ new Map();
+    for (const project of projectList) {
+      if (project.id) {
+        byId.set(project.id, project);
+        projectGroups.set(project.id, { id: project.id, title: project.name || project.id, issues: [], count: 0 });
+      }
+      const repo = getProjectRepoFullName(project);
+      if (repo) byRepo.set(repo.toLowerCase(), project);
+    }
+    const unmatchedGroups = /* @__PURE__ */ new Map();
+    for (const issue of list) {
+      if (!issue || !Number.isFinite(issue.number)) continue;
+      let target;
+      if (issue.projectId && byId.has(issue.projectId)) {
+        target = projectGroups.get(issue.projectId);
+      }
+      if (!target) {
+        const repo = getIssueRepoFullName(issue);
+        const project = repo ? byRepo.get(repo.toLowerCase()) : void 0;
+        if (project) target = projectGroups.get(project.id);
+      }
+      if (!target) {
+        const label = typeof issue.projectName === "string" && issue.projectName.trim() || getIssueRepoFullName(issue) || "Unknown Project";
+        if (!unmatchedGroups.has(label)) {
+          unmatchedGroups.set(label, { id: `unmatched:${label}`, title: label, issues: [], count: 0 });
+        }
+        target = unmatchedGroups.get(label);
+      }
+      target.issues.push(issue);
+    }
+    const result = [];
+    for (const project of projectList) {
+      const group = project.id ? projectGroups.get(project.id) : void 0;
+      if (group && group.issues.length > 0) {
+        group.count = group.issues.length;
+        result.push(group);
+      }
+    }
+    for (const group of unmatchedGroups.values()) {
+      if (group.issues.length > 0) {
+        group.count = group.issues.length;
+        result.push(group);
+      }
+    }
+    return result;
+  }
+  function readCachedIssueCollection(cache, key, ttlMs = 6e4, now = Date.now()) {
+    const entry = cache.get(key);
+    if (!entry) return null;
+    if (now - entry.timestamp >= ttlMs) {
+      cache.delete(key);
+      return null;
+    }
+    return entry.issues;
+  }
+  function parseRepoFullName(value) {
+    if (!value || typeof value !== "string") return null;
+    const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(value);
+    if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, "")}`;
+    const cleaned = value.trim().replace(/\.git$/, "");
+    if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+    return null;
+  }
+  function getSessionIssueRepo(item) {
+    if (!item) return null;
+    const explicit = item.repo ?? item.projectRepo ?? item.data?.repo;
+    const fromExplicit = parseRepoFullName(explicit);
+    if (fromExplicit) return fromExplicit;
+    return parseRepoFullName(item.html_url) || parseRepoFullName(item.url);
+  }
+  function issueRepoKey(issue) {
+    if (!issue || !Number.isFinite(issue.number)) return null;
+    const repo = getIssueRepoFullName(issue);
+    if (!repo) return null;
+    return `${repo.toLowerCase()}#${issue.number}`;
+  }
+  function sessionRepoKeys(session) {
+    const keys = /* @__PURE__ */ new Set();
+    if (!session) return [];
+    const items = Array.isArray(session.items) ? session.items : [];
+    for (const item of items) {
+      if (!item) continue;
+      const repo = getSessionIssueRepo(item);
+      if (!repo) continue;
+      const numbers = /* @__PURE__ */ new Set();
+      if (item.data?.issueNumber != null) numbers.add(Number(item.data.issueNumber));
+      if (Array.isArray(item.data?.issueNumbers)) {
+        for (const n of item.data.issueNumbers) numbers.add(Number(n));
+      }
+      if (item.id && /^\d+$/.test(String(item.id))) numbers.add(parseInt(String(item.id), 10));
+      for (const n of numbers) {
+        if (Number.isFinite(n) && n > 0) keys.add(`${repo.toLowerCase()}#${n}`);
+      }
+    }
+    return Array.from(keys);
+  }
+  function buildSessionIndexByRepo(sessions2) {
+    const index = /* @__PURE__ */ new Map();
+    if (!sessions2 || !Array.isArray(sessions2)) return index;
+    const activityPriority = (act) => {
+      if (act === "running") return 4;
+      if (act === "waiting-permission" || act === "waiting-question" || typeof act === "string" && act.startsWith("waiting")) return 3;
+      if (act === "idle") return 2;
+      return 1;
+    };
+    for (const session of sessions2) {
+      if (!session) continue;
+      for (const key of sessionRepoKeys(session)) {
+        const existing = index.get(key);
+        if (!existing || activityPriority(session.activity || "") > activityPriority(existing.activity || "")) {
+          index.set(key, session);
+        }
+      }
+    }
+    return index;
+  }
+  function findSessionForIssueByRepo(index, issue) {
+    if (!index || !issue) return null;
+    const key = issueRepoKey(issue);
+    if (!key) return null;
+    return index.get(key) || null;
+  }
+  function resolveWorkspaceRootProject(projects) {
+    const list = Array.isArray(projects) ? projects.filter(Boolean) : [];
+    const exact = list.find((p) => p.directory && p.directory.replace(/\/+$/, "") === "/workspace");
+    if (exact) return { project: exact, pinned: true, reason: "exact" };
+    const named = list.find((p) => {
+      const name = (p.name || "").trim().toLowerCase();
+      const id = (p.id || "").trim().toLowerCase();
+      const basename = p.directory ? p.directory.replace(/\/+$/, "").split("/").filter(Boolean).pop() || "" : "";
+      return name === "workspace" || id === "workspace" || basename === "workspace";
+    });
+    if (named) return { project: named, pinned: false, reason: "named" };
+    return { project: null, pinned: false, reason: "missing" };
+  }
+  function parseRetryAfterMs(headers, now = Date.now()) {
+    if (!headers) return 0;
+    const raw = headers["retry-after"] ?? headers["Retry-After"];
+    if (raw === void 0 || raw === null || raw === "") return 0;
+    const seconds = Number(raw);
+    if (Number.isFinite(seconds) && seconds >= 0) return Math.round(seconds * 1e3);
+    const date = Date.parse(String(raw));
+    if (!Number.isNaN(date)) return Math.max(0, date - now);
+    return 0;
+  }
+  function isSecondaryRateLimit(status, headers, body) {
+    if (status !== 403 && status !== 429) return false;
+    const retryAfter = headers?.["retry-after"] ?? headers?.["Retry-After"];
+    if (retryAfter !== void 0 && retryAfter !== null && retryAfter !== "") return true;
+    const remaining = headers?.["x-ratelimit-remaining"] ?? headers?.["X-RateLimit-Remaining"];
+    if (remaining !== void 0 && Number(remaining) === 0) return true;
+    const text = typeof body === "string" ? body.toLowerCase() : "";
+    return text.includes("secondary rate limit") || text.includes("abuse detection") || text.includes("rate limit") || text.includes("api rate limit exceeded");
+  }
+  function computeBackoffMs(attempt, retryAfterMs = 0, baseMs = 1e3, maxMs = 6e4) {
+    if (retryAfterMs > 0) return Math.min(retryAfterMs, maxMs);
+    const exp = baseMs * Math.pow(2, Math.max(0, attempt));
+    return Math.min(maxMs, Math.max(baseMs, exp));
+  }
+  async function retryWithBackoff(worker, options = {}) {
+    const maxAttempts = Math.max(1, options.maxAttempts ?? 3);
+    const baseMs = options.baseMs ?? 1e3;
+    const maxMs = options.maxMs ?? 6e4;
+    const isRetryable = options.isRetryable ?? (() => false);
+    const getRetryAfterMs = options.getRetryAfterMs ?? (() => 0);
+    const sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    let lastErr;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        return await worker(attempt);
+      } catch (err) {
+        lastErr = err;
+        if (!isRetryable(err) || attempt === maxAttempts - 1) throw err;
+        const delay = computeBackoffMs(attempt, getRetryAfterMs(err), baseMs, maxMs);
+        options.onRetry?.(attempt, delay, err);
+        await sleep(delay);
+      }
+    }
+    throw lastErr;
+  }
+  var FULL_ISSUE_PAGE_SIZE = 100;
+  var SMALL_ISSUE_PAGE_SIZE = 20;
+  var MAX_ISSUES_PER_REPO = 1e3;
+  function isOversizedAnswer(err) {
+    return err instanceof SyntaxError || err?.code === "RESPONSE_TOO_LARGE";
+  }
+  async function fetchIssuePage(repo, page, request, pageSizes, onShrink) {
+    const read = async (pageSize2) => {
+      const raw = await request("GET", `/repos/${repo}/issues?state=all&per_page=${pageSize2}&page=${page}`);
+      return { items: Array.isArray(raw) ? raw : raw?.items || [], pageSize: pageSize2 };
+    };
+    const pageSize = pageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    try {
+      return await read(pageSize);
+    } catch (err) {
+      if (page !== 1 || pageSize === SMALL_ISSUE_PAGE_SIZE || !isOversizedAnswer(err)) throw err;
+      pageSizes.set(repo, SMALL_ISSUE_PAGE_SIZE);
+      onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+      return read(SMALL_ISSUE_PAGE_SIZE);
+    }
+  }
+  async function mapWithConcurrency(items, limit, worker) {
+    const list = Array.isArray(items) ? items : [];
+    const results = new Array(list.length);
+    const concurrency = Math.max(1, Math.min(Math.floor(limit) || 1, list.length || 1));
+    let cursor = 0;
+    const runner = async () => {
+      while (true) {
+        const index = cursor++;
+        if (index >= list.length) return;
+        try {
+          results[index] = { item: list[index], status: "fulfilled", value: await worker(list[index], index) };
+        } catch (reason) {
+          results[index] = { item: list[index], status: "rejected", reason };
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: concurrency }, () => runner()));
+    return results;
+  }
 
   // panel/main.ts
   var host = connectHost();
@@ -3513,15 +4717,25 @@ Blocked by ${blockerRef}`;
   var currentDirectory = "";
   var currentRepo = "";
   var allProjects = [];
+  var isAllProjectsMode = false;
+  var allProjectsRepoRefs = [];
+  var ALL_PROJECTS_CACHE_KEY = "__all_projects__";
+  var issuePageSizes = /* @__PURE__ */ new Map();
+  var MAX_CONCURRENT_REPO_FETCHES = 4;
+  var RATE_LIMIT_MAX_ATTEMPTS = 3;
+  var workspaceRootNoticeShown = false;
   var isDiscoveringRepos = false;
   var issues = [];
   var sessions = [];
+  var sessionIndex = /* @__PURE__ */ new Map();
+  var sessionIndexByRepo = /* @__PURE__ */ new Map();
   var worktrees = [];
   var activeIssue = null;
   var searchQuery = "";
   var activeTab = "all";
   var userSelectedTab = false;
   var showArchivedOnly = false;
+  var showAllDoneIssues = false;
   var currentSort = "newest";
   var filterPriority = "all";
   var filterTag = "all";
@@ -3530,13 +4744,16 @@ Blocked by ${blockerRef}`;
   var selectedIssueNumbers = /* @__PURE__ */ new Set();
   var userLayoutPreference = "auto";
   var graphSelectedTheme = "all";
-  var graphShowDone = true;
+  var graphShowDone = false;
   var isDraggingEdge = false;
   var dragSourceNum = null;
   var currentGraph = null;
   var isWideScreen = false;
   var draggedIssueNumber = null;
   var isLoading = false;
+  var currentRenderedLayout = null;
+  var lastRateLimitRemaining = null;
+  var activeStreamEpoch = 0;
   var collapsedGroupKeys = /* @__PURE__ */ new Set();
   function toggleGroupCollapse(key) {
     if (collapsedGroupKeys.has(key)) {
@@ -3622,9 +4839,12 @@ Blocked by ${blockerRef}`;
   var elListViewContainer = document.getElementById("listViewContainer");
   var elKanbanViewContainer = document.getElementById("kanbanViewContainer");
   var kanbanCardContainers = {
+    "draft": document.getElementById("kCardsDraft"),
     "backlog": document.getElementById("kCardsBacklog"),
     "todo": document.getElementById("kCardsTodo"),
+    "planned": document.getElementById("kCardsPlanned"),
     "in-progress": document.getElementById("kCardsProgress"),
+    "needs-human": document.getElementById("kCardsNeedsHuman"),
     "in-review": document.getElementById("kCardsReview"),
     "done": document.getElementById("kCardsDone")
   };
@@ -3659,6 +4879,14 @@ Blocked by ${blockerRef}`;
   var elDrawerQuestionsContainer = document.getElementById("drawerQuestionsContainer");
   var elInputAddQuestion = document.getElementById("inputAddQuestion");
   var elBtnAddQuestion = document.getElementById("btnAddQuestion");
+  var elIssueTestsProgressText = document.getElementById("issueTestsProgressText");
+  var elDrawerIssueTestsContainer = document.getElementById("drawerIssueTestsContainer");
+  var elInputAddIssueTest = document.getElementById("inputAddIssueTest");
+  var elBtnAddIssueTest = document.getElementById("btnAddIssueTest");
+  var elBatchTestsProgressText = document.getElementById("batchTestsProgressText");
+  var elDrawerBatchTestsContainer = document.getElementById("drawerBatchTestsContainer");
+  var elInputAddBatchTest = document.getElementById("inputAddBatchTest");
+  var elBtnAddBatchTest = document.getElementById("btnAddBatchTest");
   var elDrawerDescriptionViewBox = document.getElementById("drawerDescriptionViewBox");
   var elDrawerDescriptionCollapsible = document.getElementById("drawerDescriptionCollapsible");
   var elDrawerDescriptionContent = document.getElementById("drawerDescriptionContent");
@@ -3678,6 +4906,7 @@ Blocked by ${blockerRef}`;
   var elTxtDrawerArchive = document.getElementById("txtDrawerArchive");
   var elBtnDrawerOpenPreflight = document.getElementById("btnDrawerOpenPreflight");
   var elPreflightBackdrop = document.getElementById("preflightModalBackdrop");
+  var elPreflightThemeNotice = document.getElementById("preflightThemeNotice");
   var elModalPreflightTitle = document.getElementById("modalPreflightTitle");
   var elPreflightWorktreeToggle = document.getElementById("preflightWorktreeToggle");
   var elPreflightWorktreeSection = document.getElementById("preflightWorktreeSection");
@@ -3733,12 +4962,18 @@ Blocked by ${blockerRef}`;
       unsubWorktrees();
       unsubWorktrees = null;
     }
+    sessions = [];
+    sessionIndex = /* @__PURE__ */ new Map();
+    sessionIndexByRepo = /* @__PURE__ */ new Map();
     try {
       unsubSessions = await host.onSessions(projectId, (sessSnap) => {
         const prevSessions = sessions;
         sessions = sessSnap.sessions || [];
+        sessionIndex = buildSessionIndex(sessions);
+        sessionIndexByRepo = buildSessionIndexByRepo(sessions);
         renderViews();
         if (activeIssue) renderDrawer(activeIssue);
+        statusReconciler.schedule(issues);
         const becameIdle = sessions.some((s) => {
           const prev = prevSessions.find((p) => p.id === s.id);
           return s.activity === "idle" && (!prev || prev.activity !== "idle");
@@ -3776,20 +5011,32 @@ Blocked by ${blockerRef}`;
           if (match) {
             const gitdir = match[1].trim();
             const targetPath = gitdir.startsWith("/") ? gitdir : `${cleanDir}/${gitdir}`;
-            try {
-              const wtConfig = await host.readFile(`${targetPath}/config`);
-              if (wtConfig?.content) {
-                found = parseGitRemoteFromConfig(wtConfig.content);
-              }
-            } catch {
-            }
-            if (!found) {
+            if (targetPath.includes("/.git/worktrees/")) {
+              const parentRepoRoot = targetPath.split("/.git/worktrees/")[0];
               try {
-                const parentConfig = await host.readFile(`${targetPath}/../../config`);
-                if (parentConfig?.content) {
+                const parentConfig = await host.readFile(`${parentRepoRoot}/.git/config`);
+                if (parentConfig && parentConfig.content) {
                   found = parseGitRemoteFromConfig(parentConfig.content);
                 }
               } catch {
+              }
+            }
+            if (!found) {
+              try {
+                const wtConfig = await host.readFile(`${targetPath}/config`);
+                if (wtConfig?.content) {
+                  found = parseGitRemoteFromConfig(wtConfig.content);
+                }
+              } catch {
+              }
+              if (!found) {
+                try {
+                  const parentConfig = await host.readFile(`${targetPath}/../../config`);
+                  if (parentConfig?.content) {
+                    found = parseGitRemoteFromConfig(parentConfig.content);
+                  }
+                } catch {
+                }
               }
             }
           }
@@ -3824,6 +5071,9 @@ Blocked by ${blockerRef}`;
         })
       );
       allProjects = inspected.filter(Boolean);
+      if (isAllProjectsMode) {
+        allProjectsRepoRefs = buildProjectRepoRefs();
+      }
       allProjects.forEach((p) => {
         if (p.gitRepo) {
           addLog(`Project "${p.name}" has Git repo: ${p.gitRepo.owner}/${p.gitRepo.repo}`, "succ");
@@ -3840,8 +5090,36 @@ Blocked by ${blockerRef}`;
     }
   }
   async function autoResolveRepoForActiveContext() {
+    if (isAllProjectsMode) return;
+    let worktreeMatchedProject = null;
+    if (currentDirectory && currentDirectory.includes("/workspace/.local/share/opencode/worktree/")) {
+      try {
+        const cleanCurDir = currentDirectory.replace(/\/+$/, "");
+        const gitFileRes = await host.readFile(`${cleanCurDir}/.git`);
+        if (gitFileRes && gitFileRes.content) {
+          const match = gitFileRes.content.match(/^gitdir:\s*(.+)$/m);
+          if (match) {
+            const gitdir = match[1].trim();
+            const targetPath = gitdir.startsWith("/") ? gitdir : `${cleanCurDir}/${gitdir}`;
+            if (targetPath.includes("/.git/worktrees/")) {
+              const parentRepoRoot = targetPath.split("/.git/worktrees/")[0].replace(/\/+$/, "");
+              worktreeMatchedProject = allProjects.find((p) => {
+                if (!p.directory) return false;
+                const cleanP = p.directory.replace(/\/+$/, "");
+                return cleanP === parentRepoRoot || parentRepoRoot.startsWith(cleanP + "/");
+              }) || null;
+              if (worktreeMatchedProject) {
+                addLog(`Worktree matched to parent project: "${worktreeMatchedProject.name}" (${worktreeMatchedProject.directory})`, "succ");
+              }
+            }
+          }
+        }
+      } catch (err) {
+        addLog(`Failed to resolve parent project from worktree .git: ${err?.message || err}`, "warn");
+      }
+    }
     const sorted = [...allProjects].sort((a, b) => (b.directory?.length || 0) - (a.directory?.length || 0));
-    let targetProject = sorted.find((p) => {
+    let targetProject = worktreeMatchedProject || sorted.find((p) => {
       if (!p.directory) return false;
       const cleanP = p.directory.replace(/\/+$/, "");
       const cleanT = currentDirectory.replace(/\/+$/, "");
@@ -3903,7 +5181,12 @@ Blocked by ${blockerRef}`;
       return;
     }
     userSelectedTab = false;
+    isAllProjectsMode = false;
+    allProjectsRepoRefs = [];
+    workspaceRootNoticeShown = false;
     currentRepo = repo;
+    issues = [];
+    showAllDoneIssues = false;
     clearSelection();
     elTxtRepoLabel.textContent = repo.split("/")[1] || repo;
     elTxtRepoLabel.title = `Project: ${currentProject?.name || "Workspace"} \u2022 Repo: ${repo} (via ${source})`;
@@ -3928,10 +5211,10 @@ Blocked by ${blockerRef}`;
     `;
       return;
     }
-    elDetectedReposList.innerHTML = allProjects.map((p) => {
+    const projectItemsHtml = allProjects.map((p) => {
       const isCurrentProject = p.id === currentProject?.id;
       const repoName = p.linkedRepo || (p.gitRepo ? `${p.gitRepo.owner}/${p.gitRepo.repo}` : null);
-      const isSelectedRepo = repoName && repoName === currentRepo;
+      const isSelectedRepo = !isAllProjectsMode && repoName && repoName === currentRepo;
       return `
         <div class="popover-item" data-project-id="${escapeHtml(p.id)}" data-repo="${escapeHtml(repoName || "")}">
           <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -3945,6 +5228,11 @@ Blocked by ${blockerRef}`;
         </div>
       `;
     }).join("");
+    const allProjectsOptionHtml = isAllProjectsMode ? `<div class="repo-option all-projects-option is-active" data-all-projects="true"><span>All Projects</span><span style="color: var(--prim); font-size: 10px; font-weight: 500;">[active]</span></div>` : `<div class="repo-option all-projects-option" data-all-projects="true"><span>All Projects</span></div>`;
+    elDetectedReposList.innerHTML = allProjectsOptionHtml + projectItemsHtml;
+    elDetectedReposList.querySelector(".all-projects-option")?.addEventListener("click", () => {
+      void selectAllProjects();
+    });
     elDetectedReposList.querySelectorAll(".popover-item").forEach((item) => {
       item.addEventListener("click", async () => {
         const projId = item.getAttribute("data-project-id");
@@ -3982,6 +5270,59 @@ Blocked by ${blockerRef}`;
   function closeRepoPopover() {
     elRepoPopover.classList.remove("active");
   }
+  function buildProjectRepoRefs() {
+    const refsByRepo = /* @__PURE__ */ new Map();
+    for (const project of allProjects) {
+      const repo = getProjectRepoFullName(project);
+      if (!repo) continue;
+      const key = repo.toLowerCase();
+      if (!refsByRepo.has(key)) {
+        refsByRepo.set(key, { projectId: project.id, projectName: project.name, repo });
+      }
+    }
+    return Array.from(refsByRepo.values());
+  }
+  async function selectAllProjects() {
+    const refs = buildProjectRepoRefs();
+    if (refs.length === 0) {
+      addLog("No workspace project has a linked or detected Git repository", "warn");
+      showBanner(
+        "No workspace project has a linked or detected Git repository. Link one to use the All Projects view.",
+        "Select Repo",
+        () => openRepoPopover()
+      );
+      return;
+    }
+    isAllProjectsMode = true;
+    allProjectsRepoRefs = refs;
+    currentRepo = ALL_PROJECTS_CACHE_KEY;
+    userSelectedTab = false;
+    issues = [];
+    showAllDoneIssues = false;
+    clearSelection();
+    currentGroupBy = "project";
+    if (elSelectGroupBy) elSelectGroupBy.value = "project";
+    elTxtRepoLabel.textContent = "All Projects";
+    elTxtRepoLabel.title = `Aggregated issues across ${refs.length} repositories`;
+    hideBanner();
+    closeRepoPopover();
+    addLog(`All Projects mode: aggregating issues from ${refs.length} repositories`, "succ");
+    getWorkspaceRootProject();
+    await fetchAllProjectIssues();
+  }
+  function getWorkspaceRootProject() {
+    const resolution = resolveWorkspaceRootProject(allProjects);
+    if (!resolution.pinned && !workspaceRootNoticeShown) {
+      workspaceRootNoticeShown = true;
+      addLog(
+        resolution.project ? `No project is registered at /workspace. Global sessions cannot be pinned to /workspace; using "${resolution.project.name}" (${resolution.project.directory}) for All Projects launches.` : 'No project is registered at /workspace and none is named "workspace". Global sessions cannot be pinned to /workspace; All Projects will use the active project.',
+        "warn"
+      );
+    } else if (resolution.pinned) {
+      workspaceRootNoticeShown = false;
+    }
+    return resolution.project;
+  }
   var workspaceGitToken = null;
   async function getWorkspaceGitToken() {
     if (workspaceGitToken) return workspaceGitToken;
@@ -4006,6 +5347,44 @@ Blocked by ${blockerRef}`;
     }
     return null;
   }
+  function headerRecord(headers) {
+    const out = {};
+    if (!headers) return out;
+    if (typeof headers.forEach === "function") {
+      headers.forEach((value, key) => {
+        out[String(key).toLowerCase()] = String(value);
+      });
+      return out;
+    }
+    if (typeof headers === "object") {
+      for (const key of Object.keys(headers)) {
+        out[String(key).toLowerCase()] = String(headers[key]);
+      }
+    }
+    return out;
+  }
+  function makeRateLimitError(status, retryAfterMs) {
+    const err = new Error(
+      `GitHub rate limit (HTTP ${status})${retryAfterMs > 0 ? `; retry after ${Math.ceil(retryAfterMs / 1e3)}s` : ""}.`
+    );
+    err.rateLimited = true;
+    err.retryAfterMs = retryAfterMs;
+    return err;
+  }
+  function rateLimitErrorFromResponse(status, headers, body) {
+    const record = headerRecord(headers);
+    const bodyText = typeof body === "string" ? body : "";
+    if (!isSecondaryRateLimit(status, record, bodyText)) return null;
+    const retryAfterMs = parseRetryAfterMs(record);
+    lastRateLimitRemaining = 0;
+    addLog(`GitHub rate limit hit (HTTP ${status}); backing off ${Math.ceil(retryAfterMs / 1e3)}s before retry...`, "warn");
+    showBanner(
+      "GitHub rate limit reached. The board is backing off and will retry automatically.",
+      "Dismiss",
+      () => hideBanner()
+    );
+    return makeRateLimitError(status, retryAfterMs);
+  }
   async function githubRequest(method, path, body, query) {
     addLog(`API ${method} ${path}`);
     const pat = await getWorkspaceGitToken() || await host.storage.get("custom_github_token");
@@ -4027,10 +5406,22 @@ Blocked by ${blockerRef}`;
         if (directRes.ok) {
           addLog(`API ${method} ${path} -> ${directRes.status} OK (via workspace PAT)`, "succ");
           hideBanner();
+          const rem = directRes.headers.get("x-ratelimit-remaining");
+          if (rem !== null) lastRateLimitRemaining = parseInt(rem, 10);
           return directRes.json();
+        }
+        if (directRes.status === 403 || directRes.status === 429) {
+          let errBody = "";
+          try {
+            errBody = await directRes.clone().text();
+          } catch {
+          }
+          const rlErr = rateLimitErrorFromResponse(directRes.status, directRes.headers, errBody);
+          if (rlErr) throw rlErr;
         }
         addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, "warn");
       } catch (err) {
+        if (err && err.rateLimited) throw err;
         addLog(`Direct PAT fetch failed (${err.message}), falling back to host proxy...`, "warn");
       }
     }
@@ -4044,7 +5435,16 @@ Blocked by ${blockerRef}`;
       if (res.status >= 200 && res.status < 300) {
         addLog(`API ${method} ${path} -> ${res.status}`, "succ");
         hideBanner();
+        const resHeaders = res.headers;
+        if (resHeaders) {
+          const rem = resHeaders["x-ratelimit-remaining"];
+          if (rem) lastRateLimitRemaining = parseInt(rem, 10);
+        }
         return typeof res.body === "string" ? JSON.parse(res.body) : res.body;
+      }
+      if (res.status === 403 || res.status === 429) {
+        const rlErr = rateLimitErrorFromResponse(res.status, res.headers, res.body);
+        if (rlErr) throw rlErr;
       }
       if (res.status === 401 || res.status === 403) {
         addLog(`API auth error HTTP ${res.status}: OAuth access restricted or missing`, "error");
@@ -4076,70 +5476,224 @@ Blocked by ${blockerRef}`;
       void fetchIssues();
     }
   }
-  async function fetchIssues(force = false) {
-    if (!currentRepo) return;
-    if (!force && issueCache.has(currentRepo)) {
-      const cached = issueCache.get(currentRepo);
-      if (Date.now() - cached.timestamp < ISSUE_CACHE_TTL_MS) {
-        issues = cached.issues;
-        if (!userSelectedTab) {
-          selectTab(resolveDefaultTab(issues));
+  function fetchRepoIssuePage(repo, page, request = githubRequest) {
+    return fetchIssuePage(repo, page, request, issuePageSizes, (pageSize) => {
+      addLog(`Issue page for ${repo} is too large for the host; reading ${pageSize} per page`, "warn");
+    });
+  }
+  async function streamRemainingPages(repo, storageKey, startPage, epoch) {
+    let page = startPage;
+    const pageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+    while (page <= maxPages && currentRepo === repo && activeStreamEpoch === epoch) {
+      try {
+        const { items: nextItems } = await fetchRepoIssuePage(repo, page);
+        if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
+        const nextIssues = normalizeGithubIssues(nextItems);
+        if (currentRepo !== repo || activeStreamEpoch !== epoch) break;
+        issues = mergeIssuePages(issues, nextIssues);
+        issueCache.set(repo, { timestamp: Date.now(), issues });
+        if (host?.storage) {
+          void host.storage.set(storageKey, { timestamp: Date.now(), issues });
         }
         renderViews();
-        addLog(`Rendered ${issues.length} issues from cache for ${currentRepo}`);
+        statusReconciler.schedule(issues);
+        addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
+        if (nextItems.length < pageSize) break;
+        page++;
+      } catch (err) {
+        addLog(`Background streaming stopped at page ${page}: ${err.message}`, "warn");
+        break;
+      }
+    }
+  }
+  async function fetchIssues(force = false) {
+    if (isAllProjectsMode) {
+      await fetchAllProjectIssues(force);
+      return;
+    }
+    if (!currentRepo) return;
+    const storageKey = `cached_issues_${currentRepo}`;
+    const streamEpoch = ++activeStreamEpoch;
+    if (!force) {
+      const cached = readCachedIssueCollection(issueCache, currentRepo, ISSUE_CACHE_TTL_MS);
+      if (cached) {
+        issues = cached;
+        if (!userSelectedTab) {
+          selectTab(resolveDefaultTab2(issues));
+        }
+        renderViews();
+        addLog(`Rendered ${issues.length} issues from memory cache for ${currentRepo}`);
         return;
+      }
+    }
+    if (!force && issues.length === 0 && host?.storage) {
+      try {
+        const stored = await host.storage.get(storageKey);
+        if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
+          issues = stored.issues;
+          issueCache.set(currentRepo, { timestamp: stored.timestamp || Date.now(), issues });
+          if (!userSelectedTab) {
+            selectTab(resolveDefaultTab2(issues));
+          }
+          renderViews();
+          addLog(`Instantly rendered ${issues.length} issues from persistent storage for ${currentRepo}`);
+        }
+      } catch {
       }
     }
     isLoading = true;
     if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
     try {
       addLog(`Fetching issues for ${currentRepo}...`);
-      const res = await githubRequest(
-        "GET",
-        `/search/issues?q=repo:${currentRepo}+is:issue&sort=updated&per_page=100`
-      );
-      const rawIssues = res.items || (Array.isArray(res) ? res : []);
-      issues = rawIssues.filter((item) => !item.pull_request).map((item) => ({
-        number: item.number,
-        title: item.title,
-        body: item.body || "",
-        state: item.state,
-        html_url: item.html_url,
-        labels: item.labels || [],
-        user: item.user,
-        assignees: item.assignees || [],
-        comments: item.comments || 0,
-        created_at: item.created_at,
-        subtasks: parseSubtasks(item.body || ""),
-        openQuestions: parseOpenQuestions(item.body || "")
-      }));
+      const { items: page1Items, pageSize } = await fetchRepoIssuePage(currentRepo, 1);
+      const page1Issues = normalizeGithubIssues(page1Items);
+      issues = page1Issues;
       issueCache.set(currentRepo, {
         timestamp: Date.now(),
         issues
       });
-      addLog(`Loaded ${issues.length} issues successfully for ${currentRepo}`, "succ");
+      if (host?.storage) {
+        void host.storage.set(storageKey, { timestamp: Date.now(), issues });
+      }
+      addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, "succ");
       if (!userSelectedTab) {
-        selectTab(resolveDefaultTab(issues));
+        selectTab(resolveDefaultTab2(issues));
       }
       renderViews();
+      statusReconciler.schedule(issues);
+      if (page1Items.length >= pageSize) {
+        void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch);
+      }
     } catch (err) {
-      addLog(`Failed to fetch issues: ${err.message}`, "error");
-      renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || "Check GitHub integration tokens"}`);
+      addLog(`Failed to fetch fresh issues: ${err.message}`, "error");
+      if (issues.length > 0) {
+        if (host?.toast) {
+          void host.toast({ kind: "info", message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
+        }
+      } else {
+        renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || "Check GitHub integration tokens"}`);
+      }
     } finally {
-      isLoading = false;
-      if (elIconRefresh) elIconRefresh.style.animation = "";
+      if (activeStreamEpoch === streamEpoch) {
+        isLoading = false;
+        if (elIconRefresh) elIconRefresh.style.animation = "";
+      }
     }
+  }
+  function githubRequestWithRetry(method, path) {
+    return retryWithBackoff(() => githubRequest(method, path), {
+      maxAttempts: RATE_LIMIT_MAX_ATTEMPTS,
+      isRetryable: (err) => Boolean(err && err.rateLimited),
+      getRetryAfterMs: (err) => Number(err?.retryAfterMs) || 0,
+      onRetry: (attempt, delayMs) => addLog(`Rate limited; retrying (${attempt + 1}) in ${Math.round(delayMs / 1e3)}s...`, "warn")
+    });
+  }
+  async function fetchAllRepoIssuePages(repo, epoch) {
+    const { items: firstItems, pageSize } = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
+    let repoIssues = normalizeGithubIssues(firstItems);
+    if (firstItems.length < pageSize) return repoIssues;
+    let page = 2;
+    const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+    while (page <= maxPages && activeStreamEpoch === epoch) {
+      const { items: nextItems } = await fetchRepoIssuePage(repo, page, githubRequestWithRetry);
+      if (nextItems.length === 0) break;
+      repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
+      if (nextItems.length < pageSize) break;
+      page++;
+    }
+    return repoIssues;
+  }
+  async function fetchAllProjectIssues(force = false) {
+    const cacheKey = ALL_PROJECTS_CACHE_KEY;
+    const epoch = ++activeStreamEpoch;
+    if (!force) {
+      const cached = readCachedIssueCollection(issueCache, cacheKey, ISSUE_CACHE_TTL_MS);
+      if (cached) {
+        issues = cached;
+        if (!userSelectedTab) selectTab(resolveDefaultTab2(issues));
+        renderViews();
+        addLog(`Rendered ${issues.length} aggregated issues from memory cache`);
+        return;
+      }
+    }
+    if (!force && issues.length === 0 && host?.storage) {
+      try {
+        const stored = await host.storage.get(`cached_issues_${cacheKey}`);
+        if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
+          issues = stored.issues;
+          issueCache.set(cacheKey, { timestamp: stored.timestamp || Date.now(), issues });
+          if (!userSelectedTab) selectTab(resolveDefaultTab2(issues));
+          renderViews();
+          addLog(`Instantly rendered ${issues.length} aggregated issues from persistent storage`);
+        }
+      } catch {
+      }
+    }
+    isLoading = true;
+    if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
+    try {
+      const refs = [...allProjectsRepoRefs];
+      addLog(`Fetching issues across ${refs.length} repositories (max ${MAX_CONCURRENT_REPO_FETCHES} in parallel)...`);
+      const settled = await mapWithConcurrency(refs, MAX_CONCURRENT_REPO_FETCHES, async (ref) => ({
+        projectId: ref.projectId,
+        projectName: ref.projectName,
+        repo: ref.repo,
+        issues: await fetchAllRepoIssuePages(ref.repo, epoch)
+      }));
+      if (activeStreamEpoch !== epoch) return;
+      const sources = [];
+      for (const result of settled) {
+        if (result.status === "fulfilled" && result.value) {
+          sources.push(result.value);
+        } else if (result.status === "rejected") {
+          addLog(`Skipped repository during aggregation: ${result.reason?.message || result.reason}`, "warn");
+        }
+      }
+      if (sources.length === 0) {
+        throw new Error("All repository requests failed");
+      }
+      issues = aggregateProjectIssues(sources);
+      issueCache.set(cacheKey, { timestamp: Date.now(), issues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues });
+      }
+      if (!userSelectedTab) selectTab(resolveDefaultTab2(issues));
+      renderViews();
+      statusReconciler.schedule(issues);
+      addLog(`Aggregated ${issues.length} deduplicated issues across ${sources.length} repositories`, "succ");
+    } catch (err) {
+      addLog(`Failed to fetch all-project issues: ${err.message}`, "error");
+      if (issues.length > 0) {
+        if (host?.toast) {
+          void host.toast({ kind: "info", message: `Offline / Rate-limited. Showing ${issues.length} aggregated issues.` });
+        }
+      } else {
+        renderEmptyState(`Failed to load aggregated issues: ${err.message || "Check GitHub integration tokens"}`);
+      }
+    } finally {
+      if (activeStreamEpoch === epoch) {
+        isLoading = false;
+        if (elIconRefresh) elIconRefresh.style.animation = "";
+      }
+    }
+  }
+  function repoForIssue(issue) {
+    if (issue && isAllProjectsMode && issue.repo) return issue.repo;
+    return currentRepo;
   }
   async function updateIssueBody(issue, newBody) {
     issue.body = newBody;
     issue.subtasks = parseSubtasks(newBody);
     issue.openQuestions = parseOpenQuestions(newBody);
+    const repo = repoForIssue(issue);
+    if (repo) issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue);
     }
     try {
-      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+      await githubRequest("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         body: newBody
       });
       await host.toast({ kind: "info", message: `Updated issue #${issue.number}` });
@@ -4149,9 +5703,11 @@ Blocked by ${blockerRef}`;
     }
   }
   async function updateIssueStatus(issue, targetColumn) {
-    const prevLabels = [...issue.labels];
+    const repo = repoForIssue(issue);
+    if (!issue || !repo) return;
+    const prevLabels = [...issue.labels || []];
     const prevState = issue.state;
-    const currentLabels = issue.labels.map((l) => l.name);
+    const currentLabels = (issue.labels || []).map((l) => typeof l === "string" ? l : l.name || "");
     const filteredLabels = currentLabels.filter((name) => !name.startsWith("status:"));
     let newState = "open";
     if (targetColumn === "done") {
@@ -4162,15 +5718,13 @@ Blocked by ${blockerRef}`;
     }
     issue.state = newState;
     issue.labels = filteredLabels.map((name) => ({ name }));
-    if (currentRepo) {
-      issueCache.delete(currentRepo);
-    }
+    issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue);
     }
     try {
-      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+      await githubRequest("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         state: newState,
         labels: filteredLabels
       });
@@ -4187,7 +5741,7 @@ Blocked by ${blockerRef}`;
       await host.toast({ kind: "error", message: `Failed to move #${issue.number}` });
     }
   }
-  function isIssueClosed(issue) {
+  function isIssueClosed2(issue) {
     if (!issue) return false;
     if (typeof issue.state === "string" && issue.state.toLowerCase() === "closed") {
       return true;
@@ -4210,12 +5764,18 @@ Blocked by ${blockerRef}`;
   }
   function getNextColumn(current) {
     switch (current) {
+      case "draft":
+        return "backlog";
       case "backlog":
         return "todo";
       case "todo":
+        return "planned";
+      case "planned":
         return "in-progress";
       case "in-progress":
         return "in-review";
+      case "needs-human":
+        return "in-progress";
       case "in-review":
         return "done";
       case "done":
@@ -4226,12 +5786,18 @@ Blocked by ${blockerRef}`;
   }
   function getNextColumnAction(current) {
     switch (current) {
+      case "draft":
+        return { label: "Backlog", target: "backlog", icon: "\u2192" };
       case "backlog":
         return { label: "To Do", target: "todo", icon: "\u2192" };
       case "todo":
+        return { label: "Planned", target: "planned", icon: "\u2192" };
+      case "planned":
         return { label: "In Progress", target: "in-progress", icon: "\u25B6" };
       case "in-progress":
         return { label: "In Review", target: "in-review", icon: "\u2192" };
+      case "needs-human":
+        return { label: "In Progress", target: "in-progress", icon: "\u25B6" };
       case "in-review":
         return { label: "Done", target: "done", icon: "\u2713" };
       case "done":
@@ -4251,7 +5817,7 @@ Blocked by ${blockerRef}`;
     let newState = issue.state;
     let targetCategory = "todo";
     if (!isArch) {
-      const currentCategory = resolveIssueColumn(issue) || "todo";
+      const currentCategory = resolveIssueColumn2(issue) || "todo";
       if (!clean.some((n) => n.startsWith("status:"))) {
         clean.push(`status:${currentCategory}`);
       }
@@ -4270,15 +5836,16 @@ Blocked by ${blockerRef}`;
     }
     issue.state = newState;
     issue.labels = clean.map((name) => ({ name }));
-    if (currentRepo) {
-      issueCache.delete(currentRepo);
+    const archiveRepo = repoForIssue(issue);
+    if (archiveRepo) {
+      issueCache.delete(archiveRepo);
     }
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue);
     }
     try {
-      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+      await githubRequest("PATCH", `/repos/${archiveRepo}/issues/${issue.number}`, {
         state: newState,
         labels: clean
       });
@@ -4298,7 +5865,7 @@ Blocked by ${blockerRef}`;
       await host.toast({ kind: "error", message: `Failed to archive #${issue.number}: ${err.message}` });
     }
   }
-  function groupIssuesBy(issuesList, groupBy) {
+  function groupIssuesBy2(issuesList, groupBy) {
     if (groupBy === "priority") {
       const groups2 = [
         { id: "critical", title: "Critical", issues: [] },
@@ -4328,19 +5895,28 @@ Blocked by ${blockerRef}`;
       }
       return Array.from(themeMap.values());
     }
+    if (groupBy === "project") {
+      if (!isAllProjectsMode) {
+        return [{ id: currentRepo || "all", title: currentRepo || "All Items", issues: issuesList }];
+      }
+      return groupIssuesByProject(issuesList, allProjects);
+    }
     if (groupBy === "none") {
       return [{ id: "all", title: "All Items", issues: issuesList }];
     }
     const groups = [
+      { id: "draft", title: "Draft", issues: [] },
       { id: "backlog", title: "Backlog", issues: [] },
       { id: "todo", title: "To Do", issues: [] },
+      { id: "planned", title: "Planned", issues: [] },
       { id: "in-progress", title: "In Progress", issues: [] },
+      { id: "needs-human", title: "Needs Human", issues: [] },
       { id: "in-review", title: "In Review", issues: [] },
       { id: "done", title: "Done", issues: [] }
     ];
     const map = new Map(groups.map((g) => [g.id, g]));
     for (const issue of issuesList) {
-      const col = resolveIssueColumn(issue);
+      const col = resolveIssueColumn2(issue);
       if (col && map.has(col)) {
         map.get(col).issues.push(issue);
       }
@@ -4348,81 +5924,151 @@ Blocked by ${blockerRef}`;
     return groups;
   }
   function getIssueSession(issue) {
-    const issueNumStr = String(issue.number);
-    const match = sessions.find((s) => {
-      if (s.items && s.items.some((it) => it.id === issueNumStr || it.data?.issueNumber === issue.number)) {
-        return true;
-      }
-      if (s.title && s.title.includes(`#${issue.number}`)) {
-        return true;
-      }
-      const wtName = extractWorktreeName(s.worktree);
-      if (wtName && wtName.includes(`issue-${issue.number}`)) {
-        return true;
-      }
-      return false;
-    });
-    return match || null;
+    if (!issue) return null;
+    if (isAllProjectsMode) {
+      return findSessionForIssueByRepo(sessionIndexByRepo, issue) || null;
+    }
+    return sessionIndex.get(issue.number) || null;
   }
-  function resolveIssueColumn(issue) {
-    if (isIssueClosed(issue)) {
+  function resolveIssueColumn2(issue, sessionOverride) {
+    if (!issue) return null;
+    if (isIssueClosed2(issue)) {
       return "done";
     }
     const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
     if (labelNames.includes("status:done")) return "done";
     if (labelNames.includes("status:in-review")) return "in-review";
-    const session = getIssueSession(issue);
+    if (labelNames.includes("status:needs-human")) return "needs-human";
+    let session = null;
+    if (sessionOverride !== void 0) {
+      if (Array.isArray(sessionOverride)) {
+        const issueNumStr = String(issue.number);
+        session = sessionOverride.find((s) => {
+          if (s.items && s.items.some(
+            (it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number || it.data && Array.isArray(it.data.issueNumbers) && it.data.issueNumbers.includes(issue.number)
+          )) {
+            return true;
+          }
+          if (s.data && (s.data.issueNumber === issue.number || Array.isArray(s.data.issueNumbers) && s.data.issueNumbers.includes(issue.number))) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issue.number}`)) {
+            return true;
+          }
+          const wtStrings = typeof s.worktree === "string" ? [s.worktree] : s.worktree ? [s.worktree.name, s.worktree.branch, s.worktree.directory].filter(Boolean) : [];
+          if (wtStrings.some((str) => String(str).includes(`issue-${issue.number}`))) {
+            return true;
+          }
+          return false;
+        }) || null;
+      } else {
+        session = sessionOverride;
+      }
+    } else {
+      session = getIssueSession(issue);
+    }
+    const isSessionRunning = Boolean(session && session.activity === "running");
+    const isSessionWaiting = Boolean(
+      session && (session.activity === "waiting-permission" || session.activity === "waiting-question" || session.activity.startsWith("waiting"))
+    );
+    const isSessionIdle = Boolean(session && session.activity === "idle");
     if (labelNames.includes("status:in-progress")) {
-      if (session && session.activity === "idle") {
+      if (isSessionIdle) {
         return "in-review";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
       }
       return "in-progress";
     }
-    if (labelNames.includes("status:todo")) {
-      if (session && (session.activity === "running" || session.activity.startsWith("waiting"))) {
+    if (labelNames.includes("status:planned")) {
+      if (isSessionRunning) {
         return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "planned";
+    }
+    if (labelNames.includes("status:todo")) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
       }
       return "todo";
     }
     if (labelNames.includes("status:backlog")) {
-      if (session && (session.activity === "running" || session.activity.startsWith("waiting"))) {
+      if (isSessionRunning) {
         return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
       }
       return "backlog";
     }
-    if (session) {
-      if (session.activity === "running" || session.activity.startsWith("waiting")) {
+    if (labelNames.includes("status:draft") || isVagueIdea(issue)) {
+      if (isSessionRunning) {
         return "in-progress";
       }
-      if (session.activity === "idle") {
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "draft";
+    }
+    if (session) {
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      if (isSessionIdle) {
         return "in-review";
       }
     }
-    return null;
+    return "todo";
   }
-  function resolveDefaultTab(issues2) {
+  function resolveDefaultTab2(issues2) {
     if (!issues2 || issues2.length === 0) return "all";
-    const hasReview = issues2.some((i) => resolveIssueColumn(i) === "in-review");
+    const hasNeedsHuman = issues2.some((i) => resolveIssueColumn2(i) === "needs-human");
+    if (hasNeedsHuman) return "needs-human";
+    const hasReview = issues2.some((i) => resolveIssueColumn2(i) === "in-review");
     if (hasReview) return "in-review";
-    const hasProgress = issues2.some((i) => resolveIssueColumn(i) === "in-progress");
+    const hasProgress = issues2.some((i) => resolveIssueColumn2(i) === "in-progress");
     if (hasProgress) return "in-progress";
-    const hasTodo = issues2.some((i) => resolveIssueColumn(i) === "todo");
+    const hasTodo = issues2.some((i) => resolveIssueColumn2(i) === "todo");
     if (hasTodo) return "todo";
-    const hasBacklog = issues2.some((i) => resolveIssueColumn(i) === "backlog");
+    const hasPlanned = issues2.some((i) => resolveIssueColumn2(i) === "planned");
+    if (hasPlanned) return "planned";
+    const hasBacklog = issues2.some((i) => resolveIssueColumn2(i) === "backlog");
     if (hasBacklog) return "backlog";
+    const hasDraft = issues2.some((i) => resolveIssueColumn2(i) === "draft");
+    if (hasDraft) return "draft";
     return "all";
   }
+  var statusReconciler = new StatusReconciler({
+    debounceMs: 300,
+    updateStatus: async (issue, targetColumn) => {
+      await updateIssueStatus(issue, targetColumn);
+    },
+    getSession: (issue) => getIssueSession(issue)
+  });
   function updateBadgeCounts() {
     const counts = {
+      "draft": 0,
       "backlog": 0,
       "todo": 0,
+      "planned": 0,
       "in-progress": 0,
+      "needs-human": 0,
       "in-review": 0,
       "done": 0
     };
     const visibleIssues = issues.filter((issue) => showArchivedOnly ? isIssueArchived(issue) : !isIssueArchived(issue));
     visibleIssues.forEach((issue) => {
-      const col = resolveIssueColumn(issue);
+      const col = resolveIssueColumn2(issue);
       if (col && counts[col] !== void 0) {
         counts[col]++;
       }
@@ -4433,14 +6079,20 @@ Blocked by ${blockerRef}`;
       if (el2) el2.textContent = String(val);
     };
     setTxt("tabCountAll", total);
+    setTxt("tabCountDraft", counts["draft"]);
     setTxt("tabCountBacklog", counts["backlog"]);
     setTxt("tabCountTodo", counts["todo"]);
+    setTxt("tabCountPlanned", counts["planned"]);
     setTxt("tabCountProgress", counts["in-progress"]);
+    setTxt("tabCountNeedsHuman", counts["needs-human"]);
     setTxt("tabCountReview", counts["in-review"]);
     setTxt("tabCountDone", counts["done"]);
+    setTxt("kCountDraft", counts["draft"]);
     setTxt("kCountBacklog", counts["backlog"]);
     setTxt("kCountTodo", counts["todo"]);
+    setTxt("kCountPlanned", counts["planned"]);
     setTxt("kCountProgress", counts["in-progress"]);
+    setTxt("kCountNeedsHuman", counts["needs-human"]);
     setTxt("kCountReview", counts["in-review"]);
     setTxt("kCountDone", counts["done"]);
     const blockedCount = sessions.filter(
@@ -4564,13 +6216,19 @@ Blocked by ${blockerRef}`;
     if (elKanbanViewContainer) elKanbanViewContainer.style.display = "";
     if (elListViewContainer) elListViewContainer.style.display = "";
     if (elGraphViewContainer) elGraphViewContainer.style.display = "";
-    renderListView(sorted);
-    renderKanbanView(sorted);
-    renderGraphView(sorted);
+    applyLayoutMode(false);
+    const activeLayout = document.body.getAttribute("data-layout") === "graph" ? "graph" : document.body.getAttribute("data-layout") === "kanban" ? "kanban" : "list";
+    if (activeLayout === "list") {
+      renderListView(sorted);
+    } else if (activeLayout === "kanban") {
+      renderKanbanView(sorted);
+    } else if (activeLayout === "graph") {
+      renderGraphView(sorted);
+    }
+    currentRenderedLayout = activeLayout;
     updateBatchBar();
-    applyLayoutMode();
   }
-  function buildCardElement(issue, inKanban) {
+  function renderIssueCard(issue, inKanban) {
     const session = getIssueSession(issue);
     const card = document.createElement("div");
     const isSelected = selectedIssueNumbers.has(issue.number);
@@ -4601,7 +6259,7 @@ Blocked by ${blockerRef}`;
       </div>
     `;
     }
-    const wtTag = extractWorktreeName(session?.worktree);
+    const wtTag = extractWorktreeName2(session?.worktree);
     const worktreeHtml = wtTag ? `
       <div class="worktree-tag">
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
@@ -4620,14 +6278,14 @@ Blocked by ${blockerRef}`;
         <div class="micro-bar"><div class="micro-fill" style="width: ${pct}%;"></div></div>
       </div>
     ` : "<span></span>";
-    const col = resolveIssueColumn(issue);
+    const col = resolveIssueColumn2(issue);
     const nextAction = col ? getNextColumnAction(col) : { label: "To Do", target: "todo", icon: "\u2192" };
     const isArch = isIssueArchived(issue);
     let archiveCategoryBadge = "";
     if (isArch) {
       const statusLabel = (issue.labels || []).find((l) => (typeof l === "string" ? l : l.name || "").startsWith("status:"));
       const rawCat = statusLabel ? (typeof statusLabel === "string" ? statusLabel : statusLabel.name || "").replace("status:", "") : "";
-      const catLabel = rawCat === "in-progress" ? "In Progress" : rawCat === "in-review" ? "In Review" : rawCat === "done" ? "Done" : rawCat === "backlog" ? "Backlog" : "To Do";
+      const catLabel = STATUS_METADATA[rawCat]?.displayName || (rawCat ? rawCat : "To Do");
       archiveCategoryBadge = `<span class="archive-from-badge">From: ${escapeHtml(catLabel)}</span>`;
     }
     const priority = getIssuePriority(issue);
@@ -4636,6 +6294,15 @@ Blocked by ${blockerRef}`;
     const complexityHtml = complexity ? `<span class="badge badge-complexity badge-complexity-${complexity.toLowerCase()}">${complexity}</span>` : "";
     const vague = isVagueIdea(issue);
     const vagueBadgeHtml = vague ? `<span class="badge badge-vague" title="Sparse task needing alignment">Needs Alignment</span>` : "";
+    const batchName = getIssueBatch(issue);
+    let awaitingBatchHtml = "";
+    if (col === "in-review" && batchName) {
+      const res = isBatchReadyForReview(batchName, issues || []);
+      const otherOutstanding = res.outstandingIssues.filter((n) => n !== issue.number);
+      if (!res.ready && otherOutstanding.length > 0) {
+        awaitingBatchHtml = `<span class="badge-awaiting-batch" title="Waiting on #${otherOutstanding.join(", #")} before batch testing">Awaiting Batch</span>`;
+      }
+    }
     const questionBadgeInfo = formatQuestionBadge(issue.openQuestions);
     const questionsBadgeHtml = questionBadgeInfo.html;
     const descPreview = getIssueDescriptionPreview(issue.body);
@@ -4662,6 +6329,8 @@ Blocked by ${blockerRef}`;
       <svg class="icon icon-sm icon-check" style="display: none;" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
     </button>
   `;
+    const titles = parseFriendlyTitle(issue.body, issue.title);
+    const subtitleHtml = titles.subtitle ? `<div class="card-subtitle-tech" style="font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;">${escapeHtml(titles.subtitle)}</div>` : "";
     card.innerHTML = `
     <div class="card-meta">
       <div class="card-id-wrap">
@@ -4670,6 +6339,7 @@ Blocked by ${blockerRef}`;
         ${priorityHtml}
         ${complexityHtml}
         ${vagueBadgeHtml}
+        ${awaitingBatchHtml}
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ""}
         ${archiveCategoryBadge}
       </div>
@@ -4679,7 +6349,8 @@ Blocked by ${blockerRef}`;
         ${agentBadgeHtml}
       </div>
     </div>
-    <div class="card-title">${escapeHtml(issue.title)}</div>
+    <div class="card-title">${escapeHtml(titles.title)}</div>
+    ${subtitleHtml}
     ${descHtml}
     ${labelsHtml ? `<div class="card-labels">${labelsHtml}</div>` : ""}
     <div class="card-footer">
@@ -4758,9 +6429,10 @@ Blocked by ${blockerRef}`;
     }
     return card;
   }
+  var buildCardElement = renderIssueCard;
   function renderListView(filteredIssues) {
     elListViewContainer.innerHTML = "";
-    const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn(i) === activeTab);
+    const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn2(i) === activeTab);
     if (listItems.length === 0) {
       elListViewContainer.innerHTML = `
       <div class="empty-box">
@@ -4771,13 +6443,16 @@ Blocked by ${blockerRef}`;
       return;
     }
     if (currentGroupBy === "none") {
+      const fragment = document.createDocumentFragment();
       listItems.forEach((issue) => {
         const card = buildCardElement(issue, false);
-        elListViewContainer.appendChild(card);
+        fragment.appendChild(card);
       });
+      elListViewContainer.appendChild(fragment);
     } else {
-      const groups = groupIssuesBy(listItems, currentGroupBy);
+      const groups = groupIssuesBy2(listItems, currentGroupBy);
       let totalRendered = 0;
+      const fragment = document.createDocumentFragment();
       groups.forEach((grp) => {
         if (grp.issues.length === 0) return;
         totalRendered += grp.issues.length;
@@ -4800,8 +6475,8 @@ Blocked by ${blockerRef}`;
         const headerEl = groupEl.querySelector(".list-group-header");
         const toggleCollapse = (e) => {
           e.stopPropagation();
-          const collapsed = toggleGroupCollapse(groupKey);
-          groupEl.classList.toggle("is-collapsed", collapsed);
+          toggleGroupCollapse(groupKey);
+          renderViews();
         };
         headerEl.addEventListener("click", toggleCollapse);
         headerEl.addEventListener("keydown", (e) => {
@@ -4810,12 +6485,16 @@ Blocked by ${blockerRef}`;
             toggleCollapse(e);
           }
         });
-        const listCardsContainer = groupEl.querySelector(".list-group-cards");
-        grp.issues.forEach((issue) => {
-          const card = buildCardElement(issue, false);
-          listCardsContainer.appendChild(card);
-        });
-        elListViewContainer.appendChild(groupEl);
+        if (!isCollapsed) {
+          const listCardsContainer = groupEl.querySelector(".list-group-cards");
+          const cardsFragment = document.createDocumentFragment();
+          grp.issues.forEach((issue) => {
+            const card = buildCardElement(issue, false);
+            cardsFragment.appendChild(card);
+          });
+          listCardsContainer.appendChild(cardsFragment);
+        }
+        fragment.appendChild(groupEl);
       });
       if (totalRendered === 0) {
         elListViewContainer.innerHTML = `
@@ -4824,20 +6503,26 @@ Blocked by ${blockerRef}`;
           <span>No issues match this view</span>
         </div>
       `;
+      } else {
+        elListViewContainer.appendChild(fragment);
       }
     }
   }
   function renderKanbanView(filteredIssues) {
     elKanbanViewContainer.innerHTML = "";
+    const kanbanFragment = document.createDocumentFragment();
     const columns = [
+      { id: "draft", title: "Draft" },
       { id: "backlog", title: "Backlog" },
       { id: "todo", title: "To Do" },
+      { id: "planned", title: "Planned" },
       { id: "in-progress", title: "In Progress" },
-      { id: "in-review", title: "In Review" },
+      { id: "needs-human", title: "Needs Human" },
+      { id: "in-review", title: "Review" },
       { id: "done", title: "Done" }
     ];
     columns.forEach((col) => {
-      const colIssues = filteredIssues.filter((i) => resolveIssueColumn(i) === col.id);
+      const colIssues = filteredIssues.filter((i) => resolveIssueColumn2(i) === col.id);
       const colEl = document.createElement("div");
       colEl.className = "kanban-col";
       colEl.dataset.column = col.id;
@@ -4870,23 +6555,34 @@ Blocked by ${blockerRef}`;
         if (currentGroupBy === "priority" && subgroupId && subgroupId !== "none") {
           const updatedLabels = updatePriorityLabels(issue.labels, subgroupId);
           issue.labels = updatedLabels.map((name) => ({ name }));
-          if (currentRepo) issueCache.delete(currentRepo);
+          const dropRepo = repoForIssue(issue);
+          if (dropRepo) issueCache.delete(dropRepo);
           renderViews();
           try {
-            await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+            await githubRequest("PATCH", `/repos/${dropRepo}/issues/${issue.number}`, {
               labels: updatedLabels
             });
           } catch {
           }
         }
       });
+      let displayIssues = colIssues;
+      let doneRemaining = 0;
+      if (col.id === "done" && !searchQuery.trim()) {
+        const scoped = scopeDoneIssues(colIssues, 25, showAllDoneIssues);
+        displayIssues = scoped.visible;
+        doneRemaining = scoped.remaining;
+      }
       if (currentGroupBy === "none" || currentGroupBy === "status") {
-        colIssues.forEach((issue) => {
+        const cardsFragment = document.createDocumentFragment();
+        displayIssues.forEach((issue) => {
           const card = buildCardElement(issue, true);
-          cardsContainer.appendChild(card);
+          cardsFragment.appendChild(card);
         });
+        cardsContainer.appendChild(cardsFragment);
       } else {
-        const subGroups = groupIssuesBy(colIssues, currentGroupBy);
+        const subGroups = groupIssuesBy2(displayIssues, currentGroupBy);
+        const subFragment = document.createDocumentFragment();
         subGroups.forEach((subGrp) => {
           if (subGrp.issues.length === 0) return;
           const groupKey = `kanban:${col.id}:${subGrp.id}`;
@@ -4908,8 +6604,8 @@ Blocked by ${blockerRef}`;
           const headerEl = subGroupEl.querySelector(".kanban-subgroup-header");
           const toggleCollapse = (e) => {
             e.stopPropagation();
-            const collapsed = toggleGroupCollapse(groupKey);
-            subGroupEl.classList.toggle("is-collapsed", collapsed);
+            toggleGroupCollapse(groupKey);
+            renderViews();
           };
           headerEl.addEventListener("click", toggleCollapse);
           headerEl.addEventListener("keydown", (e) => {
@@ -4918,16 +6614,33 @@ Blocked by ${blockerRef}`;
               toggleCollapse(e);
             }
           });
-          const subCardsContainer = subGroupEl.querySelector(".kanban-subgroup-cards");
-          subGrp.issues.forEach((issue) => {
-            const card = buildCardElement(issue, true);
-            subCardsContainer.appendChild(card);
-          });
-          cardsContainer.appendChild(subGroupEl);
+          if (!isCollapsed) {
+            const subCardsContainer = subGroupEl.querySelector(".kanban-subgroup-cards");
+            const subCardsFragment = document.createDocumentFragment();
+            subGrp.issues.forEach((issue) => {
+              const card = buildCardElement(issue, true);
+              subCardsFragment.appendChild(card);
+            });
+            subCardsContainer.appendChild(subCardsFragment);
+          }
+          subFragment.appendChild(subGroupEl);
         });
+        cardsContainer.appendChild(subFragment);
       }
-      elKanbanViewContainer.appendChild(colEl);
+      if (col.id === "done" && doneRemaining > 0) {
+        const showMoreBtn = document.createElement("div");
+        showMoreBtn.className = "kanban-show-more-btn";
+        showMoreBtn.style.cssText = "padding: 8px 10px; text-align: center; font-size: 11px; color: var(--prim); cursor: pointer; background: var(--surf-muted); border-radius: var(--rad); margin-top: 6px; border: 1px dashed var(--border); font-weight: 500;";
+        showMoreBtn.textContent = `Show all ${colIssues.length} Done (+${doneRemaining} more)`;
+        showMoreBtn.addEventListener("click", () => {
+          showAllDoneIssues = true;
+          renderViews();
+        });
+        cardsContainer.appendChild(showMoreBtn);
+      }
+      kanbanFragment.appendChild(colEl);
     });
+    elKanbanViewContainer.appendChild(kanbanFragment);
   }
   function updateViewModeButtons(mode) {
     elBtnViewList?.classList.toggle("active", mode === "list");
@@ -4952,30 +6665,40 @@ Blocked by ${blockerRef}`;
       }
     }
   }
-  function applyLayoutMode() {
+  function applyLayoutMode(triggerRender = true) {
     if (showArchivedOnly) {
       document.body.removeAttribute("data-layout");
       return;
     }
     isWideScreen = window.innerWidth >= 680;
+    let newLayout = "list";
     if (userLayoutPreference === "graph") {
+      newLayout = "graph";
       document.body.setAttribute("data-layout", "graph");
       updateViewModeButtons("graph");
-      drawCurrentGraphEdges();
     } else if (userLayoutPreference === "kanban") {
+      newLayout = "kanban";
       document.body.setAttribute("data-layout", "kanban");
       updateViewModeButtons("kanban");
     } else if (userLayoutPreference === "list") {
+      newLayout = "list";
       document.body.removeAttribute("data-layout");
       updateViewModeButtons("list");
     } else {
       if (isWideScreen) {
+        newLayout = "kanban";
         document.body.setAttribute("data-layout", "kanban");
         updateViewModeButtons("kanban");
       } else {
+        newLayout = "list";
         document.body.removeAttribute("data-layout");
         updateViewModeButtons("list");
       }
+    }
+    if (triggerRender && currentRenderedLayout !== newLayout) {
+      renderViews();
+    } else if (newLayout === "graph") {
+      drawCurrentGraphEdges();
     }
   }
   var THEME_PALETTE = [
@@ -5027,6 +6750,18 @@ Blocked by ${blockerRef}`;
       }
     }
   }
+  document.addEventListener("click", (e) => {
+    const btn = e.target?.closest(".btn-remove-blocker");
+    if (btn) {
+      e.stopPropagation();
+      e.preventDefault();
+      const target = parseInt(btn.dataset.target || "0", 10);
+      const blocker = parseInt(btn.dataset.blocker || "0", 10);
+      if (target > 0 && blocker > 0) {
+        void handleRemoveDependency(target, blocker);
+      }
+    }
+  });
   function showQuickBlockerPicker(targetIssue, triggerEl) {
     document.querySelectorAll(".graph-quick-picker").forEach((p) => p.remove());
     const popover = document.createElement("div");
@@ -5167,7 +6902,8 @@ Blocked by ${blockerRef}`;
     }
     let blockersHtml = "";
     if (node.isBlocked && node.openBlockers.length > 0) {
-      blockersHtml = `<span class="graph-badge-blocked" title="Blocked by #${node.openBlockers.join(", #")}"><svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg> #${node.openBlockers.join(", #")}</span>`;
+      const chipsHtml = renderBlockerChips(node.issue, node.openBlockers);
+      blockersHtml = `<span class="graph-badge-blocked" title="Blocked by #${node.openBlockers.join(", #")}"><svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg> ${chipsHtml}</span>`;
     }
     let impactHtml = "";
     if (node.downstreamImpact > 0) {
@@ -5213,9 +6949,20 @@ Blocked by ${blockerRef}`;
         showQuickBlockerPicker(node.issue, addBtn);
       });
     }
+    card.querySelectorAll(".btn-remove-blocker").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const target = parseInt(btn.dataset.target || "0", 10);
+        const blocker = parseInt(btn.dataset.blocker || "0", 10);
+        if (target > 0 && blocker > 0) {
+          void handleRemoveDependency(target, blocker);
+        }
+      });
+    });
     card.addEventListener("click", (e) => {
       const target = e.target;
-      if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn")) {
+      if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn") || target.closest(".btn-remove-blocker")) {
         return;
       }
       openDrawer(node.issue);
@@ -5223,7 +6970,7 @@ Blocked by ${blockerRef}`;
     card.addEventListener("keydown", (e) => {
       if (e.key === "Enter" || e.key === " ") {
         const target = e.target;
-        if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn")) {
+        if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn") || target.closest(".btn-remove-blocker")) {
           return;
         }
         e.preventDefault();
@@ -5256,13 +7003,20 @@ Blocked by ${blockerRef}`;
       const num = parseInt(card.dataset.issueNumber || "0", 10);
       if (num > 0) cardElements.set(num, card);
     });
+    const cardRects = /* @__PURE__ */ new Map();
+    cardElements.forEach((card, num) => {
+      cardRects.set(num, card.getBoundingClientRect());
+    });
+    const edgeFragment = document.createDocumentFragment();
     for (const edge of graph.edges) {
-      const sourceEl = cardElements.get(edge.from);
-      const targetEl = cardElements.get(edge.to);
-      if (!sourceEl || !targetEl) continue;
-      const sourceRect = sourceEl.getBoundingClientRect();
-      const targetRect = targetEl.getBoundingClientRect();
+      const sourceRect = cardRects.get(edge.from);
+      const targetRect = cardRects.get(edge.to);
+      if (!sourceRect || !targetRect) continue;
       const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
+      const edgeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      edgeGroup.setAttribute("class", "graph-edge-group");
+      edgeGroup.setAttribute("data-from", String(edge.from));
+      edgeGroup.setAttribute("data-to", String(edge.to));
       const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
       path.setAttribute("d", pathData.d);
       path.setAttribute("data-from", String(edge.from));
@@ -5290,8 +7044,43 @@ Blocked by ${blockerRef}`;
       const titleEl = document.createElementNS("http://www.w3.org/2000/svg", "title");
       titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to remove dependency)`;
       path.appendChild(titleEl);
-      elGraphEdgesLayer.appendChild(path);
+      edgeGroup.appendChild(path);
+      const midX = Math.round((pathData.x1 + pathData.x2) / 2);
+      const midY = Math.round((pathData.y1 + pathData.y2) / 2);
+      const badgeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      badgeGroup.setAttribute("class", "graph-edge-delete-badge");
+      badgeGroup.setAttribute("transform", `translate(${midX}, ${midY})`);
+      badgeGroup.setAttribute("data-from", String(edge.from));
+      badgeGroup.setAttribute("data-to", String(edge.to));
+      badgeGroup.setAttribute("role", "button");
+      badgeGroup.setAttribute("aria-label", `Remove dependency: #${edge.from} blocks #${edge.to}`);
+      badgeGroup.style.cursor = "pointer";
+      const hitCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      hitCircle.setAttribute("r", "12");
+      hitCircle.setAttribute("fill", "transparent");
+      badgeGroup.appendChild(hitCircle);
+      const visualCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      visualCircle.setAttribute("class", "graph-edge-delete-circle");
+      visualCircle.setAttribute("r", "8");
+      badgeGroup.appendChild(visualCircle);
+      const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      textEl.setAttribute("class", "graph-edge-delete-text");
+      textEl.setAttribute("text-anchor", "middle");
+      textEl.setAttribute("dominant-baseline", "central");
+      textEl.textContent = "\xD7";
+      badgeGroup.appendChild(textEl);
+      const badgeTitle = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      badgeTitle.textContent = `Remove dependency: #${edge.from} blocks #${edge.to}`;
+      badgeGroup.appendChild(badgeTitle);
+      badgeGroup.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        void handleRemoveDependency(edge.to, edge.from);
+      });
+      edgeGroup.appendChild(badgeGroup);
+      edgeFragment.appendChild(edgeGroup);
     }
+    elGraphEdgesLayer.appendChild(edgeFragment);
   }
   function drawCurrentGraphEdges() {
     if (!currentGraph || !elGraphEdgesLayer || !elGraphCanvas) return;
@@ -5437,7 +7226,7 @@ Blocked by ${blockerRef}`;
           pill.style.alignItems = "center";
           pill.style.gap = "4px";
           pill.style.cursor = "pointer";
-          const isClosed = blockerIssue ? isIssueClosed(blockerIssue) : false;
+          const isClosed = blockerIssue ? isIssueClosed2(blockerIssue) : false;
           if (isClosed) pill.style.opacity = "0.6";
           pill.innerHTML = `
           <span>#${bNum} ${escapeHtml(blockerIssue?.title || "")}</span>
@@ -5464,7 +7253,7 @@ Blocked by ${blockerRef}`;
           const pill = document.createElement("div");
           pill.className = "badge";
           pill.style.cursor = "pointer";
-          const isClosed = isIssueClosed(dep);
+          const isClosed = isIssueClosed2(dep);
           if (isClosed) pill.style.opacity = "0.6";
           pill.textContent = `#${dep.number} ${dep.title}`;
           pill.addEventListener("click", () => openDrawer(dep));
@@ -5502,15 +7291,16 @@ Blocked by ${blockerRef}`;
   }
   var repoLabelsCache = /* @__PURE__ */ new Map();
   async function loadRepoLabels() {
-    if (!currentRepo) return;
-    if (repoLabelsCache.has(currentRepo)) {
-      populateLabelsDatalist(repoLabelsCache.get(currentRepo));
+    const repo = repoForIssue(activeIssue);
+    if (!repo) return;
+    if (repoLabelsCache.has(repo)) {
+      populateLabelsDatalist(repoLabelsCache.get(repo));
       return;
     }
     try {
-      const list = await githubRequest("GET", `/repos/${currentRepo}/labels?per_page=100`);
+      const list = await githubRequest("GET", `/repos/${repo}/labels?per_page=100`);
       if (Array.isArray(list)) {
-        repoLabelsCache.set(currentRepo, list);
+        repoLabelsCache.set(repo, list);
         populateLabelsDatalist(list);
       }
     } catch {
@@ -5557,7 +7347,7 @@ Blocked by ${blockerRef}`;
     renderViews();
     try {
       addLog(`Adding label "${clean}" to #${issue.number}...`);
-      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+      await githubRequest("PATCH", `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
         labels: newNames
       });
       await host.toast({ kind: "success", message: `Added label "${clean}" to #${issue.number}` });
@@ -5574,7 +7364,7 @@ Blocked by ${blockerRef}`;
     renderViews();
     try {
       addLog(`Removing label "${tagName}" from #${issue.number}...`);
-      await githubRequest("PATCH", `/repos/${currentRepo}/issues/${issue.number}`, {
+      await githubRequest("PATCH", `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
         labels: newLabels.map((l) => l.name)
       });
       await host.toast({ kind: "info", message: `Removed label "${tagName}" from #${issue.number}` });
@@ -5588,7 +7378,7 @@ Blocked by ${blockerRef}`;
     elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : "";
     elDrawerGithubLink.href = issue.html_url;
     elDrawerIssueTitle.textContent = issue.title;
-    const col = resolveIssueColumn(issue);
+    const col = resolveIssueColumn2(issue);
     elDrawerStatusSelect.value = col || "none";
     if (elDrawerPrioritySelect) {
       elDrawerPrioritySelect.value = getIssuePriority(issue) || "none";
@@ -5609,7 +7399,7 @@ Blocked by ${blockerRef}`;
       };
     }
     if (elBtnDrawerToggleClose) {
-      const isClosed = isIssueClosed(issue);
+      const isClosed = isIssueClosed2(issue);
       elBtnDrawerToggleClose.textContent = isClosed ? "Reopen Issue" : "Close Issue";
       elBtnDrawerToggleClose.onclick = () => {
         void updateIssueStatus(issue, isClosed ? "todo" : "done");
@@ -5635,7 +7425,7 @@ Blocked by ${blockerRef}`;
       <span class="dot ${dotClass}"></span>
       <span>${label}</span>
     `;
-      const wtName = extractWorktreeName(session.worktree);
+      const wtName = extractWorktreeName2(session.worktree);
       elDrawerWorktreeName.textContent = wtName || "Project Root";
       elBtnDrawerJumpSession.style.display = "inline-flex";
       elBtnDrawerJumpSession.onclick = () => {
@@ -5651,6 +7441,7 @@ Blocked by ${blockerRef}`;
     }
     renderChecklist(issue);
     renderQuestions(issue);
+    renderTestPlans(issue);
     elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
     elDrawerDescriptionViewBox.style.display = "block";
     elDrawerDescriptionEditBox.style.display = "none";
@@ -5719,6 +7510,7 @@ Blocked by ${blockerRef}`;
     elQuestionsProgressText.textContent = `${open} open (${resolved} resolved)`;
     elQuestionsProgressText.style.color = open > 0 ? "var(--warn)" : "var(--succ)";
     elDrawerQuestionsContainer.innerHTML = "";
+    let unresolvedIdx = 0;
     questions.forEach((question) => {
       const itemEl = document.createElement("div");
       itemEl.className = `check-item ${question.completed ? "done" : ""}`;
@@ -5726,21 +7518,172 @@ Blocked by ${blockerRef}`;
       cb.type = "checkbox";
       cb.checked = question.completed;
       cb.title = question.completed ? "Mark question as open" : "Mark question as resolved/answered";
-      const span = document.createElement("span");
-      span.textContent = question.text;
       cb.addEventListener("change", () => {
         const updatedBody = updateOpenQuestionInMarkdown(issue.body, question.lineIndex, cb.checked);
         void updateIssueBody(issue, updatedBody);
       });
+      const contentEl = document.createElement("div");
+      contentEl.style.flex = "1";
+      contentEl.style.minWidth = "0";
+      const textRow = document.createElement("div");
+      textRow.style.display = "flex";
+      textRow.style.alignItems = "flex-start";
+      textRow.style.justifyContent = "space-between";
+      textRow.style.gap = "8px";
+      const span = document.createElement("span");
+      span.textContent = question.text;
+      span.style.flex = "1";
+      span.style.wordBreak = "break-word";
+      textRow.appendChild(span);
+      if (!question.completed) {
+        const idx = unresolvedIdx;
+        unresolvedIdx++;
+        const btnAnswer = document.createElement("button");
+        btnAnswer.className = "btn btn-xs btn-inline-answer";
+        btnAnswer.setAttribute("data-question-index", String(idx));
+        btnAnswer.title = "Record decision or answer";
+        btnAnswer.textContent = "Answer";
+        textRow.appendChild(btnAnswer);
+        btnAnswer.addEventListener("click", (e) => {
+          e.stopPropagation();
+          let answerRow = contentEl.querySelector(".inline-answer-row");
+          if (answerRow) {
+            const isVisible = answerRow.style.display !== "none";
+            answerRow.style.display = isVisible ? "none" : "flex";
+            if (!isVisible) {
+              answerRow.querySelector(".input-inline-answer")?.focus();
+            }
+            return;
+          }
+          answerRow = document.createElement("div");
+          answerRow.className = "inline-answer-row";
+          answerRow.style.display = "flex";
+          answerRow.style.gap = "6px";
+          answerRow.style.marginTop = "4px";
+          answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>`;
+          contentEl.appendChild(answerRow);
+          const input = answerRow.querySelector(".input-inline-answer");
+          const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
+          const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
+          const submitAnswer = async () => {
+            const answerText = input?.value.trim();
+            if (!answerText) {
+              input?.focus();
+              return;
+            }
+            const targetIssue = activeIssue || issue;
+            if (!targetIssue) return;
+            const newBody = answerOpenQuestionInMarkdown(targetIssue.body, idx, answerText);
+            if (issue && issue !== targetIssue) {
+              issue.body = newBody;
+              issue.subtasks = parseSubtasks(newBody);
+              issue.openQuestions = parseOpenQuestions(newBody);
+            }
+            await updateIssueBody(targetIssue, newBody);
+            await host.toast({ kind: "info", message: "Recorded answer to question" });
+            if (activeIssue && activeIssue.number === targetIssue.number) {
+              renderDrawer(targetIssue);
+            }
+          };
+          btnSave?.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            void submitAnswer();
+          });
+          btnCancel?.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            if (answerRow) answerRow.style.display = "none";
+            btnAnswer.focus();
+          });
+          input?.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter") {
+              ev.preventDefault();
+              ev.stopPropagation();
+              void submitAnswer();
+            } else if (ev.key === "Escape") {
+              ev.preventDefault();
+              ev.stopPropagation();
+              if (answerRow) answerRow.style.display = "none";
+              btnAnswer.focus();
+            }
+          });
+          input?.focus();
+        });
+      }
+      contentEl.appendChild(textRow);
       itemEl.appendChild(cb);
-      itemEl.appendChild(span);
+      itemEl.appendChild(contentEl);
       elDrawerQuestionsContainer.appendChild(itemEl);
     });
   }
+  function renderTestPlans(issue) {
+    if (!elDrawerIssueTestsContainer || !elDrawerBatchTestsContainer) return;
+    const { issueTests, batchTests } = parseTestPlan(issue.body);
+    const totalIssue = issueTests.length;
+    const completedIssue = issueTests.filter((t) => t.completed).length;
+    if (elIssueTestsProgressText) {
+      elIssueTestsProgressText.textContent = `${completedIssue} / ${totalIssue}`;
+    }
+    elDrawerIssueTestsContainer.innerHTML = "";
+    if (totalIssue === 0) {
+      elDrawerIssueTestsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No issue test plan found. Add tests below or add "## Test Plan (Issue)" in description.
+      </div>
+    `;
+    } else {
+      issueTests.forEach((item) => {
+        const itemEl = document.createElement("div");
+        itemEl.className = `check-item ${item.completed ? "done" : ""}`;
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = item.completed;
+        const span = document.createElement("span");
+        span.textContent = item.text;
+        cb.addEventListener("change", () => {
+          const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
+          void updateIssueBody(issue, updatedBody);
+        });
+        itemEl.appendChild(cb);
+        itemEl.appendChild(span);
+        elDrawerIssueTestsContainer.appendChild(itemEl);
+      });
+    }
+    const totalBatch = batchTests.length;
+    const completedBatch = batchTests.filter((t) => t.completed).length;
+    if (elBatchTestsProgressText) {
+      elBatchTestsProgressText.textContent = `${completedBatch} / ${totalBatch}`;
+    }
+    elDrawerBatchTestsContainer.innerHTML = "";
+    if (totalBatch === 0) {
+      elDrawerBatchTestsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No batch test plan found. Add tests below or add "## Test Plan (Batch)" in description.
+      </div>
+    `;
+    } else {
+      batchTests.forEach((item) => {
+        const itemEl = document.createElement("div");
+        itemEl.className = `check-item ${item.completed ? "done" : ""}`;
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = item.completed;
+        const span = document.createElement("span");
+        span.textContent = item.text;
+        cb.addEventListener("change", () => {
+          const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
+          void updateIssueBody(issue, updatedBody);
+        });
+        itemEl.appendChild(cb);
+        itemEl.appendChild(span);
+        elDrawerBatchTestsContainer.appendChild(itemEl);
+      });
+    }
+  }
   async function loadComments(issueNumber) {
     elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-muted); font-size: 11.5px;">Loading comments...</div>';
+    const commentIssue = activeIssue && activeIssue.number === issueNumber ? activeIssue : issues.find((i) => i.number === issueNumber) || null;
     try {
-      const comments = await githubRequest("GET", `/repos/${currentRepo}/issues/${issueNumber}/comments`);
+      const comments = await githubRequest("GET", `/repos/${repoForIssue(commentIssue)}/issues/${issueNumber}/comments`);
       elCommentCountBadge.textContent = String(comments.length);
       if (!comments || comments.length === 0) {
         elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">No comments yet.</div>';
@@ -5783,7 +7726,7 @@ Blocked by ${blockerRef}`;
       <div class="related-issue-title" title="${escapeHtml(other.title)}">#${other.number} ${escapeHtml(other.title)}</div>
       <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
         ${compHtml}
-        <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn(other) || "all"}</span>
+        <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn2(other) || "all"}</span>
         ${linkBtnHtml}
       </div>
     `;
@@ -5799,33 +7742,11 @@ Blocked by ${blockerRef}`;
       elDrawerRelatedIssuesContainer.appendChild(item);
     });
   }
-  function getIssuePrimaryTag(issue) {
-    if (!issue || !issue.labels) return "task";
-    for (const l of issue.labels) {
-      const name = (typeof l === "string" ? l : l.name || "").trim();
-      if (name && !name.startsWith("status:") && !name.startsWith("priority:") && !name.startsWith("complexity:") && !name.startsWith("theme:") && !["archived", "archive"].includes(name.toLowerCase())) {
-        return name;
-      }
-    }
-    for (const l of issue.labels) {
-      const name = (typeof l === "string" ? l : l.name || "").trim();
-      if (name.startsWith("theme:")) {
-        return name.replace("theme:", "");
-      }
-    }
-    return "task";
-  }
-  function buildWorktreeBranchName(options) {
-    if (options.mode === "tag") {
-      const tag = options.customTag || getIssuePrimaryTag(options.issue);
-      return `worktree-tag-${slugify(tag || "task")}`.slice(0, 80);
-    }
-    const branchSlug = slugify(options.issue.title || "task");
-    return `issue-${options.issue.number}-${branchSlug}`.slice(0, 80);
-  }
   function updatePreflightBrief() {
     if (!activeIssue) return;
-    const useWt = elPreflightWorktreeToggle.checked;
+    const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
+    const theme = getIssueTheme(activeIssue);
+    const existingThemeWorktree = theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue) : null;
     let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}
 
 `;
@@ -5844,7 +7765,28 @@ ${activeIssue.body}
       });
       brief += "\n";
     }
-    if (useWt) {
+    const labelNames = (activeIssue.labels || []).map(
+      (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
+    );
+    const skills = [];
+    if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug")) {
+      skills.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
+      skills.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
+    }
+    if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature")) {
+      skills.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
+      skills.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
+    }
+    if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs")) {
+      skills.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
+    }
+    if (skills.length > 0) {
+      brief += `### Skills:
+${skills.join("\n")}
+
+`;
+    }
+    if (useWt || existingThemeWorktree) {
       brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
     } else {
       brief += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
@@ -5872,7 +7814,38 @@ ${activeIssue.body}
     elPreflightIssuePreview.textContent = issueBranch;
     elPreflightBranchInput.value = issueBranch;
     elPreflightBaseBranchInput.value = "main";
-    elBtnPreflightLaunch.textContent = "Start Agent Session (Current Workspace)";
+    const theme = getIssueTheme(issue);
+    const hasTheme = Boolean(theme && theme !== "No Theme");
+    const existingThemeWorktree = hasTheme ? findThemeWorktree(worktrees, issue) : null;
+    if (isAllProjectsMode) {
+      elPreflightWorktreeToggle.checked = false;
+      elPreflightWorktreeToggle.disabled = true;
+      elPreflightWorktreeSection.style.display = "none";
+      if (elPreflightThemeNotice) {
+        elPreflightThemeNotice.style.display = "none";
+        elPreflightThemeNotice.textContent = "";
+      }
+      elBtnPreflightLaunch.textContent = "Start Agent Session (All Projects)";
+      updatePreflightBrief();
+      elPreflightBackdrop.classList.add("active");
+      return;
+    }
+    elPreflightWorktreeToggle.disabled = false;
+    if (elPreflightThemeNotice) {
+      if (existingThemeWorktree) {
+        elPreflightThemeNotice.style.display = "flex";
+        elPreflightThemeNotice.textContent = `Reusing active theme worktree: ${theme}`;
+        elPreflightThemeNotice.title = `Found existing theme worktree "${existingThemeWorktree.name || theme}". Session will automatically reuse it.`;
+      } else {
+        elPreflightThemeNotice.style.display = "none";
+        elPreflightThemeNotice.textContent = "";
+      }
+    }
+    if (existingThemeWorktree) {
+      elBtnPreflightLaunch.textContent = `Start Agent Session (Theme: ${theme})`;
+    } else {
+      elBtnPreflightLaunch.textContent = "Start Agent Session (Current Workspace)";
+    }
     updatePreflightBrief();
     elPreflightBackdrop.classList.add("active");
   }
@@ -5880,31 +7853,38 @@ ${activeIssue.body}
     elPreflightBackdrop.classList.remove("active");
   }
   async function launchAgentSession() {
-    if (!activeIssue || !currentProject) return;
-    const useWorktree = elPreflightWorktreeToggle.checked;
+    if (!activeIssue) return;
+    const allProjectsMode = isAllProjectsMode;
+    const targetProject = allProjectsMode ? getWorkspaceRootProject() || currentProject : currentProject;
+    if (!targetProject) return;
+    const useWorktree = allProjectsMode ? false : elPreflightWorktreeToggle.checked;
     const rawBranch = elPreflightBranchInput.value.trim();
     const cleanBranch = useWorktree ? rawBranch.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
     const baseBranch = useWorktree ? elPreflightBaseBranchInput.value.trim() || void 0 : void 0;
     const promptText = elPreflightPromptInput.value.trim().slice(0, 15e3);
     const autoMove = elPreflightMoveInProgress.checked;
+    const theme = getIssueTheme(activeIssue);
+    const existingThemeWorktree = !allProjectsMode && theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue) : null;
+    const payload = buildLaunchSessionPayload({
+      issue: activeIssue,
+      projectId: targetProject.id,
+      useWorktree,
+      branchName: cleanBranch,
+      baseBranch,
+      prompt: promptText,
+      existingWorktree: existingThemeWorktree,
+      worktrees
+    });
+    if (allProjectsMode) {
+      payload.worktree = false;
+      if (payload.data) delete payload.data.branch;
+    }
     elBtnPreflightLaunch.disabled = true;
     elBtnPreflightLaunch.textContent = "Provisioning...";
     try {
-      const targetDesc = useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : "workspace";
-      addLog(`Starting session in ${targetDesc} on project ${currentProject.id}...`);
-      const res = await host.startSession({
-        projectId: currentProject.id,
-        worktree: useWorktree && cleanBranch ? { kind: "new", name: cleanBranch, baseBranch } : false,
-        providerId: "github-task-board",
-        id: String(activeIssue.number),
-        title: `#${activeIssue.number} ${activeIssue.title}`.slice(0, 150),
-        url: activeIssue.html_url.slice(0, 1e3),
-        text: promptText,
-        data: {
-          issueNumber: activeIssue.number,
-          ...useWorktree && cleanBranch ? { branch: cleanBranch } : {}
-        }
-      });
+      const targetDesc = allProjectsMode ? "workspace root /workspace" : existingThemeWorktree ? `theme worktree "${existingThemeWorktree.name || theme}"` : useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : "workspace";
+      addLog(`Starting session in ${targetDesc} on project ${targetProject.id}...`);
+      const res = await host.startSession(payload);
       closePreflightModal();
       if (autoMove) {
         void updateIssueStatus(activeIssue, "in-progress");
@@ -5921,7 +7901,7 @@ ${activeIssue.body}
       await host.toast({ kind: "error", message: `Failed to launch agent: ${err.message || "Unknown error"}` });
     } finally {
       elBtnPreflightLaunch.disabled = false;
-      elBtnPreflightLaunch.textContent = elPreflightWorktreeToggle.checked ? "Launch Worktree & Agent" : "Start Agent Session (Current Workspace)";
+      elBtnPreflightLaunch.textContent = allProjectsMode ? "Start Agent Session (All Projects)" : elPreflightWorktreeToggle.checked ? "Launch Worktree & Agent" : existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : "Start Agent Session (Current Workspace)";
     }
   }
   function updateBatchBar() {
@@ -5961,6 +7941,9 @@ ${activeIssue.body}
     const title = `Packaged Tasks (${selected.length}): ${selected.map((i) => `#${i.number}`).join(", ")}`.slice(0, 150);
     try {
       addLog(`Launching packaged session for ${selected.length} issues...`);
+      const multiPayload = buildMultiIssueAttachPayload(selected, currentRepo);
+      const individualItems = selected.map((i) => buildIssueAttachPayload(i));
+      const items = mergeSessionItems([multiPayload], individualItems);
       const res = await host.startSession({
         projectId: currentProject.id,
         worktree: false,
@@ -5971,8 +7954,11 @@ ${activeIssue.body}
         text: promptText,
         data: {
           packaged: true,
-          issueNumbers: selected.map((i) => i.number)
-        }
+          issueNumber: selected[0]?.number,
+          issueNumbers: selected.map((i) => i.number),
+          items
+        },
+        items
       });
       clearSelection();
       selected.forEach((issue) => {
@@ -6315,19 +8301,27 @@ ${issue.body}
     }
     elScratchpadStatsBadge.textContent = stats;
   }
+  function flushScratchpadSave() {
+    if (scratchpadSaveTimer !== null) {
+      clearTimeout(scratchpadSaveTimer);
+      scratchpadSaveTimer = null;
+    }
+    const text = elScratchpadTextarea?.value ?? "";
+    updateScratchpadStats(text);
+    try {
+      localStorage.setItem(getScratchpadLocalKey(), text);
+    } catch {
+    }
+    setScratchpadSaveStatus("Saved");
+    void host.storage.set(getScratchpadStorageKey(), text).then(() => setScratchpadSaveStatus("Saved")).catch(() => setScratchpadSaveStatus("Saved"));
+  }
   function handleScratchpadInput() {
     if (!elScratchpadTextarea) return;
     setScratchpadSaveStatus("Saving...");
     clearTimeout(scratchpadSaveTimer);
     scratchpadSaveTimer = setTimeout(() => {
-      const text = elScratchpadTextarea?.value ?? "";
-      updateScratchpadStats(text);
-      try {
-        localStorage.setItem(getScratchpadLocalKey(), text);
-      } catch {
-      }
-      void host.storage.set(getScratchpadStorageKey(), text).then(() => setScratchpadSaveStatus("Saved")).catch(() => setScratchpadSaveStatus("Saved"));
-    }, 300);
+      flushScratchpadSave();
+    }, 1e3);
   }
   function insertIntoScratchpad(snippet) {
     if (!elScratchpadTextarea) return;
@@ -6414,6 +8408,7 @@ ${issue.body}
     }
   }
   function closeScratchpadModal() {
+    flushScratchpadSave();
     if (elScratchpadModalBackdrop) {
       elScratchpadModalBackdrop.classList.remove("active");
     }
@@ -6552,6 +8547,11 @@ ${issue.body}
     }, 300);
   }
   async function openNewIssueModal() {
+    if (isAllProjectsMode) {
+      await host.toast({ kind: "info", message: "Pick a specific repository to create an issue." });
+      openRepoPopover();
+      return;
+    }
     if (!currentRepo) {
       openRepoPopover();
       return;
@@ -6669,6 +8669,7 @@ ${issue.body}
   function setupDragAndDrop() {
     Object.keys(kanbanCardContainers).forEach((colId) => {
       const container = kanbanCardContainers[colId];
+      if (!container) return;
       container.addEventListener("dragover", (e) => {
         e.preventDefault();
         if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
@@ -6719,9 +8720,19 @@ ${issue.body}
         closeRepoPopover();
       }
     });
+    let searchDebounceTimer = null;
     elSearchInput.addEventListener("input", (e) => {
       searchQuery = e.target.value;
-      renderViews();
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        renderViews();
+      }, 150);
+    });
+    elSearchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        clearTimeout(searchDebounceTimer);
+        renderViews();
+      }
     });
     elBtnViewList?.addEventListener("click", () => {
       userLayoutPreference = "list";
@@ -6794,8 +8805,12 @@ ${issue.body}
       }
     });
     const refreshTasks = () => {
-      void fetchIssues();
-      void discoverWorkspaceRepositories();
+      if (isAllProjectsMode) {
+        void discoverWorkspaceRepositories().then(() => fetchAllProjectIssues(true));
+      } else {
+        void fetchIssues();
+        void discoverWorkspaceRepositories();
+      }
     };
     elBtnRefresh.addEventListener("click", refreshTasks);
     const elBtnArchiveToggle = document.getElementById("btnArchiveToggle");
@@ -6962,7 +8977,13 @@ ${issue.body}
     }
     if (elScratchpadTextarea) {
       elScratchpadTextarea.addEventListener("input", handleScratchpadInput);
+      elScratchpadTextarea.addEventListener("blur", flushScratchpadSave);
     }
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        flushScratchpadSave();
+      }
+    });
     if (elBtnScratchpadAddTheme) {
       const setThemePickerOpen = (open) => {
         if (!elScratchpadThemePopover) return;
@@ -7107,24 +9128,38 @@ ${issue.body}
       }
     });
     window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape" && activeIssue) {
+      if (e.key === "Escape") {
         const activeModal = document.querySelector(".modal-backdrop.active");
-        if (!activeModal) {
+        if (activeModal) {
+          if (activeModal === elScratchpadModalBackdrop || activeModal.id === "scratchpadModalBackdrop") {
+            flushScratchpadSave();
+            closeScratchpadModal();
+          } else if (activeModal === elPreflightBackdrop || activeModal.id === "preflightModalBackdrop") {
+            closePreflightModal();
+          } else if (activeModal === elNewIssueModalBackdrop || activeModal.id === "newIssueModalBackdrop") {
+            closeNewIssueModal();
+          } else {
+            activeModal.classList.remove("active");
+          }
+          return;
+        }
+        if (activeIssue) {
           closeDrawer();
         }
       }
     });
     if (elDrawerPrioritySelect) {
       elDrawerPrioritySelect.addEventListener("change", async () => {
-        if (!activeIssue || !currentRepo) return;
+        const priorityRepo = repoForIssue(activeIssue);
+        if (!activeIssue || !priorityRepo) return;
         const val = elDrawerPrioritySelect.value;
         const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
         activeIssue.labels = updatedLabels.map((name) => ({ name }));
-        if (currentRepo) issueCache.delete(currentRepo);
+        issueCache.delete(priorityRepo);
         renderDrawer(activeIssue);
         renderViews();
         try {
-          await githubRequest("PATCH", `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+          await githubRequest("PATCH", `/repos/${priorityRepo}/issues/${activeIssue.number}`, {
             labels: updatedLabels
           });
           await host.toast({ kind: "info", message: `Updated priority on #${activeIssue.number} to ${val}` });
@@ -7139,10 +9174,11 @@ ${issue.body}
         if (val === "none") {
           const filteredLabels = activeIssue.labels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.startsWith("status:"));
           activeIssue.labels = filteredLabels.map((name) => ({ name }));
-          if (currentRepo) issueCache.delete(currentRepo);
+          const statusRepo = repoForIssue(activeIssue);
+          if (statusRepo) issueCache.delete(statusRepo);
           renderViews();
           renderDrawer(activeIssue);
-          void githubRequest("PATCH", `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+          void githubRequest("PATCH", `/repos/${statusRepo}/issues/${activeIssue.number}`, {
             labels: filteredLabels
           });
         } else {
@@ -7153,15 +9189,16 @@ ${issue.body}
     });
     if (elDrawerComplexitySelect) {
       elDrawerComplexitySelect.addEventListener("change", async () => {
-        if (!activeIssue || !currentRepo) return;
+        const complexityRepo = repoForIssue(activeIssue);
+        if (!activeIssue || !complexityRepo) return;
         const val = elDrawerComplexitySelect.value;
         const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
         activeIssue.labels = updatedLabels.map((name) => ({ name }));
-        if (currentRepo) issueCache.delete(currentRepo);
+        issueCache.delete(complexityRepo);
         renderDrawer(activeIssue);
         renderViews();
         try {
-          await githubRequest("PATCH", `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+          await githubRequest("PATCH", `/repos/${complexityRepo}/issues/${activeIssue.number}`, {
             labels: updatedLabels
           });
           await host.toast({ kind: "info", message: `Updated complexity on #${activeIssue.number} to ${val}` });
@@ -7266,6 +9303,30 @@ ${issue.body}
         if (e.key === "Enter") elBtnAddQuestion.click();
       });
     }
+    if (elBtnAddIssueTest && elInputAddIssueTest) {
+      elBtnAddIssueTest.addEventListener("click", () => {
+        if (activeIssue && elInputAddIssueTest.value.trim()) {
+          const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddIssueTest.value, "issue");
+          elInputAddIssueTest.value = "";
+          void updateIssueBody(activeIssue, newBody);
+        }
+      });
+      elInputAddIssueTest.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") elBtnAddIssueTest.click();
+      });
+    }
+    if (elBtnAddBatchTest && elInputAddBatchTest) {
+      elBtnAddBatchTest.addEventListener("click", () => {
+        if (activeIssue && elInputAddBatchTest.value.trim()) {
+          const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddBatchTest.value, "batch");
+          elInputAddBatchTest.value = "";
+          void updateIssueBody(activeIssue, newBody);
+        }
+      });
+      elInputAddBatchTest.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") elBtnAddBatchTest.click();
+      });
+    }
     elBtnDrawerAttachComposer.addEventListener("click", async () => {
       if (!activeIssue) return;
       try {
@@ -7288,7 +9349,9 @@ ${issue.body}
       elPreflightWorktreeToggle.addEventListener("change", () => {
         const isChecked = elPreflightWorktreeToggle.checked;
         elPreflightWorktreeSection.style.display = isChecked ? "flex" : "none";
-        elBtnPreflightLaunch.textContent = isChecked ? "Launch Worktree & Agent" : "Start Agent Session (Current Workspace)";
+        const theme = activeIssue ? getIssueTheme(activeIssue) : "";
+        const existingThemeWorktree = theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue, void 0, currentProject?.id) : null;
+        elBtnPreflightLaunch.textContent = isChecked ? "Launch Worktree & Agent" : existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : "Start Agent Session (Current Workspace)";
         updatePreflightBrief();
       });
     }

@@ -6,12 +6,30 @@
 // test/shipped-parity.test.js).
 // ==========================================
 
+export function slugify(text: string, maxLen: number = 60): string {
+  return (text || '')
+    .toString()
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, maxLen);
+}
+
 export interface Subtask {
   id: string;
   lineIndex: number;
   text: string;
   completed: boolean;
   rawLine: string;
+}
+
+export interface TestItem {
+  text: string;
+  completed: boolean;
+  lineIndex: number;
+  scope: 'issue' | 'batch';
 }
 
 export interface Issue {
@@ -27,13 +45,93 @@ export interface Issue {
   created_at: string;
   subtasks: Subtask[];
   openQuestions?: Subtask[];
+  // Set on issues aggregated from multiple projects/repositories.
+  projectId?: string;
+  projectName?: string;
+  repo?: string;
+}
+
+export interface ProjectItem {
+  id: string;
+  name: string;
+  directory: string;
+  gitRepo: { owner: string; repo: string } | null;
+  linkedRepo: string | null;
+}
+
+export interface IssueGroup {
+  id: string;
+  title: string;
+  issues: Issue[];
+  count?: number;
 }
 
 const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
 
 const questionsSectionRegex = /^#{1,4}\s*(?:open\s+)?questions(?:\s*:)?/i;
+const testPlanIssueHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
+const testPlanBatchHeadingRegex = /^#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
 
 const headingRegex = /^#{1,4}\s+/;
+
+export function parseFriendlyTitle(
+  body: string | null | undefined,
+  defaultTitle?: string
+): { title: string; subtitle: string | null } {
+  if (!body || typeof body !== 'string') {
+    return { title: defaultTitle || '', subtitle: null };
+  }
+
+  const match = body.match(/(?:^|\r?\n)[ \t]*(?:#{1,4}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
+  if (match) {
+    let extracted = match[1].trim();
+    if (!extracted) {
+      const matchIndex = match.index ?? 0;
+      const remainder = body.slice(matchIndex + match[0].length);
+      const lines = remainder.split(/\r?\n/);
+      for (const rawLine of lines) {
+        const line = rawLine.trim();
+        if (!line) continue;
+        if (
+          line.startsWith('#') ||
+          /^\*\*(?:overview|description|details|context|background|about|tasks?|subtasks?|questions?):?\*\*/i.test(line) ||
+          /^[-*+]\s+/.test(line) ||
+          /^\d+\.\s+/.test(line)
+        ) {
+          break;
+        }
+        extracted = line;
+        break;
+      }
+    }
+
+    if (extracted) {
+      // Strip wrapping quotes or angle brackets if present
+      extracted = extracted.replace(/^<([^>]+)>$/, '$1').replace(/^["'](.*)["']$/, '$1').trim();
+
+      // Guard against unreplaced template placeholder
+      if (
+        extracted.toLowerCase() === '3-6 words plain english title' ||
+        extracted.toLowerCase() === '<3-6 words plain english title>'
+      ) {
+        return {
+          title: defaultTitle || '',
+          subtitle: null,
+        };
+      }
+
+      return {
+        title: extracted,
+        subtitle: defaultTitle || null,
+      };
+    }
+  }
+
+  return {
+    title: defaultTitle || '',
+    subtitle: null,
+  };
+}
 
 export function parseOpenQuestions(body: string): Subtask[] {
   if (!body) return [];
@@ -122,6 +220,30 @@ export function updateOpenQuestionInMarkdown(body: string, lineIndex: number, co
   return updateSubtaskInMarkdown(body, lineIndex, completed);
 }
 
+export function answerOpenQuestionInMarkdown(body: string | null | undefined, questionIndex: number, answerText: string): string {
+  if (!body) return '';
+  const cleanAnswer = (answerText || '').trim().replace(/\r?\n+/g, ' ');
+  const questions = parseOpenQuestions(body);
+  const unresolved = questions.filter((q) => !q.completed);
+  if (questionIndex < 0 || questionIndex >= unresolved.length) {
+    return body;
+  }
+  const target = unresolved[questionIndex];
+  const lines = body.split('\n');
+  const line = lines[target.lineIndex];
+  if (!line) return body;
+  const match = line.match(checklistRegex);
+  if (!match) return body;
+
+  const lineEnding = match[4].endsWith('\r') ? '\r' : '';
+  const questionContent = match[4]
+    .replace(/\r$/, '')
+    .replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, '')
+    .trimEnd();
+  lines[target.lineIndex] = `${match[1]}x${match[3]}${questionContent} *(Answer: ${cleanAnswer})*${lineEnding}`;
+  return lines.join('\n');
+}
+
 export function appendSubtaskToMarkdown(body: string, text: string): string {
   const cleanText = text.trim();
   if (!cleanText) return body;
@@ -177,6 +299,212 @@ export function serializeDraftQuestions(body: string, questionTexts: string[]): 
     return `${cleanBody}\n${questionsBlock}`;
   }
   return `${cleanBody}\n\n### Open Questions:\n\n${questionsBlock}`;
+}
+
+export function parseTestPlan(body: string | null | undefined): { issueTests: TestItem[]; batchTests: TestItem[] } {
+  const result: { issueTests: TestItem[]; batchTests: TestItem[] } = {
+    issueTests: [],
+    batchTests: [],
+  };
+  if (!body || typeof body !== 'string') return result;
+
+  const lines = body.split('\n');
+  let currentScope: 'issue' | 'batch' | null = null;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (headingRegex.test(line)) {
+      if (testPlanIssueHeadingRegex.test(line)) {
+        currentScope = 'issue';
+      } else if (testPlanBatchHeadingRegex.test(line)) {
+        currentScope = 'batch';
+      } else {
+        currentScope = null;
+      }
+      continue;
+    }
+
+    if (currentScope) {
+      const match = line.match(checklistRegex);
+      if (match) {
+        const item: TestItem = {
+          text: match[4].trim(),
+          completed: match[2].toLowerCase() === 'x',
+          lineIndex: i,
+          scope: currentScope,
+        };
+        if (currentScope === 'issue') {
+          result.issueTests.push(item);
+        } else {
+          result.batchTests.push(item);
+        }
+      }
+    }
+  }
+
+  return result;
+}
+
+export function updateTestItemInMarkdown(body: string, lineIndex: number, completed: boolean): string {
+  if (!body) return '';
+  return updateSubtaskInMarkdown(body, lineIndex, completed);
+}
+
+export function appendTestItemToMarkdown(body: string, text: string, scope: 'issue' | 'batch'): string {
+  const cleanText = (text || '').trim();
+  if (!cleanText) return body || '';
+
+  const header = scope === 'issue' ? '## Test Plan (Issue)' : '## Test Plan (Batch)';
+  const targetRegex = scope === 'issue' ? testPlanIssueHeadingRegex : testPlanBatchHeadingRegex;
+  const lineEnding = typeof body === 'string' && body.includes('\r\n') ? '\r' : '';
+
+  if (!body || typeof body !== 'string') {
+    return `${header}\n- [ ] ${cleanText}`;
+  }
+
+  const lines = body.split('\n');
+  let targetHeaderIndex = -1;
+  let nextHeaderIndex = -1;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (targetRegex.test(lines[i])) {
+      targetHeaderIndex = i;
+      for (let j = i + 1; j < lines.length; j++) {
+        if (/^#{1,6}\s+/.test(lines[j])) {
+          nextHeaderIndex = j;
+          break;
+        }
+      }
+      break;
+    }
+  }
+
+  if (targetHeaderIndex !== -1) {
+    const sectionEnd = nextHeaderIndex !== -1 ? nextHeaderIndex : lines.length;
+    let lastChecklistIndex = -1;
+    for (let i = targetHeaderIndex + 1; i < sectionEnd; i++) {
+      if (checklistRegex.test(lines[i])) {
+        lastChecklistIndex = i;
+      }
+    }
+
+    if (lastChecklistIndex !== -1) {
+      lines.splice(lastChecklistIndex + 1, 0, `- [ ] ${cleanText}${lineEnding}`);
+      return lines.join('\n');
+    }
+
+    // No existing checklist items in section: insert right after header
+    lines.splice(targetHeaderIndex + 1, 0, `- [ ] ${cleanText}${lineEnding}`);
+    return lines.join('\n');
+  }
+
+  return `${body.trimEnd()}\n\n${header}\n- [ ] ${cleanText}`;
+}
+
+export function serializeTestPlan(items: Array<{ text: string; completed?: boolean }>, scope: 'issue' | 'batch'): string {
+  const header = scope === 'issue' ? '## Test Plan (Issue)' : '## Test Plan (Batch)';
+  const cleanItems = (items || []).filter((item) => item && typeof item.text === 'string' && item.text.trim());
+  if (cleanItems.length === 0) {
+    return header;
+  }
+  const lines = cleanItems.map((item) => `- [${item.completed ? 'x' : ' '}] ${item.text.trim()}`);
+  return `${header}\n${lines.join('\n')}`;
+}
+
+export function getIssueBatch(issue: Issue | any): string | null {
+  if (!issue || !issue.labels || !Array.isArray(issue.labels) || issue.labels.length === 0) return null;
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l?.name || '').trim();
+    if (name.toLowerCase().startsWith('batch:')) {
+      const batchName = name.slice(6).trim();
+      if (batchName) return batchName;
+    }
+  }
+  return null;
+}
+
+export function isBatchReadyForReview(
+  batchName: string,
+  allIssues: Issue[]
+): { ready: boolean; total: number; inReview: number; outstandingIssues: number[] } {
+  const normalizedBatch = (batchName || '').trim().toLowerCase();
+  if (!normalizedBatch || !Array.isArray(allIssues)) {
+    return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
+  }
+
+  const seenNumbers = new Set<number>();
+  const batchIssues: Issue[] = [];
+
+  for (const issue of allIssues) {
+    if (!issue || typeof issue.number !== 'number') continue;
+    if (seenNumbers.has(issue.number)) continue;
+
+    // Check if issue belongs to this batch (supports multiple batch labels)
+    let belongsToBatch = false;
+    if (Array.isArray(issue.labels)) {
+      for (const l of issue.labels) {
+        const name = (typeof l === 'string' ? l : l?.name || '').trim();
+        if (name.toLowerCase().startsWith('batch:')) {
+          if (name.slice(6).trim().toLowerCase() === normalizedBatch) {
+            belongsToBatch = true;
+            break;
+          }
+        }
+      }
+    }
+
+    if (belongsToBatch) {
+      seenNumbers.add(issue.number);
+      batchIssues.push(issue);
+    }
+  }
+
+  const total = batchIssues.length;
+  if (total === 0) {
+    return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
+  }
+
+  let inReviewCount = 0;
+  const outstandingIssues: number[] = [];
+
+  for (const issue of batchIssues) {
+    const isClosed =
+      (typeof issue.state === 'string' && issue.state.toLowerCase() === 'closed') ||
+      (issue as any).state_reason === 'completed' ||
+      (issue as any).state_reason === 'not_planned';
+
+    const labelNames = (issue.labels || []).map((l: any) => (typeof l === 'string' ? l : l?.name || '').toLowerCase());
+    const isDone =
+      isClosed ||
+      labelNames.includes('status:done') ||
+      labelNames.includes('status:closed') ||
+      labelNames.includes('done') ||
+      labelNames.includes('closed') ||
+      (issue as any).column === 'done' ||
+      (issue as any).status === 'done';
+
+    const isInReview =
+      !isDone &&
+      (labelNames.includes('status:in-review') ||
+        labelNames.includes('in-review') ||
+        (issue as any).column === 'in-review' ||
+        (issue as any).status === 'in-review');
+
+    if (isInReview) {
+      inReviewCount++;
+    } else if (!isDone) {
+      outstandingIssues.push(issue.number);
+    }
+  }
+
+  const ready = total > 0 && outstandingIssues.length === 0;
+
+  return {
+    ready,
+    total,
+    inReview: inReviewCount,
+    outstandingIssues,
+  };
 }
 
 export function isVagueIdea(issue: { title?: string; body?: string; subtasks?: any[]; openQuestions?: any[]; labels?: any[] }): boolean {
@@ -312,6 +640,216 @@ export function parseScratchPadThemes(text: string) {
   };
 }
 
+export function getIssuePrimaryTag(issue: Issue): string {
+  if (!issue || !issue.labels) return 'task';
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l.name || '').trim();
+    if (
+      name &&
+      !name.startsWith('status:') &&
+      !name.startsWith('priority:') &&
+      !name.startsWith('complexity:') &&
+      !name.startsWith('theme:') &&
+      !['archived', 'archive'].includes(name.toLowerCase())
+    ) {
+      return name;
+    }
+  }
+  for (const l of issue.labels) {
+    const name = (typeof l === 'string' ? l : l.name || '').trim();
+    if (name.startsWith('theme:')) {
+      return name.replace('theme:', '');
+    }
+  }
+  return 'task';
+}
+
+export function buildWorktreeBranchName(options: {
+  issue: Issue;
+  mode?: 'tag' | 'issue' | 'theme';
+  customTag?: string;
+  theme?: string;
+  batch?: string;
+}): string {
+  const mode = options.mode || 'issue';
+  if (mode === 'tag') {
+    const tag = options.customTag || getIssuePrimaryTag(options.issue);
+    return `worktree-tag-${slugify(tag || 'task')}`.slice(0, 80);
+  }
+  if (mode === 'theme') {
+    const rawTheme = options.theme || getIssueTheme(options.issue);
+    const theme = rawTheme && rawTheme !== 'No Theme' ? rawTheme : 'task';
+    const batch = options.batch || getIssueBatch(options.issue);
+    const themeSlug = slugify(theme, 30);
+    if (batch) {
+      return `${themeSlug}-${slugify(batch, 30)}`.slice(0, 80);
+    }
+    const issueToken = `issue-${options.issue?.number}`;
+    const prefix = `${themeSlug}-${issueToken}-`;
+    const remaining = Math.max(10, 80 - prefix.length);
+    const branchSlug = slugify(options.issue?.title || 'task', remaining);
+    return `${prefix}${branchSlug}`.slice(0, 80);
+  }
+  const branchSlug = slugify(options.issue?.title || 'task');
+  return `issue-${options.issue?.number}-${branchSlug}`.slice(0, 80);
+}
+
+export function findThemeWorktree(
+  worktrees: any[],
+  themeOrIssue: string | Issue | any,
+  batch?: string | null,
+  projectId?: string | null
+): any | null {
+  if (!Array.isArray(worktrees) || worktrees.length === 0) return null;
+
+  let theme: string | null = null;
+  let issueBatch: string | null = batch || null;
+
+  if (typeof themeOrIssue === 'string') {
+    theme = themeOrIssue.trim();
+  } else if (themeOrIssue && typeof themeOrIssue === 'object') {
+    theme = getIssueTheme(themeOrIssue);
+    if (!issueBatch) {
+      issueBatch = getIssueBatch(themeOrIssue);
+    }
+  }
+
+  if (!theme || theme === 'No Theme') return null;
+
+  const themeSlug = slugify(theme);
+  const themeLower = theme.toLowerCase();
+  const batchSlug = issueBatch ? slugify(issueBatch) : null;
+  const batchLower = issueBatch ? issueBatch.toLowerCase() : null;
+
+  const themeBatchSlug = batchSlug ? `${themeSlug}-${batchSlug}` : null;
+  const themeBatchLower = batchLower ? `${themeLower}-${batchLower}` : null;
+
+  const getCandidateNames = (wt: any): string[] => {
+    if (!wt) return [];
+    if (typeof wt === 'string') return [wt];
+    const dirBasename = typeof wt.directory === 'string'
+      ? wt.directory.split('/').filter(Boolean).pop() || ''
+      : '';
+    const cleanBranch = typeof wt.branch === 'string'
+      ? wt.branch.replace(/^refs\/heads\//, '').replace(/^heads\//, '').replace(/^origin\//, '')
+      : '';
+    return [
+      wt.name,
+      wt.branch,
+      cleanBranch,
+      dirBasename,
+    ].filter(Boolean);
+  };
+
+  // 1. If batch is present, try matching <theme>-<batch> first
+  if (themeBatchSlug || themeBatchLower) {
+    for (const wt of worktrees) {
+      if (!wt) continue;
+      if (projectId && wt.projectId && wt.projectId !== projectId) continue;
+      const names = getCandidateNames(wt);
+      for (const n of names) {
+        const nStr = String(n).trim();
+        const nSlug = slugify(nStr);
+        const nLower = nStr.toLowerCase();
+        if (
+          (themeBatchSlug && nSlug === themeBatchSlug) ||
+          (themeBatchLower && nLower === themeBatchLower) ||
+          (themeBatchSlug && (nSlug === `worktree-tag-${themeBatchSlug}` || nSlug === `theme-${themeBatchSlug}`)) ||
+          (themeBatchLower && (nLower === `worktree-tag-${themeBatchLower}` || nLower === `theme-${themeBatchLower}`))
+        ) {
+          return wt;
+        }
+      }
+    }
+  }
+
+  // 2. Match <theme>
+  for (const wt of worktrees) {
+    if (!wt) continue;
+    if (projectId && wt.projectId && wt.projectId !== projectId) continue;
+    const names = getCandidateNames(wt);
+    for (const n of names) {
+      const nStr = String(n).trim();
+      const nSlug = slugify(nStr);
+      const nLower = nStr.toLowerCase();
+      if (
+        nSlug === themeSlug ||
+        nLower === themeLower ||
+        nSlug === `worktree-tag-${themeSlug}` ||
+        nSlug === `theme-${themeSlug}` ||
+        nLower === `theme:${themeLower}` ||
+        nLower === `worktree-tag-${themeLower}`
+      ) {
+        return wt;
+      }
+    }
+  }
+
+  return null;
+}
+
+export function buildLaunchSessionPayload(options: {
+  issue: Issue;
+  projectId: string;
+  useWorktree?: boolean;
+  branchName?: string;
+  baseBranch?: string;
+  prompt?: string;
+  worktrees?: any[];
+  existingWorktree?: any;
+}): any {
+  const { issue, projectId, useWorktree = false, branchName, baseBranch, prompt } = options;
+
+  let existingWorktree = options.existingWorktree;
+  if (!existingWorktree && options.worktrees && options.worktrees.length > 0) {
+    existingWorktree = findThemeWorktree(options.worktrees, issue, undefined, projectId);
+  }
+
+  let worktreePayload: any = false;
+  let directory: string | undefined = undefined;
+
+  if (existingWorktree) {
+    worktreePayload = {
+      kind: 'existing',
+      name: existingWorktree.name || existingWorktree.branch || '',
+      directory: existingWorktree.directory || '',
+    };
+    if (existingWorktree.directory) {
+      directory = existingWorktree.directory;
+    }
+  } else if (useWorktree) {
+    const cleanBranch = branchName
+      ? branchName.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 80)
+      : undefined;
+    if (cleanBranch) {
+      worktreePayload = { kind: 'new', name: cleanBranch, baseBranch };
+    }
+  }
+
+  const cleanBranch = branchName
+    ? branchName.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 80)
+    : undefined;
+
+  const branchForData = existingWorktree
+    ? (existingWorktree.branch || existingWorktree.name)
+    : (useWorktree && cleanBranch ? cleanBranch : undefined);
+
+  return {
+    projectId,
+    worktree: worktreePayload,
+    ...(directory ? { directory } : {}),
+    providerId: 'github-task-board',
+    id: String(issue.number),
+    title: `#${issue.number} ${issue.title || ''}`.slice(0, 150),
+    url: (issue.html_url || '').slice(0, 1000),
+    text: prompt || '',
+    data: {
+      issueNumber: issue.number,
+      ...(branchForData ? { branch: branchForData } : {}),
+    },
+  };
+}
+
 export const DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
 
 Input Objective / User Mind-Dump:
@@ -322,6 +860,7 @@ Instructions for the Agent:
 2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture.
 3. Every generated issue must follow this exact structure tailored for the OpenChamber Task Board:
    - Title: Conventional commit format (e.g. "feat(auth): add remember-me token refresh" or "fix(ui): prevent horizontal overflow in mobile table").
+   - Friendly Title: Start the issue body with "### Friendly Title: <3-6 words plain English title>" before the Overview.
    - Overview: Clear description of the problem, motivation, or user value.
    - Files Impacted: List candidate file paths grounded in the codebase.
    - Actionable Subtasks Checklist: Mandatory interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
@@ -453,6 +992,65 @@ export function buildMultiIssueAttachPayload(issues: Issue[], repo: string = '')
       isMulti: true,
     },
   };
+}
+
+export function mergeSessionItems(
+  existingItems: any[] | undefined | null,
+  newItems: any[] | any
+): any[] {
+  const result: any[] = Array.isArray(existingItems) ? [...existingItems] : [];
+  const incoming = Array.isArray(newItems) ? newItems : (newItems ? [newItems] : []);
+
+  for (const item of incoming) {
+    if (!item) continue;
+    const itemId = item.id ? String(item.id) : null;
+    const itemNum = item.data?.issueNumber != null
+      ? Number(item.data.issueNumber)
+      : (itemId && /^\d+$/.test(itemId) ? parseInt(itemId, 10) : null);
+
+    const existingIdx = result.findIndex((existing) => {
+      if (!existing) return false;
+      if (itemId && existing.id && String(existing.id) === itemId) return true;
+      if (
+        itemNum != null &&
+        ((existing.data?.issueNumber != null && Number(existing.data.issueNumber) === itemNum) ||
+          (existing.id && String(existing.id) === String(itemNum)))
+      ) {
+        return true;
+      }
+      return false;
+    });
+
+    if (existingIdx >= 0) {
+      const existing = result[existingIdx];
+      const mergedData = { ...(existing.data || {}), ...(item.data || {}) };
+      if (Array.isArray(existing.data?.issueNumbers) || Array.isArray(item.data?.issueNumbers)) {
+        const combined = new Set([
+          ...(Array.isArray(existing.data?.issueNumbers) ? existing.data.issueNumbers : []),
+          ...(Array.isArray(item.data?.issueNumbers) ? item.data.issueNumbers : []),
+        ]);
+        mergedData.issueNumbers = Array.from(combined);
+      }
+      result[existingIdx] = { ...existing, ...item, data: mergedData };
+    } else {
+      result.push(item);
+    }
+  }
+
+  return result;
+}
+
+export function attachIssueToSession(session: any, issueOrPayload: Issue | any): any {
+  if (!session) return session;
+  const payload =
+    issueOrPayload && typeof issueOrPayload === 'object' && 'providerId' in issueOrPayload
+      ? issueOrPayload
+      : issueOrPayload && typeof issueOrPayload === 'object' && 'number' in issueOrPayload
+      ? buildIssueAttachPayload(issueOrPayload)
+      : issueOrPayload;
+
+  session.items = mergeSessionItems(session.items, payload);
+  return session;
 }
 
 export function buildConsolidatedIssuePrompt(selectedIssues: Issue[]): string {
@@ -612,6 +1210,17 @@ export function removeDependencyFromMarkdown(body: string | null | undefined, bl
   }
 
   return newLines.join('\n').trim();
+}
+
+export function renderBlockerChip(target: { number: number } | number, blocker: number): string {
+  const targetNum = typeof target === 'number' ? target : target.number;
+  return `<span class="graph-badge-blocked-item">#${blocker} <button class="btn-remove-blocker" data-target="${targetNum}" data-blocker="${blocker}" title="Remove dependency">&times;</button></span>`;
+}
+
+export function renderBlockerChips(target: { number: number } | number, blockers: number[]): string {
+  if (!blockers || blockers.length === 0) return '';
+  const targetNum = typeof target === 'number' ? target : target.number;
+  return blockers.map((b) => renderBlockerChip(targetNum, b)).join(' ');
 }
 
 export function extractIssueReferences(body: string | null | undefined, selfNumber: number): number[] {
@@ -918,4 +1527,539 @@ export function detectCycle(issues: Issue[], newBlockerNum: number, targetNum: n
   }
   return false;
 }
+
+export function buildSessionIndex(sessions: any[]): Map<number, any> {
+  const index = new Map<number, any>();
+  if (!sessions || !Array.isArray(sessions)) return index;
+
+  const activityPriority = (act: string): number => {
+    if (act === 'running') return 4;
+    if (act === 'waiting-permission' || act === 'waiting-question' || (typeof act === 'string' && act.startsWith('waiting'))) return 3;
+    if (act === 'idle') return 2;
+    return 1;
+  };
+
+  const register = (issueNum: number, session: any) => {
+    if (!Number.isFinite(issueNum) || issueNum <= 0) return;
+    const existing = index.get(issueNum);
+    if (!existing) {
+      index.set(issueNum, session);
+    } else {
+      const existingPrio = activityPriority(existing.activity || '');
+      const newPrio = activityPriority(session.activity || '');
+      if (newPrio > existingPrio) {
+        index.set(issueNum, session);
+      }
+    }
+  };
+
+  for (const s of sessions) {
+    if (!s) continue;
+    if (Array.isArray(s.items)) {
+      for (const item of s.items) {
+        if (!item) continue;
+        if (item.id && /^\d+$/.test(item.id)) {
+          register(parseInt(item.id, 10), s);
+        }
+        if (item.data?.issueNumber != null) {
+          register(parseInt(String(item.data.issueNumber), 10), s);
+        }
+        if (Array.isArray(item.data?.issueNumbers)) {
+          for (const n of item.data.issueNumbers) {
+            register(parseInt(String(n), 10), s);
+          }
+        }
+      }
+    }
+    if (s.data?.issueNumber != null) {
+      register(parseInt(String(s.data.issueNumber), 10), s);
+    }
+    if (Array.isArray(s.data?.issueNumbers)) {
+      for (const n of s.data.issueNumbers) {
+        register(parseInt(String(n), 10), s);
+      }
+    }
+    if (typeof s.title === 'string') {
+      const matches = s.title.matchAll(/#(\d+)(?=[^0-9]|$)/g);
+      for (const m of matches) {
+        register(parseInt(m[1], 10), s);
+      }
+    }
+    const wtStrings: string[] = [];
+    if (typeof s.worktree === 'string') {
+      wtStrings.push(s.worktree);
+    } else if (s.worktree && typeof s.worktree === 'object') {
+      if (s.worktree.name) wtStrings.push(String(s.worktree.name));
+      if (s.worktree.branch) wtStrings.push(String(s.worktree.branch));
+      if (s.worktree.directory) wtStrings.push(String(s.worktree.directory));
+    }
+    for (const wtStr of wtStrings) {
+      const wtMatches = wtStr.matchAll(/(?:^|[^a-zA-Z0-9])issue-(\d+)(?=[^0-9]|$)/gi);
+      for (const m of wtMatches) {
+        register(parseInt(m[1], 10), s);
+      }
+    }
+  }
+
+  return index;
+}
+
+export function scopeDoneIssues(
+  doneIssues: any[],
+  limit: number = 25,
+  showAll: boolean = false
+): { visible: any[]; total: number; remaining: number } {
+  if (!doneIssues || !Array.isArray(doneIssues)) {
+    return { visible: [], total: 0, remaining: 0 };
+  }
+  const total = doneIssues.length;
+  if (showAll || total <= limit) {
+    return { visible: doneIssues, total, remaining: 0 };
+  }
+  return {
+    visible: doneIssues.slice(0, limit),
+    total,
+    remaining: total - limit,
+  };
+}
+
+export function normalizeGithubIssues(rawItems: any[]): Issue[] {
+  if (!rawItems || !Array.isArray(rawItems)) return [];
+  return rawItems
+    .filter((item: any) => item && !item.pull_request)
+    .map((item: any) => ({
+      number: item.number,
+      title: item.title || '',
+      body: item.body || '',
+      state: item.state || 'open',
+      html_url: item.html_url || '',
+      labels: item.labels || [],
+      user: item.user,
+      assignees: item.assignees || [],
+      comments: item.comments || 0,
+      created_at: item.created_at || '',
+      subtasks: parseSubtasks(item.body || ''),
+      openQuestions: parseOpenQuestions(item.body || ''),
+    }));
+}
+
+export function mergeIssuePages(existing: Issue[], incoming: Issue[]): Issue[] {
+  const map = new Map<number, Issue>();
+  if (Array.isArray(existing)) {
+    for (const issue of existing) {
+      if (issue && Number.isFinite(issue.number)) {
+        map.set(issue.number, issue);
+      }
+    }
+  }
+  if (Array.isArray(incoming)) {
+    for (const issue of incoming) {
+      if (issue && Number.isFinite(issue.number)) {
+        map.set(issue.number, issue);
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => b.number - a.number);
+}
+
+// ==========================================
+// Multi-Project Aggregation & Grouping
+// ==========================================
+
+export function getProjectRepoFullName(project: ProjectItem | null | undefined): string | null {
+  if (!project) return null;
+  const linked = typeof project.linkedRepo === 'string' ? project.linkedRepo.trim() : '';
+  if (linked && linked.includes('/')) return linked;
+  if (project.gitRepo && project.gitRepo.owner && project.gitRepo.repo) {
+    return `${project.gitRepo.owner}/${project.gitRepo.repo}`;
+  }
+  return null;
+}
+
+export function getIssueRepoFullName(issue: Issue | null | undefined): string | null {
+  if (!issue) return null;
+  return parseRepoFullName(issue.repo) || parseRepoFullName(issue.html_url) || null;
+}
+
+// Consolidates issues fetched from multiple repositories into one deduplicated
+// collection. Dedup key is repo + issue number, because issue numbers are only
+// unique within a repository. Each issue is tagged with its origin so the
+// project grouping view can cluster it later.
+export function aggregateProjectIssues(sources: Array<{ projectId: string; projectName: string; repo: string; issues: Issue[] }>): Issue[] {
+  const byKey = new Map<string, Issue>();
+  const list = Array.isArray(sources) ? sources : [];
+  for (const source of list) {
+    if (!source) continue;
+    const repo = typeof source.repo === 'string' ? source.repo.trim() : '';
+    const incoming = Array.isArray(source.issues) ? source.issues : [];
+    for (const issue of incoming) {
+      if (!issue || !Number.isFinite(issue.number)) continue;
+      const key = `${repo.toLowerCase()}#${issue.number}`;
+      byKey.set(key, {
+        ...issue,
+        projectId: source.projectId,
+        projectName: source.projectName,
+        repo: issue.repo || repo,
+      });
+    }
+  }
+  return Array.from(byKey.values());
+}
+
+// Clusters issues by their tagged project (projectId/projectName) or by the
+// repository they came from. Projects without issues are omitted so the board
+// shows only clean, non-empty groups, each with its issue count.
+export function groupIssuesByProject(issues: Issue[], projects: ProjectItem[]): IssueGroup[] {
+  const list = Array.isArray(issues) ? issues.filter(Boolean) : [];
+  const projectList = Array.isArray(projects) ? projects.filter(Boolean) : [];
+
+  const byId = new Map<string, ProjectItem>();
+  const byRepo = new Map<string, ProjectItem>();
+  const projectGroups = new Map<string, IssueGroup>();
+
+  for (const project of projectList) {
+    if (project.id) {
+      byId.set(project.id, project);
+      projectGroups.set(project.id, { id: project.id, title: project.name || project.id, issues: [], count: 0 });
+    }
+    const repo = getProjectRepoFullName(project);
+    if (repo) byRepo.set(repo.toLowerCase(), project);
+  }
+
+  const unmatchedGroups = new Map<string, IssueGroup>();
+
+  for (const issue of list) {
+    if (!issue || !Number.isFinite(issue.number)) continue;
+
+    let target: IssueGroup | undefined;
+    if (issue.projectId && byId.has(issue.projectId)) {
+      target = projectGroups.get(issue.projectId);
+    }
+    if (!target) {
+      const repo = getIssueRepoFullName(issue);
+      const project = repo ? byRepo.get(repo.toLowerCase()) : undefined;
+      if (project) target = projectGroups.get(project.id);
+    }
+    if (!target) {
+      const label = (typeof issue.projectName === 'string' && issue.projectName.trim())
+        || getIssueRepoFullName(issue)
+        || 'Unknown Project';
+      if (!unmatchedGroups.has(label)) {
+        unmatchedGroups.set(label, { id: `unmatched:${label}`, title: label, issues: [], count: 0 });
+      }
+      target = unmatchedGroups.get(label);
+    }
+    target!.issues.push(issue);
+  }
+
+  const result: IssueGroup[] = [];
+  for (const project of projectList) {
+    const group = project.id ? projectGroups.get(project.id) : undefined;
+    if (group && group.issues.length > 0) {
+      group.count = group.issues.length;
+      result.push(group);
+    }
+  }
+  for (const group of unmatchedGroups.values()) {
+    if (group.issues.length > 0) {
+      group.count = group.issues.length;
+      result.push(group);
+    }
+  }
+  return result;
+}
+
+export interface IssueCacheEntry {
+  timestamp: number;
+  issues: Issue[];
+}
+
+// TTL cache read used by both single-repo and all-projects issue fetching so a
+// refresh inside the window costs zero GitHub API requests (rate-limit friendly).
+export function readCachedIssueCollection(
+  cache: Map<string, IssueCacheEntry>,
+  key: string,
+  ttlMs: number = 60000,
+  now: number = Date.now()
+): Issue[] | null {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (now - entry.timestamp >= ttlMs) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.issues;
+}
+
+// ==========================================
+// Repo-Aware Session Attribution
+// ==========================================
+
+// Extracts owner/repo from a GitHub URL or a plain "owner/repo" string.
+export function parseRepoFullName(value: string | null | undefined): string | null {
+  if (!value || typeof value !== 'string') return null;
+  const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(value);
+  if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, '')}`;
+  const cleaned = value.trim().replace(/\.git$/, '');
+  if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+  return null;
+}
+
+// The repository a session chip/attach item belongs to, from an explicit repo
+// field or the item's URL. Returns null when the origin cannot be determined.
+export function getSessionIssueRepo(item: any): string | null {
+  if (!item) return null;
+  const explicit = item.repo ?? item.projectRepo ?? item.data?.repo;
+  const fromExplicit = parseRepoFullName(explicit);
+  if (fromExplicit) return fromExplicit;
+  return parseRepoFullName(item.html_url) || parseRepoFullName(item.url);
+}
+
+// A repo-qualified session key. Only produces a key when the repo is known,
+// because issue numbers are only unique within a repository.
+export function issueRepoKey(issue: Issue | null | undefined): string | null {
+  if (!issue || !Number.isFinite(issue.number)) return null;
+  const repo = getIssueRepoFullName(issue);
+  if (!repo) return null;
+  return `${repo.toLowerCase()}#${issue.number}`;
+}
+
+// Every repo-qualified (repo, issue number) pair a session is attached to.
+export function sessionRepoKeys(session: any): string[] {
+  const keys = new Set<string>();
+  if (!session) return [];
+  const items = Array.isArray(session.items) ? session.items : [];
+  for (const item of items) {
+    if (!item) continue;
+    const repo = getSessionIssueRepo(item);
+    if (!repo) continue;
+    const numbers = new Set<number>();
+    if (item.data?.issueNumber != null) numbers.add(Number(item.data.issueNumber));
+    if (Array.isArray(item.data?.issueNumbers)) {
+      for (const n of item.data.issueNumbers) numbers.add(Number(n));
+    }
+    if (item.id && /^\d+$/.test(String(item.id))) numbers.add(parseInt(String(item.id), 10));
+    for (const n of numbers) {
+      if (Number.isFinite(n) && n > 0) keys.add(`${repo.toLowerCase()}#${n}`);
+    }
+  }
+  return Array.from(keys);
+}
+
+// Repo-aware session index. A session only registers a (repo, number) key when
+// the repo is known, so a session from repo A can never bind to repo B's #N.
+export function buildSessionIndexByRepo(sessions: any[]): Map<string, any> {
+  const index = new Map<string, any>();
+  if (!sessions || !Array.isArray(sessions)) return index;
+
+  const activityPriority = (act: string): number => {
+    if (act === 'running') return 4;
+    if (act === 'waiting-permission' || act === 'waiting-question' || (typeof act === 'string' && act.startsWith('waiting'))) return 3;
+    if (act === 'idle') return 2;
+    return 1;
+  };
+
+  for (const session of sessions) {
+    if (!session) continue;
+    for (const key of sessionRepoKeys(session)) {
+      const existing = index.get(key);
+      if (!existing || activityPriority(session.activity || '') > activityPriority(existing.activity || '')) {
+        index.set(key, session);
+      }
+    }
+  }
+  return index;
+}
+
+export function findSessionForIssueByRepo(index: Map<string, any> | null | undefined, issue: Issue | null | undefined): any | null {
+  if (!index || !issue) return null;
+  const key = issueRepoKey(issue);
+  if (!key) return null;
+  return index.get(key) || null;
+}
+
+// ==========================================
+// Workspace Root Resolution & Rate-Limit Helpers
+// ==========================================
+
+export interface WorkspaceRootResolution {
+  project: ProjectItem | null;
+  /** True only when a project is registered with directory exactly /workspace. */
+  pinned: boolean;
+  reason: 'exact' | 'named' | 'missing';
+}
+
+// Deterministically resolves the project that represents the /workspace root.
+// Never silently falls back to an arbitrary shortest directory: if no project
+// is registered at /workspace we report `missing` (or `named` for a project
+// explicitly called "workspace"), so the caller can warn the operator.
+export function resolveWorkspaceRootProject(projects: ProjectItem[] | null | undefined): WorkspaceRootResolution {
+  const list = Array.isArray(projects) ? projects.filter(Boolean) : [];
+
+  const exact = list.find((p) => p.directory && p.directory.replace(/\/+$/, '') === '/workspace');
+  if (exact) return { project: exact, pinned: true, reason: 'exact' };
+
+  const named = list.find((p) => {
+    const name = (p.name || '').trim().toLowerCase();
+    const id = (p.id || '').trim().toLowerCase();
+    const basename = p.directory ? p.directory.replace(/\/+$/, '').split('/').filter(Boolean).pop() || '' : '';
+    return name === 'workspace' || id === 'workspace' || basename === 'workspace';
+  });
+  if (named) return { project: named, pinned: false, reason: 'named' };
+
+  return { project: null, pinned: false, reason: 'missing' };
+}
+
+// Parses Retry-After (delay-seconds or HTTP-date) into milliseconds.
+export function parseRetryAfterMs(headers: Record<string, string> | null | undefined, now: number = Date.now()): number {
+  if (!headers) return 0;
+  const raw = headers['retry-after'] ?? headers['Retry-After'];
+  if (raw === undefined || raw === null || raw === '') return 0;
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds) && seconds >= 0) return Math.round(seconds * 1000);
+  const date = Date.parse(String(raw));
+  if (!Number.isNaN(date)) return Math.max(0, date - now);
+  return 0;
+}
+
+// Distinguishes a GitHub secondary/primary rate limit from a real auth failure
+// so callers can back off instead of showing the authentication banner.
+export function isSecondaryRateLimit(
+  status: number,
+  headers?: Record<string, string> | null,
+  body?: string | null
+): boolean {
+  if (status !== 403 && status !== 429) return false;
+  const retryAfter = headers?.['retry-after'] ?? headers?.['Retry-After'];
+  if (retryAfter !== undefined && retryAfter !== null && retryAfter !== '') return true;
+  const remaining = headers?.['x-ratelimit-remaining'] ?? headers?.['X-RateLimit-Remaining'];
+  if (remaining !== undefined && Number(remaining) === 0) return true;
+  const text = typeof body === 'string' ? body.toLowerCase() : '';
+  return (
+    text.includes('secondary rate limit') ||
+    text.includes('abuse detection') ||
+    text.includes('rate limit') ||
+    text.includes('api rate limit exceeded')
+  );
+}
+
+// Exponential backoff, clamped. A server-provided Retry-After always wins.
+export function computeBackoffMs(attempt: number, retryAfterMs: number = 0, baseMs: number = 1000, maxMs: number = 60000): number {
+  if (retryAfterMs > 0) return Math.min(retryAfterMs, maxMs);
+  const exp = baseMs * Math.pow(2, Math.max(0, attempt));
+  return Math.min(maxMs, Math.max(baseMs, exp));
+}
+
+export interface RetryWithBackoffOptions {
+  maxAttempts?: number;
+  baseMs?: number;
+  maxMs?: number;
+  isRetryable?: (err: any) => boolean;
+  getRetryAfterMs?: (err: any) => number;
+  sleep?: (ms: number) => Promise<void>;
+  onRetry?: (attempt: number, delayMs: number, err: any) => void;
+}
+
+export async function retryWithBackoff<T>(
+  worker: (attempt: number) => Promise<T>,
+  options: RetryWithBackoffOptions = {}
+): Promise<T> {
+  const maxAttempts = Math.max(1, options.maxAttempts ?? 3);
+  const baseMs = options.baseMs ?? 1000;
+  const maxMs = options.maxMs ?? 60000;
+  const isRetryable = options.isRetryable ?? (() => false);
+  const getRetryAfterMs = options.getRetryAfterMs ?? (() => 0);
+  const sleep = options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+
+  let lastErr: any;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await worker(attempt);
+    } catch (err) {
+      lastErr = err;
+      if (!isRetryable(err) || attempt === maxAttempts - 1) throw err;
+      const delay = computeBackoffMs(attempt, getRetryAfterMs(err), baseMs, maxMs);
+      options.onRetry?.(attempt, delay, err);
+      await sleep(delay);
+    }
+  }
+  throw lastErr;
+}
+
+// Issue list pages ask for GitHub's maximum of 100. A host that cannot carry
+// that much in one answer (older OpenChamber versions cut proxied answers off
+// at 256 000 characters) gets SMALL_ISSUE_PAGE_SIZE for that repo instead.
+export const FULL_ISSUE_PAGE_SIZE = 100;
+export const SMALL_ISSUE_PAGE_SIZE = 20;
+export const MAX_ISSUES_PER_REPO = 1000;
+
+export type IssuePageRequest = (method: 'GET', path: string) => Promise<any>;
+
+// A cut-off answer fails to parse; a newer host refuses it by code.
+export function isOversizedAnswer(err: any): boolean {
+  return err instanceof SyntaxError || err?.code === 'RESPONSE_TOO_LARGE';
+}
+
+// One page of a repo's issues at the page size `pageSizes` holds for that
+// repo. Only page 1 may switch to the small size: later page numbers count in
+// the size page 1 was read with.
+export async function fetchIssuePage(
+  repo: string,
+  page: number,
+  request: IssuePageRequest,
+  pageSizes: Map<string, number>,
+  onShrink?: (pageSize: number) => void,
+): Promise<{ items: any[]; pageSize: number }> {
+  const read = async (pageSize: number) => {
+    const raw = await request('GET', `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`);
+    return { items: Array.isArray(raw) ? raw : (raw?.items || []), pageSize };
+  };
+  const pageSize = pageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+  try {
+    return await read(pageSize);
+  } catch (err) {
+    if (page !== 1 || pageSize === SMALL_ISSUE_PAGE_SIZE || !isOversizedAnswer(err)) throw err;
+    pageSizes.set(repo, SMALL_ISSUE_PAGE_SIZE);
+    onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+    return read(SMALL_ISSUE_PAGE_SIZE);
+  }
+}
+
+export interface ConcurrencyResult<T, R> {
+  item: T;
+  status: 'fulfilled' | 'rejected';
+  value?: R;
+  reason?: any;
+}
+
+// Runs `worker` over `items` with at most `limit` promises in flight, returning
+// one settled result per item. Keeps multi-repo bursts within API limits.
+export async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  worker: (item: T, index: number) => Promise<R>
+): Promise<Array<ConcurrencyResult<T, R>>> {
+  const list = Array.isArray(items) ? items : [];
+  const results: Array<ConcurrencyResult<T, R>> = new Array(list.length);
+  const concurrency = Math.max(1, Math.min(Math.floor(limit) || 1, list.length || 1));
+  let cursor = 0;
+
+  const runner = async (): Promise<void> => {
+    while (true) {
+      const index = cursor++;
+      if (index >= list.length) return;
+      try {
+        results[index] = { item: list[index], status: 'fulfilled', value: await worker(list[index], index) };
+      } catch (reason) {
+        results[index] = { item: list[index], status: 'rejected', reason };
+      }
+    }
+  };
+
+  await Promise.all(Array.from({ length: concurrency }, () => runner()));
+  return results;
+}
+
+
+
 

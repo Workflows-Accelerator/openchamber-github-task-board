@@ -5,6 +5,10 @@ import {
   buildMultiIssueAttachPayload,
   buildConsolidatedIssuePrompt,
   updateSubtaskInMarkdown,
+  buildSessionIndex,
+  scopeDoneIssues,
+  mergeIssuePages,
+  normalizeGithubIssues,
 } from '../panel/core.ts';
 
 export function matchProjectByDirectory(projects, targetDir) {
@@ -89,6 +93,77 @@ test('session worktree matching handles object worktree without throwing s.workt
   assert.equal(matchSession(12)?.id, '1');
   assert.equal(matchSession(15)?.id, '3');
   assert.equal(matchSession(999), null);
+});
+
+test('buildSessionIndex maps sessions to issue numbers with O(1) lookups and priority handling', () => {
+  const sessions = [
+    { id: 's1', title: 'Task #12 bugfix', activity: 'idle', worktree: { name: 'issue-12-bugfix' } },
+    { id: 's2', title: 'Running Task #12', activity: 'running', worktree: 'issue-12-bugfix' },
+    { id: 's3', title: 'Session with items', activity: 'idle', items: [{ id: '42' }, { data: { issueNumbers: [50, 51] } }] },
+    { id: 's4', title: 'Multiple #100 and #101', activity: 'idle' },
+    { id: 's5', title: 'feat(#77_auth): login flow', activity: 'idle', worktree: 'user/issue-77_auth' },
+  ];
+
+  const index = buildSessionIndex(sessions);
+  // Running session s2 should override idle session s1 for issue 12
+  assert.equal(index.get(12)?.id, 's2');
+  assert.equal(index.get(42)?.id, 's3');
+  assert.equal(index.get(50)?.id, 's3');
+  assert.equal(index.get(51)?.id, 's3');
+  assert.equal(index.get(77)?.id, 's5');
+  assert.equal(index.get(100)?.id, 's4');
+  assert.equal(index.get(101)?.id, 's4');
+  assert.equal(index.get(999), undefined);
+});
+
+test('scopeDoneIssues caps initial completed issues when large and reveals all on opt-in', () => {
+  const dummyDone = Array.from({ length: 60 }, (_, i) => ({ number: i + 1, title: `Done task ${i + 1}` }));
+
+  const scoped = scopeDoneIssues(dummyDone, 25, false);
+  assert.equal(scoped.visible.length, 25);
+  assert.equal(scoped.total, 60);
+  assert.equal(scoped.remaining, 35);
+
+  const all = scopeDoneIssues(dummyDone, 25, true);
+  assert.equal(all.visible.length, 60);
+  assert.equal(all.total, 60);
+  assert.equal(all.remaining, 0);
+
+  const underLimit = scopeDoneIssues(dummyDone.slice(0, 10), 25, false);
+  assert.equal(underLimit.visible.length, 10);
+  assert.equal(underLimit.remaining, 0);
+});
+
+test('normalizeGithubIssues filters out pull requests and extracts subtasks and questions', () => {
+  const rawApiItems = [
+    { number: 1, title: 'Bug report', body: '### Tasks\n- [ ] Task 1', state: 'open' },
+    { number: 2, title: 'PR title', body: 'Fixes #1', state: 'open', pull_request: { url: 'https://...' } },
+    { number: 3, title: 'Feature', body: '### Open Questions:\n- [ ] Which auth?', state: 'open' },
+  ];
+
+  const normalized = normalizeGithubIssues(rawApiItems);
+  assert.equal(normalized.length, 2);
+  assert.equal(normalized[0].number, 1);
+  assert.equal(normalized[0].subtasks.length, 1);
+  assert.equal(normalized[1].number, 3);
+  assert.equal(normalized[1].openQuestions.length, 1);
+});
+
+test('mergeIssuePages merges multi-page issue batches replacing stale duplicates', () => {
+  const page1 = [
+    { number: 200, title: 'Page 1 task A', state: 'open', labels: [] },
+    { number: 150, title: 'Page 1 task B old', state: 'open', labels: [] },
+  ];
+  const page2 = [
+    { number: 150, title: 'Page 1 task B updated', state: 'closed', labels: [] },
+    { number: 100, title: 'Page 2 task C', state: 'open', labels: [] },
+  ];
+
+  const merged = mergeIssuePages(page1, page2);
+  assert.equal(merged.length, 3);
+  assert.deepEqual(merged.map((i) => i.number), [200, 150, 100]);
+  // Duplicate 150 from page2 (newer page/fetch) should replace stale duplicate
+  assert.equal(merged.find((i) => i.number === 150)?.title, 'Page 1 task B updated');
 });
 
 test('buildIssueAttachPayload constructs valid OpenChamber attach payload', () => {

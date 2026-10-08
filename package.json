@@ -1,6 +1,6 @@
 {
   "name": "openchamber-github-task-board",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Live Linear / Trello style Kanban board for GitHub Issues with attached OpenChamber sessions and git worktrees",
   "license": "MIT",

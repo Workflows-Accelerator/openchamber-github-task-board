@@ -48,3 +48,10 @@ test('resolveAiIssuePrompt falls back to default prompt when neither is configur
   assert.ok(resolved.includes('Actionable Subtasks Checklist'));
   assert.equal(containsEmoji(resolved), false);
 });
+
+test('DEFAULT_AI_ISSUE_PROMPT requires friendly title before overview', () => {
+  assert.ok(DEFAULT_AI_ISSUE_PROMPT.includes('### Friendly Title: <3-6 words plain English title>'));
+  const friendlyTitleIdx = DEFAULT_AI_ISSUE_PROMPT.indexOf('### Friendly Title: <3-6 words plain English title>');
+  const overviewIdx = DEFAULT_AI_ISSUE_PROMPT.indexOf('Overview:');
+  assert.ok(friendlyTitleIdx < overviewIdx, 'Friendly Title requirement must precede Overview');
+});

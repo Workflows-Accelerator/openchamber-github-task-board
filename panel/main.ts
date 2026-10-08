@@ -12,11 +12,26 @@ import {
   updateComplexityLabel,
   sortIssuesList,
   findRelatedIssues,
+  STATUS_DRAFT,
+  STATUS_BACKLOG,
+  STATUS_TODO,
+  STATUS_PLANNED,
+  STATUS_IN_PROGRESS,
+  STATUS_NEEDS_HUMAN,
+  STATUS_IN_REVIEW,
+  STATUS_DONE,
+  STATUS_LABELS,
+  STATUS_METADATA,
+  STATUS_COLUMNS,
+  StatusReconciler,
 } from './labels.js';
 import {
   parseGitHubRemoteUrl,
   parseGitRemoteFromConfig,
   extractGitHubTokenFromCredentials,
+  parseGitdirContent,
+  extractParentRepoRootFromGitdir,
+  resolveParentRemoteFromGitdir,
 } from './git.js';
 
 export {
@@ -37,6 +52,21 @@ export {
   parseGitHubRemoteUrl,
   parseGitRemoteFromConfig,
   extractGitHubTokenFromCredentials,
+  parseGitdirContent,
+  extractParentRepoRootFromGitdir,
+  resolveParentRemoteFromGitdir,
+  STATUS_DRAFT,
+  STATUS_BACKLOG,
+  STATUS_TODO,
+  STATUS_PLANNED,
+  STATUS_IN_PROGRESS,
+  STATUS_NEEDS_HUMAN,
+  STATUS_IN_REVIEW,
+  STATUS_DONE,
+  STATUS_LABELS,
+  STATUS_METADATA,
+  STATUS_COLUMNS,
+  StatusReconciler,
 };
 import type {
   Subtask,
@@ -59,6 +89,7 @@ import {
   parseSubtasks,
   updateSubtaskInMarkdown,
   updateOpenQuestionInMarkdown,
+  answerOpenQuestionInMarkdown,
   appendSubtaskToMarkdown,
   appendOpenQuestionToMarkdown,
   serializeDraftQuestions,
@@ -78,11 +109,68 @@ import {
   parseIssueDependencies,
   addDependencyToMarkdown,
   removeDependencyFromMarkdown,
+  renderBlockerChip,
+  renderBlockerChips,
   extractIssueReferences,
   buildDependencyGraph,
   calculateEdgePath,
   detectCycle,
+  buildSessionIndex,
+  scopeDoneIssues,
+  normalizeGithubIssues,
+  mergeIssuePages,
+  parseFriendlyTitle,
+  TestItem,
+  parseTestPlan,
+  updateTestItemInMarkdown,
+  appendTestItemToMarkdown,
+  serializeTestPlan,
+  getIssueBatch,
+  isBatchReadyForReview,
+  getIssuePrimaryTag,
+  buildWorktreeBranchName,
+  findThemeWorktree,
+  buildLaunchSessionPayload,
+  mergeSessionItems,
+  attachIssueToSession,
+  groupIssuesByProject,
+  aggregateProjectIssues,
+  readCachedIssueCollection,
+  getProjectRepoFullName,
+  buildSessionIndexByRepo,
+  findSessionForIssueByRepo,
+  resolveWorkspaceRootProject,
+  parseRetryAfterMs,
+  isSecondaryRateLimit,
+  retryWithBackoff,
+  fetchIssuePage,
+  FULL_ISSUE_PAGE_SIZE,
+  MAX_ISSUES_PER_REPO,
+  type IssuePageRequest,
+  mapWithConcurrency,
 } from './core.js';
+export type { TestItem };
+export {
+  buildSessionIndex,
+  scopeDoneIssues,
+  normalizeGithubIssues,
+  mergeIssuePages,
+  renderBlockerChip,
+  renderBlockerChips,
+  parseFriendlyTitle,
+  parseTestPlan,
+  updateTestItemInMarkdown,
+  appendTestItemToMarkdown,
+  serializeTestPlan,
+  getIssueBatch,
+  isBatchReadyForReview,
+  getIssuePrimaryTag,
+  buildWorktreeBranchName,
+  findThemeWorktree,
+  buildLaunchSessionPayload,
+  mergeSessionItems,
+  attachIssueToSession,
+};
 
 // ==========================================
 // State Store
@@ -94,30 +182,49 @@ let currentProject: ProjectItem | null = null;
 let currentDirectory: string = '';
 let currentRepo: string = '';
 let allProjects: ProjectItem[] = [];
+let isAllProjectsMode: boolean = false;
+interface ProjectRepoRef {
+  projectId: string;
+  projectName: string;
+  repo: string;
+}
+let allProjectsRepoRefs: ProjectRepoRef[] = [];
+const ALL_PROJECTS_CACHE_KEY = '__all_projects__';
+// Page size per repo for the issue list; see fetchIssuePage in core.ts.
+const issuePageSizes = new Map<string, number>();
+const MAX_CONCURRENT_REPO_FETCHES = 4;
+const RATE_LIMIT_MAX_ATTEMPTS = 3;
+let workspaceRootNoticeShown = false;
 let isDiscoveringRepos: boolean = false;
 let issues: Issue[] = [];
 let sessions: SessionInfo[] = [];
+let sessionIndex: Map<number, SessionInfo> = new Map();
+let sessionIndexByRepo: Map<string, SessionInfo> = new Map();
 let worktrees: any[] = [];
 let activeIssue: Issue | null = null;
 let searchQuery: string = '';
 let activeTab: TabId = 'all';
 let userSelectedTab: boolean = false;
 let showArchivedOnly: boolean = false;
+let showAllDoneIssues: boolean = false;
 let currentSort: 'newest' | 'oldest' | 'priority' | 'complexity' | 'subtasks' | 'title' = 'newest';
 let filterPriority: string = 'all';
 let filterTag: string = 'all';
-let currentGroupBy: 'theme' | 'priority' | 'none' | 'status' | 'tag' = 'theme';
+let currentGroupBy: 'theme' | 'priority' | 'none' | 'status' | 'tag' | 'project' = 'theme';
 let isFilterBarOpen: boolean = false;
 let selectedIssueNumbers = new Set<number>();
 let userLayoutPreference: 'auto' | 'list' | 'kanban' | 'graph' = 'auto';
 let graphSelectedTheme: string = 'all';
-let graphShowDone: boolean = true;
+let graphShowDone: boolean = false;
 let isDraggingEdge: boolean = false;
 let dragSourceNum: number | null = null;
 let currentGraph: DependencyGraph | null = null;
 let isWideScreen: boolean = false;
 let draggedIssueNumber: number | null = null;
 let isLoading: boolean = false;
+let currentRenderedLayout: 'list' | 'kanban' | 'graph' | null = null;
+let lastRateLimitRemaining: number | null = null;
+let activeStreamEpoch = 0;
 let collapsedGroupKeys = new Set<string>();
 
 export function toggleGroupCollapse(key: string): boolean {
@@ -222,9 +329,12 @@ const elKanbanViewContainer = document.getElementById('kanbanViewContainer') as 
 
 // Kanban column references
 const kanbanCardContainers: Record<ColumnId, HTMLDivElement> = {
+  'draft': document.getElementById('kCardsDraft') as HTMLDivElement,
   'backlog': document.getElementById('kCardsBacklog') as HTMLDivElement,
   'todo': document.getElementById('kCardsTodo') as HTMLDivElement,
+  'planned': document.getElementById('kCardsPlanned') as HTMLDivElement,
   'in-progress': document.getElementById('kCardsProgress') as HTMLDivElement,
+  'needs-human': document.getElementById('kCardsNeedsHuman') as HTMLDivElement,
   'in-review': document.getElementById('kCardsReview') as HTMLDivElement,
   'done': document.getElementById('kCardsDone') as HTMLDivElement,
 };
@@ -265,6 +375,17 @@ const elDrawerQuestionsContainer = document.getElementById('drawerQuestionsConta
 const elInputAddQuestion = document.getElementById('inputAddQuestion') as HTMLInputElement | null;
 const elBtnAddQuestion = document.getElementById('btnAddQuestion') as HTMLButtonElement | null;
 
+// Test plan elements
+const elIssueTestsProgressText = document.getElementById('issueTestsProgressText') as HTMLSpanElement | null;
+const elDrawerIssueTestsContainer = document.getElementById('drawerIssueTestsContainer') as HTMLDivElement | null;
+const elInputAddIssueTest = document.getElementById('inputAddIssueTest') as HTMLInputElement | null;
+const elBtnAddIssueTest = document.getElementById('btnAddIssueTest') as HTMLButtonElement | null;
+
+const elBatchTestsProgressText = document.getElementById('batchTestsProgressText') as HTMLSpanElement | null;
+const elDrawerBatchTestsContainer = document.getElementById('drawerBatchTestsContainer') as HTMLDivElement | null;
+const elInputAddBatchTest = document.getElementById('inputAddBatchTest') as HTMLInputElement | null;
+const elBtnAddBatchTest = document.getElementById('btnAddBatchTest') as HTMLButtonElement | null;
+
 // Dual-mode description elements
 const elDrawerDescriptionViewBox = document.getElementById('drawerDescriptionViewBox') as HTMLDivElement;
 const elDrawerDescriptionCollapsible = document.getElementById('drawerDescriptionCollapsible') as HTMLDivElement;
@@ -288,6 +409,7 @@ const elBtnDrawerOpenPreflight = document.getElementById('btnDrawerOpenPreflight
 
 // Preflight modal elements
 const elPreflightBackdrop = document.getElementById('preflightModalBackdrop') as HTMLDivElement;
+const elPreflightThemeNotice = document.getElementById('preflightThemeNotice') as HTMLDivElement | null;
 const elModalPreflightTitle = document.getElementById('modalPreflightTitle') as HTMLHeadingElement;
 const elPreflightWorktreeToggle = document.getElementById('preflightWorktreeToggle') as HTMLInputElement;
 const elPreflightWorktreeSection = document.getElementById('preflightWorktreeSection') as HTMLDivElement;
@@ -385,13 +507,19 @@ async function watchActiveProject(projectId: string): Promise<void> {
     unsubWorktrees();
     unsubWorktrees = null;
   }
+  sessions = [];
+  sessionIndex = new Map();
+  sessionIndexByRepo = new Map();
 
   try {
     unsubSessions = await host.onSessions(projectId, (sessSnap) => {
       const prevSessions = sessions;
       sessions = (sessSnap.sessions as any[]) || [];
+      sessionIndex = buildSessionIndex(sessions);
+      sessionIndexByRepo = buildSessionIndexByRepo(sessions);
       renderViews();
       if (activeIssue) renderDrawer(activeIssue);
+      statusReconciler.schedule(issues);
 
       // When a session finishes / becomes idle, bust issue cache and fetch fresh state from GitHub
       const becameIdle = sessions.some((s) => {
@@ -442,19 +570,30 @@ async function inspectGitConfigInDir(dir: string): Promise<{ owner: string; repo
         if (match) {
           const gitdir = match[1].trim();
           const targetPath = gitdir.startsWith('/') ? gitdir : `${cleanDir}/${gitdir}`;
-          try {
-            const wtConfig = await host.readFile(`${targetPath}/config`);
-            if (wtConfig?.content) {
-              found = parseGitRemoteFromConfig(wtConfig.content);
-            }
-          } catch {}
-          if (!found) {
+          if (targetPath.includes('/.git/worktrees/')) {
+            const parentRepoRoot = targetPath.split('/.git/worktrees/')[0];
             try {
-              const parentConfig = await host.readFile(`${targetPath}/../../config`);
-              if (parentConfig?.content) {
+              const parentConfig = await host.readFile(`${parentRepoRoot}/.git/config`);
+              if (parentConfig && parentConfig.content) {
                 found = parseGitRemoteFromConfig(parentConfig.content);
               }
             } catch {}
+          }
+          if (!found) {
+            try {
+              const wtConfig = await host.readFile(`${targetPath}/config`);
+              if (wtConfig?.content) {
+                found = parseGitRemoteFromConfig(wtConfig.content);
+              }
+            } catch {}
+            if (!found) {
+              try {
+                const parentConfig = await host.readFile(`${targetPath}/../../config`);
+                if (parentConfig?.content) {
+                  found = parseGitRemoteFromConfig(parentConfig.content);
+                }
+              } catch {}
+            }
           }
         }
       }
@@ -497,6 +636,11 @@ async function discoverWorkspaceRepositories(): Promise<void> {
 
     allProjects = inspected.filter(Boolean) as ProjectItem[];
 
+    // Keep the aggregated view's repo list in sync when a scan finishes.
+    if (isAllProjectsMode) {
+      allProjectsRepoRefs = buildProjectRepoRefs();
+    }
+
     allProjects.forEach((p) => {
       if (p.gitRepo) {
         addLog(`Project "${p.name}" has Git repo: ${p.gitRepo.owner}/${p.gitRepo.repo}`, 'succ');
@@ -515,10 +659,44 @@ async function discoverWorkspaceRepositories(): Promise<void> {
 }
 
 async function autoResolveRepoForActiveContext(): Promise<void> {
+  // Never steal focus from the aggregated All Projects view.
+  if (isAllProjectsMode) return;
+
+  // If currentDirectory is inside /workspace/.local/share/opencode/worktree/,
+  // extract parent repository root from .git file and match that project in allProjects first,
+  // so worktree sessions inherit their true repository context!
+  let worktreeMatchedProject: ProjectItem | null = null;
+  if (currentDirectory && currentDirectory.includes('/workspace/.local/share/opencode/worktree/')) {
+    try {
+      const cleanCurDir = currentDirectory.replace(/\/+$/, '');
+      const gitFileRes = await host.readFile(`${cleanCurDir}/.git`);
+      if (gitFileRes && gitFileRes.content) {
+        const match = gitFileRes.content.match(/^gitdir:\s*(.+)$/m);
+        if (match) {
+          const gitdir = match[1].trim();
+          const targetPath = gitdir.startsWith('/') ? gitdir : `${cleanCurDir}/${gitdir}`;
+          if (targetPath.includes('/.git/worktrees/')) {
+            const parentRepoRoot = targetPath.split('/.git/worktrees/')[0].replace(/\/+$/, '');
+            worktreeMatchedProject = allProjects.find((p) => {
+              if (!p.directory) return false;
+              const cleanP = p.directory.replace(/\/+$/, '');
+              return cleanP === parentRepoRoot || parentRepoRoot.startsWith(cleanP + '/');
+            }) || null;
+            if (worktreeMatchedProject) {
+              addLog(`Worktree matched to parent project: "${worktreeMatchedProject.name}" (${worktreeMatchedProject.directory})`, 'succ');
+            }
+          }
+        }
+      }
+    } catch (err: any) {
+      addLog(`Failed to resolve parent project from worktree .git: ${err?.message || err}`, 'warn');
+    }
+  }
+
   // Longest-prefix match: sort by directory path length descending
   const sorted = [...allProjects].sort((a, b) => (b.directory?.length || 0) - (a.directory?.length || 0));
 
-  let targetProject = sorted.find((p) => {
+  let targetProject = worktreeMatchedProject || sorted.find((p) => {
     if (!p.directory) return false;
     const cleanP = p.directory.replace(/\/+$/, '');
     const cleanT = currentDirectory.replace(/\/+$/, '');
@@ -600,7 +778,12 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
     return;
   }
   userSelectedTab = false;
+  isAllProjectsMode = false;
+  allProjectsRepoRefs = [];
+  workspaceRootNoticeShown = false;
   currentRepo = repo;
+  issues = [];
+  showAllDoneIssues = false;
   clearSelection();
   elTxtRepoLabel.textContent = repo.split('/')[1] || repo;
   elTxtRepoLabel.title = `Project: ${currentProject?.name || 'Workspace'} • Repo: ${repo} (via ${source})`;
@@ -627,11 +810,11 @@ function renderRepoPopoverList(): void {
     return;
   }
 
-  elDetectedReposList.innerHTML = allProjects
+  const projectItemsHtml = allProjects
     .map((p) => {
       const isCurrentProject = p.id === currentProject?.id;
       const repoName = p.linkedRepo || (p.gitRepo ? `${p.gitRepo.owner}/${p.gitRepo.repo}` : null);
-      const isSelectedRepo = repoName && repoName === currentRepo;
+      const isSelectedRepo = !isAllProjectsMode && repoName && repoName === currentRepo;
 
       return `
         <div class="popover-item" data-project-id="${escapeHtml(p.id)}" data-repo="${escapeHtml(repoName || '')}">
@@ -647,6 +830,16 @@ function renderRepoPopoverList(): void {
       `;
     })
     .join('');
+
+  const allProjectsOptionHtml = isAllProjectsMode
+    ? `<div class="repo-option all-projects-option is-active" data-all-projects="true"><span>All Projects</span><span style="color: var(--prim); font-size: 10px; font-weight: 500;">[active]</span></div>`
+    : `<div class="repo-option all-projects-option" data-all-projects="true"><span>All Projects</span></div>`;
+
+  elDetectedReposList.innerHTML = allProjectsOptionHtml + projectItemsHtml;
+
+  elDetectedReposList.querySelector<HTMLElement>('.all-projects-option')?.addEventListener('click', () => {
+    void selectAllProjects();
+  });
 
   elDetectedReposList.querySelectorAll('.popover-item').forEach((item) => {
     item.addEventListener('click', async () => {
@@ -688,6 +881,74 @@ function closeRepoPopover(): void {
   elRepoPopover.classList.remove('active');
 }
 
+// One repo per unique linked/detected repository, keeping the first project
+// that owns it. Deduping by repo avoids querying the same GitHub repo twice.
+function buildProjectRepoRefs(): ProjectRepoRef[] {
+  const refsByRepo = new Map<string, ProjectRepoRef>();
+  for (const project of allProjects) {
+    const repo = getProjectRepoFullName(project);
+    if (!repo) continue;
+    const key = repo.toLowerCase();
+    if (!refsByRepo.has(key)) {
+      refsByRepo.set(key, { projectId: project.id, projectName: project.name, repo });
+    }
+  }
+  return Array.from(refsByRepo.values());
+}
+
+// Switch the board to the aggregated "All Projects" view: every workspace
+// project that has a linked or detected Git repository is queried in parallel,
+// and the results are consolidated into one deduplicated issue collection.
+async function selectAllProjects(): Promise<void> {
+  const refs = buildProjectRepoRefs();
+
+  if (refs.length === 0) {
+    addLog('No workspace project has a linked or detected Git repository', 'warn');
+    showBanner(
+      'No workspace project has a linked or detected Git repository. Link one to use the All Projects view.',
+      'Select Repo',
+      () => openRepoPopover()
+    );
+    return;
+  }
+
+  isAllProjectsMode = true;
+  allProjectsRepoRefs = refs;
+  currentRepo = ALL_PROJECTS_CACHE_KEY;
+  userSelectedTab = false;
+  issues = [];
+  showAllDoneIssues = false;
+  clearSelection();
+  currentGroupBy = 'project';
+  if (elSelectGroupBy) elSelectGroupBy.value = 'project';
+  elTxtRepoLabel.textContent = 'All Projects';
+  elTxtRepoLabel.title = `Aggregated issues across ${refs.length} repositories`;
+  hideBanner();
+  closeRepoPopover();
+  addLog(`All Projects mode: aggregating issues from ${refs.length} repositories`, 'succ');
+
+  // Surface early if global sessions cannot be pinned to the /workspace root.
+  getWorkspaceRootProject();
+
+  await fetchAllProjectIssues();
+}
+
+function getWorkspaceRootProject(): ProjectItem | null {
+  const resolution = resolveWorkspaceRootProject(allProjects);
+  if (!resolution.pinned && !workspaceRootNoticeShown) {
+    workspaceRootNoticeShown = true;
+    addLog(
+      resolution.project
+        ? `No project is registered at /workspace. Global sessions cannot be pinned to /workspace; using "${resolution.project.name}" (${resolution.project.directory}) for All Projects launches.`
+        : 'No project is registered at /workspace and none is named "workspace". Global sessions cannot be pinned to /workspace; All Projects will use the active project.',
+      'warn'
+    );
+  } else if (resolution.pinned) {
+    workspaceRootNoticeShown = false;
+  }
+  return resolution.project;
+}
+
 let workspaceGitToken: string | null = null;
 
 async function getWorkspaceGitToken(): Promise<string | null> {
@@ -715,6 +976,49 @@ async function getWorkspaceGitToken(): Promise<string | null> {
 // ==========================================
 // GitHub API Client Layer
 // ==========================================
+
+function headerRecord(headers: any): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!headers) return out;
+  if (typeof headers.forEach === 'function') {
+    headers.forEach((value: any, key: any) => {
+      out[String(key).toLowerCase()] = String(value);
+    });
+    return out;
+  }
+  if (typeof headers === 'object') {
+    for (const key of Object.keys(headers)) {
+      out[String(key).toLowerCase()] = String(headers[key]);
+    }
+  }
+  return out;
+}
+
+function makeRateLimitError(status: number, retryAfterMs: number): Error {
+  const err: any = new Error(
+    `GitHub rate limit (HTTP ${status})${retryAfterMs > 0 ? `; retry after ${Math.ceil(retryAfterMs / 1000)}s` : ''}.`
+  );
+  err.rateLimited = true;
+  err.retryAfterMs = retryAfterMs;
+  return err;
+}
+
+// Detects a rate limit on a non-2xx GitHub response. Shows a specific notice
+// (never the authentication banner) and returns a tagged, retryable error.
+function rateLimitErrorFromResponse(status: number, headers: any, body: any): Error | null {
+  const record = headerRecord(headers);
+  const bodyText = typeof body === 'string' ? body : '';
+  if (!isSecondaryRateLimit(status, record, bodyText)) return null;
+  const retryAfterMs = parseRetryAfterMs(record);
+  lastRateLimitRemaining = 0;
+  addLog(`GitHub rate limit hit (HTTP ${status}); backing off ${Math.ceil(retryAfterMs / 1000)}s before retry...`, 'warn');
+  showBanner(
+    'GitHub rate limit reached. The board is backing off and will retry automatically.',
+    'Dismiss',
+    () => hideBanner()
+  );
+  return makeRateLimitError(status, retryAfterMs);
+}
 
 async function githubRequest(
   method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE',
@@ -746,10 +1050,21 @@ async function githubRequest(
       if (directRes.ok) {
         addLog(`API ${method} ${path} -> ${directRes.status} OK (via workspace PAT)`, 'succ');
         hideBanner();
+        const rem = directRes.headers.get('x-ratelimit-remaining');
+        if (rem !== null) lastRateLimitRemaining = parseInt(rem, 10);
         return directRes.json();
+      }
+      if (directRes.status === 403 || directRes.status === 429) {
+        let errBody = '';
+        try {
+          errBody = await directRes.clone().text();
+        } catch {}
+        const rlErr = rateLimitErrorFromResponse(directRes.status, directRes.headers, errBody);
+        if (rlErr) throw rlErr;
       }
       addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, 'warn');
     } catch (err: any) {
+      if (err && err.rateLimited) throw err;
       addLog(`Direct PAT fetch failed (${err.message}), falling back to host proxy...`, 'warn');
     }
   }
@@ -765,7 +1080,16 @@ async function githubRequest(
     if (res.status >= 200 && res.status < 300) {
       addLog(`API ${method} ${path} -> ${res.status}`, 'succ');
       hideBanner();
+      const resHeaders = (res as any).headers;
+      if (resHeaders) {
+        const rem = resHeaders['x-ratelimit-remaining'];
+        if (rem) lastRateLimitRemaining = parseInt(rem, 10);
+      }
       return typeof res.body === 'string' ? JSON.parse(res.body) : res.body;
+    }
+    if (res.status === 403 || res.status === 429) {
+      const rlErr = rateLimitErrorFromResponse(res.status, (res as any).headers, res.body);
+      if (rlErr) throw rlErr;
     }
     if (res.status === 401 || res.status === 403) {
       addLog(`API auth error HTTP ${res.status}: OAuth access restricted or missing`, 'error');
@@ -799,21 +1123,83 @@ async function promptCustomToken(): Promise<void> {
   }
 }
 
-async function fetchIssues(force: boolean = false): Promise<void> {
-  if (!currentRepo) return;
+function fetchRepoIssuePage(
+  repo: string,
+  page: number,
+  request: IssuePageRequest = githubRequest,
+): Promise<{ items: any[]; pageSize: number }> {
+  return fetchIssuePage(repo, page, request, issuePageSizes, (pageSize) => {
+    addLog(`Issue page for ${repo} is too large for the host; reading ${pageSize} per page`, 'warn');
+  });
+}
 
-  // 1. Instant cache check (0ms UI latency)
-  if (!force && issueCache.has(currentRepo)) {
-    const cached = issueCache.get(currentRepo)!;
-    if (Date.now() - cached.timestamp < ISSUE_CACHE_TTL_MS) {
-      issues = cached.issues;
+async function streamRemainingPages(repo: string, storageKey: string, startPage: number, epoch: number): Promise<void> {
+  let page = startPage;
+  const pageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+  const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize); // keeps memory bounded
+  while (page <= maxPages && currentRepo === repo && activeStreamEpoch === epoch) {
+    try {
+      const { items: nextItems } = await fetchRepoIssuePage(repo, page);
+      if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
+
+      const nextIssues = normalizeGithubIssues(nextItems);
+      if (currentRepo !== repo || activeStreamEpoch !== epoch) break;
+
+      issues = mergeIssuePages(issues, nextIssues);
+      issueCache.set(repo, { timestamp: Date.now(), issues });
+      if (host?.storage) {
+        void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any);
+      }
+      renderViews();
+      statusReconciler.schedule(issues);
+      addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
+
+      if (nextItems.length < pageSize) break;
+      page++;
+    } catch (err: any) {
+      addLog(`Background streaming stopped at page ${page}: ${err.message}`, 'warn');
+      break;
+    }
+  }
+}
+
+async function fetchIssues(force: boolean = false): Promise<void> {
+  if (isAllProjectsMode) {
+    await fetchAllProjectIssues(force);
+    return;
+  }
+  if (!currentRepo) return;
+  const storageKey = `cached_issues_${currentRepo}`;
+  const streamEpoch = ++activeStreamEpoch;
+
+  // 1. Instant in-memory cache check (0ms UI latency)
+  if (!force) {
+    const cached = readCachedIssueCollection(issueCache, currentRepo, ISSUE_CACHE_TTL_MS);
+    if (cached) {
+      issues = cached;
       if (!userSelectedTab) {
         selectTab(resolveDefaultTab(issues));
       }
       renderViews();
-      addLog(`Rendered ${issues.length} issues from cache for ${currentRepo}`);
+      addLog(`Rendered ${issues.length} issues from memory cache for ${currentRepo}`);
       return;
     }
+  }
+
+  // 2. Instant persistent storage check (0ms UI latency on fresh reload)
+  if (!force && issues.length === 0 && host?.storage) {
+    try {
+      const stored = (await host.storage.get(storageKey)) as any;
+      if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
+        issues = stored.issues;
+        issueCache.set(currentRepo, { timestamp: stored.timestamp || Date.now(), issues });
+        if (!userSelectedTab) {
+          selectTab(resolveDefaultTab(issues));
+        }
+        renderViews();
+        addLog(`Instantly rendered ${issues.length} issues from persistent storage for ${currentRepo}`);
+      }
+    } catch {}
   }
 
   isLoading = true;
@@ -821,62 +1207,185 @@ async function fetchIssues(force: boolean = false): Promise<void> {
 
   try {
     addLog(`Fetching issues for ${currentRepo}...`);
-    // Query search API with is:issue to exclude pull requests and return real issues
-    const res: any = await githubRequest(
-      'GET',
-      `/search/issues?q=repo:${currentRepo}+is:issue&sort=updated&per_page=100`
-    );
+    // Page 1: Standard core issues endpoint (5,000 req/hr rate limit pool)
+    const { items: page1Items, pageSize } = await fetchRepoIssuePage(currentRepo, 1);
+    const page1Issues = normalizeGithubIssues(page1Items);
 
-    const rawIssues = res.items || (Array.isArray(res) ? res : []);
+    issues = page1Issues;
 
-    issues = rawIssues
-      .filter((item: any) => !item.pull_request)
-      .map((item: any) => ({
-        number: item.number,
-        title: item.title,
-        body: item.body || '',
-        state: item.state,
-        html_url: item.html_url,
-        labels: item.labels || [],
-        user: item.user,
-        assignees: item.assignees || [],
-        comments: item.comments || 0,
-        created_at: item.created_at,
-        subtasks: parseSubtasks(item.body || ''),
-        openQuestions: parseOpenQuestions(item.body || ''),
-      }));
-
-    // Cache results
+    // Cache results in memory and persistent storage
     issueCache.set(currentRepo, {
       timestamp: Date.now(),
       issues,
     });
+    if (host?.storage) {
+      void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any);
+    }
 
-    addLog(`Loaded ${issues.length} issues successfully for ${currentRepo}`, 'succ');
+    addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, 'succ');
     if (!userSelectedTab) {
       selectTab(resolveDefaultTab(issues));
     }
     renderViews();
+    statusReconciler.schedule(issues);
+
+    // Background streaming for remaining pages if page 1 came back full
+    if (page1Items.length >= pageSize) {
+      void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch);
+    }
   } catch (err: any) {
-    addLog(`Failed to fetch issues: ${err.message}`, 'error');
-    renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || 'Check GitHub integration tokens'}`);
+    addLog(`Failed to fetch fresh issues: ${err.message}`, 'error');
+    if (issues.length > 0) {
+      // Never break: keep showing cached issues!
+      if (host?.toast) {
+        void host.toast({ kind: 'info', message: `Offline / Rate-limited. Showing ${issues.length} cached issues.` });
+      }
+    } else {
+      renderEmptyState(`Failed to load issues for ${currentRepo}: ${err.message || 'Check GitHub integration tokens'}`);
+    }
   } finally {
-    isLoading = false;
-    if (elIconRefresh) elIconRefresh.style.animation = '';
+    // Only the newest fetch may clear the spinner; a superseded one must not.
+    if (activeStreamEpoch === streamEpoch) {
+      isLoading = false;
+      if (elIconRefresh) elIconRefresh.style.animation = '';
+    }
   }
+}
+
+// GitHub request with bounded retry/backoff for rate-limit responses.
+function githubRequestWithRetry(method: 'GET' | 'POST' | 'PATCH' | 'PUT' | 'DELETE', path: string): Promise<any> {
+  return retryWithBackoff(() => githubRequest(method, path), {
+    maxAttempts: RATE_LIMIT_MAX_ATTEMPTS,
+    isRetryable: (err: any) => Boolean(err && err.rateLimited),
+    getRetryAfterMs: (err: any) => Number(err?.retryAfterMs) || 0,
+    onRetry: (attempt, delayMs) => addLog(`Rate limited; retrying (${attempt + 1}) in ${Math.round(delayMs / 1000)}s...`, 'warn'),
+  });
+}
+
+// Fetch every page of issues for one repository, capped so a single runaway
+// repo cannot exhaust the API budget. Returns normalized issues only.
+async function fetchAllRepoIssuePages(repo: string, epoch: number): Promise<Issue[]> {
+  const { items: firstItems, pageSize } = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
+  let repoIssues = normalizeGithubIssues(firstItems);
+
+  if (firstItems.length < pageSize) return repoIssues;
+
+  let page = 2;
+  const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+  while (page <= maxPages && activeStreamEpoch === epoch) {
+    const { items: nextItems } = await fetchRepoIssuePage(repo, page, githubRequestWithRetry);
+    if (nextItems.length === 0) break;
+    repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
+    if (nextItems.length < pageSize) break;
+    page++;
+  }
+  return repoIssues;
+}
+
+// Parallel multi-repo fetch + dedupe + TTL caching for the All Projects view.
+async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
+  const cacheKey = ALL_PROJECTS_CACHE_KEY;
+  const epoch = ++activeStreamEpoch;
+
+  if (!force) {
+    const cached = readCachedIssueCollection(issueCache, cacheKey, ISSUE_CACHE_TTL_MS);
+    if (cached) {
+      issues = cached;
+      if (!userSelectedTab) selectTab(resolveDefaultTab(issues));
+      renderViews();
+      addLog(`Rendered ${issues.length} aggregated issues from memory cache`);
+      return;
+    }
+  }
+
+  // 2. Persistent cache: instant render on a fresh reload before the network.
+  if (!force && issues.length === 0 && host?.storage) {
+    try {
+      const stored = (await host.storage.get(`cached_issues_${cacheKey}`)) as any;
+      if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
+        issues = stored.issues;
+        issueCache.set(cacheKey, { timestamp: stored.timestamp || Date.now(), issues });
+        if (!userSelectedTab) selectTab(resolveDefaultTab(issues));
+        renderViews();
+        addLog(`Instantly rendered ${issues.length} aggregated issues from persistent storage`);
+      }
+    } catch {}
+  }
+
+  isLoading = true;
+  if (elIconRefresh) elIconRefresh.style.animation = 'spin 1s linear infinite';
+
+  try {
+    const refs = [...allProjectsRepoRefs];
+    addLog(`Fetching issues across ${refs.length} repositories (max ${MAX_CONCURRENT_REPO_FETCHES} in parallel)...`);
+
+    const settled = await mapWithConcurrency(refs, MAX_CONCURRENT_REPO_FETCHES, async (ref) => ({
+      projectId: ref.projectId,
+      projectName: ref.projectName,
+      repo: ref.repo,
+      issues: await fetchAllRepoIssuePages(ref.repo, epoch),
+    }));
+    if (activeStreamEpoch !== epoch) return;
+
+    const sources: Array<{ projectId: string; projectName: string; repo: string; issues: Issue[] }> = [];
+    for (const result of settled) {
+      if (result.status === 'fulfilled' && result.value) {
+        sources.push(result.value);
+      } else if (result.status === 'rejected') {
+        addLog(`Skipped repository during aggregation: ${result.reason?.message || result.reason}`, 'warn');
+      }
+    }
+    if (sources.length === 0) {
+      throw new Error('All repository requests failed');
+    }
+
+    issues = aggregateProjectIssues(sources);
+    issueCache.set(cacheKey, { timestamp: Date.now(), issues });
+    if (host?.storage) {
+      void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues } as any);
+    }
+
+    if (!userSelectedTab) selectTab(resolveDefaultTab(issues));
+    renderViews();
+    statusReconciler.schedule(issues);
+    addLog(`Aggregated ${issues.length} deduplicated issues across ${sources.length} repositories`, 'succ');
+  } catch (err: any) {
+    addLog(`Failed to fetch all-project issues: ${err.message}`, 'error');
+    if (issues.length > 0) {
+      if (host?.toast) {
+        void host.toast({ kind: 'info', message: `Offline / Rate-limited. Showing ${issues.length} aggregated issues.` });
+      }
+    } else {
+      renderEmptyState(`Failed to load aggregated issues: ${err.message || 'Check GitHub integration tokens'}`);
+    }
+  } finally {
+    // Only the newest fetch may clear the spinner; a superseded one must not.
+    if (activeStreamEpoch === epoch) {
+      isLoading = false;
+      if (elIconRefresh) elIconRefresh.style.animation = '';
+    }
+  }
+}
+
+// In the aggregated view a PATCH must target the issue's own repository.
+function repoForIssue(issue: Issue | null | undefined): string {
+  if (issue && isAllProjectsMode && issue.repo) return issue.repo;
+  return currentRepo;
 }
 
 async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   issue.body = newBody;
   issue.subtasks = parseSubtasks(newBody);
   issue.openQuestions = parseOpenQuestions(newBody);
+  const repo = repoForIssue(issue);
+  if (repo) issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
     renderDrawer(issue);
   }
 
   try {
-    await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
+    await githubRequest('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       body: newBody,
     });
     await host.toast({ kind: 'info', message: `Updated issue #${issue.number}` });
@@ -887,10 +1396,12 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
 }
 
 async function updateIssueStatus(issue: Issue, targetColumn: ColumnId): Promise<void> {
-  const prevLabels = [...issue.labels];
+  const repo = repoForIssue(issue);
+  if (!issue || !repo) return;
+  const prevLabels = [...(issue.labels || [])];
   const prevState = issue.state;
 
-  const currentLabels = issue.labels.map((l) => l.name);
+  const currentLabels = (issue.labels || []).map((l: any) => (typeof l === 'string' ? l : l.name || ''));
   const filteredLabels = currentLabels.filter((name) => !name.startsWith('status:'));
 
   let newState: 'open' | 'closed' = 'open';
@@ -903,16 +1414,14 @@ async function updateIssueStatus(issue: Issue, targetColumn: ColumnId): Promise<
 
   issue.state = newState;
   issue.labels = filteredLabels.map((name) => ({ name }));
-  if (currentRepo) {
-    issueCache.delete(currentRepo);
-  }
+  issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
     renderDrawer(issue);
   }
 
   try {
-    await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
+    await githubRequest('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       state: newState,
       labels: filteredLabels,
     });
@@ -969,12 +1478,18 @@ export function isIssueArchived(issue: Issue): boolean {
 
 export function getNextColumn(current: ColumnId): ColumnId {
   switch (current) {
+    case 'draft':
+      return 'backlog';
     case 'backlog':
       return 'todo';
     case 'todo':
+      return 'planned';
+    case 'planned':
       return 'in-progress';
     case 'in-progress':
       return 'in-review';
+    case 'needs-human':
+      return 'in-progress';
     case 'in-review':
       return 'done';
     case 'done':
@@ -986,12 +1501,18 @@ export function getNextColumn(current: ColumnId): ColumnId {
 
 export function getNextColumnAction(current: ColumnId): { label: string; target: ColumnId; icon: string } {
   switch (current) {
+    case 'draft':
+      return { label: 'Backlog', target: 'backlog', icon: '→' };
     case 'backlog':
       return { label: 'To Do', target: 'todo', icon: '→' };
     case 'todo':
+      return { label: 'Planned', target: 'planned', icon: '→' };
+    case 'planned':
       return { label: 'In Progress', target: 'in-progress', icon: '▶' };
     case 'in-progress':
       return { label: 'In Review', target: 'in-review', icon: '→' };
+    case 'needs-human':
+      return { label: 'In Progress', target: 'in-progress', icon: '▶' };
     case 'in-review':
       return { label: 'Done', target: 'done', icon: '✓' };
     case 'done':
@@ -1037,8 +1558,9 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
 
   issue.state = newState;
   issue.labels = clean.map((name) => ({ name }));
-  if (currentRepo) {
-    issueCache.delete(currentRepo);
+  const archiveRepo = repoForIssue(issue);
+  if (archiveRepo) {
+    issueCache.delete(archiveRepo);
   }
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
@@ -1046,7 +1568,7 @@ async function toggleArchiveIssue(issue: Issue): Promise<void> {
   }
 
   try {
-    await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
+    await githubRequest('PATCH', `/repos/${archiveRepo}/issues/${issue.number}`, {
       state: newState,
       labels: clean,
     });
@@ -1103,15 +1625,28 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[
     return Array.from(themeMap.values());
   }
 
+  if (groupBy === 'project') {
+    // Outside the aggregated view issues carry no project tag, so grouping by
+    // project would collapse everything into "Unknown Project". Keep the single
+    // repository as the one group instead.
+    if (!isAllProjectsMode) {
+      return [{ id: currentRepo || 'all', title: currentRepo || 'All Items', issues: issuesList }];
+    }
+    return groupIssuesByProject(issuesList, allProjects);
+  }
+
   if (groupBy === 'none') {
     return [{ id: 'all', title: 'All Items', issues: issuesList }];
   }
 
   // Default: status
   const groups: IssueGroup[] = [
+    { id: 'draft', title: 'Draft', issues: [] },
     { id: 'backlog', title: 'Backlog', issues: [] },
     { id: 'todo', title: 'To Do', issues: [] },
+    { id: 'planned', title: 'Planned', issues: [] },
     { id: 'in-progress', title: 'In Progress', issues: [] },
+    { id: 'needs-human', title: 'Needs Human', issues: [] },
     { id: 'in-review', title: 'In Review', issues: [] },
     { id: 'done', title: 'Done', issues: [] },
   ];
@@ -1130,76 +1665,160 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[
 // ==========================================
 
 function getIssueSession(issue: Issue): SessionInfo | null {
-  const issueNumStr = String(issue.number);
-  const match = sessions.find((s) => {
-    if (s.items && s.items.some((it) => it.id === issueNumStr || it.data?.issueNumber === issue.number)) {
-      return true;
-    }
-    if (s.title && s.title.includes(`#${issue.number}`)) {
-      return true;
-    }
-    const wtName = extractWorktreeName(s.worktree);
-    if (wtName && wtName.includes(`issue-${issue.number}`)) {
-      return true;
-    }
-    return false;
-  });
-  return match || null;
+  if (!issue) return null;
+  // In the aggregated view attribution must be repo-qualified so a session from
+  // repo A never binds to a same-numbered issue in repo B.
+  if (isAllProjectsMode) {
+    return findSessionForIssueByRepo(sessionIndexByRepo, issue) || null;
+  }
+  return sessionIndex.get(issue.number) || null;
 }
 
-export function resolveIssueColumn(issue: Issue): ColumnId | null {
+export function resolveIssueColumn(
+  issue: Issue,
+  sessionOverride?: SessionInfo | SessionInfo[] | null
+): ColumnId | null {
+  if (!issue) return null;
   if (isIssueClosed(issue)) {
     return 'done';
   }
 
-  const labelNames = (issue.labels || []).map((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase());
+  const labelNames = (issue.labels || []).map((l: any) => (typeof l === 'string' ? l : l.name || '').toLowerCase());
   if (labelNames.includes('status:done')) return 'done';
   if (labelNames.includes('status:in-review')) return 'in-review';
+  if (labelNames.includes('status:needs-human')) return 'needs-human';
 
   // Check attached session activity
-  const session = getIssueSession(issue);
+  let session: SessionInfo | null = null;
+  if (sessionOverride !== undefined) {
+    if (Array.isArray(sessionOverride)) {
+      const issueNumStr = String(issue.number);
+      session =
+        sessionOverride.find((s) => {
+          if (
+            s.items &&
+            s.items.some(
+              (it: any) =>
+                it.id === issueNumStr ||
+                (it.data && it.data.issueNumber === issue.number) ||
+                (it.data && Array.isArray(it.data.issueNumbers) && it.data.issueNumbers.includes(issue.number))
+            )
+          ) {
+            return true;
+          }
+          if (
+            (s as any).data &&
+            ((s as any).data.issueNumber === issue.number ||
+              (Array.isArray((s as any).data.issueNumbers) && (s as any).data.issueNumbers.includes(issue.number)))
+          ) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issue.number}`)) {
+            return true;
+          }
+          const wtStrings = typeof s.worktree === 'string'
+            ? [s.worktree]
+            : s.worktree
+            ? [(s.worktree as any).name, (s.worktree as any).branch, (s.worktree as any).directory].filter(Boolean)
+            : [];
+          if (wtStrings.some((str: any) => String(str).includes(`issue-${issue.number}`))) {
+            return true;
+          }
+          return false;
+        }) || null;
+    } else {
+      session = sessionOverride;
+    }
+  } else {
+    session = getIssueSession(issue);
+  }
 
-  // If issue has explicit status:in-progress label
+  const isSessionRunning = Boolean(session && session.activity === 'running');
+  const isSessionWaiting = Boolean(
+    session &&
+      (session.activity === 'waiting-permission' ||
+        session.activity === 'waiting-question' ||
+        session.activity.startsWith('waiting'))
+  );
+  const isSessionIdle = Boolean(session && session.activity === 'idle');
+
+  // Explicit status:in-progress label
   if (labelNames.includes('status:in-progress')) {
-    if (session && session.activity === 'idle') {
-      // In-progress work has finished and agent session is idle -> transition to in-review
+    if (isSessionIdle) {
       return 'in-review';
+    }
+    if (isSessionWaiting) {
+      return 'needs-human';
     }
     return 'in-progress';
   }
 
+  // Explicit status:planned label
+  if (labelNames.includes('status:planned')) {
+    if (isSessionRunning) {
+      return 'in-progress';
+    }
+    if (isSessionWaiting) {
+      return 'needs-human';
+    }
+    return 'planned';
+  }
+
   // Explicit status:todo label
   if (labelNames.includes('status:todo')) {
-    if (session && (session.activity === 'running' || session.activity.startsWith('waiting'))) {
+    if (isSessionRunning) {
       return 'in-progress';
+    }
+    if (isSessionWaiting) {
+      return 'needs-human';
     }
     return 'todo';
   }
 
   // Explicit status:backlog label
   if (labelNames.includes('status:backlog')) {
-    if (session && (session.activity === 'running' || session.activity.startsWith('waiting'))) {
+    if (isSessionRunning) {
       return 'in-progress';
+    }
+    if (isSessionWaiting) {
+      return 'needs-human';
     }
     return 'backlog';
   }
 
-  // Dynamic session detection for issues without explicit status labels
-  if (session) {
-    if (session.activity === 'running' || session.activity.startsWith('waiting')) {
+  // Explicit status:draft or isVagueIdea(issue)
+  if (labelNames.includes('status:draft') || isVagueIdea(issue)) {
+    if (isSessionRunning) {
       return 'in-progress';
     }
-    if (session.activity === 'idle') {
+    if (isSessionWaiting) {
+      return 'needs-human';
+    }
+    return 'draft';
+  }
+
+  // Dynamic session detection for issues without explicit status labels
+  if (session) {
+    if (isSessionRunning) {
+      return 'in-progress';
+    }
+    if (isSessionWaiting) {
+      return 'needs-human';
+    }
+    if (isSessionIdle) {
       return 'in-review';
     }
   }
 
-  // Unknown status (only show in 'all' view)
-  return null;
+  // Default for unlabelled well-formed issues
+  return 'todo';
 }
 
 export function resolveDefaultTab(issues: Issue[]): TabId {
   if (!issues || issues.length === 0) return 'all';
+
+  const hasNeedsHuman = issues.some((i) => resolveIssueColumn(i) === 'needs-human');
+  if (hasNeedsHuman) return 'needs-human';
 
   const hasReview = issues.some((i) => resolveIssueColumn(i) === 'in-review');
   if (hasReview) return 'in-review';
@@ -1210,17 +1829,35 @@ export function resolveDefaultTab(issues: Issue[]): TabId {
   const hasTodo = issues.some((i) => resolveIssueColumn(i) === 'todo');
   if (hasTodo) return 'todo';
 
+  const hasPlanned = issues.some((i) => resolveIssueColumn(i) === 'planned');
+  if (hasPlanned) return 'planned';
+
   const hasBacklog = issues.some((i) => resolveIssueColumn(i) === 'backlog');
   if (hasBacklog) return 'backlog';
+
+  const hasDraft = issues.some((i) => resolveIssueColumn(i) === 'draft');
+  if (hasDraft) return 'draft';
 
   return 'all';
 }
 
+// Live session write-back reconciler
+export const statusReconciler = new StatusReconciler({
+  debounceMs: 300,
+  updateStatus: async (issue, targetColumn) => {
+    await updateIssueStatus(issue, targetColumn);
+  },
+  getSession: (issue) => getIssueSession(issue),
+});
+
 function updateBadgeCounts(): void {
   const counts: Record<ColumnId, number> = {
+    'draft': 0,
     'backlog': 0,
     'todo': 0,
+    'planned': 0,
     'in-progress': 0,
+    'needs-human': 0,
     'in-review': 0,
     'done': 0,
   };
@@ -1242,16 +1879,22 @@ function updateBadgeCounts(): void {
     if (el) el.textContent = String(val);
   };
   setTxt('tabCountAll', total);
+  setTxt('tabCountDraft', counts['draft']);
   setTxt('tabCountBacklog', counts['backlog']);
   setTxt('tabCountTodo', counts['todo']);
+  setTxt('tabCountPlanned', counts['planned']);
   setTxt('tabCountProgress', counts['in-progress']);
+  setTxt('tabCountNeedsHuman', counts['needs-human']);
   setTxt('tabCountReview', counts['in-review']);
   setTxt('tabCountDone', counts['done']);
 
   // Kanban counts
+  setTxt('kCountDraft', counts['draft']);
   setTxt('kCountBacklog', counts['backlog']);
   setTxt('kCountTodo', counts['todo']);
+  setTxt('kCountPlanned', counts['planned']);
   setTxt('kCountProgress', counts['in-progress']);
+  setTxt('kCountNeedsHuman', counts['needs-human']);
   setTxt('kCountReview', counts['in-review']);
   setTxt('kCountDone', counts['done']);
 
@@ -1415,23 +2058,30 @@ function renderViews(): void {
   if (elListViewContainer) elListViewContainer.style.display = '';
   if (elGraphViewContainer) elGraphViewContainer.style.display = '';
 
-  // 1. Render Mode: List View
-  renderListView(sorted);
+  // Synchronize layout attributes and tab visibility
+  applyLayoutMode(false);
 
-  // 2. Render Mode: Kanban View
-  renderKanbanView(sorted);
+  const activeLayout: 'list' | 'kanban' | 'graph' = document.body.getAttribute('data-layout') === 'graph'
+    ? 'graph'
+    : document.body.getAttribute('data-layout') === 'kanban'
+      ? 'kanban'
+      : 'list';
 
-  // 3. Render Mode: Dependency Graph View
-  renderGraphView(sorted);
+  // Render ONLY the active view to avoid triple-DOM overhead
+  if (activeLayout === 'list') {
+    renderListView(sorted);
+  } else if (activeLayout === 'kanban') {
+    renderKanbanView(sorted);
+  } else if (activeLayout === 'graph') {
+    renderGraphView(sorted);
+  }
+  currentRenderedLayout = activeLayout;
 
   // Sync batch bar & card selections
   updateBatchBar();
-
-  // Auto layout check
-  applyLayoutMode();
 }
 
-function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
+function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
   const session = getIssueSession(issue);
   const card = document.createElement('div');
   const isSelected = selectedIssueNumbers.has(issue.number);
@@ -1505,7 +2155,7 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
   if (isArch) {
     const statusLabel = (issue.labels || []).find((l) => (typeof l === 'string' ? l : l.name || '').startsWith('status:'));
     const rawCat = statusLabel ? (typeof statusLabel === 'string' ? statusLabel : statusLabel.name || '').replace('status:', '') : '';
-    const catLabel = rawCat === 'in-progress' ? 'In Progress' : rawCat === 'in-review' ? 'In Review' : rawCat === 'done' ? 'Done' : rawCat === 'backlog' ? 'Backlog' : 'To Do';
+    const catLabel = STATUS_METADATA[rawCat as ColumnId]?.displayName || (rawCat ? rawCat : 'To Do');
     archiveCategoryBadge = `<span class="archive-from-badge">From: ${escapeHtml(catLabel)}</span>`;
   }
 
@@ -1524,6 +2174,16 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
   const vagueBadgeHtml = vague
     ? `<span class="badge badge-vague" title="Sparse task needing alignment">Needs Alignment</span>`
     : '';
+
+  const batchName = getIssueBatch(issue);
+  let awaitingBatchHtml = '';
+  if (col === 'in-review' && batchName) {
+    const res = isBatchReadyForReview(batchName, issues || []);
+    const otherOutstanding = res.outstandingIssues.filter((n) => n !== issue.number);
+    if (!res.ready && otherOutstanding.length > 0) {
+      awaitingBatchHtml = `<span class="badge-awaiting-batch" title="Waiting on #${otherOutstanding.join(', #')} before batch testing">Awaiting Batch</span>`;
+    }
+  }
 
   const questionBadgeInfo = formatQuestionBadge(issue.openQuestions);
   const questionsBadgeHtml = questionBadgeInfo.html;
@@ -1564,6 +2224,11 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
     </button>
   `;
 
+  const titles = parseFriendlyTitle(issue.body, issue.title);
+  const subtitleHtml = titles.subtitle
+    ? `<div class="card-subtitle-tech" style="font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;">${escapeHtml(titles.subtitle)}</div>`
+    : '';
+
   card.innerHTML = `
     <div class="card-meta">
       <div class="card-id-wrap">
@@ -1572,6 +2237,7 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
         ${priorityHtml}
         ${complexityHtml}
         ${vagueBadgeHtml}
+        ${awaitingBatchHtml}
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ''}
         ${archiveCategoryBadge}
       </div>
@@ -1581,7 +2247,8 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
         ${agentBadgeHtml}
       </div>
     </div>
-    <div class="card-title">${escapeHtml(issue.title)}</div>
+    <div class="card-title">${escapeHtml(titles.title)}</div>
+    ${subtitleHtml}
     ${descHtml}
     ${labelsHtml ? `<div class="card-labels">${labelsHtml}</div>` : ''}
     <div class="card-footer">
@@ -1673,6 +2340,8 @@ function buildCardElement(issue: Issue, inKanban: boolean): HTMLElement {
   return card;
 }
 
+const buildCardElement = renderIssueCard;
+
 function renderListView(filteredIssues: Issue[]): void {
   elListViewContainer.innerHTML = '';
 
@@ -1691,13 +2360,16 @@ function renderListView(filteredIssues: Issue[]): void {
   }
 
   if (currentGroupBy === 'none') {
+    const fragment = document.createDocumentFragment();
     listItems.forEach((issue) => {
       const card = buildCardElement(issue, false);
-      elListViewContainer.appendChild(card);
+      fragment.appendChild(card);
     });
+    elListViewContainer.appendChild(fragment);
   } else {
     const groups = groupIssuesBy(listItems, currentGroupBy);
     let totalRendered = 0;
+    const fragment = document.createDocumentFragment();
 
     groups.forEach((grp) => {
       if (grp.issues.length === 0) return;
@@ -1724,8 +2396,8 @@ function renderListView(filteredIssues: Issue[]): void {
       const headerEl = groupEl.querySelector('.list-group-header') as HTMLElement;
       const toggleCollapse = (e: Event) => {
         e.stopPropagation();
-        const collapsed = toggleGroupCollapse(groupKey);
-        groupEl.classList.toggle('is-collapsed', collapsed);
+        toggleGroupCollapse(groupKey);
+        renderViews();
       };
       headerEl.addEventListener('click', toggleCollapse);
       headerEl.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -1735,13 +2407,18 @@ function renderListView(filteredIssues: Issue[]): void {
         }
       });
 
-      const listCardsContainer = groupEl.querySelector('.list-group-cards') as HTMLDivElement;
-      grp.issues.forEach((issue) => {
-        const card = buildCardElement(issue, false);
-        listCardsContainer.appendChild(card);
-      });
+      // Lazy rendering: only construct cards if group is expanded
+      if (!isCollapsed) {
+        const listCardsContainer = groupEl.querySelector('.list-group-cards') as HTMLDivElement;
+        const cardsFragment = document.createDocumentFragment();
+        grp.issues.forEach((issue) => {
+          const card = buildCardElement(issue, false);
+          cardsFragment.appendChild(card);
+        });
+        listCardsContainer.appendChild(cardsFragment);
+      }
 
-      elListViewContainer.appendChild(groupEl);
+      fragment.appendChild(groupEl);
     });
 
     if (totalRendered === 0) {
@@ -1751,17 +2428,23 @@ function renderListView(filteredIssues: Issue[]): void {
           <span>No issues match this view</span>
         </div>
       `;
+    } else {
+      elListViewContainer.appendChild(fragment);
     }
   }
 }
 
 function renderKanbanView(filteredIssues: Issue[]): void {
   elKanbanViewContainer.innerHTML = '';
+  const kanbanFragment = document.createDocumentFragment();
   const columns: Array<{ id: ColumnId; title: string }> = [
+    { id: 'draft', title: 'Draft' },
     { id: 'backlog', title: 'Backlog' },
     { id: 'todo', title: 'To Do' },
+    { id: 'planned', title: 'Planned' },
     { id: 'in-progress', title: 'In Progress' },
-    { id: 'in-review', title: 'In Review' },
+    { id: 'needs-human', title: 'Needs Human' },
+    { id: 'in-review', title: 'Review' },
     { id: 'done', title: 'Done' },
   ];
 
@@ -1805,23 +2488,35 @@ function renderKanbanView(filteredIssues: Issue[]): void {
       if (currentGroupBy === 'priority' && subgroupId && subgroupId !== 'none') {
         const updatedLabels = updatePriorityLabels(issue.labels, subgroupId);
         issue.labels = updatedLabels.map((name) => ({ name }));
-        if (currentRepo) issueCache.delete(currentRepo);
+        const dropRepo = repoForIssue(issue);
+        if (dropRepo) issueCache.delete(dropRepo);
         renderViews();
         try {
-          await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
+          await githubRequest('PATCH', `/repos/${dropRepo}/issues/${issue.number}`, {
             labels: updatedLabels,
           });
         } catch {}
       }
     });
 
+    let displayIssues = colIssues;
+    let doneRemaining = 0;
+    if (col.id === 'done' && !searchQuery.trim()) {
+      const scoped = scopeDoneIssues(colIssues, 25, showAllDoneIssues);
+      displayIssues = scoped.visible;
+      doneRemaining = scoped.remaining;
+    }
+
     if (currentGroupBy === 'none' || currentGroupBy === 'status') {
-      colIssues.forEach((issue) => {
+      const cardsFragment = document.createDocumentFragment();
+      displayIssues.forEach((issue) => {
         const card = buildCardElement(issue, true);
-        cardsContainer.appendChild(card);
+        cardsFragment.appendChild(card);
       });
+      cardsContainer.appendChild(cardsFragment);
     } else {
-      const subGroups = groupIssuesBy(colIssues, currentGroupBy);
+      const subGroups = groupIssuesBy(displayIssues, currentGroupBy);
+      const subFragment = document.createDocumentFragment();
       subGroups.forEach((subGrp) => {
         if (subGrp.issues.length === 0) return;
         const groupKey = `kanban:${col.id}:${subGrp.id}`;
@@ -1845,8 +2540,8 @@ function renderKanbanView(filteredIssues: Issue[]): void {
         const headerEl = subGroupEl.querySelector('.kanban-subgroup-header') as HTMLElement;
         const toggleCollapse = (e: Event) => {
           e.stopPropagation();
-          const collapsed = toggleGroupCollapse(groupKey);
-          subGroupEl.classList.toggle('is-collapsed', collapsed);
+          toggleGroupCollapse(groupKey);
+          renderViews();
         };
         headerEl.addEventListener('click', toggleCollapse);
         headerEl.addEventListener('keydown', (e: KeyboardEvent) => {
@@ -1856,17 +2551,36 @@ function renderKanbanView(filteredIssues: Issue[]): void {
           }
         });
 
-        const subCardsContainer = subGroupEl.querySelector('.kanban-subgroup-cards') as HTMLDivElement;
-        subGrp.issues.forEach((issue) => {
-          const card = buildCardElement(issue, true);
-          subCardsContainer.appendChild(card);
-        });
-        cardsContainer.appendChild(subGroupEl);
+        // Lazy rendering: only construct cards if subgroup is expanded
+        if (!isCollapsed) {
+          const subCardsContainer = subGroupEl.querySelector('.kanban-subgroup-cards') as HTMLDivElement;
+          const subCardsFragment = document.createDocumentFragment();
+          subGrp.issues.forEach((issue) => {
+            const card = buildCardElement(issue, true);
+            subCardsFragment.appendChild(card);
+          });
+          subCardsContainer.appendChild(subCardsFragment);
+        }
+        subFragment.appendChild(subGroupEl);
       });
+      cardsContainer.appendChild(subFragment);
     }
 
-    elKanbanViewContainer.appendChild(colEl);
+    if (col.id === 'done' && doneRemaining > 0) {
+      const showMoreBtn = document.createElement('div');
+      showMoreBtn.className = 'kanban-show-more-btn';
+      showMoreBtn.style.cssText = 'padding: 8px 10px; text-align: center; font-size: 11px; color: var(--prim); cursor: pointer; background: var(--surf-muted); border-radius: var(--rad); margin-top: 6px; border: 1px dashed var(--border); font-weight: 500;';
+      showMoreBtn.textContent = `Show all ${colIssues.length} Done (+${doneRemaining} more)`;
+      showMoreBtn.addEventListener('click', () => {
+        showAllDoneIssues = true;
+        renderViews();
+      });
+      cardsContainer.appendChild(showMoreBtn);
+    }
+
+    kanbanFragment.appendChild(colEl);
   });
+  elKanbanViewContainer.appendChild(kanbanFragment);
 }
 
 function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph'): void {
@@ -1896,31 +2610,42 @@ function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph'): void {
   }
 }
 
-function applyLayoutMode(): void {
+function applyLayoutMode(triggerRender: boolean = true): void {
   if (showArchivedOnly) {
     document.body.removeAttribute('data-layout');
     return;
   }
   isWideScreen = window.innerWidth >= 680;
 
+  let newLayout: 'list' | 'kanban' | 'graph' = 'list';
   if (userLayoutPreference === 'graph') {
+    newLayout = 'graph';
     document.body.setAttribute('data-layout', 'graph');
     updateViewModeButtons('graph');
-    drawCurrentGraphEdges();
   } else if (userLayoutPreference === 'kanban') {
+    newLayout = 'kanban';
     document.body.setAttribute('data-layout', 'kanban');
     updateViewModeButtons('kanban');
   } else if (userLayoutPreference === 'list') {
+    newLayout = 'list';
     document.body.removeAttribute('data-layout');
     updateViewModeButtons('list');
   } else {
     if (isWideScreen) {
+      newLayout = 'kanban';
       document.body.setAttribute('data-layout', 'kanban');
       updateViewModeButtons('kanban');
     } else {
+      newLayout = 'list';
       document.body.removeAttribute('data-layout');
       updateViewModeButtons('list');
     }
+  }
+
+  if (triggerRender && currentRenderedLayout !== newLayout) {
+    renderViews();
+  } else if (newLayout === 'graph') {
+    drawCurrentGraphEdges();
   }
 }
 
@@ -1972,6 +2697,19 @@ async function handleRemoveDependency(targetNum: number, blockerNum: number): Pr
     }
   }
 }
+
+document.addEventListener('click', (e) => {
+  const btn = (e.target as HTMLElement)?.closest<HTMLButtonElement>('.btn-remove-blocker');
+  if (btn) {
+    e.stopPropagation();
+    e.preventDefault();
+    const target = parseInt(btn.dataset.target || '0', 10);
+    const blocker = parseInt(btn.dataset.blocker || '0', 10);
+    if (target > 0 && blocker > 0) {
+      void handleRemoveDependency(target, blocker);
+    }
+  }
+});
 
 function showQuickBlockerPicker(targetIssue: Issue, triggerEl: HTMLElement): void {
   document.querySelectorAll('.graph-quick-picker').forEach((p) => p.remove());
@@ -2144,7 +2882,8 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
 
   let blockersHtml = '';
   if (node.isBlocked && node.openBlockers.length > 0) {
-    blockersHtml = `<span class="graph-badge-blocked" title="Blocked by #${node.openBlockers.join(', #')}"><svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg> #${node.openBlockers.join(', #')}</span>`;
+    const chipsHtml = renderBlockerChips(node.issue, node.openBlockers);
+    blockersHtml = `<span class="graph-badge-blocked" title="Blocked by #${node.openBlockers.join(', #')}"><svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg> ${chipsHtml}</span>`;
   }
 
   let impactHtml = '';
@@ -2196,9 +2935,21 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
     });
   }
 
+  card.querySelectorAll<HTMLButtonElement>('.btn-remove-blocker').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const target = parseInt(btn.dataset.target || '0', 10);
+      const blocker = parseInt(btn.dataset.blocker || '0', 10);
+      if (target > 0 && blocker > 0) {
+        void handleRemoveDependency(target, blocker);
+      }
+    });
+  });
+
   card.addEventListener('click', (e) => {
     const target = e.target as HTMLElement;
-    if (target.closest('.graph-port') || target.closest('.graph-card-check') || target.closest('.graph-card-add-dep-btn')) {
+    if (target.closest('.graph-port') || target.closest('.graph-card-check') || target.closest('.graph-card-add-dep-btn') || target.closest('.btn-remove-blocker')) {
       return;
     }
     openDrawer(node.issue);
@@ -2207,7 +2958,7 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
   card.addEventListener('keydown', (e: KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       const target = e.target as HTMLElement;
-      if (target.closest('.graph-port') || target.closest('.graph-card-check') || target.closest('.graph-card-add-dep-btn')) {
+      if (target.closest('.graph-port') || target.closest('.graph-card-check') || target.closest('.graph-card-add-dep-btn') || target.closest('.btn-remove-blocker')) {
         return;
       }
       e.preventDefault();
@@ -2240,6 +2991,7 @@ function drawGraphEdges(graph: DependencyGraph): void {
   elGraphSvgOverlay.setAttribute('height', String(canvasH));
   elGraphSvgOverlay.setAttribute('viewBox', `0 0 ${canvasW} ${canvasH}`);
 
+  // 1. Batch READ phase: Read canvas and all card positions in a single layout pass
   const canvasRect = elGraphCanvas.getBoundingClientRect();
   const cardElements = new Map<number, HTMLElement>();
   elGraphCanvas.querySelectorAll<HTMLElement>('.graph-card').forEach((card) => {
@@ -2247,15 +2999,25 @@ function drawGraphEdges(graph: DependencyGraph): void {
     if (num > 0) cardElements.set(num, card);
   });
 
-  for (const edge of graph.edges) {
-    const sourceEl = cardElements.get(edge.from);
-    const targetEl = cardElements.get(edge.to);
-    if (!sourceEl || !targetEl) continue;
+  const cardRects = new Map<number, DOMRect>();
+  cardElements.forEach((card, num) => {
+    cardRects.set(num, card.getBoundingClientRect());
+  });
 
-    const sourceRect = sourceEl.getBoundingClientRect();
-    const targetRect = targetEl.getBoundingClientRect();
+  // 2. Batch WRITE phase: Build SVG paths in fragment to prevent layout thrashing
+  const edgeFragment = document.createDocumentFragment();
+
+  for (const edge of graph.edges) {
+    const sourceRect = cardRects.get(edge.from);
+    const targetRect = cardRects.get(edge.to);
+    if (!sourceRect || !targetRect) continue;
 
     const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
+
+    const edgeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    edgeGroup.setAttribute('class', 'graph-edge-group');
+    edgeGroup.setAttribute('data-from', String(edge.from));
+    edgeGroup.setAttribute('data-to', String(edge.to));
 
     const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
     path.setAttribute('d', pathData.d);
@@ -2289,8 +3051,56 @@ function drawGraphEdges(graph: DependencyGraph): void {
     titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to remove dependency)`;
     path.appendChild(titleEl);
 
-    elGraphEdgesLayer.appendChild(path);
+    edgeGroup.appendChild(path);
+
+    // Edge midpoint hover delete badge (clickable 24px target)
+    const midX = Math.round((pathData.x1 + pathData.x2) / 2);
+    const midY = Math.round((pathData.y1 + pathData.y2) / 2);
+
+    const badgeGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    badgeGroup.setAttribute('class', 'graph-edge-delete-badge');
+    badgeGroup.setAttribute('transform', `translate(${midX}, ${midY})`);
+    badgeGroup.setAttribute('data-from', String(edge.from));
+    badgeGroup.setAttribute('data-to', String(edge.to));
+    badgeGroup.setAttribute('role', 'button');
+    badgeGroup.setAttribute('aria-label', `Remove dependency: #${edge.from} blocks #${edge.to}`);
+    badgeGroup.style.cursor = 'pointer';
+
+    // 24px clickable target (circle with r=12)
+    const hitCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    hitCircle.setAttribute('r', '12');
+    hitCircle.setAttribute('fill', 'transparent');
+    badgeGroup.appendChild(hitCircle);
+
+    // Visual badge circle
+    const visualCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    visualCircle.setAttribute('class', 'graph-edge-delete-circle');
+    visualCircle.setAttribute('r', '8');
+    badgeGroup.appendChild(visualCircle);
+
+    // Visual '×' text
+    const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    textEl.setAttribute('class', 'graph-edge-delete-text');
+    textEl.setAttribute('text-anchor', 'middle');
+    textEl.setAttribute('dominant-baseline', 'central');
+    textEl.textContent = '×';
+    badgeGroup.appendChild(textEl);
+
+    const badgeTitle = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+    badgeTitle.textContent = `Remove dependency: #${edge.from} blocks #${edge.to}`;
+    badgeGroup.appendChild(badgeTitle);
+
+    badgeGroup.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      void handleRemoveDependency(edge.to, edge.from);
+    });
+
+    edgeGroup.appendChild(badgeGroup);
+    edgeFragment.appendChild(edgeGroup);
   }
+
+  elGraphEdgesLayer.appendChild(edgeFragment);
 }
 
 function drawCurrentGraphEdges(): void {
@@ -2545,15 +3355,16 @@ function closeDrawer(): void {
 let repoLabelsCache = new Map<string, Array<{ name: string; color?: string }>>();
 
 async function loadRepoLabels(): Promise<void> {
-  if (!currentRepo) return;
-  if (repoLabelsCache.has(currentRepo)) {
-    populateLabelsDatalist(repoLabelsCache.get(currentRepo)!);
+  const repo = repoForIssue(activeIssue);
+  if (!repo) return;
+  if (repoLabelsCache.has(repo)) {
+    populateLabelsDatalist(repoLabelsCache.get(repo)!);
     return;
   }
   try {
-    const list: any[] = await githubRequest('GET', `/repos/${currentRepo}/labels?per_page=100`);
+    const list: any[] = await githubRequest('GET', `/repos/${repo}/labels?per_page=100`);
     if (Array.isArray(list)) {
-      repoLabelsCache.set(currentRepo, list);
+      repoLabelsCache.set(repo, list);
       populateLabelsDatalist(list);
     }
   } catch {}
@@ -2611,7 +3422,7 @@ async function addTagToIssue(issue: Issue, tagName: string): Promise<void> {
 
   try {
     addLog(`Adding label "${clean}" to #${issue.number}...`);
-    await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
+    await githubRequest('PATCH', `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
       labels: newNames,
     });
     await host.toast({ kind: 'success', message: `Added label "${clean}" to #${issue.number}` });
@@ -2630,7 +3441,7 @@ async function removeTagFromIssue(issue: Issue, tagName: string): Promise<void> 
 
   try {
     addLog(`Removing label "${tagName}" from #${issue.number}...`);
-    await githubRequest('PATCH', `/repos/${currentRepo}/issues/${issue.number}`, {
+    await githubRequest('PATCH', `/repos/${repoForIssue(issue)}/issues/${issue.number}`, {
       labels: newLabels.map((l) => l.name),
     });
     await host.toast({ kind: 'info', message: `Removed label "${tagName}" from #${issue.number}` });
@@ -2723,6 +3534,9 @@ function renderDrawer(issue: Issue): void {
   // Render open questions
   renderQuestions(issue);
 
+  // Render test plan checklists
+  renderTestPlans(issue);
+
   // Render Markdown Description (View Mode)
   elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
   elDrawerDescriptionViewBox.style.display = 'block';
@@ -2808,6 +3622,7 @@ function renderQuestions(issue: Issue): void {
   elQuestionsProgressText.style.color = open > 0 ? 'var(--warn)' : 'var(--succ)';
 
   elDrawerQuestionsContainer.innerHTML = '';
+  let unresolvedIdx = 0;
   questions.forEach((question) => {
     const itemEl = document.createElement('div');
     itemEl.className = `check-item ${question.completed ? 'done' : ''}`;
@@ -2817,24 +3632,205 @@ function renderQuestions(issue: Issue): void {
     cb.checked = question.completed;
     cb.title = question.completed ? 'Mark question as open' : 'Mark question as resolved/answered';
 
-    const span = document.createElement('span');
-    span.textContent = question.text;
-
     cb.addEventListener('change', () => {
       const updatedBody = updateOpenQuestionInMarkdown(issue.body, question.lineIndex, cb.checked);
       void updateIssueBody(issue, updatedBody);
     });
 
+    const contentEl = document.createElement('div');
+    contentEl.style.flex = '1';
+    contentEl.style.minWidth = '0';
+
+    const textRow = document.createElement('div');
+    textRow.style.display = 'flex';
+    textRow.style.alignItems = 'flex-start';
+    textRow.style.justifyContent = 'space-between';
+    textRow.style.gap = '8px';
+
+    const span = document.createElement('span');
+    span.textContent = question.text;
+    span.style.flex = '1';
+    span.style.wordBreak = 'break-word';
+    textRow.appendChild(span);
+
+    if (!question.completed) {
+      const idx = unresolvedIdx;
+      unresolvedIdx++;
+
+      const btnAnswer = document.createElement('button');
+      btnAnswer.className = 'btn btn-xs btn-inline-answer';
+      btnAnswer.setAttribute('data-question-index', String(idx));
+      btnAnswer.title = 'Record decision or answer';
+      btnAnswer.textContent = 'Answer';
+      textRow.appendChild(btnAnswer);
+
+      btnAnswer.addEventListener('click', (e) => {
+        e.stopPropagation();
+        let answerRow = contentEl.querySelector<HTMLDivElement>('.inline-answer-row');
+        if (answerRow) {
+          const isVisible = answerRow.style.display !== 'none';
+          answerRow.style.display = isVisible ? 'none' : 'flex';
+          if (!isVisible) {
+            answerRow.querySelector<HTMLInputElement>('.input-inline-answer')?.focus();
+          }
+          return;
+        }
+
+        answerRow = document.createElement('div');
+        answerRow.className = 'inline-answer-row';
+        answerRow.style.display = 'flex';
+        answerRow.style.gap = '6px';
+        answerRow.style.marginTop = '4px';
+        answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>`;
+        contentEl.appendChild(answerRow);
+
+        const input = answerRow.querySelector<HTMLInputElement>('.input-inline-answer');
+        const btnSave = answerRow.querySelector<HTMLButtonElement>('.btn-submit-inline-answer');
+        const btnCancel = answerRow.querySelector<HTMLButtonElement>('.btn-cancel-inline-answer');
+
+        const submitAnswer = async () => {
+          const answerText = input?.value.trim();
+          if (!answerText) {
+            input?.focus();
+            return;
+          }
+          const targetIssue = activeIssue || issue;
+          if (!targetIssue) return;
+          const newBody = answerOpenQuestionInMarkdown(targetIssue.body, idx, answerText);
+          if (issue && issue !== targetIssue) {
+            issue.body = newBody;
+            issue.subtasks = parseSubtasks(newBody);
+            issue.openQuestions = parseOpenQuestions(newBody);
+          }
+          await updateIssueBody(targetIssue, newBody);
+          await host.toast({ kind: 'info', message: 'Recorded answer to question' });
+          if (activeIssue && activeIssue.number === targetIssue.number) {
+            renderDrawer(targetIssue);
+          }
+        };
+
+        btnSave?.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          void submitAnswer();
+        });
+
+        btnCancel?.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          if (answerRow) answerRow.style.display = 'none';
+          btnAnswer.focus();
+        });
+
+        input?.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            ev.stopPropagation();
+            void submitAnswer();
+          } else if (ev.key === 'Escape') {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (answerRow) answerRow.style.display = 'none';
+            btnAnswer.focus();
+          }
+        });
+
+        input?.focus();
+      });
+    }
+
+    contentEl.appendChild(textRow);
     itemEl.appendChild(cb);
-    itemEl.appendChild(span);
+    itemEl.appendChild(contentEl);
     elDrawerQuestionsContainer.appendChild(itemEl);
   });
 }
 
+function renderTestPlans(issue: Issue): void {
+  if (!elDrawerIssueTestsContainer || !elDrawerBatchTestsContainer) return;
+
+  const { issueTests, batchTests } = parseTestPlan(issue.body);
+
+  // 1. Issue Tests
+  const totalIssue = issueTests.length;
+  const completedIssue = issueTests.filter((t) => t.completed).length;
+  if (elIssueTestsProgressText) {
+    elIssueTestsProgressText.textContent = `${completedIssue} / ${totalIssue}`;
+  }
+
+  elDrawerIssueTestsContainer.innerHTML = '';
+  if (totalIssue === 0) {
+    elDrawerIssueTestsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No issue test plan found. Add tests below or add "## Test Plan (Issue)" in description.
+      </div>
+    `;
+  } else {
+    issueTests.forEach((item) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = `check-item ${item.completed ? 'done' : ''}`;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = item.completed;
+
+      const span = document.createElement('span');
+      span.textContent = item.text;
+
+      cb.addEventListener('change', () => {
+        const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
+        void updateIssueBody(issue, updatedBody);
+      });
+
+      itemEl.appendChild(cb);
+      itemEl.appendChild(span);
+      elDrawerIssueTestsContainer.appendChild(itemEl);
+    });
+  }
+
+  // 2. Batch Tests
+  const totalBatch = batchTests.length;
+  const completedBatch = batchTests.filter((t) => t.completed).length;
+  if (elBatchTestsProgressText) {
+    elBatchTestsProgressText.textContent = `${completedBatch} / ${totalBatch}`;
+  }
+
+  elDrawerBatchTestsContainer.innerHTML = '';
+  if (totalBatch === 0) {
+    elDrawerBatchTestsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No batch test plan found. Add tests below or add "## Test Plan (Batch)" in description.
+      </div>
+    `;
+  } else {
+    batchTests.forEach((item) => {
+      const itemEl = document.createElement('div');
+      itemEl.className = `check-item ${item.completed ? 'done' : ''}`;
+
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = item.completed;
+
+      const span = document.createElement('span');
+      span.textContent = item.text;
+
+      cb.addEventListener('change', () => {
+        const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
+        void updateIssueBody(issue, updatedBody);
+      });
+
+      itemEl.appendChild(cb);
+      itemEl.appendChild(span);
+      elDrawerBatchTestsContainer.appendChild(itemEl);
+    });
+  }
+}
+
 async function loadComments(issueNumber: number): Promise<void> {
   elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-muted); font-size: 11.5px;">Loading comments...</div>';
+  const commentIssue = activeIssue && activeIssue.number === issueNumber
+    ? activeIssue
+    : issues.find((i) => i.number === issueNumber) || null;
   try {
-    const comments: any[] = await githubRequest('GET', `/repos/${currentRepo}/issues/${issueNumber}/comments`);
+    const comments: any[] = await githubRequest('GET', `/repos/${repoForIssue(commentIssue)}/issues/${issueNumber}/comments`);
     elCommentCountBadge.textContent = String(comments.length);
 
     if (!comments || comments.length === 0) {
@@ -2908,46 +3904,11 @@ function renderRelatedIssues(issue: Issue): void {
 // Pre-Flight Worktree Config Modal
 // ==========================================
 
-export function getIssuePrimaryTag(issue: Issue): string {
-  if (!issue || !issue.labels) return 'task';
-  for (const l of issue.labels) {
-    const name = (typeof l === 'string' ? l : l.name || '').trim();
-    if (
-      name &&
-      !name.startsWith('status:') &&
-      !name.startsWith('priority:') &&
-      !name.startsWith('complexity:') &&
-      !name.startsWith('theme:') &&
-      !['archived', 'archive'].includes(name.toLowerCase())
-    ) {
-      return name;
-    }
-  }
-  for (const l of issue.labels) {
-    const name = (typeof l === 'string' ? l : l.name || '').trim();
-    if (name.startsWith('theme:')) {
-      return name.replace('theme:', '');
-    }
-  }
-  return 'task';
-}
-
-export function buildWorktreeBranchName(options: {
-  issue: Issue;
-  mode: 'tag' | 'issue';
-  customTag?: string;
-}): string {
-  if (options.mode === 'tag') {
-    const tag = options.customTag || getIssuePrimaryTag(options.issue);
-    return `worktree-tag-${slugify(tag || 'task')}`.slice(0, 80);
-  }
-  const branchSlug = slugify(options.issue.title || 'task');
-  return `issue-${options.issue.number}-${branchSlug}`.slice(0, 80);
-}
-
 function updatePreflightBrief(): void {
   if (!activeIssue) return;
-  const useWt = elPreflightWorktreeToggle.checked;
+  const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
+  const theme = getIssueTheme(activeIssue);
+  const existingThemeWorktree = (theme && theme !== 'No Theme') ? findThemeWorktree(worktrees, activeIssue) : null;
   let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}\n\n`;
   if (activeIssue.body) {
     brief += `### Description:\n${activeIssue.body}\n\n`;
@@ -2959,7 +3920,28 @@ function updatePreflightBrief(): void {
     });
     brief += '\n';
   }
-  if (useWt) {
+
+  const labelNames = (activeIssue.labels || []).map((l: any) =>
+    (typeof l === 'string' ? l : l.name || '').toLowerCase()
+  );
+  const skills: string[] = [];
+  if (labelNames.some((l) => l === 'bug' || l === 'kind:bug' || l === 'type:bug')) {
+    skills.push('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]');
+    skills.push('[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]');
+  }
+  if (labelNames.some((l) => l === 'enhancement' || l === 'kind:enhancement' || l === 'type:enhancement' || l === 'feature')) {
+    skills.push('[@.agents/skills/build/methodology/test-driven-development/SKILL.md]');
+    skills.push('[@.agents/skills/build/methodology/lean-build/SKILL.md]');
+  }
+  if (labelNames.some((l) => l === 'documentation' || l === 'kind:documentation' || l === 'docs')) {
+    skills.push('[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]');
+  }
+
+  if (skills.length > 0) {
+    brief += `### Skills:\n${skills.join('\n')}\n\n`;
+  }
+
+  if (useWt || existingThemeWorktree) {
     brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
   } else {
     brief += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
@@ -2993,7 +3975,43 @@ function openPreflightModal(issue: Issue): void {
   elPreflightBranchInput.value = issueBranch;
   elPreflightBaseBranchInput.value = 'main';
 
-  elBtnPreflightLaunch.textContent = 'Start Agent Session (Current Workspace)';
+  // Check for existing theme worktree
+  const theme = getIssueTheme(issue);
+  const hasTheme = Boolean(theme && theme !== 'No Theme');
+  const existingThemeWorktree = hasTheme ? findThemeWorktree(worktrees, issue) : null;
+
+  // All Projects always launches at the /workspace root without worktree isolation.
+  if (isAllProjectsMode) {
+    elPreflightWorktreeToggle.checked = false;
+    elPreflightWorktreeToggle.disabled = true;
+    elPreflightWorktreeSection.style.display = 'none';
+    if (elPreflightThemeNotice) {
+      elPreflightThemeNotice.style.display = 'none';
+      elPreflightThemeNotice.textContent = '';
+    }
+    elBtnPreflightLaunch.textContent = 'Start Agent Session (All Projects)';
+    updatePreflightBrief();
+    elPreflightBackdrop.classList.add('active');
+    return;
+  }
+  elPreflightWorktreeToggle.disabled = false;
+
+  if (elPreflightThemeNotice) {
+    if (existingThemeWorktree) {
+      elPreflightThemeNotice.style.display = 'flex';
+      elPreflightThemeNotice.textContent = `Reusing active theme worktree: ${theme}`;
+      elPreflightThemeNotice.title = `Found existing theme worktree "${existingThemeWorktree.name || theme}". Session will automatically reuse it.`;
+    } else {
+      elPreflightThemeNotice.style.display = 'none';
+      elPreflightThemeNotice.textContent = '';
+    }
+  }
+
+  if (existingThemeWorktree) {
+    elBtnPreflightLaunch.textContent = `Start Agent Session (Theme: ${theme})`;
+  } else {
+    elBtnPreflightLaunch.textContent = 'Start Agent Session (Current Workspace)';
+  }
 
   updatePreflightBrief();
   elPreflightBackdrop.classList.add('active');
@@ -3004,9 +4022,14 @@ function closePreflightModal(): void {
 }
 
 async function launchAgentSession(): Promise<void> {
-  if (!activeIssue || !currentProject) return;
+  if (!activeIssue) return;
 
-  const useWorktree = elPreflightWorktreeToggle.checked;
+  const allProjectsMode = isAllProjectsMode;
+  const targetProject = allProjectsMode ? (getWorkspaceRootProject() || currentProject) : currentProject;
+  if (!targetProject) return;
+
+  // The All Projects view never provisions a worktree; it always targets /workspace.
+  const useWorktree = allProjectsMode ? false : elPreflightWorktreeToggle.checked;
   const rawBranch = elPreflightBranchInput.value.trim();
   const cleanBranch = useWorktree
     ? rawBranch.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 80)
@@ -3015,26 +4038,42 @@ async function launchAgentSession(): Promise<void> {
   const promptText = elPreflightPromptInput.value.trim().slice(0, 15000);
   const autoMove = elPreflightMoveInProgress.checked;
 
+  const theme = getIssueTheme(activeIssue);
+  const existingThemeWorktree = (!allProjectsMode && theme && theme !== 'No Theme')
+    ? findThemeWorktree(worktrees, activeIssue)
+    : null;
+
+  const payload = buildLaunchSessionPayload({
+    issue: activeIssue,
+    projectId: targetProject.id,
+    useWorktree,
+    branchName: cleanBranch,
+    baseBranch,
+    prompt: promptText,
+    existingWorktree: existingThemeWorktree,
+    worktrees,
+  });
+
+  // All Projects launches target the workspace-root project with no worktree.
+  // The guest startSession contract has no `directory` field, so routing to
+  // /workspace is done by choosing projectId (see getWorkspaceRootProject).
+  if (allProjectsMode) {
+    payload.worktree = false;
+    if (payload.data) delete payload.data.branch;
+  }
+
   elBtnPreflightLaunch.disabled = true;
   elBtnPreflightLaunch.textContent = 'Provisioning...';
 
   try {
-    const targetDesc = useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : 'workspace';
-    addLog(`Starting session in ${targetDesc} on project ${currentProject.id}...`);
+    const targetDesc = allProjectsMode
+      ? 'workspace root /workspace'
+      : existingThemeWorktree
+        ? `theme worktree "${existingThemeWorktree.name || theme}"`
+        : (useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : 'workspace');
+    addLog(`Starting session in ${targetDesc} on project ${targetProject.id}...`);
 
-    const res = await host.startSession({
-      projectId: currentProject.id,
-      worktree: useWorktree && cleanBranch ? { kind: 'new', name: cleanBranch, baseBranch } : false,
-      providerId: 'github-task-board',
-      id: String(activeIssue.number),
-      title: `#${activeIssue.number} ${activeIssue.title}`.slice(0, 150),
-      url: activeIssue.html_url.slice(0, 1000),
-      text: promptText,
-      data: {
-        issueNumber: activeIssue.number,
-        ...(useWorktree && cleanBranch ? { branch: cleanBranch } : {}),
-      },
-    });
+    const res = await host.startSession(payload);
 
     closePreflightModal();
 
@@ -3055,9 +4094,11 @@ async function launchAgentSession(): Promise<void> {
     await host.toast({ kind: 'error', message: `Failed to launch agent: ${err.message || 'Unknown error'}` });
   } finally {
     elBtnPreflightLaunch.disabled = false;
-    elBtnPreflightLaunch.textContent = elPreflightWorktreeToggle.checked
-      ? 'Launch Worktree & Agent'
-      : 'Start Agent Session (Current Workspace)';
+    elBtnPreflightLaunch.textContent = allProjectsMode
+      ? 'Start Agent Session (All Projects)'
+      : elPreflightWorktreeToggle.checked
+        ? 'Launch Worktree & Agent'
+        : (existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : 'Start Agent Session (Current Workspace)');
   }
 }
 
@@ -3110,6 +4151,10 @@ async function launchPackagedSession(): Promise<void> {
 
   try {
     addLog(`Launching packaged session for ${selected.length} issues...`);
+    const multiPayload = buildMultiIssueAttachPayload(selected, currentRepo);
+    const individualItems = selected.map((i) => buildIssueAttachPayload(i));
+    const items = mergeSessionItems([multiPayload], individualItems);
+
     const res = await host.startSession({
       projectId: currentProject.id,
       worktree: false,
@@ -3120,9 +4165,12 @@ async function launchPackagedSession(): Promise<void> {
       text: promptText,
       data: {
         packaged: true,
+        issueNumber: selected[0]?.number,
         issueNumbers: selected.map((i) => i.number),
+        items,
       },
-    });
+      items,
+    } as any);
 
     clearSelection();
     selected.forEach((issue) => {
@@ -3530,6 +4578,23 @@ function updateScratchpadStats(text: string): void {
   elScratchpadStatsBadge.textContent = stats;
 }
 
+function flushScratchpadSave(): void {
+  if (scratchpadSaveTimer !== null) {
+    clearTimeout(scratchpadSaveTimer);
+    scratchpadSaveTimer = null;
+  }
+  const text = elScratchpadTextarea?.value ?? '';
+  updateScratchpadStats(text);
+  try {
+    localStorage.setItem(getScratchpadLocalKey(), text);
+  } catch {}
+  setScratchpadSaveStatus('Saved');
+  void host.storage
+    .set(getScratchpadStorageKey(), text)
+    .then(() => setScratchpadSaveStatus('Saved'))
+    .catch(() => setScratchpadSaveStatus('Saved'));
+}
+
 function handleScratchpadInput(): void {
   if (!elScratchpadTextarea) return;
   // Show the pending state at once, but batch the re-parse and both writes so a
@@ -3537,16 +4602,8 @@ function handleScratchpadInput(): void {
   setScratchpadSaveStatus('Saving...');
   clearTimeout(scratchpadSaveTimer);
   scratchpadSaveTimer = setTimeout(() => {
-    const text = elScratchpadTextarea?.value ?? '';
-    updateScratchpadStats(text);
-    try {
-      localStorage.setItem(getScratchpadLocalKey(), text);
-    } catch {}
-    void host.storage
-      .set(getScratchpadStorageKey(), text)
-      .then(() => setScratchpadSaveStatus('Saved'))
-      .catch(() => setScratchpadSaveStatus('Saved'));
-  }, 300);
+    flushScratchpadSave();
+  }, 1000);
 }
 
 function insertIntoScratchpad(snippet: string): void {
@@ -3644,6 +4701,7 @@ async function openScratchpadModal(): Promise<void> {
 }
 
 function closeScratchpadModal(): void {
+  flushScratchpadSave();
   if (elScratchpadModalBackdrop) {
     elScratchpadModalBackdrop.classList.remove('active');
   }
@@ -3787,6 +4845,12 @@ function saveDraftAiInput(text: string): void {
 }
 
 async function openNewIssueModal(): Promise<void> {
+  // Aggregated view has no single target repo, so issue creation must pick one.
+  if (isAllProjectsMode) {
+    await host.toast({ kind: 'info', message: 'Pick a specific repository to create an issue.' });
+    openRepoPopover();
+    return;
+  }
   if (!currentRepo) {
     openRepoPopover();
     return;
@@ -3926,6 +4990,7 @@ async function launchAiIssueSession(): Promise<void> {
 function setupDragAndDrop(): void {
   (Object.keys(kanbanCardContainers) as ColumnId[]).forEach((colId) => {
     const container = kanbanCardContainers[colId];
+    if (!container) return;
 
     container.addEventListener('dragover', (e) => {
       e.preventDefault();
@@ -3997,10 +5062,20 @@ function initEvents(): void {
     }
   });
 
-  // Search input
+  // Search input (debounced by 150ms for responsive typing across hundreds of issues)
+  let searchDebounceTimer: any = null;
   elSearchInput.addEventListener('input', (e) => {
     searchQuery = (e.target as HTMLInputElement).value;
-    renderViews();
+    clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(() => {
+      renderViews();
+    }, 150);
+  });
+  elSearchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      clearTimeout(searchDebounceTimer);
+      renderViews();
+    }
   });
 
   // 3-Way View Switcher (List / Board / Graph)
@@ -4086,8 +5161,13 @@ function initEvents(): void {
 
   // Refresh
   const refreshTasks = () => {
-    void fetchIssues();
-    void discoverWorkspaceRepositories();
+    if (isAllProjectsMode) {
+      // Rescan projects first so newly linked repos are included, then refetch.
+      void discoverWorkspaceRepositories().then(() => fetchAllProjectIssues(true));
+    } else {
+      void fetchIssues();
+      void discoverWorkspaceRepositories();
+    }
   };
   elBtnRefresh.addEventListener('click', refreshTasks);
 
@@ -4284,7 +5364,13 @@ function initEvents(): void {
   }
   if (elScratchpadTextarea) {
     elScratchpadTextarea.addEventListener('input', handleScratchpadInput);
+    elScratchpadTextarea.addEventListener('blur', flushScratchpadSave);
   }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      flushScratchpadSave();
+    }
+  });
   if (elBtnScratchpadAddTheme) {
     const setThemePickerOpen = (open: boolean) => {
       if (!elScratchpadThemePopover) return;
@@ -4442,9 +5528,22 @@ function initEvents(): void {
   });
 
   window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && activeIssue) {
+    if (e.key === 'Escape') {
       const activeModal = document.querySelector('.modal-backdrop.active');
-      if (!activeModal) {
+      if (activeModal) {
+        if (activeModal === elScratchpadModalBackdrop || activeModal.id === 'scratchpadModalBackdrop') {
+          flushScratchpadSave();
+          closeScratchpadModal();
+        } else if (activeModal === elPreflightBackdrop || activeModal.id === 'preflightModalBackdrop') {
+          closePreflightModal();
+        } else if (activeModal === elNewIssueModalBackdrop || activeModal.id === 'newIssueModalBackdrop') {
+          closeNewIssueModal();
+        } else {
+          activeModal.classList.remove('active');
+        }
+        return;
+      }
+      if (activeIssue) {
         closeDrawer();
       }
     }
@@ -4452,15 +5551,16 @@ function initEvents(): void {
 
   if (elDrawerPrioritySelect) {
     elDrawerPrioritySelect.addEventListener('change', async () => {
-      if (!activeIssue || !currentRepo) return;
+      const priorityRepo = repoForIssue(activeIssue);
+      if (!activeIssue || !priorityRepo) return;
       const val = elDrawerPrioritySelect.value;
       const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
       activeIssue.labels = updatedLabels.map((name) => ({ name }));
-      if (currentRepo) issueCache.delete(currentRepo);
+      issueCache.delete(priorityRepo);
       renderDrawer(activeIssue);
       renderViews();
       try {
-        await githubRequest('PATCH', `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+        await githubRequest('PATCH', `/repos/${priorityRepo}/issues/${activeIssue.number}`, {
           labels: updatedLabels,
         });
         await host.toast({ kind: 'info', message: `Updated priority on #${activeIssue.number} to ${val}` });
@@ -4478,10 +5578,11 @@ function initEvents(): void {
           .map((l) => (typeof l === 'string' ? l : l.name || ''))
           .filter((name) => !name.startsWith('status:'));
         activeIssue.labels = filteredLabels.map((name) => ({ name }));
-        if (currentRepo) issueCache.delete(currentRepo);
+        const statusRepo = repoForIssue(activeIssue);
+        if (statusRepo) issueCache.delete(statusRepo);
         renderViews();
         renderDrawer(activeIssue);
-        void githubRequest('PATCH', `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+        void githubRequest('PATCH', `/repos/${statusRepo}/issues/${activeIssue.number}`, {
           labels: filteredLabels,
         });
       } else {
@@ -4493,15 +5594,16 @@ function initEvents(): void {
 
   if (elDrawerComplexitySelect) {
     elDrawerComplexitySelect.addEventListener('change', async () => {
-      if (!activeIssue || !currentRepo) return;
+      const complexityRepo = repoForIssue(activeIssue);
+      if (!activeIssue || !complexityRepo) return;
       const val = elDrawerComplexitySelect.value;
       const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
       activeIssue.labels = updatedLabels.map((name) => ({ name }));
-      if (currentRepo) issueCache.delete(currentRepo);
+      issueCache.delete(complexityRepo);
       renderDrawer(activeIssue);
       renderViews();
       try {
-        await githubRequest('PATCH', `/repos/${currentRepo}/issues/${activeIssue.number}`, {
+        await githubRequest('PATCH', `/repos/${complexityRepo}/issues/${activeIssue.number}`, {
           labels: updatedLabels,
         });
         await host.toast({ kind: 'info', message: `Updated complexity on #${activeIssue.number} to ${val}` });
@@ -4624,6 +5726,34 @@ function initEvents(): void {
     });
   }
 
+  if (elBtnAddIssueTest && elInputAddIssueTest) {
+    elBtnAddIssueTest.addEventListener('click', () => {
+      if (activeIssue && elInputAddIssueTest.value.trim()) {
+        const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddIssueTest.value, 'issue');
+        elInputAddIssueTest.value = '';
+        void updateIssueBody(activeIssue, newBody);
+      }
+    });
+
+    elInputAddIssueTest.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') elBtnAddIssueTest.click();
+    });
+  }
+
+  if (elBtnAddBatchTest && elInputAddBatchTest) {
+    elBtnAddBatchTest.addEventListener('click', () => {
+      if (activeIssue && elInputAddBatchTest.value.trim()) {
+        const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddBatchTest.value, 'batch');
+        elInputAddBatchTest.value = '';
+        void updateIssueBody(activeIssue, newBody);
+      }
+    });
+
+    elInputAddBatchTest.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') elBtnAddBatchTest.click();
+    });
+  }
+
   elBtnDrawerAttachComposer.addEventListener('click', async () => {
     if (!activeIssue) return;
     try {
@@ -4650,9 +5780,11 @@ function initEvents(): void {
     elPreflightWorktreeToggle.addEventListener('change', () => {
       const isChecked = elPreflightWorktreeToggle.checked;
       elPreflightWorktreeSection.style.display = isChecked ? 'flex' : 'none';
+      const theme = activeIssue ? getIssueTheme(activeIssue) : '';
+      const existingThemeWorktree = (theme && theme !== 'No Theme') ? findThemeWorktree(worktrees, activeIssue, undefined, currentProject?.id) : null;
       elBtnPreflightLaunch.textContent = isChecked
         ? 'Launch Worktree & Agent'
-        : 'Start Agent Session (Current Workspace)';
+        : (existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : 'Start Agent Session (Current Workspace)');
       updatePreflightBrief();
     });
   }

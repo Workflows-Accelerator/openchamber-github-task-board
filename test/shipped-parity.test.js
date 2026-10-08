@@ -50,6 +50,11 @@ const JS_FUNCS = [
   'buildMultiIssueAttachPayload', 'buildConsolidatedIssuePrompt', 'serializeDraftSubtasks',
   'parseIssueDependencies', 'addDependencyToMarkdown', 'removeDependencyFromMarkdown',
   'extractIssueReferences', 'buildDependencyGraph', 'calculateEdgePath', 'detectCycle',
+  'buildSessionIndex',
+  'scopeDoneIssues',
+  'normalizeGithubIssues',
+  'mergeIssuePages',
+  'parseFriendlyTitle',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -67,8 +72,29 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 31);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 36);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
+});
+
+test('parseFriendlyTitle: shipped == core', () => {
+  const cases = [
+    { body: '### Friendly Title: My Nice Title\n\n### Overview', defaultTitle: 'feat(core): do something' },
+    { body: '## Friendly Title: Another Title', defaultTitle: 'fix: bug' },
+    { body: '**Friendly Title:** Bold Title', defaultTitle: 'chore: update' },
+    { body: '### Friendly Title:\nNext Line Title', defaultTitle: 'refactor: code' },
+    { body: 'Regular description without friendly title', defaultTitle: 'feat: regular' },
+    { body: '', defaultTitle: 'feat: empty body' },
+    { body: null, defaultTitle: 'feat: null body' },
+    { body: undefined, defaultTitle: 'feat: undefined body' },
+    { body: '### Friendly Title: Standalone Title', defaultTitle: undefined },
+  ];
+  for (const c of cases) {
+    assert.deepEqual(
+      Shipped.parseFriendlyTitle(c.body, c.defaultTitle),
+      Core.parseFriendlyTitle(c.body, c.defaultTitle),
+      'parseFriendlyTitle parity: ' + JSON.stringify(c)
+    );
+  }
 });
 
 test('parseSubtasks / parseOpenQuestions: shipped == core', () => {
@@ -184,4 +210,32 @@ test('dependency helpers: shipped == core', () => {
   assert.equal(sGraph.layers.length, cGraph.layers.length);
   assert.equal(sGraph.edges.length, cGraph.edges.length);
   assert.deepEqual(Array.from(sGraph.nodes.keys()), Array.from(cGraph.nodes.keys()));
+});
+
+test('session index: shipped == core', () => {
+  const dummySessions = [
+    { id: '1', title: 'Task #10', activity: 'idle', items: [{ id: '10' }] },
+    { id: '2', title: 'Fix bug', activity: 'running', worktree: 'issue-20-fix' },
+  ];
+  const sIdx = Shipped.buildSessionIndex(dummySessions);
+  const cIdx = Core.buildSessionIndex(dummySessions);
+  assert.equal(sIdx.get(10)?.id, cIdx.get(10)?.id);
+  assert.equal(sIdx.get(20)?.id, cIdx.get(20)?.id);
+});
+
+test('scopeDoneIssues: shipped == core', () => {
+  const dummy = [{ number: 1 }, { number: 2 }, { number: 3 }];
+  assert.deepEqual(Shipped.scopeDoneIssues(dummy, 2, false), Core.scopeDoneIssues(dummy, 2, false));
+  assert.deepEqual(Shipped.scopeDoneIssues(dummy, 2, true), Core.scopeDoneIssues(dummy, 2, true));
+});
+
+test('normalizeGithubIssues and mergeIssuePages: shipped == core', () => {
+  const raw = [
+    { number: 1, title: 'Bug', body: '- [ ] task', state: 'open' },
+    { number: 2, title: 'PR', pull_request: {} },
+  ];
+  assert.deepEqual(Shipped.normalizeGithubIssues(raw), Core.normalizeGithubIssues(raw));
+  const p1 = [{ number: 10, title: 'A' }];
+  const p2 = [{ number: 10, title: 'A updated' }, { number: 5, title: 'B' }];
+  assert.deepEqual(Shipped.mergeIssuePages(p1, p2), Core.mergeIssuePages(p1, p2));
 });

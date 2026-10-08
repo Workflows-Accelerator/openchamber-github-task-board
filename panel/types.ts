@@ -2,15 +2,16 @@
 // Types & Domain Interfaces
 // ==========================================
 
-import type { Issue } from './core.js';
-
 export type {
   Subtask,
+  TestItem,
   Issue,
   DependencyGraph,
   DependencyNode,
   DependencyEdge,
   RectLike,
+  ProjectItem,
+  IssueGroup,
 } from './core.js';
 
 export interface SessionInfo {
@@ -21,6 +22,7 @@ export interface SessionInfo {
   worktree?: string | { name?: string; branch?: string; directory?: string; status?: string } | null;
   directory?: string | null;
   items?: Array<{ id?: string; providerId?: string; data?: any; url?: string }>;
+  data?: any;
 }
 
 export function extractWorktreeName(wt: any): string {
@@ -32,21 +34,7 @@ export function extractWorktreeName(wt: any): string {
   return '';
 }
 
-export interface ProjectItem {
-  id: string;
-  name: string;
-  directory: string;
-  gitRepo: { owner: string; repo: string } | null;
-  linkedRepo: string | null;
-}
-
-export type ColumnId = 'backlog' | 'todo' | 'in-progress' | 'in-review' | 'done';
+export type ColumnId = 'draft' | 'backlog' | 'todo' | 'planned' | 'in-progress' | 'needs-human' | 'in-review' | 'done';
 export type TabId = 'all' | ColumnId;
-
-export interface IssueGroup {
-  id: string;
-  title: string;
-  issues: Issue[];
-}
 
 export type NewIssueMode = 'ai' | 'manual';

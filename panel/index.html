@@ -214,6 +214,15 @@
       padding: 2px 7px;
       font-size: 11px;
     }
+    .btn-xs {
+      height: 20px;
+      padding: 1px 6px;
+      font-size: 10.5px;
+      line-height: 1;
+    }
+    .btn-inline-answer {
+      flex-shrink: 0;
+    }
 
     /* Compact Search Input */
     .search-wrap {
@@ -550,6 +559,39 @@
       stroke-width: 3.5 !important;
       opacity: 1 !important;
     }
+    .graph-edge-group {
+      cursor: pointer;
+    }
+    .graph-edge-delete-badge {
+      opacity: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      cursor: pointer;
+    }
+    .graph-edge-group:hover .graph-edge-delete-badge,
+    .graph-edge-delete-badge:hover,
+    .graph-edge-delete-badge:focus {
+      opacity: 1;
+    }
+    .graph-edge-delete-circle {
+      fill: var(--surf-elevated, #20242b);
+      stroke: var(--border, #475569);
+      stroke-width: 1.5;
+      transition: fill 0.15s ease, stroke 0.15s ease;
+    }
+    .graph-edge-delete-text {
+      fill: var(--fg-muted, #94a3b8);
+      font-size: 11px;
+      font-weight: 700;
+      user-select: none;
+      pointer-events: none;
+    }
+    .graph-edge-delete-badge:hover .graph-edge-delete-circle {
+      fill: var(--err, #e74c3c);
+      stroke: var(--err, #e74c3c);
+    }
+    .graph-edge-delete-badge:hover .graph-edge-delete-text {
+      fill: #ffffff;
+    }
     .graph-edge-open {
       stroke: var(--oc-border-strong, var(--fg-muted, #64748b));
       stroke-width: 2;
@@ -753,6 +795,29 @@
       padding: 1px 5px;
       border-radius: 3px;
       font-weight: 600;
+    }
+    .graph-badge-blocked-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .btn-remove-blocker {
+      background: transparent;
+      border: none;
+      color: inherit;
+      cursor: pointer;
+      padding: 0 2px;
+      font-size: 11px;
+      line-height: 1;
+      opacity: 0.7;
+      transition: opacity 0.15s ease, color 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .btn-remove-blocker:hover {
+      opacity: 1;
+      color: var(--err, #e74c3c);
     }
     .graph-badge-impact {
       display: inline-flex;
@@ -1051,6 +1116,12 @@
       color: var(--fg);
       line-height: 1.4;
       word-break: break-word;
+    }
+
+    .card-subtitle-tech {
+      word-break: break-word;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
     }
 
     .card-desc {
@@ -1545,6 +1616,21 @@
       border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
     }
 
+    /* Awaiting Batch Badge on Cards */
+    .badge-awaiting-batch {
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 0 4px;
+      border-radius: 3px;
+      background: color-mix(in srgb, var(--warn) 18%, transparent);
+      color: var(--warn);
+      border: 1px solid color-mix(in srgb, var(--warn) 35%, transparent);
+      display: inline-flex;
+      align-items: center;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+
     /* Open Questions Badge on Cards */
     .questions-prog {
       display: inline-flex;
@@ -1906,6 +1992,13 @@
       cursor: pointer;
     }
 
+    /* Test Plan Checklist Section in Drawer */
+    .test-plan-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
     .add-task-row {
       display: flex;
       gap: 6px;
@@ -1990,6 +2083,25 @@
     }
     .popover-item:hover {
       background: var(--surf-hover);
+    }
+    .all-projects-option {
+      padding: 7px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg);
+      background: var(--surf-muted);
+      transition: background 0.15s ease;
+    }
+    .all-projects-option:hover {
+      background: var(--surf-hover);
+    }
+    .all-projects-option.is-active {
+      color: var(--prim);
     }
     .popover-item-title {
       font-size: 12px;
@@ -2292,6 +2404,7 @@
       <label for="selectGroupBy">Group by:</label>
       <select id="selectGroupBy" class="form-ctrl select-sm">
         <option value="theme" selected>Theme</option>
+        <option value="project">Project</option>
         <option value="priority">Priority</option>
         <option value="none">None</option>
       </select>
@@ -2349,10 +2462,13 @@
   <!-- Responsive Segmented Tab Bar (Visible in narrow panel / list mode) -->
   <nav class="status-tabs" id="statusTabBar">
     <button class="status-tab active" data-tab="all">All <span class="status-pill" id="tabCountAll">0</span></button>
+    <button class="status-tab" data-tab="draft">Draft <span class="status-pill" id="tabCountDraft">0</span></button>
     <button class="status-tab" data-tab="backlog">Backlog <span class="status-pill" id="tabCountBacklog">0</span></button>
     <button class="status-tab" data-tab="todo">To Do <span class="status-pill" id="tabCountTodo">0</span></button>
+    <button class="status-tab" data-tab="planned">Planned <span class="status-pill" id="tabCountPlanned">0</span></button>
     <button class="status-tab" data-tab="in-progress">In Progress <span class="status-pill" id="tabCountProgress">0</span></button>
-    <button class="status-tab" data-tab="in-review">In Review <span class="status-pill" id="tabCountReview">0</span></button>
+    <button class="status-tab" data-tab="needs-human">Needs Human <span class="status-pill" id="tabCountNeedsHuman">0</span></button>
+    <button class="status-tab" data-tab="in-review">Review <span class="status-pill" id="tabCountReview">0</span></button>
     <button class="status-tab" data-tab="done">Done <span class="status-pill" id="tabCountDone">0</span></button>
   </nav>
 
@@ -2364,6 +2480,14 @@
 
     <!-- Mode 2: Multi-Column Kanban View (Wide canvas for page mode) -->
     <main class="kanban-view" id="kanbanViewContainer">
+      <!-- Draft -->
+      <div class="kanban-col" data-column="draft">
+        <div class="kanban-col-header">
+          <span>Draft</span>
+          <span class="status-pill" id="kCountDraft">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsDraft" data-status="draft"></div>
+      </div>
       <!-- Backlog -->
       <div class="kanban-col" data-column="backlog">
         <div class="kanban-col-header">
@@ -2380,6 +2504,14 @@
         </div>
         <div class="kanban-cards" id="kCardsTodo" data-status="todo"></div>
       </div>
+      <!-- Planned -->
+      <div class="kanban-col" data-column="planned">
+        <div class="kanban-col-header">
+          <span>Planned</span>
+          <span class="status-pill" id="kCountPlanned">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsPlanned" data-status="planned"></div>
+      </div>
       <!-- In Progress -->
       <div class="kanban-col" data-column="in-progress">
         <div class="kanban-col-header">
@@ -2388,10 +2520,18 @@
         </div>
         <div class="kanban-cards" id="kCardsProgress" data-status="in-progress"></div>
       </div>
+      <!-- Needs Human -->
+      <div class="kanban-col" data-column="needs-human">
+        <div class="kanban-col-header">
+          <span>Needs Human</span>
+          <span class="status-pill" id="kCountNeedsHuman">0</span>
+        </div>
+        <div class="kanban-cards" id="kCardsNeedsHuman" data-status="needs-human"></div>
+      </div>
       <!-- In Review -->
       <div class="kanban-col" data-column="in-review">
         <div class="kanban-col-header">
-          <span>In Review</span>
+          <span>Review</span>
           <span class="status-pill" id="kCountReview">0</span>
         </div>
         <div class="kanban-cards" id="kCardsReview" data-status="in-review"></div>
@@ -2412,7 +2552,7 @@
         <div class="graph-theme-pills" id="graphThemePills"></div>
         <div class="graph-controls">
           <label class="graph-toggle-label">
-            <input type="checkbox" id="chkGraphShowDone" checked />
+            <input type="checkbox" id="chkGraphShowDone" />
             <span>Show Done</span>
           </label>
           <div class="graph-stats" id="graphStats">
@@ -2505,9 +2645,12 @@
         <div class="section-label">Workflow Status</div>
         <select class="form-ctrl" id="drawerStatusSelect" style="width: 100%;">
           <option value="none">Uncategorized (All View Only)</option>
+          <option value="draft">Draft</option>
           <option value="backlog">Backlog</option>
           <option value="todo">To Do</option>
+          <option value="planned">Planned</option>
           <option value="in-progress">In Progress</option>
+          <option value="needs-human">Needs Human</option>
           <option value="in-review">In Review</option>
           <option value="done">Done</option>
         </select>
@@ -2594,6 +2737,41 @@
         <div class="add-task-row">
           <input type="text" id="inputAddQuestion" class="form-ctrl" style="flex: 1;" placeholder="Add open question to align on..." />
           <button class="btn btn-sm" id="btnAddQuestion">Add Q</button>
+        </div>
+      </div>
+
+      <!-- Test Plan Section -->
+      <div class="test-plan-section">
+        <!-- Test Plan (Issue) -->
+        <div>
+          <div class="section-label">
+            <span style="display: flex; align-items: center; gap: 5px;">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 12px; height: 12px; fill: currentColor;"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-9 14l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <span>Test Plan (Issue)</span>
+            </span>
+            <span id="issueTestsProgressText" style="font-family: var(--font-mono); font-size: 11px;">0 / 0</span>
+          </div>
+          <div class="check-list" id="drawerIssueTestsContainer"></div>
+          <div class="add-task-row">
+            <input type="text" id="inputAddIssueTest" class="form-ctrl" style="flex: 1;" placeholder="Add issue test..." />
+            <button class="btn btn-sm" id="btnAddIssueTest">Add</button>
+          </div>
+        </div>
+
+        <!-- Test Plan (Batch) -->
+        <div>
+          <div class="section-label">
+            <span style="display: flex; align-items: center; gap: 5px;">
+              <svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 12px; height: 12px; fill: currentColor;"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 10l-5 3.5-3-2.5 1.41-1.41 1.59 1.33 3.59-2.5L18 12z"/></svg>
+              <span>Test Plan (Batch)</span>
+            </span>
+            <span id="batchTestsProgressText" style="font-family: var(--font-mono); font-size: 11px;">0 / 0</span>
+          </div>
+          <div class="check-list" id="drawerBatchTestsContainer"></div>
+          <div class="add-task-row">
+            <input type="text" id="inputAddBatchTest" class="form-ctrl" style="flex: 1;" placeholder="Add batch test..." />
+            <button class="btn btn-sm" id="btnAddBatchTest">Add</button>
+          </div>
         </div>
       </div>
 
@@ -2720,6 +2898,12 @@
         </button>
       </div>
       <div class="modal-body">
+        <!-- Theme Worktree Auto-Reuse Badge / Notice -->
+        <div id="preflightThemeNotice" class="preflight-theme-notice" style="display: none; align-items: center; gap: 6px; padding: 7px 10px; background: rgba(59, 130, 246, 0.12); border: 1px solid var(--prim, #3b82f6); border-radius: var(--rad); font-size: 11.5px; color: var(--prim, #3b82f6); font-weight: 500;">
+          <svg class="icon icon-sm" style="fill: var(--prim, #3b82f6); flex-shrink: 0;" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l7.59-7.59L21 8l-9 9z"/></svg>
+          <span id="preflightThemeNoticeText">Reusing active theme worktree: <strong id="preflightThemeNoticeName"></strong></span>
+        </div>
+
         <!-- Worktree Opt-in Toggle (Off by default) -->
         <div style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--surf-subtle); border-radius: var(--rad); border: 1px solid var(--border);">
           <input type="checkbox" id="preflightWorktreeToggle" />
