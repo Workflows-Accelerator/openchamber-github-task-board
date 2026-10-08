@@ -80,6 +80,12 @@ the bundle by hand.
 - No timer polling exists; adaptive-polling option dropped.
 - Source: specs/rate-limit-manager-review.md. Measured request savings and real browser conditional transport remain UNKNOWN.
 
+## D12. GitHub caching route: DIRECT ORIGINS CAPABILITY (user, 2026-10-08)
+Declare `capabilities: ["origins"]` + `contributes.origins: ["https://api.github.com"]` in the board manifest so the existing direct-fetch ETag/If-None-Match/304 path (main.ts:1094-1152) activates with the workspace token the user already provides. Rejected: host proxy upgrade (kept as possible later platform work; cleanest security but release-cycle cost), PAT-in-settings via proxy (proxy strips headers — cannot 304 regardless). Binding caveats: (a) implementation MUST empirically re-verify the CSP/origins claim in the real served panel and show an actual 304 in the network log before this counts as done; (b) no token values or prefixes in any log, test fixture or artifact; (c) the host.request fallback must remain intact for users without a workspace token.
+
+## D13. Repo manual-override lifetime: FOLLOW THE SESSION (user, 2026-10-08)
+Current-session repository is the default. A manual repo pick is scoped to the current session context: when the active session changes, selection resets to the new session's repository automatically. Explicit switching stays easy within a session context; the "Current session" control remains the anchor back to the default. (Manager had recommended keeping the manual pick; the user chose follow-the-session — this decision is authoritative.)
+
 ## Gate ledger correction (2026-10-07)
 - Batch 1 contract/views/status and voice crash local integration landed, L4 passed as indexed in verifications/proof.md; human review pending, not Done. Older RUNNING rows above are historical.
 - Batch 2 voice cd6ab18 and board 656cc4f: both independent hostile reviews HALT. No integration/acceptance; repair 1 dispatched into isolated worktrees. Worker/model/session details: status-l4-halts-2026-10-07.md.
