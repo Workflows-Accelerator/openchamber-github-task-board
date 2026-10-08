@@ -685,6 +685,8 @@ async function discoverWorkspaceRepositories(): Promise<void> {
     await autoResolveRepoForActiveContext();
   } catch (err: any) {
     addLog(`Project scan error: ${err.message}`, 'warn');
+    renderRepoPopoverList();
+    await autoResolveRepoForActiveContext();
   } finally {
     isDiscoveringRepos = false;
   }
@@ -769,30 +771,28 @@ async function autoResolveRepoForActiveContext(activeSession?: any): Promise<voi
 
   currentProject = targetProject || null;
 
-  if (!targetProject) {
-    elTxtRepoLabel.textContent = 'Select Repo';
-    return;
+  if (targetProject) {
+    // Watch active project sessions
+    void watchActiveProject(targetProject.id);
+    addLog(`Active conversation project: "${targetProject.name}" (${targetProject.directory})`);
   }
-
-  // Watch active project sessions
-  void watchActiveProject(targetProject.id);
-
-  addLog(`Active conversation project: "${targetProject.name}" (${targetProject.directory})`);
 
   // Step 2: Native Git remote in directory or project has HIGHEST precedence over stale storage
   if (currentDirectory) {
     const dirRemote = await inspectGitConfigInDir(currentDirectory);
     if (dirRemote) {
       const full = `${dirRemote.owner}/${dirRemote.repo}`;
-      targetProject.gitRepo = dirRemote;
-      targetProject.linkedRepo = full;
+      if (targetProject) {
+        targetProject.gitRepo = dirRemote;
+        targetProject.linkedRepo = full;
+      }
       currentSessionRepo = full;
-      setRepository(full, `directory: ${targetProject.name}`);
+      setRepository(full, targetProject ? `directory: ${targetProject.name}` : `directory: ${currentDirectory}`);
       return;
     }
   }
 
-  if (targetProject.gitRepo) {
+  if (targetProject?.gitRepo) {
     const full = `${targetProject.gitRepo.owner}/${targetProject.gitRepo.repo}`;
     currentSessionRepo = full;
     setRepository(full, `project-git: ${targetProject.name}`);
@@ -800,15 +800,17 @@ async function autoResolveRepoForActiveContext(activeSession?: any): Promise<voi
   }
 
   // Step 3: Check stored link for this specific project
-  const storedLink = await host.storage.get(`repo_${targetProject.id}`);
-  if (typeof storedLink === 'string' && storedLink.includes('/')) {
-    const cleanStored = storedLink.trim();
-    currentSessionRepo = cleanStored;
-    setRepository(cleanStored, `stored-project-link: ${targetProject.name}`);
-    return;
+  if (targetProject) {
+    const storedLink = await host.storage.get(`repo_${targetProject.id}`);
+    if (typeof storedLink === 'string' && storedLink.includes('/')) {
+      const cleanStored = storedLink.trim();
+      currentSessionRepo = cleanStored;
+      setRepository(cleanStored, `stored-project-link: ${targetProject.name}`);
+      return;
+    }
   }
 
-  // Step 4: Check if any session in this project has linked items
+  // Step 4: Check if any session has linked items
   const candidateSessions = activeSession ? [activeSession, ...(sessions || [])] : (sessions || []);
   if (candidateSessions.length > 0) {
     for (const sess of candidateSessions) {
@@ -825,7 +827,26 @@ async function autoResolveRepoForActiveContext(activeSession?: any): Promise<voi
     }
   }
 
-  // Step 5: If this project has no repo linked:
+  // Check stored custom/previous repo as fallback before giving up
+  const previousRepo = await host.storage.get('selected_repo');
+  if (typeof previousRepo === 'string' && previousRepo.includes('/')) {
+    const cleanPrev = previousRepo.trim();
+    currentSessionRepo = cleanPrev;
+    setRepository(cleanPrev, 'stored-selected-repo');
+    return;
+  }
+
+  // Step 5: If no repo linked:
+  if (!targetProject) {
+    elTxtRepoLabel.textContent = 'Select Repo';
+    elTxtRepoLabel.title = 'No repository detected for active context. Click to link.';
+    showBanner('No Git remote detected. Enter a repository:', 'Select Repo', () => {
+      openRepoPopover();
+    });
+    renderEmptyState('No GitHub repository detected for active directory. Click "Select Repo" above to link a repository.', 'empty');
+    return;
+  }
+
   elTxtRepoLabel.textContent = `${targetProject.name} (No Repo)`;
   elTxtRepoLabel.title = `Project "${targetProject.name}" has no GitHub repository linked. Click to link.`;
 
