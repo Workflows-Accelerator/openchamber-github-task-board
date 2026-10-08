@@ -58,6 +58,9 @@ Dispatch incident (recorded for method): first spawn attempt of both code worker
 
 Queue data status: issue #24 is live with real Human Tasks + Open Questions + status:needs-human (created via gh this wave). #23 sections land via the issue worker; #23 deliberately keeps no needs-human label while a worker actively fixes it — per D3 its Human Tasks enter the Human Tasks view at needs-human hand-off, and its Open Question is visible in the Questions view at any status. No label churn.
 
+## Wave-2 receipts
+- Issue-body hygiene + #23 handoff: L4 hostile review (ses_41d7a4ef7ee20f825a2dc7d2, worker tier) VERDICT PROCEED 2026-10-08 — all 12 issues PASS: titles extract via the real compiled parseFriendlyTitle, #23 appended handoff is an exact match (1,644 chars, 3 Human Tasks + 1 Open Question, 0 of 12 boxes checked), #22 inline-heading normalization clean, no shell-quoting truncation, no extraneous issues touched. Report: verifications/issue-bodies-l4-2026-10-08.md. L5: not waived but inherently covered by the user's live board inspection in the pending re-review (issue data, not UI code); no agent closes anything.
+
 | Track | Where | Session | State |
 | --- | --- | --- | --- |
 | Voice All Projects crash #17 | chambervoice local master, 21fd1d1 | ended | Batch 1 human verdict pending |
