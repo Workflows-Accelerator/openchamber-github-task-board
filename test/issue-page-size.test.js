@@ -80,13 +80,30 @@ test('isOversizedAnswer correctly classifies SyntaxError and RESPONSE_TOO_LARGE'
   assert.equal(isOversizedAnswer(new SyntaxError('Unterminated string in JSON at position 256000')), true);
   assert.equal(isOversizedAnswer(new SyntaxError('Unterminated string in JSON at position 17 (line 1 column 18)')), true);
   assert.equal(isOversizedAnswer(new SyntaxError('Unexpected end of JSON input')), true);
+  assert.equal(isOversizedAnswer(new SyntaxError('Unexpected end of input')), true);
   assert.equal(isOversizedAnswer({ code: 'RESPONSE_TOO_LARGE' }), true);
   assert.equal(isOversizedAnswer(new Error('RESPONSE_TOO_LARGE: maximum size exceeded')), true);
+
+  // F-01: V8 truncation SyntaxErrors (property value or array element truncation) must return true
+  const parseErr = (str) => {
+    try {
+      JSON.parse(str);
+      return null;
+    } catch (err) {
+      return err;
+    }
+  };
+  assert.equal(isOversizedAnswer(parseErr('{"error": "not found"')), true, 'Object property value truncation must return true');
+  assert.equal(isOversizedAnswer(parseErr('[{"id": 1}, {"id": 2')), true, 'Multi-element array truncation must return true');
+  assert.equal(isOversizedAnswer(parseErr('[{"id": 1, "title": "test"}')), true, 'Array element truncation must return true');
 
   // F-01: HTML error pages and non-truncation syntax errors must return false
   assert.equal(isOversizedAnswer(new SyntaxError('Unexpected token < in JSON at position 0')), false);
   assert.equal(isOversizedAnswer(new SyntaxError('Unexpected token \'<\', "<!DOCTYPE "... is not valid JSON')), false);
+  assert.equal(isOversizedAnswer(parseErr('<!DOCTYPE html><html><body>502 Bad Gateway</body></html>')), false);
   assert.equal(isOversizedAnswer(new SyntaxError('Unexpected number in JSON at position 5')), false);
+  assert.equal(isOversizedAnswer(parseErr('{"invalid": foo}')), false);
+  assert.equal(isOversizedAnswer(parseErr('{"a": undefined}')), false);
   assert.equal(isOversizedAnswer(new Error('Not Found')), false);
   assert.equal(isOversizedAnswer({ status: 500 }), false);
   assert.equal(isOversizedAnswer(null), false);

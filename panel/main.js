@@ -5632,10 +5632,11 @@ Blocked by ${blockerRef}`;
     }
     if (err instanceof SyntaxError || err.name === "SyntaxError") {
       const msg = typeof err.message === "string" ? err.message : "";
-      if (msg.includes("position 0") || msg.includes("token '<'") || msg.includes("token <")) {
+      if (msg.includes("position 0") || msg.includes("token '<'") || msg.includes("token <") || msg.includes("<!DOCTYPE")) {
         return false;
       }
-      return msg.includes("position 256000") || msg.includes("Unexpected end of JSON") || msg.includes("Unterminated string") || msg.includes("Unexpected end of data");
+      const lower = msg.toLowerCase();
+      return lower.includes("position 256000") || lower.includes("unexpected end of json") || lower.includes("unexpected end of data") || lower.includes("unexpected end of input") || lower.includes("unterminated string") || lower.includes("after property value") || lower.includes("after array element");
     }
     return false;
   }
