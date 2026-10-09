@@ -5062,6 +5062,75 @@ ${lines.join("\n")}`;
     }
     return null;
   }
+  function resolveIssueSkills(issues2) {
+    if (!issues2) {
+      return { skillNames: [], transclusions: [] };
+    }
+    const list = Array.isArray(issues2) ? issues2 : [issues2];
+    const skillNames = [];
+    const transclusions = [];
+    for (const issue of list) {
+      if (!issue) continue;
+      if (Array.isArray(issue.skills)) {
+        for (const s of issue.skills) {
+          if (typeof s === "string" && s.trim()) {
+            skillNames.push(s.trim());
+          }
+        }
+      }
+      const labelNames = (issue.labels || []).map(
+        (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
+      );
+      if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug" || l === "theme:bug")) {
+        skillNames.push("surgical-patch", "debugging-and-error-recovery");
+        transclusions.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
+        transclusions.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature" || l === "theme:enhancement" || l === "theme:feature")) {
+        skillNames.push("test-driven-development", "lean-build");
+        transclusions.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
+        transclusions.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs" || l === "theme:documentation" || l === "theme:docs")) {
+        skillNames.push("documentation-and-adrs");
+        transclusions.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "ui" || l === "frontend" || l === "css" || l === "design" || l === "theme:ui" || l === "theme:frontend")) {
+        skillNames.push("frontend-ui-engineering");
+        transclusions.push("[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "api" || l === "backend" || l === "schema" || l === "contract" || l === "theme:api" || l === "theme:backend")) {
+        skillNames.push("api-and-interface-design");
+        transclusions.push("[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "performance" || l === "perf" || l === "optimization" || l === "theme:performance" || l === "theme:perf")) {
+        skillNames.push("performance-optimization");
+        transclusions.push("[@.agents/skills/build/domain/performance-optimization/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "security" || l === "auth" || l === "hardening" || l === "theme:security")) {
+        skillNames.push("security-and-hardening");
+        transclusions.push("[@.agents/skills/review/security/security-and-hardening/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "refactor" || l === "cleanup" || l === "tech-debt" || l === "theme:refactor")) {
+        skillNames.push("code-simplification", "safe-refactor");
+        transclusions.push("[@.agents/skills/build/refactoring/code-simplification/SKILL.md]");
+        transclusions.push("[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]");
+      }
+    }
+    const uniqueSkillNames = [];
+    for (const s of skillNames) {
+      if (!uniqueSkillNames.includes(s)) {
+        uniqueSkillNames.push(s);
+      }
+    }
+    const uniqueTransclusions = [];
+    for (const t of transclusions) {
+      if (!uniqueTransclusions.includes(t)) {
+        uniqueTransclusions.push(t);
+      }
+    }
+    return { skillNames: uniqueSkillNames, transclusions: uniqueTransclusions };
+  }
   function buildLaunchSessionPayload(options) {
     const { issue, projectId, useWorktree = false, branchName, baseBranch, prompt } = options;
     let existingWorktree = options.existingWorktree;
@@ -5087,6 +5156,7 @@ ${lines.join("\n")}`;
     }
     const cleanBranch = branchName ? branchName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
     const branchForData = existingWorktree ? existingWorktree.branch || existingWorktree.name : useWorktree && cleanBranch ? cleanBranch : void 0;
+    const declaredSkills = options.skills !== void 0 ? options.skills : resolveIssueSkills(issue).skillNames;
     return {
       projectId,
       worktree: worktreePayload,
@@ -5096,9 +5166,11 @@ ${lines.join("\n")}`;
       title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
       url: (issue.html_url || "").slice(0, 1e3),
       text: prompt || "",
+      ...declaredSkills && declaredSkills.length > 0 ? { skills: declaredSkills } : {},
       data: {
         issueNumber: issue.number,
-        ...branchForData ? { branch: branchForData } : {}
+        ...branchForData ? { branch: branchForData } : {},
+        ...declaredSkills && declaredSkills.length > 0 ? { skills: declaredSkills } : {}
       }
     };
   }
@@ -5447,6 +5519,18 @@ ${issue.body.trim()}
       }
       prompt += "---\n\n";
     });
+    const { skillNames, transclusions } = resolveIssueSkills(selectedIssues);
+    if (skillNames.length > 0) {
+      const skillList = skillNames.map((s) => "`skill({ id: '" + s + "' })`").join(", ");
+      prompt += `### Recommended Skills:
+`;
+      prompt += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillList}).
+`;
+      prompt += `Transclusion references for worker sessions:
+${transclusions.join("\n")}
+
+`;
+    }
     prompt += `### Autonomous & AFK Protocol:
 `;
     prompt += `- Work through the packaged issues sequentially or in coordination, verifying each step with tests.
@@ -11091,53 +11175,14 @@ ${activeIssue.body}
       });
       brief += "\n";
     }
-    const labelNames = (activeIssue.labels || []).map(
-      (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
-    );
-    const skillNames = [];
-    const skills = [];
-    if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug")) {
-      skillNames.push("surgical-patch", "debugging-and-error-recovery");
-      skills.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
-      skills.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature")) {
-      skillNames.push("test-driven-development", "lean-build");
-      skills.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
-      skills.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs")) {
-      skillNames.push("documentation-and-adrs");
-      skills.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "ui" || l === "frontend" || l === "css" || l === "design")) {
-      skillNames.push("frontend-ui-engineering");
-      skills.push("[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "api" || l === "backend" || l === "schema" || l === "contract")) {
-      skillNames.push("api-and-interface-design");
-      skills.push("[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "performance" || l === "perf" || l === "optimization")) {
-      skillNames.push("performance-optimization");
-      skills.push("[@.agents/skills/build/domain/performance-optimization/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "security" || l === "auth" || l === "hardening")) {
-      skillNames.push("security-and-hardening");
-      skills.push("[@.agents/skills/review/security/security-and-hardening/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "refactor" || l === "cleanup" || l === "tech-debt")) {
-      skillNames.push("code-simplification", "safe-refactor");
-      skills.push("[@.agents/skills/build/refactoring/code-simplification/SKILL.md]");
-      skills.push("[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]");
-    }
+    const { skillNames, transclusions } = resolveIssueSkills(activeIssue);
     if (skillNames.length > 0) {
       brief += `### Recommended Skills:
 `;
       brief += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(", ")}).
 `;
       brief += `Transclusion references for worker sessions:
-${skills.join("\n")}
+${transclusions.join("\n")}
 
 `;
     }
@@ -11308,6 +11353,7 @@ ${skills.join("\n")}
       const multiPayload = buildMultiIssueAttachPayload(selected, currentRepo);
       const individualItems = selected.map((i) => buildIssueAttachPayload(i));
       const items = mergeSessionItems([multiPayload], individualItems);
+      const { skillNames: packageSkills } = resolveIssueSkills(selected);
       const res = await host.startSession({
         projectId: currentProject.id,
         worktree: false,
@@ -11316,10 +11362,12 @@ ${skills.join("\n")}
         title,
         url: selected[0]?.html_url || (currentRepo ? `https://github.com/${currentRepo}/issues` : ""),
         text: promptText,
+        ...packageSkills.length > 0 ? { skills: packageSkills } : {},
         data: {
           packaged: true,
           issueNumber: selected[0]?.number,
           issueNumbers: selected.map((i) => i.number),
+          ...packageSkills.length > 0 ? { skills: packageSkills } : {},
           items
         },
         items
@@ -11349,46 +11397,7 @@ ${skills.join("\n")}
     for (const issue of selected) {
       try {
         const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
-        const labelNames = (issue.labels || []).map(
-          (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
-        );
-        const skillNames = [];
-        const transclusions = [];
-        if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug")) {
-          skillNames.push("surgical-patch", "debugging-and-error-recovery");
-          transclusions.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
-          transclusions.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature")) {
-          skillNames.push("test-driven-development", "lean-build");
-          transclusions.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
-          transclusions.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs")) {
-          skillNames.push("documentation-and-adrs");
-          transclusions.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "ui" || l === "frontend" || l === "css" || l === "design")) {
-          skillNames.push("frontend-ui-engineering");
-          transclusions.push("[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "api" || l === "backend" || l === "schema" || l === "contract")) {
-          skillNames.push("api-and-interface-design");
-          transclusions.push("[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "performance" || l === "perf" || l === "optimization")) {
-          skillNames.push("performance-optimization");
-          transclusions.push("[@.agents/skills/build/domain/performance-optimization/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "security" || l === "auth" || l === "hardening")) {
-          skillNames.push("security-and-hardening");
-          transclusions.push("[@.agents/skills/review/security/security-and-hardening/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "refactor" || l === "cleanup" || l === "tech-debt")) {
-          skillNames.push("code-simplification", "safe-refactor");
-          transclusions.push("[@.agents/skills/build/refactoring/code-simplification/SKILL.md]");
-          transclusions.push("[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]");
-        }
+        const { skillNames, transclusions } = resolveIssueSkills(issue);
         let prompt = `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}
 
 `;
@@ -11426,9 +11435,11 @@ ${transclusions.join("\n")}
           title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
           url: (issue.html_url || "").slice(0, 1e3),
           text: prompt,
+          ...skillNames.length > 0 ? { skills: skillNames } : {},
           data: {
             issueNumber: issue.number,
-            ...issueRepo ? { repo: issueRepo } : {}
+            ...issueRepo ? { repo: issueRepo } : {},
+            ...skillNames.length > 0 ? { skills: skillNames } : {}
           }
         };
         await host.startSession(payload);
@@ -12067,9 +12078,11 @@ ${transclusions.join("\n")}
         title: `Align: ${firstLine || "Ideas & Themes"}`,
         url: `https://github.com/${currentRepo}/issues`,
         text: promptText,
+        skills: ["issue-lifecycle"],
         data: {
           alignment: true,
-          repo: currentRepo
+          repo: currentRepo,
+          skills: ["issue-lifecycle"]
         }
       });
       closeScratchpadModal();
@@ -12113,9 +12126,11 @@ ${transclusions.join("\n")}
         title: `Draft: ${firstLine || "GitHub Issues"}`,
         url: `https://github.com/${currentRepo}/issues`,
         text: promptText,
+        skills: ["issue-lifecycle"],
         data: {
           drafting: true,
-          repo: currentRepo
+          repo: currentRepo,
+          skills: ["issue-lifecycle"]
         }
       });
       closeScratchpadModal();
@@ -12295,9 +12310,11 @@ ${transclusions.join("\n")}
         title: `Draft: ${firstLine || "GitHub Issues"}`,
         url: `https://github.com/${currentRepo}/issues`,
         text: promptText,
+        skills: ["issue-lifecycle"],
         data: {
           drafting: true,
-          repo: currentRepo
+          repo: currentRepo,
+          skills: ["issue-lifecycle"]
         }
       });
       const parsed = parseDraftIssueFromMarkdown(userInput);

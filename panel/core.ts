@@ -1306,6 +1306,87 @@ export function findThemeWorktree(
   return null;
 }
 
+export interface IssueSkillsResult {
+  skillNames: string[];
+  transclusions: string[];
+}
+
+export function resolveIssueSkills(issues: Issue | Issue[] | null | undefined): IssueSkillsResult {
+  if (!issues) {
+    return { skillNames: [], transclusions: [] };
+  }
+  const list = Array.isArray(issues) ? issues : [issues];
+  const skillNames: string[] = [];
+  const transclusions: string[] = [];
+
+  for (const issue of list) {
+    if (!issue) continue;
+    if (Array.isArray((issue as any).skills)) {
+      for (const s of (issue as any).skills) {
+        if (typeof s === 'string' && s.trim()) {
+          skillNames.push(s.trim());
+        }
+      }
+    }
+
+    const labelNames = (issue.labels || []).map((l: any) =>
+      (typeof l === 'string' ? l : l.name || '').toLowerCase()
+    );
+
+    if (labelNames.some((l) => l === 'bug' || l === 'kind:bug' || l === 'type:bug' || l === 'theme:bug')) {
+      skillNames.push('surgical-patch', 'debugging-and-error-recovery');
+      transclusions.push('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]');
+      transclusions.push('[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]');
+    }
+    if (labelNames.some((l) => l === 'enhancement' || l === 'kind:enhancement' || l === 'type:enhancement' || l === 'feature' || l === 'theme:enhancement' || l === 'theme:feature')) {
+      skillNames.push('test-driven-development', 'lean-build');
+      transclusions.push('[@.agents/skills/build/methodology/test-driven-development/SKILL.md]');
+      transclusions.push('[@.agents/skills/build/methodology/lean-build/SKILL.md]');
+    }
+    if (labelNames.some((l) => l === 'documentation' || l === 'kind:documentation' || l === 'docs' || l === 'theme:documentation' || l === 'theme:docs')) {
+      skillNames.push('documentation-and-adrs');
+      transclusions.push('[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]');
+    }
+    if (labelNames.some((l) => l === 'ui' || l === 'frontend' || l === 'css' || l === 'design' || l === 'theme:ui' || l === 'theme:frontend')) {
+      skillNames.push('frontend-ui-engineering');
+      transclusions.push('[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]');
+    }
+    if (labelNames.some((l) => l === 'api' || l === 'backend' || l === 'schema' || l === 'contract' || l === 'theme:api' || l === 'theme:backend')) {
+      skillNames.push('api-and-interface-design');
+      transclusions.push('[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]');
+    }
+    if (labelNames.some((l) => l === 'performance' || l === 'perf' || l === 'optimization' || l === 'theme:performance' || l === 'theme:perf')) {
+      skillNames.push('performance-optimization');
+      transclusions.push('[@.agents/skills/build/domain/performance-optimization/SKILL.md]');
+    }
+    if (labelNames.some((l) => l === 'security' || l === 'auth' || l === 'hardening' || l === 'theme:security')) {
+      skillNames.push('security-and-hardening');
+      transclusions.push('[@.agents/skills/review/security/security-and-hardening/SKILL.md]');
+    }
+    if (labelNames.some((l) => l === 'refactor' || l === 'cleanup' || l === 'tech-debt' || l === 'theme:refactor')) {
+      skillNames.push('code-simplification', 'safe-refactor');
+      transclusions.push('[@.agents/skills/build/refactoring/code-simplification/SKILL.md]');
+      transclusions.push('[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]');
+    }
+  }
+
+  const uniqueSkillNames: string[] = [];
+  for (const s of skillNames) {
+    if (!uniqueSkillNames.includes(s)) {
+      uniqueSkillNames.push(s);
+    }
+  }
+
+  const uniqueTransclusions: string[] = [];
+  for (const t of transclusions) {
+    if (!uniqueTransclusions.includes(t)) {
+      uniqueTransclusions.push(t);
+    }
+  }
+
+  return { skillNames: uniqueSkillNames, transclusions: uniqueTransclusions };
+}
+
 export function buildLaunchSessionPayload(options: {
   issue: Issue;
   projectId: string;
@@ -1315,6 +1396,7 @@ export function buildLaunchSessionPayload(options: {
   prompt?: string;
   worktrees?: any[];
   existingWorktree?: any;
+  skills?: string[];
 }): any {
   const { issue, projectId, useWorktree = false, branchName, baseBranch, prompt } = options;
 
@@ -1352,6 +1434,10 @@ export function buildLaunchSessionPayload(options: {
     ? (existingWorktree.branch || existingWorktree.name)
     : (useWorktree && cleanBranch ? cleanBranch : undefined);
 
+  const declaredSkills = options.skills !== undefined
+    ? options.skills
+    : resolveIssueSkills(issue).skillNames;
+
   return {
     projectId,
     worktree: worktreePayload,
@@ -1361,9 +1447,11 @@ export function buildLaunchSessionPayload(options: {
     title: `#${issue.number} ${issue.title || ''}`.slice(0, 150),
     url: (issue.html_url || '').slice(0, 1000),
     text: prompt || '',
+    ...(declaredSkills && declaredSkills.length > 0 ? { skills: declaredSkills } : {}),
     data: {
       issueNumber: issue.number,
       ...(branchForData ? { branch: branchForData } : {}),
+      ...(declaredSkills && declaredSkills.length > 0 ? { skills: declaredSkills } : {}),
     },
   };
 }
@@ -1774,6 +1862,14 @@ export function buildConsolidatedIssuePrompt(selectedIssues: Issue[]): string {
     }
     prompt += '---\n\n';
   });
+
+  const { skillNames, transclusions } = resolveIssueSkills(selectedIssues);
+  if (skillNames.length > 0) {
+    const skillList = skillNames.map((s) => '`skill({ id: \'' + s + '\' })`').join(', ');
+    prompt += `### Recommended Skills:\n`;
+    prompt += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillList}).\n`;
+    prompt += `Transclusion references for worker sessions:\n${transclusions.join('\n')}\n\n`;
+  }
 
   prompt += `### Autonomous & AFK Protocol:\n`;
   prompt += `- Work through the packaged issues sequentially or in coordination, verifying each step with tests.\n`;
