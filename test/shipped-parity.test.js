@@ -61,6 +61,8 @@ const JS_FUNCS = [
   'parseDraftIssueFromMarkdown',
   'formatDraftReviewMeta',
   'createDraftIssuePayload',
+  'resolveOptimisticSubtaskUpdate',
+  'resolveOptimisticQuestionAnswer',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'humanTasksSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -78,7 +80,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 45);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 47);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -328,5 +330,17 @@ Live drafting overview.
   assert.deepEqual(
     Shipped.createDraftIssuePayload(payloadInput),
     Core.createDraftIssuePayload(payloadInput)
+  );
+});
+
+test('optimistic mutators: shipped == core', () => {
+  const sample = `## Overview\nTest\n\n### Subtasks\n- [ ] Task 1\n- [ ] Task 2\n\n### Open Questions\n- [ ] Question 1?`;
+  assert.deepEqual(
+    Shipped.resolveOptimisticSubtaskUpdate(sample, 'Task 2', true),
+    Core.resolveOptimisticSubtaskUpdate(sample, 'Task 2', true)
+  );
+  assert.deepEqual(
+    Shipped.resolveOptimisticQuestionAnswer(sample, 'Question 1?', 'Answer 1'),
+    Core.resolveOptimisticQuestionAnswer(sample, 'Question 1?', 'Answer 1')
   );
 });

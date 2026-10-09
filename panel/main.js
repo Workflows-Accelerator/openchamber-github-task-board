@@ -4727,6 +4727,68 @@ ${header}
     return `${header}
 ${lines.join("\n")}`;
   }
+  function resolveOptimisticSubtaskUpdate(body, taskText, completed) {
+    if (!body || typeof body !== "string") {
+      return { updatedBody: body || "", found: false };
+    }
+    const cleanTarget = taskText.trim();
+    const humanTasks = parseHumanTasks(body);
+    let target = humanTasks.find((t) => t.completed !== completed && t.text.trim() === cleanTarget) || humanTasks.find((t) => t.text.trim() === cleanTarget);
+    if (target) {
+      return {
+        updatedBody: updateSubtaskInMarkdown(body, target.lineIndex, completed),
+        found: true
+      };
+    }
+    const subtasks = parseSubtasks(body);
+    target = subtasks.find((t) => t.completed !== completed && t.text.trim() === cleanTarget) || subtasks.find((t) => t.text.trim() === cleanTarget);
+    if (target) {
+      return {
+        updatedBody: updateSubtaskInMarkdown(body, target.lineIndex, completed),
+        found: true
+      };
+    }
+    return { updatedBody: body, found: false };
+  }
+  function resolveOptimisticQuestionAnswer(body, questionText, answerText) {
+    if (!body || typeof body !== "string") {
+      return { updatedBody: body || "", found: false };
+    }
+    const cleanTarget = questionText.trim();
+    const questions = parseOpenQuestions(body);
+    const openQuestions = questions.filter((q) => !q.completed);
+    let targetIdx = openQuestions.findIndex((q) => q.text.trim() === cleanTarget);
+    if (targetIdx >= 0) {
+      return {
+        updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
+        found: true
+      };
+    }
+    targetIdx = questions.findIndex((q) => q.text.trim() === cleanTarget);
+    if (targetIdx >= 0) {
+      return {
+        updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
+        found: true
+      };
+    }
+    return { updatedBody: body, found: false };
+  }
+  function resolveOptimisticTestItemUpdate(body, itemText, completed) {
+    if (!body || typeof body !== "string") {
+      return { updatedBody: body || "", found: false };
+    }
+    const cleanTarget = itemText.trim();
+    const { issueTests, batchTests } = parseTestPlan(body);
+    const allTests = [...issueTests, ...batchTests];
+    const target = allTests.find((t) => t.completed !== completed && t.text.trim() === cleanTarget) || allTests.find((t) => t.text.trim() === cleanTarget);
+    if (target) {
+      return {
+        updatedBody: updateTestItemInMarkdown(body, target.lineIndex, completed),
+        found: true
+      };
+    }
+    return { updatedBody: body, found: false };
+  }
   function getIssueBatch(issue) {
     if (!issue || !issue.labels || !Array.isArray(issue.labels) || issue.labels.length === 0) return null;
     for (const l of issue.labels) {
@@ -5928,6 +5990,7 @@ Blocked by ${blockerRef}`;
         assignees: (item.assignees || []).map((a) => ({ login: a.login, ...a.avatar_url ? { avatar_url: a.avatar_url } : {} })),
         comments: item.comments || 0,
         created_at: item.created_at || "",
+        ...item.updated_at ? { updated_at: item.updated_at } : {},
         subtasks: parseSubtasks(item.body || ""),
         openQuestions: parseOpenQuestions(item.body || ""),
         humanTasks: parseHumanTasks(item.body || ""),
@@ -7837,6 +7900,28 @@ Blocked by ${blockerRef}`;
     }
     return notified;
   }
+  async function reloadIssueBeforeMutation(issue) {
+    const repo = repoForIssue(issue);
+    if (!repo) return null;
+    try {
+      const raw = await githubRequestWithRetry("GET", `/repos/${repo}/issues/${issue.number}`);
+      if (raw && typeof raw.body === "string") {
+        const remoteUpdatedAt = raw.updated_at || "";
+        if (issue.updated_at && remoteUpdatedAt && issue.updated_at !== remoteUpdatedAt) {
+          addLog(`Issue #${issue.number} was modified remotely (${remoteUpdatedAt} vs ${issue.updated_at}); refreshing body before mutation`, "info");
+        }
+        issue.body = raw.body;
+        issue.updated_at = remoteUpdatedAt;
+        issue.subtasks = parseSubtasks(raw.body);
+        issue.openQuestions = parseOpenQuestions(raw.body);
+        issue.humanTasks = parseHumanTasks(raw.body);
+        return { body: raw.body, updated_at: remoteUpdatedAt };
+      }
+    } catch (err) {
+      addLog(`Could not reload issue #${issue.number} (${err.message}); proceeding with cached body`, "warn");
+    }
+    return null;
+  }
   async function updateIssueBody(issue, newBody) {
     const repo = repoForIssue(issue);
     if (!repo) {
@@ -7859,9 +7944,12 @@ Blocked by ${blockerRef}`;
       renderDrawer(issue, true);
     }
     try {
-      await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
+      const res = await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         body: newBody
       });
+      if (res && res.updated_at) {
+        issue.updated_at = res.updated_at;
+      }
       await host.toast({ kind: "info", message: `Updated issue #${issue.number}` });
       if (shouldNotify) {
         await notifyAgentOnHumanTasksComplete(issue, repo);
@@ -9211,10 +9299,9 @@ Blocked by ${blockerRef}`;
                 answerInput?.focus();
                 return;
               }
-              const currentQuestions = parseOpenQuestions(issue.body);
-              const targetIdx = currentQuestions.filter((q) => !q.completed).findIndex((q) => q.text.trim() === todo.text.trim());
-              const newBody = answerOpenQuestionInMarkdown(issue.body, targetIdx >= 0 ? targetIdx : 0, ans);
-              await updateIssueBody(issue, newBody);
+              await reloadIssueBeforeMutation(issue);
+              const result = resolveOptimisticQuestionAnswer(issue.body, todo.text, ans);
+              await updateIssueBody(issue, result.updatedBody);
               await host.toast({ kind: "info", message: "Recorded answer to question" });
             };
             btnSubmit?.addEventListener("click", (e) => {
@@ -9241,15 +9328,14 @@ Blocked by ${blockerRef}`;
           cb.addEventListener("change", async (e) => {
             e.stopPropagation();
             if (todo.source === "human-task") {
-              const humanTasks = parseHumanTasks(issue.body);
-              let target = humanTasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || humanTasks.find((t) => t.text.trim() === todo.text.trim());
-              if (target) {
-                const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
-                await updateIssueBody(issue, updatedBody);
+              await reloadIssueBeforeMutation(issue);
+              const result = resolveOptimisticSubtaskUpdate(issue.body, todo.text, cb.checked);
+              if (result.found) {
+                await updateIssueBody(issue, result.updatedBody);
                 return;
               }
               const subtasks = parseSubtasks(issue.body);
-              target = subtasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || subtasks.find((t) => t.text.trim() === todo.text.trim());
+              const target = subtasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || subtasks.find((t) => t.text.trim() === todo.text.trim());
               if (target) {
                 const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
                 await updateIssueBody(issue, updatedBody);
@@ -9719,8 +9805,9 @@ Blocked by ${blockerRef}`;
             input?.focus();
             return;
           }
-          const newBody = answerOpenQuestionInMarkdown(issue.body, idx, answerText);
-          await updateIssueBody(issue, newBody);
+          await reloadIssueBeforeMutation(issue);
+          const result = resolveOptimisticQuestionAnswer(issue.body, question.text, answerText);
+          await updateIssueBody(issue, result.updatedBody);
           btnAnswer.setAttribute("aria-expanded", "false");
           await host.toast({ kind: "info", message: "Recorded answer to question" });
         };
@@ -10689,9 +10776,10 @@ Blocked by ${blockerRef}`;
       cb.checked = subtask.completed;
       const span = document.createElement("span");
       span.textContent = subtask.text;
-      cb.addEventListener("change", () => {
-        const updatedBody = updateSubtaskInMarkdown(issue.body, subtask.lineIndex, cb.checked);
-        void updateIssueBody(issue, updatedBody);
+      cb.addEventListener("change", async () => {
+        await reloadIssueBeforeMutation(issue);
+        const result = resolveOptimisticSubtaskUpdate(issue.body, subtask.text, cb.checked);
+        void updateIssueBody(issue, result.updatedBody);
       });
       itemEl.appendChild(cb);
       itemEl.appendChild(span);
@@ -10725,8 +10813,11 @@ Blocked by ${blockerRef}`;
       cb.type = "checkbox";
       cb.checked = question.completed;
       cb.title = question.completed ? "Mark question as open" : "Mark question as resolved/answered";
-      cb.addEventListener("change", () => {
-        const updatedBody = updateOpenQuestionInMarkdown(issue.body, question.lineIndex, cb.checked);
+      cb.addEventListener("change", async () => {
+        await reloadIssueBeforeMutation(issue);
+        const questions2 = parseOpenQuestions(issue.body);
+        const target = questions2.find((q) => q.text.trim() === question.text.trim()) || question;
+        const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
         void updateIssueBody(issue, updatedBody);
       });
       const contentEl = document.createElement("div");
@@ -10780,7 +10871,9 @@ Blocked by ${blockerRef}`;
             }
             const targetIssue = activeIssue || issue;
             if (!targetIssue) return;
-            const newBody = answerOpenQuestionInMarkdown(targetIssue.body, idx, answerText);
+            await reloadIssueBeforeMutation(targetIssue);
+            const result = resolveOptimisticQuestionAnswer(targetIssue.body, question.text, answerText);
+            const newBody = result.updatedBody;
             if (issue && issue !== targetIssue) {
               issue.body = newBody;
               issue.subtasks = parseSubtasks(newBody);
@@ -10846,9 +10939,10 @@ Blocked by ${blockerRef}`;
         cb.checked = item.completed;
         const span = document.createElement("span");
         span.textContent = item.text;
-        cb.addEventListener("change", () => {
-          const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
-          void updateIssueBody(issue, updatedBody);
+        cb.addEventListener("change", async () => {
+          await reloadIssueBeforeMutation(issue);
+          const result = resolveOptimisticTestItemUpdate(issue.body, item.text, cb.checked);
+          void updateIssueBody(issue, result.updatedBody);
         });
         itemEl.appendChild(cb);
         itemEl.appendChild(span);
@@ -10876,9 +10970,10 @@ Blocked by ${blockerRef}`;
         cb.checked = item.completed;
         const span = document.createElement("span");
         span.textContent = item.text;
-        cb.addEventListener("change", () => {
-          const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
-          void updateIssueBody(issue, updatedBody);
+        cb.addEventListener("change", async () => {
+          await reloadIssueBeforeMutation(issue);
+          const result = resolveOptimisticTestItemUpdate(issue.body, item.text, cb.checked);
+          void updateIssueBody(issue, result.updatedBody);
         });
         itemEl.appendChild(cb);
         itemEl.appendChild(span);
@@ -12961,6 +13056,7 @@ ${transclusions.join("\n")}
       const newBody = elDrawerDescriptionTextarea.value;
       elDrawerDescriptionEditBox.style.display = "none";
       elDrawerDescriptionViewBox.style.display = "block";
+      await reloadIssueBeforeMutation(activeIssue);
       await updateIssueBody(activeIssue, newBody);
     });
     elBtnToggleCollapse.addEventListener("click", () => {
@@ -12987,8 +13083,9 @@ ${transclusions.join("\n")}
       if (e.key === "Enter") elBtnConfirmAddLabel.click();
       if (e.key === "Escape") elBtnCancelAddLabel.click();
     });
-    elBtnAddSubtask.addEventListener("click", () => {
+    elBtnAddSubtask.addEventListener("click", async () => {
       if (activeIssue && elInputAddSubtask.value.trim()) {
+        await reloadIssueBeforeMutation(activeIssue);
         const newBody = appendSubtaskToMarkdown(activeIssue.body, elInputAddSubtask.value);
         elInputAddSubtask.value = "";
         void updateIssueBody(activeIssue, newBody);
@@ -12998,8 +13095,9 @@ ${transclusions.join("\n")}
       if (e.key === "Enter") elBtnAddSubtask.click();
     });
     if (elBtnAddQuestion && elInputAddQuestion) {
-      elBtnAddQuestion.addEventListener("click", () => {
+      elBtnAddQuestion.addEventListener("click", async () => {
         if (activeIssue && elInputAddQuestion.value.trim()) {
+          await reloadIssueBeforeMutation(activeIssue);
           const newBody = appendOpenQuestionToMarkdown(activeIssue.body, elInputAddQuestion.value);
           elInputAddQuestion.value = "";
           void updateIssueBody(activeIssue, newBody);
@@ -13010,8 +13108,9 @@ ${transclusions.join("\n")}
       });
     }
     if (elBtnAddIssueTest && elInputAddIssueTest) {
-      elBtnAddIssueTest.addEventListener("click", () => {
+      elBtnAddIssueTest.addEventListener("click", async () => {
         if (activeIssue && elInputAddIssueTest.value.trim()) {
+          await reloadIssueBeforeMutation(activeIssue);
           const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddIssueTest.value, "issue");
           elInputAddIssueTest.value = "";
           void updateIssueBody(activeIssue, newBody);
@@ -13022,8 +13121,9 @@ ${transclusions.join("\n")}
       });
     }
     if (elBtnAddBatchTest && elInputAddBatchTest) {
-      elBtnAddBatchTest.addEventListener("click", () => {
+      elBtnAddBatchTest.addEventListener("click", async () => {
         if (activeIssue && elInputAddBatchTest.value.trim()) {
+          await reloadIssueBeforeMutation(activeIssue);
           const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddBatchTest.value, "batch");
           elInputAddBatchTest.value = "";
           void updateIssueBody(activeIssue, newBody);

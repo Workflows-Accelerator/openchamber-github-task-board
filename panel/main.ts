@@ -169,6 +169,9 @@ import {
   formatDraftReviewMeta,
   createDraftIssuePayload,
   type DraftIssue,
+  resolveOptimisticSubtaskUpdate,
+  resolveOptimisticQuestionAnswer,
+  resolveOptimisticTestItemUpdate,
 } from './core.js';
 export type { TestItem, DraftIssue };
 export {
@@ -186,6 +189,9 @@ export {
   parseDraftIssueFromMarkdown,
   formatDraftReviewMeta,
   createDraftIssuePayload,
+  resolveOptimisticSubtaskUpdate,
+  resolveOptimisticQuestionAnswer,
+  resolveOptimisticTestItemUpdate,
   parseHumanTasks,
   buildHumanTaskResumePrompt,
   shouldNotifyAgentOnHumanTasksComplete,
@@ -1993,6 +1999,29 @@ async function notifyAgentOnHumanTasksComplete(issue: Issue, repo: string): Prom
   return notified;
 }
 
+async function reloadIssueBeforeMutation(issue: Issue): Promise<{ body: string; updated_at?: string } | null> {
+  const repo = repoForIssue(issue);
+  if (!repo) return null;
+  try {
+    const raw = await githubRequestWithRetry('GET', `/repos/${repo}/issues/${issue.number}`);
+    if (raw && typeof raw.body === 'string') {
+      const remoteUpdatedAt = raw.updated_at || '';
+      if (issue.updated_at && remoteUpdatedAt && issue.updated_at !== remoteUpdatedAt) {
+        addLog(`Issue #${issue.number} was modified remotely (${remoteUpdatedAt} vs ${issue.updated_at}); refreshing body before mutation`, 'info');
+      }
+      issue.body = raw.body;
+      issue.updated_at = remoteUpdatedAt;
+      issue.subtasks = parseSubtasks(raw.body);
+      issue.openQuestions = parseOpenQuestions(raw.body);
+      issue.humanTasks = parseHumanTasks(raw.body);
+      return { body: raw.body, updated_at: remoteUpdatedAt };
+    }
+  } catch (err: any) {
+    addLog(`Could not reload issue #${issue.number} (${err.message}); proceeding with cached body`, 'warn');
+  }
+  return null;
+}
+
 async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   const repo = repoForIssue(issue);
   if (!repo) {
@@ -2017,9 +2046,12 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   }
 
   try {
-    await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
+    const res = await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       body: newBody,
     });
+    if (res && res.updated_at) {
+      issue.updated_at = res.updated_at;
+    }
     await host.toast({ kind: 'info', message: `Updated issue #${issue.number}` });
 
     if (shouldNotify) {
@@ -3717,10 +3749,9 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
               answerInput?.focus();
               return;
             }
-            const currentQuestions = parseOpenQuestions(issue.body);
-            const targetIdx = currentQuestions.filter((q) => !q.completed).findIndex((q) => q.text.trim() === todo.text.trim());
-            const newBody = answerOpenQuestionInMarkdown(issue.body, targetIdx >= 0 ? targetIdx : 0, ans);
-            await updateIssueBody(issue, newBody);
+            await reloadIssueBeforeMutation(issue);
+            const result = resolveOptimisticQuestionAnswer(issue.body, todo.text, ans);
+            await updateIssueBody(issue, result.updatedBody);
             await host.toast({ kind: 'info', message: 'Recorded answer to question' });
           };
 
@@ -3753,16 +3784,14 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
         cb.addEventListener('change', async (e) => {
           e.stopPropagation();
           if (todo.source === 'human-task') {
-            const humanTasks = parseHumanTasks(issue.body);
-            let target = humanTasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim())
-              || humanTasks.find((t) => t.text.trim() === todo.text.trim());
-            if (target) {
-              const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
-              await updateIssueBody(issue, updatedBody);
+            await reloadIssueBeforeMutation(issue);
+            const result = resolveOptimisticSubtaskUpdate(issue.body, todo.text, cb.checked);
+            if (result.found) {
+              await updateIssueBody(issue, result.updatedBody);
               return;
             }
             const subtasks = parseSubtasks(issue.body);
-            target = subtasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim())
+            const target = subtasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim())
               || subtasks.find((t) => t.text.trim() === todo.text.trim());
             if (target) {
               const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
@@ -4320,8 +4349,9 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
           input?.focus();
           return;
         }
-        const newBody = answerOpenQuestionInMarkdown(issue.body, idx, answerText);
-        await updateIssueBody(issue, newBody);
+        await reloadIssueBeforeMutation(issue);
+        const result = resolveOptimisticQuestionAnswer(issue.body, question.text, answerText);
+        await updateIssueBody(issue, result.updatedBody);
         btnAnswer.setAttribute('aria-expanded', 'false');
         await host.toast({ kind: 'info', message: 'Recorded answer to question' });
       };
@@ -5485,9 +5515,10 @@ function renderChecklist(issue: Issue): void {
     const span = document.createElement('span');
     span.textContent = subtask.text;
 
-    cb.addEventListener('change', () => {
-      const updatedBody = updateSubtaskInMarkdown(issue.body, subtask.lineIndex, cb.checked);
-      void updateIssueBody(issue, updatedBody);
+    cb.addEventListener('change', async () => {
+      await reloadIssueBeforeMutation(issue);
+      const result = resolveOptimisticSubtaskUpdate(issue.body, subtask.text, cb.checked);
+      void updateIssueBody(issue, result.updatedBody);
     });
 
     itemEl.appendChild(cb);
@@ -5530,8 +5561,11 @@ function renderQuestions(issue: Issue): void {
     cb.checked = question.completed;
     cb.title = question.completed ? 'Mark question as open' : 'Mark question as resolved/answered';
 
-    cb.addEventListener('change', () => {
-      const updatedBody = updateOpenQuestionInMarkdown(issue.body, question.lineIndex, cb.checked);
+    cb.addEventListener('change', async () => {
+      await reloadIssueBeforeMutation(issue);
+      const questions = parseOpenQuestions(issue.body);
+      const target = questions.find((q) => q.text.trim() === question.text.trim()) || question;
+      const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
       void updateIssueBody(issue, updatedBody);
     });
 
@@ -5594,7 +5628,9 @@ function renderQuestions(issue: Issue): void {
           }
           const targetIssue = activeIssue || issue;
           if (!targetIssue) return;
-          const newBody = answerOpenQuestionInMarkdown(targetIssue.body, idx, answerText);
+          await reloadIssueBeforeMutation(targetIssue);
+          const result = resolveOptimisticQuestionAnswer(targetIssue.body, question.text, answerText);
+          const newBody = result.updatedBody;
           if (issue && issue !== targetIssue) {
             issue.body = newBody;
             issue.subtasks = parseSubtasks(newBody);
@@ -5673,9 +5709,10 @@ function renderTestPlans(issue: Issue): void {
       const span = document.createElement('span');
       span.textContent = item.text;
 
-      cb.addEventListener('change', () => {
-        const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
-        void updateIssueBody(issue, updatedBody);
+      cb.addEventListener('change', async () => {
+        await reloadIssueBeforeMutation(issue);
+        const result = resolveOptimisticTestItemUpdate(issue.body, item.text, cb.checked);
+        void updateIssueBody(issue, result.updatedBody);
       });
 
       itemEl.appendChild(cb);
@@ -5710,9 +5747,10 @@ function renderTestPlans(issue: Issue): void {
       const span = document.createElement('span');
       span.textContent = item.text;
 
-      cb.addEventListener('change', () => {
-        const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
-        void updateIssueBody(issue, updatedBody);
+      cb.addEventListener('change', async () => {
+        await reloadIssueBeforeMutation(issue);
+        const result = resolveOptimisticTestItemUpdate(issue.body, item.text, cb.checked);
+        void updateIssueBody(issue, result.updatedBody);
       });
 
       itemEl.appendChild(cb);
@@ -8110,6 +8148,7 @@ function initEvents(): void {
     const newBody = elDrawerDescriptionTextarea.value;
     elDrawerDescriptionEditBox.style.display = 'none';
     elDrawerDescriptionViewBox.style.display = 'block';
+    await reloadIssueBeforeMutation(activeIssue);
     await updateIssueBody(activeIssue, newBody);
   });
 
@@ -8143,8 +8182,9 @@ function initEvents(): void {
     if (e.key === 'Escape') elBtnCancelAddLabel.click();
   });
 
-  elBtnAddSubtask.addEventListener('click', () => {
+  elBtnAddSubtask.addEventListener('click', async () => {
     if (activeIssue && elInputAddSubtask.value.trim()) {
+      await reloadIssueBeforeMutation(activeIssue);
       const newBody = appendSubtaskToMarkdown(activeIssue.body, elInputAddSubtask.value);
       elInputAddSubtask.value = '';
       void updateIssueBody(activeIssue, newBody);
@@ -8156,8 +8196,9 @@ function initEvents(): void {
   });
 
   if (elBtnAddQuestion && elInputAddQuestion) {
-    elBtnAddQuestion.addEventListener('click', () => {
+    elBtnAddQuestion.addEventListener('click', async () => {
       if (activeIssue && elInputAddQuestion.value.trim()) {
+        await reloadIssueBeforeMutation(activeIssue);
         const newBody = appendOpenQuestionToMarkdown(activeIssue.body, elInputAddQuestion.value);
         elInputAddQuestion.value = '';
         void updateIssueBody(activeIssue, newBody);
@@ -8170,8 +8211,9 @@ function initEvents(): void {
   }
 
   if (elBtnAddIssueTest && elInputAddIssueTest) {
-    elBtnAddIssueTest.addEventListener('click', () => {
+    elBtnAddIssueTest.addEventListener('click', async () => {
       if (activeIssue && elInputAddIssueTest.value.trim()) {
+        await reloadIssueBeforeMutation(activeIssue);
         const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddIssueTest.value, 'issue');
         elInputAddIssueTest.value = '';
         void updateIssueBody(activeIssue, newBody);
@@ -8184,8 +8226,9 @@ function initEvents(): void {
   }
 
   if (elBtnAddBatchTest && elInputAddBatchTest) {
-    elBtnAddBatchTest.addEventListener('click', () => {
+    elBtnAddBatchTest.addEventListener('click', async () => {
       if (activeIssue && elInputAddBatchTest.value.trim()) {
+        await reloadIssueBeforeMutation(activeIssue);
         const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddBatchTest.value, 'batch');
         elInputAddBatchTest.value = '';
         void updateIssueBody(activeIssue, newBody);
