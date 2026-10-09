@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
@@ -64,13 +64,63 @@
   }
   var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
+  var GUEST_DEVICE_STORAGE_TOTAL_BYTES = 16777216;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
+  var GUEST_SHELL_ID_MAX = 128;
+  var GUEST_SHELLS_MAX = 200;
+  var GUEST_SHELL_OUTPUT_TAIL_MAX = 65536;
+  var GUEST_SHELL_END_STATUSES = ["exited", "timeout", "killed", "stopped", "unknown"];
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
+  var GUEST_STATUS_CONTROLS_MAX = 4;
+  var GUEST_STATUS_CONTROL_ID = /^[a-z][a-z0-9-]{0,39}$/;
+  var GUEST_STATUS_CONTROL_LABEL_MAX = 60;
+  var GUEST_STATUS_CONTROL_OPTIONS_MAX = 16;
+  var GUEST_STATUS_CONTROL_VALUE_MAX = 80;
+  var isControlObject = (value) => Object(value) === value && !Array.isArray(value);
+  var hasOnlyKeys = (value, keys) => Object.keys(value).every((key) => keys.includes(key));
+  var isLabel = (value) => String(value) === value && value.length >= 1 && value.length <= GUEST_STATUS_CONTROL_LABEL_MAX;
+  var isValue = (value) => String(value) === value && value.length >= 1 && value.length <= GUEST_STATUS_CONTROL_VALUE_MAX;
+  var isGuestStatusControls = (controls) => {
+    if (!Array.isArray(controls) || controls.length > GUEST_STATUS_CONTROLS_MAX)
+      return false;
+    const ids = /* @__PURE__ */ new Set();
+    for (const control of controls) {
+      if (!isControlObject(control) || !GUEST_STATUS_CONTROL_ID.test(control.id) || !isLabel(control.label))
+        return false;
+      if (control.disabled !== void 0 && control.disabled !== true && control.disabled !== false)
+        return false;
+      if (ids.has(control.id))
+        return false;
+      ids.add(control.id);
+      if (control.kind === "button") {
+        if (!hasOnlyKeys(control, ["kind", "id", "label", "disabled"]))
+          return false;
+        continue;
+      }
+      if (control.kind !== "select" || !hasOnlyKeys(control, ["kind", "id", "label", "value", "options", "disabled"]))
+        return false;
+      if (!isValue(control.value) || !Array.isArray(control.options) || control.options.length < 1 || control.options.length > GUEST_STATUS_CONTROL_OPTIONS_MAX)
+        return false;
+      const values = /* @__PURE__ */ new Set();
+      for (const option of control.options) {
+        if (!isControlObject(option) || !hasOnlyKeys(option, ["value", "label"]) || !isValue(option.value) || !isLabel(option.label) || values.has(option.value))
+          return false;
+        values.add(option.value);
+      }
+      if (!values.has(control.value))
+        return false;
+    }
+    return true;
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
   var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
@@ -128,7 +178,51 @@
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
+  var GUEST_POPOVER_ID = /^[A-Za-z0-9_-]{1,80}$/;
+  var GUEST_POPOVER_COORDINATE_MAX = 1e5;
+  var GUEST_POPOVER_WIDTH_MIN = 160;
+  var GUEST_POPOVER_WIDTH_MAX = 640;
+  var GUEST_POPOVER_HEIGHT_MIN = 48;
+  var GUEST_POPOVER_HEIGHT_MAX = 480;
+  var GUEST_POPOVER_DATA_MAX = 16e3;
+  var GUEST_POPOVER_DATA_DEPTH_MAX = 32;
+  var GUEST_POPOVER_SIDES = ["left", "right", "top", "bottom"];
+  var GUEST_POPOVER_CLOSE_REASONS = ["escape", "outside", "anchor", "owner", "closed", "replaced"];
+  var hasBoundedJsonTree = (value, depth = 0, budget = { remaining: GUEST_POPOVER_DATA_MAX }) => {
+    if (--budget.remaining < 0 || depth >= GUEST_POPOVER_DATA_DEPTH_MAX)
+      return false;
+    if (value === null)
+      return true;
+    const children = Array.isArray(value) ? value : Object(value) === value ? Object.values(value) : [];
+    for (const item of children) {
+      if (!hasBoundedJsonTree(item, depth + 1, budget))
+        return false;
+    }
+    return true;
+  };
+  var isFiniteJson = (value) => {
+    if (value === null || value === true || value === false)
+      return true;
+    if (Array.isArray(value))
+      return Object.keys(value).every((key) => /^(0|[1-9]\d*)$/.test(key) && Number(key) < value.length) && value.every(isFiniteJson);
+    if (Object(value) === value) {
+      const prototype = Object.getPrototypeOf(value);
+      return (prototype === null || prototype === Object.prototype) && Object.values(value).every(isFiniteJson);
+    }
+    return String(value) === value || Number.isFinite(value);
+  };
+  var isGuestPopoverRequest = (request) => {
+    try {
+      if (String(request.id) !== request.id || !GUEST_POPOVER_ID.test(request.id) || !Number.isFinite(request.anchor.x) || Math.abs(request.anchor.x) > GUEST_POPOVER_COORDINATE_MAX || !Number.isFinite(request.anchor.y) || Math.abs(request.anchor.y) > GUEST_POPOVER_COORDINATE_MAX || !Number.isFinite(request.anchor.width) || !Number.isFinite(request.anchor.height) || request.anchor.width <= 0 || request.anchor.height <= 0 || request.anchor.width > GUEST_POPOVER_COORDINATE_MAX || request.anchor.height > GUEST_POPOVER_COORDINATE_MAX || !Number.isInteger(request.width) || request.width < GUEST_POPOVER_WIDTH_MIN || request.width > GUEST_POPOVER_WIDTH_MAX || !Number.isInteger(request.height) || request.height < GUEST_POPOVER_HEIGHT_MIN || request.height > GUEST_POPOVER_HEIGHT_MAX || request.side !== void 0 && !GUEST_POPOVER_SIDES.includes(request.side) || request.focus !== void 0 && request.focus !== true && request.focus !== false || !hasBoundedJsonTree(request.data) || !isFiniteJson(request.data))
+        return false;
+      return JSON.stringify(request.data).length <= GUEST_POPOVER_DATA_MAX;
+    } catch {
+      return false;
+    }
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -304,6 +398,7 @@
   var isGenerateResult = (value) => Boolean(value && "text" in value && String(value.text) === value.text && !("status" in value));
   var HOST_PUSH_TYPES = /* @__PURE__ */ new Set([
     "workspace",
+    "shells",
     "ready",
     "directory",
     "session",
@@ -313,6 +408,8 @@
     "item",
     "resolve",
     "action",
+    "status-control-event",
+    "popover-closed",
     "file-open",
     "file-snapshot",
     "file-saved"
@@ -359,7 +456,7 @@
     return wire;
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
   var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
@@ -372,6 +469,14 @@
   };
   var rejectBadPath = () => Promise.reject(new HostRequestError("BAD_PATH", 'Request path must start with "/" and stay on the declared origin.'));
   var rejectBadFilePath = () => Promise.reject(new HostRequestError("BAD_PATH", `File path must be 1 to ${GUEST_FILE_PATH_MAX} characters without NUL or backslash.`));
+  var deviceStorageScope = (options) => {
+    if (options === void 0)
+      return void 0;
+    if (Object(options) !== options || Array.isArray(options) || options.scope !== void 0 && options.scope !== "instance" && options.scope !== "device") {
+      throw new HostRequestError("HOST_REJECTED", 'Storage scope must be "instance" or "device".');
+    }
+    return options.scope === "device" ? "device" : void 0;
+  };
   var nextId = (n) => {
     n.value += 1;
     return `oc-${n.value}`;
@@ -390,6 +495,8 @@
     const connectionListeners = /* @__PURE__ */ new Set();
     const settingsListeners = /* @__PURE__ */ new Set();
     const itemListeners = /* @__PURE__ */ new Set();
+    const statusControlListeners = /* @__PURE__ */ new Set();
+    const popoverClosedListeners = /* @__PURE__ */ new Set();
     let resolveHandler = null;
     let actionHandler = null;
     const fileOpenListeners = /* @__PURE__ */ new Set();
@@ -399,10 +506,14 @@
     let saveShortcutInstalled = false;
     const pending = /* @__PURE__ */ new Map();
     const workspaceListeners = /* @__PURE__ */ new Map();
+    const shellsListeners = /* @__PURE__ */ new Map();
     let disposed = false;
     const ids = { value: 0 };
     let lastReady = null;
     let lastLifecycle = null;
+    let popoverPointerActive = false;
+    let popoverFocusActive = false;
+    let popoverActivityReported = null;
     const lifecycleFromSession = (session) => {
       if (!session)
         return null;
@@ -433,6 +544,12 @@
         return;
       if (message.type === "workspace") {
         const listener = workspaceListeners.get(message.payload.subscriptionId);
+        if (listener)
+          emit([listener], message.payload.snapshot);
+        return;
+      }
+      if (message.type === "shells") {
+        const listener = shellsListeners.get(message.payload.subscriptionId);
         if (listener)
           emit([listener], message.payload.snapshot);
         return;
@@ -494,6 +611,14 @@
           lastReady = { ...lastReady, item: message.payload.item };
         }
         emit(itemListeners, message.payload.item);
+        return;
+      }
+      if (message.type === "status-control-event") {
+        emit(statusControlListeners, message.payload);
+        return;
+      }
+      if (message.type === "popover-closed") {
+        emit(popoverClosedListeners, message.payload);
         return;
       }
       if (message.type === "action") {
@@ -624,6 +749,46 @@
       event.preventDefault();
       requestFileSave();
     };
+    const onPopoverEscape = (event) => {
+      if (!isKeyEvent(event) || event.key !== "Escape" || lastReady?.surface !== "popover" || !lastReady.popover)
+        return;
+      event.preventDefault();
+      void closePopover(lastReady.popover.id, "escape").catch(() => void 0);
+    };
+    const reportPopoverActivity = () => {
+      const popover = lastReady?.surface === "popover" ? lastReady.popover : void 0;
+      if (!popover)
+        return;
+      const active2 = popoverPointerActive || popoverFocusActive;
+      if (popoverActivityReported === active2)
+        return;
+      popoverActivityReported = active2;
+      void setPopoverAnchorActive(popover.id, active2).catch(() => void 0);
+    };
+    const onPopoverPointerOver = () => {
+      if (lastReady?.surface !== "popover" || popoverPointerActive)
+        return;
+      popoverPointerActive = true;
+      reportPopoverActivity();
+    };
+    const onPopoverPointerOut = (event) => {
+      if (lastReady?.surface !== "popover" || event.relatedTarget !== null || !popoverPointerActive)
+        return;
+      popoverPointerActive = false;
+      reportPopoverActivity();
+    };
+    const onPopoverFocus = () => {
+      if (lastReady?.surface !== "popover" || popoverFocusActive)
+        return;
+      popoverFocusActive = true;
+      reportPopoverActivity();
+    };
+    const onPopoverBlur = () => {
+      if (lastReady?.surface !== "popover" || !popoverFocusActive)
+        return;
+      popoverFocusActive = false;
+      reportPopoverActivity();
+    };
     const requireIdentity = (value, maximum = 1024) => {
       if (!value.trim() || value.length > maximum)
         throw new HostRequestError("HOST_REJECTED", `Identity must contain 1 to ${maximum} characters.`);
@@ -656,6 +821,27 @@
         post({ ...envelope, type: "workspace-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
       };
     };
+    const subscribeShells = async (scope, listener) => {
+      if (scope.kind === "session")
+        requireIdentity(scope.sessionId);
+      if (scope.kind === "project")
+        requireIdentity(scope.projectId);
+      const subscriptionId = nextId(ids);
+      shellsListeners.set(subscriptionId, listener);
+      try {
+        await request({ ...envelope, type: "shells-subscribe", id: nextId(ids), payload: { subscriptionId, scope } });
+      } catch (error) {
+        shellsListeners.delete(subscriptionId);
+        if (!disposed)
+          post({ ...envelope, type: "shells-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
+        throw error;
+      }
+      return () => {
+        if (!shellsListeners.delete(subscriptionId) || disposed)
+          return;
+        post({ ...envelope, type: "shells-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
+      };
+    };
     const storage = async (payload) => {
       if ("key" in payload && (payload.key.length === 0 || payload.key.length > GUEST_STORAGE_KEY_MAX)) {
         throw new HostRequestError("HOST_REJECTED", "Storage key must contain 1 to 128 characters.");
@@ -666,11 +852,22 @@
       if (payload.op === "set" && new TextEncoder().encode(JSON.stringify(payload.value)).length > GUEST_STORAGE_VALUE_BYTES) {
         throw new HostRequestError("HOST_REJECTED", "Storage value exceeds 64 KiB.");
       }
+      if (payload.scope === "device" && lastReady?.features?.deviceStorage !== true) {
+        throw new HostRequestError("UNSUPPORTED", "This host does not support device storage.");
+      }
       const result = await send({ ...envelope, type: "storage", id: nextId(ids), payload });
       if (!result || !("storage" in result) || result.op !== payload.op)
         throw new HostRequestError("HOST_REJECTED", "Host did not return storage data.");
       return result;
     };
+    const closePopover = (id, reason) => lastReady?.features?.popovers !== true && !(lastReady?.surface === "popover" && lastReady.popover?.id === id) ? Promise.reject(new HostRequestError("UNSUPPORTED", "This host does not support popovers.")) : request({ ...envelope, type: "popover-close", id: nextId(ids), payload: reason ? { id, reason } : { id } });
+    const setPopoverAnchorActive = (id, active2) => lastReady?.features?.popovers !== true && !(lastReady?.surface === "popover" && lastReady.popover?.id === id) ? Promise.reject(new HostRequestError("UNSUPPORTED", "This host does not support popovers.")) : request({ ...envelope, type: "popover-anchor", id: nextId(ids), payload: { id, active: active2 } });
+    target.addEventListener("keydown", onPopoverEscape, true);
+    target.addEventListener("pointerover", onPopoverPointerOver);
+    target.addEventListener("pointermove", onPopoverPointerOver);
+    target.addEventListener("pointerout", onPopoverPointerOut);
+    target.addEventListener("focus", onPopoverFocus);
+    target.addEventListener("blur", onPopoverBlur);
     return {
       onAction: (handler) => {
         actionHandler = handler;
@@ -709,23 +906,64 @@
         if (snapshot.kind === "sessions")
           listener(snapshot);
       }),
+      onRunningShells: (scope, listener) => subscribeShells(scope, listener),
+      readShellOutput: async (shellId, options2) => {
+        requireIdentity(shellId, GUEST_SHELL_ID_MAX);
+        const cursor = options2?.cursor;
+        if (cursor !== void 0 && (!Number.isInteger(cursor) || cursor < 0)) {
+          throw new HostRequestError("HOST_REJECTED", "Shell output cursor must be a non-negative integer.");
+        }
+        const tailBytes = options2?.tailBytes;
+        if (tailBytes !== void 0 && (!Number.isInteger(tailBytes) || tailBytes < 1 || tailBytes > GUEST_SHELL_OUTPUT_TAIL_MAX)) {
+          throw new HostRequestError("HOST_REJECTED", `Shell output tailBytes must be an integer between 1 and ${GUEST_SHELL_OUTPUT_TAIL_MAX}.`);
+        }
+        const result = await send({ ...envelope, type: "shell-output", id: nextId(ids), payload: { shellId, cursor, tailBytes } });
+        const output = result;
+        if (!output || typeof output.output !== "string" || !Number.isFinite(output.cursor)) {
+          throw new HostRequestError("HOST_REJECTED", "Host did not return shell output.");
+        }
+        return output;
+      },
+      stopShell: async (shellId) => {
+        requireIdentity(shellId, GUEST_SHELL_ID_MAX);
+        const result = await send({ ...envelope, type: "shell-stop", id: nextId(ids), payload: { shellId } });
+        if (result?.stopped !== true)
+          throw new HostRequestError("HOST_REJECTED", "Host did not stop the shell.");
+        return { stopped: true };
+      },
       openSession: async (sessionId) => {
         requireIdentity(sessionId);
         await request({ ...envelope, type: "open-session", id: nextId(ids), payload: { sessionId } });
       },
       storage: {
-        get: async (key) => {
-          const result = await storage({ op: "get", key });
+        get: async (key, options2) => {
+          const scope = deviceStorageScope(options2);
+          const payload = { op: "get", key };
+          if (scope)
+            payload.scope = scope;
+          const result = await storage(payload);
           return result.op === "get" && result.found ? result.value : void 0;
         },
-        set: async (key, value) => {
-          await storage({ op: "set", key, value });
+        set: async (key, value, options2) => {
+          const scope = deviceStorageScope(options2);
+          const payload = { op: "set", key, value };
+          if (scope)
+            payload.scope = scope;
+          await storage(payload);
         },
-        delete: async (key) => {
-          await storage({ op: "delete", key });
+        delete: async (key, options2) => {
+          const scope = deviceStorageScope(options2);
+          const payload = { op: "delete", key };
+          if (scope)
+            payload.scope = scope;
+          await storage(payload);
         },
-        keys: async () => {
-          const result = await storage({ op: "keys" });
+        keys: async (options2) => {
+          const scope = deviceStorageScope(options2);
+          const payload = { op: "keys" };
+          if (scope)
+            payload.scope = scope;
+          const result = await storage(payload);
           if (result.op !== "keys")
             throw new HostRequestError("HOST_REJECTED", "Expected storage keys.");
           return result.keys;
@@ -787,6 +1025,38 @@
           itemListeners.delete(listener);
         };
       },
+      onStatusControl: (listener) => {
+        statusControlListeners.add(listener);
+        return () => {
+          statusControlListeners.delete(listener);
+        };
+      },
+      onPopoverClosed: (listener) => {
+        popoverClosedListeners.add(listener);
+        return () => {
+          popoverClosedListeners.delete(listener);
+        };
+      },
+      setStatusControls: (controls) => {
+        if (lastReady?.features?.statusControls !== true) {
+          return Promise.reject(new HostRequestError("UNSUPPORTED", "This host does not support status controls."));
+        }
+        if (!isGuestStatusControls(controls)) {
+          return Promise.reject(new HostRequestError("HOST_REJECTED", "Status controls must have unique bounded ids and valid selected options."));
+        }
+        return request({ ...envelope, type: "status-controls", id: nextId(ids), payload: { controls } });
+      },
+      openPopover: (payload) => {
+        if (lastReady?.features?.popovers !== true) {
+          return Promise.reject(new HostRequestError("UNSUPPORTED", "This host does not support popovers."));
+        }
+        if (!isGuestPopoverRequest(payload)) {
+          return Promise.reject(new HostRequestError("HOST_REJECTED", "Popover requests need bounded geometry and JSON data."));
+        }
+        return request({ ...envelope, type: "popover-open", id: nextId(ids), payload });
+      },
+      closePopover,
+      setPopoverAnchorActive,
       onResolve: (handler) => {
         resolveHandler = handler;
         return () => {
@@ -1084,6 +1354,10 @@
           post({ ...envelope, type: "workspace-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
         }
         workspaceListeners.clear();
+        for (const subscriptionId of shellsListeners.keys()) {
+          post({ ...envelope, type: "shells-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
+        }
+        shellsListeners.clear();
         disposed = true;
         resolveHandler = null;
         actionHandler = null;
@@ -1093,6 +1367,12 @@
         if (saveShortcutInstalled)
           target.removeEventListener("keydown", onSaveShortcut, true);
         target.removeEventListener("message", onMessage);
+        target.removeEventListener("keydown", onPopoverEscape, true);
+        target.removeEventListener("pointerover", onPopoverPointerOver);
+        target.removeEventListener("pointermove", onPopoverPointerOver);
+        target.removeEventListener("pointerout", onPopoverPointerOut);
+        target.removeEventListener("focus", onPopoverFocus);
+        target.removeEventListener("blur", onPopoverBlur);
         for (const waiter of pending.values()) {
           clearTimeout(waiter.timer);
           waiter.reject(new HostRequestError("HOST_UNAVAILABLE", "Host client was disposed."));
@@ -1105,11 +1385,13 @@
         connectionListeners.clear();
         settingsListeners.clear();
         itemListeners.clear();
+        statusControlListeners.clear();
+        popoverClosedListeners.clear();
       }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1159,7 +1441,7 @@
     return { requestId, action, parameters, context: readContext(context) };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1280,7 +1562,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1337,10 +1619,25 @@
     ["--font-mono", "mono"],
     ["--radius", "radius"]
   ];
+  var SYNTAX_TOKEN_VARS = [
+    ["--oc-syntax-keyword", "--syntax-keyword", "syntaxKeyword"],
+    ["--oc-syntax-string", "--syntax-string", "syntaxString"],
+    ["--oc-syntax-number", "--syntax-number", "syntaxNumber"],
+    ["--oc-syntax-function", "--syntax-function", "syntaxFunction"],
+    ["--oc-syntax-type", "--syntax-type", "syntaxType"],
+    ["--oc-syntax-comment", "--syntax-comment", "syntaxComment"],
+    ["--oc-syntax-variable", "--syntax-variable", "syntaxVariable"],
+    ["--oc-syntax-operator", "--syntax-operator", "syntaxOperator"]
+  ];
   var applyHostTheme = (theme, root) => {
     root.style.colorScheme = theme.mode;
     for (const [name, key] of TOKEN_VARS) {
       root.style.setProperty(name, theme.tokens[key]);
+    }
+    for (const [alias, hostName, key] of SYNTAX_TOKEN_VARS) {
+      const value = theme.tokens[key] ?? "";
+      root.style.setProperty(alias, value);
+      root.style.setProperty(hostName, value);
     }
     root.style.setProperty("font-family", theme.tokens.font);
     root.style.setProperty("font-size", "0.875rem");
@@ -1355,7 +1652,7 @@
     }
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -1414,7 +1711,7 @@
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1616,7 +1913,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -1664,7 +1961,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1712,7 +2009,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -1736,7 +2033,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return node;
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -1797,7 +2094,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -1831,7 +2128,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return target?.id ?? null;
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -1866,7 +2163,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -1905,7 +2202,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -2062,7 +2359,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2106,7 +2403,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2166,7 +2463,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2191,7 +2488,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2279,7 +2576,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2321,7 +2618,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2350,7 +2647,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2396,7 +2693,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2422,7 +2719,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2465,7 +2762,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2571,7 +2868,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -2942,6 +3239,10 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     res = res.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     res = res.replace(/\*([^*]+)\*/g, "<em>$1</em>");
     res = res.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="md-link">$1 \u2197</a>');
+    res = res.replace(/(?<![\w/])(\/(?:workspace|config|tmp|usr|home|etc|var)\/[a-zA-Z0-9_./@-]+(?:\/)?|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+\.(?:ts|js|mjs|cjs|json|md|html|css|yaml|yml|sh|py|go|rs|toml|txt)|(?:\.agents|config\/opencode|panel)\/[a-zA-Z0-9_./@-]+(?:\/)?|package\.json|tsconfig\.json|README\.md|LICENSE|\.gitignore)(?=[.,;:)]*(?:$|\s|[<]))/g, (match) => {
+      const clean = match.replace(/[.,;:)]+$/, "");
+      return `<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}">${clean}</a>`;
+    });
     return res;
   }
   function buildTableHtml(headerLine, sepLine, bodyLines) {
@@ -3066,7 +3367,13 @@ ${placeholder}
     const inlineCodes = [];
     html = html.replace(/`([^`\n]+)`/g, (_, code) => {
       const placeholder = `%%MD_INLINE_CODE_${inlineCodes.length}%%`;
-      inlineCodes.push(`<code class="md-inline-code">${code}</code>`);
+      const trimmed = code.trim();
+      if (/(?:^\/|\/|\.[a-zA-Z0-9]+$)/.test(trimmed) && !trimmed.includes(" ")) {
+        const clean = trimmed.replace(/[.,;:)]+$/, "");
+        inlineCodes.push(`<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}"><code class="md-inline-code">${code}</code></a>`);
+      } else {
+        inlineCodes.push(`<code class="md-inline-code">${code}</code>`);
+      }
       return placeholder;
     });
     const lines = html.split(/\r?\n/);
@@ -3855,7 +4162,107 @@ ${placeholder}
       const fullUrl = `https://github.com/${repo}/issues/${num}`;
       return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">${fullUrl}</a>`;
     });
-    return escaped;
+    const aTokens = [];
+    let working = escaped.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, (match) => {
+      const placeholder = `%%A_TAG_${aTokens.length}%%`;
+      aTokens.push(match);
+      return placeholder;
+    });
+    working = working.replace(/`([^`\n]+)`/g, (_m, code) => {
+      const trimmed = code.trim();
+      if (/(?:^\/|\/|\.[a-zA-Z0-9]+$)/.test(trimmed) && !trimmed.includes(" ")) {
+        const clean = trimmed.replace(/[.,;:)]+$/, "");
+        return `<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}"><code>${trimmed}</code></a>`;
+      }
+      return `<code>${trimmed}</code>`;
+    });
+    const codeTokens = [];
+    working = working.replace(/<code\b[^>]*>[\s\S]*?<\/code>/gi, (match) => {
+      const placeholder = `%%CODE_TAG_${codeTokens.length}%%`;
+      codeTokens.push(match);
+      return placeholder;
+    });
+    working = working.replace(/(?<![\w/])(\/(?:workspace|config|tmp|usr|home|etc|var)\/[a-zA-Z0-9_./@-]+(?:\/)?|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+\.(?:ts|js|mjs|cjs|json|md|html|css|yaml|yml|sh|py|go|rs|toml|txt)|(?:\.agents|config\/opencode|panel)\/[a-zA-Z0-9_./@-]+(?:\/)?|package\.json|tsconfig\.json|README\.md|LICENSE|\.gitignore)(?=[.,;:)]*(?:$|\s|[<]))/g, (match) => {
+      const clean = match.replace(/[.,;:)]+$/, "");
+      return `<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}">${clean}</a>`;
+    });
+    for (let i = codeTokens.length - 1; i >= 0; i--) {
+      working = working.replace(`%%CODE_TAG_${i}%%`, codeTokens[i]);
+    }
+    for (let i = aTokens.length - 1; i >= 0; i--) {
+      working = working.replace(`%%A_TAG_${i}%%`, aTokens[i]);
+    }
+    return working;
+  }
+  function extractQuestionOptions(questionText, issueBody) {
+    const options = [];
+    const qClean = (questionText || "").trim();
+    if (issueBody) {
+      const tableRegex = /\|\s*\*\*([A-D]\.[^*]+)\*\*\s*\|/gi;
+      let tm;
+      const tableOptions = [];
+      while ((tm = tableRegex.exec(issueBody)) !== null) {
+        tableOptions.push(tm[1].trim());
+      }
+      if (tableOptions.length >= 2) {
+        options.push(...tableOptions);
+        if (/A\s*\+\s*D/i.test(qClean)) {
+          options.push("A + D (Combination)");
+        }
+      }
+    }
+    if (options.length === 0 && qClean) {
+      let clean = qClean.replace(/^\s*[-*?]\s*/, "").trim();
+      const colonIdx = clean.indexOf(":");
+      if (colonIdx >= 0 && colonIdx < clean.length - 2) {
+        clean = clean.slice(colonIdx + 1).trim();
+      }
+      const orMatch = clean.match(/^(.*?)(?:,\s*|\s+)or\s+([^?]+)\??$/i);
+      if (orMatch) {
+        const prefix = orMatch[1];
+        const last = orMatch[2].trim();
+        const strippedPrefix = prefix.replace(/^(?:do you prefer|should we use|which|choose|is this ready for merge \(?)/i, "").trim();
+        const parts = strippedPrefix.split(",").map((s) => s.trim()).filter(Boolean);
+        parts.push(last.replace(/\)$/, "").trim());
+        if (parts.length >= 2 && parts.length <= 6) {
+          options.push(...parts);
+        }
+      }
+    }
+    if (options.length === 0 && qClean) {
+      const parenMatches = [...qClean.matchAll(/\(([A-Za-z0-9]+)\)\s*([^,;()]+)/g)];
+      if (parenMatches.length >= 2) {
+        parenMatches.forEach((m) => options.push(`(${m[1]}) ${m[2].trim()}`));
+      }
+    }
+    return [...new Set(options)];
+  }
+  function extractQuestionContext(issueBody, questionLineIndex) {
+    if (!issueBody) return "";
+    const lines = issueBody.split("\n");
+    if (typeof questionLineIndex === "number" && questionLineIndex > 0) {
+      let precedingHeading = "";
+      for (let i = questionLineIndex - 1; i >= 0; i--) {
+        const line = lines[i].trim();
+        if (/^#{1,3}\s+/.test(line)) {
+          precedingHeading = line.replace(/^#{1,3}\s+/, "");
+          break;
+        }
+      }
+      for (let i = questionLineIndex - 1; i >= Math.max(0, questionLineIndex - 8); i--) {
+        const line = lines[i].trim();
+        if (line && !line.startsWith("#") && !line.startsWith("-") && !line.startsWith("|")) {
+          return (precedingHeading ? `${precedingHeading}: ` : "") + line.slice(0, 260);
+        }
+      }
+      if (precedingHeading) return precedingHeading;
+    }
+    const overviewMatch = issueBody.match(/##\s*Overview\s*\n+([\s\S]*?)(?=\n##|\n###|$)/i);
+    if (overviewMatch) {
+      const snippet = overviewMatch[1].replace(/[#*`_]/g, "").trim().replace(/\s+/g, " ");
+      return snippet.slice(0, 240) + (snippet.length > 240 ? "..." : "");
+    }
+    return "";
   }
   function parseOpenQuestions(body) {
     if (!body) return [];
@@ -5850,6 +6257,10 @@ Blocked by ${blockerRef}`;
   var elBtnSaveCustomRepo = document.getElementById("btnSaveCustomRepo");
   var elSearchInput = document.getElementById("searchInput");
   var elBtnLayoutToggle = document.getElementById("btnLayoutToggle");
+  var elBtnViewSelect = document.getElementById("btnViewSelect");
+  var elViewSelectPopover = document.getElementById("viewSelectPopover");
+  var elViewSelectCurrentLabel = document.getElementById("viewSelectCurrentLabel");
+  var elViewSelectCurrentIcon = document.getElementById("viewSelectCurrentIcon");
   var elBtnGraphToggle = document.getElementById("btnGraphToggle");
   var elBtnViewHuman = document.getElementById("btnViewHuman");
   var elBtnViewAllTasks = document.getElementById("btnViewAllTasks");
@@ -6007,6 +6418,12 @@ Blocked by ${blockerRef}`;
     }
     elBanner.style.display = "flex";
   }
+  var elFilePreviewModalBackdrop = document.getElementById("filePreviewModalBackdrop");
+  var elFilePreviewTitle = document.getElementById("filePreviewTitle");
+  var elFilePreviewContent = document.getElementById("filePreviewContent");
+  var elBtnCloseFilePreview = document.getElementById("btnCloseFilePreview");
+  var elBtnDoneFilePreview = document.getElementById("btnDoneFilePreview");
+  var elBtnCopyPreviewPath = document.getElementById("btnCopyPreviewPath");
   function hideBanner() {
     const elBanner = document.getElementById("boardBanner");
     if (elBanner) elBanner.style.display = "none";
@@ -8244,15 +8661,85 @@ Blocked by ${blockerRef}`;
     });
     elKanbanViewContainer.appendChild(kanbanFragment);
   }
+  var currentPreviewPath = "";
+  function showFilePreviewModal(pathStr, content) {
+    currentPreviewPath = pathStr;
+    if (elFilePreviewTitle) {
+      elFilePreviewTitle.textContent = pathStr;
+    }
+    if (elFilePreviewContent) {
+      elFilePreviewContent.textContent = content;
+    }
+    if (elFilePreviewModalBackdrop) {
+      elFilePreviewModalBackdrop.classList.add("active");
+    }
+  }
+  function closeFilePreviewModal() {
+    if (elFilePreviewModalBackdrop) {
+      elFilePreviewModalBackdrop.classList.remove("active");
+    }
+  }
+  async function handleFilePathClick(pathStr, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const cleanPath = pathStr.trim().replace(/^[`'"]+|[`'"]+$/g, "");
+    if (!cleanPath) return;
+    try {
+      if (host && typeof host.writeClipboard === "function") {
+        await host.writeClipboard(cleanPath);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(cleanPath);
+      }
+    } catch {
+    }
+    try {
+      if (typeof host.openSurface === "function") {
+        await host.openSurface("file");
+      }
+    } catch {
+    }
+    let fileContent = null;
+    try {
+      if (typeof host.readFile === "function") {
+        const res = await host.readFile(cleanPath);
+        if (res && typeof res.content === "string") {
+          fileContent = res.content;
+        }
+      }
+    } catch {
+    }
+    if (fileContent !== null) {
+      showFilePreviewModal(cleanPath, fileContent);
+    } else {
+      if (host?.toast) {
+        void host.toast({ kind: "info", message: `Path copied to clipboard: ${cleanPath}` });
+      }
+    }
+  }
   function renderHumanTasksView(filteredIssues) {
     if (!elHumanViewContainer) return;
     elHumanViewContainer.innerHTML = "";
+    const getCompletedTasksForIssue = (issue) => {
+      const humanTasks = parseHumanTasks(issue.body);
+      if (humanTasks.length > 0) {
+        return humanTasks.filter((t) => t.completed).map((t) => ({ text: t.text.trim(), source: "human-task", done: true }));
+      }
+      const subtasks = parseSubtasks(issue.body);
+      if (subtasks.length > 0) {
+        return subtasks.filter((t) => t.completed).map((t) => ({ text: t.text.trim(), source: "human-task", done: true }));
+      }
+      return [];
+    };
     const humanIssues = filteredIssues.filter((i) => {
       if (resolveIssueColumn2(i) === "done") return false;
       if (resolveIssueColumn2(i) === "needs-human") return true;
       const session = getIssueSession(i);
       const todos = collectHumanTodos(i, session);
-      return todos.some((t) => !t.done);
+      if (todos.length > 0) return true;
+      const completed = getCompletedTasksForIssue(i);
+      return completed.length > 0;
     });
     if (humanIssues.length === 0) {
       if (isLoading && issues.length === 0) {
@@ -8273,12 +8760,25 @@ Blocked by ${blockerRef}`;
     `;
       return;
     }
-    const fragment = document.createDocumentFragment();
-    const buildHumanCard = (issue) => {
-      const card = document.createElement("div");
-      card.className = "human-issue-card";
+    const pendingIssues = [];
+    const completedIssues = [];
+    for (const issue of humanIssues) {
       const session = getIssueSession(issue);
-      const todos = collectHumanTodos(issue, session);
+      const activeTodos = collectHumanTodos(issue, session);
+      if (activeTodos.length > 0) {
+        pendingIssues.push(issue);
+      } else {
+        completedIssues.push(issue);
+      }
+    }
+    const fragment = document.createDocumentFragment();
+    const buildHumanCard = (issue, isCompletedCard = false) => {
+      const card = document.createElement("div");
+      card.className = `human-issue-card${isCompletedCard ? " is-all-completed" : ""}`;
+      const session = getIssueSession(issue);
+      const activeTodos = isCompletedCard ? [] : collectHumanTodos(issue, session);
+      const doneTodos = getCompletedTasksForIssue(issue);
+      const totalTodosCount = activeTodos.length + doneTodos.length;
       const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
       const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
       const header = document.createElement("div");
@@ -8305,6 +8805,13 @@ Blocked by ${blockerRef}`;
       }
       const meta = document.createElement("div");
       meta.className = "human-issue-meta";
+      if (isCompletedCard) {
+        const completedPill = document.createElement("span");
+        completedPill.className = "status-pill";
+        completedPill.style.cssText = "font-size: 10px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);";
+        completedPill.textContent = "All Completed";
+        meta.appendChild(completedPill);
+      }
       const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
       if (isAllProjectsMode && repoName) {
         const repoPill = document.createElement("span");
@@ -8330,15 +8837,108 @@ Blocked by ${blockerRef}`;
       card.appendChild(header);
       const list = document.createElement("div");
       list.className = "human-todo-list";
-      if (todos.length === 0) {
+      if (totalTodosCount === 0) {
         const emptyItem = document.createElement("div");
         emptyItem.style.cssText = "font-size: 12px; color: var(--fg-muted); padding: 4px 0;";
         emptyItem.textContent = "No specific checklist items. Review issue details in drawer.";
         list.appendChild(emptyItem);
       } else {
-        todos.forEach((todo) => {
+        const renderTodoItem = (todo, _isDoneSection) => {
           const itemEl = document.createElement("div");
-          itemEl.className = `human-todo-item ${todo.done ? "done" : ""}`;
+          itemEl.className = `human-todo-item ${todo.done ? "done is-done" : ""}`;
+          if (todo.source === "open-question") {
+            const qBadge = document.createElement("span");
+            qBadge.className = "question-icon-badge";
+            qBadge.title = "Question awaiting answer";
+            qBadge.innerHTML = '<svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
+            const spanText2 = document.createElement("span");
+            spanText2.className = "human-todo-text";
+            spanText2.innerHTML = formatTaskTextWithLinks(todo.text, issueRepo);
+            const badge2 = document.createElement("span");
+            badge2.className = "human-todo-badge badge-open-question";
+            badge2.textContent = "Question";
+            const btnAnswer = document.createElement("button");
+            btnAnswer.className = "btn btn-xs btn-primary btn-answer-action";
+            btnAnswer.textContent = "Answer";
+            btnAnswer.title = "Answer question";
+            itemEl.appendChild(qBadge);
+            itemEl.appendChild(spanText2);
+            itemEl.appendChild(badge2);
+            itemEl.appendChild(btnAnswer);
+            const answerRow = document.createElement("div");
+            answerRow.className = "inline-answer-row";
+            answerRow.style.cssText = "display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px; padding: 6px 8px; background: var(--surf-muted); border-radius: 6px; border: 1px solid var(--border);";
+            const options = extractQuestionOptions(todo.text, issue.body);
+            let optionsHtml = "";
+            if (options.length > 0) {
+              optionsHtml = `
+              <div class="question-options-group" style="margin-top: 0;">
+                <span class="question-options-label">Choices:</span>
+                <div class="question-options-chips">
+                  ${options.map((opt) => `<button type="button" class="question-option-btn" data-opt="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join("")}
+                </div>
+              </div>
+            `;
+            }
+            answerRow.innerHTML = `
+            ${optionsHtml}
+            <div style="display: flex; gap: 6px;">
+              <input type="text" class="form-ctrl input-human-answer" placeholder="Type answer or select a choice above..." style="font-size: 11px; height: 26px; flex: 1;" />
+              <button class="btn btn-xs btn-primary btn-submit-human-answer">Save</button>
+              <button class="btn btn-xs btn-cancel-human-answer">Cancel</button>
+            </div>
+          `;
+            itemEl.appendChild(answerRow);
+            const answerInput = answerRow.querySelector(".input-human-answer");
+            const btnSubmit = answerRow.querySelector(".btn-submit-human-answer");
+            const btnCancel = answerRow.querySelector(".btn-cancel-human-answer");
+            answerRow.querySelectorAll(".question-option-btn").forEach((optBtn) => {
+              optBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const optVal = optBtn.getAttribute("data-opt");
+                if (optVal && answerInput) {
+                  answerInput.value = optVal;
+                  answerInput.focus();
+                }
+              });
+            });
+            btnAnswer.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const isOpen = answerRow.style.display !== "none";
+              answerRow.style.display = isOpen ? "none" : "flex";
+              if (!isOpen) answerInput?.focus();
+            });
+            btnCancel?.addEventListener("click", (e) => {
+              e.stopPropagation();
+              answerRow.style.display = "none";
+            });
+            const doSubmitAnswer = async () => {
+              const ans = answerInput?.value.trim();
+              if (!ans) {
+                answerInput?.focus();
+                return;
+              }
+              const currentQuestions = parseOpenQuestions(issue.body);
+              const targetIdx = currentQuestions.filter((q) => !q.completed).findIndex((q) => q.text.trim() === todo.text.trim());
+              const newBody = answerOpenQuestionInMarkdown(issue.body, targetIdx >= 0 ? targetIdx : 0, ans);
+              await updateIssueBody(issue, newBody);
+              await host.toast({ kind: "info", message: "Recorded answer to question" });
+            };
+            btnSubmit?.addEventListener("click", (e) => {
+              e.stopPropagation();
+              void doSubmitAnswer();
+            });
+            answerInput?.addEventListener("keydown", (e) => {
+              e.stopPropagation();
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void doSubmitAnswer();
+              } else if (e.key === "Escape") {
+                answerRow.style.display = "none";
+              }
+            });
+            return itemEl;
+          }
           const cb = document.createElement("input");
           cb.type = "checkbox";
           cb.className = "human-todo-checkbox";
@@ -8348,17 +8948,17 @@ Blocked by ${blockerRef}`;
           cb.addEventListener("change", async (e) => {
             e.stopPropagation();
             if (todo.source === "human-task") {
-              const tasks = parseHumanTasks(issue.body);
-              const target = tasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || tasks.find((t) => t.text.trim() === todo.text.trim());
+              const humanTasks = parseHumanTasks(issue.body);
+              let target = humanTasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || humanTasks.find((t) => t.text.trim() === todo.text.trim());
               if (target) {
                 const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
                 await updateIssueBody(issue, updatedBody);
+                return;
               }
-            } else if (todo.source === "open-question") {
-              const questions = parseOpenQuestions(issue.body);
-              const target = questions.find((q) => q.completed !== cb.checked && q.text.trim() === todo.text.trim()) || questions.find((q) => q.text.trim() === todo.text.trim());
+              const subtasks = parseSubtasks(issue.body);
+              target = subtasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || subtasks.find((t) => t.text.trim() === todo.text.trim());
               if (target) {
-                const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
+                const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
                 await updateIssueBody(issue, updatedBody);
               }
             } else if (todo.source === "session-waiting") {
@@ -8374,19 +8974,36 @@ Blocked by ${blockerRef}`;
           spanText.innerHTML = formatTaskTextWithLinks(todo.text, issueRepo);
           const badge = document.createElement("span");
           badge.className = `human-todo-badge badge-${todo.source}`;
-          badge.textContent = todo.source === "human-task" ? "Human Task" : todo.source === "open-question" ? "Open Question" : "Agent Waiting";
+          badge.textContent = todo.source === "human-task" ? "Human Task" : "Agent Waiting";
           itemEl.appendChild(cb);
           itemEl.appendChild(spanText);
           itemEl.appendChild(badge);
-          list.appendChild(itemEl);
+          return itemEl;
+        };
+        activeTodos.forEach((todo) => {
+          list.appendChild(renderTodoItem(todo, false));
         });
+        if (doneTodos.length > 0) {
+          const doneGroup = document.createElement("div");
+          doneGroup.className = "human-done-tasks-group";
+          if (!isCompletedCard) {
+            const doneTitle = document.createElement("div");
+            doneTitle.className = "human-done-tasks-title";
+            doneTitle.textContent = `Completed (${doneTodos.length})`;
+            doneGroup.appendChild(doneTitle);
+          }
+          doneTodos.forEach((todo) => {
+            doneGroup.appendChild(renderTodoItem(todo, true));
+          });
+          list.appendChild(doneGroup);
+        }
       }
       card.appendChild(list);
       return card;
     };
     if (isAllProjectsMode) {
       const byRepo = {};
-      for (const issue of humanIssues) {
+      for (const issue of pendingIssues) {
         const repo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : "Unknown Repository");
         if (!byRepo[repo]) byRepo[repo] = [];
         byRepo[repo].push(issue);
@@ -8402,14 +9019,57 @@ Blocked by ${blockerRef}`;
       `;
         repoGroup.appendChild(repoHeader);
         byRepo[repo].forEach((issue) => {
-          repoGroup.appendChild(buildHumanCard(issue));
+          repoGroup.appendChild(buildHumanCard(issue, false));
         });
         fragment.appendChild(repoGroup);
       });
     } else {
-      humanIssues.forEach((issue) => {
-        fragment.appendChild(buildHumanCard(issue));
+      if (pendingIssues.length === 0 && completedIssues.length > 0) {
+        const allDoneBox = document.createElement("div");
+        allDoneBox.className = "empty-box empty-state-empty";
+        allDoneBox.style.padding = "16px 12px";
+        allDoneBox.innerHTML = `
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">All active human tasks are complete!</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">Completed tasks are retained below for review or unchecking.</span>
+      `;
+        fragment.appendChild(allDoneBox);
+      } else {
+        pendingIssues.forEach((issue) => {
+          fragment.appendChild(buildHumanCard(issue, false));
+        });
+      }
+    }
+    if (completedIssues.length > 0) {
+      const completedSection = document.createElement("div");
+      completedSection.className = "human-completed-section";
+      completedSection.innerHTML = `
+      <div class="human-completed-header" role="button" tabindex="0" aria-expanded="true">
+        <svg class="icon icon-sm completed-chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        <span class="human-completed-title">Completed Tasks (${completedIssues.length} ${completedIssues.length === 1 ? "issue" : "issues"})</span>
+        <span class="human-completed-sub">All tasks checked &bull; Click to toggle</span>
+      </div>
+      <div class="human-completed-body"></div>
+    `;
+      const bodyEl = completedSection.querySelector(".human-completed-body");
+      const headerEl = completedSection.querySelector(".human-completed-header");
+      const toggleCompleted = () => {
+        const isExpanded = headerEl.getAttribute("aria-expanded") === "true";
+        headerEl.setAttribute("aria-expanded", isExpanded ? "false" : "true");
+        bodyEl.style.display = isExpanded ? "none" : "flex";
+        completedSection.classList.toggle("is-collapsed", isExpanded);
+      };
+      headerEl.addEventListener("click", toggleCompleted);
+      headerEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleCompleted();
+        }
       });
+      completedIssues.forEach((issue) => {
+        bodyEl.appendChild(buildHumanCard(issue, true));
+      });
+      fragment.appendChild(completedSection);
     }
     elHumanViewContainer.appendChild(fragment);
   }
@@ -8643,23 +9303,14 @@ Blocked by ${blockerRef}`;
         row.className = "question-view-row";
         const leftRow = document.createElement("div");
         leftRow.style.cssText = "display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 0;";
-        const cb = document.createElement("input");
-        cb.type = "checkbox";
-        cb.className = "human-todo-checkbox";
-        cb.checked = false;
-        cb.setAttribute("aria-label", `Mark question as answered: ${question.text}`);
-        cb.addEventListener("click", (e) => e.stopPropagation());
-        cb.addEventListener("change", async (e) => {
-          e.stopPropagation();
-          const currentQuestions = parseOpenQuestions(issue.body);
-          const target = currentQuestions.find((q) => q.completed !== cb.checked && q.text.trim() === question.text.trim()) || currentQuestions.find((q) => q.text.trim() === question.text.trim()) || question;
-          const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
-          await updateIssueBody(issue, updatedBody);
-        });
+        const qIcon = document.createElement("span");
+        qIcon.className = "question-icon-badge";
+        qIcon.title = "Open question requiring human answer";
+        qIcon.innerHTML = '<svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
         const spanText = document.createElement("span");
         spanText.className = "question-view-text";
         spanText.innerHTML = formatTaskTextWithLinks(question.text, issueRepo);
-        leftRow.appendChild(cb);
+        leftRow.appendChild(qIcon);
         leftRow.appendChild(spanText);
         const btnAnswer = document.createElement("button");
         btnAnswer.className = "btn btn-xs btn-inline-answer";
@@ -8670,6 +9321,46 @@ Blocked by ${blockerRef}`;
         row.appendChild(leftRow);
         row.appendChild(btnAnswer);
         itemEl.appendChild(row);
+        const contextSnippet = extractQuestionContext(issue.body, question.lineIndex);
+        if (contextSnippet) {
+          const contextBox = document.createElement("div");
+          contextBox.className = "question-context-box";
+          contextBox.innerHTML = `
+          <div class="question-context-header">
+            <svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <span>Context from Issue</span>
+          </div>
+          <div class="question-context-body">${escapeHtml(contextSnippet)}</div>
+        `;
+          itemEl.appendChild(contextBox);
+        }
+        const options = extractQuestionOptions(question.text, issue.body);
+        if (options.length > 0) {
+          const optGroup = document.createElement("div");
+          optGroup.className = "question-options-group";
+          optGroup.innerHTML = `
+          <span class="question-options-label">Quick Choices:</span>
+          <div class="question-options-chips"></div>
+        `;
+          const chipsContainer = optGroup.querySelector(".question-options-chips");
+          options.forEach((opt) => {
+            const optBtn = document.createElement("button");
+            optBtn.className = "question-option-btn";
+            optBtn.textContent = opt;
+            optBtn.setAttribute("type", "button");
+            optBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              answerRow.style.display = "flex";
+              btnAnswer.setAttribute("aria-expanded", "true");
+              if (input) {
+                input.value = opt;
+                input.focus();
+              }
+            });
+            chipsContainer.appendChild(optBtn);
+          });
+          itemEl.appendChild(optGroup);
+        }
         const answerRow = document.createElement("div");
         answerRow.className = "inline-answer-row";
         answerRow.style.cssText = "display: none; gap: 6px; margin-top: 6px;";
@@ -8768,6 +9459,28 @@ Blocked by ${blockerRef}`;
     elBtnViewKanban?.setAttribute("aria-checked", mode === "kanban" ? "true" : "false");
     elBtnViewGraph?.classList.toggle("active", mode === "graph");
     elBtnViewGraph?.setAttribute("aria-checked", mode === "graph" ? "true" : "false");
+    if (elViewSelectCurrentLabel) {
+      elViewSelectCurrentLabel.textContent = mode === "human" ? "Human Tasks" : mode === "questions" ? "Questions" : mode === "kanban" ? "Board" : mode === "graph" ? "Graph" : mode === "all-tasks" ? "All Tasks" : "List";
+    }
+    if (elViewSelectCurrentIcon) {
+      if (mode === "human") {
+        elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+      } else if (mode === "questions") {
+        elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
+      } else if (mode === "kanban") {
+        elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>';
+      } else if (mode === "graph") {
+        elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>';
+      } else if (mode === "all-tasks") {
+        elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M22 7h-9v2h9V7zm0 8h-9v2h9v-2zM5.54 11L2 7.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 11zm0 8L2 15.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 19z"/></svg>';
+      } else {
+        elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>';
+      }
+    }
+    document.querySelectorAll(".view-opt-item").forEach((item) => {
+      const itemMode = item.getAttribute("data-mode");
+      item.classList.toggle("active", itemMode === mode);
+    });
     if (elBtnLayoutToggle) {
       if (mode === "human") {
         elBtnLayoutToggle.title = "View: Human Tasks (click to switch to All Tasks)";
@@ -11020,6 +11733,64 @@ ${issue.body}
     elBtnViewGraph?.addEventListener("click", () => {
       userLayoutPreference = "graph";
       applyLayoutMode();
+    });
+    elBtnViewSelect?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (!elViewSelectPopover) return;
+      const isHidden = elViewSelectPopover.style.display === "none";
+      elViewSelectPopover.style.display = isHidden ? "flex" : "none";
+      elBtnViewSelect.setAttribute("aria-expanded", isHidden ? "true" : "false");
+    });
+    document.addEventListener("click", (e) => {
+      if (elViewSelectPopover && elViewSelectPopover.style.display !== "none") {
+        const target = e.target;
+        if (!elViewSelectPopover.contains(target) && !elBtnViewSelect?.contains(target)) {
+          elViewSelectPopover.style.display = "none";
+          elBtnViewSelect?.setAttribute("aria-expanded", "false");
+        }
+      }
+    });
+    document.querySelectorAll(".view-opt-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        const mode = item.getAttribute("data-mode");
+        if (mode) {
+          userLayoutPreference = mode;
+          applyLayoutMode();
+        }
+        if (elViewSelectPopover) {
+          elViewSelectPopover.style.display = "none";
+          elBtnViewSelect?.setAttribute("aria-expanded", "false");
+        }
+      });
+    });
+    elBtnCloseFilePreview?.addEventListener("click", closeFilePreviewModal);
+    elBtnDoneFilePreview?.addEventListener("click", closeFilePreviewModal);
+    elFilePreviewModalBackdrop?.addEventListener("click", (e) => {
+      if (e.target === elFilePreviewModalBackdrop) {
+        closeFilePreviewModal();
+      }
+    });
+    elBtnCopyPreviewPath?.addEventListener("click", async () => {
+      if (!currentPreviewPath) return;
+      try {
+        if (host && typeof host.writeClipboard === "function") {
+          await host.writeClipboard(currentPreviewPath);
+        } else if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(currentPreviewPath);
+        }
+        if (host?.toast) {
+          void host.toast({ kind: "info", message: `Copied path: ${currentPreviewPath}` });
+        }
+      } catch {
+      }
+    });
+    document.addEventListener("click", (e) => {
+      const target = e.target;
+      const link = target?.closest(".task-file-path-link");
+      if (link) {
+        const pathStr = link.getAttribute("data-path") || link.textContent || "";
+        void handleFilePathClick(pathStr, e);
+      }
     });
     document.getElementById("menuItemViewHuman")?.addEventListener("click", () => {
       userLayoutPreference = "human";

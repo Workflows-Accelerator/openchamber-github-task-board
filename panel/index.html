@@ -2767,6 +2767,265 @@
     .empty-box.empty-state-empty svg {
       color: var(--fg-faint);
     }
+
+    /* Clickable Task File Paths */
+    .task-file-path-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      color: var(--prim);
+      text-decoration: underline;
+      text-decoration-style: dotted;
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 0.95em;
+      border-radius: 3px;
+      padding: 0 2px;
+      transition: background 0.12s ease;
+    }
+    .task-file-path-link:hover {
+      background: var(--prim-subtle);
+      text-decoration-style: solid;
+    }
+    .task-file-path-link code {
+      color: inherit;
+      background: transparent;
+      padding: 0;
+    }
+
+    /* Categorized View Selector Dropdown */
+    .view-select-wrapper {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .btn-view-select {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 8px;
+      height: 28px;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 500;
+      color: var(--fg);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .btn-view-select:hover {
+      background: var(--surf-hover);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    .btn-view-select .icon-chevron {
+      width: 14px;
+      height: 14px;
+      opacity: 0.7;
+    }
+    .view-select-popover {
+      position: absolute;
+      top: 32px;
+      left: 0;
+      width: 210px;
+      z-index: 160;
+      background: var(--surf);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+    }
+    .view-category-header {
+      font-size: 9.5px;
+      font-weight: 700;
+      color: var(--fg-muted);
+      letter-spacing: 0.08em;
+      padding: 6px 8px 3px 8px;
+      user-select: none;
+    }
+    .view-category-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+    .view-opt-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+    .view-opt-item:hover, .view-opt-item.active {
+      background: var(--surf-hover);
+    }
+    .view-opt-item.active {
+      color: var(--prim);
+      font-weight: 500;
+    }
+    .view-opt-item .icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      color: var(--fg-muted);
+    }
+    .view-opt-item.active .icon {
+      color: var(--prim);
+    }
+    .view-opt-text {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-width: 0;
+    }
+    .view-opt-text .popover-item-title {
+      font-size: 12px;
+      line-height: 1.2;
+    }
+    .view-opt-text .popover-item-sub {
+      font-size: 10px;
+      color: var(--fg-muted);
+      line-height: 1.2;
+    }
+
+    /* Completed Human Tasks Section */
+    .human-completed-section {
+      margin-top: 24px;
+      padding-top: 16px;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .human-completed-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      padding: 6px 10px;
+      border-radius: 6px;
+      background: var(--surf-subtle);
+      border: 1px solid var(--border-subtle);
+      user-select: none;
+      transition: background 0.12s ease;
+    }
+    .human-completed-header:hover {
+      background: var(--surf-hover);
+    }
+    .human-completed-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--fg-muted);
+    }
+    .human-completed-sub {
+      font-size: 11px;
+      color: var(--fg-faint);
+      margin-left: auto;
+    }
+    .human-completed-body {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .human-completed-section.is-collapsed .completed-chevron {
+      transform: rotate(-90deg);
+    }
+    .completed-chevron {
+      transition: transform 0.15s ease;
+      color: var(--fg-muted);
+    }
+
+    /* Completed tasks group inside card */
+    .human-done-tasks-group {
+      margin-top: 8px;
+      padding-top: 6px;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .human-done-tasks-title {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--fg-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 2px;
+    }
+
+    /* Question View Context and Option Buttons */
+    .question-icon-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--surf-muted);
+      border: 1px solid var(--border);
+      color: var(--prim);
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .question-context-box {
+      background: var(--surf-muted);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      margin-top: 6px;
+      font-size: 11.5px;
+      line-height: 1.4;
+      color: var(--fg-muted);
+    }
+    .question-context-header {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-weight: 600;
+      color: var(--fg);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 3px;
+    }
+    .question-context-body {
+      word-break: break-word;
+    }
+    .question-options-group {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .question-options-label {
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--fg-muted);
+    }
+    .question-options-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .question-option-btn {
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      color: var(--prim);
+      background: var(--prim-subtle);
+      border-radius: 12px;
+      padding: 2px 8px;
+      font-size: 11px;
+      cursor: pointer;
+      transition: all 0.12s ease;
+    }
+    .question-option-btn:hover {
+      background: var(--prim);
+      color: var(--prim-fg);
+      border-color: var(--prim);
+    }
   </style>
 </head>
 <body>
@@ -2800,6 +3059,57 @@
       <button class="btn btn-icon" id="btnRefresh" title="Refresh Issues & Sessions">
         <svg class="icon" id="iconRefresh" viewBox="0 0 24 24"><path d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
       </button>
+
+      <!-- Categorized View Selector Dropdown (Tasks & Issues) -->
+      <div class="view-select-wrapper" id="viewSelectWrapper">
+        <button class="btn btn-view-select" id="btnViewSelect" title="Select View Layout" aria-haspopup="menu" aria-expanded="false" aria-label="Select view layout">
+          <span class="view-select-icon" id="viewSelectCurrentIcon">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+          </span>
+          <span class="view-select-label" id="viewSelectCurrentLabel">List</span>
+          <svg class="icon icon-chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        </button>
+        <div class="popover view-select-popover" id="viewSelectPopover" role="menu" style="display: none;">
+          <div class="view-category-header">TASKS</div>
+          <div class="popover-item view-opt-item" data-mode="human" id="viewOptHuman" role="menuitem" tabindex="0">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+            <div class="view-opt-text">
+              <span class="popover-item-title">Human Tasks</span>
+              <span class="popover-item-sub">Tasks waiting on human</span>
+            </div>
+          </div>
+          <div class="popover-item view-opt-item" data-mode="questions" id="viewOptQuestions" role="menuitem" tabindex="0">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
+            <div class="view-opt-text">
+              <span class="popover-item-title">Questions</span>
+              <span class="popover-item-sub">Answer AI questions</span>
+            </div>
+          </div>
+          <div class="view-category-divider"></div>
+          <div class="view-category-header">ISSUES</div>
+          <div class="popover-item view-opt-item" data-mode="kanban" id="viewOptKanban" role="menuitem" tabindex="0">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>
+            <div class="view-opt-text">
+              <span class="popover-item-title">Board</span>
+              <span class="popover-item-sub">Kanban status columns</span>
+            </div>
+          </div>
+          <div class="popover-item view-opt-item active" data-mode="list" id="viewOptList" role="menuitem" tabindex="0">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+            <div class="view-opt-text">
+              <span class="popover-item-title">List</span>
+              <span class="popover-item-sub">Tabbed issue list</span>
+            </div>
+          </div>
+          <div class="popover-item view-opt-item" data-mode="graph" id="viewOptGraph" role="menuitem" tabindex="0">
+            <svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>
+            <div class="view-opt-text">
+              <span class="popover-item-title">Graph</span>
+              <span class="popover-item-sub">Dependency hierarchy</span>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <!-- Segmented View Switcher -->
       <div class="view-mode-group toolbar-btn-optional" id="viewModeGroup" role="radiogroup" aria-label="View Layout">
@@ -3694,6 +4004,31 @@ Auto-saved continuously. When ready, click 'Align & Clarify with AI' so the agen
           <button class="btn btn-sm" id="btnNewIssueCancel" type="button">Cancel</button>
           <button class="btn btn-sm btn-primary" id="btnNewIssueSubmit" type="button">Create Issue</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- File Preview Modal -->
+  <div class="modal-backdrop" id="filePreviewModalBackdrop">
+    <div class="modal" style="width: 720px; max-width: 95vw; height: 75vh; max-height: 640px; display: flex; flex-direction: column;">
+      <div class="modal-head">
+        <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+          <span class="modal-title" id="filePreviewTitle" style="font-family: var(--font-mono); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">File Preview</span>
+        </div>
+        <button class="btn btn-icon" id="btnCloseFilePreview" aria-label="Close file preview">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="flex: 1; min-height: 0; padding: 0; display: flex; flex-direction: column;">
+        <pre class="file-preview-content" id="filePreviewContent" style="margin: 0; padding: 12px 16px; overflow: auto; flex: 1; font-family: var(--font-mono); font-size: 12px; line-height: 1.5; color: var(--fg); background: var(--bg);"></pre>
+      </div>
+      <div class="modal-foot" style="justify-content: space-between;">
+        <button class="btn btn-secondary btn-sm" id="btnCopyPreviewPath">
+          <svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+          Copy Path
+        </button>
+        <button class="btn btn-primary btn-sm" id="btnDoneFilePreview">Done</button>
       </div>
     </div>
   </div>

@@ -41,6 +41,11 @@ function applyInlineMarkdown(text: string): string {
   res = res.replace(/\*([^*]+)\*/g, '<em>$1</em>');
   // Links
   res = res.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="md-link">$1 ↗</a>');
+  // File paths (not already linked)
+  res = res.replace(/(?<![\w/])(\/(?:workspace|config|tmp|usr|home|etc|var)\/[a-zA-Z0-9_./@-]+(?:\/)?|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+\.(?:ts|js|mjs|cjs|json|md|html|css|yaml|yml|sh|py|go|rs|toml|txt)|(?:\.agents|config\/opencode|panel)\/[a-zA-Z0-9_./@-]+(?:\/)?|package\.json|tsconfig\.json|README\.md|LICENSE|\.gitignore)(?=[.,;:)]*(?:$|\s|[<]))/g, (match) => {
+    const clean = match.replace(/[.,;:)]+$/, '');
+    return `<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}">${clean}</a>`;
+  });
   return res;
 }
 
@@ -169,7 +174,13 @@ export function renderMarkdown(raw: string): string {
   const inlineCodes: string[] = [];
   html = html.replace(/`([^`\n]+)`/g, (_, code) => {
     const placeholder = `%%MD_INLINE_CODE_${inlineCodes.length}%%`;
-    inlineCodes.push(`<code class="md-inline-code">${code}</code>`);
+    const trimmed = code.trim();
+    if (/(?:^\/|\/|\.[a-zA-Z0-9]+$)/.test(trimmed) && !trimmed.includes(' ')) {
+      const clean = trimmed.replace(/[.,;:)]+$/, '');
+      inlineCodes.push(`<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}"><code class="md-inline-code">${code}</code></a>`);
+    } else {
+      inlineCodes.push(`<code class="md-inline-code">${code}</code>`);
+    }
     return placeholder;
   });
 

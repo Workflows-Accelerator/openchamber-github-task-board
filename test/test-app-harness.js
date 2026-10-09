@@ -196,7 +196,7 @@ export function createTestApp(options = {}) {
         return true;
       },
       click: function () {
-        el.dispatchEvent({ type: 'click', target: el, preventDefault: () => {} });
+        el.dispatchEvent({ type: 'click', target: el, preventDefault: () => {}, stopPropagation: () => {} });
       },
       setAttribute: function (name, value) {
         const strVal = String(value);
@@ -346,6 +346,12 @@ export function createTestApp(options = {}) {
       if (am[1] === 'title') {
         el.title = am[2];
       }
+      if (am[1] === 'style') {
+        am[2].split(';').forEach((part) => {
+          const [k, v] = part.split(':').map((s) => s?.trim());
+          if (k && v) el.style[k] = v;
+        });
+      }
     }
 
     if (!['input', 'img', 'br', 'hr', 'meta', 'link'].includes(tag.toLowerCase())) {
@@ -364,7 +370,20 @@ export function createTestApp(options = {}) {
       if (sel.startsWith('#')) return getEl(sel.slice(1));
       return mockDoc.body.querySelector(sel) || createElement();
     },
-    querySelectorAll: (sel) => mockDoc.body.querySelectorAll(sel),
+    querySelectorAll: (sel) => {
+      const results = [...mockDoc.body.querySelectorAll(sel)];
+      for (const item of elements.values()) {
+        if (matchesSelector(item, sel) && !results.includes(item)) {
+          results.push(item);
+        }
+        if (item.querySelectorAll) {
+          for (const sub of item.querySelectorAll(sel)) {
+            if (!results.includes(sub)) results.push(sub);
+          }
+        }
+      }
+      return results;
+    },
     createElement,
     createDocumentFragment: () => createElement('fragment'),
     createTextNode: (t) => ({ textContent: t }),

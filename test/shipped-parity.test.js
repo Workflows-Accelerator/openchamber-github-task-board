@@ -56,6 +56,8 @@ const JS_FUNCS = [
   'normalizeGithubIssues',
   'mergeIssuePages',
   'parseFriendlyTitle',
+  'extractQuestionOptions',
+  'extractQuestionContext',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'humanTasksSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -73,7 +75,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 40);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 42);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -254,4 +256,38 @@ test('normalizeGithubIssues and mergeIssuePages: shipped == core', () => {
   const p1 = [{ number: 10, title: 'A' }];
   const p2 = [{ number: 10, title: 'A updated' }, { number: 5, title: 'B' }];
   assert.deepEqual(Shipped.mergeIssuePages(p1, p2), Core.mergeIssuePages(p1, p2));
+});
+
+test('extractQuestionOptions / extractQuestionContext: shipped == core', () => {
+  const sampleBody = `
+## Overview
+The batch review gate parks issues on status:needs-human.
+
+| Channel | Mechanism |
+|---|---|
+| **A. Parent-session injection** | Dispatched work notification. |
+| **B. Board event** | Event raised. |
+| **C. Scheduled sweep** | Periodic sweep. |
+| **D. Board comment** | Issue comment posted. |
+
+### Open Questions
+- [ ] Channel A, B, or A+D?
+  `;
+
+  const qText = 'Channel A, B, or A+D?';
+  assert.deepEqual(
+    Shipped.extractQuestionOptions(qText, sampleBody),
+    Core.extractQuestionOptions(qText, sampleBody)
+  );
+
+  const fallbackQ = 'Should we use TypeScript or JavaScript?';
+  assert.deepEqual(
+    Shipped.extractQuestionOptions(fallbackQ),
+    Core.extractQuestionOptions(fallbackQ)
+  );
+
+  assert.deepEqual(
+    Shipped.extractQuestionContext(sampleBody, 12),
+    Core.extractQuestionContext(sampleBody, 12)
+  );
 });

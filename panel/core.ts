@@ -195,7 +195,133 @@ export function formatTaskTextWithLinks(text: string | null | undefined, current
     return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">${fullUrl}</a>`;
   });
 
-  return escaped;
+  // 4. Convert file paths into clickable links
+  // Protect existing <a> tags so replacements don't corrupt attributes or contents
+  const aTokens: string[] = [];
+  let working = escaped.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, (match) => {
+    const placeholder = `%%A_TAG_${aTokens.length}%%`;
+    aTokens.push(match);
+    return placeholder;
+  });
+
+  // Match inline backticks `path/to/file`
+  working = working.replace(/`([^`\n]+)`/g, (_m, code) => {
+    const trimmed = code.trim();
+    if (/(?:^\/|\/|\.[a-zA-Z0-9]+$)/.test(trimmed) && !trimmed.includes(' ')) {
+      const clean = trimmed.replace(/[.,;:)]+$/, '');
+      return `<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}"><code>${trimmed}</code></a>`;
+    }
+    return `<code>${trimmed}</code>`;
+  });
+
+  // Protect <code> tags
+  const codeTokens: string[] = [];
+  working = working.replace(/<code\b[^>]*>[\s\S]*?<\/code>/gi, (match) => {
+    const placeholder = `%%CODE_TAG_${codeTokens.length}%%`;
+    codeTokens.push(match);
+    return placeholder;
+  });
+
+  // Match raw absolute and relative file paths or known config files
+  working = working.replace(/(?<![\w/])(\/(?:workspace|config|tmp|usr|home|etc|var)\/[a-zA-Z0-9_./@-]+(?:\/)?|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+\.(?:ts|js|mjs|cjs|json|md|html|css|yaml|yml|sh|py|go|rs|toml|txt)|(?:\.agents|config\/opencode|panel)\/[a-zA-Z0-9_./@-]+(?:\/)?|package\.json|tsconfig\.json|README\.md|LICENSE|\.gitignore)(?=[.,;:)]*(?:$|\s|[<]))/g, (match) => {
+    const clean = match.replace(/[.,;:)]+$/, '');
+    return `<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}">${clean}</a>`;
+  });
+
+  // Restore <code> and <a> tokens
+  for (let i = codeTokens.length - 1; i >= 0; i--) {
+    working = working.replace(`%%CODE_TAG_${i}%%`, codeTokens[i]);
+  }
+  for (let i = aTokens.length - 1; i >= 0; i--) {
+    working = working.replace(`%%A_TAG_${i}%%`, aTokens[i]);
+  }
+
+  return working;
+}
+
+export function extractQuestionOptions(questionText: string, issueBody?: string): string[] {
+  const options: string[] = [];
+  const qClean = (questionText || '').trim();
+
+  // 1. Look for options defined in tables in the issue body (e.g. **A. Parent-session injection**)
+  if (issueBody) {
+    const tableRegex = /\|\s*\*\*([A-D]\.[^*]+)\*\*\s*\|/gi;
+    let tm: RegExpExecArray | null;
+    const tableOptions: string[] = [];
+    while ((tm = tableRegex.exec(issueBody)) !== null) {
+      tableOptions.push(tm[1].trim());
+    }
+    if (tableOptions.length >= 2) {
+      options.push(...tableOptions);
+      if (/A\s*\+\s*D/i.test(qClean)) {
+        options.push('A + D (Combination)');
+      }
+    }
+  }
+
+  // 2. Parse inline choice questions: "Channel A, B, or A+D?" or "X or Y?"
+  if (options.length === 0 && qClean) {
+    let clean = qClean.replace(/^\s*[-*?]\s*/, '').trim();
+    // If prompt has a colon like "Choose one: A, B, or C?", strip before colon
+    const colonIdx = clean.indexOf(':');
+    if (colonIdx >= 0 && colonIdx < clean.length - 2) {
+      clean = clean.slice(colonIdx + 1).trim();
+    }
+    const orMatch = clean.match(/^(.*?)(?:,\s*|\s+)or\s+([^?]+)\??$/i);
+    if (orMatch) {
+      const prefix = orMatch[1];
+      const last = orMatch[2].trim();
+      const strippedPrefix = prefix.replace(/^(?:do you prefer|should we use|which|choose|is this ready for merge \(?)/i, '').trim();
+      const parts = strippedPrefix.split(',').map((s) => s.trim()).filter(Boolean);
+      parts.push(last.replace(/\)$/, '').trim());
+      if (parts.length >= 2 && parts.length <= 6) {
+        options.push(...parts);
+      }
+    }
+  }
+
+  // 3. Parse parenthesized options: (A) ..., (B) ...
+  if (options.length === 0 && qClean) {
+    const parenMatches = [...qClean.matchAll(/\(([A-Za-z0-9]+)\)\s*([^,;()]+)/g)];
+    if (parenMatches.length >= 2) {
+      parenMatches.forEach((m) => options.push(`(${m[1]}) ${m[2].trim()}`));
+    }
+  }
+
+  return [...new Set(options)];
+}
+
+export function extractQuestionContext(issueBody: string | null | undefined, questionLineIndex?: number): string {
+  if (!issueBody) return '';
+  const lines = issueBody.split('\n');
+
+  // 1. Look for section heading or text preceding the question line
+  if (typeof questionLineIndex === 'number' && questionLineIndex > 0) {
+    let precedingHeading = '';
+    for (let i = questionLineIndex - 1; i >= 0; i--) {
+      const line = lines[i].trim();
+      if (/^#{1,3}\s+/.test(line)) {
+        precedingHeading = line.replace(/^#{1,3}\s+/, '');
+        break;
+      }
+    }
+    for (let i = questionLineIndex - 1; i >= Math.max(0, questionLineIndex - 8); i--) {
+      const line = lines[i].trim();
+      if (line && !line.startsWith('#') && !line.startsWith('-') && !line.startsWith('|')) {
+        return (precedingHeading ? `${precedingHeading}: ` : '') + line.slice(0, 260);
+      }
+    }
+    if (precedingHeading) return precedingHeading;
+  }
+
+  // 2. Fallback to Overview section
+  const overviewMatch = issueBody.match(/##\s*Overview\s*\n+([\s\S]*?)(?=\n##|\n###|$)/i);
+  if (overviewMatch) {
+    const snippet = overviewMatch[1].replace(/[#*`_]/g, '').trim().replace(/\s+/g, ' ');
+    return snippet.slice(0, 240) + (snippet.length > 240 ? '...' : '');
+  }
+
+  return '';
 }
 
 export function parseOpenQuestions(body: string): Subtask[] {

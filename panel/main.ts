@@ -161,6 +161,8 @@ import {
   sessionRepoKeys,
   resolveSimplifiedViewTitle,
   formatTaskTextWithLinks,
+  extractQuestionOptions,
+  extractQuestionContext,
 } from './core.js';
 export type { TestItem };
 export {
@@ -173,6 +175,8 @@ export {
   parseFriendlyTitle,
   resolveSimplifiedViewTitle,
   formatTaskTextWithLinks,
+  extractQuestionOptions,
+  extractQuestionContext,
   parseHumanTasks,
   collectHumanTodos,
   parseTestPlan,
@@ -290,6 +294,10 @@ const elBtnSaveCustomRepo = document.getElementById('btnSaveCustomRepo') as HTML
 
 const elSearchInput = document.getElementById('searchInput') as HTMLInputElement;
 const elBtnLayoutToggle = document.getElementById('btnLayoutToggle') as HTMLButtonElement | null;
+const elBtnViewSelect = document.getElementById('btnViewSelect') as HTMLButtonElement | null;
+const elViewSelectPopover = document.getElementById('viewSelectPopover') as HTMLDivElement | null;
+const elViewSelectCurrentLabel = document.getElementById('viewSelectCurrentLabel') as HTMLSpanElement | null;
+const elViewSelectCurrentIcon = document.getElementById('viewSelectCurrentIcon') as HTMLSpanElement | null;
 const elBtnGraphToggle = document.getElementById('btnGraphToggle') as HTMLButtonElement | null;
 const elBtnViewHuman = document.getElementById('btnViewHuman') as HTMLButtonElement | null;
 const elBtnViewAllTasks = document.getElementById('btnViewAllTasks') as HTMLButtonElement | null;
@@ -478,6 +486,14 @@ function showBanner(text: string, actionLabel?: string, onAction?: () => void): 
   }
   elBanner.style.display = 'flex';
 }
+
+// File preview modal elements
+const elFilePreviewModalBackdrop = document.getElementById('filePreviewModalBackdrop') as HTMLDivElement | null;
+const elFilePreviewTitle = document.getElementById('filePreviewTitle') as HTMLSpanElement | null;
+const elFilePreviewContent = document.getElementById('filePreviewContent') as HTMLPreElement | null;
+const elBtnCloseFilePreview = document.getElementById('btnCloseFilePreview') as HTMLButtonElement | null;
+const elBtnDoneFilePreview = document.getElementById('btnDoneFilePreview') as HTMLButtonElement | null;
+const elBtnCopyPreviewPath = document.getElementById('btnCopyPreviewPath') as HTMLButtonElement | null;
 
 function hideBanner(): void {
   const elBanner = document.getElementById('boardBanner');
@@ -3261,17 +3277,107 @@ function renderKanbanView(filteredIssues: Issue[]): void {
   elKanbanViewContainer.appendChild(kanbanFragment);
 }
 
+let currentPreviewPath = '';
+
+function showFilePreviewModal(pathStr: string, content: string): void {
+  currentPreviewPath = pathStr;
+  if (elFilePreviewTitle) {
+    elFilePreviewTitle.textContent = pathStr;
+  }
+  if (elFilePreviewContent) {
+    elFilePreviewContent.textContent = content;
+  }
+  if (elFilePreviewModalBackdrop) {
+    elFilePreviewModalBackdrop.classList.add('active');
+  }
+}
+
+function closeFilePreviewModal(): void {
+  if (elFilePreviewModalBackdrop) {
+    elFilePreviewModalBackdrop.classList.remove('active');
+  }
+}
+
+async function handleFilePathClick(pathStr: string, e?: Event): Promise<void> {
+  if (e) {
+    e.preventDefault();
+    e.stopPropagation();
+  }
+  const cleanPath = pathStr.trim().replace(/^[`'"]+|[`'"]+$/g, '');
+  if (!cleanPath) return;
+
+  // 1. Copy path to clipboard
+  try {
+    if (host && typeof host.writeClipboard === 'function') {
+      await host.writeClipboard(cleanPath);
+    } else if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(cleanPath);
+    }
+  } catch {
+    // ignore
+  }
+
+  // 2. Open Files surface in OpenChamber if supported
+  try {
+    if (typeof (host as any).openSurface === 'function') {
+      await (host as any).openSurface('file');
+    }
+  } catch {
+    // ignore
+  }
+
+  // 3. Try to read file if host.readFile is available
+  let fileContent: string | null = null;
+  try {
+    if (typeof (host as any).readFile === 'function') {
+      const res = await (host as any).readFile(cleanPath);
+      if (res && typeof res.content === 'string') {
+        fileContent = res.content;
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  // 4. Show modal if content available, else toast
+  if (fileContent !== null) {
+    showFilePreviewModal(cleanPath, fileContent);
+  } else {
+    if (host?.toast) {
+      void host.toast({ kind: 'info', message: `Path copied to clipboard: ${cleanPath}` });
+    }
+  }
+}
+
 function renderHumanTasksView(filteredIssues: Issue[]): void {
   if (!elHumanViewContainer) return;
   elHumanViewContainer.innerHTML = '';
 
-  // Filter issues in needs-human status or with uncompleted human todos
+  const getCompletedTasksForIssue = (issue: Issue): HumanTodo[] => {
+    const humanTasks = parseHumanTasks(issue.body);
+    if (humanTasks.length > 0) {
+      return humanTasks
+        .filter((t) => t.completed)
+        .map((t) => ({ text: t.text.trim(), source: 'human-task' as const, done: true }));
+    }
+    const subtasks = parseSubtasks(issue.body);
+    if (subtasks.length > 0) {
+      return subtasks
+        .filter((t) => t.completed)
+        .map((t) => ({ text: t.text.trim(), source: 'human-task' as const, done: true }));
+    }
+    return [];
+  };
+
+  // Filter issues in needs-human status or with human todos (active or completed)
   const humanIssues = filteredIssues.filter((i) => {
     if (resolveIssueColumn(i) === 'done') return false;
     if (resolveIssueColumn(i) === 'needs-human') return true;
     const session = getIssueSession(i);
     const todos = collectHumanTodos(i, session);
-    return todos.some((t) => !t.done);
+    if (todos.length > 0) return true;
+    const completed = getCompletedTasksForIssue(i);
+    return completed.length > 0;
   });
 
   if (humanIssues.length === 0) {
@@ -3294,15 +3400,31 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
     return;
   }
 
+  // Partition into pending (active tasks) and completed (all tasks done)
+  const pendingIssues: Issue[] = [];
+  const completedIssues: Issue[] = [];
+
+  for (const issue of humanIssues) {
+    const session = getIssueSession(issue);
+    const activeTodos = collectHumanTodos(issue, session);
+    if (activeTodos.length > 0) {
+      pendingIssues.push(issue);
+    } else {
+      completedIssues.push(issue);
+    }
+  }
+
   const fragment = document.createDocumentFragment();
 
   // Helper to render one human issue card
-  const buildHumanCard = (issue: Issue): HTMLElement => {
+  const buildHumanCard = (issue: Issue, isCompletedCard: boolean = false): HTMLElement => {
     const card = document.createElement('div');
-    card.className = 'human-issue-card';
+    card.className = `human-issue-card${isCompletedCard ? ' is-all-completed' : ''}`;
 
     const session = getIssueSession(issue);
-    const todos = collectHumanTodos(issue, session);
+    const activeTodos = isCompletedCard ? [] : collectHumanTodos(issue, session);
+    const doneTodos = getCompletedTasksForIssue(issue);
+    const totalTodosCount = activeTodos.length + doneTodos.length;
     const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
     const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || undefined;
 
@@ -3336,6 +3458,14 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
     const meta = document.createElement('div');
     meta.className = 'human-issue-meta';
 
+    if (isCompletedCard) {
+      const completedPill = document.createElement('span');
+      completedPill.className = 'status-pill';
+      completedPill.style.cssText = 'font-size: 10px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);';
+      completedPill.textContent = 'All Completed';
+      meta.appendChild(completedPill);
+    }
+
     const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
     if (isAllProjectsMode && repoName) {
       const repoPill = document.createElement('span');
@@ -3368,16 +3498,129 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
     const list = document.createElement('div');
     list.className = 'human-todo-list';
 
-    if (todos.length === 0) {
+    if (totalTodosCount === 0) {
       const emptyItem = document.createElement('div');
       emptyItem.style.cssText = 'font-size: 12px; color: var(--fg-muted); padding: 4px 0;';
       emptyItem.textContent = 'No specific checklist items. Review issue details in drawer.';
       list.appendChild(emptyItem);
     } else {
-      todos.forEach((todo) => {
+      // Helper to render one todo item
+      const renderTodoItem = (todo: HumanTodo, _isDoneSection: boolean) => {
         const itemEl = document.createElement('div');
-        itemEl.className = `human-todo-item ${todo.done ? 'done' : ''}`;
+        itemEl.className = `human-todo-item ${todo.done ? 'done is-done' : ''}`;
 
+        // Questions must NOT be rendered as checkable todos!
+        if (todo.source === 'open-question') {
+          const qBadge = document.createElement('span');
+          qBadge.className = 'question-icon-badge';
+          qBadge.title = 'Question awaiting answer';
+          qBadge.innerHTML = '<svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
+
+          const spanText = document.createElement('span');
+          spanText.className = 'human-todo-text';
+          spanText.innerHTML = formatTaskTextWithLinks(todo.text, issueRepo);
+
+          const badge = document.createElement('span');
+          badge.className = 'human-todo-badge badge-open-question';
+          badge.textContent = 'Question';
+
+          const btnAnswer = document.createElement('button');
+          btnAnswer.className = 'btn btn-xs btn-primary btn-answer-action';
+          btnAnswer.textContent = 'Answer';
+          btnAnswer.title = 'Answer question';
+
+          itemEl.appendChild(qBadge);
+          itemEl.appendChild(spanText);
+          itemEl.appendChild(badge);
+          itemEl.appendChild(btnAnswer);
+
+          // Inline answer composer
+          const answerRow = document.createElement('div');
+          answerRow.className = 'inline-answer-row';
+          answerRow.style.cssText = 'display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px; padding: 6px 8px; background: var(--surf-muted); border-radius: 6px; border: 1px solid var(--border);';
+
+          const options = extractQuestionOptions(todo.text, issue.body);
+          let optionsHtml = '';
+          if (options.length > 0) {
+            optionsHtml = `
+              <div class="question-options-group" style="margin-top: 0;">
+                <span class="question-options-label">Choices:</span>
+                <div class="question-options-chips">
+                  ${options.map((opt) => `<button type="button" class="question-option-btn" data-opt="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}
+                </div>
+              </div>
+            `;
+          }
+
+          answerRow.innerHTML = `
+            ${optionsHtml}
+            <div style="display: flex; gap: 6px;">
+              <input type="text" class="form-ctrl input-human-answer" placeholder="Type answer or select a choice above..." style="font-size: 11px; height: 26px; flex: 1;" />
+              <button class="btn btn-xs btn-primary btn-submit-human-answer">Save</button>
+              <button class="btn btn-xs btn-cancel-human-answer">Cancel</button>
+            </div>
+          `;
+          itemEl.appendChild(answerRow);
+
+          const answerInput = answerRow.querySelector<HTMLInputElement>('.input-human-answer');
+          const btnSubmit = answerRow.querySelector<HTMLButtonElement>('.btn-submit-human-answer');
+          const btnCancel = answerRow.querySelector<HTMLButtonElement>('.btn-cancel-human-answer');
+
+          answerRow.querySelectorAll<HTMLButtonElement>('.question-option-btn').forEach((optBtn) => {
+            optBtn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const optVal = optBtn.getAttribute('data-opt');
+              if (optVal && answerInput) {
+                answerInput.value = optVal;
+                answerInput.focus();
+              }
+            });
+          });
+
+          btnAnswer.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = answerRow.style.display !== 'none';
+            answerRow.style.display = isOpen ? 'none' : 'flex';
+            if (!isOpen) answerInput?.focus();
+          });
+
+          btnCancel?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            answerRow.style.display = 'none';
+          });
+
+          const doSubmitAnswer = async () => {
+            const ans = answerInput?.value.trim();
+            if (!ans) {
+              answerInput?.focus();
+              return;
+            }
+            const currentQuestions = parseOpenQuestions(issue.body);
+            const targetIdx = currentQuestions.filter((q) => !q.completed).findIndex((q) => q.text.trim() === todo.text.trim());
+            const newBody = answerOpenQuestionInMarkdown(issue.body, targetIdx >= 0 ? targetIdx : 0, ans);
+            await updateIssueBody(issue, newBody);
+            await host.toast({ kind: 'info', message: 'Recorded answer to question' });
+          };
+
+          btnSubmit?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            void doSubmitAnswer();
+          });
+
+          answerInput?.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              void doSubmitAnswer();
+            } else if (e.key === 'Escape') {
+              answerRow.style.display = 'none';
+            }
+          });
+
+          return itemEl;
+        }
+
+        // Regular human task with checkbox
         const cb = document.createElement('input');
         cb.type = 'checkbox';
         cb.className = 'human-todo-checkbox';
@@ -3388,19 +3631,19 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
         cb.addEventListener('change', async (e) => {
           e.stopPropagation();
           if (todo.source === 'human-task') {
-            const tasks = parseHumanTasks(issue.body);
-            const target = tasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim())
-              || tasks.find((t) => t.text.trim() === todo.text.trim());
+            const humanTasks = parseHumanTasks(issue.body);
+            let target = humanTasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim())
+              || humanTasks.find((t) => t.text.trim() === todo.text.trim());
             if (target) {
               const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
               await updateIssueBody(issue, updatedBody);
+              return;
             }
-          } else if (todo.source === 'open-question') {
-            const questions = parseOpenQuestions(issue.body);
-            const target = questions.find((q) => q.completed !== cb.checked && q.text.trim() === todo.text.trim())
-              || questions.find((q) => q.text.trim() === todo.text.trim());
+            const subtasks = parseSubtasks(issue.body);
+            target = subtasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim())
+              || subtasks.find((t) => t.text.trim() === todo.text.trim());
             if (target) {
-              const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
+              const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
               await updateIssueBody(issue, updatedBody);
             }
           } else if (todo.source === 'session-waiting') {
@@ -3418,18 +3661,34 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
 
         const badge = document.createElement('span');
         badge.className = `human-todo-badge badge-${todo.source}`;
-        badge.textContent =
-          todo.source === 'human-task'
-            ? 'Human Task'
-            : todo.source === 'open-question'
-              ? 'Open Question'
-              : 'Agent Waiting';
+        badge.textContent = todo.source === 'human-task' ? 'Human Task' : 'Agent Waiting';
 
         itemEl.appendChild(cb);
         itemEl.appendChild(spanText);
         itemEl.appendChild(badge);
-        list.appendChild(itemEl);
+        return itemEl;
+      };
+
+      // 1. Render active tasks
+      activeTodos.forEach((todo) => {
+        list.appendChild(renderTodoItem(todo, false));
       });
+
+      // 2. Render completed tasks group (allows reviewing and unchecking!)
+      if (doneTodos.length > 0) {
+        const doneGroup = document.createElement('div');
+        doneGroup.className = 'human-done-tasks-group';
+        if (!isCompletedCard) {
+          const doneTitle = document.createElement('div');
+          doneTitle.className = 'human-done-tasks-title';
+          doneTitle.textContent = `Completed (${doneTodos.length})`;
+          doneGroup.appendChild(doneTitle);
+        }
+        doneTodos.forEach((todo) => {
+          doneGroup.appendChild(renderTodoItem(todo, true));
+        });
+        list.appendChild(doneGroup);
+      }
     }
 
     card.appendChild(list);
@@ -3437,9 +3696,9 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
   };
 
   if (isAllProjectsMode) {
-    // Group by repository
+    // Group pending issues by repository
     const byRepo: { [repo: string]: Issue[] } = {};
-    for (const issue of humanIssues) {
+    for (const issue of pendingIssues) {
       const repo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : 'Unknown Repository');
       if (!byRepo[repo]) byRepo[repo] = [];
       byRepo[repo].push(issue);
@@ -3458,15 +3717,62 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
       repoGroup.appendChild(repoHeader);
 
       byRepo[repo].forEach((issue) => {
-        repoGroup.appendChild(buildHumanCard(issue));
+        repoGroup.appendChild(buildHumanCard(issue, false));
       });
 
       fragment.appendChild(repoGroup);
     });
   } else {
-    humanIssues.forEach((issue) => {
-      fragment.appendChild(buildHumanCard(issue));
+    if (pendingIssues.length === 0 && completedIssues.length > 0) {
+      const allDoneBox = document.createElement('div');
+      allDoneBox.className = 'empty-box empty-state-empty';
+      allDoneBox.style.padding = '16px 12px';
+      allDoneBox.innerHTML = `
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">All active human tasks are complete!</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">Completed tasks are retained below for review or unchecking.</span>
+      `;
+      fragment.appendChild(allDoneBox);
+    } else {
+      pendingIssues.forEach((issue) => {
+        fragment.appendChild(buildHumanCard(issue, false));
+      });
+    }
+  }
+
+  // Render completed issues at the bottom of the list
+  if (completedIssues.length > 0) {
+    const completedSection = document.createElement('div');
+    completedSection.className = 'human-completed-section';
+    completedSection.innerHTML = `
+      <div class="human-completed-header" role="button" tabindex="0" aria-expanded="true">
+        <svg class="icon icon-sm completed-chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        <span class="human-completed-title">Completed Tasks (${completedIssues.length} ${completedIssues.length === 1 ? 'issue' : 'issues'})</span>
+        <span class="human-completed-sub">All tasks checked &bull; Click to toggle</span>
+      </div>
+      <div class="human-completed-body"></div>
+    `;
+    const bodyEl = completedSection.querySelector('.human-completed-body') as HTMLElement;
+    const headerEl = completedSection.querySelector('.human-completed-header') as HTMLElement;
+    const toggleCompleted = () => {
+      const isExpanded = headerEl.getAttribute('aria-expanded') === 'true';
+      headerEl.setAttribute('aria-expanded', isExpanded ? 'false' : 'true');
+      bodyEl.style.display = isExpanded ? 'none' : 'flex';
+      completedSection.classList.toggle('is-collapsed', isExpanded);
+    };
+    headerEl.addEventListener('click', toggleCompleted);
+    headerEl.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggleCompleted();
+      }
     });
+
+    completedIssues.forEach((issue) => {
+      bodyEl.appendChild(buildHumanCard(issue, true));
+    });
+
+    fragment.appendChild(completedSection);
   }
 
   elHumanViewContainer.appendChild(fragment);
@@ -3751,28 +4057,16 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
       const leftRow = document.createElement('div');
       leftRow.style.cssText = 'display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 0;';
 
-      const cb = document.createElement('input');
-      cb.type = 'checkbox';
-      cb.className = 'human-todo-checkbox';
-      cb.checked = false;
-      cb.setAttribute('aria-label', `Mark question as answered: ${question.text}`);
-
-      cb.addEventListener('click', (e) => e.stopPropagation());
-      cb.addEventListener('change', async (e) => {
-        e.stopPropagation();
-        const currentQuestions = parseOpenQuestions(issue.body);
-        const target = currentQuestions.find((q) => q.completed !== cb.checked && q.text.trim() === question.text.trim())
-          || currentQuestions.find((q) => q.text.trim() === question.text.trim())
-          || question;
-        const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
-        await updateIssueBody(issue, updatedBody);
-      });
+      const qIcon = document.createElement('span');
+      qIcon.className = 'question-icon-badge';
+      qIcon.title = 'Open question requiring human answer';
+      qIcon.innerHTML = '<svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
 
       const spanText = document.createElement('span');
       spanText.className = 'question-view-text';
       spanText.innerHTML = formatTaskTextWithLinks(question.text, issueRepo);
 
-      leftRow.appendChild(cb);
+      leftRow.appendChild(qIcon);
       leftRow.appendChild(spanText);
 
       const btnAnswer = document.createElement('button');
@@ -3785,6 +4079,50 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
       row.appendChild(leftRow);
       row.appendChild(btnAnswer);
       itemEl.appendChild(row);
+
+      // Context snippet from issue
+      const contextSnippet = extractQuestionContext(issue.body, question.lineIndex);
+      if (contextSnippet) {
+        const contextBox = document.createElement('div');
+        contextBox.className = 'question-context-box';
+        contextBox.innerHTML = `
+          <div class="question-context-header">
+            <svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <span>Context from Issue</span>
+          </div>
+          <div class="question-context-body">${escapeHtml(contextSnippet)}</div>
+        `;
+        itemEl.appendChild(contextBox);
+      }
+
+      // Quick Choices from options
+      const options = extractQuestionOptions(question.text, issue.body);
+      if (options.length > 0) {
+        const optGroup = document.createElement('div');
+        optGroup.className = 'question-options-group';
+        optGroup.innerHTML = `
+          <span class="question-options-label">Quick Choices:</span>
+          <div class="question-options-chips"></div>
+        `;
+        const chipsContainer = optGroup.querySelector('.question-options-chips') as HTMLElement;
+        options.forEach((opt) => {
+          const optBtn = document.createElement('button');
+          optBtn.className = 'question-option-btn';
+          optBtn.textContent = opt;
+          optBtn.setAttribute('type', 'button');
+          optBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            answerRow.style.display = 'flex';
+            btnAnswer.setAttribute('aria-expanded', 'true');
+            if (input) {
+              input.value = opt;
+              input.focus();
+            }
+          });
+          chipsContainer.appendChild(optBtn);
+        });
+        itemEl.appendChild(optGroup);
+      }
 
       const answerRow = document.createElement('div');
       answerRow.className = 'inline-answer-row';
@@ -3904,6 +4242,42 @@ function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph' | 'human' | 'al
 
   elBtnViewGraph?.classList.toggle('active', mode === 'graph');
   elBtnViewGraph?.setAttribute('aria-checked', mode === 'graph' ? 'true' : 'false');
+
+  if (elViewSelectCurrentLabel) {
+    elViewSelectCurrentLabel.textContent =
+      mode === 'human'
+        ? 'Human Tasks'
+        : mode === 'questions'
+          ? 'Questions'
+          : mode === 'kanban'
+            ? 'Board'
+            : mode === 'graph'
+              ? 'Graph'
+              : mode === 'all-tasks'
+                ? 'All Tasks'
+                : 'List';
+  }
+
+  if (elViewSelectCurrentIcon) {
+    if (mode === 'human') {
+      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
+    } else if (mode === 'questions') {
+      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
+    } else if (mode === 'kanban') {
+      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>';
+    } else if (mode === 'graph') {
+      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>';
+    } else if (mode === 'all-tasks') {
+      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M22 7h-9v2h9V7zm0 8h-9v2h9v-2zM5.54 11L2 7.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 11zm0 8L2 15.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 19z"/></svg>';
+    } else {
+      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>';
+    }
+  }
+
+  document.querySelectorAll('.view-opt-item').forEach((item) => {
+    const itemMode = item.getAttribute('data-mode');
+    item.classList.toggle('active', itemMode === mode);
+  });
 
   if (elBtnLayoutToggle) {
     if (mode === 'human') {
@@ -6573,6 +6947,73 @@ function initEvents(): void {
   elBtnViewGraph?.addEventListener('click', () => {
     userLayoutPreference = 'graph';
     applyLayoutMode();
+  });
+
+  // Categorized View Selector Dropdown (Tasks vs Issues)
+  elBtnViewSelect?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!elViewSelectPopover) return;
+    const isHidden = elViewSelectPopover.style.display === 'none';
+    elViewSelectPopover.style.display = isHidden ? 'flex' : 'none';
+    elBtnViewSelect.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+  });
+
+  document.addEventListener('click', (e) => {
+    if (elViewSelectPopover && elViewSelectPopover.style.display !== 'none') {
+      const target = e.target as Node;
+      if (!elViewSelectPopover.contains(target) && !elBtnViewSelect?.contains(target)) {
+        elViewSelectPopover.style.display = 'none';
+        elBtnViewSelect?.setAttribute('aria-expanded', 'false');
+      }
+    }
+  });
+
+  document.querySelectorAll<HTMLElement>('.view-opt-item').forEach((item) => {
+    item.addEventListener('click', () => {
+      const mode = item.getAttribute('data-mode') as 'list' | 'kanban' | 'graph' | 'human' | 'questions' | null;
+      if (mode) {
+        userLayoutPreference = mode;
+        applyLayoutMode();
+      }
+      if (elViewSelectPopover) {
+        elViewSelectPopover.style.display = 'none';
+        elBtnViewSelect?.setAttribute('aria-expanded', 'false');
+      }
+    });
+  });
+
+  // File Preview Modal handlers
+  elBtnCloseFilePreview?.addEventListener('click', closeFilePreviewModal);
+  elBtnDoneFilePreview?.addEventListener('click', closeFilePreviewModal);
+  elFilePreviewModalBackdrop?.addEventListener('click', (e) => {
+    if (e.target === elFilePreviewModalBackdrop) {
+      closeFilePreviewModal();
+    }
+  });
+  elBtnCopyPreviewPath?.addEventListener('click', async () => {
+    if (!currentPreviewPath) return;
+    try {
+      if (host && typeof host.writeClipboard === 'function') {
+        await host.writeClipboard(currentPreviewPath);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(currentPreviewPath);
+      }
+      if (host?.toast) {
+        void host.toast({ kind: 'info', message: `Copied path: ${currentPreviewPath}` });
+      }
+    } catch {
+      // ignore
+    }
+  });
+
+  // Global delegation for clickable task file paths
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement | null;
+    const link = target?.closest('.task-file-path-link') as HTMLElement | null;
+    if (link) {
+      const pathStr = link.getAttribute('data-path') || link.textContent || '';
+      void handleFilePathClick(pathStr, e);
+    }
   });
 
   // More menu direct view items
