@@ -3380,13 +3380,39 @@ async function handleFilePathClick(pathStr: string, e?: Event): Promise<void> {
     // ignore
   }
 
-  // 2. Open Files surface in OpenChamber if supported
-  try {
-    if (typeof (host as any).openSurface === 'function') {
-      await (host as any).openSurface('file');
+  // 2. Direct editor navigation: invoke host editor open capabilities (host.openFile or file.open surface) alongside clipboard copy
+  let editorOpened = false;
+  if (host && typeof (host as any).openFile === 'function') {
+    try {
+      await (host as any).openFile(cleanPath);
+      editorOpened = true;
+    } catch {
+      try {
+        await (host as any).openFile({ path: cleanPath });
+        editorOpened = true;
+      } catch {
+        // ignore
+      }
     }
-  } catch {
-    // ignore
+  }
+
+  if (host && typeof (host as any).openSurface === 'function') {
+    try {
+      await (host as any).openSurface('file.open', { path: cleanPath });
+      editorOpened = true;
+    } catch {
+      try {
+        await (host as any).openSurface('file', { path: cleanPath });
+        editorOpened = true;
+      } catch {
+        try {
+          await (host as any).openSurface('file');
+          editorOpened = true;
+        } catch {
+          // ignore
+        }
+      }
+    }
   }
 
   // 3. Try to read file if host.readFile is available (try relative, with leading slash, workspace prefix, and current directory)

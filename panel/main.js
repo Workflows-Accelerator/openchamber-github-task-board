@@ -8936,11 +8936,35 @@ Blocked by ${blockerRef}`;
       }
     } catch {
     }
-    try {
-      if (typeof host.openSurface === "function") {
-        await host.openSurface("file");
+    let editorOpened = false;
+    if (host && typeof host.openFile === "function") {
+      try {
+        await host.openFile(cleanPath);
+        editorOpened = true;
+      } catch {
+        try {
+          await host.openFile({ path: cleanPath });
+          editorOpened = true;
+        } catch {
+        }
       }
-    } catch {
+    }
+    if (host && typeof host.openSurface === "function") {
+      try {
+        await host.openSurface("file.open", { path: cleanPath });
+        editorOpened = true;
+      } catch {
+        try {
+          await host.openSurface("file", { path: cleanPath });
+          editorOpened = true;
+        } catch {
+          try {
+            await host.openSurface("file");
+            editorOpened = true;
+          } catch {
+          }
+        }
+      }
     }
     let fileContent = null;
     if (host && typeof host.readFile === "function") {
