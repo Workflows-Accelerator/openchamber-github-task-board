@@ -58,6 +58,8 @@ const JS_FUNCS = [
   'parseFriendlyTitle',
   'extractQuestionOptions',
   'extractQuestionContext',
+  'resolveOptimisticSubtaskUpdate',
+  'resolveOptimisticQuestionAnswer',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'humanTasksSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -75,7 +77,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 42);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 44);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -289,5 +291,17 @@ The batch review gate parks issues on status:needs-human.
   assert.deepEqual(
     Shipped.extractQuestionContext(sampleBody, 12),
     Core.extractQuestionContext(sampleBody, 12)
+  );
+});
+
+test('optimistic mutators: shipped == core', () => {
+  const sample = `## Overview\nTest\n\n### Subtasks\n- [ ] Task 1\n- [ ] Task 2\n\n### Open Questions\n- [ ] Question 1?`;
+  assert.deepEqual(
+    Shipped.resolveOptimisticSubtaskUpdate(sample, 'Task 2', true),
+    Core.resolveOptimisticSubtaskUpdate(sample, 'Task 2', true)
+  );
+  assert.deepEqual(
+    Shipped.resolveOptimisticQuestionAnswer(sample, 'Question 1?', 'Answer 1'),
+    Core.resolveOptimisticQuestionAnswer(sample, 'Question 1?', 'Answer 1')
   );
 });

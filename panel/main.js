@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
@@ -64,20 +64,20 @@
   }
   var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_DEVICE_STORAGE_TOTAL_BYTES = 16777216;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
   var GUEST_SHELL_ID_MAX = 128;
   var GUEST_SHELLS_MAX = 200;
   var GUEST_SHELL_OUTPUT_TAIL_MAX = 65536;
   var GUEST_SHELL_END_STATUSES = ["exited", "timeout", "killed", "stopped", "unknown"];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
   var GUEST_STATUS_CONTROLS_MAX = 4;
   var GUEST_STATUS_CONTROL_ID = /^[a-z][a-z0-9-]{0,39}$/;
   var GUEST_STATUS_CONTROL_LABEL_MAX = 60;
@@ -120,7 +120,7 @@
     return true;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
   var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
@@ -178,7 +178,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
   var GUEST_POPOVER_ID = /^[A-Za-z0-9_-]{1,80}$/;
   var GUEST_POPOVER_COORDINATE_MAX = 1e5;
   var GUEST_POPOVER_WIDTH_MIN = 160;
@@ -222,7 +222,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -456,7 +456,7 @@
     return wire;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
   var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
@@ -1391,7 +1391,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1441,7 +1441,7 @@
     return { requestId, action, parameters, context: readContext(context) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1562,7 +1562,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1652,7 +1652,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -1711,7 +1711,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1913,7 +1913,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -1961,7 +1961,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2009,7 +2009,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -2033,7 +2033,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return node;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2094,7 +2094,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -2128,7 +2128,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return target?.id ?? null;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -2163,7 +2163,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -2202,7 +2202,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -2359,7 +2359,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2403,7 +2403,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2463,7 +2463,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2488,7 +2488,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2576,7 +2576,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2618,7 +2618,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2647,7 +2647,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2693,7 +2693,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2719,7 +2719,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2762,7 +2762,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2868,7 +2868,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -4718,6 +4718,68 @@ ${header}
     return `${header}
 ${lines.join("\n")}`;
   }
+  function resolveOptimisticSubtaskUpdate(body, taskText, completed) {
+    if (!body || typeof body !== "string") {
+      return { updatedBody: body || "", found: false };
+    }
+    const cleanTarget = taskText.trim();
+    const humanTasks = parseHumanTasks(body);
+    let target = humanTasks.find((t) => t.completed !== completed && t.text.trim() === cleanTarget) || humanTasks.find((t) => t.text.trim() === cleanTarget);
+    if (target) {
+      return {
+        updatedBody: updateSubtaskInMarkdown(body, target.lineIndex, completed),
+        found: true
+      };
+    }
+    const subtasks = parseSubtasks(body);
+    target = subtasks.find((t) => t.completed !== completed && t.text.trim() === cleanTarget) || subtasks.find((t) => t.text.trim() === cleanTarget);
+    if (target) {
+      return {
+        updatedBody: updateSubtaskInMarkdown(body, target.lineIndex, completed),
+        found: true
+      };
+    }
+    return { updatedBody: body, found: false };
+  }
+  function resolveOptimisticQuestionAnswer(body, questionText, answerText) {
+    if (!body || typeof body !== "string") {
+      return { updatedBody: body || "", found: false };
+    }
+    const cleanTarget = questionText.trim();
+    const questions = parseOpenQuestions(body);
+    const openQuestions = questions.filter((q) => !q.completed);
+    let targetIdx = openQuestions.findIndex((q) => q.text.trim() === cleanTarget);
+    if (targetIdx >= 0) {
+      return {
+        updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
+        found: true
+      };
+    }
+    targetIdx = questions.findIndex((q) => q.text.trim() === cleanTarget);
+    if (targetIdx >= 0) {
+      return {
+        updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
+        found: true
+      };
+    }
+    return { updatedBody: body, found: false };
+  }
+  function resolveOptimisticTestItemUpdate(body, itemText, completed) {
+    if (!body || typeof body !== "string") {
+      return { updatedBody: body || "", found: false };
+    }
+    const cleanTarget = itemText.trim();
+    const { issueTests, batchTests } = parseTestPlan(body);
+    const allTests = [...issueTests, ...batchTests];
+    const target = allTests.find((t) => t.completed !== completed && t.text.trim() === cleanTarget) || allTests.find((t) => t.text.trim() === cleanTarget);
+    if (target) {
+      return {
+        updatedBody: updateTestItemInMarkdown(body, target.lineIndex, completed),
+        found: true
+      };
+    }
+    return { updatedBody: body, found: false };
+  }
   function getIssueBatch(issue) {
     if (!issue || !issue.labels || !Array.isArray(issue.labels) || issue.labels.length === 0) return null;
     for (const l of issue.labels) {
@@ -5836,6 +5898,7 @@ Blocked by ${blockerRef}`;
         assignees: (item.assignees || []).map((a) => ({ login: a.login, ...a.avatar_url ? { avatar_url: a.avatar_url } : {} })),
         comments: item.comments || 0,
         created_at: item.created_at || "",
+        ...item.updated_at ? { updated_at: item.updated_at } : {},
         subtasks: parseSubtasks(item.body || ""),
         openQuestions: parseOpenQuestions(item.body || ""),
         humanTasks: parseHumanTasks(item.body || ""),
@@ -7709,6 +7772,28 @@ Blocked by ${blockerRef}`;
     if (isAllProjectsMode) return "";
     return currentRepo;
   }
+  async function reloadIssueBeforeMutation(issue) {
+    const repo = repoForIssue(issue);
+    if (!repo) return null;
+    try {
+      const raw = await githubRequestWithRetry("GET", `/repos/${repo}/issues/${issue.number}`);
+      if (raw && typeof raw.body === "string") {
+        const remoteUpdatedAt = raw.updated_at || "";
+        if (issue.updated_at && remoteUpdatedAt && issue.updated_at !== remoteUpdatedAt) {
+          addLog(`Issue #${issue.number} was modified remotely (${remoteUpdatedAt} vs ${issue.updated_at}); refreshing body before mutation`, "info");
+        }
+        issue.body = raw.body;
+        issue.updated_at = remoteUpdatedAt;
+        issue.subtasks = parseSubtasks(raw.body);
+        issue.openQuestions = parseOpenQuestions(raw.body);
+        issue.humanTasks = parseHumanTasks(raw.body);
+        return { body: raw.body, updated_at: remoteUpdatedAt };
+      }
+    } catch (err) {
+      addLog(`Could not reload issue #${issue.number} (${err.message}); proceeding with cached body`, "warn");
+    }
+    return null;
+  }
   async function updateIssueBody(issue, newBody) {
     const repo = repoForIssue(issue);
     if (!repo) {
@@ -7728,9 +7813,12 @@ Blocked by ${blockerRef}`;
       renderDrawer(issue, true);
     }
     try {
-      await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
+      const res = await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         body: newBody
       });
+      if (res && res.updated_at) {
+        issue.updated_at = res.updated_at;
+      }
       await host.toast({ kind: "info", message: `Updated issue #${issue.number}` });
     } catch (err) {
       addLog(`Failed to sync body: ${err.message}`, "error");
@@ -9053,10 +9141,9 @@ Blocked by ${blockerRef}`;
                 answerInput?.focus();
                 return;
               }
-              const currentQuestions = parseOpenQuestions(issue.body);
-              const targetIdx = currentQuestions.filter((q) => !q.completed).findIndex((q) => q.text.trim() === todo.text.trim());
-              const newBody = answerOpenQuestionInMarkdown(issue.body, targetIdx >= 0 ? targetIdx : 0, ans);
-              await updateIssueBody(issue, newBody);
+              await reloadIssueBeforeMutation(issue);
+              const result = resolveOptimisticQuestionAnswer(issue.body, todo.text, ans);
+              await updateIssueBody(issue, result.updatedBody);
               await host.toast({ kind: "info", message: "Recorded answer to question" });
             };
             btnSubmit?.addEventListener("click", (e) => {
@@ -9083,15 +9170,14 @@ Blocked by ${blockerRef}`;
           cb.addEventListener("change", async (e) => {
             e.stopPropagation();
             if (todo.source === "human-task") {
-              const humanTasks = parseHumanTasks(issue.body);
-              let target = humanTasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || humanTasks.find((t) => t.text.trim() === todo.text.trim());
-              if (target) {
-                const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
-                await updateIssueBody(issue, updatedBody);
+              await reloadIssueBeforeMutation(issue);
+              const result = resolveOptimisticSubtaskUpdate(issue.body, todo.text, cb.checked);
+              if (result.found) {
+                await updateIssueBody(issue, result.updatedBody);
                 return;
               }
               const subtasks = parseSubtasks(issue.body);
-              target = subtasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || subtasks.find((t) => t.text.trim() === todo.text.trim());
+              const target = subtasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || subtasks.find((t) => t.text.trim() === todo.text.trim());
               if (target) {
                 const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
                 await updateIssueBody(issue, updatedBody);
@@ -9561,8 +9647,9 @@ Blocked by ${blockerRef}`;
             input?.focus();
             return;
           }
-          const newBody = answerOpenQuestionInMarkdown(issue.body, idx, answerText);
-          await updateIssueBody(issue, newBody);
+          await reloadIssueBeforeMutation(issue);
+          const result = resolveOptimisticQuestionAnswer(issue.body, question.text, answerText);
+          await updateIssueBody(issue, result.updatedBody);
           btnAnswer.setAttribute("aria-expanded", "false");
           await host.toast({ kind: "info", message: "Recorded answer to question" });
         };
@@ -10531,9 +10618,10 @@ Blocked by ${blockerRef}`;
       cb.checked = subtask.completed;
       const span = document.createElement("span");
       span.textContent = subtask.text;
-      cb.addEventListener("change", () => {
-        const updatedBody = updateSubtaskInMarkdown(issue.body, subtask.lineIndex, cb.checked);
-        void updateIssueBody(issue, updatedBody);
+      cb.addEventListener("change", async () => {
+        await reloadIssueBeforeMutation(issue);
+        const result = resolveOptimisticSubtaskUpdate(issue.body, subtask.text, cb.checked);
+        void updateIssueBody(issue, result.updatedBody);
       });
       itemEl.appendChild(cb);
       itemEl.appendChild(span);
@@ -10567,8 +10655,11 @@ Blocked by ${blockerRef}`;
       cb.type = "checkbox";
       cb.checked = question.completed;
       cb.title = question.completed ? "Mark question as open" : "Mark question as resolved/answered";
-      cb.addEventListener("change", () => {
-        const updatedBody = updateOpenQuestionInMarkdown(issue.body, question.lineIndex, cb.checked);
+      cb.addEventListener("change", async () => {
+        await reloadIssueBeforeMutation(issue);
+        const questions2 = parseOpenQuestions(issue.body);
+        const target = questions2.find((q) => q.text.trim() === question.text.trim()) || question;
+        const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
         void updateIssueBody(issue, updatedBody);
       });
       const contentEl = document.createElement("div");
@@ -10622,7 +10713,9 @@ Blocked by ${blockerRef}`;
             }
             const targetIssue = activeIssue || issue;
             if (!targetIssue) return;
-            const newBody = answerOpenQuestionInMarkdown(targetIssue.body, idx, answerText);
+            await reloadIssueBeforeMutation(targetIssue);
+            const result = resolveOptimisticQuestionAnswer(targetIssue.body, question.text, answerText);
+            const newBody = result.updatedBody;
             if (issue && issue !== targetIssue) {
               issue.body = newBody;
               issue.subtasks = parseSubtasks(newBody);
@@ -10688,9 +10781,10 @@ Blocked by ${blockerRef}`;
         cb.checked = item.completed;
         const span = document.createElement("span");
         span.textContent = item.text;
-        cb.addEventListener("change", () => {
-          const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
-          void updateIssueBody(issue, updatedBody);
+        cb.addEventListener("change", async () => {
+          await reloadIssueBeforeMutation(issue);
+          const result = resolveOptimisticTestItemUpdate(issue.body, item.text, cb.checked);
+          void updateIssueBody(issue, result.updatedBody);
         });
         itemEl.appendChild(cb);
         itemEl.appendChild(span);
@@ -10718,9 +10812,10 @@ Blocked by ${blockerRef}`;
         cb.checked = item.completed;
         const span = document.createElement("span");
         span.textContent = item.text;
-        cb.addEventListener("change", () => {
-          const updatedBody = updateTestItemInMarkdown(issue.body, item.lineIndex, cb.checked);
-          void updateIssueBody(issue, updatedBody);
+        cb.addEventListener("change", async () => {
+          await reloadIssueBeforeMutation(issue);
+          const result = resolveOptimisticTestItemUpdate(issue.body, item.text, cb.checked);
+          void updateIssueBody(issue, result.updatedBody);
         });
         itemEl.appendChild(cb);
         itemEl.appendChild(span);
@@ -12623,6 +12718,7 @@ ${transclusions.join("\n")}
       const newBody = elDrawerDescriptionTextarea.value;
       elDrawerDescriptionEditBox.style.display = "none";
       elDrawerDescriptionViewBox.style.display = "block";
+      await reloadIssueBeforeMutation(activeIssue);
       await updateIssueBody(activeIssue, newBody);
     });
     elBtnToggleCollapse.addEventListener("click", () => {
@@ -12649,8 +12745,9 @@ ${transclusions.join("\n")}
       if (e.key === "Enter") elBtnConfirmAddLabel.click();
       if (e.key === "Escape") elBtnCancelAddLabel.click();
     });
-    elBtnAddSubtask.addEventListener("click", () => {
+    elBtnAddSubtask.addEventListener("click", async () => {
       if (activeIssue && elInputAddSubtask.value.trim()) {
+        await reloadIssueBeforeMutation(activeIssue);
         const newBody = appendSubtaskToMarkdown(activeIssue.body, elInputAddSubtask.value);
         elInputAddSubtask.value = "";
         void updateIssueBody(activeIssue, newBody);
@@ -12660,8 +12757,9 @@ ${transclusions.join("\n")}
       if (e.key === "Enter") elBtnAddSubtask.click();
     });
     if (elBtnAddQuestion && elInputAddQuestion) {
-      elBtnAddQuestion.addEventListener("click", () => {
+      elBtnAddQuestion.addEventListener("click", async () => {
         if (activeIssue && elInputAddQuestion.value.trim()) {
+          await reloadIssueBeforeMutation(activeIssue);
           const newBody = appendOpenQuestionToMarkdown(activeIssue.body, elInputAddQuestion.value);
           elInputAddQuestion.value = "";
           void updateIssueBody(activeIssue, newBody);
@@ -12672,8 +12770,9 @@ ${transclusions.join("\n")}
       });
     }
     if (elBtnAddIssueTest && elInputAddIssueTest) {
-      elBtnAddIssueTest.addEventListener("click", () => {
+      elBtnAddIssueTest.addEventListener("click", async () => {
         if (activeIssue && elInputAddIssueTest.value.trim()) {
+          await reloadIssueBeforeMutation(activeIssue);
           const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddIssueTest.value, "issue");
           elInputAddIssueTest.value = "";
           void updateIssueBody(activeIssue, newBody);
@@ -12684,8 +12783,9 @@ ${transclusions.join("\n")}
       });
     }
     if (elBtnAddBatchTest && elInputAddBatchTest) {
-      elBtnAddBatchTest.addEventListener("click", () => {
+      elBtnAddBatchTest.addEventListener("click", async () => {
         if (activeIssue && elInputAddBatchTest.value.trim()) {
+          await reloadIssueBeforeMutation(activeIssue);
           const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddBatchTest.value, "batch");
           elInputAddBatchTest.value = "";
           void updateIssueBody(activeIssue, newBody);

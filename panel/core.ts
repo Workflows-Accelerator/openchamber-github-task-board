@@ -49,6 +49,7 @@ export interface Issue {
   assignees?: Array<{ login: string; avatar_url?: string }>;
   comments?: number;
   created_at: string;
+  updated_at?: string;
   subtasks: Subtask[];
   openQuestions?: Subtask[];
   humanTasks?: Subtask[];
@@ -821,6 +822,97 @@ export function serializeTestPlan(items: Array<{ text: string; completed?: boole
   }
   const lines = cleanItems.map((item) => `- [${item.completed ? 'x' : ' '}] ${item.text.trim()}`);
   return `${header}\n${lines.join('\n')}`;
+}
+
+export function resolveOptimisticSubtaskUpdate(
+  body: string,
+  taskText: string,
+  completed: boolean
+): { updatedBody: string; found: boolean } {
+  if (!body || typeof body !== 'string') {
+    return { updatedBody: body || '', found: false };
+  }
+  const cleanTarget = taskText.trim();
+  // 1. Try human tasks first
+  const humanTasks = parseHumanTasks(body);
+  let target = humanTasks.find((t) => t.completed !== completed && t.text.trim() === cleanTarget)
+    || humanTasks.find((t) => t.text.trim() === cleanTarget);
+
+  if (target) {
+    return {
+      updatedBody: updateSubtaskInMarkdown(body, target.lineIndex, completed),
+      found: true,
+    };
+  }
+
+  // 2. Try regular subtasks
+  const subtasks = parseSubtasks(body);
+  target = subtasks.find((t) => t.completed !== completed && t.text.trim() === cleanTarget)
+    || subtasks.find((t) => t.text.trim() === cleanTarget);
+
+  if (target) {
+    return {
+      updatedBody: updateSubtaskInMarkdown(body, target.lineIndex, completed),
+      found: true,
+    };
+  }
+
+  return { updatedBody: body, found: false };
+}
+
+export function resolveOptimisticQuestionAnswer(
+  body: string,
+  questionText: string,
+  answerText: string
+): { updatedBody: string; found: boolean } {
+  if (!body || typeof body !== 'string') {
+    return { updatedBody: body || '', found: false };
+  }
+  const cleanTarget = questionText.trim();
+  const questions = parseOpenQuestions(body);
+  const openQuestions = questions.filter((q) => !q.completed);
+  let targetIdx = openQuestions.findIndex((q) => q.text.trim() === cleanTarget);
+
+  if (targetIdx >= 0) {
+    return {
+      updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
+      found: true,
+    };
+  }
+
+  // Fallback: match among all questions
+  targetIdx = questions.findIndex((q) => q.text.trim() === cleanTarget);
+  if (targetIdx >= 0) {
+    return {
+      updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
+      found: true,
+    };
+  }
+
+  return { updatedBody: body, found: false };
+}
+
+export function resolveOptimisticTestItemUpdate(
+  body: string,
+  itemText: string,
+  completed: boolean
+): { updatedBody: string; found: boolean } {
+  if (!body || typeof body !== 'string') {
+    return { updatedBody: body || '', found: false };
+  }
+  const cleanTarget = itemText.trim();
+  const { issueTests, batchTests } = parseTestPlan(body);
+  const allTests = [...issueTests, ...batchTests];
+  const target = allTests.find((t) => t.completed !== completed && t.text.trim() === cleanTarget)
+    || allTests.find((t) => t.text.trim() === cleanTarget);
+
+  if (target) {
+    return {
+      updatedBody: updateTestItemInMarkdown(body, target.lineIndex, completed),
+      found: true,
+    };
+  }
+  return { updatedBody: body, found: false };
 }
 
 export function getIssueBatch(issue: Issue | any): string | null {
@@ -2224,6 +2316,7 @@ export function normalizeGithubIssues(rawItems: any[]): Issue[] {
         assignees: (item.assignees || []).map((a: any) => ({ login: a.login, ...(a.avatar_url ? { avatar_url: a.avatar_url } : {}) })),
         comments: item.comments || 0,
         created_at: item.created_at || '',
+        ...(item.updated_at ? { updated_at: item.updated_at } : {}),
         subtasks: parseSubtasks(item.body || ''),
         openQuestions: parseOpenQuestions(item.body || ''),
         humanTasks: parseHumanTasks(item.body || ''),
