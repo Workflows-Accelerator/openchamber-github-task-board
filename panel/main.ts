@@ -121,6 +121,8 @@ import {
   mergeIssuePages,
   parseFriendlyTitle,
   parseHumanTasks,
+  buildHumanTaskResumePrompt,
+  shouldNotifyAgentOnHumanTasksComplete,
   collectHumanTodos,
   HumanTodo,
   TestItem,
@@ -178,6 +180,9 @@ export {
   extractQuestionOptions,
   extractQuestionContext,
   parseHumanTasks,
+  buildHumanTaskResumePrompt,
+  shouldNotifyAgentOnHumanTasksComplete,
+  notifyAgentOnHumanTasksComplete,
   collectHumanTodos,
   parseTestPlan,
   updateTestItemInMarkdown,
@@ -1941,6 +1946,45 @@ function repoForIssue(issue: Issue | null | undefined): string {
   return currentRepo;
 }
 
+async function notifyAgentOnHumanTasksComplete(issue: Issue, repo: string): Promise<boolean> {
+  const session = sessionIndex.get(issue.number)
+    || (repo ? sessionIndexByRepo.get(`${repo}#${issue.number}`) : undefined);
+  const promptText = buildHumanTaskResumePrompt(issue.number);
+
+  let notified = false;
+  if (session && session.id) {
+    try {
+      if (typeof (host as any).openSession === 'function') {
+        void (host as any).openSession(session.id);
+      }
+      if (typeof (host as any).prompt === 'function') {
+        await (host as any).prompt({ text: promptText, send: true });
+        notified = true;
+      }
+      addLog(`Dispatched resume prompt to attached session ${session.id} for issue #${issue.number}`);
+      if (host?.toast) {
+        void host.toast({
+          kind: 'info',
+          message: `All human tasks complete for #${issue.number}. Resumed attached agent session.`,
+        });
+      }
+    } catch (err: any) {
+      addLog(`Failed to dispatch resume message to session ${session.id}: ${err.message}`, 'warn');
+    }
+  } else {
+    try {
+      if (typeof (host as any).prompt === 'function') {
+        await (host as any).prompt({ text: promptText, send: true });
+        notified = true;
+        addLog(`Dispatched resume prompt for issue #${issue.number} to active session`);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return notified;
+}
+
 async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   const repo = repoForIssue(issue);
   if (!repo) {
@@ -1950,10 +1994,14 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
     }
     return;
   }
+  const prevHumanTasks = issue.humanTasks || parseHumanTasks(issue.body);
+  const nextHumanTasks = parseHumanTasks(newBody);
+  const shouldNotify = shouldNotifyAgentOnHumanTasksComplete(prevHumanTasks, nextHumanTasks);
+
   issue.body = newBody;
   issue.subtasks = parseSubtasks(newBody);
   issue.openQuestions = parseOpenQuestions(newBody);
-  issue.humanTasks = parseHumanTasks(newBody);
+  issue.humanTasks = nextHumanTasks;
   issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
@@ -1965,6 +2013,10 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
       body: newBody,
     });
     await host.toast({ kind: 'info', message: `Updated issue #${issue.number}` });
+
+    if (shouldNotify) {
+      await notifyAgentOnHumanTasksComplete(issue, repo);
+    }
   } catch (err: any) {
     addLog(`Failed to sync body: ${err.message}`, 'error');
     await host.toast({ kind: 'error', message: `Failed to update #${issue.number} on GitHub` });

@@ -420,6 +420,20 @@ export function parseHumanTasks(body: string | null | undefined): Subtask[] {
   return tasks;
 }
 
+export function buildHumanTaskResumePrompt(issueNumber: number): string {
+  return `All human tasks for issue #${issueNumber} are now complete. Resume work, run your verification suite, and advance the issue to the next step.`;
+}
+
+export function shouldNotifyAgentOnHumanTasksComplete(
+  prevTasks: Subtask[] | null | undefined,
+  nextTasks: Subtask[] | null | undefined
+): boolean {
+  if (!nextTasks || nextTasks.length === 0) return false;
+  const hadIncomplete = !prevTasks || prevTasks.length === 0 || prevTasks.some((t) => !t.completed);
+  const nowAllComplete = nextTasks.every((t) => t.completed);
+  return hadIncomplete && nowAllComplete;
+}
+
 export function parseSubtasks(body: string): Subtask[] {
   if (!body) return [];
   const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
