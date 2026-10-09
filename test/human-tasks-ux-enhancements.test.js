@@ -254,6 +254,13 @@ test('Human Tasks View: completed tasks remain visible for review and unchecking
   // Check that completed tasks group exists in mixed issue card
   const doneGroups = humanContainer.querySelectorAll('.human-done-tasks-group');
   assert.ok(doneGroups.length >= 1, 'human-done-tasks-group rendered for completed tasks');
+  const doneHeader = doneGroups[0].querySelector('.human-done-tasks-header');
+  assert.ok(doneHeader, 'human-done-tasks-header exists for collapsing completed tasks');
+  assert.ok(doneGroups[0].classList.contains('is-collapsed'), 'completed tasks group starts collapsed');
+  doneHeader.click();
+  assert.ok(!doneGroups[0].classList.contains('is-collapsed'), 'clicking header expands completed tasks group');
+  doneHeader.click();
+  assert.ok(doneGroups[0].classList.contains('is-collapsed'), 'clicking header collapses completed tasks group again');
 
   // Completed issues section at bottom
   const completedSection = humanContainer.querySelectorAll('.human-completed-section');

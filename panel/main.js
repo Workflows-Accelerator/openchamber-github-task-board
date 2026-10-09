@@ -8684,7 +8684,10 @@ Blocked by ${blockerRef}`;
       e.preventDefault();
       e.stopPropagation();
     }
-    const cleanPath = pathStr.trim().replace(/^[`'"]+|[`'"]+$/g, "");
+    let cleanPath = pathStr.trim().replace(/^[`'"]+|[`'"]+$/g, "");
+    if (cleanPath.startsWith("./")) {
+      cleanPath = cleanPath.slice(2);
+    }
     if (!cleanPath) return;
     try {
       if (host && typeof host.writeClipboard === "function") {
@@ -8701,17 +8704,28 @@ Blocked by ${blockerRef}`;
     } catch {
     }
     let fileContent = null;
-    try {
-      if (typeof host.readFile === "function") {
-        const res = await host.readFile(cleanPath);
-        if (res && typeof res.content === "string") {
-          fileContent = res.content;
+    if (host && typeof host.readFile === "function") {
+      const candidatePaths = [
+        cleanPath,
+        cleanPath.startsWith("/") ? cleanPath.slice(1) : "/" + cleanPath,
+        cleanPath.startsWith("/") ? cleanPath : `/workspace/${cleanPath}`
+      ];
+      for (const p of candidatePaths) {
+        try {
+          const res = await host.readFile(p);
+          if (res && typeof res.content === "string") {
+            fileContent = res.content;
+            break;
+          }
+        } catch {
         }
       }
-    } catch {
     }
     if (fileContent !== null) {
       showFilePreviewModal(cleanPath, fileContent);
+      if (host?.toast) {
+        void host.toast({ kind: "info", message: `Copied "${cleanPath}" & switched to Files. (Preview open in Task Board)` });
+      }
     } else {
       if (host?.toast) {
         void host.toast({ kind: "info", message: `Path copied to clipboard: ${cleanPath}` });
@@ -8847,6 +8861,11 @@ Blocked by ${blockerRef}`;
           const itemEl = document.createElement("div");
           itemEl.className = `human-todo-item ${todo.done ? "done is-done" : ""}`;
           if (todo.source === "open-question") {
+            itemEl.className = "human-todo-item human-todo-item-question";
+            const headerRow = document.createElement("div");
+            headerRow.className = "human-question-header-row";
+            const textWrap = document.createElement("div");
+            textWrap.className = "human-question-text-wrap";
             const qBadge = document.createElement("span");
             qBadge.className = "question-icon-badge";
             qBadge.title = "Question awaiting answer";
@@ -8854,6 +8873,10 @@ Blocked by ${blockerRef}`;
             const spanText2 = document.createElement("span");
             spanText2.className = "human-todo-text";
             spanText2.innerHTML = formatTaskTextWithLinks(todo.text, issueRepo);
+            textWrap.appendChild(qBadge);
+            textWrap.appendChild(spanText2);
+            const actionsWrap = document.createElement("div");
+            actionsWrap.className = "human-question-actions";
             const badge2 = document.createElement("span");
             badge2.className = "human-todo-badge badge-open-question";
             badge2.textContent = "Question";
@@ -8861,10 +8884,11 @@ Blocked by ${blockerRef}`;
             btnAnswer.className = "btn btn-xs btn-primary btn-answer-action";
             btnAnswer.textContent = "Answer";
             btnAnswer.title = "Answer question";
-            itemEl.appendChild(qBadge);
-            itemEl.appendChild(spanText2);
-            itemEl.appendChild(badge2);
-            itemEl.appendChild(btnAnswer);
+            actionsWrap.appendChild(badge2);
+            actionsWrap.appendChild(btnAnswer);
+            headerRow.appendChild(textWrap);
+            headerRow.appendChild(actionsWrap);
+            itemEl.appendChild(headerRow);
             const answerRow = document.createElement("div");
             answerRow.className = "inline-answer-row";
             answerRow.style.cssText = "display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px; padding: 6px 8px; background: var(--surf-muted); border-radius: 6px; border: 1px solid var(--border);";
@@ -8882,10 +8906,12 @@ Blocked by ${blockerRef}`;
             }
             answerRow.innerHTML = `
             ${optionsHtml}
-            <div style="display: flex; gap: 6px;">
-              <input type="text" class="form-ctrl input-human-answer" placeholder="Type answer or select a choice above..." style="font-size: 11px; height: 26px; flex: 1;" />
-              <button class="btn btn-xs btn-primary btn-submit-human-answer">Save</button>
-              <button class="btn btn-xs btn-cancel-human-answer">Cancel</button>
+            <div class="inline-answer-input-bar">
+              <input type="text" class="form-ctrl input-human-answer" placeholder="Type answer or select a choice above..." />
+              <div class="inline-answer-btns">
+                <button class="btn btn-xs btn-primary btn-submit-human-answer">Save</button>
+                <button class="btn btn-xs btn-cancel-human-answer">Cancel</button>
+              </div>
             </div>
           `;
             itemEl.appendChild(answerRow);
@@ -8985,16 +9011,49 @@ Blocked by ${blockerRef}`;
         });
         if (doneTodos.length > 0) {
           const doneGroup = document.createElement("div");
-          doneGroup.className = "human-done-tasks-group";
-          if (!isCompletedCard) {
-            const doneTitle = document.createElement("div");
-            doneTitle.className = "human-done-tasks-title";
-            doneTitle.textContent = `Completed (${doneTodos.length})`;
-            doneGroup.appendChild(doneTitle);
-          }
+          doneGroup.className = "human-done-tasks-group is-collapsed";
+          const doneHeader = document.createElement("div");
+          doneHeader.className = "human-done-tasks-header";
+          doneHeader.setAttribute("role", "button");
+          doneHeader.setAttribute("tabindex", "0");
+          doneHeader.setAttribute("aria-expanded", "false");
+          doneHeader.setAttribute("aria-label", `Toggle completed tasks (${doneTodos.length})`);
+          doneHeader.innerHTML = `
+          <svg class="icon icon-xs done-tasks-chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+          <span class="human-done-tasks-title">Completed (${doneTodos.length})</span>
+          <span class="human-done-tasks-hint">Click to show</span>
+        `;
+          const doneItemsList = document.createElement("div");
+          doneItemsList.className = "human-done-tasks-items";
+          doneItemsList.style.display = "none";
           doneTodos.forEach((todo) => {
-            doneGroup.appendChild(renderTodoItem(todo, true));
+            doneItemsList.appendChild(renderTodoItem(todo, true));
           });
+          const toggleDoneGroup = (e) => {
+            if (e) e.stopPropagation();
+            const isCollapsed = doneGroup.classList.contains("is-collapsed");
+            const hint = doneHeader.querySelector(".human-done-tasks-hint");
+            if (isCollapsed) {
+              doneGroup.classList.remove("is-collapsed");
+              doneItemsList.style.display = "flex";
+              doneHeader.setAttribute("aria-expanded", "true");
+              if (hint) hint.textContent = "Click to hide";
+            } else {
+              doneGroup.classList.add("is-collapsed");
+              doneItemsList.style.display = "none";
+              doneHeader.setAttribute("aria-expanded", "false");
+              if (hint) hint.textContent = "Click to show";
+            }
+          };
+          doneHeader.addEventListener("click", toggleDoneGroup);
+          doneHeader.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggleDoneGroup(e);
+            }
+          });
+          doneGroup.appendChild(doneHeader);
+          doneGroup.appendChild(doneItemsList);
           list.appendChild(doneGroup);
         }
       }
@@ -9302,7 +9361,7 @@ Blocked by ${blockerRef}`;
         const row = document.createElement("div");
         row.className = "question-view-row";
         const leftRow = document.createElement("div");
-        leftRow.style.cssText = "display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 0;";
+        leftRow.style.cssText = "display: flex; align-items: flex-start; gap: 8px; flex: 1 1 180px; min-width: 0;";
         const qIcon = document.createElement("span");
         qIcon.className = "question-icon-badge";
         qIcon.title = "Open question requiring human answer";
@@ -9314,6 +9373,7 @@ Blocked by ${blockerRef}`;
         leftRow.appendChild(spanText);
         const btnAnswer = document.createElement("button");
         btnAnswer.className = "btn btn-xs btn-inline-answer";
+        btnAnswer.style.cssText = "flex-shrink: 0; margin-left: auto;";
         btnAnswer.title = "Record decision or answer";
         btnAnswer.setAttribute("aria-expanded", "false");
         btnAnswer.setAttribute("aria-label", `Answer question: ${question.text}`);
@@ -9363,11 +9423,15 @@ Blocked by ${blockerRef}`;
         }
         const answerRow = document.createElement("div");
         answerRow.className = "inline-answer-row";
-        answerRow.style.cssText = "display: none; gap: 6px; margin-top: 6px;";
+        answerRow.style.cssText = "display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px;";
         answerRow.innerHTML = `
-        <input type="text" class="form-ctrl input-inline-answer" aria-label="Answer for: ${escapeHtml(question.text)}" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" />
-        <button class="btn btn-xs btn-primary btn-submit-inline-answer" aria-label="Save answer">Save</button>
-        <button class="btn btn-xs btn-cancel-inline-answer" aria-label="Cancel answer">Cancel</button>
+        <div class="inline-answer-input-bar">
+          <input type="text" class="form-ctrl input-inline-answer" aria-label="Answer for: ${escapeHtml(question.text)}" placeholder="Type answer or decision..." />
+          <div class="inline-answer-btns">
+            <button class="btn btn-xs btn-primary btn-submit-inline-answer" aria-label="Save answer">Save</button>
+            <button class="btn btn-xs btn-cancel-inline-answer" aria-label="Cancel answer">Cancel</button>
+          </div>
+        </div>
       `;
         itemEl.appendChild(answerRow);
         const input = answerRow.querySelector(".input-inline-answer");

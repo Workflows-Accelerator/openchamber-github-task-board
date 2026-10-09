@@ -3303,7 +3303,10 @@ async function handleFilePathClick(pathStr: string, e?: Event): Promise<void> {
     e.preventDefault();
     e.stopPropagation();
   }
-  const cleanPath = pathStr.trim().replace(/^[`'"]+|[`'"]+$/g, '');
+  let cleanPath = pathStr.trim().replace(/^[`'"]+|[`'"]+$/g, '');
+  if (cleanPath.startsWith('./')) {
+    cleanPath = cleanPath.slice(2);
+  }
   if (!cleanPath) return;
 
   // 1. Copy path to clipboard
@@ -3326,22 +3329,33 @@ async function handleFilePathClick(pathStr: string, e?: Event): Promise<void> {
     // ignore
   }
 
-  // 3. Try to read file if host.readFile is available
+  // 3. Try to read file if host.readFile is available (try relative, with leading slash, and workspace prefix)
   let fileContent: string | null = null;
-  try {
-    if (typeof (host as any).readFile === 'function') {
-      const res = await (host as any).readFile(cleanPath);
-      if (res && typeof res.content === 'string') {
-        fileContent = res.content;
+  if (host && typeof (host as any).readFile === 'function') {
+    const candidatePaths = [
+      cleanPath,
+      cleanPath.startsWith('/') ? cleanPath.slice(1) : '/' + cleanPath,
+      cleanPath.startsWith('/') ? cleanPath : `/workspace/${cleanPath}`,
+    ];
+    for (const p of candidatePaths) {
+      try {
+        const res = await (host as any).readFile(p);
+        if (res && typeof res.content === 'string') {
+          fileContent = res.content;
+          break;
+        }
+      } catch {
+        // try next candidate
       }
     }
-  } catch {
-    // ignore
   }
 
   // 4. Show modal if content available, else toast
   if (fileContent !== null) {
     showFilePreviewModal(cleanPath, fileContent);
+    if (host?.toast) {
+      void host.toast({ kind: 'info', message: `Copied "${cleanPath}" & switched to Files. (Preview open in Task Board)` });
+    }
   } else {
     if (host?.toast) {
       void host.toast({ kind: 'info', message: `Path copied to clipboard: ${cleanPath}` });
@@ -3511,6 +3525,14 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
 
         // Questions must NOT be rendered as checkable todos!
         if (todo.source === 'open-question') {
+          itemEl.className = 'human-todo-item human-todo-item-question';
+
+          const headerRow = document.createElement('div');
+          headerRow.className = 'human-question-header-row';
+
+          const textWrap = document.createElement('div');
+          textWrap.className = 'human-question-text-wrap';
+
           const qBadge = document.createElement('span');
           qBadge.className = 'question-icon-badge';
           qBadge.title = 'Question awaiting answer';
@@ -3519,6 +3541,12 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
           const spanText = document.createElement('span');
           spanText.className = 'human-todo-text';
           spanText.innerHTML = formatTaskTextWithLinks(todo.text, issueRepo);
+
+          textWrap.appendChild(qBadge);
+          textWrap.appendChild(spanText);
+
+          const actionsWrap = document.createElement('div');
+          actionsWrap.className = 'human-question-actions';
 
           const badge = document.createElement('span');
           badge.className = 'human-todo-badge badge-open-question';
@@ -3529,10 +3557,12 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
           btnAnswer.textContent = 'Answer';
           btnAnswer.title = 'Answer question';
 
-          itemEl.appendChild(qBadge);
-          itemEl.appendChild(spanText);
-          itemEl.appendChild(badge);
-          itemEl.appendChild(btnAnswer);
+          actionsWrap.appendChild(badge);
+          actionsWrap.appendChild(btnAnswer);
+
+          headerRow.appendChild(textWrap);
+          headerRow.appendChild(actionsWrap);
+          itemEl.appendChild(headerRow);
 
           // Inline answer composer
           const answerRow = document.createElement('div');
@@ -3554,10 +3584,12 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
 
           answerRow.innerHTML = `
             ${optionsHtml}
-            <div style="display: flex; gap: 6px;">
-              <input type="text" class="form-ctrl input-human-answer" placeholder="Type answer or select a choice above..." style="font-size: 11px; height: 26px; flex: 1;" />
-              <button class="btn btn-xs btn-primary btn-submit-human-answer">Save</button>
-              <button class="btn btn-xs btn-cancel-human-answer">Cancel</button>
+            <div class="inline-answer-input-bar">
+              <input type="text" class="form-ctrl input-human-answer" placeholder="Type answer or select a choice above..." />
+              <div class="inline-answer-btns">
+                <button class="btn btn-xs btn-primary btn-submit-human-answer">Save</button>
+                <button class="btn btn-xs btn-cancel-human-answer">Cancel</button>
+              </div>
             </div>
           `;
           itemEl.appendChild(answerRow);
@@ -3674,19 +3706,58 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
         list.appendChild(renderTodoItem(todo, false));
       });
 
-      // 2. Render completed tasks group (allows reviewing and unchecking!)
+      // 2. Render completed tasks group (collapsible, allows reviewing and unchecking!)
       if (doneTodos.length > 0) {
         const doneGroup = document.createElement('div');
-        doneGroup.className = 'human-done-tasks-group';
-        if (!isCompletedCard) {
-          const doneTitle = document.createElement('div');
-          doneTitle.className = 'human-done-tasks-title';
-          doneTitle.textContent = `Completed (${doneTodos.length})`;
-          doneGroup.appendChild(doneTitle);
-        }
+        doneGroup.className = 'human-done-tasks-group is-collapsed';
+
+        const doneHeader = document.createElement('div');
+        doneHeader.className = 'human-done-tasks-header';
+        doneHeader.setAttribute('role', 'button');
+        doneHeader.setAttribute('tabindex', '0');
+        doneHeader.setAttribute('aria-expanded', 'false');
+        doneHeader.setAttribute('aria-label', `Toggle completed tasks (${doneTodos.length})`);
+        doneHeader.innerHTML = `
+          <svg class="icon icon-xs done-tasks-chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+          <span class="human-done-tasks-title">Completed (${doneTodos.length})</span>
+          <span class="human-done-tasks-hint">Click to show</span>
+        `;
+
+        const doneItemsList = document.createElement('div');
+        doneItemsList.className = 'human-done-tasks-items';
+        doneItemsList.style.display = 'none';
+
         doneTodos.forEach((todo) => {
-          doneGroup.appendChild(renderTodoItem(todo, true));
+          doneItemsList.appendChild(renderTodoItem(todo, true));
         });
+
+        const toggleDoneGroup = (e?: Event) => {
+          if (e) e.stopPropagation();
+          const isCollapsed = doneGroup.classList.contains('is-collapsed');
+          const hint = doneHeader.querySelector('.human-done-tasks-hint');
+          if (isCollapsed) {
+            doneGroup.classList.remove('is-collapsed');
+            doneItemsList.style.display = 'flex';
+            doneHeader.setAttribute('aria-expanded', 'true');
+            if (hint) hint.textContent = 'Click to hide';
+          } else {
+            doneGroup.classList.add('is-collapsed');
+            doneItemsList.style.display = 'none';
+            doneHeader.setAttribute('aria-expanded', 'false');
+            if (hint) hint.textContent = 'Click to show';
+          }
+        };
+
+        doneHeader.addEventListener('click', toggleDoneGroup);
+        doneHeader.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            toggleDoneGroup(e);
+          }
+        });
+
+        doneGroup.appendChild(doneHeader);
+        doneGroup.appendChild(doneItemsList);
         list.appendChild(doneGroup);
       }
     }
@@ -4055,7 +4126,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
       row.className = 'question-view-row';
 
       const leftRow = document.createElement('div');
-      leftRow.style.cssText = 'display: flex; align-items: flex-start; gap: 8px; flex: 1; min-width: 0;';
+      leftRow.style.cssText = 'display: flex; align-items: flex-start; gap: 8px; flex: 1 1 180px; min-width: 0;';
 
       const qIcon = document.createElement('span');
       qIcon.className = 'question-icon-badge';
@@ -4071,6 +4142,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
 
       const btnAnswer = document.createElement('button');
       btnAnswer.className = 'btn btn-xs btn-inline-answer';
+      btnAnswer.style.cssText = 'flex-shrink: 0; margin-left: auto;';
       btnAnswer.title = 'Record decision or answer';
       btnAnswer.setAttribute('aria-expanded', 'false');
       btnAnswer.setAttribute('aria-label', `Answer question: ${question.text}`);
@@ -4126,11 +4198,15 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
 
       const answerRow = document.createElement('div');
       answerRow.className = 'inline-answer-row';
-      answerRow.style.cssText = 'display: none; gap: 6px; margin-top: 6px;';
+      answerRow.style.cssText = 'display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px;';
       answerRow.innerHTML = `
-        <input type="text" class="form-ctrl input-inline-answer" aria-label="Answer for: ${escapeHtml(question.text)}" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" />
-        <button class="btn btn-xs btn-primary btn-submit-inline-answer" aria-label="Save answer">Save</button>
-        <button class="btn btn-xs btn-cancel-inline-answer" aria-label="Cancel answer">Cancel</button>
+        <div class="inline-answer-input-bar">
+          <input type="text" class="form-ctrl input-inline-answer" aria-label="Answer for: ${escapeHtml(question.text)}" placeholder="Type answer or decision..." />
+          <div class="inline-answer-btns">
+            <button class="btn btn-xs btn-primary btn-submit-inline-answer" aria-label="Save answer">Save</button>
+            <button class="btn btn-xs btn-cancel-inline-answer" aria-label="Cancel answer">Cancel</button>
+          </div>
+        </div>
       `;
       itemEl.appendChild(answerRow);
 

@@ -2719,6 +2719,8 @@
       border: 1px solid var(--border-subtle);
       border-radius: var(--rad-sm);
       transition: background 0.15s ease, border-color 0.15s ease;
+      min-width: 0;
+      overflow: hidden;
     }
     .question-view-item:hover {
       background: var(--surf-hover);
@@ -2727,17 +2729,22 @@
 
     .question-view-row {
       display: flex;
+      flex-wrap: wrap;
       align-items: flex-start;
       justify-content: space-between;
-      gap: 10px;
+      gap: 8px;
+      width: 100%;
     }
 
     .question-view-text {
-      flex: 1;
+      flex: 1 1 180px;
+      min-width: 0;
       font-size: 12.5px;
       line-height: 1.4;
       color: var(--fg);
-      word-break: break-word;
+      word-break: normal;
+      overflow-wrap: break-word;
+      white-space: normal;
     }
 
     /* Empty State */
@@ -2801,6 +2808,7 @@
     }
     .btn-view-select {
       display: inline-flex;
+      flex-direction: row;
       align-items: center;
       gap: 6px;
       padding: 0 8px;
@@ -2850,12 +2858,15 @@
       background: var(--border);
       margin: 4px 0;
     }
+    .view-select-popover .view-opt-item,
     .view-opt-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 10px !important;
       padding: 6px 8px;
       border-radius: 6px;
+      border-bottom: none !important;
       cursor: pointer;
       transition: background 0.12s ease;
     }
@@ -2880,13 +2891,20 @@
       flex-direction: column;
       flex: 1;
       min-width: 0;
+      text-align: left;
     }
     .view-opt-text .popover-item-title {
       font-size: 12px;
-      line-height: 1.2;
+      font-weight: 500;
+      line-height: 1.3;
+      color: var(--fg);
+    }
+    .view-opt-item.active .popover-item-title {
+      color: var(--prim);
+      font-weight: 600;
     }
     .view-opt-text .popover-item-sub {
-      font-size: 10px;
+      font-size: 10.5px;
       color: var(--fg-muted);
       line-height: 1.2;
     }
@@ -2947,13 +2965,45 @@
       flex-direction: column;
       gap: 4px;
     }
+    .human-done-tasks-header {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+      padding: 3px 6px;
+      border-radius: 4px;
+      transition: background 0.12s ease;
+    }
+    .human-done-tasks-header:hover {
+      background: var(--surf-hover);
+    }
+    .done-tasks-chevron {
+      transition: transform 0.15s ease;
+      color: var(--fg-muted);
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+    }
+    .human-done-tasks-group.is-collapsed .done-tasks-chevron {
+      transform: rotate(-90deg);
+    }
     .human-done-tasks-title {
-      font-size: 10.5px;
+      font-size: 11px;
       font-weight: 600;
       color: var(--fg-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 2px;
+      letter-spacing: 0.02em;
+    }
+    .human-done-tasks-hint {
+      font-size: 10px;
+      color: var(--fg-faint);
+      margin-left: auto;
+    }
+    .human-done-tasks-items {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-top: 4px;
     }
 
     /* Question View Context and Option Buttons */
@@ -2970,6 +3020,63 @@
       flex-shrink: 0;
       margin-top: 1px;
     }
+    .human-todo-item-question {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 6px !important;
+    }
+    .human-question-header-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      width: 100%;
+    }
+    .human-question-text-wrap {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      flex: 1 1 180px;
+      min-width: 0;
+    }
+    .human-question-text-wrap .human-todo-text {
+      flex: 1;
+      min-width: 0;
+      word-break: normal;
+      overflow-wrap: break-word;
+      white-space: normal;
+    }
+    .human-question-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+    .inline-answer-row {
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .inline-answer-input-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      width: 100%;
+    }
+    .inline-answer-input-bar input,
+    .input-human-answer,
+    .input-inline-answer {
+      flex: 1 1 120px;
+      min-width: 0;
+      height: 26px;
+      font-size: 11px;
+    }
+    .inline-answer-btns {
+      display: flex;
+      gap: 4px;
+      flex-shrink: 0;
+    }
     .question-context-box {
       background: var(--surf-muted);
       border: 1px solid var(--border);
@@ -2979,6 +3086,10 @@
       font-size: 11.5px;
       line-height: 1.4;
       color: var(--fg-muted);
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
+      overflow: hidden;
     }
     .question-context-header {
       display: flex;
@@ -2992,14 +3103,16 @@
       margin-bottom: 3px;
     }
     .question-context-body {
-      word-break: break-word;
+      word-break: normal;
+      overflow-wrap: break-word;
+      white-space: pre-wrap;
     }
     .question-options-group {
       display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 6px;
+      flex-direction: column;
+      gap: 4px;
       margin-top: 6px;
+      width: 100%;
     }
     .question-options-label {
       font-size: 10.5px;
@@ -3010,6 +3123,7 @@
       display: flex;
       flex-wrap: wrap;
       gap: 4px;
+      width: 100%;
     }
     .question-option-btn {
       border: 1px solid rgba(59, 130, 246, 0.4);
@@ -3020,6 +3134,11 @@
       font-size: 11px;
       cursor: pointer;
       transition: all 0.12s ease;
+      white-space: normal;
+      text-align: left;
+      word-break: normal;
+      overflow-wrap: break-word;
+      max-width: 100%;
     }
     .question-option-btn:hover {
       background: var(--prim);
@@ -3071,14 +3190,14 @@
         </button>
         <div class="popover view-select-popover" id="viewSelectPopover" role="menu" style="display: none;">
           <div class="view-category-header">TASKS</div>
-          <div class="popover-item view-opt-item" data-mode="human" id="viewOptHuman" role="menuitem" tabindex="0">
+          <div class="view-opt-item" data-mode="human" id="viewOptHuman" role="menuitem" tabindex="0">
             <svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
             <div class="view-opt-text">
               <span class="popover-item-title">Human Tasks</span>
               <span class="popover-item-sub">Tasks waiting on human</span>
             </div>
           </div>
-          <div class="popover-item view-opt-item" data-mode="questions" id="viewOptQuestions" role="menuitem" tabindex="0">
+          <div class="view-opt-item" data-mode="questions" id="viewOptQuestions" role="menuitem" tabindex="0">
             <svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
             <div class="view-opt-text">
               <span class="popover-item-title">Questions</span>
@@ -3087,21 +3206,21 @@
           </div>
           <div class="view-category-divider"></div>
           <div class="view-category-header">ISSUES</div>
-          <div class="popover-item view-opt-item" data-mode="kanban" id="viewOptKanban" role="menuitem" tabindex="0">
+          <div class="view-opt-item" data-mode="kanban" id="viewOptKanban" role="menuitem" tabindex="0">
             <svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>
             <div class="view-opt-text">
               <span class="popover-item-title">Board</span>
               <span class="popover-item-sub">Kanban status columns</span>
             </div>
           </div>
-          <div class="popover-item view-opt-item active" data-mode="list" id="viewOptList" role="menuitem" tabindex="0">
+          <div class="view-opt-item active" data-mode="list" id="viewOptList" role="menuitem" tabindex="0">
             <svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
             <div class="view-opt-text">
               <span class="popover-item-title">List</span>
               <span class="popover-item-sub">Tabbed issue list</span>
             </div>
           </div>
-          <div class="popover-item view-opt-item" data-mode="graph" id="viewOptGraph" role="menuitem" tabindex="0">
+          <div class="view-opt-item" data-mode="graph" id="viewOptGraph" role="menuitem" tabindex="0">
             <svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>
             <div class="view-opt-text">
               <span class="popover-item-title">Graph</span>
