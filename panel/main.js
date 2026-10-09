@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
@@ -64,20 +64,20 @@
   }
   var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_DEVICE_STORAGE_TOTAL_BYTES = 16777216;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
   var GUEST_SHELL_ID_MAX = 128;
   var GUEST_SHELLS_MAX = 200;
   var GUEST_SHELL_OUTPUT_TAIL_MAX = 65536;
   var GUEST_SHELL_END_STATUSES = ["exited", "timeout", "killed", "stopped", "unknown"];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
   var GUEST_STATUS_CONTROLS_MAX = 4;
   var GUEST_STATUS_CONTROL_ID = /^[a-z][a-z0-9-]{0,39}$/;
   var GUEST_STATUS_CONTROL_LABEL_MAX = 60;
@@ -120,7 +120,7 @@
     return true;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
   var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
@@ -178,7 +178,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
   var GUEST_POPOVER_ID = /^[A-Za-z0-9_-]{1,80}$/;
   var GUEST_POPOVER_COORDINATE_MAX = 1e5;
   var GUEST_POPOVER_WIDTH_MIN = 160;
@@ -222,7 +222,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -456,7 +456,7 @@
     return wire;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
   var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
@@ -1391,7 +1391,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1441,7 +1441,7 @@
     return { requestId, action, parameters, context: readContext(context) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1562,7 +1562,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1652,7 +1652,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -1711,7 +1711,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1913,7 +1913,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -1961,7 +1961,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2009,7 +2009,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -2033,7 +2033,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return node;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2094,7 +2094,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -2128,7 +2128,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return target?.id ?? null;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -2163,7 +2163,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -2202,7 +2202,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -2359,7 +2359,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2403,7 +2403,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2463,7 +2463,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2488,7 +2488,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2576,7 +2576,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2618,7 +2618,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2647,7 +2647,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2693,7 +2693,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2719,7 +2719,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2762,7 +2762,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2868,7 +2868,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -4991,6 +4991,75 @@ ${lines.join("\n")}`;
     }
     return null;
   }
+  function resolveIssueSkills(issues2) {
+    if (!issues2) {
+      return { skillNames: [], transclusions: [] };
+    }
+    const list = Array.isArray(issues2) ? issues2 : [issues2];
+    const skillNames = [];
+    const transclusions = [];
+    for (const issue of list) {
+      if (!issue) continue;
+      if (Array.isArray(issue.skills)) {
+        for (const s of issue.skills) {
+          if (typeof s === "string" && s.trim()) {
+            skillNames.push(s.trim());
+          }
+        }
+      }
+      const labelNames = (issue.labels || []).map(
+        (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
+      );
+      if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug" || l === "theme:bug")) {
+        skillNames.push("surgical-patch", "debugging-and-error-recovery");
+        transclusions.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
+        transclusions.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature" || l === "theme:enhancement" || l === "theme:feature")) {
+        skillNames.push("test-driven-development", "lean-build");
+        transclusions.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
+        transclusions.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs" || l === "theme:documentation" || l === "theme:docs")) {
+        skillNames.push("documentation-and-adrs");
+        transclusions.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "ui" || l === "frontend" || l === "css" || l === "design" || l === "theme:ui" || l === "theme:frontend")) {
+        skillNames.push("frontend-ui-engineering");
+        transclusions.push("[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "api" || l === "backend" || l === "schema" || l === "contract" || l === "theme:api" || l === "theme:backend")) {
+        skillNames.push("api-and-interface-design");
+        transclusions.push("[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "performance" || l === "perf" || l === "optimization" || l === "theme:performance" || l === "theme:perf")) {
+        skillNames.push("performance-optimization");
+        transclusions.push("[@.agents/skills/build/domain/performance-optimization/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "security" || l === "auth" || l === "hardening" || l === "theme:security")) {
+        skillNames.push("security-and-hardening");
+        transclusions.push("[@.agents/skills/review/security/security-and-hardening/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "refactor" || l === "cleanup" || l === "tech-debt" || l === "theme:refactor")) {
+        skillNames.push("code-simplification", "safe-refactor");
+        transclusions.push("[@.agents/skills/build/refactoring/code-simplification/SKILL.md]");
+        transclusions.push("[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]");
+      }
+    }
+    const uniqueSkillNames = [];
+    for (const s of skillNames) {
+      if (!uniqueSkillNames.includes(s)) {
+        uniqueSkillNames.push(s);
+      }
+    }
+    const uniqueTransclusions = [];
+    for (const t of transclusions) {
+      if (!uniqueTransclusions.includes(t)) {
+        uniqueTransclusions.push(t);
+      }
+    }
+    return { skillNames: uniqueSkillNames, transclusions: uniqueTransclusions };
+  }
   function buildLaunchSessionPayload(options) {
     const { issue, projectId, useWorktree = false, branchName, baseBranch, prompt } = options;
     let existingWorktree = options.existingWorktree;
@@ -5016,6 +5085,7 @@ ${lines.join("\n")}`;
     }
     const cleanBranch = branchName ? branchName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
     const branchForData = existingWorktree ? existingWorktree.branch || existingWorktree.name : useWorktree && cleanBranch ? cleanBranch : void 0;
+    const declaredSkills = options.skills !== void 0 ? options.skills : resolveIssueSkills(issue).skillNames;
     return {
       projectId,
       worktree: worktreePayload,
@@ -5025,9 +5095,11 @@ ${lines.join("\n")}`;
       title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
       url: (issue.html_url || "").slice(0, 1e3),
       text: prompt || "",
+      ...declaredSkills && declaredSkills.length > 0 ? { skills: declaredSkills } : {},
       data: {
         issueNumber: issue.number,
-        ...branchForData ? { branch: branchForData } : {}
+        ...branchForData ? { branch: branchForData } : {},
+        ...declaredSkills && declaredSkills.length > 0 ? { skills: declaredSkills } : {}
       }
     };
   }
@@ -5293,6 +5365,18 @@ ${issue.body.trim()}
       }
       prompt += "---\n\n";
     });
+    const { skillNames, transclusions } = resolveIssueSkills(selectedIssues);
+    if (skillNames.length > 0) {
+      const skillList = skillNames.map((s) => "`skill({ id: '" + s + "' })`").join(", ");
+      prompt += `### Recommended Skills:
+`;
+      prompt += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillList}).
+`;
+      prompt += `Transclusion references for worker sessions:
+${transclusions.join("\n")}
+
+`;
+    }
     prompt += `### Autonomous & AFK Protocol:
 `;
     prompt += `- Work through the packaged issues sequentially or in coordination, verifying each step with tests.
@@ -10838,53 +10922,14 @@ ${activeIssue.body}
       });
       brief += "\n";
     }
-    const labelNames = (activeIssue.labels || []).map(
-      (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
-    );
-    const skillNames = [];
-    const skills = [];
-    if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug")) {
-      skillNames.push("surgical-patch", "debugging-and-error-recovery");
-      skills.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
-      skills.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature")) {
-      skillNames.push("test-driven-development", "lean-build");
-      skills.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
-      skills.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs")) {
-      skillNames.push("documentation-and-adrs");
-      skills.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "ui" || l === "frontend" || l === "css" || l === "design")) {
-      skillNames.push("frontend-ui-engineering");
-      skills.push("[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "api" || l === "backend" || l === "schema" || l === "contract")) {
-      skillNames.push("api-and-interface-design");
-      skills.push("[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "performance" || l === "perf" || l === "optimization")) {
-      skillNames.push("performance-optimization");
-      skills.push("[@.agents/skills/build/domain/performance-optimization/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "security" || l === "auth" || l === "hardening")) {
-      skillNames.push("security-and-hardening");
-      skills.push("[@.agents/skills/review/security/security-and-hardening/SKILL.md]");
-    }
-    if (labelNames.some((l) => l === "refactor" || l === "cleanup" || l === "tech-debt")) {
-      skillNames.push("code-simplification", "safe-refactor");
-      skills.push("[@.agents/skills/build/refactoring/code-simplification/SKILL.md]");
-      skills.push("[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]");
-    }
+    const { skillNames, transclusions } = resolveIssueSkills(activeIssue);
     if (skillNames.length > 0) {
       brief += `### Recommended Skills:
 `;
       brief += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(", ")}).
 `;
       brief += `Transclusion references for worker sessions:
-${skills.join("\n")}
+${transclusions.join("\n")}
 
 `;
     }
@@ -11055,6 +11100,7 @@ ${skills.join("\n")}
       const multiPayload = buildMultiIssueAttachPayload(selected, currentRepo);
       const individualItems = selected.map((i) => buildIssueAttachPayload(i));
       const items = mergeSessionItems([multiPayload], individualItems);
+      const { skillNames: packageSkills } = resolveIssueSkills(selected);
       const res = await host.startSession({
         projectId: currentProject.id,
         worktree: false,
@@ -11063,10 +11109,12 @@ ${skills.join("\n")}
         title,
         url: selected[0]?.html_url || (currentRepo ? `https://github.com/${currentRepo}/issues` : ""),
         text: promptText,
+        ...packageSkills.length > 0 ? { skills: packageSkills } : {},
         data: {
           packaged: true,
           issueNumber: selected[0]?.number,
           issueNumbers: selected.map((i) => i.number),
+          ...packageSkills.length > 0 ? { skills: packageSkills } : {},
           items
         },
         items
@@ -11096,46 +11144,7 @@ ${skills.join("\n")}
     for (const issue of selected) {
       try {
         const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
-        const labelNames = (issue.labels || []).map(
-          (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
-        );
-        const skillNames = [];
-        const transclusions = [];
-        if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug")) {
-          skillNames.push("surgical-patch", "debugging-and-error-recovery");
-          transclusions.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
-          transclusions.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature")) {
-          skillNames.push("test-driven-development", "lean-build");
-          transclusions.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
-          transclusions.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs")) {
-          skillNames.push("documentation-and-adrs");
-          transclusions.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "ui" || l === "frontend" || l === "css" || l === "design")) {
-          skillNames.push("frontend-ui-engineering");
-          transclusions.push("[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "api" || l === "backend" || l === "schema" || l === "contract")) {
-          skillNames.push("api-and-interface-design");
-          transclusions.push("[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "performance" || l === "perf" || l === "optimization")) {
-          skillNames.push("performance-optimization");
-          transclusions.push("[@.agents/skills/build/domain/performance-optimization/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "security" || l === "auth" || l === "hardening")) {
-          skillNames.push("security-and-hardening");
-          transclusions.push("[@.agents/skills/review/security/security-and-hardening/SKILL.md]");
-        }
-        if (labelNames.some((l) => l === "refactor" || l === "cleanup" || l === "tech-debt")) {
-          skillNames.push("code-simplification", "safe-refactor");
-          transclusions.push("[@.agents/skills/build/refactoring/code-simplification/SKILL.md]");
-          transclusions.push("[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]");
-        }
+        const { skillNames, transclusions } = resolveIssueSkills(issue);
         let prompt = `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}
 
 `;
@@ -11173,9 +11182,11 @@ ${transclusions.join("\n")}
           title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
           url: (issue.html_url || "").slice(0, 1e3),
           text: prompt,
+          ...skillNames.length > 0 ? { skills: skillNames } : {},
           data: {
             issueNumber: issue.number,
-            ...issueRepo ? { repo: issueRepo } : {}
+            ...issueRepo ? { repo: issueRepo } : {},
+            ...skillNames.length > 0 ? { skills: skillNames } : {}
           }
         };
         await host.startSession(payload);
@@ -11664,9 +11675,11 @@ ${transclusions.join("\n")}
         title: `Align: ${firstLine || "Ideas & Themes"}`,
         url: `https://github.com/${currentRepo}/issues`,
         text: promptText,
+        skills: ["issue-lifecycle"],
         data: {
           alignment: true,
-          repo: currentRepo
+          repo: currentRepo,
+          skills: ["issue-lifecycle"]
         }
       });
       closeScratchpadModal();
@@ -11710,9 +11723,11 @@ ${transclusions.join("\n")}
         title: `Draft: ${firstLine || "GitHub Issues"}`,
         url: `https://github.com/${currentRepo}/issues`,
         text: promptText,
+        skills: ["issue-lifecycle"],
         data: {
           drafting: true,
-          repo: currentRepo
+          repo: currentRepo,
+          skills: ["issue-lifecycle"]
         }
       });
       closeScratchpadModal();
@@ -11889,9 +11904,11 @@ ${transclusions.join("\n")}
         title: `Draft: ${firstLine || "GitHub Issues"}`,
         url: `https://github.com/${currentRepo}/issues`,
         text: promptText,
+        skills: ["issue-lifecycle"],
         data: {
           drafting: true,
-          repo: currentRepo
+          repo: currentRepo,
+          skills: ["issue-lifecycle"]
         }
       });
       closeNewIssueModal();

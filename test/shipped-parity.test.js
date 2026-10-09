@@ -58,6 +58,7 @@ const JS_FUNCS = [
   'parseFriendlyTitle',
   'extractQuestionOptions',
   'extractQuestionContext',
+  'resolveIssueSkills',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'humanTasksSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -75,7 +76,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 42);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 43);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -290,4 +291,34 @@ The batch review gate parks issues on status:needs-human.
     Shipped.extractQuestionContext(sampleBody, 12),
     Core.extractQuestionContext(sampleBody, 12)
   );
+});
+
+test('resolveIssueSkills: shipped == core', () => {
+  const cases = [
+    null,
+    undefined,
+    {},
+    { number: 1, title: 'Bug report', labels: [{ name: 'bug' }] },
+    { number: 2, title: 'Feature request', labels: [{ name: 'enhancement' }] },
+    { number: 3, title: 'Docs update', labels: [{ name: 'documentation' }] },
+    { number: 4, title: 'UI styling', labels: [{ name: 'ui' }] },
+    { number: 5, title: 'API redesign', labels: [{ name: 'api' }] },
+    { number: 6, title: 'Speed up', labels: [{ name: 'perf' }] },
+    { number: 7, title: 'Auth fix', labels: [{ name: 'security' }] },
+    { number: 8, title: 'Clean debt', labels: [{ name: 'refactor' }] },
+    { number: 9, title: 'Theme docs', labels: [{ name: 'theme:documentation' }] },
+    { number: 10, title: 'Explicit skills', skills: ['custom-skill'] },
+    [
+      { number: 1, labels: [{ name: 'bug' }] },
+      { number: 2, labels: [{ name: 'ui' }] },
+      { number: 3, labels: [{ name: 'bug' }] },
+    ],
+  ];
+  for (const c of cases) {
+    assert.deepEqual(
+      Shipped.resolveIssueSkills(c),
+      Core.resolveIssueSkills(c),
+      'resolveIssueSkills parity: ' + JSON.stringify(c)
+    );
+  }
 });

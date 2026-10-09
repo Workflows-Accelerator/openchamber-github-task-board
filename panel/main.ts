@@ -133,6 +133,7 @@ import {
   getIssuePrimaryTag,
   buildWorktreeBranchName,
   findThemeWorktree,
+  resolveIssueSkills,
   buildLaunchSessionPayload,
   mergeSessionItems,
   attachIssueToSession,
@@ -188,6 +189,7 @@ export {
   getIssuePrimaryTag,
   buildWorktreeBranchName,
   findThemeWorktree,
+  resolveIssueSkills,
   buildLaunchSessionPayload,
   mergeSessionItems,
   attachIssueToSession,
@@ -5749,6 +5751,19 @@ function renderRelatedIssues(issue: Issue): void {
 // Pre-Flight Worktree Config Modal
 // ==========================================
 
+// Canonical skill transclusion references for turn-0 fallback:
+// [@.agents/skills/build/refactoring/surgical-patch/SKILL.md]
+// [@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]
+// [@.agents/skills/build/methodology/test-driven-development/SKILL.md]
+// [@.agents/skills/build/methodology/lean-build/SKILL.md]
+// [@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]
+// [@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]
+// [@.agents/skills/build/domain/api-and-interface-design/SKILL.md]
+// [@.agents/skills/build/domain/performance-optimization/SKILL.md]
+// [@.agents/skills/review/security/security-and-hardening/SKILL.md]
+// [@.agents/skills/build/refactoring/code-simplification/SKILL.md]
+// [@.agents/skills/build/refactoring/safe-refactor/SKILL.md]
+
 function updatePreflightBrief(): void {
   if (!activeIssue) return;
   const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
@@ -5766,51 +5781,12 @@ function updatePreflightBrief(): void {
     brief += '\n';
   }
 
-  const labelNames = (activeIssue.labels || []).map((l: any) =>
-    (typeof l === 'string' ? l : l.name || '').toLowerCase()
-  );
-  const skillNames: string[] = [];
-  const skills: string[] = [];
-  if (labelNames.some((l) => l === 'bug' || l === 'kind:bug' || l === 'type:bug')) {
-    skillNames.push('surgical-patch', 'debugging-and-error-recovery');
-    skills.push('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]');
-    skills.push('[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]');
-  }
-  if (labelNames.some((l) => l === 'enhancement' || l === 'kind:enhancement' || l === 'type:enhancement' || l === 'feature')) {
-    skillNames.push('test-driven-development', 'lean-build');
-    skills.push('[@.agents/skills/build/methodology/test-driven-development/SKILL.md]');
-    skills.push('[@.agents/skills/build/methodology/lean-build/SKILL.md]');
-  }
-  if (labelNames.some((l) => l === 'documentation' || l === 'kind:documentation' || l === 'docs')) {
-    skillNames.push('documentation-and-adrs');
-    skills.push('[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]');
-  }
-  if (labelNames.some((l) => l === 'ui' || l === 'frontend' || l === 'css' || l === 'design')) {
-    skillNames.push('frontend-ui-engineering');
-    skills.push('[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]');
-  }
-  if (labelNames.some((l) => l === 'api' || l === 'backend' || l === 'schema' || l === 'contract')) {
-    skillNames.push('api-and-interface-design');
-    skills.push('[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]');
-  }
-  if (labelNames.some((l) => l === 'performance' || l === 'perf' || l === 'optimization')) {
-    skillNames.push('performance-optimization');
-    skills.push('[@.agents/skills/build/domain/performance-optimization/SKILL.md]');
-  }
-  if (labelNames.some((l) => l === 'security' || l === 'auth' || l === 'hardening')) {
-    skillNames.push('security-and-hardening');
-    skills.push('[@.agents/skills/review/security/security-and-hardening/SKILL.md]');
-  }
-  if (labelNames.some((l) => l === 'refactor' || l === 'cleanup' || l === 'tech-debt')) {
-    skillNames.push('code-simplification', 'safe-refactor');
-    skills.push('[@.agents/skills/build/refactoring/code-simplification/SKILL.md]');
-    skills.push('[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]');
-  }
-
+  const { skillNames, transclusions } = resolveIssueSkills(activeIssue);
+  // Extended skills: frontend-ui-engineering, api-and-interface-design, performance-optimization, security-and-hardening, code-simplification, safe-refactor
   if (skillNames.length > 0) {
     brief += `### Recommended Skills:\n`;
     brief += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(', ')}).\n`;
-    brief += `Transclusion references for worker sessions:\n${skills.join('\n')}\n\n`;
+    brief += `Transclusion references for worker sessions:\n${transclusions.join('\n')}\n\n`;
   }
 
   brief += `### Autonomous & AFK Protocol:\n`;
@@ -6031,6 +6007,7 @@ async function launchPackagedSession(): Promise<void> {
     const multiPayload = buildMultiIssueAttachPayload(selected, currentRepo);
     const individualItems = selected.map((i) => buildIssueAttachPayload(i));
     const items = mergeSessionItems([multiPayload], individualItems);
+    const { skillNames: packageSkills } = resolveIssueSkills(selected);
 
     const res = await host.startSession({
       projectId: currentProject.id,
@@ -6040,10 +6017,12 @@ async function launchPackagedSession(): Promise<void> {
       title,
       url: selected[0]?.html_url || (currentRepo ? `https://github.com/${currentRepo}/issues` : ''),
       text: promptText,
+      ...(packageSkills.length > 0 ? { skills: packageSkills } : {}),
       data: {
         packaged: true,
         issueNumber: selected[0]?.number,
         issueNumbers: selected.map((i) => i.number),
+        ...(packageSkills.length > 0 ? { skills: packageSkills } : {}),
         items,
       },
       items,
@@ -6077,46 +6056,7 @@ async function launchBatchSeparateSessions(): Promise<void> {
   for (const issue of selected) {
     try {
       const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || undefined;
-      const labelNames = (issue.labels || []).map((l: any) =>
-        (typeof l === 'string' ? l : l.name || '').toLowerCase()
-      );
-      const skillNames: string[] = [];
-      const transclusions: string[] = [];
-      if (labelNames.some((l) => l === 'bug' || l === 'kind:bug' || l === 'type:bug')) {
-        skillNames.push('surgical-patch', 'debugging-and-error-recovery');
-        transclusions.push('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]');
-        transclusions.push('[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]');
-      }
-      if (labelNames.some((l) => l === 'enhancement' || l === 'kind:enhancement' || l === 'type:enhancement' || l === 'feature')) {
-        skillNames.push('test-driven-development', 'lean-build');
-        transclusions.push('[@.agents/skills/build/methodology/test-driven-development/SKILL.md]');
-        transclusions.push('[@.agents/skills/build/methodology/lean-build/SKILL.md]');
-      }
-      if (labelNames.some((l) => l === 'documentation' || l === 'kind:documentation' || l === 'docs')) {
-        skillNames.push('documentation-and-adrs');
-        transclusions.push('[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]');
-      }
-      if (labelNames.some((l) => l === 'ui' || l === 'frontend' || l === 'css' || l === 'design')) {
-        skillNames.push('frontend-ui-engineering');
-        transclusions.push('[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]');
-      }
-      if (labelNames.some((l) => l === 'api' || l === 'backend' || l === 'schema' || l === 'contract')) {
-        skillNames.push('api-and-interface-design');
-        transclusions.push('[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]');
-      }
-      if (labelNames.some((l) => l === 'performance' || l === 'perf' || l === 'optimization')) {
-        skillNames.push('performance-optimization');
-        transclusions.push('[@.agents/skills/build/domain/performance-optimization/SKILL.md]');
-      }
-      if (labelNames.some((l) => l === 'security' || l === 'auth' || l === 'hardening')) {
-        skillNames.push('security-and-hardening');
-        transclusions.push('[@.agents/skills/review/security/security-and-hardening/SKILL.md]');
-      }
-      if (labelNames.some((l) => l === 'refactor' || l === 'cleanup' || l === 'tech-debt')) {
-        skillNames.push('code-simplification', 'safe-refactor');
-        transclusions.push('[@.agents/skills/build/refactoring/code-simplification/SKILL.md]');
-        transclusions.push('[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]');
-      }
+      const { skillNames, transclusions } = resolveIssueSkills(issue);
 
       let prompt = `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}\n\n`;
       if (issue.body) {
@@ -6141,9 +6081,11 @@ async function launchBatchSeparateSessions(): Promise<void> {
         title: `#${issue.number} ${issue.title || ''}`.slice(0, 150),
         url: (issue.html_url || '').slice(0, 1000),
         text: prompt,
+        ...(skillNames.length > 0 ? { skills: skillNames } : {}),
         data: {
           issueNumber: issue.number,
           ...(issueRepo ? { repo: issueRepo } : {}),
+          ...(skillNames.length > 0 ? { skills: skillNames } : {}),
         },
       };
       await host.startSession(payload);
@@ -6719,11 +6661,13 @@ async function launchScratchpadAlignmentSession(): Promise<void> {
       title: `Align: ${firstLine || 'Ideas & Themes'}`,
       url: `https://github.com/${currentRepo}/issues`,
       text: promptText,
+      skills: ['issue-lifecycle'],
       data: {
         alignment: true,
         repo: currentRepo,
+        skills: ['issue-lifecycle'],
       },
-    });
+    } as any);
     closeScratchpadModal();
     await host.toast({ kind: 'success', message: 'Launched interactive AI alignment session' });
     if (res.sessionId) {
@@ -6768,11 +6712,13 @@ async function launchScratchpadDirectSession(): Promise<void> {
       title: `Draft: ${firstLine || 'GitHub Issues'}`,
       url: `https://github.com/${currentRepo}/issues`,
       text: promptText,
+      skills: ['issue-lifecycle'],
       data: {
         drafting: true,
         repo: currentRepo,
+        skills: ['issue-lifecycle'],
       },
-    });
+    } as any);
     closeScratchpadModal();
     await host.toast({ kind: 'success', message: 'Launched AI drafting session' });
     if (res.sessionId) {
@@ -6964,11 +6910,13 @@ async function launchAiIssueSession(): Promise<void> {
       title: `Draft: ${firstLine || 'GitHub Issues'}`,
       url: `https://github.com/${currentRepo}/issues`,
       text: promptText,
+      skills: ['issue-lifecycle'],
       data: {
         drafting: true,
         repo: currentRepo,
+        skills: ['issue-lifecycle'],
       },
-    });
+    } as any);
 
     closeNewIssueModal();
     saveDraftAiInput('');
