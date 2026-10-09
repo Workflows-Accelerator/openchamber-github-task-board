@@ -4052,6 +4052,46 @@ Auto-saved continuously. When ready, click 'Align & Clarify with AI' so the agen
               <button class="btn btn-sm btn-primary" id="btnSavePromptConfig" type="button">Save Settings</button>
             </div>
           </div>
+
+          <!-- Live AI Drafting Feedback & Review Card -->
+          <div id="aiDraftReviewCard" class="panel-box draft-review-card" style="display: none; flex-direction: column; gap: 8px; border: 1px solid var(--border-subtle); border-radius: var(--rad); padding: 10px; background: var(--surf-muted);">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span id="draftStatusIndicator" class="status-pill status-pill-running" style="font-size: 11px; display: inline-flex; align-items: center; gap: 4px;">
+                  <span id="draftStatusSpinner" class="spinner-sm spin-fast" style="width: 10px; height: 10px; border-width: 1.5px; display: inline-block;"></span>
+                  <span id="draftStatusText">Drafting in background...</span>
+                </span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <button class="btn btn-sm btn-icon" id="btnDismissDraftReview" type="button" title="Dismiss draft" style="width: 20px; height: 20px; padding: 0;">
+                  <svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div id="draftReviewContent" style="display: flex; flex-direction: column; gap: 6px;">
+              <div>
+                <label style="font-size: 10.5px; color: var(--fg-muted); display: block; margin-bottom: 2px;">Proposed Title</label>
+                <input type="text" id="draftReviewTitleInput" class="form-ctrl" style="width: 100%; font-size: 12px; font-weight: 500;" placeholder="Draft issue title..." />
+              </div>
+              <div>
+                <label style="font-size: 10.5px; color: var(--fg-muted); display: block; margin-bottom: 2px;">Proposed Description &amp; Checklist</label>
+                <textarea id="draftReviewBodyInput" class="form-ctrl" style="width: 100%; height: 90px; resize: vertical; font-size: 11px; font-family: var(--font-mono); line-height: 1.4;" placeholder="Draft issue body..."></textarea>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; color: var(--fg-muted);">
+                <span id="draftReviewMeta">0 subtasks · 0 questions</span>
+                <button class="btn btn-sm" id="btnEditDraftInManual" type="button" style="font-size: 10.5px; height: 20px; padding: 0 6px;">Edit in Manual Mode</button>
+              </div>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 4px; border-top: 1px solid var(--border-subtle); padding-top: 8px;">
+              <button class="btn btn-sm" id="btnOpenDraftSessionLink" type="button" style="display: none; font-size: 11px;">View Session</button>
+              <button class="btn btn-sm btn-primary" id="btnAcceptAndPostDraft" type="button">
+                <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                <span>Accept &amp; Post to GitHub</span>
+              </button>
+            </div>
+          </div>
         </div>
 
         <!-- Mode 2: Manual (Secondary) -->

@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
@@ -64,20 +64,20 @@
   }
   var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_DEVICE_STORAGE_TOTAL_BYTES = 16777216;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
   var GUEST_SHELL_ID_MAX = 128;
   var GUEST_SHELLS_MAX = 200;
   var GUEST_SHELL_OUTPUT_TAIL_MAX = 65536;
   var GUEST_SHELL_END_STATUSES = ["exited", "timeout", "killed", "stopped", "unknown"];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
   var GUEST_STATUS_CONTROLS_MAX = 4;
   var GUEST_STATUS_CONTROL_ID = /^[a-z][a-z0-9-]{0,39}$/;
   var GUEST_STATUS_CONTROL_LABEL_MAX = 60;
@@ -120,7 +120,7 @@
     return true;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
   var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
@@ -178,7 +178,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
   var GUEST_POPOVER_ID = /^[A-Za-z0-9_-]{1,80}$/;
   var GUEST_POPOVER_COORDINATE_MAX = 1e5;
   var GUEST_POPOVER_WIDTH_MIN = 160;
@@ -222,7 +222,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -456,7 +456,7 @@
     return wire;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
   var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
@@ -1391,7 +1391,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1441,7 +1441,7 @@
     return { requestId, action, parameters, context: readContext(context) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1562,7 +1562,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1652,7 +1652,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -1711,7 +1711,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1913,7 +1913,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
 .oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
 `;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -1961,7 +1961,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2009,7 +2009,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -2033,7 +2033,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return node;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2094,7 +2094,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -2128,7 +2128,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     return target?.id ?? null;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -2163,7 +2163,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -2202,7 +2202,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -2359,7 +2359,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2403,7 +2403,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2463,7 +2463,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2488,7 +2488,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2576,7 +2576,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2618,7 +2618,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2647,7 +2647,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2693,7 +2693,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2719,7 +2719,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2762,7 +2762,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2868,7 +2868,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -5098,6 +5098,89 @@ Instructions for the Alignment Session:
     const template = storedPrompt?.trim() || DEFAULT_AI_ALIGNMENT_PROMPT;
     return template.replace(/\{repo\}/g, repo || "").replace(/\{userInput\}/g, (userInput || "").trim());
   }
+  function parseDraftIssueFromMarkdown(text) {
+    if (!text || typeof text !== "string") return null;
+    const clean = text.trim();
+    if (!clean) return null;
+    const lines = clean.split("\n");
+    let title = "";
+    let labels = [];
+    const bodyLines = [];
+    let titleFound = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      const titleMatch = /^title:\s*(.+)$/i.exec(trimmed) || /^issue title:\s*(.+)$/i.exec(trimmed);
+      if (!titleFound && titleMatch) {
+        title = titleMatch[1].trim();
+        titleFound = true;
+        continue;
+      }
+      const h1Match = /^#\s+(.+)$/.exec(trimmed);
+      if (!titleFound && h1Match) {
+        title = h1Match[1].trim();
+        titleFound = true;
+        continue;
+      }
+      const labelsMatch = /^(?:labels|tags):\s*(.+)$/i.exec(trimmed);
+      if (labelsMatch) {
+        const extracted = labelsMatch[1].split(/[,;\s]+/).map((l) => l.trim().toLowerCase()).filter(Boolean);
+        labels.push(...extracted);
+        continue;
+      }
+      bodyLines.push(line);
+    }
+    if (!titleFound) {
+      let firstNonEmptyIdx = -1;
+      for (let i = 0; i < bodyLines.length; i++) {
+        if (bodyLines[i].trim()) {
+          firstNonEmptyIdx = i;
+          break;
+        }
+      }
+      if (firstNonEmptyIdx >= 0) {
+        title = bodyLines[firstNonEmptyIdx].trim();
+        bodyLines.splice(firstNonEmptyIdx, 1);
+      }
+    }
+    title = title.replace(/^[*_"`#]+|[*_"`#]+$/g, "").trim();
+    if (!title) return null;
+    const body = bodyLines.join("\n").trim();
+    const subtasks = parseSubtasks(body).map((s) => s.text);
+    const openQuestions = parseOpenQuestions(body).map((q) => q.text);
+    if (!labels.some((l) => l.startsWith("status:"))) {
+      labels.push("status:todo");
+    }
+    return {
+      title,
+      body,
+      subtasks,
+      openQuestions,
+      labels: Array.from(new Set(labels)),
+      status: "ready"
+    };
+  }
+  function formatDraftReviewMeta(subtaskCount, questionCount) {
+    const subtaskLabel = subtaskCount === 1 ? "1 subtask" : `${subtaskCount} subtasks`;
+    const questionLabel = questionCount === 1 ? "1 question" : `${questionCount} questions`;
+    return `${subtaskLabel} \xB7 ${questionLabel}`;
+  }
+  function createDraftIssuePayload(draft) {
+    const cleanTitle = (draft?.title || "").trim();
+    if (!cleanTitle) {
+      throw new Error("Draft issue must have a non-empty title");
+    }
+    const cleanBody = (draft?.body || "").trim();
+    let labels = Array.isArray(draft?.labels) ? [...draft.labels] : [];
+    if (!labels.some((l) => l.startsWith("status:"))) {
+      labels.push("status:todo");
+    }
+    return {
+      title: cleanTitle,
+      body: cleanBody,
+      labels: Array.from(new Set(labels))
+    };
+  }
   function buildIssueAttachPayload(issue, repoOverride) {
     const numStr = String(issue.number);
     const title = `#${issue.number} ${issue.title || ""}`.slice(0, 150);
@@ -6565,6 +6648,7 @@ Blocked by ${blockerRef}`;
         renderViews();
         if (activeIssue) renderDrawer(activeIssue);
         statusReconciler.schedule(issues);
+        handleDraftSessionUpdates(sessions);
         const becameIdle = sessions.some((s) => {
           const prev = prevSessions.find((p) => p.id === s.id);
           return s.activity === "idle" && (!prev || prev.activity !== "idle");
@@ -11271,6 +11355,156 @@ ${transclusions.join("\n")}
   var elBtnNewIssueClose = document.getElementById("btnNewIssueClose");
   var draftSubtasks = [];
   var draftQuestions = [];
+  var elAiDraftReviewCard = document.getElementById("aiDraftReviewCard");
+  var elDraftStatusIndicator = document.getElementById("draftStatusIndicator");
+  var elDraftStatusSpinner = document.getElementById("draftStatusSpinner");
+  var elDraftStatusText = document.getElementById("draftStatusText");
+  var elBtnDismissDraftReview = document.getElementById("btnDismissDraftReview");
+  var elDraftReviewTitleInput = document.getElementById("draftReviewTitleInput");
+  var elDraftReviewBodyInput = document.getElementById("draftReviewBodyInput");
+  var elDraftReviewMeta = document.getElementById("draftReviewMeta");
+  var elBtnEditDraftInManual = document.getElementById("btnEditDraftInManual");
+  var elBtnOpenDraftSessionLink = document.getElementById("btnOpenDraftSessionLink");
+  var elBtnAcceptAndPostDraft = document.getElementById("btnAcceptAndPostDraft");
+  var activeDraftSessionId = null;
+  var currentDraftIssue = null;
+  function setDraftReviewStatus(status, message) {
+    if (!elDraftStatusIndicator || !elDraftStatusText) return;
+    elDraftStatusText.textContent = message;
+    if (status === "drafting") {
+      elDraftStatusIndicator.className = "status-pill status-pill-running";
+      if (elDraftStatusSpinner) elDraftStatusSpinner.style.display = "inline-block";
+    } else if (status === "ready") {
+      elDraftStatusIndicator.className = "status-pill status-pill-ready";
+      if (elDraftStatusSpinner) elDraftStatusSpinner.style.display = "none";
+    } else {
+      elDraftStatusIndicator.className = "status-pill status-pill-failed";
+      if (elDraftStatusSpinner) elDraftStatusSpinner.style.display = "none";
+    }
+  }
+  function updateDraftReviewMeta() {
+    if (!elDraftReviewMeta) return;
+    const body = elDraftReviewBodyInput?.value || "";
+    const subtasks = parseSubtasks(body);
+    const questions = parseOpenQuestions(body);
+    elDraftReviewMeta.textContent = formatDraftReviewMeta(subtasks.length, questions.length);
+  }
+  function showDraftReviewCard(draft) {
+    if (!elAiDraftReviewCard) return;
+    currentDraftIssue = draft;
+    if (elDraftReviewTitleInput) {
+      elDraftReviewTitleInput.value = draft.title;
+    }
+    if (elDraftReviewBodyInput) {
+      elDraftReviewBodyInput.value = draft.body;
+    }
+    updateDraftReviewMeta();
+    if (draft.sessionId) {
+      activeDraftSessionId = draft.sessionId;
+      if (elBtnOpenDraftSessionLink) {
+        elBtnOpenDraftSessionLink.style.display = "inline-block";
+      }
+    }
+    setDraftReviewStatus(
+      draft.status || "ready",
+      draft.status === "drafting" ? "Drafting in background..." : "Draft ready for review"
+    );
+    elAiDraftReviewCard.style.display = "flex";
+  }
+  function hideDraftReviewCard() {
+    if (!elAiDraftReviewCard) return;
+    elAiDraftReviewCard.style.display = "none";
+    activeDraftSessionId = null;
+    currentDraftIssue = null;
+  }
+  function handleDraftSessionUpdates(allSessions) {
+    if (!activeDraftSessionId) return;
+    const draftSess = allSessions.find((s) => s.id === activeDraftSessionId);
+    if (!draftSess) return;
+    if (draftSess.activity === "idle" || draftSess.outcome === "completed") {
+      setDraftReviewStatus("ready", "Draft ready for review");
+    } else if (draftSess.activity === "running") {
+      setDraftReviewStatus("drafting", "Drafting in background...");
+    }
+  }
+  function editDraftInManualMode() {
+    const title = elDraftReviewTitleInput ? elDraftReviewTitleInput.value.trim() : "";
+    const body = elDraftReviewBodyInput ? elDraftReviewBodyInput.value.trim() : "";
+    elNewIssueTitleInput.value = title;
+    elNewIssueBodyInput.value = body;
+    draftSubtasks = parseSubtasks(body).map((s) => s.text);
+    renderDraftSubtasks();
+    draftQuestions = parseOpenQuestions(body).map((q) => q.text);
+    renderDraftQuestions();
+    setNewIssueMode("manual");
+  }
+  function openActiveDraftSession() {
+    if (activeDraftSessionId && typeof host.openSession === "function") {
+      void host.openSession(activeDraftSessionId);
+    }
+  }
+  async function acceptAndPostDraft() {
+    const targetRepo = currentRepo;
+    if (!targetRepo) {
+      await host.toast({ kind: "error", message: "No target repository selected" });
+      return;
+    }
+    const title = elDraftReviewTitleInput ? elDraftReviewTitleInput.value.trim() : "";
+    const body = elDraftReviewBodyInput ? elDraftReviewBodyInput.value.trim() : "";
+    if (!title) {
+      if (elDraftReviewTitleInput) elDraftReviewTitleInput.focus();
+      await host.toast({ kind: "info", message: "Issue title cannot be empty" });
+      return;
+    }
+    if (elBtnAcceptAndPostDraft) {
+      elBtnAcceptAndPostDraft.disabled = true;
+      elBtnAcceptAndPostDraft.textContent = "Posting to GitHub...";
+    }
+    try {
+      const payload = createDraftIssuePayload({ title, body, labels: ["status:todo"] });
+      addLog(`Posting accepted draft issue to ${targetRepo}: "${title}"...`);
+      const created = await githubRequestWithRetry("POST", `/repos/${targetRepo}/issues`, payload);
+      addLog(`Created issue #${created.number}: ${created.title}`, "succ");
+      await host.toast({ kind: "success", message: `Created #${created.number} on GitHub` });
+      closeNewIssueModal();
+      hideDraftReviewCard();
+      saveDraftAiInput("");
+      if (elAiIssueInput) elAiIssueInput.value = "";
+      if (created && created.number) {
+        const normalizedCreated = normalizeGithubIssues([{ ...created, repo: targetRepo }]);
+        normalizedCreated.forEach((i) => {
+          i.repo = targetRepo;
+        });
+        if (currentRepo === targetRepo || isAllProjectsMode) {
+          issues = mergeIssuePages(issues, normalizedCreated);
+          renderViews();
+          statusReconciler.schedule(issues);
+        }
+        const existingCached = issueCache.get(targetRepo)?.issues || [];
+        const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
+        issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues }).catch(() => {
+          });
+        }
+        if (isAllProjectsMode) {
+          issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+          if (host?.storage) {
+            void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+            });
+          }
+        }
+      }
+    } catch (err) {
+      addLog(`Failed to post draft issue: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to create issue: ${err.message || "Unknown error"}` });
+    } finally {
+      if (elBtnAcceptAndPostDraft) {
+        elBtnAcceptAndPostDraft.disabled = false;
+        elBtnAcceptAndPostDraft.innerHTML = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Accept &amp; Post to GitHub</span>`;
+      }
+    }
+  }
   var currentNewIssueMode = "ai";
   function setNewIssueMode(mode) {
     currentNewIssueMode = mode;
@@ -11785,12 +12019,14 @@ ${transclusions.join("\n")}
     if (elInputNewIssueDraftQuestion) elInputNewIssueDraftQuestion.value = "";
     await loadDraftAiInput();
     elAiPromptConfigPanel.style.display = "none";
+    hideDraftReviewCard();
     setNewIssueMode("ai");
     elNewIssueModalBackdrop.classList.add("active");
     setTimeout(() => elAiIssueInput.focus(), 50);
   }
   function closeNewIssueModal() {
     elNewIssueModalBackdrop.classList.remove("active");
+    hideDraftReviewCard();
   }
   async function submitNewIssue() {
     const title = elNewIssueTitleInput.value.trim();
@@ -11878,12 +12114,13 @@ ${transclusions.join("\n")}
     elBtnLaunchAISession.disabled = true;
     elBtnLaunchAISession.textContent = "Starting AI Session...";
     try {
-      addLog("Launching AI issue drafting session...");
+      addLog("Launching AI issue drafting session in background...");
       const res = await host.startSession({
         projectId: currentProject?.id,
         worktree: false,
         // Issue drafting is administrative; no worktree churn
-        navigation: "open",
+        navigation: "preserve",
+        // Keep modal open for live feedback
         providerId: "github-task-board",
         id: `draft-${Date.now()}`,
         title: `Draft: ${firstLine || "GitHub Issues"}`,
@@ -11894,16 +12131,18 @@ ${transclusions.join("\n")}
           repo: currentRepo
         }
       });
-      closeNewIssueModal();
-      saveDraftAiInput("");
-      if (elAiIssueInput) elAiIssueInput.value = "";
-      await host.toast({
-        kind: "success",
-        message: "Launched AI drafting session"
+      const parsed = parseDraftIssueFromMarkdown(userInput);
+      showDraftReviewCard({
+        title: parsed?.title || firstLine || "Draft Issue",
+        body: parsed?.body || userInput,
+        sessionId: res.sessionId,
+        status: "drafting",
+        repo: currentRepo
       });
-      if (res.sessionId) {
-        void host.openSession(res.sessionId);
-      }
+      await host.toast({
+        kind: "info",
+        message: "Launched background drafting session. Live draft preview below."
+      });
     } catch (err) {
       addLog(`Failed to start AI session: ${err.message}`, "error");
       await host.toast({ kind: "error", message: `Failed to start session: ${err.message}` });
@@ -12283,6 +12522,31 @@ ${transclusions.join("\n")}
     elBtnLaunchAISession.addEventListener("click", () => {
       void launchAiIssueSession();
     });
+    if (elBtnAcceptAndPostDraft) {
+      elBtnAcceptAndPostDraft.addEventListener("click", () => {
+        void acceptAndPostDraft();
+      });
+    }
+    if (elBtnEditDraftInManual) {
+      elBtnEditDraftInManual.addEventListener("click", () => {
+        editDraftInManualMode();
+      });
+    }
+    if (elBtnDismissDraftReview) {
+      elBtnDismissDraftReview.addEventListener("click", () => {
+        hideDraftReviewCard();
+      });
+    }
+    if (elBtnOpenDraftSessionLink) {
+      elBtnOpenDraftSessionLink.addEventListener("click", () => {
+        openActiveDraftSession();
+      });
+    }
+    if (elDraftReviewBodyInput) {
+      elDraftReviewBodyInput.addEventListener("input", () => {
+        updateDraftReviewMeta();
+      });
+    }
     elBtnTogglePromptConfig.addEventListener("click", () => {
       const isHidden = elAiPromptConfigPanel.style.display === "none";
       if (isHidden) {
