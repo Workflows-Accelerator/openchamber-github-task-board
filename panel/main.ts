@@ -165,8 +165,12 @@ import {
   formatTaskTextWithLinks,
   extractQuestionOptions,
   extractQuestionContext,
+  parseDraftIssueFromMarkdown,
+  formatDraftReviewMeta,
+  createDraftIssuePayload,
+  type DraftIssue,
 } from './core.js';
-export type { TestItem };
+export type { TestItem, DraftIssue };
 export {
   buildSessionIndex,
   scopeDoneIssues,
@@ -179,6 +183,9 @@ export {
   formatTaskTextWithLinks,
   extractQuestionOptions,
   extractQuestionContext,
+  parseDraftIssueFromMarkdown,
+  formatDraftReviewMeta,
+  createDraftIssuePayload,
   parseHumanTasks,
   buildHumanTaskResumePrompt,
   shouldNotifyAgentOnHumanTasksComplete,
@@ -574,6 +581,7 @@ async function watchActiveProject(projectId: string): Promise<void> {
       renderViews();
       if (activeIssue) renderDrawer(activeIssue);
       statusReconciler.schedule(issues);
+      handleDraftSessionUpdates(sessions);
 
       // When a session finishes / becomes idle, incrementally fetch issues changed since last sync
       const becameIdle = sessions.some((s) => {
@@ -6329,6 +6337,174 @@ const elBtnNewIssueClose = document.getElementById('btnNewIssueClose') as HTMLBu
 let draftSubtasks: string[] = [];
 let draftQuestions: string[] = [];
 
+// Live AI Drafting Feedback Elements
+const elAiDraftReviewCard = document.getElementById('aiDraftReviewCard') as HTMLDivElement | null;
+const elDraftStatusIndicator = document.getElementById('draftStatusIndicator') as HTMLSpanElement | null;
+const elDraftStatusSpinner = document.getElementById('draftStatusSpinner') as HTMLSpanElement | null;
+const elDraftStatusText = document.getElementById('draftStatusText') as HTMLSpanElement | null;
+const elBtnDismissDraftReview = document.getElementById('btnDismissDraftReview') as HTMLButtonElement | null;
+const elDraftReviewTitleInput = document.getElementById('draftReviewTitleInput') as HTMLInputElement | null;
+const elDraftReviewBodyInput = document.getElementById('draftReviewBodyInput') as HTMLTextAreaElement | null;
+const elDraftReviewMeta = document.getElementById('draftReviewMeta') as HTMLSpanElement | null;
+const elBtnEditDraftInManual = document.getElementById('btnEditDraftInManual') as HTMLButtonElement | null;
+const elBtnOpenDraftSessionLink = document.getElementById('btnOpenDraftSessionLink') as HTMLButtonElement | null;
+const elBtnAcceptAndPostDraft = document.getElementById('btnAcceptAndPostDraft') as HTMLButtonElement | null;
+
+let activeDraftSessionId: string | null = null;
+let currentDraftIssue: DraftIssue | null = null;
+
+function setDraftReviewStatus(status: 'drafting' | 'ready' | 'failed', message: string): void {
+  if (!elDraftStatusIndicator || !elDraftStatusText) return;
+  elDraftStatusText.textContent = message;
+  if (status === 'drafting') {
+    elDraftStatusIndicator.className = 'status-pill status-pill-running';
+    if (elDraftStatusSpinner) elDraftStatusSpinner.style.display = 'inline-block';
+  } else if (status === 'ready') {
+    elDraftStatusIndicator.className = 'status-pill status-pill-ready';
+    if (elDraftStatusSpinner) elDraftStatusSpinner.style.display = 'none';
+  } else {
+    elDraftStatusIndicator.className = 'status-pill status-pill-failed';
+    if (elDraftStatusSpinner) elDraftStatusSpinner.style.display = 'none';
+  }
+}
+
+function updateDraftReviewMeta(): void {
+  if (!elDraftReviewMeta) return;
+  const body = elDraftReviewBodyInput?.value || '';
+  const subtasks = parseSubtasks(body);
+  const questions = parseOpenQuestions(body);
+  elDraftReviewMeta.textContent = formatDraftReviewMeta(subtasks.length, questions.length);
+}
+
+function showDraftReviewCard(draft: DraftIssue): void {
+  if (!elAiDraftReviewCard) return;
+  currentDraftIssue = draft;
+  if (elDraftReviewTitleInput) {
+    elDraftReviewTitleInput.value = draft.title;
+  }
+  if (elDraftReviewBodyInput) {
+    elDraftReviewBodyInput.value = draft.body;
+  }
+  updateDraftReviewMeta();
+
+  if (draft.sessionId) {
+    activeDraftSessionId = draft.sessionId;
+    if (elBtnOpenDraftSessionLink) {
+      elBtnOpenDraftSessionLink.style.display = 'inline-block';
+    }
+  }
+
+  setDraftReviewStatus(
+    draft.status || 'ready',
+    draft.status === 'drafting' ? 'Drafting in background...' : 'Draft ready for review'
+  );
+  elAiDraftReviewCard.style.display = 'flex';
+}
+
+function hideDraftReviewCard(): void {
+  if (!elAiDraftReviewCard) return;
+  elAiDraftReviewCard.style.display = 'none';
+  activeDraftSessionId = null;
+  currentDraftIssue = null;
+}
+
+function handleDraftSessionUpdates(allSessions: any[]): void {
+  if (!activeDraftSessionId) return;
+  const draftSess = allSessions.find((s) => s.id === activeDraftSessionId);
+  if (!draftSess) return;
+
+  if (draftSess.activity === 'idle' || draftSess.outcome === 'completed') {
+    setDraftReviewStatus('ready', 'Draft ready for review');
+  } else if (draftSess.activity === 'running') {
+    setDraftReviewStatus('drafting', 'Drafting in background...');
+  }
+}
+
+function editDraftInManualMode(): void {
+  const title = elDraftReviewTitleInput ? elDraftReviewTitleInput.value.trim() : '';
+  const body = elDraftReviewBodyInput ? elDraftReviewBodyInput.value.trim() : '';
+  elNewIssueTitleInput.value = title;
+  elNewIssueBodyInput.value = body;
+  draftSubtasks = parseSubtasks(body).map((s) => s.text);
+  renderDraftSubtasks();
+  draftQuestions = parseOpenQuestions(body).map((q) => q.text);
+  renderDraftQuestions();
+  setNewIssueMode('manual');
+}
+
+function openActiveDraftSession(): void {
+  if (activeDraftSessionId && typeof (host as any).openSession === 'function') {
+    void (host as any).openSession(activeDraftSessionId);
+  }
+}
+
+async function acceptAndPostDraft(): Promise<void> {
+  const targetRepo = currentRepo;
+  if (!targetRepo) {
+    await host.toast({ kind: 'error', message: 'No target repository selected' });
+    return;
+  }
+  const title = elDraftReviewTitleInput ? elDraftReviewTitleInput.value.trim() : '';
+  const body = elDraftReviewBodyInput ? elDraftReviewBodyInput.value.trim() : '';
+  if (!title) {
+    if (elDraftReviewTitleInput) elDraftReviewTitleInput.focus();
+    await host.toast({ kind: 'info', message: 'Issue title cannot be empty' });
+    return;
+  }
+
+  if (elBtnAcceptAndPostDraft) {
+    elBtnAcceptAndPostDraft.disabled = true;
+    elBtnAcceptAndPostDraft.textContent = 'Posting to GitHub...';
+  }
+
+  try {
+    const payload = createDraftIssuePayload({ title, body, labels: ['status:todo'] });
+    addLog(`Posting accepted draft issue to ${targetRepo}: "${title}"...`);
+    const created: any = await githubRequestWithRetry('POST', `/repos/${targetRepo}/issues`, payload);
+    addLog(`Created issue #${created.number}: ${created.title}`, 'succ');
+    await host.toast({ kind: 'success', message: `Created #${created.number} on GitHub` });
+
+    closeNewIssueModal();
+    hideDraftReviewCard();
+    saveDraftAiInput('');
+    if (elAiIssueInput) elAiIssueInput.value = '';
+
+    if (created && created.number) {
+      const normalizedCreated = normalizeGithubIssues([{ ...created, repo: targetRepo }]);
+      normalizedCreated.forEach((i) => {
+        i.repo = targetRepo;
+      });
+
+      if (currentRepo === targetRepo || isAllProjectsMode) {
+        issues = mergeIssuePages(issues, normalizedCreated);
+        renderViews();
+        statusReconciler.schedule(issues);
+      }
+
+      const existingCached = issueCache.get(targetRepo)?.issues || [];
+      const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
+      issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues } as any).catch(() => {});
+      }
+      if (isAllProjectsMode) {
+        issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any).catch(() => {});
+        }
+      }
+    }
+  } catch (err: any) {
+    addLog(`Failed to post draft issue: ${err.message}`, 'error');
+    await host.toast({ kind: 'error', message: `Failed to create issue: ${err.message || 'Unknown error'}` });
+  } finally {
+    if (elBtnAcceptAndPostDraft) {
+      elBtnAcceptAndPostDraft.disabled = false;
+      elBtnAcceptAndPostDraft.innerHTML = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Accept &amp; Post to GitHub</span>`;
+    }
+  }
+}
+
 let currentNewIssueMode: NewIssueMode = 'ai';
 
 function setNewIssueMode(mode: NewIssueMode): void {
@@ -6897,6 +7073,7 @@ async function openNewIssueModal(): Promise<void> {
   // late-resolving load cannot clobber a value they just set.
   await loadDraftAiInput();
   elAiPromptConfigPanel.style.display = 'none';
+  hideDraftReviewCard();
 
   setNewIssueMode('ai'); // AI Assisted is the first and default!
   elNewIssueModalBackdrop.classList.add('active');
@@ -6905,6 +7082,7 @@ async function openNewIssueModal(): Promise<void> {
 
 function closeNewIssueModal(): void {
   elNewIssueModalBackdrop.classList.remove('active');
+  hideDraftReviewCard();
 }
 
 async function submitNewIssue(): Promise<void> {
@@ -7006,11 +7184,11 @@ async function launchAiIssueSession(): Promise<void> {
   elBtnLaunchAISession.textContent = 'Starting AI Session...';
 
   try {
-    addLog('Launching AI issue drafting session...');
+    addLog('Launching AI issue drafting session in background...');
     const res = await host.startSession({
       projectId: currentProject?.id,
       worktree: false, // Issue drafting is administrative; no worktree churn
-      navigation: 'open',
+      navigation: 'preserve', // Keep modal open for live feedback
       providerId: 'github-task-board',
       id: `draft-${Date.now()}`,
       title: `Draft: ${firstLine || 'GitHub Issues'}`,
@@ -7022,17 +7200,19 @@ async function launchAiIssueSession(): Promise<void> {
       },
     });
 
-    closeNewIssueModal();
-    saveDraftAiInput('');
-    if (elAiIssueInput) elAiIssueInput.value = '';
-    await host.toast({
-      kind: 'success',
-      message: 'Launched AI drafting session',
+    const parsed = parseDraftIssueFromMarkdown(userInput);
+    showDraftReviewCard({
+      title: parsed?.title || firstLine || 'Draft Issue',
+      body: parsed?.body || userInput,
+      sessionId: res.sessionId,
+      status: 'drafting',
+      repo: currentRepo,
     });
 
-    if (res.sessionId) {
-      void host.openSession(res.sessionId);
-    }
+    await host.toast({
+      kind: 'info',
+      message: 'Launched background drafting session. Live draft preview below.',
+    });
   } catch (err: any) {
     addLog(`Failed to start AI session: ${err.message}`, 'error');
     await host.toast({ kind: 'error', message: `Failed to start session: ${err.message}` });
@@ -7507,6 +7687,32 @@ function initEvents(): void {
   elBtnLaunchAISession.addEventListener('click', () => {
     void launchAiIssueSession();
   });
+
+  if (elBtnAcceptAndPostDraft) {
+    elBtnAcceptAndPostDraft.addEventListener('click', () => {
+      void acceptAndPostDraft();
+    });
+  }
+  if (elBtnEditDraftInManual) {
+    elBtnEditDraftInManual.addEventListener('click', () => {
+      editDraftInManualMode();
+    });
+  }
+  if (elBtnDismissDraftReview) {
+    elBtnDismissDraftReview.addEventListener('click', () => {
+      hideDraftReviewCard();
+    });
+  }
+  if (elBtnOpenDraftSessionLink) {
+    elBtnOpenDraftSessionLink.addEventListener('click', () => {
+      openActiveDraftSession();
+    });
+  }
+  if (elDraftReviewBodyInput) {
+    elDraftReviewBodyInput.addEventListener('input', () => {
+      updateDraftReviewMeta();
+    });
+  }
 
   // Prompt Configuration Editor toggle & actions
   elBtnTogglePromptConfig.addEventListener('click', () => {

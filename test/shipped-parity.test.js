@@ -58,6 +58,9 @@ const JS_FUNCS = [
   'parseFriendlyTitle',
   'extractQuestionOptions',
   'extractQuestionContext',
+  'parseDraftIssueFromMarkdown',
+  'formatDraftReviewMeta',
+  'createDraftIssuePayload',
 ];
 const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'humanTasksSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
 
@@ -75,7 +78,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 42);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 45);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
@@ -289,5 +292,41 @@ The batch review gate parks issues on status:needs-human.
   assert.deepEqual(
     Shipped.extractQuestionContext(sampleBody, 12),
     Core.extractQuestionContext(sampleBody, 12)
+  );
+});
+
+test('draft review helpers: shipped == core', () => {
+  const sample = `# feat(api): add live drafting
+
+### Friendly Title: Live Drafting
+
+## Overview
+Live drafting overview.
+
+### Actionable Subtasks Checklist:
+- [ ] Task 1
+- [ ] Task 2
+
+### Open Questions:
+- [ ] Question 1
+`;
+  assert.deepEqual(
+    Shipped.parseDraftIssueFromMarkdown(sample),
+    Core.parseDraftIssueFromMarkdown(sample)
+  );
+
+  assert.equal(
+    Shipped.formatDraftReviewMeta(2, 1),
+    Core.formatDraftReviewMeta(2, 1)
+  );
+
+  const payloadInput = {
+    title: 'feat(api): test title',
+    body: 'test body',
+    labels: ['bug'],
+  };
+  assert.deepEqual(
+    Shipped.createDraftIssuePayload(payloadInput),
+    Core.createDraftIssuePayload(payloadInput)
   );
 });

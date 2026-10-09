@@ -1358,6 +1358,129 @@ export function resolveAiAlignmentPrompt({
   return template.replace(/\{repo\}/g, repo || '').replace(/\{userInput\}/g, (userInput || '').trim());
 }
 
+export interface DraftIssue {
+  title: string;
+  body: string;
+  subtasks?: string[];
+  openQuestions?: string[];
+  labels?: string[];
+  repo?: string;
+  sessionId?: string | null;
+  status?: 'drafting' | 'ready' | 'failed';
+}
+
+export function parseDraftIssueFromMarkdown(text: string | null | undefined): DraftIssue | null {
+  if (!text || typeof text !== 'string') return null;
+  const clean = text.trim();
+  if (!clean) return null;
+
+  const lines = clean.split('\n');
+  let title = '';
+  let labels: string[] = [];
+  const bodyLines: string[] = [];
+  let titleFound = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Check for explicit "Title: <text>" or "Issue Title: <text>"
+    const titleMatch = /^title:\s*(.+)$/i.exec(trimmed) || /^issue title:\s*(.+)$/i.exec(trimmed);
+    if (!titleFound && titleMatch) {
+      title = titleMatch[1].trim();
+      titleFound = true;
+      continue;
+    }
+
+    // Check for H1 "# <text>"
+    const h1Match = /^#\s+(.+)$/.exec(trimmed);
+    if (!titleFound && h1Match) {
+      title = h1Match[1].trim();
+      titleFound = true;
+      continue;
+    }
+
+    // Check for explicit "Labels: a, b" or "Tags: a, b"
+    const labelsMatch = /^(?:labels|tags):\s*(.+)$/i.exec(trimmed);
+    if (labelsMatch) {
+      const extracted = labelsMatch[1]
+        .split(/[,;\s]+/)
+        .map((l) => l.trim().toLowerCase())
+        .filter(Boolean);
+      labels.push(...extracted);
+      continue;
+    }
+
+    bodyLines.push(line);
+  }
+
+  // Fallback: If no markdown header or explicit title prefix was found,
+  // use the first non-empty line as title, and the rest as body
+  if (!titleFound) {
+    let firstNonEmptyIdx = -1;
+    for (let i = 0; i < bodyLines.length; i++) {
+      if (bodyLines[i].trim()) {
+        firstNonEmptyIdx = i;
+        break;
+      }
+    }
+    if (firstNonEmptyIdx >= 0) {
+      title = bodyLines[firstNonEmptyIdx].trim();
+      bodyLines.splice(firstNonEmptyIdx, 1);
+    }
+  }
+
+  // Clean title delimiters
+  title = title.replace(/^[*_"`#]+|[*_"`#]+$/g, '').trim();
+  if (!title) return null;
+
+  const body = bodyLines.join('\n').trim();
+
+  // Extract subtasks and open questions from the body
+  const subtasks = parseSubtasks(body).map((s) => s.text);
+  const openQuestions = parseOpenQuestions(body).map((q) => q.text);
+
+  if (!labels.some((l) => l.startsWith('status:'))) {
+    labels.push('status:todo');
+  }
+
+  return {
+    title,
+    body,
+    subtasks,
+    openQuestions,
+    labels: Array.from(new Set(labels)),
+    status: 'ready',
+  };
+}
+
+export function formatDraftReviewMeta(subtaskCount: number, questionCount: number): string {
+  const subtaskLabel = subtaskCount === 1 ? '1 subtask' : `${subtaskCount} subtasks`;
+  const questionLabel = questionCount === 1 ? '1 question' : `${questionCount} questions`;
+  return `${subtaskLabel} · ${questionLabel}`;
+}
+
+export function createDraftIssuePayload(draft: {
+  title: string;
+  body?: string;
+  labels?: string[];
+}): { title: string; body: string; labels: string[] } {
+  const cleanTitle = (draft?.title || '').trim();
+  if (!cleanTitle) {
+    throw new Error('Draft issue must have a non-empty title');
+  }
+  const cleanBody = (draft?.body || '').trim();
+  let labels = Array.isArray(draft?.labels) ? [...draft.labels] : [];
+  if (!labels.some((l) => l.startsWith('status:'))) {
+    labels.push('status:todo');
+  }
+  return {
+    title: cleanTitle,
+    body: cleanBody,
+    labels: Array.from(new Set(labels)),
+  };
+}
+
 export function buildIssueAttachPayload(issue: Issue, repoOverride?: string) {
   const numStr = String(issue.number);
   const title = `#${issue.number} ${issue.title || ''}`.slice(0, 150);
