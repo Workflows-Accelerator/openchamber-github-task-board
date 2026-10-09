@@ -5038,7 +5038,7 @@ Input Objective / User Mind-Dump:
 
 Instructions for the Agent:
 1. Analyze the user's input. If the user described multiple independent tasks, bugs, or features, decompose them into distinct, well-scoped GitHub issues. If it describes a single topic, create one focused issue.
-2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture.
+2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture. Load the \`issue-lifecycle\` skill to adhere to Issue Body Contract v1.
 3. Every generated issue must follow this exact structure tailored for the OpenChamber Task Board:
    - Title: Conventional commit format (e.g. "feat(auth): add remember-me token refresh" or "fix(ui): prevent horizontal overflow in mobile table").
    - Friendly Title: Start the issue body with "### Friendly Title: <3-6 words plain English title>" before the Overview.
@@ -5051,9 +5051,13 @@ Instructions for the Agent:
      - [ ] Run test suite and verify green
    - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify.
    - Human Tasks: Add a "### Human Tasks:" section with interactive Markdown checkboxes (- [ ]) with verb-first items (e.g. "Approve ...", "Review PR #N", "Grant access to ...", "Deploy ...") written at the moment the agent blocks on a human or hands off for validation.
+   - Test Plan: Add a "## Test Plan (Issue):" section with interactive Markdown checkboxes (- [ ]) listing exact automated verification commands.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
    - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
-4. If a GitHub token or gh CLI is available in the environment, you can create the issues directly using the GitHub API. Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
+4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo".
+5. Creation: If a GitHub token is configured or available in ~/.git-credentials, create issues directly via curl:
+   curl -s -X POST -H "Authorization: Bearer <token>" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/{repo}/issues -d '{"title":"...","body":"...","labels":["status:todo",...]}'
+   Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
   function resolveAiIssuePrompt({
     repo,
     userInput,
@@ -5070,18 +5074,22 @@ User Scratch Pad / Multi-Theme Mind-Dump:
 
 Instructions for the Alignment Session:
 1. Review every theme, idea, feature, and bug in the user's scratch pad.
-2. Ground yourself by inspecting project architecture, existing modules, conventions, and configuration files in this workspace.
+2. Ground yourself by inspecting project architecture, existing modules, conventions, and configuration files in this workspace. Load the \`issue-lifecycle\` skill to govern lifecycle states and Issue Body Contract v1.
 3. Your primary goal is ALIGNMENT before issue creation:
    - For each distinct theme, identify unstated assumptions, ambiguities, technical tradeoffs, and potential edge cases.
    - Formulate probing, concise questions that need clarification (e.g. data modeling decisions, auth boundaries, UX state handling, error recovery).
    - Propose 2-3 architectural approaches or solutions for tricky decisions with pros/cons and a clear recommendation.
-4. Interact directly with the user to align on answers.
-5. Once aligned on each theme, synthesize the finalized decisions into clean, well-scoped GitHub issues containing:
+4. Interact directly with the user to align on answers. When human is away, record unresolved questions in the issue body.
+5. Once aligned on each theme, synthesize the finalized decisions into clean, well-scoped GitHub issues adhering to Issue Body Contract v1:
    - Title in Conventional Commit format
-   - Impacted files and architectural plan
-   - Actionable Subtasks Checklist (- [ ])
-   - Open Questions (- [ ] / - [x])
-   - Suggested worktree branch slug`;
+   - Friendly Title: "### Friendly Title: <3-6 words plain English title>"
+   - Overview: "## Overview" with problem description and user value
+   - Acceptance Criteria: "### Acceptance Criteria:" with testable checkboxes (- [ ])
+   - Actionable Subtasks Checklist: "### Actionable Subtasks Checklist:" with discrete implementation steps (- [ ])
+   - Open Questions: "### Open Questions:" (- [ ] unresolved, - [x] answered)
+   - Human Tasks: "### Human Tasks:" with verb-first items for verification
+   - Test Plan: "## Test Plan (Issue):" with verification commands (- [ ])
+   - Suggested worktree branch slug ("issue-<number>-<slug>")`;
   function resolveAiAlignmentPrompt({
     repo,
     userInput,
@@ -5273,7 +5281,8 @@ ${issue.body.trim()}
 
 `;
       }
-      if (issue.subtasks && issue.subtasks.length > 0) {
+      const hasChecklistInBody = typeof issue.body === "string" && issue.body.includes("### Actionable Subtasks Checklist:");
+      if (!hasChecklistInBody && issue.subtasks && issue.subtasks.length > 0) {
         prompt += `### Actionable Subtasks Checklist:
 `;
         issue.subtasks.forEach((s) => {
@@ -5284,8 +5293,104 @@ ${issue.body.trim()}
       }
       prompt += "---\n\n";
     });
+    prompt += `### Autonomous & AFK Protocol:
+`;
+    prompt += `- Work through the packaged issues sequentially or in coordination, verifying each step with tests.
+`;
+    prompt += `- If blocked on human decisions, permissions, or secrets while the human is away, record explicit items under "### Human Tasks:" in the issue body, mark "status:needs-human", and continue with any unblocked tasks.
+
+`;
     prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
     return prompt;
+  }
+  var DEFAULT_TEMPLATES = {
+    bug: {
+      id: "bug",
+      name: "Bug Report",
+      description: "Investigate unexpected behavior, identify root cause, and draft fix subtasks",
+      promptInstructions: `### Problem Description
+[Detailed explanation of what went wrong, including error messages or unexpected behavior]
+
+### Steps to Reproduce
+1. [First step]
+2. [Second step]
+
+### Root Cause Analysis
+[Inspect the relevant codebase files and explain the underlying mechanism]
+
+### Actionable Fix Subtasks
+- [ ] Reproduce with an isolated test
+- [ ] Implement narrow surgical fix
+- [ ] Verify test suite passes
+- [ ] Verify regression resistance`
+    },
+    feature: {
+      id: "feature",
+      name: "Feature / Enhancement",
+      description: "Design and specify new functionality with architectural plan and subtasks",
+      promptInstructions: `### Goal & User Value
+[Why this feature is needed and what problem it solves]
+
+### Architectural & UI Design
+[Proposed technical architecture, component structure, or API changes]
+
+### Actionable Implementation Subtasks
+- [ ] Define interfaces and types
+- [ ] Implement core logic / components
+- [ ] Add unit and integration tests
+- [ ] Verify end-to-end user flow`
+    },
+    task: {
+      id: "task",
+      name: "Technical Debt / Refactor",
+      description: "Code cleanup, performance optimization, or architecture simplification",
+      promptInstructions: `### Motivation
+[Identify dead code, performance bottlenecks, or architectural complexity]
+
+### Scope of Refactoring
+[Specific files and modules to touch, and what must remain unchanged]
+
+### Actionable Checklist
+- [ ] Establish baseline test coverage
+- [ ] Perform behavior-preserving refactoring
+- [ ] Verify existing tests continue to pass without regressions`
+    }
+  };
+  function mergeTemplates(defaults, userCustomTemplates) {
+    if (!userCustomTemplates || typeof userCustomTemplates !== "object") {
+      return { ...defaults };
+    }
+    const result = { ...defaults };
+    for (const [key, val] of Object.entries(userCustomTemplates)) {
+      if (val && typeof val === "object" && val.promptInstructions) {
+        result[key] = {
+          ...result[key] || { id: key, name: key },
+          ...val
+        };
+      }
+    }
+    return result;
+  }
+  function buildAgentIssuePrompt({
+    repo,
+    template,
+    userGoal
+  }) {
+    return `You are tasked with drafting and creating a new GitHub Issue for repository "${repo}".
+
+User Objective / Summary:
+${userGoal.trim()}
+
+Template Specification (${template.name}):
+Follow this exact structure and include actionable markdown subtasks (- [ ]):
+
+${template.promptInstructions.trim()}
+
+Instructions for the Agent:
+1. Inspect the relevant repository files in the project to gather accurate context, file paths, and function names.
+2. Structure the issue clearly with a concise title and the markdown body following the template above.
+3. Include an interactive checklist of subtasks with "- [ ]".
+4. Once you have drafted the complete issue, ask the user for confirmation or output the finalized issue so it can be committed to GitHub.`;
   }
   function serializeDraftSubtasks(body, subtaskTexts) {
     const cleanBody = (body || "").trim();
@@ -8705,10 +8810,14 @@ Blocked by ${blockerRef}`;
     }
     let fileContent = null;
     if (host && typeof host.readFile === "function") {
+      const cleanCurDir = (currentDirectory || "").replace(/\/+$/, "");
+      const cleanProjDir = (currentProject?.directory || "").replace(/\/+$/, "");
       const candidatePaths = [
         cleanPath,
         cleanPath.startsWith("/") ? cleanPath.slice(1) : "/" + cleanPath,
-        cleanPath.startsWith("/") ? cleanPath : `/workspace/${cleanPath}`
+        cleanPath.startsWith("/") ? cleanPath : `/workspace/${cleanPath}`,
+        ...cleanCurDir && !cleanPath.startsWith("/") ? [`${cleanCurDir}/${cleanPath}`] : [],
+        ...cleanProjDir && cleanProjDir !== cleanCurDir && !cleanPath.startsWith("/") ? [`${cleanProjDir}/${cleanPath}`] : []
       ];
       for (const p of candidatePaths) {
         try {
@@ -10732,24 +10841,62 @@ ${activeIssue.body}
     const labelNames = (activeIssue.labels || []).map(
       (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
     );
+    const skillNames = [];
     const skills = [];
     if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug")) {
+      skillNames.push("surgical-patch", "debugging-and-error-recovery");
       skills.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
       skills.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
     }
     if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature")) {
+      skillNames.push("test-driven-development", "lean-build");
       skills.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
       skills.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
     }
     if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs")) {
+      skillNames.push("documentation-and-adrs");
       skills.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
     }
-    if (skills.length > 0) {
-      brief += `### Skills:
+    if (labelNames.some((l) => l === "ui" || l === "frontend" || l === "css" || l === "design")) {
+      skillNames.push("frontend-ui-engineering");
+      skills.push("[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]");
+    }
+    if (labelNames.some((l) => l === "api" || l === "backend" || l === "schema" || l === "contract")) {
+      skillNames.push("api-and-interface-design");
+      skills.push("[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]");
+    }
+    if (labelNames.some((l) => l === "performance" || l === "perf" || l === "optimization")) {
+      skillNames.push("performance-optimization");
+      skills.push("[@.agents/skills/build/domain/performance-optimization/SKILL.md]");
+    }
+    if (labelNames.some((l) => l === "security" || l === "auth" || l === "hardening")) {
+      skillNames.push("security-and-hardening");
+      skills.push("[@.agents/skills/review/security/security-and-hardening/SKILL.md]");
+    }
+    if (labelNames.some((l) => l === "refactor" || l === "cleanup" || l === "tech-debt")) {
+      skillNames.push("code-simplification", "safe-refactor");
+      skills.push("[@.agents/skills/build/refactoring/code-simplification/SKILL.md]");
+      skills.push("[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]");
+    }
+    if (skillNames.length > 0) {
+      brief += `### Recommended Skills:
+`;
+      brief += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(", ")}).
+`;
+      brief += `Transclusion references for worker sessions:
 ${skills.join("\n")}
 
 `;
     }
+    brief += `### Autonomous & AFK Protocol:
+`;
+    brief += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.
+`;
+    brief += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.
+`;
+    brief += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.
+
+`;
     if (useWt || existingThemeWorktree) {
       brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
     } else {
@@ -10948,6 +11095,76 @@ ${skills.join("\n")}
     let successCount = 0;
     for (const issue of selected) {
       try {
+        const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
+        const labelNames = (issue.labels || []).map(
+          (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
+        );
+        const skillNames = [];
+        const transclusions = [];
+        if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug")) {
+          skillNames.push("surgical-patch", "debugging-and-error-recovery");
+          transclusions.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
+          transclusions.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
+        }
+        if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature")) {
+          skillNames.push("test-driven-development", "lean-build");
+          transclusions.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
+          transclusions.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
+        }
+        if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs")) {
+          skillNames.push("documentation-and-adrs");
+          transclusions.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
+        }
+        if (labelNames.some((l) => l === "ui" || l === "frontend" || l === "css" || l === "design")) {
+          skillNames.push("frontend-ui-engineering");
+          transclusions.push("[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]");
+        }
+        if (labelNames.some((l) => l === "api" || l === "backend" || l === "schema" || l === "contract")) {
+          skillNames.push("api-and-interface-design");
+          transclusions.push("[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]");
+        }
+        if (labelNames.some((l) => l === "performance" || l === "perf" || l === "optimization")) {
+          skillNames.push("performance-optimization");
+          transclusions.push("[@.agents/skills/build/domain/performance-optimization/SKILL.md]");
+        }
+        if (labelNames.some((l) => l === "security" || l === "auth" || l === "hardening")) {
+          skillNames.push("security-and-hardening");
+          transclusions.push("[@.agents/skills/review/security/security-and-hardening/SKILL.md]");
+        }
+        if (labelNames.some((l) => l === "refactor" || l === "cleanup" || l === "tech-debt")) {
+          skillNames.push("code-simplification", "safe-refactor");
+          transclusions.push("[@.agents/skills/build/refactoring/code-simplification/SKILL.md]");
+          transclusions.push("[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]");
+        }
+        let prompt = `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}
+
+`;
+        if (issue.body) {
+          prompt += `### Description:
+${issue.body}
+
+`;
+        }
+        if (skillNames.length > 0) {
+          prompt += `### Recommended Skills:
+`;
+          prompt += `Load with skill tool: ${skillNames.map((s) => `\`${s}\``).join(", ")}
+`;
+          prompt += `Transclusion fallback:
+${transclusions.join("\n")}
+
+`;
+        }
+        prompt += `### Autonomous & AFK Protocol:
+`;
+        prompt += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.
+`;
+        prompt += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.
+`;
+        prompt += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.
+
+`;
+        prompt += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
         const payload = {
           projectId: currentProject.id,
           worktree: false,
@@ -10955,14 +11172,10 @@ ${skills.join("\n")}
           id: String(issue.number),
           title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
           url: (issue.html_url || "").slice(0, 1e3),
-          text: `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}
-
-${issue.body ? `### Description:
-${issue.body}
-
-` : ""}Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`,
+          text: prompt,
           data: {
-            issueNumber: issue.number
+            issueNumber: issue.number,
+            ...issueRepo ? { repo: issueRepo } : {}
           }
         };
         await host.startSession(payload);

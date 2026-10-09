@@ -3329,13 +3329,17 @@ async function handleFilePathClick(pathStr: string, e?: Event): Promise<void> {
     // ignore
   }
 
-  // 3. Try to read file if host.readFile is available (try relative, with leading slash, and workspace prefix)
+  // 3. Try to read file if host.readFile is available (try relative, with leading slash, workspace prefix, and current directory)
   let fileContent: string | null = null;
   if (host && typeof (host as any).readFile === 'function') {
+    const cleanCurDir = (currentDirectory || '').replace(/\/+$/, '');
+    const cleanProjDir = (currentProject?.directory || '').replace(/\/+$/, '');
     const candidatePaths = [
       cleanPath,
       cleanPath.startsWith('/') ? cleanPath.slice(1) : '/' + cleanPath,
       cleanPath.startsWith('/') ? cleanPath : `/workspace/${cleanPath}`,
+      ...(cleanCurDir && !cleanPath.startsWith('/') ? [`${cleanCurDir}/${cleanPath}`] : []),
+      ...(cleanProjDir && cleanProjDir !== cleanCurDir && !cleanPath.startsWith('/') ? [`${cleanProjDir}/${cleanPath}`] : []),
     ];
     for (const p of candidatePaths) {
       try {
@@ -5765,22 +5769,54 @@ function updatePreflightBrief(): void {
   const labelNames = (activeIssue.labels || []).map((l: any) =>
     (typeof l === 'string' ? l : l.name || '').toLowerCase()
   );
+  const skillNames: string[] = [];
   const skills: string[] = [];
   if (labelNames.some((l) => l === 'bug' || l === 'kind:bug' || l === 'type:bug')) {
+    skillNames.push('surgical-patch', 'debugging-and-error-recovery');
     skills.push('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]');
     skills.push('[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]');
   }
   if (labelNames.some((l) => l === 'enhancement' || l === 'kind:enhancement' || l === 'type:enhancement' || l === 'feature')) {
+    skillNames.push('test-driven-development', 'lean-build');
     skills.push('[@.agents/skills/build/methodology/test-driven-development/SKILL.md]');
     skills.push('[@.agents/skills/build/methodology/lean-build/SKILL.md]');
   }
   if (labelNames.some((l) => l === 'documentation' || l === 'kind:documentation' || l === 'docs')) {
+    skillNames.push('documentation-and-adrs');
     skills.push('[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]');
   }
-
-  if (skills.length > 0) {
-    brief += `### Skills:\n${skills.join('\n')}\n\n`;
+  if (labelNames.some((l) => l === 'ui' || l === 'frontend' || l === 'css' || l === 'design')) {
+    skillNames.push('frontend-ui-engineering');
+    skills.push('[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]');
   }
+  if (labelNames.some((l) => l === 'api' || l === 'backend' || l === 'schema' || l === 'contract')) {
+    skillNames.push('api-and-interface-design');
+    skills.push('[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]');
+  }
+  if (labelNames.some((l) => l === 'performance' || l === 'perf' || l === 'optimization')) {
+    skillNames.push('performance-optimization');
+    skills.push('[@.agents/skills/build/domain/performance-optimization/SKILL.md]');
+  }
+  if (labelNames.some((l) => l === 'security' || l === 'auth' || l === 'hardening')) {
+    skillNames.push('security-and-hardening');
+    skills.push('[@.agents/skills/review/security/security-and-hardening/SKILL.md]');
+  }
+  if (labelNames.some((l) => l === 'refactor' || l === 'cleanup' || l === 'tech-debt')) {
+    skillNames.push('code-simplification', 'safe-refactor');
+    skills.push('[@.agents/skills/build/refactoring/code-simplification/SKILL.md]');
+    skills.push('[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]');
+  }
+
+  if (skillNames.length > 0) {
+    brief += `### Recommended Skills:\n`;
+    brief += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(', ')}).\n`;
+    brief += `Transclusion references for worker sessions:\n${skills.join('\n')}\n\n`;
+  }
+
+  brief += `### Autonomous & AFK Protocol:\n`;
+  brief += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.\n`;
+  brief += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.\n`;
+  brief += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.\n\n`;
 
   if (useWt || existingThemeWorktree) {
     brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
@@ -6040,6 +6076,63 @@ async function launchBatchSeparateSessions(): Promise<void> {
   let successCount = 0;
   for (const issue of selected) {
     try {
+      const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || undefined;
+      const labelNames = (issue.labels || []).map((l: any) =>
+        (typeof l === 'string' ? l : l.name || '').toLowerCase()
+      );
+      const skillNames: string[] = [];
+      const transclusions: string[] = [];
+      if (labelNames.some((l) => l === 'bug' || l === 'kind:bug' || l === 'type:bug')) {
+        skillNames.push('surgical-patch', 'debugging-and-error-recovery');
+        transclusions.push('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]');
+        transclusions.push('[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]');
+      }
+      if (labelNames.some((l) => l === 'enhancement' || l === 'kind:enhancement' || l === 'type:enhancement' || l === 'feature')) {
+        skillNames.push('test-driven-development', 'lean-build');
+        transclusions.push('[@.agents/skills/build/methodology/test-driven-development/SKILL.md]');
+        transclusions.push('[@.agents/skills/build/methodology/lean-build/SKILL.md]');
+      }
+      if (labelNames.some((l) => l === 'documentation' || l === 'kind:documentation' || l === 'docs')) {
+        skillNames.push('documentation-and-adrs');
+        transclusions.push('[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]');
+      }
+      if (labelNames.some((l) => l === 'ui' || l === 'frontend' || l === 'css' || l === 'design')) {
+        skillNames.push('frontend-ui-engineering');
+        transclusions.push('[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]');
+      }
+      if (labelNames.some((l) => l === 'api' || l === 'backend' || l === 'schema' || l === 'contract')) {
+        skillNames.push('api-and-interface-design');
+        transclusions.push('[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]');
+      }
+      if (labelNames.some((l) => l === 'performance' || l === 'perf' || l === 'optimization')) {
+        skillNames.push('performance-optimization');
+        transclusions.push('[@.agents/skills/build/domain/performance-optimization/SKILL.md]');
+      }
+      if (labelNames.some((l) => l === 'security' || l === 'auth' || l === 'hardening')) {
+        skillNames.push('security-and-hardening');
+        transclusions.push('[@.agents/skills/review/security/security-and-hardening/SKILL.md]');
+      }
+      if (labelNames.some((l) => l === 'refactor' || l === 'cleanup' || l === 'tech-debt')) {
+        skillNames.push('code-simplification', 'safe-refactor');
+        transclusions.push('[@.agents/skills/build/refactoring/code-simplification/SKILL.md]');
+        transclusions.push('[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]');
+      }
+
+      let prompt = `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}\n\n`;
+      if (issue.body) {
+        prompt += `### Description:\n${issue.body}\n\n`;
+      }
+      if (skillNames.length > 0) {
+        prompt += `### Recommended Skills:\n`;
+        prompt += `Load with skill tool: ${skillNames.map((s) => `\`${s}\``).join(', ')}\n`;
+        prompt += `Transclusion fallback:\n${transclusions.join('\n')}\n\n`;
+      }
+      prompt += `### Autonomous & AFK Protocol:\n`;
+      prompt += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.\n`;
+      prompt += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.\n`;
+      prompt += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.\n\n`;
+      prompt += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
+
       const payload = {
         projectId: currentProject.id,
         worktree: false,
@@ -6047,9 +6140,10 @@ async function launchBatchSeparateSessions(): Promise<void> {
         id: String(issue.number),
         title: `#${issue.number} ${issue.title || ''}`.slice(0, 150),
         url: (issue.html_url || '').slice(0, 1000),
-        text: `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}\n\n${issue.body ? `### Description:\n${issue.body}\n\n` : ''}Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`,
+        text: prompt,
         data: {
           issueNumber: issue.number,
+          ...(issueRepo ? { repo: issueRepo } : {}),
         },
       };
       await host.startSession(payload);

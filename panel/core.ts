@@ -1269,7 +1269,7 @@ Input Objective / User Mind-Dump:
 
 Instructions for the Agent:
 1. Analyze the user's input. If the user described multiple independent tasks, bugs, or features, decompose them into distinct, well-scoped GitHub issues. If it describes a single topic, create one focused issue.
-2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture.
+2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture. Load the \`issue-lifecycle\` skill to adhere to Issue Body Contract v1.
 3. Every generated issue must follow this exact structure tailored for the OpenChamber Task Board:
    - Title: Conventional commit format (e.g. "feat(auth): add remember-me token refresh" or "fix(ui): prevent horizontal overflow in mobile table").
    - Friendly Title: Start the issue body with "### Friendly Title: <3-6 words plain English title>" before the Overview.
@@ -1282,9 +1282,13 @@ Instructions for the Agent:
      - [ ] Run test suite and verify green
    - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify.
    - Human Tasks: Add a "### Human Tasks:" section with interactive Markdown checkboxes (- [ ]) with verb-first items (e.g. "Approve ...", "Review PR #N", "Grant access to ...", "Deploy ...") written at the moment the agent blocks on a human or hands off for validation.
+   - Test Plan: Add a "## Test Plan (Issue):" section with interactive Markdown checkboxes (- [ ]) listing exact automated verification commands.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
    - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
-4. If a GitHub token or gh CLI is available in the environment, you can create the issues directly using the GitHub API. Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
+4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo".
+5. Creation: If a GitHub token is configured or available in ~/.git-credentials, create issues directly via curl:
+   curl -s -X POST -H "Authorization: Bearer <token>" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/{repo}/issues -d '{"title":"...","body":"...","labels":["status:todo",...]}'
+   Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
 
 export function resolveAiIssuePrompt({
   repo,
@@ -1310,18 +1314,22 @@ User Scratch Pad / Multi-Theme Mind-Dump:
 
 Instructions for the Alignment Session:
 1. Review every theme, idea, feature, and bug in the user's scratch pad.
-2. Ground yourself by inspecting project architecture, existing modules, conventions, and configuration files in this workspace.
+2. Ground yourself by inspecting project architecture, existing modules, conventions, and configuration files in this workspace. Load the \`issue-lifecycle\` skill to govern lifecycle states and Issue Body Contract v1.
 3. Your primary goal is ALIGNMENT before issue creation:
    - For each distinct theme, identify unstated assumptions, ambiguities, technical tradeoffs, and potential edge cases.
    - Formulate probing, concise questions that need clarification (e.g. data modeling decisions, auth boundaries, UX state handling, error recovery).
    - Propose 2-3 architectural approaches or solutions for tricky decisions with pros/cons and a clear recommendation.
-4. Interact directly with the user to align on answers.
-5. Once aligned on each theme, synthesize the finalized decisions into clean, well-scoped GitHub issues containing:
+4. Interact directly with the user to align on answers. When human is away, record unresolved questions in the issue body.
+5. Once aligned on each theme, synthesize the finalized decisions into clean, well-scoped GitHub issues adhering to Issue Body Contract v1:
    - Title in Conventional Commit format
-   - Impacted files and architectural plan
-   - Actionable Subtasks Checklist (- [ ])
-   - Open Questions (- [ ] / - [x])
-   - Suggested worktree branch slug`;
+   - Friendly Title: "### Friendly Title: <3-6 words plain English title>"
+   - Overview: "## Overview" with problem description and user value
+   - Acceptance Criteria: "### Acceptance Criteria:" with testable checkboxes (- [ ])
+   - Actionable Subtasks Checklist: "### Actionable Subtasks Checklist:" with discrete implementation steps (- [ ])
+   - Open Questions: "### Open Questions:" (- [ ] unresolved, - [x] answered)
+   - Human Tasks: "### Human Tasks:" with verb-first items for verification
+   - Test Plan: "## Test Plan (Issue):" with verification commands (- [ ])
+   - Suggested worktree branch slug ("issue-<number>-<slug>")`;
 
 export function resolveAiAlignmentPrompt({
   repo,
@@ -1527,7 +1535,8 @@ export function buildConsolidatedIssuePrompt(selectedIssues: Issue[]): string {
     if (issue.body) {
       prompt += `### Overview & Context:\n${issue.body.trim()}\n\n`;
     }
-    if (issue.subtasks && issue.subtasks.length > 0) {
+    const hasChecklistInBody = typeof issue.body === 'string' && issue.body.includes('### Actionable Subtasks Checklist:');
+    if (!hasChecklistInBody && issue.subtasks && issue.subtasks.length > 0) {
       prompt += `### Actionable Subtasks Checklist:\n`;
       issue.subtasks.forEach((s) => {
         prompt += `- [${s.completed ? 'x' : ' '}] ${s.text}\n`;
@@ -1537,8 +1546,111 @@ export function buildConsolidatedIssuePrompt(selectedIssues: Issue[]): string {
     prompt += '---\n\n';
   });
 
+  prompt += `### Autonomous & AFK Protocol:\n`;
+  prompt += `- Work through the packaged issues sequentially or in coordination, verifying each step with tests.\n`;
+  prompt += `- If blocked on human decisions, permissions, or secrets while the human is away, record explicit items under "### Human Tasks:" in the issue body, mark "status:needs-human", and continue with any unblocked tasks.\n\n`;
+
   prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
   return prompt;
+}
+
+export const DEFAULT_TEMPLATES: Record<string, { id: string; name: string; description: string; promptInstructions: string }> = {
+  bug: {
+    id: 'bug',
+    name: 'Bug Report',
+    description: 'Investigate unexpected behavior, identify root cause, and draft fix subtasks',
+    promptInstructions: `### Problem Description
+[Detailed explanation of what went wrong, including error messages or unexpected behavior]
+
+### Steps to Reproduce
+1. [First step]
+2. [Second step]
+
+### Root Cause Analysis
+[Inspect the relevant codebase files and explain the underlying mechanism]
+
+### Actionable Fix Subtasks
+- [ ] Reproduce with an isolated test
+- [ ] Implement narrow surgical fix
+- [ ] Verify test suite passes
+- [ ] Verify regression resistance`,
+  },
+  feature: {
+    id: 'feature',
+    name: 'Feature / Enhancement',
+    description: 'Design and specify new functionality with architectural plan and subtasks',
+    promptInstructions: `### Goal & User Value
+[Why this feature is needed and what problem it solves]
+
+### Architectural & UI Design
+[Proposed technical architecture, component structure, or API changes]
+
+### Actionable Implementation Subtasks
+- [ ] Define interfaces and types
+- [ ] Implement core logic / components
+- [ ] Add unit and integration tests
+- [ ] Verify end-to-end user flow`,
+  },
+  task: {
+    id: 'task',
+    name: 'Technical Debt / Refactor',
+    description: 'Code cleanup, performance optimization, or architecture simplification',
+    promptInstructions: `### Motivation
+[Identify dead code, performance bottlenecks, or architectural complexity]
+
+### Scope of Refactoring
+[Specific files and modules to touch, and what must remain unchanged]
+
+### Actionable Checklist
+- [ ] Establish baseline test coverage
+- [ ] Perform behavior-preserving refactoring
+- [ ] Verify existing tests continue to pass without regressions`,
+  },
+};
+
+export function mergeTemplates(
+  defaults: Record<string, any>,
+  userCustomTemplates?: Record<string, any> | null
+): Record<string, any> {
+  if (!userCustomTemplates || typeof userCustomTemplates !== 'object') {
+    return { ...defaults };
+  }
+  const result = { ...defaults };
+  for (const [key, val] of Object.entries(userCustomTemplates)) {
+    if (val && typeof val === 'object' && val.promptInstructions) {
+      result[key] = {
+        ...(result[key] || { id: key, name: key }),
+        ...val,
+      };
+    }
+  }
+  return result;
+}
+
+export function buildAgentIssuePrompt({
+  repo,
+  template,
+  userGoal,
+}: {
+  repo: string;
+  template: { name: string; promptInstructions: string };
+  userGoal: string;
+}): string {
+  return `You are tasked with drafting and creating a new GitHub Issue for repository "${repo}".
+
+User Objective / Summary:
+${userGoal.trim()}
+
+Template Specification (${template.name}):
+Follow this exact structure and include actionable markdown subtasks (- [ ]):
+
+${template.promptInstructions.trim()}
+
+Instructions for the Agent:
+1. Inspect the relevant repository files in the project to gather accurate context, file paths, and function names.
+2. Structure the issue clearly with a concise title and the markdown body following the template above.
+3. Include an interactive checklist of subtasks with "- [ ]".
+4. Once you have drafted the complete issue, ask the user for confirmation or output the finalized issue so it can be committed to GitHub.`;
 }
 
 export function serializeDraftSubtasks(body: string, subtaskTexts: string[]): string {
