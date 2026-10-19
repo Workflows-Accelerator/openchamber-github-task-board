@@ -11,8 +11,10 @@
 | Independent final draft review | COMPLETED; BLOCKED | ses_9c5fc24b22a5724ccc1ac96d / 9router/genius | verifications/proof.md at 9c1a3f8; PARTIAL / NEEDS-FIXES / BLOCKED; BLK-01..14 + M-01..09 | All accepted; fix required |
 | Draft fix (first pass) | RETURNED; RESIDUALS | ses_1cafec6386df9e0f4fb684f6 / 9router/engineer | Revision at 6b0d8b9; residual-findings.md | Outcome title, local paths/commits, source URLs, settled choices, Open Questions, tests, template, exploration remain |
 | Residual fix (2 attempts) | FAILED, no report | ses_38f90000f9b5d74a598e49d1 genius; ses_c413dd1c73991b1742b13ac0 engineer | Partial uncommitted edits kept | Manager audit: R1-R11 mostly present; gaps = Q3 options, Q5 overlap, Human Task 4 missing, parser run, URL check, commit |
-| Residual finish (short) | RUNNING | ses_18e2ff24ab2eeeb7c3388058 / worker | tasks/finish-residual-short.md | Then fresh genius verifier, gate, publish |
-| Residual draft fix | RUNNING | ses_c413dd1c73991b1742b13ac0 / 9router/engineer (partial edits from failed ses_38f90000f9b5d74a598e49d1) | issue-draft.md dirty + four owned artifacts, final commit | Finish R5/R7/R12, parser check, commit; then fresh verifier; no self-approval |
+| Residual finish (short) | COMPLETED at 41f51f5 | ses_18e2ff24ab2eeeb7c3388058 / worker | Commit 41f51f5, 4 owned files; parser 5/5/17, 58 subtasks; 10 URLs HTTP 200; 0 redaction hits | Committed, not pushed |
+| Hostile review of 41f51f5 | COMPLETED — NOT PUBLISHABLE (4 MINOR, 0 blocker) | ses_6017d8ecf64441d76eed24e0 / worker | Findings F1-F4: "workspace-relative links"; Decision 5 cell semi-settles run representation; Stage 5 sandbox test lacks authorization note; companion paths not sanitized | Apply four surgical fixes, then fresh independent verifier |
+| Residual draft fix (superseded) | ABANDONED | ses_c413dd1c73991b1742b13ac0 / engineer; ses_38f90000f9b5d74a598e49d1 / genius | Partial edits recovered by the short finisher at 41f51f5 | None |
+| Minor fixes to 41f51f5 | RUNNING | ses_2651b3a231590dfb16dcdba1 / worker | tasks/minor-fixes-pending.md | Fresh independent verifier next; no self-approval |
 | Publish one deep draft issue | PENDING | Not dispatched | Issue URL + body readback | Use supported authenticated route; no credential values or installation; gh absent |
 | Human design choices | PENDING | Human | Decisions mirrored to issue | No implementation before approval |
 
