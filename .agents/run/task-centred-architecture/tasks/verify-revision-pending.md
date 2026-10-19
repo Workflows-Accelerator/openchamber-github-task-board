@@ -2,8 +2,8 @@
 Repo: /workspace/extensions/github-task-board
 Worktree: /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal
 Branch: docs/task-centred-proposal
-Base commit: FILL AFTER FIX (fixer commit on top of 9c1a3f8; worktree clean)
-State: The fixer revised the draft after a hostile review. You are a fresh independent verifier; you did not author or fix the draft and cannot be the fixer. The first reviewer is finished. Nothing is published or implemented.
+Base commit: cb1c4ab (docs/task-centred-proposal) — prior hostile review at 41f51f5 found 4 MINOR items, fixed in cb1c4ab. Worktree must be clean except untracked `.agents/idle-nontext-state.json`, which is not an artifact.
+State: The draft was revised across 6b0d8b9, 41f51f5 and cb1c4ab after a hostile review at 9c1a3f8. You are a fresh independent verifier; you did not author or fix the draft. Nothing is published or implemented. The hostile review at 41f51f5 and its 4 minor fixes are context, not evidence — verify them yourself.
 Files you own: .agents/run/task-centred-architecture/verifications/final.md only. Read all artifacts; do not modify the draft, companions, proof, review adjudication, mission/decisions/rulings, code, docs, config, skills, agents, credentials, schedules, core DB or GitHub issues.
 Test command: targeted documentation/parser review only. You must import or otherwise exercise the actual v1 parsers against the revised body and record the exact title, subtask/question/human-task/test-plan counts. Do not claim application tests beyond what you actually run. No publication.
 Do not touch: the review proof at 9c1a3f8, any prior report, existing untracked main-checkout files, or other worktrees.
@@ -16,17 +16,13 @@ Do not touch: the review proof at 9c1a3f8, any prior report, existing untracked 
 [@/workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal/.agents/run/task-centred-architecture/revision-notes.md]
 [@/workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal/.agents/run/task-centred-architecture/verifications/proof.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/review-adjudication.md]
-[@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/manager-draft-findings.md]
-[@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/research-rulings.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/decisions.md]
-[@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/explore/scenarios-to-cover.md]
 [@/workspace/extensions/github-task-board/docs/issue-body-contract.md]
+[@/workspace/extensions/github-task-board/panel/core.ts]
 [@/workspace/config/opencode/.agents/skills/review/adversarial/doubt-driven-development/SKILL.md]
-[@/workspace/config/opencode/.agents/skills/meta/orchestration/subagent-driven-development/SKILL.md]
-[@/workspace/config/opencode/.agents/skills/communication/terse/caveman-lite/SKILL.md]
 </context_files>
 <skills>
-Use doubt-driven-development as the review lens, subagent-driven-development for two-verdict review discipline, and caveman-lite for terse findings. Do not load other skills.
+Use doubt-driven-development as the review lens. Do not load other skills. Read files on demand; do not re-read what you already hold.
 </skills>
 <scope>
 - Read the revised artifacts at the pinned commit and the prior proof. Check each BLK-01..14 and M-01..09 against a visible change. Missing or merely asserted resolutions are findings.
