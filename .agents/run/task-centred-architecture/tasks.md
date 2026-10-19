@@ -10,6 +10,8 @@
 | Architecture synthesis | RETURNED; NOT ACCEPTED | ses_0dd4a969a59d0055ee0985f2 / 9router/engineer | Proposal worktree issue-draft.md, design-evidence.md, source-receipts.md at 474e7cb | Independent final review against pinned commit |
 | Independent final draft review | COMPLETED; BLOCKED | ses_9c5fc24b22a5724ccc1ac96d / 9router/genius | verifications/proof.md at 9c1a3f8; PARTIAL / NEEDS-FIXES / BLOCKED; BLK-01..14 + M-01..09 | All accepted; fix required |
 | Draft fix (first pass) | RETURNED; RESIDUALS | ses_1cafec6386df9e0f4fb684f6 / 9router/engineer | Revision at 6b0d8b9; residual-findings.md | Outcome title, local paths/commits, source URLs, settled choices, Open Questions, tests, template, exploration remain |
+| Residual fix (2 attempts) | FAILED, no report | ses_38f90000f9b5d74a598e49d1 genius; ses_c413dd1c73991b1742b13ac0 engineer | Partial uncommitted edits kept | Manager audit: R1-R11 mostly present; gaps = Q3 options, Q5 overlap, Human Task 4 missing, parser run, URL check, commit |
+| Residual finish (short) | RUNNING | ses_18e2ff24ab2eeeb7c3388058 / worker | tasks/finish-residual-short.md | Then fresh genius verifier, gate, publish |
 | Residual draft fix | RUNNING | ses_c413dd1c73991b1742b13ac0 / 9router/engineer (partial edits from failed ses_38f90000f9b5d74a598e49d1) | issue-draft.md dirty + four owned artifacts, final commit | Finish R5/R7/R12, parser check, commit; then fresh verifier; no self-approval |
 | Publish one deep draft issue | PENDING | Not dispatched | Issue URL + body readback | Use supported authenticated route; no credential values or installation; gh absent |
 | Human design choices | PENDING | Human | Decisions mirrored to issue | No implementation before approval |
