@@ -54,5 +54,8 @@ User reported server restart. Saved mission and report ownership recovered. One 
 ## Recovery checkpoint
 User reported server restart during research. Read saved mission and checked each known worker once (skills status was inadvertently queried twice); all returned busy. No workers restarted or duplicated. Main checkout still contains only unrelated untracked run files plus this run's uncommitted decisions.md. Current parent session record: ses_f22887e18ffem6RBrwgNhw5iNM, agent team, provider/model 9router/genius. Do not status-poll workers; await completion wakes.
 
+## Synthesis workspace
+Prepared /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal, branch docs/task-centred-proposal, base 02949c0. Clean report-only worktree; no synthesis worker dispatched yet. Source baseline remains 55ddeaa, with manager run-state commits only. No env/dependencies needed; safe registration can be delegated if required. research-rulings.md contains mandatory board corrections and version-specific capability caveats.
+
 ## Next gate
-Review evidence, author draft, run hostile review. Publish one deep draft issue (no implementation children yet unless user later approves), link it to this session, ask one batched alignment round with a short plain-language decision list. No claims of implementation or runtime proof.
+Await remaining review wakes without polling. Review evidence, author draft, run hostile review. Publish one deep draft issue (no implementation children yet unless user later approves), link it to this session, ask one batched alignment round with a short plain-language decision list. No claims of implementation or runtime proof.

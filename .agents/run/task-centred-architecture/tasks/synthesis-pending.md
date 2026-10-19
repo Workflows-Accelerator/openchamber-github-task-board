@@ -1,9 +1,9 @@
 <env_preflight>
 Repo: /workspace/extensions/github-task-board
-Worktree: TO BE SET BEFORE DISPATCH
-Branch: TO BE SET BEFORE DISPATCH
-Base commit: TO BE SET BEFORE DISPATCH
-State: NOT READY FOR DISPATCH; wait for all three research reports, then fill preflight and exact immutable report/commit pointers.
+Worktree: /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal
+Branch: docs/task-centred-proposal
+Base commit: 02949c0 (manager-only run state over board source baseline 55ddeaa)
+State: clean isolated report-only worktree created. NOT READY FOR DISPATCH: wait for remaining independent GitHub/skills review wakes and insert exact source pointers; no synthesis worker active.
 Files: captured user vision mission.md, decisions.md, research reports github.md/board.md/skills.md in isolated worktrees.
 Test command: documentation/specification only; validate all claimed capabilities against attached evidence and link current official citations. No application tests or implementation.
 Do not touch: application code, runtime config, agent prompts, skills, schedules, credentials or issue state.
