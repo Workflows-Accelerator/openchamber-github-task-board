@@ -1,6 +1,6 @@
 # Run work from the task board
 
-State: reviewing draft (synthesis returned at 474e7cb; independent review not yet dispatched; nothing implemented or approved)
+State: reviewing draft (synthesis returned at 474e7cb; independent review RUNNING; nothing implemented or approved)
 Date: 2026-10-19
 Alignment: research and detailed draft issue creation APPROVED by user; architecture choices and implementation NOT APPROVED.
 Repository snapshot: /workspace/extensions/github-task-board, feat/v2-binding-and-ratelimit, 55ddeaa911180ac54b84ce9ff194d35e31874261. Only existing unrelated untracked .agents files were present. Do not touch them.
@@ -59,7 +59,7 @@ User reported server restart during research. Read saved mission and checked eac
 - FINAL DRAFT REVIEW: ses_9c5fc24b22a5724ccc1ac96d; 9router/genius verified in session.list immediately after dispatch; same proposal worktree at 474e7cb; RUNNING. Fresh independent reviewer reads tasks/review-pending.md. Owns verifications/proof.md only; draft read-only. No publication authority.
 
 ## Synthesis workspace
-Prepared /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal, branch docs/task-centred-proposal, base 02949c0. Clean report-only worktree; no synthesis worker dispatched yet. Source baseline remains 55ddeaa, with manager run-state commits only. No env/dependencies needed; safe registration can be delegated if required. research-rulings.md contains mandatory board corrections and version-specific capability caveats.
+Prepared /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal, branch docs/task-centred-proposal, base 02949c0. Synthesis returned and committed at 474e7cb; worktree clean. Independent review runs in the same worktree against pinned 474e7cb and writes only verifications/proof.md. Source baseline remains 55ddeaa, with manager run-state commits only. No env/dependencies needed. research-rulings.md contains mandatory board corrections and version-specific capability caveats.
 
 ## Next gate
 Await remaining review wakes without polling. Review evidence, author draft, run hostile review. Publish one deep draft issue (no implementation children yet unless user later approves), link it to this session, ask one batched alignment round with a short plain-language decision list. No claims of implementation or runtime proof.
