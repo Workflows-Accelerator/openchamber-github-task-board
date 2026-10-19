@@ -1,6 +1,6 @@
 # Run work from the task board
 
-State: final verification BLOCKED at cb1c4ab (BLK-03 open decisions pre-committed; NEW-01 wrong session route). Fix pass B1-B11 running. Nothing implemented or approved.
+State: AWAITING_HUMAN after third same-class verification failure. Draft ce230ab; report final3.md at be21ac1. Remaining blockers N-07 (global extension-storage mandate conflicts with relay choice) and N-08 (global tiny-task exemption conflicts with full-phase choice). No worker running; no further corrections or reviews before user decision. See reviews/final3-outcome.md. Nothing published or implemented.
 Date: 2026-10-19
 Alignment: research and detailed draft issue creation APPROVED by user; architecture choices and implementation NOT APPROVED.
 Repository snapshot: /workspace/extensions/github-task-board, feat/v2-binding-and-ratelimit, 55ddeaa911180ac54b84ce9ff194d35e31874261. Only existing unrelated untracked .agents files were present. Do not touch them.
@@ -69,4 +69,4 @@ Prepared /workspace/extensions/github-task-board/.worktrees/team-research-task-c
 - The user authorized creation of one deep draft issue. Implementation, child execution issues, branch pushes, PRs, merges, schedule mutations, agent/skill/config edits and closure remain unauthorized.
 
 ## Next gate
-Await the independent review wake without polling. Then adjudicate all blockers, dispatch a fresh fixer in the same proposal worktree with `tasks/fix-draft-pending.md`, run a fresh verification review against the new commit, and only then publish one deep draft issue. Link it to this session and ask one batched alignment round with a short plain-language decision list. No claims of implementation or runtime proof.
+STOP: third review is BLOCKED on N-07/N-08 after repeated same-class failures. Ask the user to approve one bounded wording-only correction of the two blockers and three minor consistency gaps, followed by one independent review. Keep all five architecture decisions open. Do not dispatch before the answer. If the next review blocks, return to the user rather than retry. Publication still requires READY plus manager gate; exactly one draft issue authorized. No claims of implementation or runtime proof.

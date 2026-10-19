@@ -2,7 +2,7 @@
 Repo: /workspace/extensions/github-task-board
 Worktree: /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal
 Branch: docs/task-centred-proposal
-Base commit: SET AFTER FINAL VERIFICATION (final fix commit; worktree clean)
+Base commit: cb1c4ab (final reviewed draft; worktree clean except untracked `.agents/idle-nontext-state.json`, never commit it)
 State: NOT READY until the fresh final verifier returns READY and the manager gate passes. This publisher did not author, fix or review the draft. The user authorized exactly one deep draft issue; implementation, child execution issues, branch pushes, PRs, merges, schedules, agent/skill/config changes and closure are not authorized.
 Files: issue-draft.md (final reviewed body; strip the separate `Title:` metadata line) and the final title from the manager/fixer; final verifier proof at `verifications/final.md`.
 Test command: authenticated create response plus a fresh GET/readback of title, body, state and labels. No application tests for document publication.
@@ -14,7 +14,7 @@ Do not touch: code/config/skills/agents, credentials, schedules, existing issue 
 - Do not create child issues, comments, PRs, branches, pushes, releases, schedules, repository settings or issue closures. Do not edit any existing issue.
 - Strip the local `Title:` metadata line; the published body must start at `### Friendly Title:` and be otherwise byte-equivalent to the reviewed body apart from documented GitHub newline normalization. Do not publish local run-state paths, session IDs, credentials or unreviewed research.
 - Before create, query the target repository for an exact or near-exact duplicate title. If the create response is lost or ambiguous, reconcile with a search and adopt the matching issue rather than blindly retrying. Never send repeated POSTs without a duplicate check.
-- `gh` is absent in the manager checkout. Use only an already available, supported, authenticated issue API/CLI route. Do not install tools, dump environment or git config, reveal authorization headers, copy tokens, invent credentials or bypass a permission denial. If no safe path exists, stop BLOCKED and preserve the reviewed body.
+- An authenticated read route exists: an environment credential was present and a read-only GET returned HTTP 200. The probe printed permissions object KEYS only, not their values; this does NOT establish write permission. This brief is inactive and its reviewed base is stale: do not publish until a fresh independent review is READY and the manager pins the final approved revision. A publisher may use the existing environment credential through node without exposing it in argv, logs, headers or files; never dump environment, use shell tracing or verbose authenticated requests, or install tools. Stop on denied permission; do not bypass it.
 - If `gh` is available in the assigned environment, allowed issue subcommands only; never `gh issue develop`. Do not feed files into `gh` with `--body-file` or `-F`; do not use `gh api` if it would expose the token.
 - The target repository is public. Confirm no private path, session identifier, credential, customer name or private context appears in the published body. Source links must be stable public URLs or repository-relative paths; local-only commit hashes must not be presented as public evidence.
 - Read back the created issue with a fresh authenticated GET. Compare exact title, normalized body, open state and expected label. API success alone is not content proof.

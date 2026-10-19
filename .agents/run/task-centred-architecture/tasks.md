@@ -16,8 +16,13 @@
 | Residual draft fix (superseded) | SUPERSEDED | ses_c413dd1c73991b1742b13ac0 / engineer; ses_38f90000f9b5d74a598e49d1 / genius | Partial edits recovered by the short finisher at 41f51f5 | None |
 | Minor fixes to 41f51f5 | COMPLETE at cb1c4ab | ses_2651b3a231590dfb16dcdba1 / worker | 4 files, 6+/3-; parser reproduced 5/5/17/58; companions labelled internal | — |
 | Independent final verification (1) | BLOCKED — 2 blockers, 1 major, 8 minor | ses_8973bf564e77d98f3e423974 / genius | verifications/final.md at 88999b5; BLK-03 decisions pre-committed; NEW-01 wrong interrupt route | Fix pass dispatched |
-| Fix final blockers | RUNNING | ses_e68a35328e3f40363b2edda0 / engineer | tasks/fix-final-blockers.md (B1-B11) | Then fresh re-verification |
-| Publish one deep draft issue | PENDING | Not dispatched | Issue URL + body readback | Use supported authenticated route; no credential values or installation; gh absent |
+| Fix final blockers | COMPLETE at 37243b4 | ses_e68a35328e3f40363b2edda0 / engineer | B1-B11 applied; parser 5/5/17/58, all unchecked | Re-verified, not accepted as done |
+| Independent verification (2) | BLOCKED at 35f362a | ses_b2870669d738e6c8d45e480d / 9router/genius reported | verifications/final2.md; NEW-01/storage/minors resolved; BLK-03 residuals | Residual wording fix applied |
+| Residual BLK-03 correction | COMPLETE at 4224d1f | ses_868929b474598c435fa8bb3b / engineer | E1-E7 applied; parser 5/5/17/58 | Third verification |
+| Q4 alignment | COMPLETE at ce230ab | ses_e9f850d1dfaf459f8ed6e31f / worker | Q4 offers all three phase models; parser unchanged | Third verification |
+| Independent verification (3) | BLOCKED at be21ac1 | ses_6cb04a5b72a851e470167b53 / 9router/genius reported | verifications/final3.md; N-07/N-08 blockers; N-06/N-09/N-10 minor | PAUSED FOR HUMAN; reviews/final3-outcome.md |
+| Further draft corrections | AWAITING HUMAN | None running | Proposed two rule corrections plus three minor consistency fixes | Ask approval for one bounded correction/review pass; do not dispatch before answer |
+| Publish one deep draft issue | BLOCKED | Not dispatched | Issue URL + body readback still absent | Authenticated GET route exists; write permission NOT verified; needs READY and manager gate |
 | Human design choices | PENDING | Human | Decisions mirrored to issue | No implementation before approval |
 
 ## Evidence and incident policy
