@@ -20,6 +20,7 @@ Decision: **Accept all 14 blockers and all 9 majors as must-fix. No blocker is p
 - **M-06:** Fix design-evidence traceability (scenario 8/9 anchors), the false proof-file claim, the deletion/7.2 s repetitions, and the primary-quota summary. Update base commit references.
 - **M-09:** Add the bounded remediation loop: ordinary verifier/test defects return to execution within a bound; human escalation after exhausted budget or a real fork.
 - **Reviewer's BLK-08/09/10/11/12/13/14:** Add the reliability/recovery section, migration rollback/pause/ownership/proof gates, `Decisions`/`Next Action`/action IDs/redaction, concurrency residual-race language, provenance labels, native one-parent/cross-org fallbacks, and authority/approval/cancellation policy.
+- **Public source durability:** The research commits are local and unpushed. Do not put local-only commit hashes, run-state paths or session IDs in the public issue as if readers can resolve them. Use official documentation URLs, repository-relative paths and version strings; keep the internal source receipts as private run evidence. If a fact has no public link, label it SOURCE-OBSERVED and describe the installed version/interface, not a private path.
 
 ## Constraints for the fixer
 - Base on review commit `9c1a3f8`; do not edit or amend the review proof.
