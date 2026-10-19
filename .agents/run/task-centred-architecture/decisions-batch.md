@@ -3,16 +3,17 @@
 Each item maps to the issue's Q1-Q5. Ask once, before any implementation. No option is preselected by the draft.
 
 1. **Where new ideas land before they belong to a project.**
-   Options: a private intake repository; draft items in the GitHub Project; or a local-only file on this machine.
-   Trade-off: private repo is visible across devices and team members but is still remote; Project drafts are native but cannot hold comments or sub-tasks until converted; local is private but single-device.
+   Options: a private intake repository; draft items in the GitHub Project; a local-only file on this machine; or a general existing repository used for triage.
+   Trade-off: private repo is visible across devices and team members but is still remote; Project drafts are native but cannot hold comments or sub-tasks until converted; local is private but single-device; a general repo is the least setup but mixes intake with real work.
 
 2. **How much an agent may do without asking you.**
    Options: exploration only (no file edits without approval); autonomous edits and tests in isolated worktrees, with hard stops before merge, deploy, secrets, repo creation or closing a task; or per-project allowlists including auto-merge of trivial documentation fixes.
    Trade-off: speed versus unreviewed outward effects.
 
 3. **Where the always-on coordinator lives.**
-   Options: an OpenChamber host extension service; the OpenCode plugin process; the task board panel itself; or a small hosted relay.
-   Trade-off: panel is simplest but dies when you close it; host service survives but is new infrastructure; plugin survives with the engine; relay survives anything but needs hosting and credentials.
+   Options: an OpenChamber host extension service; the OpenCode plugin process; or a small hosted relay.
+   Trade-off: host service survives the panel but is new infrastructure inside this machine; plugin survives with the engine but couples the coordinator to it; relay survives anything but needs hosting and credentials.
+   Note: a coordinator living inside the task board panel was evaluated and rejected — it dies when you close the panel, so it cannot run unattended.
 
 4. **Whether small tasks may skip phases.**
    Options: adaptive fast path (a typo fix goes straight to execution and review, while review and your sign-off stay mandatory); full ceremony on every task; or one phase at a time advanced by you.
@@ -20,6 +21,7 @@ Each item maps to the issue's Q1-Q5. Ask once, before any implementation. No opt
 
 5. **How recurring tasks and their history are represented, and what happens when runs overlap.**
    Options for representation: a reusable definition issue with separate run records, or one issue with an appended run ledger.
+   Options for retention: shard projects by milestone/year, bounded run history, or manual retention review.
    Options for overlap: skip the new run, queue it, or allow parallel runs.
    Trade-off: audit clarity versus issue volume; GitHub Projects has a hard 50,000-item cap that archiving does not relieve.
 
