@@ -2,9 +2,9 @@
 Repo: /workspace/extensions/github-task-board
 Worktree: /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal
 Branch: docs/task-centred-proposal
-Base commit: FILL AFTER REVIEW (review commit on top of 474e7cb; worktree clean)
+Base commit: 9c1a3f8 (independent review commit on top of 474e7cb; worktree clean)
 State: The synthesis draft is a proposal, not an approved architecture. The independent review returned at the base commit. You are a fresh fixer; the synthesis author and reviewer are finished and cannot be resumed.
-Files you own: .agents/run/task-centred-architecture/issue-draft.md, design-evidence.md, source-receipts.md. You may read the review proof and all manager inputs. Do not modify the review proof, mission/decisions/rulings, application code, docs contract, config, skills, agents, credentials, schedules, core DB, GitHub issues or other worktrees.
+Files you own: .agents/run/task-centred-architecture/issue-draft.md, design-evidence.md, source-receipts.md, revision-notes.md. You may read the review proof and all manager inputs. Do not modify the review proof, mission/decisions/rulings, application code, docs contract, config, skills, agents, credentials, schedules, core DB, GitHub issues or other worktrees.
 Test command: documentation review only. You must run a local heading/parser compatibility check against docs/issue-body-contract.md and the actual panel/core.ts regexes; do not claim app tests. No publication.
 Do not touch: existing untracked files in the main checkout; the review proof; any source research artifacts.
 </env_preflight>
@@ -14,7 +14,8 @@ Do not touch: existing untracked files in the main checkout; the review proof; a
 [@/workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal/.agents/run/task-centred-architecture/design-evidence.md]
 [@/workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal/.agents/run/task-centred-architecture/source-receipts.md]
 [@/workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal/.agents/run/task-centred-architecture/verifications/proof.md]
-[@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/draft-findings.md]
+[@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/review-adjudication.md]
+[@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/manager-draft-findings.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/mission.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/decisions.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/research-rulings.md]
@@ -29,7 +30,7 @@ Do not touch: existing untracked files in the main checkout; the review proof; a
 Use doubt-driven-development as the review lens, subagent-driven-development for the two-verdict fixer discipline, and caveman-lite for dense prose. Do not load other skills.
 </skills>
 <scope>
-- Edit only the three owned artifacts. Rewrite rather than add layers if the draft's structure is the problem. Preserve its good parts: four-axis orthogonality, native hierarchy/dependency facts, adaptive fast path, single-authoritative-controller-first proposal, dense task-body idea, staged migration and ten-scenario intent.
+- Edit only the four owned artifacts. Rewrite rather than add layers if the draft's structure is the problem. Preserve its good parts: four-axis orthogonality, native hierarchy/dependency facts, adaptive fast path, single-authoritative-controller-first proposal, dense task-body idea, staged migration and ten-scenario intent. Create `revision-notes.md` mapping every BLK and M to its resolution.
 - First fix the v1 contract headings exactly. The published body must begin with `### Friendly Title:` and use `### Acceptance Criteria:`, `### Actionable Subtasks Checklist:`, `### Open Questions:` and `### Human Tasks:`; `## Overview` and `## Test Plan (Issue)` are correct. The separate `Title:` metadata line is not body and must be stripped by the publisher. Remove the false “compatibility shell” claim or replace it with a tested statement.
 - Keep five decision forks at most: intake home/privacy; autonomy and outward gates; controller hosting/authority; phase fast path; recurrence/run visibility. Present recommendations as recommendations with fair tradeoffs, not selections. Do not bake a recommendation into acceptance criteria, human tasks or test-plan expectations; make those conditional on the selected option.
 - Keep unapproved implementation out. Label the migration checklist “Proposed migration slices — not authorized until decisions and pilot scope are approved.” Do not ask the user to approve a pilot deployment that has not been scoped.
@@ -46,8 +47,10 @@ Use doubt-driven-development as the review lens, subagent-driven-development for
 - Consider the title/friendly title: use positive outcome language without a conventional commit prefix. If you change the title, keep it consistent across artifacts and report the change.
 </scope>
 <criteria>
-- The revised issue body parses under the v1 contract: exact heading level and punctuation for every parsed section, verified locally against docs and the actual parser regexes; no false compatibility claim.
-- Review blockers are each either fixed with a visible change or explicitly parked with a reason the manager can adjudicate. Do not silently drop a blocker.
+- The revised issue body parses under the v1 contract: exact heading level and punctuation for every parsed section, verified locally against docs and the actual parser regexes; no false compatibility claim. Use `### Friendly Title:` exactly, put the real title first, and remove any earlier fenced `Friendly Title:` text. Record the known v1 `parseSubtasks` cross-section counting limitation instead of claiming clean rendering.
+- All 14 blockers (BLK-01..14) and all 9 majors (M-01..09) in the pinned review proof are fixed with visible changes or returned explicitly to the manager. No blocker may be silently dropped. The manager adjudication in `review-adjudication.md` controls where it corrects or sharpens the review (heading level, 900/5 caveat, proof-file existence, intake transfer limits, five-decision framing, baseline, banner, retention, reliability, migration, body fields, concurrency, provenance, native graph, authority).
+- The issue body includes a usable Sources & Evidence section with stable official links and commit-pinned references, labels DOCUMENTED / SOURCE-OBSERVED / PROPOSED / UNKNOWN-NOT RUN, and lists what was not run. The private/companion files must not be the only evidence.
+- The issue body includes the proposal-only authorization banner; no human task asks to deploy a pilot; no acceptance/test/human checkbox is checked.
 - No architecture choice is presented as selected; all downstream criteria/tasks/expectations are conditional.
 - No implementation, publication, branch push, PR, merge, schedule mutation, agent/skill/config edit or credential access occurs.
 - Every claim is labelled and every unknown is explicit. The body is dense but readable, with no fluff and no strawman alternatives.
@@ -59,7 +62,7 @@ Use doubt-driven-development as the review lens, subagent-driven-development for
 3. Revise issue-draft.md first, then design-evidence.md and source-receipts.md. Preserve good content, cut repetition and strawmen.
 4. Re-read the revised body as a human: title/outcome first, one authoritative state model, decisions clearly open, architecture next to its evidence, edge cases, sources, then acceptance/subtasks/questions/human tasks/test plan.
 5. Check every checkbox remains unchecked; check no choice leaked into acceptance/human tasks/test plan; check no implementation authorization language.
-6. Commit only the three owned artifacts. Do not amend or rewrite review history.
+6. Commit only the four owned artifacts. Do not amend or rewrite review history.
 7. Return a two-verdict report: Fix coverage PASS/FAIL and Publication readiness RECOMMEND/HOLD, with blocker IDs and residual doubts. No self-approval.
 </steps>
 <output>

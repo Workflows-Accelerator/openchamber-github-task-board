@@ -8,8 +8,8 @@
 | Board research | REJECTED AS STANDALONE AUTHORITY | author ses_a3148e31f7413473a465be92; reviewer ses_5ef16829c229ac460dbfcc8e / both 9router/engineer | Board explore/board.md f77a2a9; verifications/board-hostile.md 952cc90 | Synthesis must resolve review findings and research-rulings.md |
 | Skills research | RETURNED; REVIEW RUNNING | author ses_0ffb8b71f9acc1ab15ec25ca / 9router/engineer; reviewer ses_ecc76d3e94111ed255874024 | Config worktree explore/skills.md 8615dee | Await review; manager direct report read denied, no bypass |
 | Architecture synthesis | RETURNED; NOT ACCEPTED | ses_0dd4a969a59d0055ee0985f2 / 9router/engineer | Proposal worktree issue-draft.md, design-evidence.md, source-receipts.md at 474e7cb | Independent final review against pinned commit |
-| Independent final draft review | RUNNING | ses_9c5fc24b22a5724ccc1ac96d / 9router/genius | verifications/proof.md | Await wake; adjudicate all blockers before publication |
-| Draft fix and re-review | BLOCKED ON REVIEW | Not dispatched | Revised issue-draft.md + proof | Fresh fixer, then fresh verifier; no self-approval |
+| Independent final draft review | COMPLETED; BLOCKED | ses_9c5fc24b22a5724ccc1ac96d / 9router/genius | verifications/proof.md at 9c1a3f8; PARTIAL / NEEDS-FIXES / BLOCKED; BLK-01..14 + M-01..09 | All accepted; fix required |
+| Draft fix | RUNNING | ses_1cafec6386df9e0f4fb684f6 / 9router/engineer | Revised issue-draft.md, design-evidence.md, source-receipts.md, revision-notes.md | Fix all blockers; then fresh verifier; no self-approval |
 | Publish one deep draft issue | PENDING | Not dispatched | Issue URL + body readback | Use supported authenticated route; no credential values or installation; gh absent |
 | Human design choices | PENDING | Human | Decisions mirrored to issue | No implementation before approval |
 
