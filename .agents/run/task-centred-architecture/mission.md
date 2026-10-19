@@ -1,6 +1,6 @@
 # Run work from the task board
 
-State: independent final verification running against cb1c4ab (hostile review at 41f51f5 found 4 minors, fixed in cb1c4ab; parser reproduced 5/5/17/58; all source URLs HTTP 200; zero redaction hits). Publication route unresolved because `gh` is absent. Nothing implemented or approved.
+State: final verification BLOCKED at cb1c4ab (BLK-03 open decisions pre-committed; NEW-01 wrong session route). Fix pass B1-B11 running. Nothing implemented or approved.
 Date: 2026-10-19
 Alignment: research and detailed draft issue creation APPROVED by user; architecture choices and implementation NOT APPROVED.
 Repository snapshot: /workspace/extensions/github-task-board, feat/v2-binding-and-ratelimit, 55ddeaa911180ac54b84ce9ff194d35e31874261. Only existing unrelated untracked .agents files were present. Do not touch them.

@@ -15,7 +15,8 @@
 | Hostile review of 41f51f5 | COMPLETED — NOT PUBLISHABLE (4 MINOR, 0 blocker) | ses_6017d8ecf64441d76eed24e0 / worker | Findings F1-F4: "workspace-relative links"; Decision 5 cell semi-settles run representation; Stage 5 sandbox test lacks authorization note; companion paths not sanitized | Apply four surgical fixes, then fresh independent verifier |
 | Residual draft fix (superseded) | SUPERSEDED | ses_c413dd1c73991b1742b13ac0 / engineer; ses_38f90000f9b5d74a598e49d1 / genius | Partial edits recovered by the short finisher at 41f51f5 | None |
 | Minor fixes to 41f51f5 | COMPLETE at cb1c4ab | ses_2651b3a231590dfb16dcdba1 / worker | 4 files, 6+/3-; parser reproduced 5/5/17/58; companions labelled internal | — |
-| Independent final verification | RUNNING | ses_8973bf564e77d98f3e423974 / genius | tasks/verify-revision-pending.md, base cb1c4ab | READY/BLOCKED decides publication |
+| Independent final verification (1) | BLOCKED — 2 blockers, 1 major, 8 minor | ses_8973bf564e77d98f3e423974 / genius | verifications/final.md at 88999b5; BLK-03 decisions pre-committed; NEW-01 wrong interrupt route | Fix pass dispatched |
+| Fix final blockers | RUNNING | ses_e68a35328e3f40363b2edda0 / engineer | tasks/fix-final-blockers.md (B1-B11) | Then fresh re-verification |
 | Publish one deep draft issue | PENDING | Not dispatched | Issue URL + body readback | Use supported authenticated route; no credential values or installation; gh absent |
 | Human design choices | PENDING | Human | Decisions mirrored to issue | No implementation before approval |
 
