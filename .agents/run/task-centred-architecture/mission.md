@@ -61,5 +61,11 @@ User reported server restart during research. Read saved mission and checked eac
 ## Synthesis workspace
 Prepared /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal, branch docs/task-centred-proposal, base 02949c0. Synthesis returned and committed at 474e7cb; worktree clean. Independent review runs in the same worktree against pinned 474e7cb and writes only verifications/proof.md. Source baseline remains 55ddeaa, with manager run-state commits only. No env/dependencies needed. research-rulings.md contains mandatory board corrections and version-specific capability caveats.
 
+## Publication facts (manager read-only check, 2026-10-19)
+- Target repository is public: `Workflows-Accelerator/openchamber-github-task-board`; issues are enabled; default branch `master`.
+- Existing labels include `status:draft` and `status:needs-human`; do not create labels. Existing open issues #21–#25 were checked; no near-duplicate of the proposed architecture title.
+- `gh` is absent in the manager checkout (`command not found`). A supported, already-authenticated issue API/CLI route must be used by the publisher; it must never print, copy or persist credential values. If no safe route exists, stop BLOCKED and preserve the reviewed body.
+- The user authorized creation of one deep draft issue. Implementation, child execution issues, branch pushes, PRs, merges, schedule mutations, agent/skill/config edits and closure remain unauthorized.
+
 ## Next gate
-Await remaining review wakes without polling. Review evidence, author draft, run hostile review. Publish one deep draft issue (no implementation children yet unless user later approves), link it to this session, ask one batched alignment round with a short plain-language decision list. No claims of implementation or runtime proof.
+Await the independent review wake without polling. Then adjudicate all blockers, dispatch a fresh fixer in the same proposal worktree with `tasks/fix-draft-pending.md`, run a fresh verification review against the new commit, and only then publish one deep draft issue. Link it to this session and ask one batched alignment round with a short plain-language decision list. No claims of implementation or runtime proof.
