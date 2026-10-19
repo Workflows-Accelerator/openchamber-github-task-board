@@ -44,5 +44,11 @@ Manager retains alignment and proof decisions. Workers own only isolated report 
 - SKILLS: ses_0ffb8b71f9acc1ab15ec25ca; engineer requested; /workspace/config/opencode/.worktrees/team-research-task-centred-skills; report explore/skills.md; RUNNING.
 Actual provider/model verification deferred to completion wake or one safe session-record check; no polling. All workers auto_accept=true, dynamic-agent, report-only scope. Worktrees created with git worktree add from the above explicit current snapshots; no base branch checkout/pull because these are isolated read-only investigations of current installed work, not production feature branches. Setup DB registration delegated safely; no dependencies/env required.
 
+## Restart recovery, 2026-10-19
+User reported server restart. Saved mission and report ownership recovered. One bounded status check for each original worker returned busy; no duplicate or replacement workers spawned. (A duplicate SKILLS status call was accidental; do not repeat.) Main checkout remains same feature branch, only unrelated untracked files and our untracked decisions.md. Continue work from these artifacts, await completion wakes, no polling. Additional aligned decisions are in decisions.md.
+
+## Recovery checkpoint
+User reported server restart during research. Read saved mission and checked each known worker once (skills status was inadvertently queried twice); all returned busy. No workers restarted or duplicated. Main checkout still contains only unrelated untracked run files plus this run's uncommitted decisions.md. Current parent session record: ses_f22887e18ffem6RBrwgNhw5iNM, agent team, provider/model 9router/genius. Do not status-poll workers; await completion wakes.
+
 ## Next gate
 Review evidence, author draft, run hostile review. Publish one deep draft issue (no implementation children yet unless user later approves), link it to this session, ask one batched alignment round with a short plain-language decision list. No claims of implementation or runtime proof.
