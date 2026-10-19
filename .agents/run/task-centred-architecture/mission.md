@@ -1,6 +1,6 @@
 # Run work from the task board
 
-State: exploring
+State: reviewing research (all three authors returned; final architecture not drafted or approved)
 Date: 2026-10-19
 Alignment: research and detailed draft issue creation APPROVED by user; architecture choices and implementation NOT APPROVED.
 Repository snapshot: /workspace/extensions/github-task-board, feat/v2-binding-and-ratelimit, 55ddeaa911180ac54b84ce9ff194d35e31874261. Only existing unrelated untracked .agents files were present. Do not touch them.
@@ -39,9 +39,13 @@ GitHub is not a transactional job queue: duplicate claims, ordering, stale body 
 Manager retains alignment and proof decisions. Workers own only isolated report paths in their worktrees; source trees read-only. Only delegate dispatch. No repeated session polling. Research reports distinguish observed/source-documented/proposed/unknown. gh CLI unavailable at manager checkout (exit 127); worker must not assume gh is present. Never print/read credential files or raw authenticated remotes. No application baseline tests needed for read-only research; record NOT RUN rather than historical test claims.
 
 ## Dispatched sessions
-- GITHUB: ses_6b9cfac5fb254d350b6c0246; engineer requested; /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-github; report explore/github.md (in worker worktree); RUNNING.
-- BOARD: ses_a3148e31f7413473a465be92; engineer requested; /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-board; report explore/board.md; RUNNING.
-- SKILLS: ses_0ffb8b71f9acc1ab15ec25ca; engineer requested; /workspace/config/opencode/.worktrees/team-research-task-centred-skills; report explore/skills.md; RUNNING.
+- GITHUB: ses_6b9cfac5fb254d350b6c0246; COMPLETED at 5f9ddfa43fca347178620aa537d7322624897984; actual 9router/engineer verified in wake. Report explore/github.md in /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-github. Claims remain unaccepted pending hostile review.
+- GITHUB HOSTILE: designated reviewer ses_b56f866fa48707aa35b84356; engineer requested; same GitHub research worktree; RUNNING.
+- GITHUB DUPLICATE DISPATCH INCIDENT: accidental second reviewer ses_faa2494e941ea798902a7432 in same worktree with overlapping report ownership. Stop instruction send rejected because session busy; no further send or duplicate spawned. User informed and asked to stop the duplicate if still running. Preserve both resulting commits, inspect overlapping artifacts after completion, never assume either report independently clean until collision checked. No application write authority granted.
+- BOARD: ses_a3148e31f7413473a465be92; completed; actual 9router/engineer verified in wake; report explore/board.md at f77a2a9 in /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-board. Author/source-only claims are NOT accepted as runtime proof.
+- BOARD HOSTILE: ses_5ef16829c229ac460dbfcc8e; COMPLETED at 952cc90; actual 9router/engineer. Verdicts PARTIAL / NEEDS-FIXES. verifications/board-hostile.md identifies nonexistent proof, distributed SQLite/fencing fallacy, fast-path auto-closure/review bypass, blocking question misconception, rate/schema errors, core DB coupling and file-collision omission. Original report is rejected as a standalone authority. Synthesis must adopt precise corrections and itself pass independent review; no need to mutate source research. Reviewer also uses source-inspected facts as 'empirically verified' and calls 5000/hour universal; synthesis must correct these too. schedule.update absent from cited older plugin does NOT mean absent from current advertised platform tool (current tool contract includes it); keep version/route-specific capability provenance.
+- SKILLS: ses_0ffb8b71f9acc1ab15ec25ca; COMPLETED at 8615dee in /workspace/config/opencode/.worktrees/team-research-task-centred-skills; actual 9router/engineer verified in wake. Claims about hidden-but-callable specialist skills are source observations awaiting hostile verification, not demonstrated live behavior. Direct manager report read was denied; do not bypass denial.
+- SKILLS HOSTILE: ses_ecc76d3e94111ed255874024; engineer requested; same config research worktree; RUNNING. tasks/skills-hostile.md requests independent exact metadata/parser/catalog/loadability checks and source-vs-live distinction.
 Actual provider/model verification deferred to completion wake or one safe session-record check; no polling. All workers auto_accept=true, dynamic-agent, report-only scope. Worktrees created with git worktree add from the above explicit current snapshots; no base branch checkout/pull because these are isolated read-only investigations of current installed work, not production feature branches. Setup DB registration delegated safely; no dependencies/env required.
 
 ## Restart recovery, 2026-10-19
