@@ -1,6 +1,6 @@
 # Run work from the task board
 
-State: reviewing research (all three authors returned; final architecture not drafted or approved)
+State: reviewing draft (synthesis returned at 474e7cb; independent review not yet dispatched; nothing implemented or approved)
 Date: 2026-10-19
 Alignment: research and detailed draft issue creation APPROVED by user; architecture choices and implementation NOT APPROVED.
 Repository snapshot: /workspace/extensions/github-task-board, feat/v2-binding-and-ratelimit, 55ddeaa911180ac54b84ce9ff194d35e31874261. Only existing unrelated untracked .agents files were present. Do not touch them.
@@ -55,7 +55,8 @@ User reported server restart. Saved mission and report ownership recovered. One 
 User reported server restart during research. Read saved mission and checked each known worker once (skills status was inadvertently queried twice); all returned busy. No workers restarted or duplicated. Main checkout still contains only unrelated untracked run files plus this run's uncommitted decisions.md. Current parent session record: ses_f22887e18ffem6RBrwgNhw5iNM, agent team, provider/model 9router/genius. Do not status-poll workers; await completion wakes.
 
 ## Synthesis dispatch
-- SYNTHESIS: ses_0dd4a969a59d0055ee0985f2; 9router/engineer verified from session record immediately after dispatch (dynamic-agent, parent ses_f22887e18ffem6RBrwgNhw5iNM); worktree /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal; branch docs/task-centred-proposal; RUNNING. Brief tasks/synthesis.md; produces issue-draft.md, design-evidence.md, source-receipts.md. Web/skill tools are denied by the worker envelope, so it must use the supplied reviewed inputs and saved source evidence in permitted worktrees; any external-source gap must be reported, not fabricated. No publication authority.
+- SYNTHESIS: ses_0dd4a969a59d0055ee0985f2; 9router/engineer verified from session record immediately after dispatch (dynamic-agent, parent ses_f22887e18ffem6RBrwgNhw5iNM); worktree /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal; branch docs/task-centred-proposal; COMPLETED at 474e7cb; three artifacts committed (issue-draft.md, design-evidence.md, source-receipts.md). It produced a proposal, not an approved architecture. Manager spot-check (non-exhaustive) already sees: v1 heading spellings likely fail the current parser despite the compatibility claim; rate guidance still uses a 7.2s constant/universal limits; destructive "purging/deletion" language; invented `host.storage`/`task.*` API names; and intake/daemon/recurrence choices baked into acceptance criteria, human tasks and test plan. These must be adjudicated by the independent reviewer, not silently accepted. No publication authority.
+- FINAL DRAFT REVIEW: ses_9c5fc24b22a5724ccc1ac96d; 9router/genius verified in session.list immediately after dispatch; same proposal worktree at 474e7cb; RUNNING. Fresh independent reviewer reads tasks/review-pending.md. Owns verifications/proof.md only; draft read-only. No publication authority.
 
 ## Synthesis workspace
 Prepared /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal, branch docs/task-centred-proposal, base 02949c0. Clean report-only worktree; no synthesis worker dispatched yet. Source baseline remains 55ddeaa, with manager run-state commits only. No env/dependencies needed; safe registration can be delegated if required. research-rulings.md contains mandatory board corrections and version-specific capability caveats.

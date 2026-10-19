@@ -2,8 +2,8 @@
 Repo: /workspace/extensions/github-task-board
 Worktree: /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal
 Branch: docs/task-centred-proposal
-Base commit: FILL WITH SYNTHESIS COMMIT AFTER WAKE
-State: NOT READY FOR DISPATCH until synthesis author returns and its commit is recorded. Then this reviewer is a FRESH independent session; author is finished and cannot be resumed. All source research is in other worktrees, read-only.
+Base commit: 474e7cb (author commit on docs/task-centred-proposal; worktree clean)
+State: READY FOR DISPATCH. Synthesis author returned and is finished; this reviewer is a FRESH independent session and cannot be the author. All source research is in other worktrees, read-only.
 Files: issue-draft.md, design-evidence.md, source-receipts.md; manager mission/decisions/scenarios/reviewed-inputs/research-rulings; docs/issue-body-contract.md; saved official evidence in board/GitHub worktrees by immutable commit.
 Test command: documentation/architecture review only; read-only. App build/tests, live controller, schedule and native hidden-skill invocation NOT RUN by design.
 Do not touch: draft or any research/source file, application, config, agents, skills, credentials, schedules, core DB, GitHub issues, other worktrees. Write only owned review artifacts.
@@ -26,12 +26,21 @@ You are a fresh independent reviewer, not the author: distrust the draft's self-
 </context_files>
 <skills>
 [@/workspace/config/opencode/.agents/skills/review/adversarial/doubt-driven-development/SKILL.md]
-[@/workspace/config/opencode/.agents/skills/review/methodology/ponytail-review/SKILL.md]
 [@/workspace/config/opencode/.agents/skills/communication/terse/caveman-lite/SKILL.md]
 </skills>
 <scope>
 Own ONLY .agents/run/task-centred-architecture/verifications/proof.md for the architecture draft and sanitized supporting evidence in this proposal worktree. Draft, research reports and sources READ ONLY. No edits to draft or source, no implementation, no publication, no GitHub mutation, no schedules or sessions, no config/skill/agent changes, no user questions, no pushing/merging. If you find defects, report them; do not silently fix the author's work.
 </scope>
+<manager_notes>
+Non-exhaustive spot-checks from the manager; do not treat these as the full review or as already proven.
+- Verify the draft's own parser-compatibility claim against docs/issue-body-contract.md and the actual regexes in panel/core.ts. Check heading level AND punctuation for every v1 section, not merely that a section name appears.
+- Check whether a recommended option (private intake repo, host daemon, per-run child issues) has leaked into acceptance criteria, human tasks or test-plan expectations as though the user already chose it.
+- Check rate-limit wording against research-rulings.md B10/G8/G10: 80/min and 500/hour are general documented guidance, not universal hard caps; 7.2s is an arithmetic illustration, not a safe constant; no unmeasured quotas.
+- Check destructive wording: archiving does not free Projects capacity, but the draft must not prescribe automatic deletion/purging of items as the only retention answer.
+- Check for invented API names or host capabilities (e.g. task.claim/task.update/task.ask, host.storage) presented as existing; operation semantics may be proposed, actual APIs may not.
+- Check the issue body itself has usable source/reference links or explicitly defers them to a durable appendix; a companion file that will not be published is not sufficient evidence for a public issue.
+- Check that the current delegate/brief/mission contracts are explicitly retained until a proven replacement, and that no implementation or child execution issue is authorized by this draft.
+</manager_notes>
 <criteria>
 - Return two explicit verdicts: Spec Compliance PASS | FAIL | PARTIAL and Quality & Health APPROVED | NEEDS-FIXES. Use PASS/APPROVED only if no material defect prevents human design review; this is readiness for alignment, never implementation or merge approval.
 - Verify title is output-focused plain language and no technical prefix, body has compatible v1 headings without checked future criteria, human tasks only real decisions, at most five top user choices, and no claim work is implemented, tested or approved. All live runtime proof must be marked NOT RUN.
