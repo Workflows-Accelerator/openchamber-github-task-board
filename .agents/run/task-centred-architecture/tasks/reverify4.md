@@ -2,7 +2,7 @@
 repo: /workspace/extensions/github-task-board
 worktree: /workspace/extensions/github-task-board/.worktrees/team-research-task-centred-proposal
 branch: docs/task-centred-proposal
-Base commit: SET AFTER FIXER COMPLETES (on top of be21ac1). Worktree clean except untracked `.agents/idle-nontext-state.json`.
+Base commit: c1d1df6 (on top of be21ac1). Worktree clean except untracked `.agents/idle-nontext-state.json`.
 You are a FRESH verifier; you did not author, fix, or previously review. Own only verifications/final4.md. Do not edit the draft or companions, do not publish, do not touch final.md, final2.md, final3.md, or proof.md.
 </env_preflight>
 
