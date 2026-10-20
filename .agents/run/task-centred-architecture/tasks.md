@@ -20,8 +20,8 @@
 | Independent verification (2) | BLOCKED at 35f362a | ses_b2870669d738e6c8d45e480d / 9router/genius reported | verifications/final2.md; NEW-01/storage/minors resolved; BLK-03 residuals | Residual wording fix applied |
 | Residual BLK-03 correction | COMPLETE at 4224d1f | ses_868929b474598c435fa8bb3b / engineer | E1-E7 applied; parser 5/5/17/58 | Third verification |
 | Q4 alignment | COMPLETE at ce230ab | ses_e9f850d1dfaf459f8ed6e31f / worker | Q4 offers all three phase models; parser unchanged | Third verification |
-| Independent verification (3) | BLOCKED at be21ac1 | ses_6cb04a5b72a851e470167b53 / 9router/genius reported | verifications/final3.md; N-07/N-08 blockers; N-06/N-09/N-10 minor | PAUSED FOR HUMAN; reviews/final3-outcome.md |
-| Further draft corrections | AWAITING HUMAN | None running | Proposed two rule corrections plus three minor consistency fixes | Ask approval for one bounded correction/review pass; do not dispatch before answer |
+| Independent verification (3) | BLOCKED at be21ac1 | ses_6cb04a5b72a851e470167b53 / 9router/genius reported | verifications/final3.md; N-07/N-08 blockers; N-06/N-09/N-10 minor | Human approved one bounded correction pass |
+| Fix final3 blockers | RUNNING | ses_pending / engineer | tasks/fix-final3-blockers.md (N-07, N-08, N-09, N-10, N-06) | Then fresh independent verifier |
 | Publish one deep draft issue | BLOCKED | Not dispatched | Issue URL + body readback still absent | Authenticated GET route exists; write permission NOT verified; needs READY and manager gate |
 | Human design choices | PENDING | Human | Decisions mirrored to issue | No implementation before approval |
 

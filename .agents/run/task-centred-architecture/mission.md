@@ -1,6 +1,6 @@
 # Run work from the task board
 
-State: AWAITING_HUMAN after third same-class verification failure. Draft ce230ab; report final3.md at be21ac1. Remaining blockers N-07 (global extension-storage mandate conflicts with relay choice) and N-08 (global tiny-task exemption conflicts with full-phase choice). No worker running; no further corrections or reviews before user decision. See reviews/final3-outcome.md. Nothing published or implemented.
+State: executing approved bounded correction pass for N-07/N-08 blockers and N-09/N-10/N-06 minors. Draft base be21ac1. Nothing published or implemented.
 Date: 2026-10-19
 Alignment: research and detailed draft issue creation APPROVED by user; architecture choices and implementation NOT APPROVED.
 Repository snapshot: /workspace/extensions/github-task-board, feat/v2-binding-and-ratelimit, 55ddeaa911180ac54b84ce9ff194d35e31874261. Only existing unrelated untracked .agents files were present. Do not touch them.
