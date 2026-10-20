@@ -33,3 +33,12 @@ Q9. Source-of-truth state edits across devices/editors: stale body writes, claim
 ## Current evidence
 Manager: git status and log verified board base 55ddeaa on feat/v2-binding-and-ratelimit; config base e10fc86 on master. Existing unrelated untracked files preserved. .worktrees ignored in both repositories. gh issue list failed with command unavailable (exit 127); no credentials inspected.
 Research workers running; no architecture implementation or live runtime verification performed.
+
+## Human Alignment Decisions (Issue #26) — 2026-10-20
+User explicitly selected and approved the 5 strategic architecture forks via interactive question gate:
+1. **Intake Home (D1):** Private intake repo — dedicated repository (e.g. `org/tasks-intake`) with full issue features, sub-issues, and multi-device access.
+2. **Autonomy Scope (D2):** Scoped autonomy — autonomous research, branching, editing, testing, and hostile review in isolated worktrees; hard human gates before merge, deploy, secrets, repo creation, or task closure.
+3. **Coordinator Hosting (D3):** Host extension service daemon — managed by OpenChamber host, persists across UI tabs and runs independently of panel lifecycle.
+4. **Phase Fast Path (D4):** Adaptive fast path — tiny tasks collapse exploration and planning; execution, hostile review, and human sign-off remain mandatory.
+5. **Recurrence & Retention (D5):** Definition + runs — reusable definition issue with child run issues, bounded history (e.g. 30 days retention to avoid GitHub Projects 50,000 cap), and skip-on-overlap policy.
+

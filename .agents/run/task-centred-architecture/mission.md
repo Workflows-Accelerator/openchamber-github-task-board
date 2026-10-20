@@ -1,6 +1,6 @@
 # Run work from the task board
 
-State: PUBLISHED. Issue #26 created at https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/26 with label status:draft. Verified by fresh GET and exact SHA-256 body hash match. Linked to session. Awaiting user decisions on 5 architectural choices. No implementation or branch pushes authorized.
+State: ALIGNED. Issue #26 created at https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/26. User approved all 5 strategic architecture decisions (private intake repo, scoped autonomy, host extension daemon, adaptive fast path, definition + runs). Decisions recorded to disk and mirrored to issue receipt. Ready to align on Stage 1 implementation planning when authorized.
 Date: 2026-10-19
 Alignment: research and detailed draft issue creation APPROVED by user; architecture choices and implementation NOT APPROVED.
 Repository snapshot: /workspace/extensions/github-task-board, feat/v2-binding-and-ratelimit, 55ddeaa911180ac54b84ce9ff194d35e31874261. Only existing unrelated untracked .agents files were present. Do not touch them.

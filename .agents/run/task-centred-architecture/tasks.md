@@ -23,8 +23,8 @@
 | Independent verification (3) | BLOCKED at be21ac1 | ses_6cb04a5b72a851e470167b53 / 9router/genius reported | verifications/final3.md; N-07/N-08 blockers; N-06/N-09/N-10 minor | Human approved one bounded correction pass |
 | Fix final3 blockers | COMPLETED | ses_c8726baba5aaae8e0ea9ff89 / engineer | Commit c1d1df6 (N-07, N-08, N-09, N-10, N-06 resolved) | Dispatched reverify4 |
 | Independent verification (4) | COMPLETE at e9cb1ac | ses_b4222f39ccaceceb6ad7764b / genius | verifications/final4.md (READY; spec PASS, quality PASS) | Dispatched publisher |
-| Publish one deep draft issue | COMPLETE | Manager execution via GITHUB_TOKEN | Issue #26 published at https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/26; exact SHA-256 match; status:draft label attached | Linked to session; presenting 5 decisions to user |
-| Human design choices | AWAITING HUMAN | Human | 5 strategic decisions presented to user | No implementation before approval |
+| Publish one deep draft issue | COMPLETE | Manager execution via GITHUB_TOKEN | Issue #26 published at https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/26; exact SHA-256 match; status:draft label attached | Linked to session; 5 decisions approved |
+| Human design choices | ALIGNED | Human | 5 strategic decisions approved (D1: Private intake repo, D2: Scoped autonomy, D3: Host extension service, D4: Adaptive fast path, D5: Definition + runs) | Recorded to disk; ready for Stage 1 plan |
 
 ## Evidence and incident policy
 All three research authors returned actual provider/model 9router/engineer. Board reviewer same. Remaining reviewer identities deferred to wakes; no polling. Original source research is untrusted until findings resolved in final draft; preserve original reports and reviews as audit trail, do not silently rewrite them. Final independent reviewer gets all caveats, especially source inspection != live proof.
