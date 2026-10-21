@@ -25,6 +25,14 @@
 | Independent verification (4) | COMPLETE at e9cb1ac | ses_b4222f39ccaceceb6ad7764b / genius | verifications/final4.md (READY; spec PASS, quality PASS) | Dispatched publisher |
 | Publish one deep draft issue | COMPLETE | Manager execution via GITHUB_TOKEN | Issue #26 published at https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/26; exact SHA-256 match; status:draft label attached | Linked to session; 5 decisions approved |
 | Human design choices | ALIGNED | Human | 5 strategic decisions approved (D1: Private intake repo, D2: Scoped autonomy, D3: Host extension service, D4: Adaptive fast path, D5: Definition + runs) | Recorded to disk; ready for Stage 1 plan |
+| Stage 1 Implementation Plan (`PLAN.md`) | COMPLETE | Manager | `.agents/run/task-centred-architecture/PLAN.md` | Decomposed into 7 tasks |
+| Task 001: Section-scoped parser | READY | Pending dispatch | `tasks/task-001-build-section-scoped-parser.md` | Provision worktree and dispatch |
+| Task 002: Dual-mode 4-axis metadata | PENDING | Blocked on 001 | `tasks/task-002-build-dual-mode-4axis-metadata.md` | Await 001 |
+| Task 003: Attention grouping | PENDING | Blocked on 002 | `tasks/task-003-build-attention-grouping.md` | Await 002 |
+| Task 004: Automated verification ladder | PENDING | Blocked on 001-003 | `tasks/task-004-proof-stage1-verification-ladder.md` | Await 003 |
+| Task 005: Adversarial cross-section fuzz | PENDING | Blocked on 004 | `tasks/task-005-adversarial-cross-section-fuzz.md` | Await 004 |
+| Task 006: State commit checkpoint | PENDING | Blocked on 004-005 | `tasks/task-006-commit-stage1-baseline.md` | Await 005 |
+| Task 007: Human validation walkthrough | PENDING | Blocked on 006 | `tasks/task-007-validate-stage1-contract.md` | Await 006 |
 
 ## Evidence and incident policy
 All three research authors returned actual provider/model 9router/engineer. Board reviewer same. Remaining reviewer identities deferred to wakes; no polling. Original source research is untrusted until findings resolved in final draft; preserve original reports and reviews as audit trail, do not silently rewrite them. Final independent reviewer gets all caveats, especially source inspection != live proof.
