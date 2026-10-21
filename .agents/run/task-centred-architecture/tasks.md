@@ -31,8 +31,8 @@
 | Task 003: Attention grouping | COMPLETE | ses_e3b8e7a387b300a321220145 / engineer | groupIssuesByAttention partitions orthogonally; 19/19 scoping tests pass; 379/379 regression pass | Proceed to Task 004 |
 | Task 004: Automated verification ladder | COMPLETE | ses_76cd50b4a07b4fa500a058d1 / engineer | L0-L3 verified; Issue #26 parses 26 subtasks vs 58 cross-counted; 380/380 tests pass | Proceed to Task 005 |
 | Task 005: Adversarial cross-section fuzz | COMPLETE | ses_ab8fe86f04524d481a87f9dc / engineer | 5 defects resolved (CRLF regex, type check, test plan bleeding, BOM, label precedence); 386/386 pass | Proceed to Task 006 |
-| Task 006: State commit checkpoint | READY | Pending dispatch | `tasks/task-006-commit-stage1-baseline.md` | Dispatch to feature worktree |
-| Task 007: Human validation walkthrough | PENDING | Blocked on 006 | `tasks/task-007-validate-stage1-contract.md` | Await 006 |
+| Task 006: State commit checkpoint | COMPLETE | ses_a23a4b9be634afdbe9e36257 / worker | Commit 187ef68 (feat(core): implement Stage 1 dual-mode parser, section scoping, and attention grouping) | Proceed to Task 007 |
+| Task 007: Human validation walkthrough | READY | Pending dispatch | `tasks/task-007-validate-stage1-contract.md` | Dispatch to feature worktree |
 
 ## Evidence and incident policy
 All three research authors returned actual provider/model 9router/engineer. Board reviewer same. Remaining reviewer identities deferred to wakes; no polling. Original source research is untrusted until findings resolved in final draft; preserve original reports and reviews as audit trail, do not silently rewrite them. Final independent reviewer gets all caveats, especially source inspection != live proof.
