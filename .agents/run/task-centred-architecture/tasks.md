@@ -30,8 +30,8 @@
 | Task 002: Dual-mode 4-axis metadata | COMPLETE | ses_9f473536c80d7f8b9a68e55f / engineer | 4-axis model; v1/v2 dual mode; 14/14 scoping tests pass; 374/374 regression pass | Proceed to Task 003 |
 | Task 003: Attention grouping | COMPLETE | ses_e3b8e7a387b300a321220145 / engineer | groupIssuesByAttention partitions orthogonally; 19/19 scoping tests pass; 379/379 regression pass | Proceed to Task 004 |
 | Task 004: Automated verification ladder | COMPLETE | ses_76cd50b4a07b4fa500a058d1 / engineer | L0-L3 verified; Issue #26 parses 26 subtasks vs 58 cross-counted; 380/380 tests pass | Proceed to Task 005 |
-| Task 005: Adversarial cross-section fuzz | READY | Pending dispatch | `tasks/task-005-adversarial-cross-section-fuzz.md` | Dispatch to feature worktree |
-| Task 006: State commit checkpoint | PENDING | Blocked on 004-005 | `tasks/task-006-commit-stage1-baseline.md` | Await 005 |
+| Task 005: Adversarial cross-section fuzz | COMPLETE | ses_ab8fe86f04524d481a87f9dc / engineer | 5 defects resolved (CRLF regex, type check, test plan bleeding, BOM, label precedence); 386/386 pass | Proceed to Task 006 |
+| Task 006: State commit checkpoint | READY | Pending dispatch | `tasks/task-006-commit-stage1-baseline.md` | Dispatch to feature worktree |
 | Task 007: Human validation walkthrough | PENDING | Blocked on 006 | `tasks/task-007-validate-stage1-contract.md` | Await 006 |
 
 ## Evidence and incident policy
