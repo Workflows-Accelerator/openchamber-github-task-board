@@ -26,8 +26,8 @@
 | Publish one deep draft issue | COMPLETE | Manager execution via GITHUB_TOKEN | Issue #26 published at https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/26; exact SHA-256 match; status:draft label attached | Linked to session; 5 decisions approved |
 | Human design choices | ALIGNED | Human | 5 strategic decisions approved (D1: Private intake repo, D2: Scoped autonomy, D3: Host extension service, D4: Adaptive fast path, D5: Definition + runs) | Recorded to disk; ready for Stage 1 plan |
 | Stage 1 Implementation Plan (`PLAN.md`) | COMPLETE | Manager | `.agents/run/task-centred-architecture/PLAN.md` | Decomposed into 7 tasks |
-| Task 001: Section-scoped parser | READY | Pending dispatch | `tasks/task-001-build-section-scoped-parser.md` | Provision worktree and dispatch |
-| Task 002: Dual-mode 4-axis metadata | PENDING | Blocked on 001 | `tasks/task-002-build-dual-mode-4axis-metadata.md` | Await 001 |
+| Task 001: Section-scoped parser | COMPLETE | ses_4ecb1ede3d23822739140bb9 / engineer | 0 cross-counting; 8/8 scoping tests pass; 368/368 regression pass | Proceed to Task 002 |
+| Task 002: Dual-mode 4-axis metadata | READY | Pending dispatch | `tasks/task-002-build-dual-mode-4axis-metadata.md` | Dispatch to feature worktree |
 | Task 003: Attention grouping | PENDING | Blocked on 002 | `tasks/task-003-build-attention-grouping.md` | Await 002 |
 | Task 004: Automated verification ladder | PENDING | Blocked on 001-003 | `tasks/task-004-proof-stage1-verification-ladder.md` | Await 003 |
 | Task 005: Adversarial cross-section fuzz | PENDING | Blocked on 004 | `tasks/task-005-adversarial-cross-section-fuzz.md` | Await 004 |
