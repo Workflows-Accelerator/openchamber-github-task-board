@@ -29,8 +29,8 @@
 | Task 001: Section-scoped parser | COMPLETE | ses_4ecb1ede3d23822739140bb9 / engineer | 0 cross-counting; 8/8 scoping tests pass; 368/368 regression pass | Proceed to Task 002 |
 | Task 002: Dual-mode 4-axis metadata | COMPLETE | ses_9f473536c80d7f8b9a68e55f / engineer | 4-axis model; v1/v2 dual mode; 14/14 scoping tests pass; 374/374 regression pass | Proceed to Task 003 |
 | Task 003: Attention grouping | COMPLETE | ses_e3b8e7a387b300a321220145 / engineer | groupIssuesByAttention partitions orthogonally; 19/19 scoping tests pass; 379/379 regression pass | Proceed to Task 004 |
-| Task 004: Automated verification ladder | READY | Pending dispatch | `tasks/task-004-proof-stage1-verification-ladder.md` | Dispatch to feature worktree |
-| Task 005: Adversarial cross-section fuzz | PENDING | Blocked on 004 | `tasks/task-005-adversarial-cross-section-fuzz.md` | Await 004 |
+| Task 004: Automated verification ladder | COMPLETE | ses_76cd50b4a07b4fa500a058d1 / engineer | L0-L3 verified; Issue #26 parses 26 subtasks vs 58 cross-counted; 380/380 tests pass | Proceed to Task 005 |
+| Task 005: Adversarial cross-section fuzz | READY | Pending dispatch | `tasks/task-005-adversarial-cross-section-fuzz.md` | Dispatch to feature worktree |
 | Task 006: State commit checkpoint | PENDING | Blocked on 004-005 | `tasks/task-006-commit-stage1-baseline.md` | Await 005 |
 | Task 007: Human validation walkthrough | PENDING | Blocked on 006 | `tasks/task-007-validate-stage1-contract.md` | Await 006 |
 
