@@ -27,8 +27,8 @@
 | Human design choices | ALIGNED | Human | 5 strategic decisions approved (D1: Private intake repo, D2: Scoped autonomy, D3: Host extension service, D4: Adaptive fast path, D5: Definition + runs) | Recorded to disk; ready for Stage 1 plan |
 | Stage 1 Implementation Plan (`PLAN.md`) | COMPLETE | Manager | `.agents/run/task-centred-architecture/PLAN.md` | Decomposed into 7 tasks |
 | Task 001: Section-scoped parser | COMPLETE | ses_4ecb1ede3d23822739140bb9 / engineer | 0 cross-counting; 8/8 scoping tests pass; 368/368 regression pass | Proceed to Task 002 |
-| Task 002: Dual-mode 4-axis metadata | READY | Pending dispatch | `tasks/task-002-build-dual-mode-4axis-metadata.md` | Dispatch to feature worktree |
-| Task 003: Attention grouping | PENDING | Blocked on 002 | `tasks/task-003-build-attention-grouping.md` | Await 002 |
+| Task 002: Dual-mode 4-axis metadata | COMPLETE | ses_9f473536c80d7f8b9a68e55f / engineer | 4-axis model; v1/v2 dual mode; 14/14 scoping tests pass; 374/374 regression pass | Proceed to Task 003 |
+| Task 003: Attention grouping | READY | Pending dispatch | `tasks/task-003-build-attention-grouping.md` | Dispatch to feature worktree |
 | Task 004: Automated verification ladder | PENDING | Blocked on 001-003 | `tasks/task-004-proof-stage1-verification-ladder.md` | Await 003 |
 | Task 005: Adversarial cross-section fuzz | PENDING | Blocked on 004 | `tasks/task-005-adversarial-cross-section-fuzz.md` | Await 004 |
 | Task 006: State commit checkpoint | PENDING | Blocked on 004-005 | `tasks/task-006-commit-stage1-baseline.md` | Await 005 |
