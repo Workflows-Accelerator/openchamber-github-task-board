@@ -4183,7 +4183,7 @@ ${placeholder}
   var testPlanBatchHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
   var testPlanHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan(?:\s*\(.*?\))?(?:\s*:)?/i;
   var acceptanceCriteriaSectionRegex = /^[ \t]*#{1,6}\s*acceptance\s+criteria(?:\s*:)?/i;
-  var subtasksSectionRegex = /^[ \t]*#{1,6}\s*(?:actionable\s+subtasks(?:\s+checklist)?|subtasks?|tasks?)(?:\s*:)?/i;
+  var subtasksSectionRegex = /^[ \t]*#{1,6}\s*(?:actionable\s+subtasks(?:\s+checklist)?|subtasks?|tasks?)(?:\s*:)?/im;
   var headingRegex = /^[ ]{0,3}#{1,6}\s+/;
   function parseFriendlyTitle(body, defaultTitle) {
     if (!body || typeof body !== "string") {
@@ -4366,8 +4366,11 @@ ${placeholder}
     return "";
   }
   function parseOpenQuestions(body) {
-    if (!body || typeof body !== "string") return [];
+    if (!body || typeof body !== "string" || !body.includes("[")) return [];
     const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    if (!/question/i.test(cleanBody)) return [];
+    const hasCodeFence = cleanBody.includes("```") || cleanBody.includes("~~~");
+    const hasCR = cleanBody.includes("\r");
     const lines = cleanBody.split("\n");
     const questions = [];
     let inQuestionsSection = false;
@@ -4375,43 +4378,75 @@ ${placeholder}
     let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
-      const line = rawLine.replace(/\r/g, "");
-      if (/^[ \t]*(?:```|~~~)/.test(line)) {
-        inCodeFence = !inCodeFence;
-        continue;
-      }
-      if (inCodeFence) continue;
-      if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
-        inQuestionsSection = questionsSectionRegex.test(line);
-        inHumanTasksSection = humanTasksSectionRegex.test(line);
+      const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+      const firstChar = line.charCodeAt(0);
+      if (firstChar !== 45 && firstChar !== 42) {
+        if (hasCodeFence) {
+          if (/^[ \t]*(?:```|~~~)/.test(line)) {
+            inCodeFence = !inCodeFence;
+            continue;
+          }
+          if (inCodeFence) continue;
+        }
+        if (line.includes("#")) {
+          const isQuestions = questionsSectionRegex.test(line);
+          const isHuman = humanTasksSectionRegex.test(line);
+          if (isQuestions || isHuman || headingRegex.test(line)) {
+            inQuestionsSection = isQuestions;
+            inHumanTasksSection = isHuman;
+            continue;
+          }
+        }
+      } else if (inCodeFence) {
         continue;
       }
       if (inQuestionsSection) {
-        const match = line.match(checklistRegex);
-        if (match) {
-          const text = match[4].trim();
-          if (text) {
-            questions.push({
-              id: `question-${i}`,
-              lineIndex: i,
-              completed: match[2].toLowerCase() === "x",
-              text,
-              rawLine
-            });
+        let completed = false;
+        let text = "";
+        if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+          completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+          text = line.slice(6).trim();
+        } else {
+          const match = line.match(checklistRegex);
+          if (match) {
+            completed = match[2].toLowerCase() === "x";
+            text = match[4].trim();
           }
         }
+        if (text) {
+          questions.push({
+            id: `question-${i}`,
+            lineIndex: i,
+            completed,
+            text,
+            rawLine
+          });
+        }
       } else if (!inHumanTasksSection) {
-        const match = line.match(checklistRegex);
-        if (match && /^\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
-          const text = match[4].replace(/^(?:\?|Q:|Question:)\s*/i, "").trim();
-          if (text) {
-            questions.push({
-              id: `question-${i}`,
-              lineIndex: i,
-              completed: match[2].toLowerCase() === "x",
-              text,
-              rawLine
-            });
+        if (line.includes("?") || line.includes("Q:") || line.includes("q:") || /question/i.test(line)) {
+          let completed = false;
+          let text = "";
+          if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+            completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+            text = line.slice(6).trim();
+          } else {
+            const match = line.match(checklistRegex);
+            if (match) {
+              completed = match[2].toLowerCase() === "x";
+              text = match[4].trim();
+            }
+          }
+          if (text && /^(?:\?|Q:|Question:)/i.test(text)) {
+            const qText = text.replace(/^(?:\?|Q:|Question:)\s*/i, "").trim();
+            if (qText) {
+              questions.push({
+                id: `question-${i}`,
+                lineIndex: i,
+                completed,
+                text: qText,
+                rawLine
+              });
+            }
           }
         }
       }
@@ -4419,37 +4454,58 @@ ${placeholder}
     return questions;
   }
   function parseHumanTasks(body) {
-    if (!body || typeof body !== "string") return [];
+    if (!body || typeof body !== "string" || !body.includes("[")) return [];
     const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    if (!/human/i.test(cleanBody)) return [];
+    const hasCodeFence = cleanBody.includes("```") || cleanBody.includes("~~~");
+    const hasCR = cleanBody.includes("\r");
     const lines = cleanBody.split("\n");
     const tasks = [];
     let inHumanTasksSection = false;
     let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
-      const line = rawLine.replace(/\r/g, "");
-      if (/^[ \t]*(?:```|~~~)/.test(line)) {
-        inCodeFence = !inCodeFence;
-        continue;
-      }
-      if (inCodeFence) continue;
-      if (headingRegex.test(line) || humanTasksSectionRegex.test(line) || questionsSectionRegex.test(line)) {
-        inHumanTasksSection = humanTasksSectionRegex.test(line);
+      const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+      const firstChar = line.charCodeAt(0);
+      if (firstChar !== 45 && firstChar !== 42) {
+        if (hasCodeFence) {
+          if (/^[ \t]*(?:```|~~~)/.test(line)) {
+            inCodeFence = !inCodeFence;
+            continue;
+          }
+          if (inCodeFence) continue;
+        }
+        if (line.includes("#")) {
+          const isHuman = humanTasksSectionRegex.test(line);
+          if (isHuman || questionsSectionRegex.test(line) || headingRegex.test(line)) {
+            inHumanTasksSection = isHuman;
+            continue;
+          }
+        }
+      } else if (inCodeFence) {
         continue;
       }
       if (inHumanTasksSection) {
-        const match = line.match(checklistRegex);
-        if (match) {
-          const text = match[4].trim();
-          if (text) {
-            tasks.push({
-              id: `human-task-${i}`,
-              lineIndex: i,
-              completed: match[2].toLowerCase() === "x",
-              text,
-              rawLine
-            });
+        let completed = false;
+        let text = "";
+        if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+          completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+          text = line.slice(6).trim();
+        } else {
+          const match = line.match(checklistRegex);
+          if (match) {
+            completed = match[2].toLowerCase() === "x";
+            text = match[4].trim();
           }
+        }
+        if (text) {
+          tasks.push({
+            id: `human-task-${i}`,
+            lineIndex: i,
+            completed,
+            text,
+            rawLine
+          });
         }
       }
     }
@@ -4465,59 +4521,88 @@ ${placeholder}
     return hadIncomplete && nowAllComplete;
   }
   function parseAcceptanceCriteria(body) {
-    if (!body || typeof body !== "string") return [];
+    if (!body || typeof body !== "string" || !body.includes("[")) return [];
     const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    if (!/acceptance/i.test(cleanBody)) return [];
+    const hasCodeFence = cleanBody.includes("```") || cleanBody.includes("~~~");
+    const hasCR = cleanBody.includes("\r");
     const lines = cleanBody.split("\n");
     const items = [];
     let inAcSection = false;
     let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
-      const line = rawLine.replace(/\r/g, "");
-      if (/^[ \t]*(?:```|~~~)/.test(line)) {
-        inCodeFence = !inCodeFence;
-        continue;
-      }
-      if (inCodeFence) continue;
-      if (headingRegex.test(line) || acceptanceCriteriaSectionRegex.test(line)) {
-        inAcSection = acceptanceCriteriaSectionRegex.test(line);
+      const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+      const firstChar = line.charCodeAt(0);
+      if (firstChar !== 45 && firstChar !== 42) {
+        if (hasCodeFence) {
+          if (/^[ \t]*(?:```|~~~)/.test(line)) {
+            inCodeFence = !inCodeFence;
+            continue;
+          }
+          if (inCodeFence) continue;
+        }
+        if (line.includes("#")) {
+          const isAc = acceptanceCriteriaSectionRegex.test(line);
+          if (isAc || headingRegex.test(line)) {
+            inAcSection = isAc;
+            continue;
+          }
+        }
+      } else if (inCodeFence) {
         continue;
       }
       if (inAcSection) {
-        const match = line.match(checklistRegex);
-        if (match) {
-          const text = match[4].trim();
-          if (text) {
-            items.push({
-              id: `ac-${i}`,
-              lineIndex: i,
-              completed: match[2].toLowerCase() === "x",
-              text,
-              rawLine
-            });
+        let completed = false;
+        let text = "";
+        if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+          completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+          text = line.slice(6).trim();
+        } else {
+          const match = line.match(checklistRegex);
+          if (match) {
+            completed = match[2].toLowerCase() === "x";
+            text = match[4].trim();
           }
+        }
+        if (text) {
+          items.push({
+            id: `ac-${i}`,
+            lineIndex: i,
+            completed,
+            text,
+            rawLine
+          });
         }
       }
     }
     return items;
   }
   function parseSubtasks(body) {
-    if (!body || typeof body !== "string") return [];
+    if (!body || typeof body !== "string" || !body.includes("[")) return [];
     const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const hasCodeFence = cleanBody.includes("```") || cleanBody.includes("~~~");
+    const hasCR = cleanBody.includes("\r");
     const lines = cleanBody.split("\n");
     const subtasks = [];
     let hasExplicitSubtasksSection = false;
-    let inCode = false;
-    for (let i = 0; i < lines.length; i++) {
-      const rawLine = lines[i];
-      if (/^[ \t]*(?:```|~~~)/.test(rawLine)) {
-        inCode = !inCode;
-        continue;
-      }
-      if (inCode) continue;
-      if (subtasksSectionRegex.test(rawLine)) {
-        hasExplicitSubtasksSection = true;
-        break;
+    if (/task/i.test(cleanBody)) {
+      if (!hasCodeFence) {
+        hasExplicitSubtasksSection = subtasksSectionRegex.test(cleanBody);
+      } else {
+        let inCode = false;
+        for (let i = 0; i < lines.length; i++) {
+          const rawLine = lines[i];
+          if (/^[ \t]*(?:```|~~~)/.test(rawLine)) {
+            inCode = !inCode;
+            continue;
+          }
+          if (inCode) continue;
+          if (subtasksSectionRegex.test(rawLine)) {
+            hasExplicitSubtasksSection = true;
+            break;
+          }
+        }
       }
     }
     if (hasExplicitSubtasksSection) {
@@ -4525,32 +4610,50 @@ ${placeholder}
       let inCodeFence2 = false;
       for (let i = 0; i < lines.length; i++) {
         const rawLine = lines[i];
-        const line = rawLine.replace(/\r/g, "");
-        if (/^[ \t]*(?:```|~~~)/.test(line)) {
-          inCodeFence2 = !inCodeFence2;
-          continue;
-        }
-        if (inCodeFence2) continue;
-        if (headingRegex.test(line) || subtasksSectionRegex.test(line)) {
-          inSubtasksSection = subtasksSectionRegex.test(line);
+        const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+        const firstChar = line.charCodeAt(0);
+        if (firstChar !== 45 && firstChar !== 42) {
+          if (hasCodeFence) {
+            if (/^[ \t]*(?:```|~~~)/.test(line)) {
+              inCodeFence2 = !inCodeFence2;
+              continue;
+            }
+            if (inCodeFence2) continue;
+          }
+          if (line.includes("#")) {
+            const isSub = subtasksSectionRegex.test(line);
+            if (isSub || headingRegex.test(line)) {
+              inSubtasksSection = isSub;
+              continue;
+            }
+          }
+        } else if (inCodeFence2) {
           continue;
         }
         if (inSubtasksSection) {
-          const match = line.match(checklistRegex);
-          if (match) {
-            if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
+          let completed = false;
+          let text = "";
+          if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+            completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+            text = line.slice(6).trim();
+          } else {
+            const match = line.match(checklistRegex);
+            if (match) {
+              completed = match[2].toLowerCase() === "x";
+              text = match[4].trim();
+            }
+          }
+          if (text) {
+            if (text.charCodeAt(0) === 63 || text.charCodeAt(0) === 81 && (text.charCodeAt(1) === 58 || text.startsWith("Question:")) || /^(?:\?|Q:|Question:)/i.test(text)) {
               continue;
             }
-            const text = match[4].trim();
-            if (text) {
-              subtasks.push({
-                id: `task-${i}`,
-                lineIndex: i,
-                completed: match[2].toLowerCase() === "x",
-                text,
-                rawLine
-              });
-            }
+            subtasks.push({
+              id: `task-${i}`,
+              lineIndex: i,
+              completed,
+              text,
+              rawLine
+            });
           }
         }
       }
@@ -4560,35 +4663,52 @@ ${placeholder}
     let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
-      const line = rawLine.replace(/\r/g, "");
-      if (/^[ \t]*(?:```|~~~)/.test(line)) {
-        inCodeFence = !inCodeFence;
-        continue;
-      }
-      if (inCodeFence) continue;
-      const isExcluded = acceptanceCriteriaSectionRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line) || testPlanHeadingRegex.test(line);
-      if (headingRegex.test(line) || isExcluded) {
-        inExcludedSection = isExcluded;
+      const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+      const firstChar = line.charCodeAt(0);
+      if (firstChar !== 45 && firstChar !== 42) {
+        if (hasCodeFence) {
+          if (/^[ \t]*(?:```|~~~)/.test(line)) {
+            inCodeFence = !inCodeFence;
+            continue;
+          }
+          if (inCodeFence) continue;
+        }
+        if (line.includes("#")) {
+          const isExcluded = acceptanceCriteriaSectionRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line) || testPlanHeadingRegex.test(line);
+          if (isExcluded || headingRegex.test(line)) {
+            inExcludedSection = isExcluded;
+            continue;
+          }
+        }
+      } else if (inCodeFence) {
         continue;
       }
       if (inExcludedSection) {
         continue;
       }
-      const match = line.match(checklistRegex);
-      if (match) {
-        if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
+      let completed = false;
+      let text = "";
+      if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+        completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+        text = line.slice(6).trim();
+      } else {
+        const match = line.match(checklistRegex);
+        if (match) {
+          completed = match[2].toLowerCase() === "x";
+          text = match[4].trim();
+        }
+      }
+      if (text) {
+        if (text.charCodeAt(0) === 63 || text.charCodeAt(0) === 81 && (text.charCodeAt(1) === 58 || text.startsWith("Question:")) || /^(?:\?|Q:|Question:)/i.test(text)) {
           continue;
         }
-        const text = match[4].trim();
-        if (text) {
-          subtasks.push({
-            id: `task-${i}`,
-            lineIndex: i,
-            completed: match[2].toLowerCase() === "x",
-            text,
-            rawLine
-          });
-        }
+        subtasks.push({
+          id: `task-${i}`,
+          lineIndex: i,
+          completed,
+          text,
+          rawLine
+        });
       }
     }
     return subtasks;
@@ -4820,42 +4940,65 @@ ${questionsBlock}`;
       issueTests: [],
       batchTests: []
     };
-    if (!body || typeof body !== "string") return result;
+    if (!body || typeof body !== "string" || !body.includes("[")) return result;
     const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    if (!/test\s*plan/i.test(cleanBody)) return result;
+    const hasCodeFence = cleanBody.includes("```") || cleanBody.includes("~~~");
+    const hasCR = cleanBody.includes("\r");
     const lines = cleanBody.split("\n");
     let currentScope = null;
     let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
-      const line = rawLine.replace(/\r/g, "");
-      if (/^[ \t]*(?:```|~~~)/.test(line)) {
-        inCodeFence = !inCodeFence;
-        continue;
-      }
-      if (inCodeFence) continue;
-      if (headingRegex.test(line) || testPlanIssueHeadingRegex.test(line) || testPlanBatchHeadingRegex.test(line)) {
-        if (testPlanIssueHeadingRegex.test(line)) {
-          currentScope = "issue";
-        } else if (testPlanBatchHeadingRegex.test(line)) {
-          currentScope = "batch";
-        } else {
-          currentScope = null;
+      const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+      const firstChar = line.charCodeAt(0);
+      if (firstChar !== 45 && firstChar !== 42) {
+        if (hasCodeFence) {
+          if (/^[ \t]*(?:```|~~~)/.test(line)) {
+            inCodeFence = !inCodeFence;
+            continue;
+          }
+          if (inCodeFence) continue;
         }
+        if (line.includes("#")) {
+          if (testPlanIssueHeadingRegex.test(line)) {
+            currentScope = "issue";
+            continue;
+          } else if (testPlanBatchHeadingRegex.test(line)) {
+            currentScope = "batch";
+            continue;
+          } else if (headingRegex.test(line)) {
+            currentScope = null;
+            continue;
+          }
+        }
+      } else if (inCodeFence) {
         continue;
       }
       if (currentScope) {
-        const match = line.match(checklistRegex);
-        if (match) {
-          const item = {
-            text: match[4].trim(),
-            completed: match[2].toLowerCase() === "x",
+        let completed = false;
+        let text = "";
+        if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+          completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+          text = line.slice(6).trim();
+        } else {
+          const match = line.match(checklistRegex);
+          if (match) {
+            completed = match[2].toLowerCase() === "x";
+            text = match[4].trim();
+          }
+        }
+        if (text) {
+          const testItem = {
+            text,
+            completed,
             lineIndex: i,
             scope: currentScope
           };
           if (currentScope === "issue") {
-            result.issueTests.push(item);
+            result.issueTests.push(testItem);
           } else {
-            result.batchTests.push(item);
+            result.batchTests.push(testItem);
           }
         }
       }
@@ -6687,12 +6830,13 @@ Blocked by ${blockerRef}`;
       return null;
     };
     return rawItems.filter((item) => item && !item.pull_request).map((item) => {
-      const repo = parseRepo(item.repo) || parseRepo(item.repository_url) || parseRepo(item.html_url) || void 0;
+      const repo = !item.repo && !item.repository_url && !item.html_url ? void 0 : parseRepo(item.repo) || parseRepo(item.repository_url) || parseRepo(item.html_url) || void 0;
       const ac = parseAcceptanceCriteria(item.body || "");
       const subtasks = parseSubtasks(item.body || "");
       const openQuestions = parseOpenQuestions(item.body || "");
       const humanTasks = parseHumanTasks(item.body || "");
-      const labels = (item.labels || []).map((l) => typeof l === "string" ? { name: l } : { name: l.name, ...l.color ? { color: l.color } : {} });
+      const labels = Array.isArray(item.labels) && item.labels.length > 0 ? item.labels.map((l) => typeof l === "string" ? { name: l } : { name: l.name, ...l.color ? { color: l.color } : {} }) : [];
+      const assignees = Array.isArray(item.assignees) && item.assignees.length > 0 ? item.assignees.map((a) => ({ login: a.login, ...a.avatar_url ? { avatar_url: a.avatar_url } : {} })) : [];
       const issue = {
         number: item.number,
         title: item.title || "",
@@ -6701,7 +6845,7 @@ Blocked by ${blockerRef}`;
         html_url: item.html_url || "",
         labels,
         ...item.user ? { user: { login: item.user.login, ...item.user.avatar_url ? { avatar_url: item.user.avatar_url } : {} } } : {},
-        assignees: (item.assignees || []).map((a) => ({ login: a.login, ...a.avatar_url ? { avatar_url: a.avatar_url } : {} })),
+        assignees,
         comments: item.comments || 0,
         created_at: item.created_at || "",
         ...item.updated_at ? { updated_at: item.updated_at } : {},
@@ -6736,6 +6880,9 @@ Blocked by ${blockerRef}`;
     };
     const getIssueKey = (issue) => {
       const rawRepo = issue.repo ?? issue.projectRepo;
+      if (!rawRepo && !issue.html_url) {
+        return String(issue.number);
+      }
       const repo = (parseRepo(rawRepo) || parseRepo(issue.html_url) || "").toLowerCase().trim();
       return repo ? `${repo}#${issue.number}` : String(issue.number);
     };

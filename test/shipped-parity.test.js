@@ -43,7 +43,7 @@ function scanDecl(src, start) {
 }
 
 const JS_FUNCS = [
-  'parseOpenQuestions', 'parseHumanTasks', 'parseSubtasks', 'collectHumanTodos',
+  'parseOpenQuestions', 'parseHumanTasks', 'parseAcceptanceCriteria', 'parseSubtasks', 'collectHumanTodos',
   'updateSubtaskInMarkdown', 'updateOpenQuestionInMarkdown', 'answerOpenQuestionInMarkdown',
   'appendSubtaskToMarkdown', 'appendOpenQuestionToMarkdown', 'serializeDraftQuestions',
   'isVagueIdea', 'formatQuestionBadge', 'getIssueTheme', 'extractTaskThemes', 'parseScratchPadThemes',
@@ -65,7 +65,11 @@ const JS_FUNCS = [
   'resolveOptimisticQuestionAnswer',
   'resolveIssueSkills',
 ];
-const JS_CONSTS = ['checklistRegex', 'questionsSectionRegex', 'humanTasksSectionRegex', 'headingRegex', 'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX'];
+const JS_CONSTS = [
+  'checklistRegex', 'questionsSectionRegex', 'humanTasksSectionRegex', 'headingRegex',
+  'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX',
+  'testPlanHeadingRegex', 'acceptanceCriteriaSectionRegex', 'subtasksSectionRegex',
+];
 
 function extract(marker) {
   const idx = MAIN_JS.indexOf(marker);
@@ -81,7 +85,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 48);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 52);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 
