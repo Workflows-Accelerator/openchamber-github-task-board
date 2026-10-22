@@ -38,6 +38,53 @@ export interface TestItem {
   scope: 'issue' | 'batch';
 }
 
+export type WorkflowPhase =
+  | 'draft'
+  | 'exploration'
+  | 'alignment'
+  | 'planning'
+  | 'execution'
+  | 'verification'
+  | 'human_verification'
+  | 'publication'
+  | 'done'
+  | 'archive';
+
+export type HumanAttention =
+  | 'none'
+  | 'needs-decision'
+  | 'needs-permission'
+  | 'needs-review';
+
+export type ExecutionLiveness =
+  | 'idle'
+  | 'running'
+  | 'retrying'
+  | 'failed'
+  | 'completed';
+
+export type DependencyState =
+  | 'ready'
+  | 'blocked-by-dependency';
+
+export interface V2IssueMetadata {
+  phase: WorkflowPhase;
+  attention: HumanAttention;
+  liveness: ExecutionLiveness;
+  dependencyState: DependencyState;
+  isExplicitV2: boolean;
+}
+
+export type ColumnId =
+  | 'draft'
+  | 'backlog'
+  | 'todo'
+  | 'planned'
+  | 'in-progress'
+  | 'needs-human'
+  | 'in-review'
+  | 'done';
+
 export interface Issue {
   number: number;
   title: string;
@@ -53,6 +100,8 @@ export interface Issue {
   subtasks: Subtask[];
   openQuestions?: Subtask[];
   humanTasks?: Subtask[];
+  acceptanceCriteria?: Subtask[];
+  v2Metadata?: V2IssueMetadata;
   // Set on issues aggregated from multiple projects/repositories.
   projectId?: string;
   projectName?: string;
@@ -80,6 +129,9 @@ const questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
 const humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
 const testPlanIssueHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
 const testPlanBatchHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
+const testPlanHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan(?:\s*\(.*?\))?(?:\s*:)?/i;
+const acceptanceCriteriaSectionRegex = /^[ \t]*#{1,6}\s*acceptance\s+criteria(?:\s*:)?/i;
+const subtasksSectionRegex = /^[ \t]*#{1,6}\s*(?:actionable\s+subtasks(?:\s+checklist)?|subtasks?|tasks?)(?:\s*:)?/i;
 
 const headingRegex = /^[ ]{0,3}#{1,6}\s+/;
 
@@ -325,8 +377,8 @@ export function extractQuestionContext(issueBody: string | null | undefined, que
   return '';
 }
 
-export function parseOpenQuestions(body: string): Subtask[] {
-  if (!body) return [];
+export function parseOpenQuestions(body: string | null | undefined): Subtask[] {
+  if (!body || typeof body !== 'string') return [];
   const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
   const lines = cleanBody.split('\n');
   const questions: Subtask[] = [];
@@ -435,13 +487,12 @@ export function shouldNotifyAgentOnHumanTasksComplete(
   return hadIncomplete && nowAllComplete;
 }
 
-export function parseSubtasks(body: string): Subtask[] {
-  if (!body) return [];
+export function parseAcceptanceCriteria(body: string | null | undefined): Subtask[] {
+  if (!body || typeof body !== 'string') return [];
   const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
   const lines = cleanBody.split('\n');
-  const subtasks: Subtask[] = [];
-  let inQuestionsSection = false;
-  let inHumanTasksSection = false;
+  const items: Subtask[] = [];
+  let inAcSection = false;
   let inCodeFence = false;
 
   for (let i = 0; i < lines.length; i++) {
@@ -453,14 +504,118 @@ export function parseSubtasks(body: string): Subtask[] {
     }
     if (inCodeFence) continue;
 
-    if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
-      inQuestionsSection = questionsSectionRegex.test(line);
-      inHumanTasksSection = humanTasksSectionRegex.test(line);
+    if (headingRegex.test(line) || acceptanceCriteriaSectionRegex.test(line)) {
+      inAcSection = acceptanceCriteriaSectionRegex.test(line);
       continue;
     }
-    if (inQuestionsSection || inHumanTasksSection) {
+    if (inAcSection) {
+      const match = line.match(checklistRegex);
+      if (match) {
+        const text = match[4].trim();
+        if (text) {
+          items.push({
+            id: `ac-${i}`,
+            lineIndex: i,
+            completed: match[2].toLowerCase() === 'x',
+            text,
+            rawLine,
+          });
+        }
+      }
+    }
+  }
+  return items;
+}
+
+export function parseSubtasks(body: string | null | undefined): Subtask[] {
+  if (!body || typeof body !== 'string') return [];
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const lines = cleanBody.split('\n');
+  const subtasks: Subtask[] = [];
+
+  let hasExplicitSubtasksSection = false;
+  let inCode = false;
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    if (/^[ \t]*(?:```|~~~)/.test(rawLine)) {
+      inCode = !inCode;
       continue;
     }
+    if (inCode) continue;
+    if (subtasksSectionRegex.test(rawLine)) {
+      hasExplicitSubtasksSection = true;
+      break;
+    }
+  }
+
+  if (hasExplicitSubtasksSection) {
+    let inSubtasksSection = false;
+    let inCodeFence = false;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const line = rawLine.replace(/\r/g, '');
+      if (/^[ \t]*(?:```|~~~)/.test(line)) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+
+      if (headingRegex.test(line) || subtasksSectionRegex.test(line)) {
+        inSubtasksSection = subtasksSectionRegex.test(line);
+        continue;
+      }
+
+      if (inSubtasksSection) {
+        const match = line.match(checklistRegex);
+        if (match) {
+          if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
+            continue;
+          }
+          const text = match[4].trim();
+          if (text) {
+            subtasks.push({
+              id: `task-${i}`,
+              lineIndex: i,
+              completed: match[2].toLowerCase() === 'x',
+              text,
+              rawLine,
+            });
+          }
+        }
+      }
+    }
+    return subtasks;
+  }
+
+  // Fallback: no explicit subtasks section present.
+  // Collect top-level checkboxes while strictly excluding checkboxes belonging to
+  // Acceptance Criteria, Open Questions, Human Tasks, and Test Plan sections.
+  let inExcludedSection = false;
+  let inCodeFence = false;
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const line = rawLine.replace(/\r/g, '');
+    if (/^[ \t]*(?:```|~~~)/.test(line)) {
+      inCodeFence = !inCodeFence;
+      continue;
+    }
+    if (inCodeFence) continue;
+
+    const isExcluded =
+      acceptanceCriteriaSectionRegex.test(line) ||
+      questionsSectionRegex.test(line) ||
+      humanTasksSectionRegex.test(line) ||
+      testPlanHeadingRegex.test(line);
+
+    if (headingRegex.test(line) || isExcluded) {
+      inExcludedSection = isExcluded;
+      continue;
+    }
+
+    if (inExcludedSection) {
+      continue;
+    }
+
     const match = line.match(checklistRegex);
     if (match) {
       if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
@@ -627,10 +782,13 @@ export function collectHumanTodos(
 export function updateSubtaskInMarkdown(body: string, lineIndex: number, completed: boolean): string {
   const lines = body.split('\n');
   if (lineIndex >= 0 && lineIndex < lines.length) {
-    const match = lines[lineIndex].match(checklistRegex);
+    const rawLine = lines[lineIndex];
+    const hasCr = rawLine.endsWith('\r');
+    const cleanLine = hasCr ? rawLine.slice(0, -1) : rawLine;
+    const match = cleanLine.match(checklistRegex);
     if (match) {
       const mark = completed ? 'x' : ' ';
-      lines[lineIndex] = `${match[1]}${mark}${match[3]}${match[4]}`;
+      lines[lineIndex] = `${match[1]}${mark}${match[3]}${match[4]}${hasCr ? '\r' : ''}`;
     }
   }
   return lines.join('\n');
@@ -650,14 +808,15 @@ export function answerOpenQuestionInMarkdown(body: string | null | undefined, qu
   }
   const target = unresolved[questionIndex];
   const lines = body.split('\n');
-  const line = lines[target.lineIndex];
-  if (!line) return body;
-  const match = line.match(checklistRegex);
+  const rawLine = lines[target.lineIndex];
+  if (!rawLine) return body;
+  const hasCr = rawLine.endsWith('\r');
+  const cleanLine = hasCr ? rawLine.slice(0, -1) : rawLine;
+  const match = cleanLine.match(checklistRegex);
   if (!match) return body;
 
-  const lineEnding = match[4].endsWith('\r') ? '\r' : '';
+  const lineEnding = hasCr ? '\r' : '';
   const questionContent = match[4]
-    .replace(/\r$/, '')
     .replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, '')
     .trimEnd();
   lines[target.lineIndex] = `${match[1]}x${match[3]}${questionContent} *(Answer: ${cleanAnswer})*${lineEnding}`;
@@ -728,12 +887,14 @@ export function parseTestPlan(body: string | null | undefined): { issueTests: Te
   };
   if (!body || typeof body !== 'string') return result;
 
-  const lines = body.split('\n');
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const lines = cleanBody.split('\n');
   let currentScope: 'issue' | 'batch' | null = null;
   let inCodeFence = false;
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i];
+    const rawLine = lines[i];
+    const line = rawLine.replace(/\r/g, '');
     if (/^[ \t]*(?:```|~~~)/.test(line)) {
       inCodeFence = !inCodeFence;
       continue;
@@ -2519,6 +2680,587 @@ export function scopeDoneIssues(
   };
 }
 
+export function isIssueClosed(issue: Issue | any): boolean {
+  if (!issue) return false;
+  if (issue.state === 'closed') return true;
+  if (issue.state_reason === 'completed' || issue.state_reason === 'not_planned') return true;
+  const labelNames = (issue.labels || []).map((l: any) =>
+    (typeof l === 'string' ? l : l?.name || '').toLowerCase()
+  );
+  if (
+    labelNames.includes('status:done') ||
+    labelNames.includes('status:closed') ||
+    labelNames.includes('done') ||
+    labelNames.includes('closed')
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function resolveMatchedSession(issue: Issue | any, sessionOrList?: any): any | null {
+  if (!sessionOrList || !issue) return null;
+  const issueNum = typeof issue.number === 'number' ? issue.number : parseInt(String(issue.number || issue.id || 0), 10);
+  const issueNumStr = String(issueNum);
+
+  const isBoundToOther = (s: any, currentNum: number): boolean => {
+    if (!s || !currentNum) return false;
+    const currentStr = String(currentNum);
+    if (Array.isArray(s.items)) {
+      for (const it of s.items) {
+        if (!it) continue;
+        if (it.id === currentStr) return false;
+        const otherNum =
+          it.data?.issueNumber ||
+          (Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers[0]) ||
+          (Number.isFinite(Number(it.id)) ? Number(it.id) : null);
+        if (otherNum && Number(otherNum) !== currentNum) return true;
+      }
+    }
+    if (typeof s.title === 'string') {
+      const match = s.title.match(/#(\d+)/);
+      if (match && Number(match[1]) !== currentNum) return true;
+    }
+    const wtName = typeof s.worktree === 'string'
+      ? s.worktree
+      : (s.worktree?.name || s.worktree?.branch || s.worktree?.directory || '');
+    if (wtName) {
+      const match = wtName.match(/issue-(\d+)/);
+      if (match && Number(match[1]) !== currentNum) return true;
+    }
+    return false;
+  };
+
+  if (Array.isArray(sessionOrList)) {
+    if (Number.isFinite(issueNum) && issueNum > 0) {
+      return (
+        sessionOrList.find((s: any) => {
+          if (!s) return false;
+          if (
+            s.items &&
+            Array.isArray(s.items) &&
+            s.items.some(
+              (it: any) =>
+                it &&
+                (it.id === issueNumStr ||
+                  it.data?.issueNumber === issueNum ||
+                  (Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers.includes(issueNum)))
+            )
+          ) {
+            return true;
+          }
+          if (
+            s.data &&
+            (s.data.issueNumber === issueNum ||
+              (Array.isArray(s.data.issueNumbers) && s.data.issueNumbers.includes(issueNum)))
+          ) {
+            return true;
+          }
+          if (typeof s.title === 'string' && s.title.includes(`#${issueNum}`)) return true;
+          const wtName = typeof s.worktree === 'string'
+            ? s.worktree
+            : (s.worktree?.name || s.worktree?.branch || s.worktree?.directory || '');
+          if (wtName && wtName.includes(`issue-${issueNum}`)) return true;
+          return false;
+        }) || (sessionOrList.length === 1 && !isBoundToOther(sessionOrList[0], issueNum) ? sessionOrList[0] : null)
+      );
+    }
+    return sessionOrList.length === 1 ? sessionOrList[0] : null;
+  } else if (typeof sessionOrList === 'object') {
+    if (Number.isFinite(issueNum) && issueNum > 0 && isBoundToOther(sessionOrList, issueNum)) {
+      return null;
+    }
+    return sessionOrList;
+  }
+  return null;
+}
+
+const ATTENTION_PRECEDENCE: Record<HumanAttention, number> = {
+  'needs-permission': 4,
+  'needs-decision': 3,
+  'needs-review': 2,
+  none: 1,
+};
+
+const PHASE_PRECEDENCE: Record<WorkflowPhase, number> = {
+  done: 10,
+  archive: 9,
+  publication: 8,
+  human_verification: 7,
+  verification: 6,
+  execution: 5,
+  planning: 4,
+  alignment: 3,
+  exploration: 2,
+  draft: 1,
+};
+
+const LIVENESS_PRECEDENCE: Record<ExecutionLiveness, number> = {
+  failed: 5,
+  retrying: 4,
+  running: 3,
+  completed: 2,
+  idle: 1,
+};
+
+export function resolveV2Metadata(
+  issue: Issue | any,
+  session?: any,
+  allIssues?: Issue[]
+): V2IssueMetadata {
+  if (!issue) {
+    return {
+      phase: 'draft',
+      attention: 'none',
+      liveness: 'idle',
+      dependencyState: 'ready',
+      isExplicitV2: false,
+    };
+  }
+
+  const rawLabels = Array.isArray(issue.labels) ? issue.labels : [];
+  const labelNames = rawLabels.map((l: any) =>
+    (typeof l === 'string' ? l : l?.name || '').trim().toLowerCase()
+  );
+
+  let phase: WorkflowPhase | null = null;
+  let attention: HumanAttention | null = null;
+  let liveness: ExecutionLiveness | null = null;
+  let dependencyState: DependencyState | null = null;
+  let isExplicitV2 = false;
+
+  // 1. Explicit V2 Labels with deterministic precedence
+  for (const name of labelNames) {
+    if (name.startsWith('phase:')) {
+      const p = name.slice(6).trim().replace(/-/g, '_');
+      if (
+        p === 'draft' ||
+        p === 'exploration' ||
+        p === 'alignment' ||
+        p === 'planning' ||
+        p === 'execution' ||
+        p === 'verification' ||
+        p === 'human_verification' ||
+        p === 'publication' ||
+        p === 'done' ||
+        p === 'archive'
+      ) {
+        const candidate = p as WorkflowPhase;
+        if (!phase || PHASE_PRECEDENCE[candidate] > PHASE_PRECEDENCE[phase]) {
+          phase = candidate;
+        }
+        isExplicitV2 = true;
+      }
+    } else if (name.startsWith('attention:')) {
+      const a = name.slice(10).trim();
+      if (
+        a === 'none' ||
+        a === 'needs-decision' ||
+        a === 'needs-permission' ||
+        a === 'needs-review'
+      ) {
+        const candidate = a as HumanAttention;
+        if (!attention || ATTENTION_PRECEDENCE[candidate] > ATTENTION_PRECEDENCE[attention]) {
+          attention = candidate;
+        }
+        isExplicitV2 = true;
+      }
+    } else if (name.startsWith('liveness:')) {
+      const l = name.slice(9).trim();
+      if (
+        l === 'idle' ||
+        l === 'running' ||
+        l === 'retrying' ||
+        l === 'failed' ||
+        l === 'completed'
+      ) {
+        const candidate = l as ExecutionLiveness;
+        if (!liveness || LIVENESS_PRECEDENCE[candidate] > LIVENESS_PRECEDENCE[liveness]) {
+          liveness = candidate;
+        }
+      }
+    } else if (name === 'dependency:blocked' || name === 'dependency:blocked-by-dependency') {
+      dependencyState = 'blocked-by-dependency';
+    } else if (name === 'dependency:ready') {
+      if (dependencyState !== 'blocked-by-dependency') {
+        dependencyState = 'ready';
+      }
+    }
+  }
+
+  // Check explicit properties on issue / issue.v2Metadata if not set by labels
+  if (!phase) {
+    const rawPhase = (issue as any).phase || (issue.v2Metadata?.isExplicitV2 ? issue.v2Metadata.phase : null);
+    if (rawPhase && typeof rawPhase === 'string') {
+      const p = rawPhase.trim().toLowerCase().replace(/-/g, '_');
+      if (
+        p === 'draft' ||
+        p === 'exploration' ||
+        p === 'alignment' ||
+        p === 'planning' ||
+        p === 'execution' ||
+        p === 'verification' ||
+        p === 'human_verification' ||
+        p === 'publication' ||
+        p === 'done' ||
+        p === 'archive'
+      ) {
+        phase = p as WorkflowPhase;
+        isExplicitV2 = true;
+      }
+    }
+  }
+
+  if (!attention) {
+    const rawAttention = (issue as any).attention || (issue.v2Metadata?.isExplicitV2 ? issue.v2Metadata.attention : null);
+    if (rawAttention && typeof rawAttention === 'string') {
+      const a = rawAttention.trim().toLowerCase();
+      if (a === 'none' || a === 'needs-decision' || a === 'needs-permission' || a === 'needs-review') {
+        attention = a as HumanAttention;
+        isExplicitV2 = true;
+      }
+    }
+  }
+
+  const closed = isIssueClosed(issue);
+
+  // 2. Phase Fallback Projection (when phase is null)
+  if (!phase) {
+    if (closed) {
+      phase = 'done';
+    } else if (labelNames.includes('archived') || labelNames.includes('archive')) {
+      phase = 'archive';
+    } else if (labelNames.includes('status:in-review')) {
+      phase = 'verification';
+    } else if (labelNames.includes('status:in-progress')) {
+      phase = 'execution';
+    } else if (labelNames.includes('status:planned') || labelNames.includes('status:todo')) {
+      phase = 'planning';
+    } else if (labelNames.includes('status:needs-alignment')) {
+      phase = 'alignment';
+    } else if (labelNames.includes('status:draft') || labelNames.includes('status:backlog')) {
+      phase = 'draft';
+    } else if (labelNames.includes('status:needs-human')) {
+      phase = 'execution';
+    } else if (isVagueIdea(issue)) {
+      phase = 'draft';
+    } else {
+      phase = 'planning';
+    }
+  }
+
+  const matchedSession = resolveMatchedSession(issue, session);
+
+  // 3. Attention Fallback Projection (when attention is null)
+  if (!attention) {
+    if (closed || phase === 'done' || phase === 'archive') {
+      attention = 'none';
+    } else {
+      // Check attached session activity
+      if (matchedSession) {
+        const act = (typeof matchedSession.activity === 'string' ? matchedSession.activity : '').trim();
+        if (act === 'waiting-permission') {
+          attention = 'needs-permission';
+        } else if (act === 'waiting-question') {
+          attention = 'needs-decision';
+        } else if (act === 'waiting-review') {
+          attention = 'needs-review';
+        } else if (act.startsWith('waiting')) {
+          attention = 'needs-decision';
+        }
+      }
+
+      if (!attention) {
+        const humanTasks = Array.isArray(issue.humanTasks)
+          ? issue.humanTasks
+          : parseHumanTasks(typeof issue.body === 'string' ? issue.body : '');
+        const openHumanTasks = humanTasks.filter((t: any) => !t.completed);
+
+        if (openHumanTasks.length > 0) {
+          const hasPerm = openHumanTasks.some((t: any) =>
+            /\b(permission|grant|access|secret|token|credential|deploy|provision)\b/i.test(t.text)
+          );
+          const hasDec = openHumanTasks.some((t: any) =>
+            /\b(decide|decision|choose|choice|answer)\b/i.test(t.text)
+          );
+          if (hasPerm) {
+            attention = 'needs-permission';
+          } else if (hasDec) {
+            attention = 'needs-decision';
+          } else {
+            attention = 'needs-review';
+          }
+        } else {
+          const questions = Array.isArray(issue.openQuestions)
+            ? issue.openQuestions
+            : parseOpenQuestions(typeof issue.body === 'string' ? issue.body : '');
+          const openQuestions = questions.filter((q: any) => !q.completed);
+
+          if (openQuestions.length > 0) {
+            attention = 'needs-decision';
+          } else if (labelNames.includes('status:needs-human')) {
+            attention = 'needs-review';
+          } else {
+            attention = 'none';
+          }
+        }
+      }
+    }
+  }
+
+  // 4. Liveness Fallback (when liveness is null)
+  if (!liveness) {
+    if (matchedSession) {
+      const act = (typeof matchedSession.activity === 'string' ? matchedSession.activity : '').trim();
+      const stat = (typeof matchedSession.status === 'string' ? matchedSession.status : '').trim();
+      if (act === 'running' || stat === 'running') {
+        liveness = 'running';
+      } else if (act === 'retrying' || stat === 'retrying') {
+        liveness = 'retrying';
+      } else if (act === 'failed' || stat === 'failed' || matchedSession.error) {
+        liveness = 'failed';
+      } else if (act === 'completed' || stat === 'completed') {
+        liveness = 'completed';
+      } else {
+        liveness = 'idle';
+      }
+    } else if (closed || phase === 'done') {
+      liveness = 'completed';
+    } else {
+      liveness = 'idle';
+    }
+  }
+
+  // 5. DependencyState Fallback (when dependencyState is null)
+  if (!dependencyState) {
+    const blockers = parseIssueDependencies(typeof issue.body === 'string' ? issue.body : '');
+    if (blockers.length > 0) {
+      if (allIssues && Array.isArray(allIssues) && allIssues.length > 0) {
+        const openBlockers = blockers.filter((num) => {
+          const target = allIssues.find((i) => i.number === num);
+          if (!target) return true;
+          return !isIssueClosed(target);
+        });
+        dependencyState = openBlockers.length > 0 ? 'blocked-by-dependency' : 'ready';
+      } else {
+        dependencyState = 'blocked-by-dependency';
+      }
+    } else {
+      dependencyState = 'ready';
+    }
+  }
+
+  return {
+    phase,
+    attention,
+    liveness,
+    dependencyState,
+    isExplicitV2,
+  };
+}
+
+export function resolveIssueColumn(
+  issue: Issue | any,
+  sessionOrList?: any
+): ColumnId | null {
+  if (!issue) return null;
+  if (isIssueClosed(issue)) {
+    return 'done';
+  }
+
+  const rawLabels = Array.isArray(issue.labels) ? issue.labels : [];
+  const labelNames = rawLabels.map((l: any) =>
+    (typeof l === 'string' ? l : l?.name || '').trim().toLowerCase()
+  );
+
+  // 1. Direct v1 status matches
+  if (labelNames.includes('status:done')) return 'done';
+  if (labelNames.includes('status:in-review')) return 'in-review';
+  if (labelNames.includes('status:needs-human')) return 'needs-human';
+
+  const matchedSession = resolveMatchedSession(issue, sessionOrList);
+  const isSessionRunning = Boolean(matchedSession && matchedSession.activity === 'running');
+  const isSessionWaiting = Boolean(
+    matchedSession &&
+      (matchedSession.activity === 'waiting-permission' ||
+        matchedSession.activity === 'waiting-question' ||
+        matchedSession.activity.startsWith('waiting'))
+  );
+  const isSessionIdle = Boolean(matchedSession && matchedSession.activity === 'idle');
+
+  // Explicit status:in-progress label
+  if (labelNames.includes('status:in-progress')) {
+    if (isSessionIdle || isSessionWaiting) {
+      return 'needs-human';
+    }
+    return 'in-progress';
+  }
+
+  // Explicit status:planned label
+  if (labelNames.includes('status:planned')) {
+    if (isSessionRunning) return 'in-progress';
+    if (isSessionWaiting) return 'needs-human';
+    return 'planned';
+  }
+
+  // Explicit status:todo label
+  if (labelNames.includes('status:todo')) {
+    if (isSessionRunning) return 'in-progress';
+    if (isSessionWaiting) return 'needs-human';
+    return 'todo';
+  }
+
+  // Explicit status:backlog label
+  if (labelNames.includes('status:backlog')) {
+    if (isSessionRunning) return 'in-progress';
+    if (isSessionWaiting) return 'needs-human';
+    return 'backlog';
+  }
+
+  // Explicit status:draft
+  if (labelNames.includes('status:draft')) {
+    if (isSessionRunning) return 'in-progress';
+    if (isSessionWaiting || isSessionIdle) return 'needs-human';
+    return 'draft';
+  }
+
+  // Check if explicit v2 labels exist
+  const hasExplicitPhase = labelNames.some((l: string) => l.startsWith('phase:'));
+  const hasExplicitAttention = labelNames.some((l: string) => l.startsWith('attention:'));
+
+  if (hasExplicitPhase || hasExplicitAttention || issue.v2Metadata?.isExplicitV2) {
+    const meta = issue.v2Metadata && issue.v2Metadata.isExplicitV2
+      ? issue.v2Metadata
+      : resolveV2Metadata(issue, sessionOrList);
+
+    if (meta.phase === 'done' || meta.phase === 'archive') {
+      return 'done';
+    }
+
+    if (isSessionWaiting || isSessionIdle) {
+      return 'needs-human';
+    }
+
+    if (meta.attention === 'needs-decision' || meta.attention === 'needs-permission' || meta.attention === 'needs-review') {
+      return 'needs-human';
+    }
+
+    if (isSessionRunning) {
+      return 'in-progress';
+    }
+
+    switch (meta.phase) {
+      case 'draft':
+      case 'exploration':
+      case 'alignment':
+        return 'draft';
+      case 'planning':
+        return 'todo';
+      case 'execution':
+        return 'in-progress';
+      case 'verification':
+      case 'publication':
+        return 'in-review';
+      case 'human_verification':
+        return 'needs-human';
+      case 'done':
+      case 'archive':
+        return 'done';
+      default:
+        return 'todo';
+    }
+  }
+
+  // Legacy fallback for issues without status labels or v2 labels:
+  if (isVagueIdea(issue)) {
+    if (isSessionRunning) return 'in-progress';
+    if (isSessionWaiting || isSessionIdle) return 'needs-human';
+    return 'draft';
+  }
+
+  if (matchedSession) {
+    if (isSessionRunning) return 'in-progress';
+    if (isSessionWaiting || isSessionIdle) return 'needs-human';
+  }
+
+  return 'todo';
+}
+
+export function groupIssuesByAttention(
+  issues: Issue[],
+  sessionIndex?: Map<number, any> | any
+): Record<HumanAttention, Issue[]> {
+  const groups: Record<HumanAttention, Issue[]> = {
+    'needs-decision': [],
+    'needs-permission': [],
+    'needs-review': [],
+    none: [],
+  };
+
+  if (!issues || !Array.isArray(issues)) {
+    return groups;
+  }
+
+  for (const issue of issues) {
+    if (!issue || typeof issue !== 'object') {
+      continue;
+    }
+
+    let session: any = null;
+    if (sessionIndex) {
+      if (sessionIndex instanceof Map) {
+        if (Number.isFinite(issue.number)) {
+          session = sessionIndex.get(issue.number);
+        }
+        if (!session) {
+          const rKey = issueRepoKey(issue);
+          if (rKey) session = sessionIndex.get(rKey);
+        }
+      } else if (Array.isArray(sessionIndex)) {
+        session = resolveMatchedSession(issue, sessionIndex);
+      } else if (typeof sessionIndex === 'object') {
+        if (Number.isFinite(issue.number) && (sessionIndex as any)[issue.number]) {
+          session = (sessionIndex as any)[issue.number];
+        } else {
+          session = resolveMatchedSession(issue, sessionIndex);
+        }
+      }
+    }
+
+    const meta = resolveV2Metadata(issue, session, issues);
+    const att = meta && meta.attention;
+    const targetGroup: HumanAttention =
+      att === 'needs-decision' || att === 'needs-permission' || att === 'needs-review'
+        ? att
+        : 'none';
+
+    groups[targetGroup].push(issue);
+  }
+
+  return groups;
+}
+
+export function filterIssuesByAttention(
+  issues: Issue[],
+  attention: HumanAttention,
+  sessionIndex?: Map<number, any> | any
+): Issue[] {
+  if (!issues || !Array.isArray(issues)) {
+    return [];
+  }
+  const validAttentions: ReadonlySet<HumanAttention> = new Set([
+    'none',
+    'needs-decision',
+    'needs-permission',
+    'needs-review',
+  ]);
+  if (!validAttentions.has(attention)) {
+    return [];
+  }
+  const grouped = groupIssuesByAttention(issues, sessionIndex);
+  return grouped[attention] || [];
+}
+
 export function normalizeGithubIssues(rawItems: any[]): Issue[] {
   if (!rawItems || !Array.isArray(rawItems)) return [];
   const parseRepo = (val: string | null | undefined): string | null => {
@@ -2538,25 +3280,45 @@ export function normalizeGithubIssues(rawItems: any[]): Issue[] {
         parseRepo(item.repository_url) ||
         parseRepo(item.html_url) ||
         undefined;
-      return {
+      const ac = parseAcceptanceCriteria(item.body || '');
+      const subtasks = parseSubtasks(item.body || '');
+      const openQuestions = parseOpenQuestions(item.body || '');
+      const humanTasks = parseHumanTasks(item.body || '');
+      const labels = (item.labels || []).map((l: any) => typeof l === 'string' ? { name: l } : { name: l.name, ...(l.color ? { color: l.color } : {}) });
+      const issue: Issue = {
         number: item.number,
         title: item.title || '',
         body: item.body || '',
         state: item.state || 'open',
         html_url: item.html_url || '',
-        labels: (item.labels || []).map((l: any) => typeof l === 'string' ? { name: l } : { name: l.name, ...(l.color ? { color: l.color } : {}) }),
+        labels,
         ...(item.user ? { user: { login: item.user.login, ...(item.user.avatar_url ? { avatar_url: item.user.avatar_url } : {}) } } : {}),
         assignees: (item.assignees || []).map((a: any) => ({ login: a.login, ...(a.avatar_url ? { avatar_url: a.avatar_url } : {}) })),
         comments: item.comments || 0,
         created_at: item.created_at || '',
         ...(item.updated_at ? { updated_at: item.updated_at } : {}),
-        subtasks: parseSubtasks(item.body || ''),
-        openQuestions: parseOpenQuestions(item.body || ''),
-        humanTasks: parseHumanTasks(item.body || ''),
+        subtasks,
+        openQuestions,
+        humanTasks,
+        ...(ac.length > 0 ? { acceptanceCriteria: ac } : {}),
         ...(repo ? { repo } : {}),
         ...(item.projectId ? { projectId: item.projectId } : {}),
         ...(item.projectName ? { projectName: item.projectName } : {}),
       };
+
+      const shouldPopulateV2 = Boolean(
+        item.v2Metadata ||
+        item.labels !== undefined ||
+        ac.length > 0 ||
+        item.phase ||
+        item.attention
+      );
+
+      if (shouldPopulateV2) {
+        issue.v2Metadata = resolveV2Metadata(issue);
+      }
+
+      return issue;
     });
 }
 
