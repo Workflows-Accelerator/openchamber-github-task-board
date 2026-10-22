@@ -34,7 +34,8 @@
 | Task 006: State commit checkpoint | COMPLETE | ses_a23a4b9be634afdbe9e36257 / worker | Commit 187ef68 (feat(core): implement Stage 1 dual-mode parser, section scoping, and attention grouping) | Proceed to Task 007 |
 | Task 007: Human validation walkthrough | COMPLETE | ses_c8c1228511694908a3a3b0d4 / engineer | Full walkthrough and empirical receipts compiled | Present to user at L5 Review Gate |
 | Stage 1 Human Validation Gate (L5) | APPROVED | User | Human approved Stage 1 completion | Dispatched Task 008 (integration merge) |
-| Task 008: Stage 1 Integration Merge | RUNNING | ses_3a077be973e9fd2c1e30efe9 / engineer | Brief `tasks/task-008-integrate-stage1-merge.md` | Await merge completion and worktree cleanup |
+| Task 008: Stage 1 Integration Merge | COMPLETE | ses_3a077be973e9fd2c1e30efe9 / engineer | Merged into feat/v2-binding-and-ratelimit (6ca57f6); bundle rebuilt (5de3816); parity aligned (52974b7); worktree pruned; 386/386 pass | Stage 1 LANDED |
+| Stage 2 Planning: Coordinator Pilot & UI Surfaces | READY | Manager | Roadmap drafting | Author Stage 2 implementation plan |
 
 ## Evidence and incident policy
 All three research authors returned actual provider/model 9router/engineer. Board reviewer same. Remaining reviewer identities deferred to wakes; no polling. Original source research is untrusted until findings resolved in final draft; preserve original reports and reviews as audit trail, do not silently rewrite them. Final independent reviewer gets all caveats, especially source inspection != live proof.
