@@ -9,8 +9,9 @@
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
-  --oc-scrollbar-thumb: color-mix(in srgb, var(--oc-muted, currentColor) 40%, transparent);
-  --oc-scrollbar-thumb-hover: color-mix(in srgb, var(--oc-muted, currentColor) 65%, transparent);
+  /* Quiet at rest like the app's own thumbs; hover gives a clear grab target. */
+  --oc-scrollbar-thumb: color-mix(in srgb, var(--oc-muted, currentColor) 18%, transparent);
+  --oc-scrollbar-thumb-hover: color-mix(in srgb, var(--oc-muted, currentColor) 36%, transparent);
   scrollbar-gutter: stable;
 }
 * {
@@ -254,7 +255,7 @@
   var GUEST_SETTING_VALUE_MAX = 2e3;
   var GUEST_REQUEST_PATH_MAX = 2e3;
   var GUEST_REQUEST_BODY_MAX = 64e3;
-  var GUEST_REQUEST_RESPONSE_MAX = 256e3;
+  var GUEST_REQUEST_RESPONSE_MAX = 8e6;
   var GUEST_REQUEST_TIMEOUT_MS = 2e4;
   var GUEST_FILE_PATH_MAX = 1024;
   var GUEST_FILE_CONTENT_MAX = 2e6;
@@ -279,6 +280,8 @@
     "NO_INTEGRATION",
     "NO_SERVICE",
     "SERVICE_FAILED",
+    "REQUEST_FAILED",
+    "RESPONSE_TOO_LARGE",
     "NO_SESSION",
     "SESSION_BUSY",
     "NOT_GRANTED",
@@ -1652,6 +1655,297 @@
     }
   };
 
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  var OC_ALIAS = {
+    "surface-background": "bg",
+    "surface-elevated": "elevated",
+    "surface-elevated-foreground": "elevated-fg",
+    "surface-foreground": "fg",
+    "surface-muted-foreground": "muted",
+    "surface-muted": "muted-surface",
+    "surface-subtle": "subtle",
+    "interactive-border": "border",
+    "interactive-hover": "hover",
+    "interactive-active": "active",
+    "interactive-selection": "selection",
+    "interactive-selection-foreground": "selection-fg",
+    "interactive-focus-ring": "focus",
+    "primary": "primary",
+    "primary-foreground": "primary-fg",
+    "primary-text": "primary-text",
+    "success-text": "success-text",
+    "warning-text": "warning-text",
+    "error-text": "error-text",
+    "info-text": "info-text",
+    "status-success": "success",
+    "status-warning": "warning",
+    "status-error": "error",
+    "status-info": "info",
+    "font-sans": "font",
+    "font-mono": "mono",
+    "radius": "radius"
+  };
+  var v = (name, fallback) => `var(--${name}, var(--oc-${OC_ALIAS[name]}, ${fallback}))`;
+  var bg = v("surface-background", "transparent");
+  var elevated = v("surface-elevated", "transparent");
+  var elevatedFg = v("surface-elevated-foreground", "inherit");
+  var fg = v("surface-foreground", "inherit");
+  var muted = v("surface-muted-foreground", "gray");
+  var secondary = v("surface-muted", "transparent");
+  var border = v("interactive-border", "currentColor");
+  var hover = v("interactive-hover", "transparent");
+  var active = v("interactive-active", "transparent");
+  var selection = v("interactive-selection", "transparent");
+  var selectionFg = v("interactive-selection-foreground", "inherit");
+  var primary = v("primary", "currentColor");
+  var primaryText = v("primary-text", "inherit");
+  var errorText = v("error-text", "inherit");
+  var font = v("font-sans", "inherit");
+  var mono = v("font-mono", "monospace");
+  var radius = v("radius", "9px");
+  var controlRadius = `calc(${radius} - 2px)`;
+  var smallRadius = `calc(${radius} - 4px)`;
+  var mix = (color, pct, base = "transparent") => `color-mix(in srgb, ${color} ${pct}%, ${base})`;
+  var focusFill = `background-image: linear-gradient(${hover}, ${hover});`;
+  var field = (edge) => `box-shadow: inset 0 0 0 1px ${edge}, var(--oc-sdk-field-lift);`;
+  var raised = "box-shadow: inset 0 0 0 1px var(--oc-sdk-edge), var(--oc-sdk-raised-lift);";
+  var litButton = "box-shadow: var(--oc-sdk-lit);";
+  var darkLift = `inset 0 1px 0 0 ${mix(fg, 1.5)}, 0 1px 1px 0 rgb(0 0 0 / 0.28), 0 2px 3px -2px rgb(0 0 0 / 0.2)`;
+  var THEME_VARS = `
+:root {
+  --oc-sdk-edge: ${mix(fg, 10)};
+  --oc-sdk-field-bg: ${elevated};
+  --oc-sdk-raised-bg: ${bg};
+  --oc-sdk-field-lift: inset 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --oc-sdk-raised-lift: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  --oc-sdk-lit: inset 0 1px 0 0 rgb(255 255 255 / 0.45), 0 1px 2px 0 rgb(0 0 0 / 0.08);
+  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.8), inset 0 0 0 1px rgb(0 0 0 / 0.04), 0 0 0 1px rgb(0 0 0 / 0.1), 0 1px 2px -0.5px rgb(0 0 0 / 0.08), 0 4px 8px -2px rgb(0 0 0 / 0.08), 0 12px 20px -4px rgb(0 0 0 / 0.08);
+}
+:root[data-oc-theme="dark"] {
+  --oc-sdk-edge: ${mix(fg, 6)};
+  --oc-sdk-field-bg: ${mix(bg, 50, elevated)};
+  --oc-sdk-raised-bg: ${elevated};
+  --oc-sdk-field-lift: ${darkLift};
+  --oc-sdk-raised-lift: ${darkLift};
+  --oc-sdk-lit: inset 0 1px 0 0 ${mix(fg, 1.5)}, 0 1px 1px 0 rgb(0 0 0 / 0.28), 0 2px 3px -2px rgb(0 0 0 / 0.2);
+  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.06), inset 0 0 0 1px rgb(255 255 255 / 0.08), 0 0 0 1px rgb(0 0 0 / 0.36), 0 1px 1px -0.5px rgb(0 0 0 / 0.22), 0 3px 3px -1.5px rgb(0 0 0 / 0.2), 0 6px 6px -3px rgb(0 0 0 / 0.16);
+}`;
+  var tone = (name) => {
+    const color = v(`status-${name}`, "currentColor");
+    return `
+.oc-sdk[data-tone="${name}"], .oc-sdk [data-tone="${name}"] { --oc-sdk-tone: ${color}; --oc-sdk-tone-text: ${v(`${name}-text`, "inherit")}; }`;
+  };
+  var UI_SIZE_CSS = `
+.oc-sdk { box-sizing: border-box; font-size: 0.875rem; line-height: 1.45; }
+.oc-sdk *, .oc-sdk *::before, .oc-sdk *::after { box-sizing: border-box; }
+/* :where() keeps the reset at zero specificity so every primitive class below overrides it. */
+:where(.oc-sdk) :where(button, input, textarea), :where(button.oc-sdk, input.oc-sdk, textarea.oc-sdk) { font: inherit; color: inherit; margin: 0; }
+:where(.oc-sdk) :where(button), :where(button.oc-sdk) { cursor: pointer; background: none; border: 0; padding: 0; }
+.oc-sdk button:disabled, button.oc-sdk:disabled, .oc-sdk[aria-disabled="true"], .oc-sdk [aria-disabled="true"] { opacity: .5; pointer-events: none; }
+
+.oc-sdk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 12px; border: 1px solid transparent; font-size: 0.875rem; font-weight: 500; line-height: 1; white-space: nowrap; }
+.oc-sdk-btn[data-size="sm"] { gap: 6px; height: 28px; padding: 0 10px; font-size: 0.8125rem; }
+.oc-sdk-btn[data-size="xs"] { gap: 4px; height: 24px; padding: 0 8px; font-size: 0.75rem; }
+.oc-sdk-btn[data-loading="true"] { opacity: .5; pointer-events: none; }
+.oc-sdk-btn > .oc-sdk-spinner-ring { width: 14px; height: 14px; }
+
+.oc-sdk-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.oc-sdk-field-label { font-size: 0.8125rem; font-weight: 500; }
+.oc-sdk-field-note { font-size: 0.75rem; }
+.oc-sdk-input { display: block; width: 100%; min-width: 0; height: 32px; padding: 0 10px; border: 0; font-size: 0.875rem; line-height: 1.45; appearance: none; }
+textarea.oc-sdk-input { height: auto; padding: 8px 10px; resize: vertical; }
+
+.oc-sdk-search { position: relative; min-width: 0; }
+.oc-sdk-search .oc-sdk-input { padding-left: 34px; padding-right: 34px; }
+.oc-sdk-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.oc-sdk-search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: none; align-items: center; justify-content: center; width: 24px; height: 24px; }
+.oc-sdk-search[data-active="true"] .oc-sdk-search-clear { display: inline-flex; }
+
+.oc-sdk-select { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.oc-sdk-trigger { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; width: auto; max-width: 100%; min-width: 0; height: 28px; padding: 0 10px; border: 1px solid transparent; font-size: 0.8125rem; text-align: left; }
+.oc-sdk-trigger-value { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oc-sdk-trigger-chevron { flex: 0 0 auto; }
+.oc-sdk-popup { position: fixed; z-index: 50; display: flex; flex-direction: column; gap: 2px; min-width: 160px; max-width: calc(100vw - 16px); max-height: min(320px, calc(100vh - 16px)); overflow: auto; padding: 4px; border: 1px solid transparent; }
+.oc-sdk-popup-search { flex: 0 0 auto; padding: 2px 2px 4px; }
+.oc-sdk-popup-search .oc-sdk-input { height: 28px; font-size: 0.8125rem; }
+.oc-sdk-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; font-size: 0.8125rem; text-align: left; }
+.oc-sdk-option-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oc-sdk-option-hint { flex: 0 0 auto; font-size: 0.75rem; }
+.oc-sdk-option-check { flex: 0 0 auto; display: inline-flex; width: 14px; visibility: hidden; }
+.oc-sdk-option[aria-selected="true"] > .oc-sdk-option-check { visibility: visible; }
+.oc-sdk-popup-empty { padding: 8px; font-size: 0.8125rem; }
+
+.oc-sdk-check { display: inline-flex; align-items: flex-start; gap: 8px; width: 100%; text-align: left; }
+.oc-sdk-check-box { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; margin-top: 3px; border: 1px solid transparent; }
+.oc-sdk-check-box > svg { display: none; }
+.oc-sdk-check[aria-checked="true"] .oc-sdk-check-box > svg { display: block; }
+.oc-sdk-check-thumb { flex: 0 0 auto; position: relative; width: 36px; height: 20px; }
+.oc-sdk-check-thumb::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; }
+.oc-sdk-check-text { display: flex; flex-direction: column; min-width: 0; }
+.oc-sdk-check-label { font-size: 0.875rem; }
+.oc-sdk-check-desc { font-size: 0.75rem; }
+
+.oc-sdk-tabs { display: inline-flex; gap: 2px; padding: 2px; max-width: 100%; overflow: auto; }
+.oc-sdk-tab { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid transparent; font-size: 0.8125rem; font-weight: 500; white-space: nowrap; }
+.oc-sdk-tab-count { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+
+.oc-sdk-badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: 11px; font-weight: 500; line-height: 16px; white-space: nowrap; }
+
+.oc-sdk-list { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.oc-sdk-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; text-align: left; }
+.oc-sdk-row-lead { flex: 0 0 auto; width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
+.oc-sdk-row-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.oc-sdk-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oc-sdk-row-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
+.oc-sdk-row-meta { flex: 0 0 auto; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.oc-sdk-list-empty { padding: 16px 8px; text-align: center; font-size: 0.8125rem; }
+
+.oc-sdk-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 40px 16px; text-align: center; }
+.oc-sdk-empty-title { margin: 0; font-size: 0.8125rem; font-weight: 600; }
+.oc-sdk-empty-body { margin: 0; max-width: 32rem; font-size: 0.8125rem; }
+.oc-sdk-empty-action { margin-top: 12px; }
+
+@keyframes oc-sdk-spin { to { transform: rotate(360deg); } }
+.oc-sdk-spinner { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8125rem; }
+.oc-sdk-spinner-ring { width: 16px; height: 16px; border: 2px solid transparent; animation: oc-sdk-spin .8s linear infinite; }
+.oc-sdk-spinner[data-size="sm"] .oc-sdk-spinner-ring { width: 12px; height: 12px; }
+
+.oc-sdk-banner { display: flex; align-items: flex-start; gap: 12px; padding: 8px 12px; border: 1px solid transparent; }
+.oc-sdk-banner-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.oc-sdk-banner-title { font-size: 0.8125rem; font-weight: 500; }
+.oc-sdk-banner-body { font-size: 0.8125rem; }
+.oc-sdk-banner-action { flex: 0 0 auto; }
+
+.oc-sdk-separator { display: flex; align-items: center; gap: 8px; width: 100%; margin: 8px 0; font-size: 0.75rem; }
+.oc-sdk-separator::before, .oc-sdk-separator::after { content: ""; flex: 1 1 auto; height: 1px; }
+.oc-sdk-separator[data-labeled="false"]::after { display: none; }
+.oc-sdk-popup > .oc-sdk-separator { margin: 4px 0; }
+
+.oc-sdk-progress { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.oc-sdk-progress-label { display: flex; justify-content: space-between; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.oc-sdk-progress-track { height: 6px; overflow: hidden; }
+.oc-sdk-progress-fill { height: 100%; transform-origin: left; transition: transform 200ms ease-out; }
+
+.oc-sdk-menu { position: relative; display: inline-flex; }
+
+.oc-sdk-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; }
+`;
+  var GUEST_UI_LOOK_CSS = `${THEME_VARS}
+.oc-sdk { color: ${fg}; font-family: ${font}; }
+.oc-sdk :focus-visible, .oc-sdk:focus-visible { outline: none; }
+.oc-sdk :where(button, a[href], [role="button"], [role="tab"], [role="option"]):focus-visible, button.oc-sdk:focus-visible { ${focusFill} }
+.oc-sdk-mono { font-family: ${mono}; }
+.oc-sdk-muted { color: ${muted}; }
+${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
+.oc-sdk[data-tone="primary"], .oc-sdk [data-tone="primary"] { --oc-sdk-tone: ${primary}; --oc-sdk-tone-text: ${primaryText}; }
+
+.oc-sdk-btn { border-radius: ${controlRadius}; transition: background 150ms ease-out, color 150ms ease-out; }
+.oc-sdk-btn[data-size="xs"] { border-radius: ${smallRadius}; }
+.oc-sdk-btn[data-variant="default"] { color: ${primaryText}; background: ${mix(primary, 10, bg)}; border-color: ${mix(primary, 12)}; ${litButton} }
+.oc-sdk-btn[data-variant="default"]:hover { background: ${mix(primary, 16, bg)}; }
+.oc-sdk-btn[data-variant="default"]:active { background: ${mix(primary, 22, bg)}; box-shadow: none; }
+.oc-sdk-btn[data-variant="secondary"] { background: ${secondary}; color: var(--oc-fg); }
+.oc-sdk-btn[data-variant="secondary"]:hover { background-image: linear-gradient(${hover}, ${hover}); }
+.oc-sdk-btn[data-variant="secondary"]:active { background-image: linear-gradient(${active}, ${active}); }
+.oc-sdk-btn[data-variant="outline"] { background: var(--oc-sdk-raised-bg); color: ${elevatedFg}; border-color: transparent; ${raised} }
+.oc-sdk-btn[data-variant="outline"]:hover { background-image: linear-gradient(${hover}, ${hover}); }
+.oc-sdk-btn[data-variant="outline"]:active { background-image: linear-gradient(${active}, ${active}); box-shadow: inset 0 0 0 1px var(--oc-sdk-edge); }
+.oc-sdk-btn[data-variant="ghost"] { background: transparent; }
+.oc-sdk-btn[data-variant="ghost"]:hover { background: ${hover}; }
+.oc-sdk-btn[data-variant="ghost"]:active { background: ${active}; }
+.oc-sdk-btn[data-variant="destructive"] { --oc-sdk-tone: ${v("status-error", "red")}; color: ${errorText}; background: ${mix("var(--oc-sdk-tone)", 7, bg)}; border-color: ${mix("var(--oc-sdk-tone)", 12)}; ${litButton} }
+.oc-sdk-btn[data-variant="destructive"]:hover { background: ${mix("var(--oc-sdk-tone)", 9, bg)}; }
+.oc-sdk-btn[data-variant="destructive"]:active { background: ${mix("var(--oc-sdk-tone)", 11, bg)}; box-shadow: none; }
+
+.oc-sdk-field-note { color: ${muted}; }
+.oc-sdk-field[data-invalid="true"] .oc-sdk-field-note { color: ${errorText}; }
+.oc-sdk-input { border-radius: ${controlRadius}; background: var(--oc-sdk-field-bg); color: ${elevatedFg}; ${field("var(--oc-sdk-edge)")} transition: background 150ms ease-out; }
+.oc-sdk-input::placeholder { color: ${muted}; }
+.oc-sdk-input:hover:not(:focus) { background-image: linear-gradient(${hover}, ${hover}); }
+.oc-sdk-input:focus, .oc-sdk-input:focus-visible { ${field(mix(fg, 26))} }
+.oc-sdk-field[data-invalid="true"] .oc-sdk-input, .oc-sdk-field[data-invalid="true"] .oc-sdk-input:focus { ${field(v("status-error", "red"))} }
+.oc-sdk-input[data-mono="true"] { font-family: ${mono}; }
+
+.oc-sdk-search-icon { color: ${muted}; }
+.oc-sdk-search[data-active="true"] .oc-sdk-search-icon { color: ${primary}; }
+.oc-sdk-search-clear { border-radius: ${smallRadius}; color: ${muted}; }
+.oc-sdk-search-clear:hover { background: ${hover}; color: ${fg}; }
+
+.oc-sdk-trigger { border-color: transparent; border-radius: ${controlRadius}; background: var(--oc-sdk-raised-bg); color: ${elevatedFg}; ${raised} transition: background 150ms ease-out; }
+.oc-sdk-trigger:hover { background-image: linear-gradient(${hover}, ${hover}); }
+.oc-sdk-trigger[aria-expanded="true"] { background-image: linear-gradient(${active}, ${active}); }
+.oc-sdk-trigger-value[data-empty="true"] { color: ${muted}; }
+.oc-sdk-trigger-chevron { color: ${muted}; }
+/* The app's dropdown light: lit top, hairline rings and a layered shadow, no border. */
+.oc-sdk-popup { --surface-foreground: ${elevatedFg}; border-color: transparent; border-radius: 12px; background: ${elevated}; color: ${elevatedFg}; box-shadow: var(--oc-sdk-float); }
+.oc-sdk-option { border-radius: 8px; }
+.oc-sdk-option[data-active="true"] { background: ${hover}; }
+/* A selected option shows a check mark in the text colour, like the app's own pickers. Options without the mark come
+   from bundles built before it existed and keep the selection fill as their only sign of the choice. */
+.oc-sdk-option[aria-selected="true"]:not([data-mark]) { background: ${selection}; color: ${selectionFg}; }
+.oc-sdk-option-check { color: ${fg}; }
+.oc-sdk-option[data-destructive="true"] { color: ${errorText}; }
+.oc-sdk-option[data-destructive="true"][data-active="true"] { background: ${mix(v("status-error", "red"), 10)}; }
+.oc-sdk-option-hint { color: ${muted}; }
+.oc-sdk-popup-empty { color: ${muted}; }
+
+/* Checked stays neutral: the mark carries the state, and the primary colour stays with primary actions. */
+.oc-sdk-check-box { border-color: ${border}; border-radius: 4px; color: ${fg}; transition: border-color 150ms ease-out; }
+.oc-sdk-check[aria-checked="true"] .oc-sdk-check-box { border-color: ${mix(fg, 60, border)}; }
+.oc-sdk-check-thumb { border-radius: 9999px; background: ${border}; transition: background 150ms ease-out; }
+.oc-sdk-check-thumb::after { border-radius: 9999px; background: ${bg}; transition: transform 150ms ease-out; }
+.oc-sdk-check[aria-checked="true"] .oc-sdk-check-thumb { background: ${primary}; }
+.oc-sdk-check[aria-checked="true"] .oc-sdk-check-thumb::after { transform: translateX(16px); }
+.oc-sdk-check:focus-visible { box-shadow: none; }
+.oc-sdk-check:focus-visible .oc-sdk-check-box, .oc-sdk-check:focus-visible .oc-sdk-check-thumb { ${focusFill} }
+.oc-sdk-check-desc { color: ${muted}; }
+
+.oc-sdk-tabs { border-radius: 10px; }
+.oc-sdk-tabs[data-track="true"] { background: ${mix(fg, 4)}; box-shadow: inset 0 1px 2px 0 rgb(0 0 0 / 0.16); }
+.oc-sdk-tab { border-radius: 8px; color: ${muted}; transition: color 150ms ease-out, background 150ms ease-out; }
+.oc-sdk-tab:hover { color: ${fg}; }
+.oc-sdk-tab[aria-selected="true"] { color: ${selectionFg}; background: ${selection}; border-color: ${border}; }
+.oc-sdk-tabs[data-track="true"] .oc-sdk-tab[aria-selected="true"] { color: ${elevatedFg}; background: var(--oc-sdk-raised-bg); border-color: transparent; ${raised} }
+.oc-sdk-tab-count { color: ${muted}; }
+
+.oc-sdk-badge { border-radius: 9999px; background: ${hover}; color: ${muted}; }
+.oc-sdk-badge[data-tone] { color: var(--oc-sdk-tone-text, var(--oc-sdk-tone)); background: ${mix("var(--oc-sdk-tone)", 15)}; }
+
+.oc-sdk-row { border-radius: 6px; transition: background 120ms ease-out; }
+.oc-sdk-row:hover, .oc-sdk-row[data-active="true"] { background: ${hover}; }
+.oc-sdk-row[aria-selected="true"] { background: ${selection}; color: ${selectionFg}; }
+.oc-sdk-row-lead { font-family: ${mono}; color: ${muted}; }
+.oc-sdk-row-sub { color: ${muted}; }
+.oc-sdk-row-meta { color: ${muted}; }
+.oc-sdk-row[aria-selected="true"] .oc-sdk-row-lead, .oc-sdk-row[aria-selected="true"] .oc-sdk-row-sub, .oc-sdk-row[aria-selected="true"] .oc-sdk-row-meta { color: inherit; opacity: .75; }
+.oc-sdk-list-empty { color: ${muted}; }
+
+.oc-sdk-empty-body { color: ${muted}; }
+
+.oc-sdk-spinner { color: ${muted}; }
+.oc-sdk-spinner-ring { border-color: ${border}; border-top-color: ${primary}; border-radius: 9999px; }
+
+/* Set apart by its tint alone, like the app's banners. */
+.oc-sdk-banner { border-color: transparent; border-radius: 8px; background: ${mix("var(--oc-sdk-tone)", 10)}; }
+.oc-sdk-banner-title { color: var(--oc-sdk-tone-text, var(--oc-sdk-tone)); }
+.oc-sdk-banner-body { color: ${muted}; }
+
+.oc-sdk-separator { color: ${muted}; }
+.oc-sdk-separator::before, .oc-sdk-separator::after { background: ${mix(border, 40)}; }
+
+.oc-sdk-progress-label { color: ${muted}; }
+.oc-sdk-progress-track { border-radius: 9999px; background: ${border}; }
+.oc-sdk-progress-fill { border-radius: 9999px; background: var(--oc-sdk-tone, ${primary}); }
+
+.oc-sdk-text a { color: ${primaryText}; text-decoration: underline; text-underline-offset: 2px; }
+.oc-sdk-text img { border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
+`;
+  var UI_CSS = `
+${GUEST_SCROLLBAR_CSS}
+${UI_SIZE_CSS}
+${GUEST_UI_LOOK_CSS}`;
+
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
@@ -1711,208 +2005,6 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
-  var OC_ALIAS = {
-    "surface-background": "bg",
-    "surface-elevated": "elevated",
-    "surface-elevated-foreground": "elevated-fg",
-    "surface-foreground": "fg",
-    "surface-muted-foreground": "muted",
-    "surface-muted": "muted-surface",
-    "surface-subtle": "subtle",
-    "interactive-border": "border",
-    "interactive-hover": "hover",
-    "interactive-active": "active",
-    "interactive-selection": "selection",
-    "interactive-selection-foreground": "selection-fg",
-    "interactive-focus-ring": "focus",
-    "primary": "primary",
-    "primary-foreground": "primary-fg",
-    "primary-text": "primary-text",
-    "success-text": "success-text",
-    "warning-text": "warning-text",
-    "error-text": "error-text",
-    "info-text": "info-text",
-    "status-success": "success",
-    "status-warning": "warning",
-    "status-error": "error",
-    "status-info": "info",
-    "font-sans": "font",
-    "font-mono": "mono",
-    "radius": "radius"
-  };
-  var v = (name, fallback) => `var(--${name}, var(--oc-${OC_ALIAS[name]}, ${fallback}))`;
-  var bg = v("surface-background", "transparent");
-  var elevated = v("surface-elevated", "transparent");
-  var elevatedFg = v("surface-elevated-foreground", "inherit");
-  var fg = v("surface-foreground", "inherit");
-  var muted = v("surface-muted-foreground", "gray");
-  var secondary = v("surface-muted", "transparent");
-  var border = v("interactive-border", "currentColor");
-  var hover = v("interactive-hover", "transparent");
-  var active = v("interactive-active", "transparent");
-  var selection = v("interactive-selection", "transparent");
-  var selectionFg = v("interactive-selection-foreground", "inherit");
-  var focus = v("interactive-focus-ring", "currentColor");
-  var primary = v("primary", "currentColor");
-  var primaryText = v("primary-text", "inherit");
-  var errorText = v("error-text", "inherit");
-  var font = v("font-sans", "inherit");
-  var mono = v("font-mono", "monospace");
-  var radius = v("radius", "9px");
-  var mix = (color, pct, base = "transparent") => `color-mix(in srgb, ${color} ${pct}%, ${base})`;
-  var focusRing = `box-shadow: 0 0 0 2px ${focus};`;
-  var tone = (name) => {
-    const color = v(`status-${name}`, "currentColor");
-    return `
-.oc-sdk[data-tone="${name}"], .oc-sdk [data-tone="${name}"] { --oc-sdk-tone: ${color}; --oc-sdk-tone-text: ${v(`${name}-text`, "inherit")}; }`;
-  };
-  var UI_CSS = `
-${GUEST_SCROLLBAR_CSS}
-.oc-sdk { box-sizing: border-box; color: ${fg}; font-family: ${font}; font-size: 0.875rem; line-height: 1.45; }
-.oc-sdk *, .oc-sdk *::before, .oc-sdk *::after { box-sizing: border-box; }
-/* :where() keeps the reset at zero specificity so every primitive class below overrides it. */
-:where(.oc-sdk) :where(button, input, textarea), :where(button.oc-sdk, input.oc-sdk, textarea.oc-sdk) { font: inherit; color: inherit; margin: 0; }
-:where(.oc-sdk) :where(button), :where(button.oc-sdk) { cursor: pointer; background: none; border: 0; padding: 0; }
-.oc-sdk button:disabled, button.oc-sdk:disabled, .oc-sdk[aria-disabled="true"], .oc-sdk [aria-disabled="true"] { opacity: .5; pointer-events: none; }
-.oc-sdk :focus-visible { outline: none; ${focusRing} }
-.oc-sdk-mono { font-family: ${mono}; }
-.oc-sdk-muted { color: ${muted}; }
-${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
-.oc-sdk[data-tone="primary"], .oc-sdk [data-tone="primary"] { --oc-sdk-tone: ${primary}; --oc-sdk-tone-text: ${primaryText}; }
-
-.oc-sdk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 36px; padding: 0 14px; border: 1px solid transparent; border-radius: ${radius}; font-size: 0.875rem; font-weight: 500; line-height: 1; white-space: nowrap; transition: background 150ms ease-out, color 150ms ease-out; }
-.oc-sdk-btn[data-size="sm"] { height: 32px; padding: 0 10px; font-size: 0.8125rem; }
-.oc-sdk-btn[data-size="xs"] { height: 24px; padding: 0 8px; font-size: 0.75rem; border-radius: 6px; }
-.oc-sdk-btn[data-variant="default"] { color: ${primaryText}; background: ${mix(primary, 10, bg)}; border-color: ${mix(primary, 12)}; }
-.oc-sdk-btn[data-variant="default"]:hover { background: ${mix(primary, 16, bg)}; }
-.oc-sdk-btn[data-variant="default"]:active { background: ${mix(primary, 22, bg)}; }
-.oc-sdk-btn[data-variant="secondary"] { background: ${secondary}; color: var(--oc-fg); }
-.oc-sdk-btn[data-variant="secondary"]:hover { background-image: linear-gradient(${hover}, ${hover}); }
-.oc-sdk-btn[data-variant="secondary"]:active { background-image: linear-gradient(${active}, ${active}); }
-.oc-sdk-btn[data-variant="outline"] { background: ${elevated}; color: ${elevatedFg}; border-color: ${border}; }
-.oc-sdk-btn[data-variant="outline"]:hover { background-image: linear-gradient(${hover}, ${hover}); }
-.oc-sdk-btn[data-variant="outline"]:active { background-image: linear-gradient(${active}, ${active}); }
-.oc-sdk-btn[data-variant="ghost"] { background: transparent; }
-.oc-sdk-btn[data-variant="ghost"]:hover { background: ${hover}; }
-.oc-sdk-btn[data-variant="ghost"]:active { background: ${active}; }
-.oc-sdk-btn[data-variant="destructive"] { --oc-sdk-tone: ${v("status-error", "red")}; color: ${errorText}; background: ${mix("var(--oc-sdk-tone)", 7, bg)}; border-color: ${mix("var(--oc-sdk-tone)", 12)}; }
-.oc-sdk-btn[data-variant="destructive"]:hover { background: ${mix("var(--oc-sdk-tone)", 9, bg)}; }
-.oc-sdk-btn[data-variant="destructive"]:active { background: ${mix("var(--oc-sdk-tone)", 11, bg)}; }
-.oc-sdk-btn[data-loading="true"] { opacity: .5; pointer-events: none; }
-.oc-sdk-btn > .oc-sdk-spinner-ring { width: 14px; height: 14px; }
-
-.oc-sdk-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.oc-sdk-field-label { font-size: 0.8125rem; font-weight: 500; }
-.oc-sdk-field-note { font-size: 0.75rem; color: ${muted}; }
-.oc-sdk-field[data-invalid="true"] .oc-sdk-field-note { color: ${errorText}; }
-.oc-sdk-input { display: block; width: 100%; min-width: 0; height: 36px; padding: 0 12px; border: 0; border-radius: ${radius}; background: ${elevated}; color: ${elevatedFg}; font-size: 0.875rem; line-height: 1.45; appearance: none; box-shadow: inset 0 0 0 1px ${mix(border, 60)}; transition: background 150ms ease-out, box-shadow 150ms ease-out; }
-textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
-.oc-sdk-input::placeholder { color: ${muted}; }
-.oc-sdk-input:hover:not(:focus) { background-image: linear-gradient(${hover}, ${hover}); }
-.oc-sdk-input:focus, .oc-sdk-input:focus-visible { box-shadow: inset 0 0 0 2px ${focus}; }
-.oc-sdk-field[data-invalid="true"] .oc-sdk-input { box-shadow: inset 0 0 0 1px ${v("status-error", "red")}; }
-.oc-sdk-field[data-invalid="true"] .oc-sdk-input:focus { box-shadow: inset 0 0 0 2px ${v("status-error", "red")}; }
-.oc-sdk-input[data-mono="true"] { font-family: ${mono}; }
-
-.oc-sdk-search { position: relative; min-width: 0; }
-.oc-sdk-search .oc-sdk-input { padding-left: 34px; padding-right: 34px; }
-.oc-sdk-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); color: ${muted}; pointer-events: none; }
-.oc-sdk-search[data-active="true"] .oc-sdk-search-icon { color: ${primary}; }
-.oc-sdk-search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: none; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 6px; color: ${muted}; }
-.oc-sdk-search[data-active="true"] .oc-sdk-search-clear { display: inline-flex; }
-.oc-sdk-search-clear:hover { background: ${hover}; color: ${fg}; }
-
-.oc-sdk-select { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.oc-sdk-trigger { display: inline-flex; align-items: center; gap: 6px; width: 100%; min-width: 0; height: 32px; padding: 0 8px 0 10px; border: 1px solid ${border}; border-radius: 6px; background: ${elevated}; color: ${elevatedFg}; font-size: 0.8125rem; text-align: left; transition: background 150ms ease-out; }
-.oc-sdk-trigger:hover { background-image: linear-gradient(${hover}, ${hover}); }
-.oc-sdk-trigger[aria-expanded="true"] { background-image: linear-gradient(${active}, ${active}); }
-.oc-sdk-trigger-value { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.oc-sdk-trigger-value[data-empty="true"] { color: ${muted}; }
-.oc-sdk-trigger-chevron { flex: 0 0 auto; color: ${muted}; }
-.oc-sdk-popup { --surface-foreground: ${elevatedFg}; position: fixed; z-index: 50; display: flex; flex-direction: column; gap: 2px; min-width: 160px; max-width: calc(100vw - 16px); max-height: min(320px, calc(100vh - 16px)); overflow: auto; padding: 4px; border: 1px solid ${mix(border, 60)}; border-radius: 12px; background: ${elevated}; color: ${elevatedFg}; box-shadow: 0 8px 24px ${mix(fg, 12)}; }
-.oc-sdk-popup-search { flex: 0 0 auto; padding: 2px 2px 4px; }
-.oc-sdk-popup-search .oc-sdk-input { height: 32px; font-size: 0.8125rem; }
-.oc-sdk-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border-radius: 8px; font-size: 0.8125rem; text-align: left; }
-.oc-sdk-option[data-active="true"] { background: ${hover}; }
-.oc-sdk-option[aria-selected="true"] { background: ${selection}; color: ${selectionFg}; }
-.oc-sdk-option[data-destructive="true"] { color: ${errorText}; }
-.oc-sdk-option[data-destructive="true"][data-active="true"] { background: ${mix(v("status-error", "red"), 10)}; }
-.oc-sdk-option-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.oc-sdk-option-hint { flex: 0 0 auto; font-size: 0.75rem; color: ${muted}; }
-.oc-sdk-option-check { flex: 0 0 auto; width: 12px; }
-.oc-sdk-popup-empty { padding: 8px; font-size: 0.8125rem; color: ${muted}; }
-
-.oc-sdk-check { display: inline-flex; align-items: flex-start; gap: 8px; width: 100%; text-align: left; }
-.oc-sdk-check-box { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; margin-top: 3px; border: 1px solid ${border}; border-radius: 4px; color: ${primary}; transition: border-color 150ms ease-out; }
-.oc-sdk-check[aria-checked="true"] .oc-sdk-check-box { border-color: ${mix(primary, 65, border)}; }
-.oc-sdk-check-box > svg { display: none; }
-.oc-sdk-check[aria-checked="true"] .oc-sdk-check-box > svg { display: block; }
-.oc-sdk-check-thumb { flex: 0 0 auto; position: relative; width: 36px; height: 20px; border-radius: 9999px; background: ${border}; transition: background 150ms ease-out; }
-.oc-sdk-check-thumb::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 9999px; background: ${bg}; transition: transform 150ms ease-out; }
-.oc-sdk-check[aria-checked="true"] .oc-sdk-check-thumb { background: ${primary}; }
-.oc-sdk-check[aria-checked="true"] .oc-sdk-check-thumb::after { transform: translateX(16px); }
-.oc-sdk-check:focus-visible { box-shadow: none; }
-.oc-sdk-check:focus-visible .oc-sdk-check-box, .oc-sdk-check:focus-visible .oc-sdk-check-thumb { ${focusRing} }
-.oc-sdk-check-text { display: flex; flex-direction: column; min-width: 0; }
-.oc-sdk-check-label { font-size: 0.875rem; }
-.oc-sdk-check-desc { font-size: 0.75rem; color: ${muted}; }
-
-.oc-sdk-tabs { display: inline-flex; gap: 2px; padding: 2px; border-radius: 10px; max-width: 100%; overflow: auto; }
-.oc-sdk-tabs[data-track="true"] { background: ${mix(fg, 4)}; }
-.oc-sdk-tab { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid transparent; border-radius: 8px; font-size: 0.8125rem; font-weight: 500; color: ${muted}; white-space: nowrap; transition: color 150ms ease-out, background 150ms ease-out; }
-.oc-sdk-tab:hover { color: ${fg}; }
-.oc-sdk-tab[aria-selected="true"] { color: ${selectionFg}; background: ${selection}; border-color: ${border}; }
-.oc-sdk-tab-count { font-size: 0.75rem; font-variant-numeric: tabular-nums; color: ${muted}; }
-
-.oc-sdk-badge { display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 9999px; font-size: 11px; font-weight: 500; line-height: 16px; white-space: nowrap; background: ${hover}; color: ${muted}; }
-.oc-sdk-badge[data-tone] { color: var(--oc-sdk-tone-text, var(--oc-sdk-tone)); background: ${mix("var(--oc-sdk-tone)", 15)}; }
-
-.oc-sdk-list { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
-.oc-sdk-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; border-radius: 6px; text-align: left; transition: background 120ms ease-out; }
-.oc-sdk-row:hover, .oc-sdk-row[data-active="true"] { background: ${hover}; }
-.oc-sdk-row[aria-selected="true"] { background: ${selection}; color: ${selectionFg}; }
-.oc-sdk-row-lead { flex: 0 0 auto; width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: ${mono}; font-size: 0.75rem; color: ${muted}; }
-.oc-sdk-row-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
-.oc-sdk-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.oc-sdk-row-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; color: ${muted}; }
-.oc-sdk-row-meta { flex: 0 0 auto; font-size: 0.75rem; font-variant-numeric: tabular-nums; color: ${muted}; }
-.oc-sdk-row[aria-selected="true"] .oc-sdk-row-lead, .oc-sdk-row[aria-selected="true"] .oc-sdk-row-sub, .oc-sdk-row[aria-selected="true"] .oc-sdk-row-meta { color: inherit; opacity: .75; }
-.oc-sdk-list-empty { padding: 16px 8px; text-align: center; font-size: 0.8125rem; color: ${muted}; }
-
-.oc-sdk-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 40px 16px; text-align: center; }
-.oc-sdk-empty-title { margin: 0; font-size: 0.8125rem; font-weight: 600; }
-.oc-sdk-empty-body { margin: 0; max-width: 32rem; font-size: 0.8125rem; color: ${muted}; }
-.oc-sdk-empty-action { margin-top: 12px; }
-
-@keyframes oc-sdk-spin { to { transform: rotate(360deg); } }
-.oc-sdk-spinner { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8125rem; color: ${muted}; }
-.oc-sdk-spinner-ring { width: 16px; height: 16px; border: 2px solid ${border}; border-top-color: ${primary}; border-radius: 9999px; animation: oc-sdk-spin .8s linear infinite; }
-.oc-sdk-spinner[data-size="sm"] .oc-sdk-spinner-ring { width: 12px; height: 12px; }
-
-.oc-sdk-banner { display: flex; align-items: flex-start; gap: 12px; padding: 8px 12px; border: 1px solid ${mix("var(--oc-sdk-tone)", 40)}; border-radius: 8px; background: ${mix("var(--oc-sdk-tone)", 10)}; }
-.oc-sdk-banner-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.oc-sdk-banner-title { font-size: 0.8125rem; font-weight: 500; color: var(--oc-sdk-tone-text, var(--oc-sdk-tone)); }
-.oc-sdk-banner-body { font-size: 0.8125rem; color: ${muted}; }
-.oc-sdk-banner-action { flex: 0 0 auto; }
-
-.oc-sdk-separator { display: flex; align-items: center; gap: 8px; width: 100%; margin: 8px 0; font-size: 0.75rem; color: ${muted}; }
-.oc-sdk-separator::before, .oc-sdk-separator::after { content: ""; flex: 1 1 auto; height: 1px; background: ${mix(border, 40)}; }
-.oc-sdk-separator[data-labeled="false"]::after { display: none; }
-.oc-sdk-popup > .oc-sdk-separator { margin: 4px 0; }
-
-.oc-sdk-progress { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.oc-sdk-progress-label { display: flex; justify-content: space-between; font-size: 0.75rem; color: ${muted}; font-variant-numeric: tabular-nums; }
-.oc-sdk-progress-track { height: 6px; border-radius: 9999px; background: ${border}; overflow: hidden; }
-.oc-sdk-progress-fill { height: 100%; border-radius: 9999px; background: var(--oc-sdk-tone, ${primary}); transform-origin: left; transition: transform 200ms ease-out; }
-
-.oc-sdk-menu { position: relative; display: inline-flex; }
-
-.oc-sdk-text { white-space: pre-wrap; overflow-wrap: anywhere; }
-.oc-sdk-text a { color: ${primaryText}; text-decoration: underline; text-underline-offset: 2px; }
-.oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
-`;
-
   // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
@@ -1965,12 +2057,12 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
-    const field = el("label", "oc-sdk oc-sdk-field");
+    const field2 = el("label", "oc-sdk oc-sdk-field");
     const caption = el("span", "oc-sdk-field-label");
     const input = props.multiline ? el("textarea", "oc-sdk-input") : el("input", "oc-sdk-input");
     const note = el("span", "oc-sdk-field-note");
-    field.append(caption, input, note);
-    root.append(field);
+    field2.append(caption, input, note);
+    root.append(field2);
     const paint = () => {
       setText(caption, props.label);
       caption.hidden = !props.label;
@@ -1986,7 +2078,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       setAttr(input, "placeholder", props.placeholder);
       input.dataset.mono = props.mono ? "true" : "false";
       const invalid = Boolean(props.error);
-      field.dataset.invalid = invalid ? "true" : "false";
+      field2.dataset.invalid = invalid ? "true" : "false";
       input.setAttribute("aria-invalid", invalid ? "true" : "false");
       const text = props.error ?? props.helper ?? "";
       setText(note, text);
@@ -2004,7 +2096,7 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       },
       dispose: () => {
         input.removeEventListener("input", onInput);
-        field.remove();
+        field2.remove();
       }
     };
   };
@@ -2147,6 +2239,12 @@ textarea.oc-sdk-input { height: auto; padding: 8px 12px; resize: vertical; }
       const hint = el("span", "oc-sdk-option-hint");
       hint.textContent = spec.hint;
       node.append(hint);
+    }
+    if (role === "option") {
+      node.dataset.mark = "check";
+      const check = el("span", "oc-sdk-option-check");
+      check.append(icon("check", 14));
+      node.append(check);
     }
     node.addEventListener("pointerenter", on.hover);
     node.addEventListener("click", on.pick);
@@ -4083,6 +4181,9 @@ ${placeholder}
   var humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
   var testPlanIssueHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
   var testPlanBatchHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
+  var testPlanHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan(?:\s*\(.*?\))?(?:\s*:)?/i;
+  var acceptanceCriteriaSectionRegex = /^[ \t]*#{1,6}\s*acceptance\s+criteria(?:\s*:)?/i;
+  var subtasksSectionRegex = /^[ \t]*#{1,6}\s*(?:actionable\s+subtasks(?:\s+checklist)?|subtasks?|tasks?)(?:\s*:)?/i;
   var headingRegex = /^[ ]{0,3}#{1,6}\s+/;
   function parseFriendlyTitle(body, defaultTitle) {
     if (!body || typeof body !== "string") {
@@ -4265,7 +4366,7 @@ ${placeholder}
     return "";
   }
   function parseOpenQuestions(body) {
-    if (!body) return [];
+    if (!body || typeof body !== "string") return [];
     const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
     const lines = cleanBody.split("\n");
     const questions = [];
@@ -4363,13 +4464,12 @@ ${placeholder}
     const nowAllComplete = nextTasks.every((t) => t.completed);
     return hadIncomplete && nowAllComplete;
   }
-  function parseSubtasks(body) {
-    if (!body) return [];
+  function parseAcceptanceCriteria(body) {
+    if (!body || typeof body !== "string") return [];
     const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
     const lines = cleanBody.split("\n");
-    const subtasks = [];
-    let inQuestionsSection = false;
-    let inHumanTasksSection = false;
+    const items = [];
+    let inAcSection = false;
     let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
       const rawLine = lines[i];
@@ -4379,12 +4479,99 @@ ${placeholder}
         continue;
       }
       if (inCodeFence) continue;
-      if (headingRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line)) {
-        inQuestionsSection = questionsSectionRegex.test(line);
-        inHumanTasksSection = humanTasksSectionRegex.test(line);
+      if (headingRegex.test(line) || acceptanceCriteriaSectionRegex.test(line)) {
+        inAcSection = acceptanceCriteriaSectionRegex.test(line);
         continue;
       }
-      if (inQuestionsSection || inHumanTasksSection) {
+      if (inAcSection) {
+        const match = line.match(checklistRegex);
+        if (match) {
+          const text = match[4].trim();
+          if (text) {
+            items.push({
+              id: `ac-${i}`,
+              lineIndex: i,
+              completed: match[2].toLowerCase() === "x",
+              text,
+              rawLine
+            });
+          }
+        }
+      }
+    }
+    return items;
+  }
+  function parseSubtasks(body) {
+    if (!body || typeof body !== "string") return [];
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const lines = cleanBody.split("\n");
+    const subtasks = [];
+    let hasExplicitSubtasksSection = false;
+    let inCode = false;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      if (/^[ \t]*(?:```|~~~)/.test(rawLine)) {
+        inCode = !inCode;
+        continue;
+      }
+      if (inCode) continue;
+      if (subtasksSectionRegex.test(rawLine)) {
+        hasExplicitSubtasksSection = true;
+        break;
+      }
+    }
+    if (hasExplicitSubtasksSection) {
+      let inSubtasksSection = false;
+      let inCodeFence2 = false;
+      for (let i = 0; i < lines.length; i++) {
+        const rawLine = lines[i];
+        const line = rawLine.replace(/\r/g, "");
+        if (/^[ \t]*(?:```|~~~)/.test(line)) {
+          inCodeFence2 = !inCodeFence2;
+          continue;
+        }
+        if (inCodeFence2) continue;
+        if (headingRegex.test(line) || subtasksSectionRegex.test(line)) {
+          inSubtasksSection = subtasksSectionRegex.test(line);
+          continue;
+        }
+        if (inSubtasksSection) {
+          const match = line.match(checklistRegex);
+          if (match) {
+            if (/^\s*(?:[-*+]|\d+\.)\s*\[[ xX]\]\s*(?:\?|Q:|Question:)/i.test(line)) {
+              continue;
+            }
+            const text = match[4].trim();
+            if (text) {
+              subtasks.push({
+                id: `task-${i}`,
+                lineIndex: i,
+                completed: match[2].toLowerCase() === "x",
+                text,
+                rawLine
+              });
+            }
+          }
+        }
+      }
+      return subtasks;
+    }
+    let inExcludedSection = false;
+    let inCodeFence = false;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const line = rawLine.replace(/\r/g, "");
+      if (/^[ \t]*(?:```|~~~)/.test(line)) {
+        inCodeFence = !inCodeFence;
+        continue;
+      }
+      if (inCodeFence) continue;
+      const isExcluded = acceptanceCriteriaSectionRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line) || testPlanHeadingRegex.test(line);
+      if (headingRegex.test(line) || isExcluded) {
+        inExcludedSection = isExcluded;
+        continue;
+      }
+      if (inExcludedSection) {
         continue;
       }
       const match = line.match(checklistRegex);
@@ -4530,10 +4717,13 @@ ${placeholder}
   function updateSubtaskInMarkdown(body, lineIndex, completed) {
     const lines = body.split("\n");
     if (lineIndex >= 0 && lineIndex < lines.length) {
-      const match = lines[lineIndex].match(checklistRegex);
+      const rawLine = lines[lineIndex];
+      const hasCr = rawLine.endsWith("\r");
+      const cleanLine = hasCr ? rawLine.slice(0, -1) : rawLine;
+      const match = cleanLine.match(checklistRegex);
       if (match) {
         const mark = completed ? "x" : " ";
-        lines[lineIndex] = `${match[1]}${mark}${match[3]}${match[4]}`;
+        lines[lineIndex] = `${match[1]}${mark}${match[3]}${match[4]}${hasCr ? "\r" : ""}`;
       }
     }
     return lines.join("\n");
@@ -4551,12 +4741,14 @@ ${placeholder}
     }
     const target = unresolved[questionIndex];
     const lines = body.split("\n");
-    const line = lines[target.lineIndex];
-    if (!line) return body;
-    const match = line.match(checklistRegex);
+    const rawLine = lines[target.lineIndex];
+    if (!rawLine) return body;
+    const hasCr = rawLine.endsWith("\r");
+    const cleanLine = hasCr ? rawLine.slice(0, -1) : rawLine;
+    const match = cleanLine.match(checklistRegex);
     if (!match) return body;
-    const lineEnding = match[4].endsWith("\r") ? "\r" : "";
-    const questionContent = match[4].replace(/\r$/, "").replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, "").trimEnd();
+    const lineEnding = hasCr ? "\r" : "";
+    const questionContent = match[4].replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, "").trimEnd();
     lines[target.lineIndex] = `${match[1]}x${match[3]}${questionContent} *(Answer: ${cleanAnswer})*${lineEnding}`;
     return lines.join("\n");
   }
@@ -4629,11 +4821,13 @@ ${questionsBlock}`;
       batchTests: []
     };
     if (!body || typeof body !== "string") return result;
-    const lines = body.split("\n");
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const lines = cleanBody.split("\n");
     let currentScope = null;
     let inCodeFence = false;
     for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
+      const rawLine = lines[i];
+      const line = rawLine.replace(/\r/g, "");
       if (/^[ \t]*(?:```|~~~)/.test(line)) {
         inCodeFence = !inCodeFence;
         continue;
@@ -6049,6 +6243,437 @@ Blocked by ${blockerRef}`;
       remaining: total - limit
     };
   }
+  function isIssueClosed2(issue) {
+    if (!issue) return false;
+    if (issue.state === "closed") return true;
+    if (issue.state_reason === "completed" || issue.state_reason === "not_planned") return true;
+    const labelNames = (issue.labels || []).map(
+      (l) => (typeof l === "string" ? l : l?.name || "").toLowerCase()
+    );
+    if (labelNames.includes("status:done") || labelNames.includes("status:closed") || labelNames.includes("done") || labelNames.includes("closed")) {
+      return true;
+    }
+    return false;
+  }
+  function resolveMatchedSession(issue, sessionOrList) {
+    if (!sessionOrList || !issue) return null;
+    const issueNum = typeof issue.number === "number" ? issue.number : parseInt(String(issue.number || issue.id || 0), 10);
+    const issueNumStr = String(issueNum);
+    const isBoundToOther = (s, currentNum) => {
+      if (!s || !currentNum) return false;
+      const currentStr = String(currentNum);
+      if (Array.isArray(s.items)) {
+        for (const it of s.items) {
+          if (!it) continue;
+          if (it.id === currentStr) return false;
+          const otherNum = it.data?.issueNumber || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers[0] || (Number.isFinite(Number(it.id)) ? Number(it.id) : null);
+          if (otherNum && Number(otherNum) !== currentNum) return true;
+        }
+      }
+      if (typeof s.title === "string") {
+        const match = s.title.match(/#(\d+)/);
+        if (match && Number(match[1]) !== currentNum) return true;
+      }
+      const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
+      if (wtName) {
+        const match = wtName.match(/issue-(\d+)/);
+        if (match && Number(match[1]) !== currentNum) return true;
+      }
+      return false;
+    };
+    if (Array.isArray(sessionOrList)) {
+      if (Number.isFinite(issueNum) && issueNum > 0) {
+        return sessionOrList.find((s) => {
+          if (!s) return false;
+          if (s.items && Array.isArray(s.items) && s.items.some(
+            (it) => it && (it.id === issueNumStr || it.data?.issueNumber === issueNum || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers.includes(issueNum))
+          )) {
+            return true;
+          }
+          if (s.data && (s.data.issueNumber === issueNum || Array.isArray(s.data.issueNumbers) && s.data.issueNumbers.includes(issueNum))) {
+            return true;
+          }
+          if (typeof s.title === "string" && s.title.includes(`#${issueNum}`)) return true;
+          const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
+          if (wtName && wtName.includes(`issue-${issueNum}`)) return true;
+          return false;
+        }) || (sessionOrList.length === 1 && !isBoundToOther(sessionOrList[0], issueNum) ? sessionOrList[0] : null);
+      }
+      return sessionOrList.length === 1 ? sessionOrList[0] : null;
+    } else if (typeof sessionOrList === "object") {
+      if (Number.isFinite(issueNum) && issueNum > 0 && isBoundToOther(sessionOrList, issueNum)) {
+        return null;
+      }
+      return sessionOrList;
+    }
+    return null;
+  }
+  var ATTENTION_PRECEDENCE = {
+    "needs-permission": 4,
+    "needs-decision": 3,
+    "needs-review": 2,
+    none: 1
+  };
+  var PHASE_PRECEDENCE = {
+    done: 10,
+    archive: 9,
+    publication: 8,
+    human_verification: 7,
+    verification: 6,
+    execution: 5,
+    planning: 4,
+    alignment: 3,
+    exploration: 2,
+    draft: 1
+  };
+  var LIVENESS_PRECEDENCE = {
+    failed: 5,
+    retrying: 4,
+    running: 3,
+    completed: 2,
+    idle: 1
+  };
+  function resolveV2Metadata(issue, session, allIssues) {
+    if (!issue) {
+      return {
+        phase: "draft",
+        attention: "none",
+        liveness: "idle",
+        dependencyState: "ready",
+        isExplicitV2: false
+      };
+    }
+    const rawLabels = Array.isArray(issue.labels) ? issue.labels : [];
+    const labelNames = rawLabels.map(
+      (l) => (typeof l === "string" ? l : l?.name || "").trim().toLowerCase()
+    );
+    let phase = null;
+    let attention = null;
+    let liveness = null;
+    let dependencyState = null;
+    let isExplicitV2 = false;
+    for (const name of labelNames) {
+      if (name.startsWith("phase:")) {
+        const p = name.slice(6).trim().replace(/-/g, "_");
+        if (p === "draft" || p === "exploration" || p === "alignment" || p === "planning" || p === "execution" || p === "verification" || p === "human_verification" || p === "publication" || p === "done" || p === "archive") {
+          const candidate = p;
+          if (!phase || PHASE_PRECEDENCE[candidate] > PHASE_PRECEDENCE[phase]) {
+            phase = candidate;
+          }
+          isExplicitV2 = true;
+        }
+      } else if (name.startsWith("attention:")) {
+        const a = name.slice(10).trim();
+        if (a === "none" || a === "needs-decision" || a === "needs-permission" || a === "needs-review") {
+          const candidate = a;
+          if (!attention || ATTENTION_PRECEDENCE[candidate] > ATTENTION_PRECEDENCE[attention]) {
+            attention = candidate;
+          }
+          isExplicitV2 = true;
+        }
+      } else if (name.startsWith("liveness:")) {
+        const l = name.slice(9).trim();
+        if (l === "idle" || l === "running" || l === "retrying" || l === "failed" || l === "completed") {
+          const candidate = l;
+          if (!liveness || LIVENESS_PRECEDENCE[candidate] > LIVENESS_PRECEDENCE[liveness]) {
+            liveness = candidate;
+          }
+        }
+      } else if (name === "dependency:blocked" || name === "dependency:blocked-by-dependency") {
+        dependencyState = "blocked-by-dependency";
+      } else if (name === "dependency:ready") {
+        if (dependencyState !== "blocked-by-dependency") {
+          dependencyState = "ready";
+        }
+      }
+    }
+    if (!phase) {
+      const rawPhase = issue.phase || (issue.v2Metadata?.isExplicitV2 ? issue.v2Metadata.phase : null);
+      if (rawPhase && typeof rawPhase === "string") {
+        const p = rawPhase.trim().toLowerCase().replace(/-/g, "_");
+        if (p === "draft" || p === "exploration" || p === "alignment" || p === "planning" || p === "execution" || p === "verification" || p === "human_verification" || p === "publication" || p === "done" || p === "archive") {
+          phase = p;
+          isExplicitV2 = true;
+        }
+      }
+    }
+    if (!attention) {
+      const rawAttention = issue.attention || (issue.v2Metadata?.isExplicitV2 ? issue.v2Metadata.attention : null);
+      if (rawAttention && typeof rawAttention === "string") {
+        const a = rawAttention.trim().toLowerCase();
+        if (a === "none" || a === "needs-decision" || a === "needs-permission" || a === "needs-review") {
+          attention = a;
+          isExplicitV2 = true;
+        }
+      }
+    }
+    const closed = isIssueClosed2(issue);
+    if (!phase) {
+      if (closed) {
+        phase = "done";
+      } else if (labelNames.includes("archived") || labelNames.includes("archive")) {
+        phase = "archive";
+      } else if (labelNames.includes("status:in-review")) {
+        phase = "verification";
+      } else if (labelNames.includes("status:in-progress")) {
+        phase = "execution";
+      } else if (labelNames.includes("status:planned") || labelNames.includes("status:todo")) {
+        phase = "planning";
+      } else if (labelNames.includes("status:needs-alignment")) {
+        phase = "alignment";
+      } else if (labelNames.includes("status:draft") || labelNames.includes("status:backlog")) {
+        phase = "draft";
+      } else if (labelNames.includes("status:needs-human")) {
+        phase = "execution";
+      } else if (isVagueIdea(issue)) {
+        phase = "draft";
+      } else {
+        phase = "planning";
+      }
+    }
+    const matchedSession = resolveMatchedSession(issue, session);
+    if (!attention) {
+      if (closed || phase === "done" || phase === "archive") {
+        attention = "none";
+      } else {
+        if (matchedSession) {
+          const act = (typeof matchedSession.activity === "string" ? matchedSession.activity : "").trim();
+          if (act === "waiting-permission") {
+            attention = "needs-permission";
+          } else if (act === "waiting-question") {
+            attention = "needs-decision";
+          } else if (act === "waiting-review") {
+            attention = "needs-review";
+          } else if (act.startsWith("waiting")) {
+            attention = "needs-decision";
+          }
+        }
+        if (!attention) {
+          const humanTasks = Array.isArray(issue.humanTasks) ? issue.humanTasks : parseHumanTasks(typeof issue.body === "string" ? issue.body : "");
+          const openHumanTasks = humanTasks.filter((t) => !t.completed);
+          if (openHumanTasks.length > 0) {
+            const hasPerm = openHumanTasks.some(
+              (t) => /\b(permission|grant|access|secret|token|credential|deploy|provision)\b/i.test(t.text)
+            );
+            const hasDec = openHumanTasks.some(
+              (t) => /\b(decide|decision|choose|choice|answer)\b/i.test(t.text)
+            );
+            if (hasPerm) {
+              attention = "needs-permission";
+            } else if (hasDec) {
+              attention = "needs-decision";
+            } else {
+              attention = "needs-review";
+            }
+          } else {
+            const questions = Array.isArray(issue.openQuestions) ? issue.openQuestions : parseOpenQuestions(typeof issue.body === "string" ? issue.body : "");
+            const openQuestions = questions.filter((q) => !q.completed);
+            if (openQuestions.length > 0) {
+              attention = "needs-decision";
+            } else if (labelNames.includes("status:needs-human")) {
+              attention = "needs-review";
+            } else {
+              attention = "none";
+            }
+          }
+        }
+      }
+    }
+    if (!liveness) {
+      if (matchedSession) {
+        const act = (typeof matchedSession.activity === "string" ? matchedSession.activity : "").trim();
+        const stat = (typeof matchedSession.status === "string" ? matchedSession.status : "").trim();
+        if (act === "running" || stat === "running") {
+          liveness = "running";
+        } else if (act === "retrying" || stat === "retrying") {
+          liveness = "retrying";
+        } else if (act === "failed" || stat === "failed" || matchedSession.error) {
+          liveness = "failed";
+        } else if (act === "completed" || stat === "completed") {
+          liveness = "completed";
+        } else {
+          liveness = "idle";
+        }
+      } else if (closed || phase === "done") {
+        liveness = "completed";
+      } else {
+        liveness = "idle";
+      }
+    }
+    if (!dependencyState) {
+      const blockers = parseIssueDependencies(typeof issue.body === "string" ? issue.body : "");
+      if (blockers.length > 0) {
+        if (allIssues && Array.isArray(allIssues) && allIssues.length > 0) {
+          const openBlockers = blockers.filter((num) => {
+            const target = allIssues.find((i) => i.number === num);
+            if (!target) return true;
+            return !isIssueClosed2(target);
+          });
+          dependencyState = openBlockers.length > 0 ? "blocked-by-dependency" : "ready";
+        } else {
+          dependencyState = "blocked-by-dependency";
+        }
+      } else {
+        dependencyState = "ready";
+      }
+    }
+    return {
+      phase,
+      attention,
+      liveness,
+      dependencyState,
+      isExplicitV2
+    };
+  }
+  function resolveIssueColumn2(issue, sessionOrList) {
+    if (!issue) return null;
+    if (isIssueClosed2(issue)) {
+      return "done";
+    }
+    const rawLabels = Array.isArray(issue.labels) ? issue.labels : [];
+    const labelNames = rawLabels.map(
+      (l) => (typeof l === "string" ? l : l?.name || "").trim().toLowerCase()
+    );
+    if (labelNames.includes("status:done")) return "done";
+    if (labelNames.includes("status:in-review")) return "in-review";
+    if (labelNames.includes("status:needs-human")) return "needs-human";
+    const matchedSession = resolveMatchedSession(issue, sessionOrList);
+    const isSessionRunning = Boolean(matchedSession && matchedSession.activity === "running");
+    const isSessionWaiting = Boolean(
+      matchedSession && (matchedSession.activity === "waiting-permission" || matchedSession.activity === "waiting-question" || matchedSession.activity.startsWith("waiting"))
+    );
+    const isSessionIdle = Boolean(matchedSession && matchedSession.activity === "idle");
+    if (labelNames.includes("status:in-progress")) {
+      if (isSessionIdle || isSessionWaiting) {
+        return "needs-human";
+      }
+      return "in-progress";
+    }
+    if (labelNames.includes("status:planned")) {
+      if (isSessionRunning) return "in-progress";
+      if (isSessionWaiting) return "needs-human";
+      return "planned";
+    }
+    if (labelNames.includes("status:todo")) {
+      if (isSessionRunning) return "in-progress";
+      if (isSessionWaiting) return "needs-human";
+      return "todo";
+    }
+    if (labelNames.includes("status:backlog")) {
+      if (isSessionRunning) return "in-progress";
+      if (isSessionWaiting) return "needs-human";
+      return "backlog";
+    }
+    if (labelNames.includes("status:draft")) {
+      if (isSessionRunning) return "in-progress";
+      if (isSessionWaiting || isSessionIdle) return "needs-human";
+      return "draft";
+    }
+    const hasExplicitPhase = labelNames.some((l) => l.startsWith("phase:"));
+    const hasExplicitAttention = labelNames.some((l) => l.startsWith("attention:"));
+    if (hasExplicitPhase || hasExplicitAttention || issue.v2Metadata?.isExplicitV2) {
+      const meta = issue.v2Metadata && issue.v2Metadata.isExplicitV2 ? issue.v2Metadata : resolveV2Metadata(issue, sessionOrList);
+      if (meta.phase === "done" || meta.phase === "archive") {
+        return "done";
+      }
+      if (isSessionWaiting || isSessionIdle) {
+        return "needs-human";
+      }
+      if (meta.attention === "needs-decision" || meta.attention === "needs-permission" || meta.attention === "needs-review") {
+        return "needs-human";
+      }
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      switch (meta.phase) {
+        case "draft":
+        case "exploration":
+        case "alignment":
+          return "draft";
+        case "planning":
+          return "todo";
+        case "execution":
+          return "in-progress";
+        case "verification":
+        case "publication":
+          return "in-review";
+        case "human_verification":
+          return "needs-human";
+        case "done":
+        case "archive":
+          return "done";
+        default:
+          return "todo";
+      }
+    }
+    if (isVagueIdea(issue)) {
+      if (isSessionRunning) return "in-progress";
+      if (isSessionWaiting || isSessionIdle) return "needs-human";
+      return "draft";
+    }
+    if (matchedSession) {
+      if (isSessionRunning) return "in-progress";
+      if (isSessionWaiting || isSessionIdle) return "needs-human";
+    }
+    return "todo";
+  }
+  function groupIssuesByAttention(issues2, sessionIndex2) {
+    const groups = {
+      "needs-decision": [],
+      "needs-permission": [],
+      "needs-review": [],
+      none: []
+    };
+    if (!issues2 || !Array.isArray(issues2)) {
+      return groups;
+    }
+    for (const issue of issues2) {
+      if (!issue || typeof issue !== "object") {
+        continue;
+      }
+      let session = null;
+      if (sessionIndex2) {
+        if (sessionIndex2 instanceof Map) {
+          if (Number.isFinite(issue.number)) {
+            session = sessionIndex2.get(issue.number);
+          }
+          if (!session) {
+            const rKey = issueRepoKey(issue);
+            if (rKey) session = sessionIndex2.get(rKey);
+          }
+        } else if (Array.isArray(sessionIndex2)) {
+          session = resolveMatchedSession(issue, sessionIndex2);
+        } else if (typeof sessionIndex2 === "object") {
+          if (Number.isFinite(issue.number) && sessionIndex2[issue.number]) {
+            session = sessionIndex2[issue.number];
+          } else {
+            session = resolveMatchedSession(issue, sessionIndex2);
+          }
+        }
+      }
+      const meta = resolveV2Metadata(issue, session, issues2);
+      const att = meta && meta.attention;
+      const targetGroup = att === "needs-decision" || att === "needs-permission" || att === "needs-review" ? att : "none";
+      groups[targetGroup].push(issue);
+    }
+    return groups;
+  }
+  function filterIssuesByAttention(issues2, attention, sessionIndex2) {
+    if (!issues2 || !Array.isArray(issues2)) {
+      return [];
+    }
+    const validAttentions = /* @__PURE__ */ new Set([
+      "none",
+      "needs-decision",
+      "needs-permission",
+      "needs-review"
+    ]);
+    if (!validAttentions.has(attention)) {
+      return [];
+    }
+    const grouped = groupIssuesByAttention(issues2, sessionIndex2);
+    return grouped[attention] || [];
+  }
   function normalizeGithubIssues(rawItems) {
     if (!rawItems || !Array.isArray(rawItems)) return [];
     const parseRepo = (val) => {
@@ -6063,25 +6688,38 @@ Blocked by ${blockerRef}`;
     };
     return rawItems.filter((item) => item && !item.pull_request).map((item) => {
       const repo = parseRepo(item.repo) || parseRepo(item.repository_url) || parseRepo(item.html_url) || void 0;
-      return {
+      const ac = parseAcceptanceCriteria(item.body || "");
+      const subtasks = parseSubtasks(item.body || "");
+      const openQuestions = parseOpenQuestions(item.body || "");
+      const humanTasks = parseHumanTasks(item.body || "");
+      const labels = (item.labels || []).map((l) => typeof l === "string" ? { name: l } : { name: l.name, ...l.color ? { color: l.color } : {} });
+      const issue = {
         number: item.number,
         title: item.title || "",
         body: item.body || "",
         state: item.state || "open",
         html_url: item.html_url || "",
-        labels: (item.labels || []).map((l) => typeof l === "string" ? { name: l } : { name: l.name, ...l.color ? { color: l.color } : {} }),
+        labels,
         ...item.user ? { user: { login: item.user.login, ...item.user.avatar_url ? { avatar_url: item.user.avatar_url } : {} } } : {},
         assignees: (item.assignees || []).map((a) => ({ login: a.login, ...a.avatar_url ? { avatar_url: a.avatar_url } : {} })),
         comments: item.comments || 0,
         created_at: item.created_at || "",
         ...item.updated_at ? { updated_at: item.updated_at } : {},
-        subtasks: parseSubtasks(item.body || ""),
-        openQuestions: parseOpenQuestions(item.body || ""),
-        humanTasks: parseHumanTasks(item.body || ""),
+        subtasks,
+        openQuestions,
+        humanTasks,
+        ...ac.length > 0 ? { acceptanceCriteria: ac } : {},
         ...repo ? { repo } : {},
         ...item.projectId ? { projectId: item.projectId } : {},
         ...item.projectName ? { projectName: item.projectName } : {}
       };
+      const shouldPopulateV2 = Boolean(
+        item.v2Metadata || item.labels !== void 0 || ac.length > 0 || item.phase || item.attention
+      );
+      if (shouldPopulateV2) {
+        issue.v2Metadata = resolveV2Metadata(issue);
+      }
+      return issue;
     });
   }
   function mergeIssuePages(existing, incoming) {
@@ -8093,7 +8731,7 @@ Blocked by ${blockerRef}`;
       await host.toast({ kind: "error", message: `Failed to move #${issue.number}` });
     }
   }
-  function isIssueClosed2(issue) {
+  function isIssueClosed3(issue) {
     if (!issue) return false;
     if (typeof issue.state === "string" && issue.state.toLowerCase() === "closed") {
       return true;
@@ -8169,7 +8807,7 @@ Blocked by ${blockerRef}`;
     let newState = issue.state;
     let targetCategory = "todo";
     if (!isArch) {
-      const currentCategory = resolveIssueColumn2(issue) || "todo";
+      const currentCategory = resolveIssueColumn3(issue) || "todo";
       if (!clean.some((n) => n.startsWith("status:"))) {
         clean.push(`status:${currentCategory}`);
       }
@@ -8273,7 +8911,7 @@ Blocked by ${blockerRef}`;
     ];
     const map = new Map(groups.map((g) => [g.id, g]));
     for (const issue of issuesList) {
-      const col = resolveIssueColumn2(issue);
+      const col = resolveIssueColumn3(issue);
       if (col && map.has(col)) {
         map.get(col).issues.push(issue);
       }
@@ -8301,9 +8939,9 @@ Blocked by ${blockerRef}`;
     }
     return numMatch || null;
   }
-  function resolveIssueColumn2(issue, sessionOverride) {
+  function resolveIssueColumn3(issue, sessionOverride) {
     if (!issue) return null;
-    if (isIssueClosed2(issue)) {
+    if (isIssueClosed3(issue)) {
       return "done";
     }
     const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
@@ -8413,19 +9051,19 @@ Blocked by ${blockerRef}`;
   }
   function resolveDefaultTab2(issues2) {
     if (!issues2 || issues2.length === 0) return "all";
-    const hasNeedsHuman = issues2.some((i) => resolveIssueColumn2(i) === "needs-human");
+    const hasNeedsHuman = issues2.some((i) => resolveIssueColumn3(i) === "needs-human");
     if (hasNeedsHuman) return "needs-human";
-    const hasReview = issues2.some((i) => resolveIssueColumn2(i) === "in-review");
+    const hasReview = issues2.some((i) => resolveIssueColumn3(i) === "in-review");
     if (hasReview) return "in-review";
-    const hasProgress = issues2.some((i) => resolveIssueColumn2(i) === "in-progress");
+    const hasProgress = issues2.some((i) => resolveIssueColumn3(i) === "in-progress");
     if (hasProgress) return "in-progress";
-    const hasTodo = issues2.some((i) => resolveIssueColumn2(i) === "todo");
+    const hasTodo = issues2.some((i) => resolveIssueColumn3(i) === "todo");
     if (hasTodo) return "todo";
-    const hasPlanned = issues2.some((i) => resolveIssueColumn2(i) === "planned");
+    const hasPlanned = issues2.some((i) => resolveIssueColumn3(i) === "planned");
     if (hasPlanned) return "planned";
-    const hasBacklog = issues2.some((i) => resolveIssueColumn2(i) === "backlog");
+    const hasBacklog = issues2.some((i) => resolveIssueColumn3(i) === "backlog");
     if (hasBacklog) return "backlog";
-    const hasDraft = issues2.some((i) => resolveIssueColumn2(i) === "draft");
+    const hasDraft = issues2.some((i) => resolveIssueColumn3(i) === "draft");
     if (hasDraft) return "draft";
     return "all";
   }
@@ -8449,7 +9087,7 @@ Blocked by ${blockerRef}`;
     };
     const visibleIssues = issues.filter((issue) => showArchivedOnly ? isIssueArchived(issue) : !isIssueArchived(issue));
     visibleIssues.forEach((issue) => {
-      const col = resolveIssueColumn2(issue);
+      const col = resolveIssueColumn3(issue);
       if (col && counts[col] !== void 0) {
         counts[col]++;
       }
@@ -8711,7 +9349,7 @@ Blocked by ${blockerRef}`;
         <div class="micro-bar"><div class="micro-fill" style="width: ${pct}%;"></div></div>
       </div>
     ` : "<span></span>";
-    const col = resolveIssueColumn2(issue);
+    const col = resolveIssueColumn3(issue);
     const nextAction = col ? getNextColumnAction(col) : { label: "To Do", target: "todo", icon: "\u2192" };
     const isArch = isIssueArchived(issue);
     let archiveCategoryBadge = "";
@@ -8865,7 +9503,7 @@ Blocked by ${blockerRef}`;
   var buildCardElement = renderIssueCard;
   function renderListView(filteredIssues) {
     elListViewContainer.innerHTML = "";
-    const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn2(i) === activeTab);
+    const listItems = activeTab === "all" ? filteredIssues : filteredIssues.filter((i) => resolveIssueColumn3(i) === activeTab);
     if (listItems.length === 0) {
       if (isLoading && issues.length === 0) {
         elListViewContainer.innerHTML = `
@@ -8964,7 +9602,7 @@ Blocked by ${blockerRef}`;
       { id: "done", title: "Done" }
     ];
     columns.forEach((col) => {
-      const colIssues = filteredIssues.filter((i) => resolveIssueColumn2(i) === col.id);
+      const colIssues = filteredIssues.filter((i) => resolveIssueColumn3(i) === col.id);
       const colEl = document.createElement("div");
       colEl.className = "kanban-col";
       colEl.dataset.column = col.id;
@@ -9186,8 +9824,8 @@ Blocked by ${blockerRef}`;
       return [];
     };
     const humanIssues = filteredIssues.filter((i) => {
-      if (resolveIssueColumn2(i) === "done") return false;
-      if (resolveIssueColumn2(i) === "needs-human") return true;
+      if (resolveIssueColumn3(i) === "done") return false;
+      if (resolveIssueColumn3(i) === "needs-human") return true;
       const session = getIssueSession(i);
       const todos = collectHumanTodos(i, session);
       if (todos.length > 0) return true;
@@ -9602,7 +10240,7 @@ Blocked by ${blockerRef}`;
       done: []
     };
     for (const issue of filteredIssues) {
-      const col = resolveIssueColumn2(issue);
+      const col = resolveIssueColumn3(issue);
       if (col && groups[col]) {
         groups[col].push(issue);
       }
@@ -9719,7 +10357,7 @@ Blocked by ${blockerRef}`;
       card.setAttribute("role", "region");
       const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
       card.setAttribute("aria-label", `Issue #${issue.number}: ${displayTitle}`);
-      const col = resolveIssueColumn2(issue) || "backlog";
+      const col = resolveIssueColumn3(issue) || "backlog";
       const statusMeta = STATUS_METADATA[col];
       const header = document.createElement("div");
       header.className = "questions-issue-header";
@@ -10584,7 +11222,7 @@ Blocked by ${blockerRef}`;
           pill.style.alignItems = "center";
           pill.style.gap = "4px";
           pill.style.cursor = "pointer";
-          const isClosed = blockerIssue ? isIssueClosed2(blockerIssue) : false;
+          const isClosed = blockerIssue ? isIssueClosed3(blockerIssue) : false;
           if (isClosed) pill.style.opacity = "0.6";
           pill.innerHTML = `
           <span>#${bNum} ${escapeHtml(blockerIssue?.title || "")}</span>
@@ -10611,7 +11249,7 @@ Blocked by ${blockerRef}`;
           const pill = document.createElement("div");
           pill.className = "badge";
           pill.style.cursor = "pointer";
-          const isClosed = isIssueClosed2(dep);
+          const isClosed = isIssueClosed3(dep);
           if (isClosed) pill.style.opacity = "0.6";
           pill.textContent = `#${dep.number} ${dep.title}`;
           pill.addEventListener("click", () => openDrawer(dep));
@@ -10754,7 +11392,7 @@ Blocked by ${blockerRef}`;
     elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : "";
     elDrawerGithubLink.href = issue.html_url;
     elDrawerIssueTitle.textContent = issue.title;
-    const col = resolveIssueColumn2(issue);
+    const col = resolveIssueColumn3(issue);
     elDrawerStatusSelect.value = col || "none";
     if (elDrawerPrioritySelect) {
       elDrawerPrioritySelect.value = getIssuePriority(issue) || "none";
@@ -10775,7 +11413,7 @@ Blocked by ${blockerRef}`;
       };
     }
     if (elBtnDrawerToggleClose) {
-      const isClosed = isIssueClosed2(issue);
+      const isClosed = isIssueClosed3(issue);
       elBtnDrawerToggleClose.textContent = isClosed ? "Reopen Issue" : "Close Issue";
       elBtnDrawerToggleClose.onclick = () => {
         void updateIssueStatus(issue, isClosed ? "todo" : "done");
@@ -11136,7 +11774,7 @@ Blocked by ${blockerRef}`;
       <div class="related-issue-title" title="${escapeHtml(other.title)}">#${other.number} ${escapeHtml(other.title)}</div>
       <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
         ${compHtml}
-        <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn2(other) || "all"}</span>
+        <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn3(other) || "all"}</span>
         ${linkBtnHtml}
       </div>
     `;
