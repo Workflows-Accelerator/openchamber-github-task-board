@@ -25,6 +25,7 @@ Preflight facts are true and authoritative at dispatch: do not run initial disco
 service/task-claim.ts
 service/session-watcher.ts
 service/reconciler.ts
+service/main.ts
 test/stage2b-pilot-coordinator.test.js
 .agents/run/task-centred-architecture/outputs/task-208-reconciler.md
 </owned_paths>

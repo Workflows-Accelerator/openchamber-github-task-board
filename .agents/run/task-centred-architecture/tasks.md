@@ -44,7 +44,7 @@
 | Task 205: Integration Merge of Stage 2A | COMPLETE | ses_3b8d738aafbf3d2652a153e8 / engineer | Brief `tasks/task-205-integrate-stage2a-merge.md` | Merge commit 7cc6399; bundle rebuild cf9acf8; worktree removed; branch preserved; Stage 2A LANDED |
 | Stage 2B: Host Probing & Pilot Coordinator | IN PROGRESS | Manager | Empirical probe complete (discovered `contributes.service`); authoring 6 tasks | Tasks 206–211 |
 | Task 206: Service Architecture & Build Pipeline | COMPLETE | ses_cf83f53c9a5421924e3a4e7f / engineer | package.json service contributes, esbuild script, types.ts, config.ts, main.ts; 0 type errors; 413 tests pass | Proceed to Task 207 |
-| Task 207: Single-Writer Lease & CAS Pre-Flight | RUNNING | ses_8a5d6a3f02d06c0a3eae8433 / engineer | Brief `tasks/task-207-lease-and-cas.md` | In progress in worktree |
+| Task 207: Single-Writer Lease & CAS Pre-Flight | COMPLETE | ses_8a5d6a3f02d06c0a3eae8433 / engineer | LeaseStore atomic persistence, TTL, renewals, reclamation, CAS SHA-256; 17/17 tests pass | Proceed to Task 208 |
 | Task 208: Task Claiming & Reconciler | QUEUED | engineer | Brief `tasks/task-208-task-claiming-and-reconciler.md` | Awaits Task 207 |
 | Task 209: Stage 2B Proof & Bundle Build | QUEUED | engineer | Brief `tasks/task-209-proof-and-bundle-build.md` | Awaits Task 208 |
 | Task 210: Hostile Adversarial Review (L4) | QUEUED | engineer | Brief `tasks/task-210-hostile-adversarial-review.md` | Awaits Task 209 |
