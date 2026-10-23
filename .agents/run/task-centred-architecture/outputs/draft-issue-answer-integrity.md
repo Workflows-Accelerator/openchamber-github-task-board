@@ -11,8 +11,7 @@ Source evidence (read at `feat/v2-binding-and-ratelimit`, before any fix):
 
 Status: reported from source reading by the #30/#31 design; reproduction and exact counts are being verified by an independent review. Not yet proven by a failing test.
 
-### Work Type:
-bug
+### Work Type: bug
 
 ## Acceptance Criteria:
 - [ ] Answering a question either writes the answer to that exact question or fails with a visible message; success is never shown for an unwritten or misdirected answer.
