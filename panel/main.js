@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
@@ -65,20 +65,20 @@
   }
   var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_DEVICE_STORAGE_TOTAL_BYTES = 16777216;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
   var GUEST_SHELL_ID_MAX = 128;
   var GUEST_SHELLS_MAX = 200;
   var GUEST_SHELL_OUTPUT_TAIL_MAX = 65536;
   var GUEST_SHELL_END_STATUSES = ["exited", "timeout", "killed", "stopped", "unknown"];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
   var GUEST_STATUS_CONTROLS_MAX = 4;
   var GUEST_STATUS_CONTROL_ID = /^[a-z][a-z0-9-]{0,39}$/;
   var GUEST_STATUS_CONTROL_LABEL_MAX = 60;
@@ -121,7 +121,7 @@
     return true;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
   var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
@@ -179,7 +179,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
   var GUEST_POPOVER_ID = /^[A-Za-z0-9_-]{1,80}$/;
   var GUEST_POPOVER_COORDINATE_MAX = 1e5;
   var GUEST_POPOVER_WIDTH_MIN = 160;
@@ -223,7 +223,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -459,7 +459,7 @@
     return wire;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
   var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
@@ -1394,7 +1394,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1444,7 +1444,7 @@
     return { requestId, action, parameters, context: readContext(context) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1565,7 +1565,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1655,7 +1655,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1946,7 +1946,7 @@ ${GUEST_SCROLLBAR_CSS}
 ${UI_SIZE_CSS}
 ${GUEST_UI_LOOK_CSS}`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -2005,7 +2005,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -2053,7 +2053,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2101,7 +2101,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -2125,7 +2125,7 @@ ${GUEST_UI_LOOK_CSS}`;
     return node;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2186,7 +2186,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -2220,7 +2220,7 @@ ${GUEST_UI_LOOK_CSS}`;
     return target?.id ?? null;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -2261,7 +2261,7 @@ ${GUEST_UI_LOOK_CSS}`;
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -2300,7 +2300,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -2457,7 +2457,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2501,7 +2501,7 @@ ${GUEST_UI_LOOK_CSS}`;
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2561,7 +2561,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2586,7 +2586,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2674,7 +2674,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2716,7 +2716,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2745,7 +2745,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2791,7 +2791,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2817,7 +2817,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2860,7 +2860,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2966,7 +2966,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -7336,6 +7336,7 @@ Blocked by ${blockerRef}`;
   var isFilterBarOpen = false;
   var selectedIssueNumbers = /* @__PURE__ */ new Set();
   var userLayoutPreference = "auto";
+  var currentAttentionFilter = "all";
   var graphSelectedTheme = "all";
   var graphShowDone = false;
   var isDraggingEdge = false;
@@ -7391,6 +7392,8 @@ Blocked by ${blockerRef}`;
   var elViewSelectCurrentLabel = document.getElementById("viewSelectCurrentLabel");
   var elViewSelectCurrentIcon = document.getElementById("viewSelectCurrentIcon");
   var elBtnGraphToggle = document.getElementById("btnGraphToggle");
+  var elBtnViewAttention = document.getElementById("btnViewAttention");
+  var elAttentionViewBadge = document.getElementById("attentionViewBadge");
   var elBtnViewHuman = document.getElementById("btnViewHuman");
   var elBtnViewAllTasks = document.getElementById("btnViewAllTasks");
   var elBtnViewQuestions = document.getElementById("btnViewQuestions");
@@ -7444,6 +7447,7 @@ Blocked by ${blockerRef}`;
   var elHumanViewContainer = document.getElementById("humanViewContainer");
   var elAllTasksViewContainer = document.getElementById("allTasksViewContainer");
   var elQuestionsViewContainer = document.getElementById("questionsViewContainer");
+  var elAttentionViewContainer = document.getElementById("attentionViewContainer");
   var kanbanCardContainers = {
     "draft": document.getElementById("kCardsDraft"),
     "backlog": document.getElementById("kCardsBacklog"),
@@ -9342,6 +9346,19 @@ Blocked by ${blockerRef}`;
       elListViewContainer.appendChild(card);
     });
   }
+  function updateAttentionBadge(issuesList) {
+    if (!elAttentionViewBadge) return;
+    const targetSessionIndex = sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex;
+    const grouped = groupIssuesByAttention(issuesList, targetSessionIndex);
+    const total = grouped["needs-decision"].length + grouped["needs-permission"].length + grouped["needs-review"].length;
+    if (total > 0) {
+      elAttentionViewBadge.textContent = String(total);
+      elAttentionViewBadge.style.display = "inline-flex";
+    } else {
+      elAttentionViewBadge.textContent = "0";
+      elAttentionViewBadge.style.display = "none";
+    }
+  }
   function renderViews() {
     updateBadgeCounts();
     if (elSelectFilterTag) {
@@ -9407,6 +9424,7 @@ Blocked by ${blockerRef}`;
       if (elHumanViewContainer) elHumanViewContainer.style.display = "none";
       if (elAllTasksViewContainer) elAllTasksViewContainer.style.display = "none";
       if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = "none";
+      if (elAttentionViewContainer) elAttentionViewContainer.style.display = "none";
       if (elListViewContainer) {
         elListViewContainer.style.display = "flex";
         renderArchiveView(sorted);
@@ -9420,12 +9438,15 @@ Blocked by ${blockerRef}`;
     if (elHumanViewContainer) elHumanViewContainer.style.display = "";
     if (elAllTasksViewContainer) elAllTasksViewContainer.style.display = "";
     if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = "";
+    if (elAttentionViewContainer) elAttentionViewContainer.style.display = "";
     applyLayoutMode(false);
-    const activeLayout = document.body.getAttribute("data-layout") === "graph" ? "graph" : document.body.getAttribute("data-layout") === "kanban" ? "kanban" : document.body.getAttribute("data-layout") === "human" ? "human" : document.body.getAttribute("data-layout") === "all-tasks" ? "all-tasks" : document.body.getAttribute("data-layout") === "questions" ? "questions" : "list";
+    const activeLayout = document.body.getAttribute("data-layout") === "graph" ? "graph" : document.body.getAttribute("data-layout") === "kanban" ? "kanban" : document.body.getAttribute("data-layout") === "attention" ? "attention" : document.body.getAttribute("data-layout") === "human" ? "human" : document.body.getAttribute("data-layout") === "all-tasks" ? "all-tasks" : document.body.getAttribute("data-layout") === "questions" ? "questions" : "list";
+    updateAttentionBadge(filtered);
     if (currentRenderedLayout && currentRenderedLayout !== activeLayout) {
       if (currentRenderedLayout === "human" && elHumanViewContainer) elHumanViewContainer.innerHTML = "";
       if (currentRenderedLayout === "all-tasks" && elAllTasksViewContainer) elAllTasksViewContainer.innerHTML = "";
       if (currentRenderedLayout === "questions" && elQuestionsViewContainer) elQuestionsViewContainer.innerHTML = "";
+      if (currentRenderedLayout === "attention" && elAttentionViewContainer) elAttentionViewContainer.innerHTML = "";
       if (currentRenderedLayout === "kanban" && elKanbanViewContainer) elKanbanViewContainer.innerHTML = "";
       if (currentRenderedLayout === "list" && elListViewContainer) elListViewContainer.innerHTML = "";
       if (currentRenderedLayout === "graph" && elGraphViewContainer) elGraphViewContainer.innerHTML = "";
@@ -9442,6 +9463,8 @@ Blocked by ${blockerRef}`;
       renderAllTasksView(sorted);
     } else if (activeLayout === "questions") {
       renderQuestionsView(sorted);
+    } else if (activeLayout === "attention") {
+      renderAttentionView(sorted);
     }
     currentRenderedLayout = activeLayout;
     updateBatchBar();
@@ -10733,24 +10756,249 @@ Blocked by ${blockerRef}`;
     }
     elQuestionsViewContainer.appendChild(fragment);
   }
+  function renderAttentionView(filteredIssues) {
+    if (!elAttentionViewContainer) return;
+    elAttentionViewContainer.innerHTML = "";
+    const targetSessionIndex = sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex;
+    const grouped = groupIssuesByAttention(filteredIssues, targetSessionIndex);
+    const decisions = grouped["needs-decision"];
+    const permissions = grouped["needs-permission"];
+    const reviews = grouped["needs-review"];
+    const totalAttention = decisions.length + permissions.length + reviews.length;
+    if (elAttentionViewBadge) {
+      if (totalAttention > 0) {
+        elAttentionViewBadge.textContent = String(totalAttention);
+        elAttentionViewBadge.style.display = "inline-flex";
+      } else {
+        elAttentionViewBadge.textContent = "0";
+        elAttentionViewBadge.style.display = "none";
+      }
+    }
+    if (totalAttention === 0) {
+      if (isLoading && filteredIssues.length === 0) {
+        elAttentionViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading attention queue...</span>
+        </div>
+      `;
+        return;
+      }
+      elAttentionViewContainer.innerHTML = `
+      <div class="empty-box empty-state-empty attention-empty-state">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" style="color: var(--succ);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <span style="font-weight: 600; font-size: 13px; color: var(--fg);">All systems clear \u2014 no tasks currently require human attention.</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">All tasks and sessions are moving forward without blockers.</span>
+      </div>
+    `;
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    const header = document.createElement("div");
+    header.className = "attention-header";
+    const headerTop = document.createElement("div");
+    headerTop.className = "attention-header-top";
+    const titleEl = document.createElement("div");
+    titleEl.className = "attention-title";
+    titleEl.innerHTML = `
+    <svg class="icon" viewBox="0 0 24 24" style="color: var(--warn);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    <span>Attention Action Queues</span>
+  `;
+    headerTop.appendChild(titleEl);
+    const filtersBar = document.createElement("div");
+    filtersBar.className = "attention-sub-filters";
+    filtersBar.setAttribute("role", "tablist");
+    filtersBar.setAttribute("aria-label", "Attention Queue Sub-filters");
+    const filterConfigs = [
+      { key: "all", label: "All Attention", count: totalAttention },
+      { key: "needs-decision", label: "Needs Decision", count: decisions.length },
+      { key: "needs-permission", label: "Needs Permission", count: permissions.length },
+      { key: "needs-review", label: "Needs Review", count: reviews.length }
+    ];
+    filterConfigs.forEach((cfg) => {
+      const btn = document.createElement("button");
+      btn.className = `attention-sub-filter-btn${currentAttentionFilter === cfg.key ? " active" : ""}`;
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", currentAttentionFilter === cfg.key ? "true" : "false");
+      btn.setAttribute("data-subfilter", cfg.key);
+      btn.innerHTML = `<span>${escapeHtml(cfg.label)}</span><span class="filter-count">${cfg.count}</span>`;
+      btn.addEventListener("click", () => {
+        currentAttentionFilter = cfg.key;
+        renderAttentionView(filteredIssues);
+      });
+      filtersBar.appendChild(btn);
+    });
+    header.appendChild(headerTop);
+    header.appendChild(filtersBar);
+    fragment.appendChild(header);
+    const buildAttentionCard = (issue, category) => {
+      const card = document.createElement("div");
+      card.className = "attention-card";
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      const session = getIssueSession(issue);
+      const v2 = resolveV2Metadata(issue, session);
+      const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
+      const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+      card.setAttribute("aria-label", `Issue #${issue.number}: ${displayTitle}. Requires ${category}.`);
+      const topRow = document.createElement("div");
+      topRow.className = "attention-card-top";
+      const titleGroup = document.createElement("div");
+      titleGroup.className = "attention-card-title-group";
+      const titleEl2 = document.createElement("div");
+      titleEl2.className = "attention-card-title";
+      titleEl2.textContent = displayTitle;
+      if (isPlaceholder) {
+        titleEl2.style.fontStyle = "italic";
+        titleEl2.style.color = "var(--fg-muted)";
+      }
+      titleGroup.appendChild(titleEl2);
+      if (displaySubtitle) {
+        const subEl = document.createElement("div");
+        subEl.className = "card-subtitle-tech";
+        subEl.style.cssText = "font-size: 10.5px; color: var(--fg-muted);";
+        subEl.textContent = displaySubtitle;
+        titleGroup.appendChild(subEl);
+      }
+      topRow.appendChild(titleGroup);
+      const metaEl = document.createElement("div");
+      metaEl.className = "attention-card-meta";
+      if ((isAllProjectsMode || currentRepo === null) && repoName) {
+        const repoBadge = document.createElement("span");
+        repoBadge.className = "attention-repo-badge";
+        repoBadge.textContent = repoName.split("/")[1] || repoName;
+        metaEl.appendChild(repoBadge);
+      }
+      const numBadge = document.createElement("span");
+      numBadge.style.cssText = "font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); font-weight: 600;";
+      numBadge.textContent = `#${issue.number}`;
+      metaEl.appendChild(numBadge);
+      const phaseBadge = document.createElement("span");
+      phaseBadge.className = "attention-phase-badge";
+      phaseBadge.textContent = v2.phase;
+      metaEl.appendChild(phaseBadge);
+      topRow.appendChild(metaEl);
+      card.appendChild(topRow);
+      const reasonEl = document.createElement("div");
+      let snippetText = "";
+      let reasonClass = "";
+      let actionBtnLabel = "";
+      if (category === "needs-decision") {
+        reasonClass = "reason-decision";
+        actionBtnLabel = "Decide";
+        const openQs = Array.isArray(issue.openQuestions) ? issue.openQuestions.filter((q) => !q.completed) : [];
+        if (openQs.length === 1) {
+          snippetText = "1 open question requires decision";
+        } else if (openQs.length > 1) {
+          snippetText = `${openQs.length} open questions require decisions`;
+        } else {
+          snippetText = "Pending design or implementation decision";
+        }
+      } else if (category === "needs-permission") {
+        reasonClass = "reason-permission";
+        actionBtnLabel = "Authorize";
+        snippetText = "Session blocked awaiting tool or permission approval";
+      } else {
+        reasonClass = "reason-review";
+        actionBtnLabel = "Review";
+        const subtasks = Array.isArray(issue.subtasks) ? issue.subtasks : [];
+        const completedSubtasks = subtasks.filter((s) => s.completed);
+        if (completedSubtasks.length > 0) {
+          snippetText = `${completedSubtasks.length} completed subtask${completedSubtasks.length > 1 ? "s" : ""} awaiting review`;
+        } else {
+          snippetText = "Completed work awaiting human review";
+        }
+      }
+      reasonEl.className = `attention-reason-snippet ${reasonClass}`;
+      reasonEl.textContent = snippetText;
+      card.appendChild(reasonEl);
+      const bottomRow = document.createElement("div");
+      bottomRow.className = "attention-card-bottom";
+      const actionBtn = document.createElement("button");
+      actionBtn.className = "btn btn-sm btn-primary";
+      actionBtn.style.cssText = "margin-left: auto; height: 22px; font-size: 11px; padding: 0 8px;";
+      actionBtn.textContent = actionBtnLabel;
+      const onCardAction = (e) => {
+        e?.stopPropagation();
+        openDrawer(issue);
+      };
+      actionBtn.addEventListener("click", onCardAction);
+      card.addEventListener("click", () => openDrawer(issue));
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDrawer(issue);
+        }
+      });
+      bottomRow.appendChild(actionBtn);
+      card.appendChild(bottomRow);
+      return card;
+    };
+    const renderQueueSection = (category, title, dotClass, items) => {
+      if (currentAttentionFilter !== "all" && currentAttentionFilter !== category) {
+        return;
+      }
+      const section = document.createElement("section");
+      section.className = "attention-queue-section";
+      section.setAttribute("aria-label", `${title} queue`);
+      const secHeader = document.createElement("div");
+      secHeader.className = "attention-queue-header";
+      const secHeaderLeft = document.createElement("div");
+      secHeaderLeft.className = "attention-queue-header-left";
+      const dot = document.createElement("span");
+      dot.className = `attention-queue-dot ${dotClass}`;
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = title;
+      secHeaderLeft.appendChild(dot);
+      secHeaderLeft.appendChild(titleSpan);
+      const countPill = document.createElement("span");
+      countPill.className = "filter-count";
+      countPill.style.cssText = "font-size: 10px; font-family: var(--font-mono);";
+      countPill.textContent = String(items.length);
+      secHeader.appendChild(secHeaderLeft);
+      secHeader.appendChild(countPill);
+      section.appendChild(secHeader);
+      const cardsContainer = document.createElement("div");
+      cardsContainer.className = "attention-queue-cards";
+      if (items.length === 0) {
+        const emptyNote = document.createElement("div");
+        emptyNote.style.cssText = "font-size: 12px; color: var(--fg-muted); padding: 12px 8px; font-style: italic;";
+        emptyNote.textContent = `No tasks currently in ${title.toLowerCase()}.`;
+        cardsContainer.appendChild(emptyNote);
+      } else {
+        items.forEach((issue) => {
+          cardsContainer.appendChild(buildAttentionCard(issue, category));
+        });
+      }
+      section.appendChild(cardsContainer);
+      fragment.appendChild(section);
+    };
+    renderQueueSection("needs-decision", "Needs Decision", "queue-dot-decision", decisions);
+    renderQueueSection("needs-permission", "Needs Permission", "queue-dot-permission", permissions);
+    renderQueueSection("needs-review", "Needs Review", "queue-dot-review", reviews);
+    elAttentionViewContainer.appendChild(fragment);
+  }
   function updateViewModeButtons(mode) {
-    elBtnViewHuman?.classList.toggle("active", mode === "human");
-    elBtnViewHuman?.setAttribute("aria-checked", mode === "human" ? "true" : "false");
-    elBtnViewAllTasks?.classList.toggle("active", mode === "all-tasks");
-    elBtnViewAllTasks?.setAttribute("aria-checked", mode === "all-tasks" ? "true" : "false");
-    elBtnViewQuestions?.classList.toggle("active", mode === "questions");
-    elBtnViewQuestions?.setAttribute("aria-checked", mode === "questions" ? "true" : "false");
-    elBtnViewList?.classList.toggle("active", mode === "list");
-    elBtnViewList?.setAttribute("aria-checked", mode === "list" ? "true" : "false");
-    elBtnViewKanban?.classList.toggle("active", mode === "kanban");
-    elBtnViewKanban?.setAttribute("aria-checked", mode === "kanban" ? "true" : "false");
-    elBtnViewGraph?.classList.toggle("active", mode === "graph");
-    elBtnViewGraph?.setAttribute("aria-checked", mode === "graph" ? "true" : "false");
+    const syncBtn = (btn, isActive) => {
+      if (!btn) return;
+      if (isActive) btn.classList.add("active");
+      else btn.classList.remove("active");
+      btn.setAttribute("aria-checked", isActive ? "true" : "false");
+    };
+    syncBtn(elBtnViewAttention, mode === "attention");
+    syncBtn(elBtnViewHuman, mode === "human");
+    syncBtn(elBtnViewAllTasks, mode === "all-tasks");
+    syncBtn(elBtnViewQuestions, mode === "questions");
+    syncBtn(elBtnViewList, mode === "list");
+    syncBtn(elBtnViewKanban, mode === "kanban");
+    syncBtn(elBtnViewGraph, mode === "graph");
     if (elViewSelectCurrentLabel) {
-      elViewSelectCurrentLabel.textContent = mode === "human" ? "Human Tasks" : mode === "questions" ? "Questions" : mode === "kanban" ? "Board" : mode === "graph" ? "Graph" : mode === "all-tasks" ? "All Tasks" : "List";
+      elViewSelectCurrentLabel.textContent = mode === "attention" ? "Attention" : mode === "human" ? "Human Tasks" : mode === "questions" ? "Questions" : mode === "kanban" ? "Board" : mode === "graph" ? "Graph" : mode === "all-tasks" ? "All Tasks" : "List";
     }
     if (elViewSelectCurrentIcon) {
-      if (mode === "human") {
+      if (mode === "attention") {
+        elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+      } else if (mode === "human") {
         elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
       } else if (mode === "questions") {
         elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
@@ -10769,7 +11017,11 @@ Blocked by ${blockerRef}`;
       item.classList.toggle("active", itemMode === mode);
     });
     if (elBtnLayoutToggle) {
-      if (mode === "human") {
+      if (mode === "attention") {
+        elBtnLayoutToggle.title = "View: Attention (click to switch to Human Tasks)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: Attention (click to switch to Human Tasks)");
+        elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+      } else if (mode === "human") {
         elBtnLayoutToggle.title = "View: Human Tasks (click to switch to All Tasks)";
         elBtnLayoutToggle.setAttribute("aria-label", "View: Human Tasks (click to switch to All Tasks)");
         elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
@@ -10790,8 +11042,8 @@ Blocked by ${blockerRef}`;
         elBtnLayoutToggle.setAttribute("aria-label", "View: Board (click to switch to Graph)");
         elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>';
       } else {
-        elBtnLayoutToggle.title = "View: Graph (click to switch to Human Tasks)";
-        elBtnLayoutToggle.setAttribute("aria-label", "View: Graph (click to switch to Human Tasks)");
+        elBtnLayoutToggle.title = "View: Graph (click to switch to Attention)";
+        elBtnLayoutToggle.setAttribute("aria-label", "View: Graph (click to switch to Attention)");
         elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>';
       }
     }
@@ -10803,7 +11055,11 @@ Blocked by ${blockerRef}`;
     }
     isWideScreen = window.innerWidth >= 680;
     let newLayout = "list";
-    if (userLayoutPreference === "human") {
+    if (userLayoutPreference === "attention") {
+      newLayout = "attention";
+      document.body.setAttribute("data-layout", "attention");
+      updateViewModeButtons("attention");
+    } else if (userLayoutPreference === "human") {
       newLayout = "human";
       document.body.setAttribute("data-layout", "human");
       updateViewModeButtons("human");
@@ -11134,7 +11390,9 @@ Blocked by ${blockerRef}`;
     const canvasW = Math.max(elGraphCanvas.scrollWidth, elGraphCanvas.clientWidth, elGraphCanvas.offsetWidth);
     const canvasH = Math.max(elGraphCanvas.scrollHeight, elGraphCanvas.clientHeight, elGraphCanvas.offsetHeight);
     if (canvasW === 0 || canvasH === 0) {
-      requestAnimationFrame(() => drawGraphEdges(graph));
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(() => drawGraphEdges(graph));
+      }
       return;
     }
     elGraphSvgOverlay.setAttribute("width", String(canvasW));
@@ -11342,10 +11600,14 @@ Blocked by ${blockerRef}`;
       elGraphLayers.appendChild(rowEl);
     });
     observeGraphResize();
-    requestAnimationFrame(() => {
-      drawCurrentGraphEdges();
-      requestAnimationFrame(() => drawCurrentGraphEdges());
-    });
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => {
+        drawCurrentGraphEdges();
+        if (typeof requestAnimationFrame === "function") {
+          requestAnimationFrame(() => drawCurrentGraphEdges());
+        }
+      });
+    }
   }
   function renderDrawerDependencies(issue) {
     if (!elDrawerDependenciesContainer) return;
@@ -11420,7 +11682,7 @@ Blocked by ${blockerRef}`;
     elDrawerScrim.classList.add("active");
     elTaskDrawer.classList.add("active");
     document.body.classList.add("drawer-open");
-    if (document.body.getAttribute("data-layout") === "graph") {
+    if (document.body.getAttribute("data-layout") === "graph" && typeof requestAnimationFrame === "function") {
       requestAnimationFrame(() => drawCurrentGraphEdges());
     }
   }
@@ -11430,7 +11692,7 @@ Blocked by ${blockerRef}`;
     elDrawerScrim.classList.remove("active");
     elTaskDrawer.classList.remove("active");
     document.body.classList.remove("drawer-open");
-    if (document.body.getAttribute("data-layout") === "graph") {
+    if (document.body.getAttribute("data-layout") === "graph" && typeof requestAnimationFrame === "function") {
       requestAnimationFrame(() => drawCurrentGraphEdges());
     }
   }
@@ -11606,12 +11868,13 @@ Blocked by ${blockerRef}`;
     elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
     elDrawerDescriptionViewBox.style.display = "block";
     elDrawerDescriptionEditBox.style.display = "none";
-    requestAnimationFrame(() => {
-      if (elDrawerDescriptionContent.scrollHeight > 220) {
+    const scheduleFrame = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (cb) => setTimeout(cb, 0);
+    scheduleFrame(() => {
+      if (elDrawerDescriptionContent && elDrawerDescriptionContent.scrollHeight > 220) {
         elDrawerDescriptionCollapsible.classList.remove("expanded");
         elDrawerDescriptionToggleRow.style.display = "block";
         elBtnToggleCollapse.textContent = "Show more";
-      } else {
+      } else if (elDrawerDescriptionCollapsible && elDrawerDescriptionToggleRow) {
         elDrawerDescriptionCollapsible.classList.add("expanded");
         elDrawerDescriptionToggleRow.style.display = "none";
       }
@@ -13197,6 +13460,10 @@ ${transclusions.join("\n")}
         renderViews();
       }
     });
+    elBtnViewAttention?.addEventListener("click", () => {
+      userLayoutPreference = "attention";
+      applyLayoutMode();
+    });
     elBtnViewHuman?.addEventListener("click", () => {
       userLayoutPreference = "human";
       applyLayoutMode();
@@ -13279,6 +13546,11 @@ ${transclusions.join("\n")}
         void handleFilePathClick(pathStr, e);
       }
     });
+    document.getElementById("menuItemViewAttention")?.addEventListener("click", () => {
+      userLayoutPreference = "attention";
+      applyLayoutMode();
+      closeMoreMenu();
+    });
     document.getElementById("menuItemViewHuman")?.addEventListener("click", () => {
       userLayoutPreference = "human";
       applyLayoutMode();
@@ -13312,10 +13584,10 @@ ${transclusions.join("\n")}
     if (elBtnLayoutToggle) {
       elBtnLayoutToggle.addEventListener("click", () => {
         const cur = document.body.getAttribute("data-layout");
-        userLayoutPreference = cur === "kanban" ? "graph" : cur === "graph" ? "human" : cur === "human" ? "all-tasks" : cur === "all-tasks" ? "questions" : cur === "questions" ? "list" : "kanban";
+        userLayoutPreference = cur === "kanban" ? "graph" : cur === "graph" ? "attention" : cur === "attention" ? "human" : cur === "human" ? "all-tasks" : cur === "all-tasks" ? "questions" : cur === "questions" ? "list" : "kanban";
         applyLayoutMode();
         if (host?.toast) {
-          const name = userLayoutPreference === "kanban" ? "Board" : userLayoutPreference === "graph" ? "Graph" : userLayoutPreference === "human" ? "Human Tasks" : userLayoutPreference === "all-tasks" ? "All Tasks" : userLayoutPreference === "questions" ? "Questions" : "List";
+          const name = userLayoutPreference === "kanban" ? "Board" : userLayoutPreference === "graph" ? "Graph" : userLayoutPreference === "attention" ? "Attention" : userLayoutPreference === "human" ? "Human Tasks" : userLayoutPreference === "all-tasks" ? "All Tasks" : userLayoutPreference === "questions" ? "Questions" : "List";
           void host.toast({ kind: "info", message: `Switched to ${name} view` });
         }
       });
