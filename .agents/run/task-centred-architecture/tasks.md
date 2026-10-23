@@ -47,8 +47,9 @@
 | Task 207: Single-Writer Lease & CAS Pre-Flight | COMPLETE | ses_8a5d6a3f02d06c0a3eae8433 / engineer | LeaseStore atomic persistence, TTL, renewals, reclamation, CAS SHA-256; 17/17 tests pass | Proceed to Task 208 |
 | Task 208: Task Claiming & Reconciler | COMPLETE | ses_1650a227b9848f9195eec6b1 / engineer | opt-in task claiming, session liveness watcher, lifecycle reconciler; 35/35 Stage 2B tests pass, 448/448 full suite pass | Proceed to Task 209 |
 | Task 209: Stage 2B Proof & Bundle Build | COMPLETE | ses_856e13f82252eb353e95633f / engineer | panel/main.js & service/main.js built cleanly; 18/18 parity; 449/449 tests pass; commit 4286d40 | Proceed to Task 210 |
-| Task 210: Hostile Adversarial Review (L4) | RUNNING | ses_586bfef36e609ca53b6327bd / engineer | Brief `tasks/task-210-hostile-adversarial-review.md` | In progress in worktree |
-| Task 211: Integration Merge of Stage 2B | QUEUED | engineer | Brief `tasks/task-211-integrate-stage2b-merge.md` | Awaits Task 210 |
+| Task 210: Hostile Adversarial Review (L4) | COMPLETE | ses_586bfef36e609ca53b6327bd / engineer | Brief `tasks/task-210-hostile-adversarial-review.md` | PROCEED-WITH-CONDITIONS; 3 critical defects (ADV-2B-01..ADV-2B-04) |
+| Task 210b: Remediate Hostile Conditions | QUEUED | engineer | Brief `tasks/task-210b-remediate-hostile-conditions.md` | Awaits dispatch |
+| Task 211: Integration Merge of Stage 2B | QUEUED | engineer | Brief `tasks/task-211-integrate-stage2b-merge.md` | Awaits Task 210b |
 
 ## Evidence and incident policy
 All three research authors returned actual provider/model 9router/engineer. Board reviewer same. Remaining reviewer identities deferred to wakes; no polling. Original source research is untrusted until findings resolved in final draft; preserve original reports and reviews as audit trail, do not silently rewrite them. Final independent reviewer gets all caveats, especially source inspection != live proof.
