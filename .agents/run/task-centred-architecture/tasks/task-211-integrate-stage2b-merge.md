@@ -2,7 +2,7 @@
 Repo: /workspace/extensions/github-task-board
 Worktree: /workspace/extensions/github-task-board
 Branch: feat/v2-binding-and-ratelimit
-Base commit: 9d4f8da
+Base commit: 5847424 (current HEAD of feat/v2-binding-and-ratelimit; run-state docs only since 9d4f8da)
 Files: package.json, service/**, test/stage2b-pilot-coordinator.test.js
 Test command: npm run typecheck && npm run build && node --test
 Do not touch: config/**, master branch (never push to master)
@@ -23,13 +23,14 @@ Preflight facts are true and authoritative at dispatch: do not run initial disco
 .agents/run/task-centred-architecture/outputs/task-211-integration-merge.md
 </owned_paths>
 <depends_on>
-task-210
+task-210f
 </depends_on>
 <steps>
 1. In /workspace/extensions/github-task-board, run `git merge --no-ff feat/stage2b-pilot-coordinator -m "merge: Stage 2B single-writer pilot coordinator background service into preview"`.
+   - If conflicts occur ONLY in `.agents/run/**` run-state/doc files (both branches touched the same output artifact paths): resolve by taking the feature branch's version (`--theirs`) for `outputs/task-2*.md` artifacts, or combining if trivially complementary. Application code (service/**, test/**, package.json, tsconfig.json) must merge cleanly — if it does NOT, stop and report HALT instead of guessing.
 2. Run `npm run typecheck` (verify exit 0).
 3. Run `npm run build` to compile `panel/main.js` and `service/main.js`. If any bundle changed, commit as `chore(build): rebuild bundles for Stage 2B integration`.
-4. Run `node --test` to verify all tests pass (0 failures, 0 skipped, >= 430 tests).
+4. Run `node --test` to verify all tests pass (0 failures, 0 skipped, >= 460 tests; expected 467+).
 5. Push to GitHub origin (feature/preview branches only):
    `git push origin feat/v2-binding-and-ratelimit`
    `git push origin feat/stage2b-pilot-coordinator`
@@ -43,7 +44,7 @@ task-210
 <criteria>
 - Merge commit created on feat/v2-binding-and-ratelimit cleanly with zero conflicts.
 - Typecheck and both builds pass cleanly.
-- node --test passes all tests (>= 430 tests).
+- node --test passes all tests (>= 460 tests).
 - Local worktree .worktrees/team-dev-stage2b-pilot-coordinator removed; branch feat/stage2b-pilot-coordinator preserved.
 - feat/v2-binding-and-ratelimit and feat/stage2b-pilot-coordinator pushed to origin.
 - No push to remote master.
