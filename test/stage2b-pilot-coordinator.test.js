@@ -635,6 +635,124 @@ test('Part 6: CoordinatorService.start() initializes lease store and preserves c
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
+test('Part 6: Store treats array-valued leases as wrong shape and backs up before reset (ADV-2E-01)', async () => {
+  const arrayVariants = [
+    '{"leases":[]}',
+    '{"leases":[{"issueNumber":1,"repo":"org/repo","ownerId":"worker-1","claimedAt":1000,"expiresAt":9000000000000,"heartbeatAt":1000,"claimedSha":"sha","phase":"execution"}]}',
+  ];
+
+  for (const variant of arrayVariants) {
+    const tempDir = createTempDir('lease-array-shape-');
+    const filePath = path.join(tempDir, 'leases.json');
+    fs.writeFileSync(filePath, variant, 'utf8');
+
+    const store = new LeaseStore(filePath, 60000);
+    await store.init();
+
+    assert.equal(store.listActiveLeases().length, 0, `array-valued leases must not load via init (${variant})`);
+
+    const files = fs.readdirSync(tempDir);
+    const bakFiles = files.filter((f) => f.startsWith('leases.json.corrupted.') && f.endsWith('.bak'));
+    assert.equal(bakFiles.length, 1, `array-valued leases ${variant} must be backed up before reset`);
+    assert.equal(fs.readFileSync(path.join(tempDir, bakFiles[0]), 'utf8'), variant, 'backup must preserve the array payload');
+
+    const onDisk = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.equal(onDisk.version, 1);
+    assert.deepEqual(onDisk.leases, {}, 'array entries must never be re-keyed into the store');
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('Part 6: loadFromDisk rejects array-valued leases and never re-keys entries to "0" (ADV-2E-01)', async () => {
+  const tempDir = createTempDir('lease-array-load-');
+  const filePath = path.join(tempDir, 'leases.json');
+  const store = new LeaseStore(filePath, 60000);
+  await store.init();
+
+  // Legitimate lease present before the corruption
+  const claim = await store.acquireLease('org/repo', 1, 'worker-1', 'sha-1', 'execution');
+  assert.equal(claim.acquired, true);
+
+  // External write corrupts the file into an array-shaped payload
+  const variant = '{"leases":[{"issueNumber":7,"repo":"org/repo","ownerId":"worker-7","claimedAt":1000,"expiresAt":9000000000000,"heartbeatAt":1000,"claimedSha":"sha-7","phase":"execution"}]}';
+  fs.writeFileSync(filePath, variant, 'utf8');
+
+  // Next mutation loads from disk through loadFromDisk()
+  const second = await store.acquireLease('org/repo', 2, 'worker-2', 'sha-2', 'execution');
+  assert.equal(second.acquired, true);
+
+  const files = fs.readdirSync(tempDir);
+  const bakFiles = files.filter((f) => f.startsWith('leases.json.corrupted.') && f.endsWith('.bak'));
+  assert.equal(bakFiles.length, 1, 'array-shaped load must be backed up before any overwrite');
+  assert.equal(fs.readFileSync(path.join(tempDir, bakFiles[0]), 'utf8'), variant, 'backup must preserve the array payload');
+
+  const onDisk = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  assert.deepEqual(
+    Object.keys(onDisk.leases).sort(),
+    ['org/repo#1', 'org/repo#2'],
+    'array entries must never be re-keyed to numeric keys and prior leases must survive'
+  );
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
+test('Part 6: CoordinatorService releases held leases on shutdown instead of waiting for TTL (PLAN-STAGE2B invariant 4)', async () => {
+  const tempDir = createTempDir('service-release-');
+  const filePath = path.join(tempDir, 'leases.json');
+  const store = new LeaseStore(filePath, 600000);
+  const service = new CoordinatorService(
+    { storageDir: tempDir, pollIntervalMs: 600000, leaseTtlMs: 600000, dryRun: true },
+    store
+  );
+
+  await service.start();
+
+  try {
+    // Acquire through the service path
+    const claim = await service.acquireLease('org/repo', 77, 'sha-77', 'execution');
+    assert.equal(claim.acquired, true, 'service must acquire and track the lease');
+    assert.ok(store.getLease('org/repo', 77), 'lease is held before shutdown');
+
+    await service.stop();
+
+    assert.equal(store.getLease('org/repo', 77), null, 'shutdown must release held leases immediately (not wait for 600s TTL)');
+    const onDisk = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.equal(onDisk.leases['org/repo#77'], undefined, 'released lease must be gone from disk');
+  } finally {
+    await service.stop();
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('Part 6: shutdown releases same-owner store leases but never another owner\u2019s lease', async () => {
+  const tempDir = createTempDir('service-release-owners-');
+  const filePath = path.join(tempDir, 'leases.json');
+  const store = new LeaseStore(filePath, 600000);
+  const service = new CoordinatorService(
+    { storageDir: tempDir, pollIntervalMs: 600000, leaseTtlMs: 600000, dryRun: true },
+    store
+  );
+  await service.start();
+
+  try {
+    // Acquired through the store directly with this instance's ownerId (outside bookkeeping)
+    const own = await store.acquireLease('org/repo', 81, service.getOwnerId(), 'sha-81', 'execution');
+    assert.equal(own.acquired, true);
+    // Another coordinator instance's lease must survive our shutdown
+    const other = await store.acquireLease('org/repo', 82, 'other-worker', 'sha-82', 'execution');
+    assert.equal(other.acquired, true);
+
+    await service.stop();
+
+    assert.equal(store.getLease('org/repo', 81), null, 'same-owner lease must be released on shutdown');
+    assert.ok(store.getLease('org/repo', 82), 'another owner\u2019s lease must never be touched on shutdown');
+  } finally {
+    await service.stop();
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test('Part 6: Rapid concurrent writes do not race or corrupt lease file', async () => {
   const tempDir = createTempDir('lease-concurrency-');
   const filePath = path.join(tempDir, 'leases.json');

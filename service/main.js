@@ -87,6 +87,9 @@ function resolveLeaseStorageDir(rawDir) {
 function getDefaultLeasesFilePath() {
   return path2.join(resolveLeaseStorageDir(), "leases.json");
 }
+function isPlainLeasesMap(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 var LeaseStore = class {
   filePath;
   defaultTtlMs;
@@ -130,7 +133,7 @@ var LeaseStore = class {
       try {
         const raw = await fs2.promises.readFile(this.filePath, "utf8");
         const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed.leases === "object" && parsed.leases !== null) {
+        if (parsed && isPlainLeasesMap(parsed.leases)) {
           this.leases = { ...parsed.leases };
           this.backupBlocked = false;
           return;
@@ -190,7 +193,7 @@ var LeaseStore = class {
     try {
       const raw = await fs2.promises.readFile(this.filePath, "utf8");
       const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed.leases === "object" && parsed.leases !== null) {
+      if (parsed && isPlainLeasesMap(parsed.leases)) {
         this.leases = { ...parsed.leases };
         this.backupBlocked = false;
         return;
@@ -689,11 +692,13 @@ var CoordinatorService = class {
   config;
   status = "stopped";
   timer = null;
-  heldLeases = /* @__PURE__ */ new Set();
+  ownerId;
+  heldLeases = /* @__PURE__ */ new Map();
   leaseStore;
   constructor(config, leaseStore) {
     this.config = loadCoordinatorConfig(config);
     this.leaseStore = leaseStore || new LeaseStore(void 0, this.config.leaseTtlMs);
+    this.ownerId = `coordinator-${process.pid}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
   getConfig() {
     return { ...this.config };
@@ -703,6 +708,31 @@ var CoordinatorService = class {
   }
   getLeaseStore() {
     return this.leaseStore;
+  }
+  getOwnerId() {
+    return this.ownerId;
+  }
+  /**
+   * Acquire a lease on behalf of this coordinator instance and track it so
+   * clean shutdown can release it (PLAN-STAGE2B invariant 4).
+   */
+  async acquireLease(repo, issueNumber, bodySha, phase, ttlMs) {
+    const result = await this.leaseStore.acquireLease(
+      repo,
+      issueNumber,
+      this.ownerId,
+      bodySha,
+      phase,
+      ttlMs ?? this.config.leaseTtlMs
+    );
+    if (result.acquired) {
+      this.heldLeases.set(this.leaseStore.getLeaseKey(repo, issueNumber), {
+        repo: repo.trim(),
+        issueNumber: Number(issueNumber),
+        ownerId: this.ownerId
+      });
+    }
+    return result;
   }
   async start() {
     if (this.status === "running" || this.status === "starting") {
@@ -777,11 +807,33 @@ var CoordinatorService = class {
     if (this.config.dryRun) {
     }
   }
+  /**
+   * Release every lease this instance holds on shutdown (PLAN-STAGE2B invariant 4):
+   * tracked acquisitions plus any store lease still owned by this instance.
+   * Other owners' leases are never touched (single-writer safety).
+   */
   async releaseHeldLeases() {
-    if (this.heldLeases.size === 0) {
+    const pending = new Map(this.heldLeases);
+    for (const lease of this.leaseStore.listActiveLeases()) {
+      if (lease.ownerId === this.ownerId) {
+        pending.set(this.leaseStore.getLeaseKey(lease.repo, lease.issueNumber), {
+          repo: lease.repo,
+          issueNumber: lease.issueNumber,
+          ownerId: lease.ownerId
+        });
+      }
+    }
+    if (pending.size === 0) {
       return;
     }
-    console.log(`[Coordinator Service] Releasing ${this.heldLeases.size} held leases...`);
+    console.log(`[Coordinator Service] Releasing ${pending.size} held leases...`);
+    for (const [key, entry] of pending) {
+      try {
+        await this.leaseStore.releaseLease(entry.repo, entry.issueNumber, entry.ownerId);
+      } catch (err) {
+        console.error(`[Coordinator Service] Failed to release lease ${key} on shutdown:`, err);
+      }
+    }
     this.heldLeases.clear();
   }
 };

@@ -2,18 +2,26 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { loadCoordinatorConfig, resolveStorageDir } from './config.ts';
 import { LeaseStore } from './lease-store.ts';
-import type { CoordinatorConfig, CoordinatorStatus } from './types.js';
+import type { ClaimResult, CoordinatorConfig, CoordinatorStatus } from './types.js';
+
+interface HeldLeaseEntry {
+  repo: string;
+  issueNumber: number;
+  ownerId: string;
+}
 
 export class CoordinatorService {
   private config: CoordinatorConfig;
   private status: CoordinatorStatus = 'stopped';
   private timer: NodeJS.Timeout | null = null;
-  private heldLeases: Set<string> = new Set();
+  private ownerId: string;
+  private heldLeases: Map<string, HeldLeaseEntry> = new Map();
   private leaseStore: LeaseStore;
 
   constructor(config?: Partial<CoordinatorConfig>, leaseStore?: LeaseStore) {
     this.config = loadCoordinatorConfig(config);
     this.leaseStore = leaseStore || new LeaseStore(undefined, this.config.leaseTtlMs);
+    this.ownerId = `coordinator-${process.pid}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
   }
 
   public getConfig(): CoordinatorConfig {
@@ -26,6 +34,39 @@ export class CoordinatorService {
 
   public getLeaseStore(): LeaseStore {
     return this.leaseStore;
+  }
+
+  public getOwnerId(): string {
+    return this.ownerId;
+  }
+
+  /**
+   * Acquire a lease on behalf of this coordinator instance and track it so
+   * clean shutdown can release it (PLAN-STAGE2B invariant 4).
+   */
+  public async acquireLease(
+    repo: string,
+    issueNumber: number,
+    bodySha: string,
+    phase: string,
+    ttlMs?: number
+  ): Promise<ClaimResult> {
+    const result = await this.leaseStore.acquireLease(
+      repo,
+      issueNumber,
+      this.ownerId,
+      bodySha,
+      phase,
+      ttlMs ?? this.config.leaseTtlMs
+    );
+    if (result.acquired) {
+      this.heldLeases.set(this.leaseStore.getLeaseKey(repo, issueNumber), {
+        repo: repo.trim(),
+        issueNumber: Number(issueNumber),
+        ownerId: this.ownerId,
+      });
+    }
+    return result;
   }
 
   public async start(): Promise<void> {
@@ -117,11 +158,35 @@ export class CoordinatorService {
     }
   }
 
+  /**
+   * Release every lease this instance holds on shutdown (PLAN-STAGE2B invariant 4):
+   * tracked acquisitions plus any store lease still owned by this instance.
+   * Other owners' leases are never touched (single-writer safety).
+   */
   private async releaseHeldLeases(): Promise<void> {
-    if (this.heldLeases.size === 0) {
+    const pending = new Map<string, HeldLeaseEntry>(this.heldLeases);
+    for (const lease of this.leaseStore.listActiveLeases()) {
+      if (lease.ownerId === this.ownerId) {
+        pending.set(this.leaseStore.getLeaseKey(lease.repo, lease.issueNumber), {
+          repo: lease.repo,
+          issueNumber: lease.issueNumber,
+          ownerId: lease.ownerId,
+        });
+      }
+    }
+
+    if (pending.size === 0) {
       return;
     }
-    console.log(`[Coordinator Service] Releasing ${this.heldLeases.size} held leases...`);
+
+    console.log(`[Coordinator Service] Releasing ${pending.size} held leases...`);
+    for (const [key, entry] of pending) {
+      try {
+        await this.leaseStore.releaseLease(entry.repo, entry.issueNumber, entry.ownerId);
+      } catch (err) {
+        console.error(`[Coordinator Service] Failed to release lease ${key} on shutdown:`, err);
+      }
+    }
     this.heldLeases.clear();
   }
 }

@@ -38,6 +38,15 @@ export function getDefaultLeasesFilePath(): string {
 }
 
 /**
+ * A valid store requires `leases` to be a plain object. Arrays are wrong shape
+ * (`typeof [] === 'object'`) and would otherwise be silently re-keyed to numeric
+ * keys, destroying repo/issue identity without a forensic backup (ADV-2E-01).
+ */
+function isPlainLeasesMap(value: unknown): value is Record<string, TaskLease> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
  * Isolated single-writer lease store managing operational task claims.
  * Persists state atomically to disk via temporary file writes and atomic renames.
  */
@@ -90,12 +99,12 @@ export class LeaseStore {
       try {
         const raw = await fs.promises.readFile(this.filePath, 'utf8');
         const parsed = JSON.parse(raw) as LeaseStoreState;
-        if (parsed && typeof parsed.leases === 'object' && parsed.leases !== null) {
+        if (parsed && isPlainLeasesMap(parsed.leases)) {
           this.leases = { ...parsed.leases };
           this.backupBlocked = false;
           return;
         }
-        // Valid JSON but wrong shape (null, 42, {"leases":null}, ...)
+        // Valid JSON but wrong shape (null, 42, {"leases":null}, {"leases":[...]}, ...)
         await this.resetPreservingPriorState('unexpected store shape');
       } catch (err: any) {
         if (err?.code === 'ENOENT') {
@@ -156,7 +165,7 @@ export class LeaseStore {
     try {
       const raw = await fs.promises.readFile(this.filePath, 'utf8');
       const parsed = JSON.parse(raw) as LeaseStoreState;
-      if (parsed && typeof parsed.leases === 'object' && parsed.leases !== null) {
+      if (parsed && isPlainLeasesMap(parsed.leases)) {
         this.leases = { ...parsed.leases };
         this.backupBlocked = false;
         return;
