@@ -12,7 +12,8 @@ Issues are the durable work record; the board is the human interface. User chose
 ## Active workers (no polling)
 - ses_c0ba66ae44ca4343f3c680ea #28 F1 repair bounded re-review in .worktrees/team-dev-issue-28-current-board, brief tasks/issue-28-f1-re-review.md. Repair 74038a3: soft cap 2000, hard ceiling 4000, pending pinned, at ceiling abandons the older publication as stale then trims. 485/485, 19/19 targeted, red-first 3 fail on 8625b0a, bundle byte-identical.
 - ses_e3084386d7422e36b44f5828 #33 remediation of F1/F2/F4–F9 in .worktrees/team-dev-issue-33-standalone-board, brief tasks/issue-33-remediation.md. F3 sign-in model explicitly out of scope pending owner decision.
-- ses_88388f2f1250dabb57bdde2e #30/#31 design hostile review in .worktrees/team-dev-issue-30-31-design, brief tasks/issue-30-31-design-review.md (long-running).
+- ses_8a2f1aeedc954d3918922366 #30/#31 design revision in .worktrees/team-dev-issue-30-31-design, brief tasks/issue-30-31-design-revision.md, responding to review fcbe9cf.
+- #30/#31 design review COMPLETE (fcbe9cf, Genius): Design PARTIAL, Evidence NEEDS-FIXES. Proven live defects: wrong-question fallback, false success toast on failed PATCH, body kept after failed PATCH, failed fresh read continuing on cached body. Also: false "human-only closure" claim (panel/reconciler paths can produce done), `[nonblocking]` unmodelled, 32-bit unscoped question ID, f28f575 fixed five findings not four, Stage 2B was three fixes + two reviews. Failed claims: "no work type" (resolveIssueSkills already routes bug/enhancement; 9/20 issues labelled), "questions not in Human Tasks view", "no reproduction requirement", "no delivery channel" (host service exists), "done only when closed". Lost update must be stated as residual, not closed. D1 should include native issue types and formalize labels; D2 add capability spike + status quo; D3 keep reject-stale plus repo+issue+generation scope, 64-bit/SHA-256, NFC, revision binding.
 - #28 fix B HALTED (review 1270070): new High — failed edit published as success when a refresh completes during the in-flight PATCH; R1 not fully closed; incremental overwrites fresher full-page fields; All Projects clobber reproduced. Branch/worktree kept for audit, never merge.
 - #28 fix A review COMPLETE (e3fb381): Spec PASS, race closure PARTIAL, Quality NEEDS-FIXES; F1 gating (cap/eviction) now repaired; F2/F3 outside #28; F4–F6 Low; 100-seed fuzz clean.
 - #33 hostile security review COMPLETE (ef1b78d, reviewer Genius): Spec PARTIAL, Security NEEDS-FIXES, no Critical/High credential leak, auth bypass, CSRF gap or stored XSS. F1 Moderate lost update (GitHub does not support If-Match on PATCH; fake honoured it), F2 Moderate unauthenticated login scrypt/array DoS, F3 High spec/access-control deviation (board password, no GitHub identity — owner decision), F4–F10 Low. 68/68, tsc, bundle hash, 29/29 browser re-run.
@@ -30,7 +31,8 @@ Issues are the durable work record; the board is the human interface. User chose
 - Voice reference worktrees and their private security reports: stay local, never publish.
 
 ## Next
-1. Fold #28 replacement result; independent hostile review of the fix in its worktree; no duplicate merge with the original worker's branch.
-2. #33 result -> hostile review (auth, credential exposure, lost updates, responsive page) -> then a user-visible local run for their look.
-3. #30/#31 design -> present only its genuine decisions.
-4. One batched human review ask for #28/#33; #29 wording may be included as a read-only item. No master, no deployment.
+1. F1 re-review and #33 remediation must pass; then merge #28 (survivor) into feat/v2-binding-and-ratelimit, push, and dispatch #34 fix on the merged base.
+2. Merge #33 after the remediation re-review and the owner's sign-in decision; push the feature branch either way.
+3. Revised #30/#31 design -> present the three corrected decisions; no implementation before the owner decides D1.
+4. One batched human ask: #28 checks, #33 checks + sign-in model, deployment facts, D1–D3. No master, no deployment without the owner.
+5. Follow-up bug issue for the remaining write paths (issue creation during refresh, archive/tag/priority/complexity, All Projects aggregate) and, if confirmed, any agent-reachable done path.
