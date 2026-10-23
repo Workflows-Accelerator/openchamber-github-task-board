@@ -110,3 +110,32 @@ Raise `MAX_ISSUE_WRITE_TRACKERS` to at least `MAX_ISSUES_PER_REPO` (1000) so one
 
 ### Boundaries
 All evidence is shipped-bundle/recording-host synthetic (L0/L1/L4); no credential or live GitHub request, no installed-host activation. L3 and L5 remain **NOT RUN / AWAITING HUMAN**; no merge, push, close or deploy. F1 is a concurrency-scale defect proven only in the recording harness (deterministic timing), not on a live host.
+
+---
+
+## F1 remediation — `74038a3` (appended; prior findings kept)
+
+**Status:** F1 fixed on the shipped bundle; bounded independent re-review is next. Supplied and actual model: Engineer, `9router/engineer`. Report: `.agents/run/task-centred-architecture/outputs/issue-28-f1-fix.md`.
+
+### Change
+- Soft cap `MAX_ISSUE_WRITE_TRACKERS = MAX_ISSUES_PER_REPO * 2` = 2000 (one scan can admit 1000, so the cap holds the current and one concurrent scan).
+- Eviction is oldest-first and only removes unpinned records. Pinned = `pending > 0`, or a settled admission newer than the start of the only publication that can still commit for that repository. Hard ceiling 4000: if every record is pinned, the older publication is abandoned (`obsoleteIssueSnapshotEpochs`) and the map is trimmed to 2000; publication/streaming then leave freshness `stale`.
+- TTL unchanged, but a record still needed by a live publication is not expired until that publication ends; pruning now also happens on write settlement, at publication and in the fetch `finally`. Keys remain lower-cased `repo#number`; state stays in memory only.
+
+### Regressions (shipped bundle, `test/current-board.test.js`)
+1. paged full refresh + 500-issue incremental + pending body edit keeps the edit before and after the older publication and after PATCH settlement;
+2. pending edit survives 2000 admissions and the older publication (pinned under cap pressure);
+3. settled edit survives 2000 protected admissions (2001 > soft cap, every record pinned) and the older publication.
+
+### Red-first
+On `8625b0a` source/bundle with the new test file: `node --test test/current-board.test.js` exit 1, 16 pass / 3 fail, each failing at the F1 assertion (`old body` for the edited field), `/tmp/opencode/f1-red.log`. After the fix: 19 pass, 0 fail.
+
+### Evidence
+- L0: `npm run typecheck` exit 0; `npm run build` exit 0; `git status --short` empty; bundle byte-identical to `HEAD:panel/main.js`.
+- L1: `node --test test/current-board.test.js` exit 0, 19 pass; `npm test` exit 0, 485 pass, 0 fail/skipped (`/tmp/opencode/f1-suite.log`); `git diff --check` exit 0.
+- Hard-ceiling probe: `node /tmp/opencode/f1-hard.mjs` exit 0; 5 scans, 5001 issues, settled edit survives, older publication abandoned and freshness `stale` (`/tmp/opencode/f1-hard.log`).
+
+### Boundaries and residual risk
+- Synthetic recording-host/shipped-bundle evidence only; no credential, live GitHub request, installed activation, push, merge, close or deploy. L3/L5 remain **NOT RUN / AWAITING HUMAN**.
+- The hard ceiling is proved by the synthetic probe rather than a committed test; triggering it requires five scans for one repository during a single stalled refresh. F2/F3 remain separate; F4-F6 unchanged.
+- The 500/2000-issue fixtures exceed the host's 64 KB per-key storage limit, so F1 tests 1 and 3 assert displayed state; cache is asserted by the pre-existing R1 tests and F1 test 2 (whose publication membership is small).
