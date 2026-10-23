@@ -8,6 +8,7 @@
 
 export type GitHubErrorKind =
   | 'unauthorized'
+  | 'forbidden'
   | 'not_found'
   | 'rate_limited'
   | 'server'
@@ -55,9 +56,18 @@ export interface IssueList {
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 
-function kindForStatus(status: number): GitHubErrorKind {
-  if (status === 401 || status === 403) return 'unauthorized';
+function kindForStatus(status: number, headers?: Headers, data?: any): GitHubErrorKind {
+  if (status === 401) return 'unauthorized';
+  if (status === 403) {
+    const remaining = headers?.get('x-ratelimit-remaining');
+    const msg = typeof data?.message === 'string' ? data.message.toLowerCase() : '';
+    if (remaining === '0' || msg.includes('rate limit')) {
+      return 'rate_limited';
+    }
+    return 'forbidden';
+  }
   if (status === 404) return 'not_found';
+  if (status === 422) return 'invalid';
   if (status === 429) return 'rate_limited';
   return 'server';
 }
@@ -129,15 +139,19 @@ export class GitHubClient {
     }
 
     if (!response.ok) {
-      const kind = kindForStatus(response.status);
+      const kind = kindForStatus(response.status, response.headers, data);
       const message =
         kind === 'unauthorized'
           ? 'GitHub rejected the stored token'
-          : kind === 'not_found'
-            ? 'GitHub resource not found'
-            : kind === 'rate_limited'
-              ? 'GitHub rate limit reached'
-              : `GitHub responded with status ${response.status}`;
+          : kind === 'forbidden'
+            ? 'GitHub refused access to the requested resource'
+            : kind === 'not_found'
+              ? 'GitHub resource not found'
+              : kind === 'rate_limited'
+                ? 'GitHub rate limit reached'
+                : kind === 'invalid'
+                  ? (typeof data?.message === 'string' ? data.message : 'GitHub rejected the request as invalid')
+                  : `GitHub responded with status ${response.status}`;
       throw new GitHubError(kind, response.status, message);
     }
 
@@ -167,10 +181,12 @@ export class GitHubClient {
 
   async listIssues(): Promise<IssueList> {
     const items: any[] = [];
+    const seenNumbers = new Set<number>();
     let pages = 0;
     let truncated = false;
     let nextUrl: string | null =
       `${this.issuesBase()}/issues?state=all&per_page=${this.perPage}&page=1`;
+    const apiOrigin = new URL(this.apiBase).origin;
 
     while (nextUrl) {
       if (pages >= this.maxPages) {
@@ -181,15 +197,41 @@ export class GitHubClient {
       if (!Array.isArray(data)) {
         throw new GitHubError('server', 200, 'GitHub issues response was not a list');
       }
-      items.push(...data);
+
+      let newCount = 0;
+      for (const item of data) {
+        const num = item?.number;
+        if (typeof num === 'number') {
+          if (!seenNumbers.has(num)) {
+            seenNumbers.add(num);
+            items.push(item);
+            newCount += 1;
+          }
+        } else {
+          items.push(item);
+          newCount += 1;
+        }
+      }
       pages += 1;
+
+      if (data.length > 0 && newCount === 0) {
+        // Page added nothing new; stop pagination to avoid duplicate loops
+        break;
+      }
+
       const link = headers.get('link') ?? '';
       const nextMatch = /<([^>]+)>\s*;\s*rel="next"/i.exec(link);
       if (nextMatch) {
-        nextUrl = nextMatch[1];
-        if (!nextUrl.startsWith(this.apiBase)) {
+        let parsedNext: URL;
+        try {
+          parsedNext = new URL(nextMatch[1], this.apiBase);
+        } catch {
+          throw new GitHubError('server', 200, 'GitHub pagination Link header URL was malformed');
+        }
+        if (parsedNext.origin !== apiOrigin) {
           throw new GitHubError('server', 200, 'GitHub pagination left the configured API origin');
         }
+        nextUrl = parsedNext.toString();
       } else if (data.length >= this.perPage) {
         nextUrl = `${this.issuesBase()}/issues?state=all&per_page=${this.perPage}&page=${pages + 1}`;
       } else {

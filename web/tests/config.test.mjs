@@ -4,6 +4,7 @@ import {
   loadConfig,
   hashPassword,
   verifyPassword,
+  verifyPasswordAsync,
   ConfigError,
   describeConfig,
 } from '../server/config.ts';
@@ -153,4 +154,20 @@ test('verifyPassword returns false for malformed stored hashes', () => {
   for (const stored of ['', 'plain', 'scrypt$1$2$3', 'scrypt$16384$8$1$!!!$!!!', 'bcrypt$x$y']) {
     assert.equal(verifyPassword(PASSWORD, stored), false, `stored=${stored}`);
   }
+});
+
+test('BOARD_TRUST_PROXY parses truthy and falsy values', () => {
+  assert.equal(loadConfig(validEnv()).trustProxy, false);
+  assert.equal(loadConfig(validEnv({ BOARD_TRUST_PROXY: 'false' })).trustProxy, false);
+  assert.equal(loadConfig(validEnv({ BOARD_TRUST_PROXY: 'true' })).trustProxy, true);
+  assert.equal(loadConfig(validEnv({ BOARD_TRUST_PROXY: '1' })).trustProxy, true);
+  assert.equal(loadConfig(validEnv({ BOARD_TRUST_PROXY: 'yes' })).trustProxy, true);
+});
+
+test('verifyPasswordAsync matches valid password and rejects invalid', async () => {
+  const hash = hashPassword('async-secret-pass');
+  assert.equal(await verifyPasswordAsync('async-secret-pass', hash), true);
+  assert.equal(await verifyPasswordAsync('wrong-pass', hash), false);
+  assert.equal(await verifyPasswordAsync('', hash), false);
+  assert.equal(await verifyPasswordAsync('async-secret-pass', 'invalid-hash'), false);
 });

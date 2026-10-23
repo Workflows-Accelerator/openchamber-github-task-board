@@ -12,6 +12,7 @@ import { readFileSync } from 'node:fs';
 import {
   ConfigError,
   verifyPassword,
+  verifyPasswordAsync,
   type BoardConfig,
 } from './config.ts';
 import {
@@ -25,6 +26,7 @@ import {
 } from './auth.ts';
 import { GitHubClient, GitHubError, parseIssueNumber } from './github.ts';
 import { STATUS_METADATA } from '../../panel/labels.ts';
+import { findSections, replaceSectionText, SectionError } from './sections.ts';
 import {
   BoardError,
   applyQuestionAnswer,
@@ -33,6 +35,8 @@ import {
   buildBoardList,
   buildIssueDetail,
   issueFingerprint,
+  labelNames,
+  statusLabelOf,
 } from './board.ts';
 
 export interface BoardServerOptions {
@@ -134,6 +138,12 @@ function readJsonBody(req: http.IncomingMessage): Promise<any> {
 function mapGitHubError(error: unknown): never {
   if (error instanceof HttpError) throw error;
   if (error instanceof GitHubError) {
+    if (error.kind === 'unauthorized') {
+      throw new HttpError(502, 'github_unauthorized', 'GitHub rejected credentials or token expired');
+    }
+    if (error.kind === 'forbidden') {
+      throw new HttpError(502, 'github_forbidden', 'GitHub refused access to the repository');
+    }
     if (error.kind === 'not_found') {
       throw new HttpError(404, 'not_found', 'That issue was not found in the configured repository');
     }
@@ -146,6 +156,81 @@ function mapGitHubError(error: unknown): never {
     throw new HttpError(502, 'github_unavailable', 'GitHub could not be reached');
   }
   throw error;
+}
+
+class ScryptQueue {
+  private active = 0;
+  private readonly maxConcurrent: number;
+  private readonly queue: Array<() => void> = [];
+
+  constructor(maxConcurrent = 2) {
+    this.maxConcurrent = maxConcurrent;
+  }
+
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    if (this.active >= this.maxConcurrent) {
+      await new Promise<void>((resolve) => this.queue.push(resolve));
+    }
+    this.active += 1;
+    try {
+      return await fn();
+    } finally {
+      this.active -= 1;
+      const next = this.queue.shift();
+      if (next) next();
+    }
+  }
+}
+
+function getClientIp(req: http.IncomingMessage, trustProxy: boolean): string {
+  if (trustProxy) {
+    const forwarded = req.headers['x-forwarded-for'];
+    if (typeof forwarded === 'string' && forwarded.trim()) {
+      const first = forwarded.split(',')[0].trim();
+      if (first) return first;
+    }
+    const standardForwarded = req.headers['forwarded'];
+    if (typeof standardForwarded === 'string' && standardForwarded.trim()) {
+      const match = /for="?([^";, ]+)/i.exec(standardForwarded);
+      if (match && match[1]) return match[1];
+    }
+  }
+  return req.socket.remoteAddress ?? 'unknown';
+}
+
+function assertOriginAllowed(req: http.IncomingMessage, baseUrl: string | null): void {
+  if (!baseUrl) return;
+  let expectedOrigin: string;
+  try {
+    expectedOrigin = new URL(baseUrl).origin;
+  } catch {
+    return;
+  }
+  const origin = req.headers.origin;
+  if (typeof origin === 'string' && origin.trim()) {
+    let parsedOrigin: string;
+    try {
+      parsedOrigin = new URL(origin).origin;
+    } catch {
+      throw new HttpError(403, 'cross_origin_rejected', 'Cross-origin write requests are not allowed');
+    }
+    if (parsedOrigin !== expectedOrigin) {
+      throw new HttpError(403, 'cross_origin_rejected', 'Cross-origin write requests are not allowed');
+    }
+    return;
+  }
+  const referer = req.headers.referer;
+  if (typeof referer === 'string' && referer.trim()) {
+    let parsedRefererOrigin: string;
+    try {
+      parsedRefererOrigin = new URL(referer).origin;
+    } catch {
+      throw new HttpError(403, 'cross_origin_rejected', 'Cross-origin write requests are not allowed');
+    }
+    if (parsedRefererOrigin !== expectedOrigin) {
+      throw new HttpError(403, 'cross_origin_rejected', 'Cross-origin write requests are not allowed');
+    }
+  }
 }
 
 export async function createBoardServer(options: BoardServerOptions): Promise<BoardServer> {
@@ -173,7 +258,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   try {
     account = await github.getAuthenticatedUser();
   } catch (error) {
-    if (error instanceof GitHubError && error.kind === 'unauthorized') {
+    if (error instanceof GitHubError && (error.kind === 'unauthorized' || error.kind === 'forbidden')) {
       throw new ConfigError('BOARD_GITHUB_TOKEN', 'BOARD_GITHUB_TOKEN was rejected by GitHub');
     }
     throw new ConfigError('BOARD_GITHUB_TOKEN', 'BOARD_GITHUB_TOKEN could not be verified with GitHub');
@@ -187,7 +272,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   try {
     await github.getRepository();
   } catch (error) {
-    if (error instanceof GitHubError && error.kind === 'unauthorized') {
+    if (error instanceof GitHubError && (error.kind === 'unauthorized' || error.kind === 'forbidden')) {
       throw new ConfigError('BOARD_REPO', 'BOARD_REPO is not accessible to the stored GitHub token');
     }
     throw new ConfigError('BOARD_REPO', 'BOARD_REPO could not be verified with GitHub');
@@ -280,6 +365,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   }
 
   function requireCsrf(req: http.IncomingMessage, record: { csrfToken: string }): void {
+    assertOriginAllowed(req, config.baseUrl);
     const provided = req.headers['x-csrf-token'];
     const token = Array.isArray(provided) ? provided[0] : provided;
     if (!csrfMatches(record.csrfToken, token)) {
@@ -368,9 +454,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       requireCsrf(req, record);
       const number = parseIssueNumberOrThrow(sectionMatch[1]);
       const body = await readJsonBody(req);
-      return writeIssue(number, body, (fresh) => ({
-        body: applySectionEdit(fresh, body?.sectionId, body?.text),
-      }));
+      return writeIssue(number, body, {
+        kind: 'section',
+        sectionId: body?.sectionId,
+        text: body?.text,
+      });
     }
 
     const answerMatch = /^\/api\/issues\/([^/]+)\/questions\/([^/]+)\/answer$/.exec(url.pathname);
@@ -383,9 +471,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         throw new HttpError(400, 'invalid_request', 'The question index is not valid');
       }
       const body = await readJsonBody(req);
-      return writeIssue(number, body, (fresh) => ({
-        body: applyQuestionAnswer(fresh, index, body?.answer),
-      }));
+      return writeIssue(number, body, {
+        kind: 'question',
+        index,
+        answer: body?.answer,
+      });
     }
 
     const statusMatch = /^\/api\/issues\/([^/]+)\/status$/.exec(url.pathname);
@@ -397,9 +487,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       if (!body || typeof body.status !== 'string') {
         throw new HttpError(400, 'invalid_request', 'A status label is required');
       }
-      return writeIssue(number, body, (fresh) => ({
-        labels: applyStatusChange(fresh, body.status),
-      }));
+      return writeIssue(number, body, {
+        kind: 'status',
+        status: body.status,
+      });
     }
 
     if (url.pathname.startsWith('/api/')) {
@@ -427,18 +518,67 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
   }
 
-  async function login(req: http.IncomingMessage): Promise<HandlerResponse> {
-    const ip = req.socket.remoteAddress ?? 'unknown';
-    const verdict = limiter.check(ip);
-    const body = await readJsonBody(req).catch((error) => {
-      throw error instanceof HttpError ? error : new HttpError(400, 'invalid_json', 'The request body must be JSON');
+  type WriteOp =
+    | { kind: 'section'; sectionId: unknown; text: unknown }
+    | { kind: 'question'; index: number; answer: unknown }
+    | { kind: 'status'; status: unknown };
+
+  const inFlightLogins = new Set<string>();
+  const scryptQueue = new ScryptQueue(2);
+  const issueLocks = new Map<number, Promise<void>>();
+
+  async function withIssueLock<T>(number: number, fn: () => Promise<T>): Promise<T> {
+    while (issueLocks.has(number)) {
+      try {
+        await issueLocks.get(number);
+      } catch {
+        // ignore errors from prior lock holders
+      }
+    }
+    let release = () => {};
+    const lockPromise = new Promise<void>((resolve) => {
+      release = resolve;
     });
-    const password = body && typeof body.password === 'string' ? body.password : '';
-    const valid = verifyPassword(password, config.passwordHash);
+    issueLocks.set(number, lockPromise);
+    try {
+      return await fn();
+    } finally {
+      issueLocks.delete(number);
+      release();
+    }
+  }
+
+  async function login(req: http.IncomingMessage): Promise<HandlerResponse> {
+    const ip = getClientIp(req, config.trustProxy);
+    const verdict = limiter.check(ip);
+
+    if (inFlightLogins.has(ip)) {
+      const retrySec = Math.max(1, verdict.retryAfterSeconds || 1);
+      return {
+        status: 429,
+        body: {
+          error: 'rate_limited',
+          message: 'A login request is already in progress for this client; try again in a moment',
+          retryAfterSeconds: retrySec,
+        },
+        headers: { 'retry-after': String(retrySec) },
+      };
+    }
+
+    inFlightLogins.add(ip);
+    let valid = false;
+    try {
+      const body = await readJsonBody(req).catch((error) => {
+        throw error instanceof HttpError ? error : new HttpError(400, 'invalid_json', 'The request body must be JSON');
+      });
+      const password = body && typeof body.password === 'string' ? body.password : '';
+      valid = await scryptQueue.run(() => verifyPasswordAsync(password, config.passwordHash));
+    } finally {
+      inFlightLogins.delete(ip);
+    }
 
     if (!valid) {
       if (!verdict.allowed) {
-        limiter.recordFailure(ip);
         return {
           status: 429,
           body: {
@@ -469,7 +609,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   async function writeIssue(
     number: number,
     body: any,
-    computePatch: (fresh: any) => Record<string, unknown>,
+    op: WriteOp,
   ): Promise<HandlerResponse> {
     const supplied = body && typeof body.fingerprint === 'string' ? body.fingerprint : '';
     if (!/^[a-f0-9]{64}$/.test(supplied)) {
@@ -480,59 +620,176 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       );
     }
 
-    const fresh = await github.getIssue(number).catch(mapGitHubError);
-    if (fresh.item.pull_request) {
-      throw new HttpError(404, 'not_found', 'That number is a pull request, not an issue');
-    }
-
-    const currentFingerprint = issueFingerprint(fresh.item);
-    if (currentFingerprint !== supplied) {
-      throw new HttpError(409, 'conflict', 'This task changed on GitHub after you opened it; nothing was written', {
-        issue: buildIssueDetail(fresh.item),
-        statusOptions: statusOptions(),
-      });
-    }
-
-    let patch: Record<string, unknown>;
-    try {
-      patch = computePatch(fresh.item);
-    } catch (error) {
-      if (error instanceof BoardError) {
-        throw new HttpError(400, 'invalid_edit', error.message);
+    return withIssueLock(number, async () => {
+      const fresh = await github.getIssue(number).catch(mapGitHubError);
+      if (fresh.item.pull_request) {
+        throw new HttpError(404, 'not_found', 'That number is a pull request, not an issue');
       }
-      throw error;
-    }
 
-    for (const [key, value] of Object.entries(patch)) {
-      if (key === 'body' && typeof fresh.item.body === 'string' && value === fresh.item.body) {
-        throw new HttpError(400, 'invalid_edit', 'That change would leave the issue unchanged');
-      }
-    }
-
-    let updated: Awaited<ReturnType<GitHubClient['updateIssue']>> | null = null;
-    try {
-      updated = await github.updateIssue(number, patch, { etag: fresh.etag });
-    } catch (error) {
-      if (error instanceof GitHubError && error.status === 412) {
-        const reread = await github.getIssue(number).catch(mapGitHubError);
-        throw new HttpError(409, 'conflict', 'This task changed on GitHub while saving; nothing was written', {
-          issue: buildIssueDetail(reread.item),
+      const currentFingerprint = issueFingerprint(fresh.item);
+      if (currentFingerprint !== supplied) {
+        throw new HttpError(409, 'conflict', 'This task changed on GitHub after you opened it; nothing was written', {
+          issue: buildIssueDetail(fresh.item),
           statusOptions: statusOptions(),
         });
       }
-      mapGitHubError(error);
-    }
 
-    if (!updated) throw new HttpError(502, 'github_unavailable', 'GitHub could not be reached');
-    log(`write issue=${number} fields=${Object.keys(patch).join(',')}`);
-    return {
-      status: 200,
-      body: {
-        issue: buildIssueDetail(updated.item),
-        savedAt: new Date(now()).toISOString(),
-        statusOptions: statusOptions(),
-      },
-    };
+      let baseSectionId = '';
+      let baseText = '';
+      let targetText = '';
+      let baseQuestionIndex = -1;
+      let baseQuestionText = '';
+      let targetAnswer = '';
+      let baseStatus: string | null = null;
+      let targetStatus = '';
+
+      if (op.kind === 'section') {
+        if (typeof op.sectionId !== 'string') {
+          throw new HttpError(400, 'invalid_edit', 'A section id is required');
+        }
+        if (typeof op.text !== 'string') {
+          throw new HttpError(400, 'invalid_edit', 'Section text must be a string');
+        }
+        baseSectionId = op.sectionId;
+        const baseSection = findSections(fresh.item.body ?? '').find((s) => s.id === op.sectionId);
+        if (!baseSection || !baseSection.editable) {
+          throw new HttpError(400, 'invalid_edit', 'That section cannot be edited from the board');
+        }
+        baseText = baseSection.text;
+        targetText = op.text;
+        if (targetText === baseText) {
+          throw new HttpError(400, 'invalid_edit', 'That change would leave the issue unchanged');
+        }
+      } else if (op.kind === 'question') {
+        if (typeof op.answer !== 'string' || op.answer.trim() === '') {
+          throw new HttpError(400, 'invalid_edit', 'An answer is required');
+        }
+        if (op.answer.length > 2000) {
+          throw new HttpError(400, 'invalid_edit', 'The answer is too long');
+        }
+        const baseDetail = buildIssueDetail(fresh.item);
+        const baseQ = baseDetail.openQuestions.find((q) => q.answerIndex === op.index);
+        if (!baseQ || baseQ.completed) {
+          throw new HttpError(400, 'invalid_edit', 'That open question is no longer answerable');
+        }
+        baseQuestionIndex = baseQ.index;
+        baseQuestionText = baseQ.text;
+        targetAnswer = op.answer;
+      } else if (op.kind === 'status') {
+        if (typeof op.status !== 'string' || !op.status) {
+          throw new HttpError(400, 'invalid_edit', 'A status label is required');
+        }
+        baseStatus = statusLabelOf(labelNames(fresh.item));
+        targetStatus = op.status;
+        if (targetStatus === baseStatus) {
+          throw new HttpError(400, 'invalid_edit', 'That change would leave the issue unchanged');
+        }
+      }
+
+      const MAX_RETRIES = 2;
+      let currentItem = fresh.item;
+      let lastPatch: Record<string, unknown> = {};
+
+      for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
+        let patch: Record<string, unknown>;
+        try {
+          if (op.kind === 'section') {
+            patch = { body: replaceSectionText(currentItem.body ?? '', baseSectionId, op.text) };
+          } else if (op.kind === 'question') {
+            const curDetail = buildIssueDetail(currentItem);
+            const curQView = curDetail.openQuestions[baseQuestionIndex];
+            const answerIdx = curQView?.answerIndex ?? op.index;
+            patch = { body: applyQuestionAnswer(currentItem, answerIdx, op.answer) };
+          } else {
+            patch = { labels: applyStatusChange(currentItem, op.status) };
+          }
+        } catch (error) {
+          if (error instanceof BoardError) throw new HttpError(400, 'invalid_edit', error.message);
+          if (error instanceof SectionError) throw new HttpError(400, 'invalid_edit', error.message);
+          throw error;
+        }
+        lastPatch = patch;
+
+        try {
+          await github.updateIssue(number, patch, { etag: fresh.etag });
+        } catch (error) {
+          if (error instanceof GitHubError && error.status === 412) {
+            const reread = await github.getIssue(number).catch(mapGitHubError);
+            throw new HttpError(409, 'conflict', 'This task changed on GitHub while saving; nothing was written', {
+              issue: buildIssueDetail(reread.item),
+              statusOptions: statusOptions(),
+            });
+          }
+          mapGitHubError(error);
+        }
+
+        const reread = await github.getIssue(number).catch(mapGitHubError);
+        currentItem = reread.item;
+
+        let verified = false;
+        let matchesBase = false;
+
+        if (op.kind === 'section') {
+          const curSec = findSections(currentItem.body ?? '').find((s) => s.id === op.sectionId);
+          const curText = curSec?.text ?? '';
+          if (curText === targetText) {
+            verified = true;
+          } else if (curText === baseText) {
+            matchesBase = true;
+          }
+        } else if (op.kind === 'question') {
+          const curDetail = buildIssueDetail(currentItem);
+          const curQ = curDetail.openQuestions[baseQuestionIndex];
+          const cleanAnswer = targetAnswer.trim().replace(/\r?\n+/g, ' ');
+          if (curQ && curQ.completed && curQ.text.includes(cleanAnswer)) {
+            verified = true;
+          } else if (curQ && !curQ.completed && curQ.text === baseQuestionText) {
+            matchesBase = true;
+          }
+        } else if (op.kind === 'status') {
+          const curStatus = statusLabelOf(labelNames(currentItem));
+          if (curStatus === targetStatus) {
+            verified = true;
+          } else if (curStatus === baseStatus) {
+            matchesBase = true;
+          }
+        }
+
+        if (verified) {
+          log(`write issue=${number} fields=${Object.keys(lastPatch).join(',')}${attempt > 0 ? ` retries=${attempt}` : ''}`);
+          return {
+            status: 200,
+            body: {
+              issue: buildIssueDetail(currentItem),
+              savedAt: new Date(now()).toISOString(),
+              statusOptions: statusOptions(),
+            },
+          };
+        }
+
+        if (!matchesBase) {
+          throw new HttpError(
+            409,
+            'conflict',
+            'This task changed on GitHub while saving; nothing was written',
+            {
+              issue: buildIssueDetail(currentItem),
+              statusOptions: statusOptions(),
+            },
+          );
+        }
+      }
+
+      throw new HttpError(
+        409,
+        'conflict',
+        'This task could not be saved due to concurrent modifications; try reloading',
+        {
+          issue: buildIssueDetail(currentItem),
+          statusOptions: statusOptions(),
+        },
+      );
+    });
   }
 
   return {

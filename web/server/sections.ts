@@ -28,6 +28,7 @@ export interface Section {
 
 const statusSet = new Set<string>(STATUS_LABELS as readonly string[]);
 const headingPattern = /^ {0,3}(#{1,6})[ \t]+(.*?)[ \t]*$/;
+const fencePattern = /^ {0,3}(`{3,}|~{3,})/;
 const overviewTitlePattern = /^(?:overview|summary|description|context|background|goals?)$/i;
 
 function slugifyHeading(title: string): string {
@@ -50,12 +51,33 @@ function trimRange(lines: string[], start: number, end: number): string[] {
 
 export function findSections(body: string): Section[] {
   if (typeof body !== 'string') return [];
-  const lines = body.split('\n');
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  const lines = cleanBody.split('\n');
   const headings: Array<{ line: number; level: number; title: string }> = [];
+
+  let inFence = false;
+  let fenceChar = '';
+  let fenceLen = 0;
+
   for (let index = 0; index < lines.length; index += 1) {
-    const match = headingPattern.exec(lines[index].replace(/\r$/, ''));
-    if (match) {
-      headings.push({ line: index, level: match[1].length, title: match[2] });
+    const cleanLine = lines[index].replace(/\r$/, '');
+    if (!inFence) {
+      const fenceMatch = fencePattern.exec(cleanLine);
+      if (fenceMatch) {
+        inFence = true;
+        fenceChar = fenceMatch[1][0];
+        fenceLen = fenceMatch[1].length;
+        continue;
+      }
+      const match = headingPattern.exec(cleanLine);
+      if (match) {
+        headings.push({ line: index, level: match[1].length, title: match[2] });
+      }
+    } else {
+      const fenceMatch = fencePattern.exec(cleanLine);
+      if (fenceMatch && fenceMatch[1][0] === fenceChar && fenceMatch[1].length >= fenceLen) {
+        inFence = false;
+      }
     }
   }
 
@@ -63,8 +85,12 @@ export function findSections(body: string): Section[] {
   const usedIds = new Set<string>();
 
   const firstHeadingLine = headings.length > 0 ? headings[0].line : lines.length;
+  const preambleLines = lines.slice(0, firstHeadingLine);
   const preambleText = trimRange(lines, 0, firstHeadingLine).join('\n');
   const hasPreamble = preambleText.trim() !== '';
+
+  const isPreambleAmbiguous =
+    preambleLines.some((l) => /^ {0,3}(?:`{3,}|~{3,}|#{1,6})/.test(l.replace(/\r$/, '')));
 
   if (hasPreamble) {
     usedIds.add('overview');
@@ -76,7 +102,7 @@ export function findSections(body: string): Section[] {
       startLine: 0,
       endLine: firstHeadingLine,
       text: preambleText,
-      editable: true,
+      editable: !isPreambleAmbiguous,
     });
   }
 
@@ -143,6 +169,9 @@ export function replaceSectionText(body: string, sectionId: string, text: unknow
   }
   if (typeof body !== 'string') {
     throw new SectionError('issue body must be a string');
+  }
+  if (body.startsWith('\uFEFF')) {
+    return '\uFEFF' + replaceSectionText(body.slice(1), sectionId, text);
   }
   const eol = body.includes('\r\n') ? '\r\n' : '\n';
   const textLines = text.replace(/\r\n?/g, '\n').split('\n');

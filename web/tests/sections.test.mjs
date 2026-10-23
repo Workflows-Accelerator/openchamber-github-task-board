@@ -138,3 +138,59 @@ test('setStatusLabel accepts every agreed status and rejects anything else', () 
 test('setStatusLabel can clear the status without touching other labels', () => {
   assert.deepEqual(setStatusLabel(['bug', 'status:todo'], null), ['bug']);
 });
+
+test('findSections and replaceSectionText handle BOM correctly', () => {
+  const body = '\uFEFF## Overview\n\nText A\n\n## Human Tasks\n- [ ] keep\n';
+  const sections = editableSections(body);
+  assert.equal(sections.length, 1);
+  assert.equal(sections[0].id, 'overview');
+  assert.equal(sections[0].title, 'Overview');
+  assert.equal(sections[0].text, 'Text A');
+
+  const updated = replaceSectionText(body, 'overview', 'NEW');
+  assert.ok(updated.startsWith('\uFEFF## Overview\n'));
+  assert.ok(updated.includes('NEW\n\n## Human Tasks'));
+  assert.ok(updated.includes('## Overview'));
+});
+
+test('headings inside fenced code blocks are ignored', () => {
+  const body = [
+    '## Overview',
+    'Intro.',
+    '',
+    '```markdown',
+    '## Not a real section',
+    'Some code',
+    '```',
+    '',
+    '## Acceptance Criteria',
+    '- [ ] task',
+  ].join('\n');
+  const sections = findSections(body);
+  const titles = sections.map((s) => s.title);
+  assert.ok(!titles.includes('Not a real section'));
+  assert.deepEqual(titles, ['Overview', 'Acceptance Criteria']);
+});
+
+test('ambiguous preamble containing a code fence is not offered as editable', () => {
+  const body = '```\n# Overview inside code\ncode\n```\n## Human Tasks\n- [ ] keep\n';
+  const editable = editableSections(body);
+  assert.equal(editable.length, 0);
+  assert.throws(
+    () => replaceSectionText(body, 'overview', 'NEW'),
+    (err) => err instanceof SectionError && /not editable/.test(err.message),
+  );
+});
+
+test('duplicate headings only allow the first matching overview to be editable', () => {
+  const body = '## Overview\nFirst text.\n\n## Overview\nSecond text.\n';
+  const sections = findSections(body);
+  assert.equal(sections[0].id, 'overview');
+  assert.equal(sections[0].editable, true);
+  assert.equal(sections[1].id, 'overview-2');
+  assert.equal(sections[1].editable, false);
+
+  const replaced = replaceSectionText(body, 'overview', 'Updated text.');
+  assert.ok(replaced.includes('## Overview\nUpdated text.'));
+  assert.ok(replaced.includes('## Overview\nSecond text.'));
+});

@@ -5,7 +5,7 @@
 // There is no config file, no CLI flag and no client-supplied repository.
 // ==========================================
 
-import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { randomBytes, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
 
 export const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1, keylen: 32 } as const;
 export const MIN_PASSWORD_LENGTH = 8;
@@ -29,6 +29,7 @@ export interface BoardConfig {
   port: number;
   baseUrl: string | null;
   githubApiBase: string;
+  trustProxy: boolean;
 }
 
 export class ConfigError extends Error {
@@ -167,6 +168,33 @@ export function verifyPassword(password: string, stored: string): boolean {
   }
 }
 
+export async function verifyPasswordAsync(password: string, stored: string): Promise<boolean> {
+  if (typeof password !== 'string' || password.length === 0) return false;
+  const parsed = parsePasswordHash(stored);
+  if (!parsed) return false;
+  return new Promise<boolean>((resolve) => {
+    scrypt(
+      password,
+      parsed.salt,
+      parsed.key.length,
+      { N: parsed.N, r: parsed.r, p: parsed.p },
+      (err, derived) => {
+        if (err || !derived || derived.length !== parsed.key.length) {
+          resolve(false);
+          return;
+        }
+        resolve(timingSafeEqual(derived, parsed.key));
+      },
+    );
+  });
+}
+
+function parseTrustProxy(value: string | undefined): boolean {
+  if (value === undefined || value.trim() === '') return false;
+  const lower = value.trim().toLowerCase();
+  return lower === 'true' || lower === '1' || lower === 'yes';
+}
+
 export function loadConfig(env: Record<string, string | undefined>): BoardConfig {
   const githubToken = requireValue(
     env,
@@ -227,6 +255,7 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
 
   const port = parsePort(read(env, 'BOARD_PORT'));
   const baseUrl = parseBaseUrl(read(env, 'BOARD_BASE_URL'));
+  const trustProxy = parseTrustProxy(read(env, 'BOARD_TRUST_PROXY'));
 
   return {
     githubToken: githubToken.trim(),
@@ -238,6 +267,7 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
     port,
     baseUrl,
     githubApiBase: DEFAULT_GITHUB_API_BASE,
+    trustProxy,
   };
 }
 
@@ -248,6 +278,7 @@ export function describeConfig(config: BoardConfig): Record<string, unknown> {
     port: config.port,
     baseUrl: config.baseUrl,
     githubApiBase: config.githubApiBase,
+    trustProxy: config.trustProxy,
     passwordSource: config.passwordWasGenerated ? 'BOARD_PASSWORD (hashed at startup)' : 'BOARD_PASSWORD_HASH',
   };
 }

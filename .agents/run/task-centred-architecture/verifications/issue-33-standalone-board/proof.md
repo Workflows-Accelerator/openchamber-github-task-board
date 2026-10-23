@@ -107,3 +107,21 @@ merged, or commented.
 
 Actual review model: Genius (`9router/genius`). Builder-supplied and actual
 builder model reported by the build: Engineer (`9router/engineer`).
+
+## Hostile Review Remediation Proof (2026-10-23)
+
+Remediated findings F1, F2, F4, F5, F6, F7, F8, F9, and answered-question cosmetic nit.
+Sign-in model (F3) remains out of scope and preserved as designed.
+
+### Verification Results
+
+| Command | Status | Evidence |
+| --- | --- | --- |
+| `node --test web/tests/*.test.mjs` | **PASS** | 86 / 86 tests passed across 6 test suites (18 new regression tests) |
+| `npx tsc -p web/tsconfig.json` | **PASS** | Exit code 0, 0 diagnostics |
+| `npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=web/dist/server.mjs` | **PASS** | 91.9kb bundle |
+| `node --check web/dist/server.mjs` | **PASS** | Exit code 0 |
+| `sha256sum web/dist/server.mjs` | **PASS** | `a230c333bafc720fb4580e6f6b918aa055f7d28a218e61f82f48500e2728d710` |
+| `node web/tests/browser-verify.mjs` | **PASS** | 29 checks passed, 10 screenshots captured |
+
+Remediation details documented in `.agents/run/task-centred-architecture/outputs/issue-33-remediation.md`.

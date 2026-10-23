@@ -84,6 +84,10 @@ export async function startFakeGitHub(options = {}) {
     patchCalls: [],
     unknownRepoHits: [],
     failAll: false,
+    injectedResponse: null,
+    honorIfMatch: options.honorIfMatch ?? false,
+    beforePatchHook: options.beforePatchHook ?? null,
+    patchHook: options.patchHook ?? null,
   };
   const perPage = options.perPage ?? 100;
   const repoAccessible = options.repoAccessible !== false;
@@ -98,6 +102,10 @@ export async function startFakeGitHub(options = {}) {
       res.statusCode = status;
       res.end(payload === undefined ? '' : JSON.stringify(payload));
     };
+
+    if (state.injectedResponse) {
+      return send(state.injectedResponse.status, state.injectedResponse.payload, state.injectedResponse.headers);
+    }
 
     if (state.failAll) {
       return send(500, { message: 'Injected synthetic failure' });
@@ -157,7 +165,7 @@ export async function startFakeGitHub(options = {}) {
 
       if (req.method === 'PATCH') {
         const ifMatch = req.headers['if-match'];
-        if (ifMatch && ifMatch !== etagFor(issue)) {
+        if (state.honorIfMatch && ifMatch && ifMatch !== etagFor(issue)) {
           return send(412, { message: 'Precondition Failed' });
         }
         let payload;
@@ -167,11 +175,24 @@ export async function startFakeGitHub(options = {}) {
           return send(400, { message: 'Bad Request' });
         }
         state.patchCalls.push({ number, payload, ifMatch });
-        if (payload && typeof payload.body === 'string') issue.body = payload.body;
-        if (payload && Array.isArray(payload.labels)) {
-          issue.labels = payload.labels.map((name) => ({ name, color: 'ededed' }));
+
+        let applyPayload = true;
+        if (state.patchHook) {
+          const result = await state.patchHook(issue, payload);
+          if (result && result.applyPayload === false) {
+            applyPayload = false;
+          }
+        } else if (state.beforePatchHook) {
+          await state.beforePatchHook(issue);
         }
-        if (payload && typeof payload.state === 'string') issue.state = payload.state;
+
+        if (applyPayload) {
+          if (payload && typeof payload.body === 'string') issue.body = payload.body;
+          if (payload && Array.isArray(payload.labels)) {
+            issue.labels = payload.labels.map((name) => ({ name, color: 'ededed' }));
+          }
+          if (payload && typeof payload.state === 'string') issue.state = payload.state;
+        }
         issue.updated_at = new Date().toISOString();
         return send(200, issue, { etag: etagFor(issue) });
       }
@@ -204,6 +225,18 @@ export async function startFakeGitHub(options = {}) {
     },
     setFailure(value) {
       state.failAll = Boolean(value);
+    },
+    setHonorIfMatch(value) {
+      state.honorIfMatch = Boolean(value);
+    },
+    setBeforePatchHook(fn) {
+      state.beforePatchHook = fn;
+    },
+    setPatchHook(fn) {
+      state.patchHook = fn;
+    },
+    setInjectedResponse(status, payload = {}, headers = {}) {
+      state.injectedResponse = status ? { status, payload, headers } : null;
     },
     mutateIssue(number, mutate) {
       const index = state.issues.findIndex((issue) => issue.number === number);

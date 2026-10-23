@@ -31,17 +31,19 @@ printing its value.
 | `BOARD_PASSWORD` | one of these | Plain password, hashed in memory at startup (minimum 8 characters). |
 | `BOARD_SESSION_SECRET` | yes | At least 32 characters. Signs session cookies; changing it ends every session. |
 | `BOARD_PORT` | no | Listen port, default `8787`. |
-| `BOARD_BASE_URL` | no | Public origin, e.g. `https://board.example.test` (used for HSTS when https). |
+| `BOARD_BASE_URL` | no | Public origin, e.g. `https://board.example.test` (used for HSTS and Origin/Referer write validation). |
+| `BOARD_TRUST_PROXY` | no | Set to `true` when behind a trusted reverse proxy to honor client IP in `X-Forwarded-For`. |
 
 If both password variables are set, `BOARD_PASSWORD_HASH` wins.
 
-Generate a hash (the password is not passed as an argument, so it stays out of
-shell history):
+Generate a hash (pass the password via standard input or interactive prompt to prevent recording in shell history; use `umask 077` if writing to a file):
 
 ```sh
-BOARD_PASSWORD='…' node web/tools/hash-password.mjs
-# or
-printf '%s' '…' | node web/tools/hash-password.mjs
+# generate password hash via stdin (keeps secrets out of shell history)
+printf '%s' 'your-secret-password' | node web/tools/hash-password.mjs
+
+# or write to an environment file with restricted permissions
+(umask 077 && printf 'BOARD_PASSWORD_HASH=%s\n' "$(printf '%s' 'your-secret-password' | node web/tools/hash-password.mjs)" > .env.board)
 ```
 
 ## Run
@@ -54,12 +56,11 @@ deployable bundle:
 npx esbuild web/server.ts --bundle --platform=node --format=esm \
   --target=node20 --packages=external --outfile=web/dist/server.mjs
 
-# run from source
-BOARD_GITHUB_TOKEN=… BOARD_GITHUB_LOGIN=owner BOARD_REPO=owner/repo \
-BOARD_PASSWORD='…' BOARD_SESSION_SECRET='…' node web/server.ts
+# run from source using an env file or secret manager (avoid inline secrets in shell history)
+node --env-file=.env.board web/server.ts
 
 # run the built bundle
-node web/dist/server.mjs
+node --env-file=.env.board web/dist/server.mjs
 ```
 
 The server listens on `127.0.0.1` only. Put a TLS-terminating reverse proxy in
@@ -76,29 +77,35 @@ accept on `https` origins (and on `http://localhost` for local testing).
   must be readable by the token. Otherwise the process exits with an error
   naming the variable, before it listens.
 - **Sign-in:** the browser posts the password (over HTTPS in deployment). The
-  server compares it with scrypt (`N=16384,r=8,p=1`, per-deployment salt) using
-  `timingSafeEqual`. A successful sign-in issues a random session id, signed
-  with `BOARD_SESSION_SECRET`, in an `HttpOnly; Secure; SameSite=Strict` cookie,
-  plus a CSRF token bound to that session.
-- **Failed logins:** a small in-memory sliding-window limiter (5 failures per
-  minute per client address) answers `429` with `Retry-After`. A correct
-  password is still accepted while the limiter is cooling down, so the owner
-  cannot be locked out by an attacker or by their own typos. There is no
-  account lockout state.
-- **Sessions:** absolute 12-hour lifetime, 2-hour idle timeout, in memory only.
-  A server restart signs everyone out.
-- **CSRF:** every state-changing request needs `X-CSRF-Token` matching the
-  session's token; the login endpoint itself needs no token but issues the
-  session cookie only after a correct password.
+  server compares it using asynchronous scrypt (`N=16384,r=8,p=1`, per-deployment salt)
+  and `timingSafeEqual`. Scrypt operations run through a concurrency queue (max 2
+  concurrent workers) and in-flight login requests are deduplicated per client IP to
+  prevent CPU/memory exhaustion during login floods. A successful sign-in issues a
+  random session id, signed with `BOARD_SESSION_SECRET`, in an `HttpOnly; Secure; SameSite=Strict`
+  cookie, plus a CSRF token bound to that session.
+- **Failed logins & rate limiting:** an in-memory sliding-window limiter (5 failures per
+  minute per client address) answers `429` with `Retry-After`. The limiter state is bounded
+  (capped at 1,000 entries with LRU eviction). Client IP addresses are derived from the
+  direct socket connection unless `BOARD_TRUST_PROXY=true` is set. A correct password is still
+  accepted while the limiter is cooling down, so the owner cannot be locked out by an
+  attacker or by their own typos. There is no account lockout state.
+- **Sessions:** absolute 12-hour lifetime, 2-hour idle timeout, in memory only. The
+  session store is bounded to 50 concurrent active sessions with LRU eviction. A server
+  restart or change to `BOARD_SESSION_SECRET` immediately invalidates every session.
+- **CSRF & Origin checks:** every state-changing request needs `X-CSRF-Token` matching the
+  session's token. When `BOARD_BASE_URL` is configured, incoming `Origin` and `Referer`
+  headers on write requests are validated against the base URL origin.
 - **Repository allowlist:** every GitHub call is built from `BOARD_REPO` on the
   server. Requests carrying `repo`, `repository`, `owner`, `name` or `org`
   parameters, or any `/repos/...` path, are refused before they reach GitHub.
-- **Conditional writes:** the read model includes a SHA-256 fingerprint over the
+- **Conditional writes & concurrency:** the read model includes a SHA-256 fingerprint over the
   issue body, label names and state. A write must send the fingerprint it read.
-  The server re-reads the issue, compares fingerprints, and refuses with `409`
-  plus the current issue if anything changed. The `PATCH` also carries the
-  ETag from that fresh read as `If-Match`; a `412` becomes the same `409`. In
-  the conflict path nothing is written.
+  The server acquires an in-process per-issue lock, re-reads the issue, compares fingerprints,
+  and refuses with `409` plus the current issue if anything changed. When writing, the server
+  sends `If-Match` with the latest ETag. Because GitHub's REST API does not guarantee conditional
+  `PATCH` support on issues, the server performs post-write verification by re-reading the issue.
+  If a non-conflicting concurrent change occurred elsewhere, it retries up to 2 times to converge;
+  if the edited section was touched or retries are exhausted, it fails closed with `409 Conflict`.
 - **Section scoping:** only the Overview prose is replaceable. Every other byte
   of the body (checklists, questions, human tasks, test plan, spacing) is
   compared byte-for-byte in tests. Open-question answers reuse
@@ -110,14 +117,14 @@ accept on `https` origins (and on `http://localhost` for local testing).
 
 ### Deliberate limits
 
-- Single user, one repository, one process, in-memory sessions. Not a
+- Single user, one repository, one process, in-memory sessions capped at 50 entries. Not a
   multi-tenant service.
 - The board is read-through: if GitHub is unavailable the page shows plain error
   and stale states; it does not keep a mirror of issue bodies.
-- The fingerprint closes the lost-update window between the server's fresh read
-  and its `PATCH` only when GitHub honours `If-Match`. GitHub's documented
-  support for conditional `PATCH` on issues is not guaranteed; the small
-  remaining window is a residual risk, recorded in the report.
+- While the board eliminates server-side races between concurrent board clients with per-issue locks
+  and post-write verification, GitHub's API does not support transactional or conditional issue PATCH.
+  The remaining window for writes occurring directly on GitHub between the server's final read and GitHub's
+  internal commit is a known residual risk.
 - There is no notification/question loop and no agent integration. Those are
   separate, parked workstreams.
 

@@ -10,6 +10,7 @@ import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 export const SESSION_COOKIE = 'board_session';
 export const DEFAULT_ABSOLUTE_TTL_MS = 12 * 60 * 60 * 1000;
 export const DEFAULT_IDLE_TTL_MS = 2 * 60 * 60 * 1000;
+export const DEFAULT_MAX_SESSIONS = 50;
 
 export interface SessionRecord {
   id: string;
@@ -31,6 +32,7 @@ interface SessionStoreOptions {
   secret: string;
   absoluteTtlMs?: number;
   idleTtlMs?: number;
+  maxSessions?: number;
   now?: () => number;
 }
 
@@ -49,6 +51,7 @@ export class SessionStore {
   private readonly secret: string;
   private readonly absoluteTtlMs: number;
   private readonly idleTtlMs: number;
+  private readonly maxSessions: number;
   private readonly now: () => number;
   private readonly sessions = new Map<string, SessionRecord>();
 
@@ -56,6 +59,7 @@ export class SessionStore {
     this.secret = options.secret;
     this.absoluteTtlMs = options.absoluteTtlMs ?? DEFAULT_ABSOLUTE_TTL_MS;
     this.idleTtlMs = options.idleTtlMs ?? DEFAULT_IDLE_TTL_MS;
+    this.maxSessions = options.maxSessions ?? DEFAULT_MAX_SESSIONS;
     this.now = options.now ?? Date.now;
   }
 
@@ -69,6 +73,12 @@ export class SessionStore {
   }
 
   create(ip: string | null = null): CreatedSession {
+    this.sweep();
+    while (this.sessions.size >= this.maxSessions) {
+      const oldestKey = this.sessions.keys().next().value;
+      if (!oldestKey) break;
+      this.sessions.delete(oldestKey);
+    }
     const now = this.now();
     const id = randomBytes(24).toString('base64url');
     const csrfToken = randomBytes(32).toString('hex');
@@ -176,9 +186,12 @@ export interface LimiterVerdict {
   retryAfterSeconds: number;
 }
 
+export const DEFAULT_MAX_LIMITER_ENTRIES = 1000;
+
 interface LoginRateLimiterOptions {
   maxFailures?: number;
   windowMs?: number;
+  maxEntries?: number;
   now?: () => number;
 }
 
@@ -192,20 +205,36 @@ interface LoginRateLimiterOptions {
 export class LoginRateLimiter {
   private readonly maxFailures: number;
   private readonly windowMs: number;
+  private readonly maxEntries: number;
   private readonly now: () => number;
   private readonly failures = new Map<string, number[]>();
 
   constructor(options: LoginRateLimiterOptions = {}) {
     this.maxFailures = options.maxFailures ?? 5;
     this.windowMs = options.windowMs ?? 60_000;
+    this.maxEntries = options.maxEntries ?? DEFAULT_MAX_LIMITER_ENTRIES;
     this.now = options.now ?? Date.now;
   }
 
+  get size(): number {
+    return this.failures.size;
+  }
+
   private prune(key: string): number[] {
+    const list = this.failures.get(key);
+    if (!list) return [];
     const now = this.now();
-    const recent = (this.failures.get(key) ?? []).filter((at) => now - at < this.windowMs);
-    if (recent.length === 0) this.failures.delete(key);
-    else this.failures.set(key, recent);
+    const cutoff = now - this.windowMs;
+    let firstValid = 0;
+    while (firstValid < list.length && list[firstValid] <= cutoff) {
+      firstValid += 1;
+    }
+    if (firstValid === list.length) {
+      this.failures.delete(key);
+      return [];
+    }
+    const recent = firstValid === 0 ? list : list.slice(firstValid);
+    this.failures.set(key, recent);
     return recent;
   }
 
@@ -219,7 +248,12 @@ export class LoginRateLimiter {
 
   recordFailure(key: string): void {
     const recent = this.prune(key);
+    if (!this.failures.has(key) && this.failures.size >= this.maxEntries) {
+      const oldestKey = this.failures.keys().next().value;
+      if (oldestKey) this.failures.delete(oldestKey);
+    }
     recent.push(this.now());
+    this.failures.delete(key);
     this.failures.set(key, recent);
   }
 

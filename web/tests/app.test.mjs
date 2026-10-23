@@ -549,3 +549,224 @@ test('the API answers unknown routes and methods plainly', async () => {
     await close();
   }
 });
+
+test('GitHub error mapping distinguishes 401, 403 rate limit, 403 forbidden, 422, and 5xx', async () => {
+  const { fake, board, close } = await fixture();
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+
+    // 401 -> 502 github_unauthorized
+    fake.setInjectedResponse(401, { message: 'Bad credentials' });
+    const res401 = await client.request('/api/board');
+    assert.equal(res401.status, 502);
+    assert.equal(res401.json.error, 'github_unauthorized');
+
+    // 403 primary rate limit -> 503 github_rate_limited
+    fake.setInjectedResponse(403, { message: 'rate limit' }, { 'x-ratelimit-remaining': '0' });
+    const resRate = await client.request('/api/board');
+    assert.equal(resRate.status, 503);
+    assert.equal(resRate.json.error, 'github_rate_limited');
+
+    // 403 forbidden -> 502 github_forbidden
+    fake.setInjectedResponse(403, { message: 'Forbidden access' });
+    const res403 = await client.request('/api/board');
+    assert.equal(res403.status, 502);
+    assert.equal(res403.json.error, 'github_forbidden');
+
+    // 422 -> 400 invalid_request
+    fake.setInjectedResponse(422, { message: 'Validation failed' });
+    const res422 = await client.request('/api/board');
+    assert.equal(res422.status, 400);
+    assert.equal(res422.json.error, 'invalid_request');
+
+    // 500 -> 502 github_unavailable
+    fake.setInjectedResponse(500, { message: 'Internal Server Error' });
+    const res500 = await client.request('/api/board');
+    assert.equal(res500.status, 502);
+    assert.equal(res500.json.error, 'github_unavailable');
+
+    fake.setInjectedResponse(null);
+  } finally {
+    await close();
+  }
+});
+
+test('parallel login flood does not block the process and finishes quickly', async () => {
+  const { board, close } = await fixture();
+  try {
+    const start = Date.now();
+    const results = await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        fetch(`${board.url}/api/session`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ password: `wrong-password-${i}` }),
+        }).then((res) => res.status),
+      ),
+    );
+    const duration = Date.now() - start;
+    assert.ok(duration < 800, `parallel logins took ${duration}ms, expected <800ms`);
+    assert.ok(results.every((status) => status === 401 || status === 429));
+    assert.ok(results.includes(429));
+
+    const ownerRes = await fetch(`${board.url}/api/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: BOARD_PASSWORD }),
+    });
+    assert.equal(ownerRes.status, 200);
+  } finally {
+    await close();
+  }
+});
+
+test('forwarded headers cannot bypass rate limiting unless proxy is explicitly trusted', async () => {
+  const { board, close } = await fixture();
+  try {
+    for (let i = 0; i < 5; i += 1) {
+      const res = await fetch(`${board.url}/api/session`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-forwarded-for': `198.51.100.${i + 1}`,
+        },
+        body: JSON.stringify({ password: 'wrong-password' }),
+      });
+      assert.equal(res.status, 401);
+    }
+    const resLimited = await fetch(`${board.url}/api/session`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-forwarded-for': '198.51.100.99',
+      },
+      body: JSON.stringify({ password: 'wrong-password' }),
+    });
+    assert.equal(resLimited.status, 429);
+  } finally {
+    await close();
+  }
+});
+
+test('Origin and Referer validation rejects cross-origin writes when BOARD_BASE_URL is set', async () => {
+  const baseUrl = 'https://board.example.test';
+  const { board, close } = await fixture({
+    board: { env: { BOARD_BASE_URL: baseUrl } },
+  });
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+    const detail = await client.request('/api/issues/1');
+    const fingerprint = detail.json.issue.fingerprint;
+
+    const evilOrigin = await client.request('/api/issues/1/section', {
+      method: 'PUT',
+      headers: { origin: 'https://evil.example' },
+      body: { sectionId: 'overview', text: 'Malicious write.', fingerprint },
+    });
+    assert.equal(evilOrigin.status, 403);
+    assert.equal(evilOrigin.json.error, 'cross_origin_rejected');
+
+    const evilReferer = await client.request('/api/issues/1/section', {
+      method: 'PUT',
+      headers: { referer: 'https://evil.example/page' },
+      body: { sectionId: 'overview', text: 'Malicious write.', fingerprint },
+    });
+    assert.equal(evilReferer.status, 403);
+    assert.equal(evilReferer.json.error, 'cross_origin_rejected');
+
+    const sameOrigin = await client.request('/api/issues/1/section', {
+      method: 'PUT',
+      headers: { origin: baseUrl },
+      body: { sectionId: 'overview', text: 'Allowed write.', fingerprint },
+    });
+    assert.equal(sameOrigin.status, 200);
+  } finally {
+    await close();
+  }
+});
+
+test('concurrent mutation between GET and PATCH in another section converges with both edits preserved', async () => {
+  const { fake, board, close } = await fixture();
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+    const detail = await client.request('/api/issues/1');
+    const fingerprint = detail.json.issue.fingerprint;
+
+    fake.setPatchHook((issue) => {
+      // Simulate concurrent remote write winning over first PATCH attempt
+      issue.body = issue.body.replace('- [ ] Approve the rollout', '- [x] Approve the rollout');
+      fake.setPatchHook(null);
+      return { applyPayload: false };
+    });
+
+    const res = await client.request('/api/issues/1/section', {
+      method: 'PUT',
+      body: { sectionId: 'overview', text: 'Updated overview prose.', fingerprint },
+    });
+
+    assert.equal(res.status, 200);
+    assert.equal(res.json.issue.editableSections[0].text, 'Updated overview prose.');
+    assert.ok(res.json.issue.body.includes('- [x] Approve the rollout'));
+    assert.ok(res.json.issue.body.includes('- [ ] node --test web/tests/*.test.mjs'));
+  } finally {
+    await close();
+  }
+});
+
+test('concurrent mutation in the same section results in 409 conflict without retry', async () => {
+  const { fake, board, close } = await fixture();
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+    const detail = await client.request('/api/issues/1');
+    const fingerprint = detail.json.issue.fingerprint;
+
+    fake.setPatchHook((issue) => {
+      // Concurrent write to the same section
+      issue.body = issue.body.replace('Board overview prose.', 'Remote author changed overview.');
+      fake.setPatchHook(null);
+      return { applyPayload: false };
+    });
+
+    const res = await client.request('/api/issues/1/section', {
+      method: 'PUT',
+      body: { sectionId: 'overview', text: 'My local edit.', fingerprint },
+    });
+
+    assert.equal(res.status, 409);
+    assert.equal(res.json.error, 'conflict');
+    assert.ok(res.json.issue.body.includes('Remote author changed overview.'));
+  } finally {
+    await close();
+  }
+});
+
+test('retries are bounded to at most 2 retries when verification keeps failing', async () => {
+  const { fake, board, close } = await fixture();
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+    const detail = await client.request('/api/issues/1');
+    const fingerprint = detail.json.issue.fingerprint;
+
+    let mutationCount = 0;
+    fake.setPatchHook(() => {
+      mutationCount += 1;
+      return { applyPayload: false };
+    });
+
+    const res = await client.request('/api/issues/1/section', {
+      method: 'PUT',
+      body: { sectionId: 'overview', text: 'Persistent new text.', fingerprint },
+    });
+
+    assert.equal(res.status, 409);
+    assert.equal(res.json.error, 'conflict');
+    assert.equal(mutationCount, 3);
+  } finally {
+    await close();
+  }
+});

@@ -321,12 +321,20 @@
 
     issue.openQuestions.forEach(function (question) {
       if (question.answerIndex === null) {
+        var text = question.text;
+        var answerMatch = /^(.*?)\s*\*\s*\(Answer:\s*([\s\S]*?)\)\s*\*$/i.exec(text);
+        var questionSpans = [
+          el('span', { text: '✓', 'aria-hidden': 'true' }),
+        ];
+        if (answerMatch) {
+          questionSpans.push(el('span', { text: answerMatch[1] }));
+          questionSpans.push(el('span', { class: 'answer-text', text: '— Answer: ' + answerMatch[2] }));
+        } else {
+          questionSpans.push(el('span', { text: text }));
+        }
+        questionSpans.push(el('span', { class: 'muted small', text: '(answered)' }));
         list.appendChild(
-          el('li', { class: 'question-answered' }, [
-            el('span', { text: '✓', 'aria-hidden': 'true' }),
-            el('span', { text: question.text }),
-            el('span', { class: 'muted small', text: '(answered)' }),
-          ]),
+          el('li', { class: 'question-answered' }, questionSpans),
         );
         return;
       }

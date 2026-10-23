@@ -122,3 +122,90 @@ test('unknown repository paths are never requested', async () => {
     assert.deepEqual(fake.state.unknownRepoHits, []);
   });
 });
+
+test('listIssues rejects a malicious origin in the Link header', async () => {
+  const mockFetch = async () =>
+    new Response(JSON.stringify([{ number: 1, title: 'One' }]), {
+      status: 200,
+      headers: {
+        'content-type': 'application/json',
+        link: '<https://api.github.com.evil.test/repos/owner/repo/issues?page=2>; rel="next"',
+      },
+    });
+
+  const client = new GitHubClient({
+    apiBase: 'https://api.github.com',
+    token: TOKEN,
+    repo: { owner: 'owner', name: 'repo', full: 'owner/repo' },
+    fetchImpl: mockFetch,
+  });
+
+  await assert.rejects(
+    () => client.listIssues(),
+    (err) => err instanceof GitHubError && /origin/i.test(err.message),
+  );
+});
+
+test('listIssues dedupes issues and stops when a page adds nothing new', async () => {
+  let callCount = 0;
+  const mockFetch = async () => {
+    callCount += 1;
+    // Always returns the same issues with a rel="next" Link
+    return new Response(JSON.stringify([{ number: 1, title: 'One' }, { number: 2, title: 'Two' }]), {
+      status: 200,
+      headers: {
+        'content-type': 'application/json',
+        link: '<https://api.github.com/repos/owner/repo/issues?page=2>; rel="next"',
+      },
+    });
+  };
+
+  const client = new GitHubClient({
+    apiBase: 'https://api.github.com',
+    token: TOKEN,
+    repo: { owner: 'owner', name: 'repo', full: 'owner/repo' },
+    fetchImpl: mockFetch,
+    maxPages: 10,
+  });
+
+  const result = await client.listIssues();
+  assert.equal(result.items.length, 2);
+  assert.deepEqual(result.items.map((i) => i.number), [1, 2]);
+  // Should stop on page 2 when all items are duplicates, not looping up to maxPages 10
+  assert.equal(callCount, 2);
+});
+
+test('error kinds distinguish 401, 403 rate-limit, 403 forbidden, 422 invalid, 500 server', async () => {
+  const cases = [
+    { status: 401, headers: {}, body: { message: 'Bad credentials' }, expected: 'unauthorized' },
+    { status: 403, headers: { 'x-ratelimit-remaining': '0' }, body: { message: 'rate limit' }, expected: 'rate_limited' },
+    { status: 403, headers: {}, body: { message: 'API rate limit exceeded' }, expected: 'rate_limited' },
+    { status: 403, headers: {}, body: { message: 'Resource not accessible by personal access token' }, expected: 'forbidden' },
+    { status: 422, headers: {}, body: { message: 'Validation Failed' }, expected: 'invalid' },
+    { status: 500, headers: {}, body: { message: 'Internal Server Error' }, expected: 'server' },
+    { status: 502, headers: {}, body: { message: 'Bad Gateway' }, expected: 'server' },
+  ];
+
+  for (const { status, headers, body, expected } of cases) {
+    const mockFetch = async () =>
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { 'content-type': 'application/json', ...headers },
+      });
+    const client = new GitHubClient({
+      apiBase: 'https://api.github.com',
+      token: TOKEN,
+      repo: { owner: 'owner', name: 'repo', full: 'owner/repo' },
+      fetchImpl: mockFetch,
+    });
+
+    await assert.rejects(
+      () => client.getIssue(1),
+      (err) => {
+        assert.ok(err instanceof GitHubError);
+        assert.equal(err.kind, expected, `status ${status} expected kind ${expected}`);
+        return true;
+      },
+    );
+  }
+});

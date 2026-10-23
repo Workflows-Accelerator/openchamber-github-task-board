@@ -134,3 +134,28 @@ test('login limiter blocks repeated failures, then recovers after the window', (
   limiter.recordFailure(key);
   assert.equal(limiter.check(key).allowed, true, 'success clears the failure window');
 });
+
+test('session store caps stored sessions and evicts oldest when full', () => {
+  const store = new SessionStore({ secret: SECRET, maxSessions: 3 });
+  const s1 = store.create();
+  const s2 = store.create();
+  const s3 = store.create();
+
+  assert.equal(store.size, 3);
+  assert.ok(store.get(s1.cookieValue));
+
+  const s4 = store.create();
+  assert.equal(store.size, 3);
+  assert.equal(store.get(s1.cookieValue), null, 'oldest session evicted');
+  assert.ok(store.get(s2.cookieValue));
+  assert.ok(store.get(s3.cookieValue));
+  assert.ok(store.get(s4.cookieValue));
+});
+
+test('login limiter bounds failure map size and does not grow without bound on 5000 failures', () => {
+  const limiter = new LoginRateLimiter({ maxEntries: 100 });
+  for (let i = 0; i < 5000; i += 1) {
+    limiter.recordFailure(`client-${i}`);
+  }
+  assert.ok(limiter.size <= 100);
+});

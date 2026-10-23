@@ -86,14 +86,14 @@ export interface IssueDetail {
   };
 }
 
-function labelNames(raw: any): string[] {
+export function labelNames(raw: any): string[] {
   if (!Array.isArray(raw?.labels)) return [];
   return raw.labels
     .map((label: any) => (typeof label === 'string' ? label : label?.name ?? ''))
     .filter((name: string) => name !== '');
 }
 
-function statusLabelOf(labels: string[]): string | null {
+export function statusLabelOf(labels: string[]): string | null {
   for (const label of labels) {
     const normalized = label.trim().toLowerCase();
     if (statusSet.has(normalized)) return normalized;
