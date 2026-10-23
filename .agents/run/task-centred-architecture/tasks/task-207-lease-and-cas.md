@@ -11,8 +11,8 @@ Preflight facts are true and authoritative at dispatch: do not run initial disco
 <goal>Implement the isolated single-writer lease store (service/lease-store.ts) with TTL expiration, heartbeat renewal, and atomic disk persistence in .openchamber-data/task-coordinator/leases.json, and the SHA-256 Compare-And-Swap (CAS) pre-flight validator (service/cas.ts).</goal>
 <context_files>
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/PLAN-STAGE2B.md]
-[@/workspace/extensions/github-task-board/service/types.ts]
-[@/workspace/extensions/github-task-board/service/config.ts]
+[@/workspace/extensions/github-task-board/.worktrees/team-dev-stage2b-pilot-coordinator/service/types.ts]
+[@/workspace/extensions/github-task-board/.worktrees/team-dev-stage2b-pilot-coordinator/service/config.ts]
 </context_files>
 <skills>
 [@.agents/skills/build/methodology/test-driven-development/SKILL.md]

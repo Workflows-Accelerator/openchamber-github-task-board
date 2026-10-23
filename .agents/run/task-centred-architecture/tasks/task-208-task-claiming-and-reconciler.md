@@ -11,9 +11,9 @@ Preflight facts are true and authoritative at dispatch: do not run initial disco
 <goal>Implement the opt-in task claiming engine (service/task-claim.ts), session liveness watcher (service/session-watcher.ts), and lifecycle reconciler (service/reconciler.ts) connecting task phases and attention states to agent session outcomes.</goal>
 <context_files>
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/PLAN-STAGE2B.md]
-[@/workspace/extensions/github-task-board/service/types.ts]
-[@/workspace/extensions/github-task-board/service/lease-store.ts]
-[@/workspace/extensions/github-task-board/service/cas.ts]
+[@/workspace/extensions/github-task-board/.worktrees/team-dev-stage2b-pilot-coordinator/service/types.ts]
+[@/workspace/extensions/github-task-board/.worktrees/team-dev-stage2b-pilot-coordinator/service/lease-store.ts]
+[@/workspace/extensions/github-task-board/.worktrees/team-dev-stage2b-pilot-coordinator/service/cas.ts]
 [@/workspace/extensions/github-task-board/panel/core.ts]
 </context_files>
 <skills>
