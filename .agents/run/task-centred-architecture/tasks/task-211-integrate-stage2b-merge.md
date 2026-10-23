@@ -5,7 +5,8 @@ Branch: feat/v2-binding-and-ratelimit
 Base commit: 9d4f8da
 Files: package.json, service/**, test/stage2b-pilot-coordinator.test.js
 Test command: npm run typecheck && npm run build && node --test
-Do not touch: config/**, master branch (do NOT push to master or origin)
+Do not touch: config/**, master branch (never push to master)
+Note: pushing feature/preview branches (feat/stage2b-pilot-coordinator, feat/v2-binding-and-ratelimit) to origin IS authorized and required.
 Preflight facts are true and authoritative at dispatch: do not run initial discovery commands (git status, pwd, ls) to re-ground on startup. Re-inspect targeted state only for mutations/pre-commit verification, compaction/resume with stale facts, branch/location changes, or action failure.
 </env_preflight>
 <goal>Merge feat/stage2b-pilot-coordinator into feat/v2-binding-and-ratelimit at the root checkout, rebuild both bundles (panel and service), verify all tests pass green, remove the local worktree, and emit the completion deliverable.</goal>
@@ -29,17 +30,22 @@ task-210
 2. Run `npm run typecheck` (verify exit 0).
 3. Run `npm run build` to compile `panel/main.js` and `service/main.js`. If any bundle changed, commit as `chore(build): rebuild bundles for Stage 2B integration`.
 4. Run `node --test` to verify all tests pass (0 failures, 0 skipped, >= 430 tests).
-5. Tear down the local feature worktree:
+5. Push to GitHub origin (feature/preview branches only):
+   `git push origin feat/v2-binding-and-ratelimit`
+   `git push origin feat/stage2b-pilot-coordinator`
+   (Note: master must NEVER be pushed. No force-push, no branch deletion.)
+6. Tear down the local feature worktree:
    `git worktree remove .worktrees/team-dev-stage2b-pilot-coordinator`
    `git worktree prune`
    (Note: Do NOT delete branch `feat/stage2b-pilot-coordinator`; branches persist per policy).
-6. Emit completion report to `.agents/run/task-centred-architecture/outputs/task-211-integration-merge.md`.
+7. Emit completion report to `.agents/run/task-centred-architecture/outputs/task-211-integration-merge.md`.
 </steps>
 <criteria>
 - Merge commit created on feat/v2-binding-and-ratelimit cleanly with zero conflicts.
 - Typecheck and both builds pass cleanly.
 - node --test passes all tests (>= 430 tests).
 - Local worktree .worktrees/team-dev-stage2b-pilot-coordinator removed; branch feat/stage2b-pilot-coordinator preserved.
+- feat/v2-binding-and-ratelimit and feat/stage2b-pilot-coordinator pushed to origin.
 - No push to remote master.
 </criteria>
 <verification>
@@ -57,4 +63,7 @@ Emit structured output in .agents/run/task-centred-architecture/outputs/task-211
 ## Cleanup:
 - Worktree removal: .worktrees/team-dev-stage2b-pilot-coordinator removed (CONFIRMED)
 - Branch status: feat/stage2b-pilot-coordinator preserved (CONFIRMED)
+## Origin Push:
+- feat/v2-binding-and-ratelimit pushed: CONFIRMED / SKIPPED
+- feat/stage2b-pilot-coordinator pushed: CONFIRMED / SKIPPED
 </output>
