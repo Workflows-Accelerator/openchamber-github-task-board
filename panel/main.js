@@ -8275,15 +8275,139 @@ Blocked by ${blockerRef}`;
   function admitsIssueSnapshot(repo, epoch) {
     return !isAllProjectsMode && currentRepo === repo && activeStreamEpoch === epoch;
   }
+  var ISSUE_WRITE_TTL_MS = 5 * 6e4;
+  var MAX_ISSUE_WRITE_TRACKERS = 400;
+  var issueWriteTrackers = /* @__PURE__ */ new Map();
+  function issueWriteKey(repo, issue) {
+    const number = typeof issue === "number" ? issue : issue.number;
+    const owner = (typeof issue === "number" ? repo : getIssueRepoFullName(issue) || issue.repo || repo || "").toLowerCase();
+    return `${owner}#${number}`;
+  }
+  function latestWriteTime(groups) {
+    if (!groups) return 0;
+    let latest = 0;
+    for (const tracker of groups.values()) latest = Math.max(latest, tracker.time);
+    return latest;
+  }
+  function pruneIssueWriteTrackers() {
+    const cutoff = Date.now() - ISSUE_WRITE_TTL_MS;
+    for (const [key, groups] of issueWriteTrackers) {
+      for (const [group, tracker] of groups) {
+        if (tracker.pending === 0 && tracker.time < cutoff) groups.delete(group);
+      }
+      if (groups.size === 0) issueWriteTrackers.delete(key);
+    }
+    if (issueWriteTrackers.size > MAX_ISSUE_WRITE_TRACKERS) {
+      const oldestFirst = [...issueWriteTrackers.keys()].sort((a, b) => latestWriteTime(issueWriteTrackers.get(a)) - latestWriteTime(issueWriteTrackers.get(b)));
+      for (const key of oldestFirst.slice(0, issueWriteTrackers.size - MAX_ISSUE_WRITE_TRACKERS)) {
+        issueWriteTrackers.delete(key);
+      }
+    }
+  }
+  function trackIssueWrite(repo, issue, groups) {
+    pruneIssueWriteTrackers();
+    const key = issueWriteKey(repo, issue);
+    const startedAt = Date.now();
+    let byGroup = issueWriteTrackers.get(key);
+    if (!byGroup) {
+      byGroup = /* @__PURE__ */ new Map();
+      issueWriteTrackers.set(key, byGroup);
+    }
+    for (const group of groups) {
+      const tracker = byGroup.get(group) || { time: 0, pending: 0 };
+      tracker.pending += 1;
+      tracker.time = Math.max(tracker.time, startedAt);
+      byGroup.set(group, tracker);
+    }
+    return (accepted) => {
+      for (const group of groups) {
+        const tracker = byGroup.get(group);
+        if (!tracker) continue;
+        tracker.pending = Math.max(0, tracker.pending - 1);
+        if (accepted) {
+          tracker.time = Math.max(tracker.time, Date.now());
+        } else if (tracker.pending === 0 && tracker.time <= startedAt) {
+          byGroup.delete(group);
+        }
+      }
+      if (byGroup.size === 0) issueWriteTrackers.delete(key);
+    };
+  }
+  function admitIssueRecord(repo, issue, at = Date.now()) {
+    pruneIssueWriteTrackers();
+    const key = issueWriteKey(repo, issue);
+    const byGroup = issueWriteTrackers.get(key) || /* @__PURE__ */ new Map();
+    const tracker = byGroup.get("record") || { time: 0, pending: 0 };
+    tracker.time = Math.max(tracker.time, at);
+    byGroup.set("record", tracker);
+    issueWriteTrackers.set(key, byGroup);
+  }
+  function protectedIssueGroups(repo, issue, startedAt) {
+    const byGroup = issueWriteTrackers.get(issueWriteKey(repo, issue));
+    const groups = /* @__PURE__ */ new Set();
+    if (!byGroup) return groups;
+    for (const [group, tracker] of byGroup) {
+      if (tracker.pending > 0 || tracker.time > startedAt) groups.add(group);
+    }
+    return groups;
+  }
+  function findIssueRecord(repo, issue) {
+    const key = issueWriteKey(repo, issue);
+    return issues.find((entry) => entry && issueWriteKey(repo, entry) === key) || issue;
+  }
+  function applyProtectedIssueFields(published, local, groups) {
+    if (!local || groups.size === 0) return published;
+    if (groups.has("record")) return { ...published, ...local };
+    const merged = { ...published };
+    if (groups.has("body")) {
+      merged.body = local.body;
+      merged.subtasks = local.subtasks;
+      merged.openQuestions = local.openQuestions;
+      merged.humanTasks = local.humanTasks;
+      merged.acceptanceCriteria = local.acceptanceCriteria;
+    }
+    if (groups.has("state")) merged.state = local.state;
+    if (groups.has("labels")) merged.labels = local.labels;
+    merged.v2Metadata = local.v2Metadata;
+    if (local.updated_at) merged.updated_at = local.updated_at;
+    return merged;
+  }
+  function protectIssueFields(repo, published, localIssues, startedAt) {
+    const localByKey = /* @__PURE__ */ new Map();
+    for (const entry of localIssues || []) {
+      if (entry && Number.isFinite(entry.number)) localByKey.set(issueWriteKey(repo, entry), entry);
+    }
+    return published.map((entry) => {
+      if (!entry || !Number.isFinite(entry.number)) return entry;
+      const key = issueWriteKey(repo, entry);
+      return applyProtectedIssueFields(entry, localByKey.get(key), protectedIssueGroups(repo, entry, startedAt));
+    });
+  }
+  function reconcileIssueSnapshot(repo, snapshot, localIssues, startedAt) {
+    const reconciled = protectIssueFields(repo, snapshot, localIssues, startedAt);
+    const publishedKeys = /* @__PURE__ */ new Set();
+    for (const entry of snapshot) {
+      if (entry && Number.isFinite(entry.number)) publishedKeys.add(issueWriteKey(repo, entry));
+    }
+    const localByKey = /* @__PURE__ */ new Map();
+    for (const entry of localIssues || []) {
+      if (entry && Number.isFinite(entry.number)) localByKey.set(issueWriteKey(repo, entry), entry);
+    }
+    for (const [key, local] of localByKey) {
+      if (publishedKeys.has(key)) continue;
+      if (protectedIssueGroups(repo, local, startedAt).size > 0) reconciled.push(local);
+    }
+    return reconciled;
+  }
   function publishIssueSnapshot(repo, storageKey, snapshot, startedAt) {
-    issues = snapshot;
+    issues = reconcileIssueSnapshot(repo, snapshot, issues, startedAt);
     const timestamp = Date.now();
     issueCache.set(repo, { timestamp, issues });
     repoFullSyncTimestamps.set(repo, timestamp);
     void host.storage.set(storageKey, { timestamp, issues, fullSyncTimestamp: timestamp }).catch(() => {
     });
     lastSyncTimestamp = timestamp;
-    repoSyncWatermarks.set(repo, startedAt);
+    repoSyncWatermarks.set(repo, Math.max(startedAt, repoSyncWatermarks.get(repo) || 0));
     lastSyncErrorState = null;
     renderViews();
     statusReconciler.schedule(issues);
@@ -8320,7 +8444,8 @@ Blocked by ${blockerRef}`;
         publishIssueSnapshot(repo, storageKey, snapshot, startedAt);
         return;
       }
-      issues = mergeIssuePages(issues, snapshot);
+      const priorIssues = issues;
+      issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
       renderViews();
       renderBoardFreshness("partial", repo);
     }
@@ -8386,7 +8511,8 @@ Blocked by ${blockerRef}`;
       if (items.length < pageSize) {
         publishIssueSnapshot(repo, storageKey, snapshot, startedAt);
       } else {
-        issues = mergeIssuePages(issues, snapshot);
+        const priorIssues = issues;
+        issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
         renderViews();
         renderBoardFreshness("partial", repo);
         await streamRemainingPages(repo, storageKey, 2, epoch, force, snapshot, startedAt);
@@ -8589,11 +8715,12 @@ Blocked by ${blockerRef}`;
     const cleanRepo = parseRepoFullName(repo) || repo;
     const etag = repoIncrementalEtagCache.get(cleanRepo);
     const epoch = activeStreamEpoch;
+    const baselineIssues = issues;
     try {
       const result = await syncIncrementalRepoIssues({
         repo: cleanRepo,
         since: sinceIso,
-        currentIssues: issues,
+        currentIssues: baselineIssues,
         etag,
         pageSizes: issuePageSizes,
         onShrink: (shrunkSize) => {
@@ -8602,6 +8729,10 @@ Blocked by ${blockerRef}`;
         requestFn: (method, reqPath, body, query, headers) => githubRequestWithRetry(method, reqPath, body, query, headers)
       });
       if (activeStreamEpoch !== epoch || !isAllProjectsMode && currentRepo !== cleanRepo) return false;
+      const baseline = new Set(baselineIssues);
+      for (const entry of result.issues) {
+        if (entry && !baseline.has(entry)) admitIssueRecord(cleanRepo, entry);
+      }
       if (result.etag && !result.truncated) {
         repoIncrementalEtagCache.set(cleanRepo, result.etag);
       } else if (result.truncated) {
@@ -8781,6 +8912,7 @@ Blocked by ${blockerRef}`;
     const prevHumanTasks = issue.humanTasks || parseHumanTasks(issue.body);
     const nextHumanTasks = parseHumanTasks(newBody);
     const shouldNotify = shouldNotifyAgentOnHumanTasksComplete(prevHumanTasks, nextHumanTasks);
+    const finishWrite = trackIssueWrite(repo, issue, ["body"]);
     issue.body = newBody;
     issue.subtasks = parseSubtasks(newBody);
     issue.openQuestions = parseOpenQuestions(newBody);
@@ -8798,6 +8930,7 @@ Blocked by ${blockerRef}`;
       const res = await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         body: newBody
       });
+      finishWrite(true);
       if (res && res.updated_at) {
         issue.updated_at = res.updated_at;
       }
@@ -8806,6 +8939,7 @@ Blocked by ${blockerRef}`;
         await notifyAgentOnHumanTasksComplete(issue, repo);
       }
     } catch (err) {
+      finishWrite(false);
       addLog(`Failed to sync body: ${err.message}`, "error");
       await host.toast({ kind: "error", message: `Failed to update #${issue.number} on GitHub` });
     }
@@ -8840,6 +8974,7 @@ Blocked by ${blockerRef}`;
     delete issue.v2Metadata;
     const session = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
     issue.v2Metadata = resolveV2Metadata(issue, session);
+    const finishWrite = trackIssueWrite(repo, issue, ["state", "labels"]);
     issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
@@ -8850,14 +8985,18 @@ Blocked by ${blockerRef}`;
         state: newState,
         labels: filteredLabels
       });
+      finishWrite(true);
       await host.toast({ kind: "success", message: `Moved #${issue.number} to ${targetColumn}` });
       addLog(`Moved #${issue.number} to ${targetColumn}`, "succ");
     } catch (err) {
-      issue.state = prevState;
-      issue.labels = prevLabels;
-      delete issue.v2Metadata;
-      const session2 = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
-      issue.v2Metadata = resolveV2Metadata(issue, session2);
+      finishWrite(false);
+      for (const target of /* @__PURE__ */ new Set([issue, findIssueRecord(repo, issue)])) {
+        target.state = prevState;
+        target.labels = prevLabels;
+        delete target.v2Metadata;
+        const targetSession = typeof getIssueSession === "function" ? getIssueSession(target) : void 0;
+        target.v2Metadata = resolveV2Metadata(target, targetSession);
+      }
       renderViews();
       if (activeIssue && activeIssue.number === issue.number) {
         renderDrawer(issue, true);

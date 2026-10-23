@@ -1428,15 +1428,172 @@ function admitsIssueSnapshot(repo: string, epoch: number): boolean {
   return !isAllProjectsMode && currentRepo === repo && activeStreamEpoch === epoch;
 }
 
+// --- Issue write admission (refresh/edit races) ---
+// A refresh response only reflects the repository as of its request start. A
+// local write that is still in flight, or that was accepted after that moment,
+// must therefore survive the publication of the older response. Each issue
+// keeps at most one small record per field group; records expire and the map is
+// capped, so this never becomes unbounded per-issue history.
+type IssueWriteGroup = 'body' | 'state' | 'labels' | 'record';
+interface IssueWriteTracker { time: number; pending: number }
+
+const ISSUE_WRITE_TTL_MS = 5 * 60_000;
+const MAX_ISSUE_WRITE_TRACKERS = 400;
+const issueWriteTrackers = new Map<string, Map<IssueWriteGroup, IssueWriteTracker>>();
+
+function issueWriteKey(repo: string, issue: Issue | number): string {
+  const number = typeof issue === 'number' ? issue : issue.number;
+  const owner = (typeof issue === 'number'
+    ? repo
+    : (getIssueRepoFullName(issue) || issue.repo || repo) || '').toLowerCase();
+  return `${owner}#${number}`;
+}
+
+function latestWriteTime(groups: Map<IssueWriteGroup, IssueWriteTracker> | undefined): number {
+  if (!groups) return 0;
+  let latest = 0;
+  for (const tracker of groups.values()) latest = Math.max(latest, tracker.time);
+  return latest;
+}
+
+function pruneIssueWriteTrackers(): void {
+  const cutoff = Date.now() - ISSUE_WRITE_TTL_MS;
+  for (const [key, groups] of issueWriteTrackers) {
+    for (const [group, tracker] of groups) {
+      if (tracker.pending === 0 && tracker.time < cutoff) groups.delete(group);
+    }
+    if (groups.size === 0) issueWriteTrackers.delete(key);
+  }
+  if (issueWriteTrackers.size > MAX_ISSUE_WRITE_TRACKERS) {
+    const oldestFirst = [...issueWriteTrackers.keys()]
+      .sort((a, b) => latestWriteTime(issueWriteTrackers.get(a)) - latestWriteTime(issueWriteTrackers.get(b)));
+    for (const key of oldestFirst.slice(0, issueWriteTrackers.size - MAX_ISSUE_WRITE_TRACKERS)) {
+      issueWriteTrackers.delete(key);
+    }
+  }
+}
+
+// Marks one optimistic local edit; the returned callback settles it. A failed
+// edit drops its freshness so a later authoritative response may correct it.
+function trackIssueWrite(repo: string, issue: Issue | number, groups: IssueWriteGroup[]): (accepted: boolean) => void {
+  pruneIssueWriteTrackers();
+  const key = issueWriteKey(repo, issue);
+  const startedAt = Date.now();
+  let byGroup = issueWriteTrackers.get(key);
+  if (!byGroup) {
+    byGroup = new Map();
+    issueWriteTrackers.set(key, byGroup);
+  }
+  for (const group of groups) {
+    const tracker = byGroup.get(group) || { time: 0, pending: 0 };
+    tracker.pending += 1;
+    tracker.time = Math.max(tracker.time, startedAt);
+    byGroup.set(group, tracker);
+  }
+  return (accepted: boolean) => {
+    for (const group of groups) {
+      const tracker = byGroup!.get(group);
+      if (!tracker) continue;
+      tracker.pending = Math.max(0, tracker.pending - 1);
+      if (accepted) {
+        tracker.time = Math.max(tracker.time, Date.now());
+      } else if (tracker.pending === 0 && tracker.time <= startedAt) {
+        byGroup!.delete(group);
+      }
+    }
+    if (byGroup!.size === 0) issueWriteTrackers.delete(key);
+  };
+}
+
+// Records a network read newer than in-flight refreshes (incremental sync
+// results) so publications of older full responses neither undo its fields nor
+// drop its membership.
+function admitIssueRecord(repo: string, issue: Issue, at: number = Date.now()): void {
+  pruneIssueWriteTrackers();
+  const key = issueWriteKey(repo, issue);
+  const byGroup = issueWriteTrackers.get(key) || new Map<IssueWriteGroup, IssueWriteTracker>();
+  const tracker = byGroup.get('record') || { time: 0, pending: 0 };
+  tracker.time = Math.max(tracker.time, at);
+  byGroup.set('record', tracker);
+  issueWriteTrackers.set(key, byGroup);
+}
+
+function protectedIssueGroups(repo: string, issue: Issue | number, startedAt: number): Set<IssueWriteGroup> {
+  const byGroup = issueWriteTrackers.get(issueWriteKey(repo, issue));
+  const groups = new Set<IssueWriteGroup>();
+  if (!byGroup) return groups;
+  for (const [group, tracker] of byGroup) {
+    if (tracker.pending > 0 || tracker.time > startedAt) groups.add(group);
+  }
+  return groups;
+}
+
+function findIssueRecord(repo: string, issue: Issue): Issue {
+  const key = issueWriteKey(repo, issue);
+  return issues.find((entry) => entry && issueWriteKey(repo, entry) === key) || issue;
+}
+
+function applyProtectedIssueFields(published: Issue, local: Issue | undefined, groups: Set<IssueWriteGroup>): Issue {
+  if (!local || groups.size === 0) return published;
+  if (groups.has('record')) return { ...published, ...local };
+  const merged = { ...published };
+  if (groups.has('body')) {
+    merged.body = local.body;
+    merged.subtasks = local.subtasks;
+    merged.openQuestions = local.openQuestions;
+    merged.humanTasks = local.humanTasks;
+    merged.acceptanceCriteria = local.acceptanceCriteria;
+  }
+  if (groups.has('state')) merged.state = local.state;
+  if (groups.has('labels')) merged.labels = local.labels;
+  merged.v2Metadata = local.v2Metadata;
+  if (local.updated_at) merged.updated_at = local.updated_at;
+  return merged;
+}
+
+// Overlays newer local fields onto a response without touching membership.
+function protectIssueFields(repo: string, published: Issue[], localIssues: Issue[], startedAt: number): Issue[] {
+  const localByKey = new Map<string, Issue>();
+  for (const entry of localIssues || []) {
+    if (entry && Number.isFinite(entry.number)) localByKey.set(issueWriteKey(repo, entry), entry);
+  }
+  return published.map((entry) => {
+    if (!entry || !Number.isFinite(entry.number)) return entry;
+    const key = issueWriteKey(repo, entry);
+    return applyProtectedIssueFields(entry, localByKey.get(key), protectedIssueGroups(repo, entry, startedAt));
+  });
+}
+
+// Full snapshots stay authoritative for membership (deletions and empty
+// repositories included); only issues with writes or admissions newer than this
+// response's request start are kept when the response cannot know them yet.
+function reconcileIssueSnapshot(repo: string, snapshot: Issue[], localIssues: Issue[], startedAt: number): Issue[] {
+  const reconciled = protectIssueFields(repo, snapshot, localIssues, startedAt);
+  const publishedKeys = new Set<string>();
+  for (const entry of snapshot) {
+    if (entry && Number.isFinite(entry.number)) publishedKeys.add(issueWriteKey(repo, entry));
+  }
+  const localByKey = new Map<string, Issue>();
+  for (const entry of localIssues || []) {
+    if (entry && Number.isFinite(entry.number)) localByKey.set(issueWriteKey(repo, entry), entry);
+  }
+  for (const [key, local] of localByKey) {
+    if (publishedKeys.has(key)) continue;
+    if (protectedIssueGroups(repo, local, startedAt).size > 0) reconciled.push(local);
+  }
+  return reconciled;
+}
+
 function publishIssueSnapshot(repo: string, storageKey: string, snapshot: Issue[], startedAt: number): void {
-  issues = snapshot;
+  issues = reconcileIssueSnapshot(repo, snapshot, issues, startedAt);
   const timestamp = Date.now();
   issueCache.set(repo, { timestamp, issues });
   repoFullSyncTimestamps.set(repo, timestamp);
   void host.storage.set(storageKey, { timestamp, issues, fullSyncTimestamp: timestamp } as any).catch(() => {});
   lastSyncTimestamp = timestamp;
   // Use request start, not completion, so concurrent upstream changes are not skipped by incremental reads.
-  repoSyncWatermarks.set(repo, startedAt);
+  // Never regress below an incremental claim already admitted during this refresh.
+  repoSyncWatermarks.set(repo, Math.max(startedAt, repoSyncWatermarks.get(repo) || 0));
   lastSyncErrorState = null;
   renderViews();
   statusReconciler.schedule(issues);
@@ -1477,7 +1634,8 @@ async function streamRemainingPages(
       publishIssueSnapshot(repo, storageKey, snapshot, startedAt);
       return;
     }
-    issues = mergeIssuePages(issues, snapshot);
+    const priorIssues = issues;
+    issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
     renderViews();
     renderBoardFreshness('partial', repo);
   }
@@ -1541,7 +1699,8 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       publishIssueSnapshot(repo, storageKey, snapshot, startedAt);
     } else {
       // Keep prior membership until all pages complete; stream changed fields provisionally.
-      issues = mergeIssuePages(issues, snapshot);
+      const priorIssues = issues;
+      issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
       renderViews();
       renderBoardFreshness('partial', repo);
       await streamRemainingPages(repo, storageKey, 2, epoch, force, snapshot, startedAt);
@@ -1773,12 +1932,13 @@ async function syncRepoIncremental(repo: string, sinceIso: string, watermarkTime
   const cleanRepo = parseRepoFullName(repo) || repo;
   const etag = repoIncrementalEtagCache.get(cleanRepo);
   const epoch = activeStreamEpoch;
+  const baselineIssues = issues;
 
   try {
     const result = await syncIncrementalRepoIssues({
       repo: cleanRepo,
       since: sinceIso,
-      currentIssues: issues,
+      currentIssues: baselineIssues,
       etag,
       pageSizes: issuePageSizes,
       onShrink: (shrunkSize) => {
@@ -1789,6 +1949,14 @@ async function syncRepoIncremental(repo: string, sinceIso: string, watermarkTime
     });
 
     if (activeStreamEpoch !== epoch || (!isAllProjectsMode && currentRepo !== cleanRepo)) return false;
+
+    // Admitted results are newer than any refresh still in flight: mergeIssuePages
+    // returns fresh objects for the issues this scan touched, and those fields may
+    // not be undone by an older full snapshot that completes later (R2).
+    const baseline = new Set(baselineIssues);
+    for (const entry of result.issues) {
+      if (entry && !baseline.has(entry)) admitIssueRecord(cleanRepo, entry);
+    }
 
     if (result.etag && !result.truncated) {
       repoIncrementalEtagCache.set(cleanRepo, result.etag);
@@ -1997,6 +2165,7 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   const nextHumanTasks = parseHumanTasks(newBody);
   const shouldNotify = shouldNotifyAgentOnHumanTasksComplete(prevHumanTasks, nextHumanTasks);
 
+  const finishWrite = trackIssueWrite(repo, issue, ['body']);
   issue.body = newBody;
   issue.subtasks = parseSubtasks(newBody);
   issue.openQuestions = parseOpenQuestions(newBody);
@@ -2015,6 +2184,7 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
     const res = await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       body: newBody,
     });
+    finishWrite(true);
     if (res && res.updated_at) {
       issue.updated_at = res.updated_at;
     }
@@ -2024,6 +2194,7 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
       await notifyAgentOnHumanTasksComplete(issue, repo);
     }
   } catch (err: any) {
+    finishWrite(false);
     addLog(`Failed to sync body: ${err.message}`, 'error');
     await host.toast({ kind: 'error', message: `Failed to update #${issue.number} on GitHub` });
   }
@@ -2067,6 +2238,7 @@ async function updateIssueStatus(
   delete (issue as any).v2Metadata;
   const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
   issue.v2Metadata = resolveV2Metadata(issue, session);
+  const finishWrite = trackIssueWrite(repo, issue, ['state', 'labels']);
   issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
@@ -2078,15 +2250,20 @@ async function updateIssueStatus(
       state: newState,
       labels: filteredLabels,
     });
+    finishWrite(true);
     await host.toast({ kind: 'success', message: `Moved #${issue.number} to ${targetColumn}` });
     addLog(`Moved #${issue.number} to ${targetColumn}`, 'succ');
   } catch (err: any) {
-    // Revert optimistic update on failure
-    issue.state = prevState;
-    issue.labels = prevLabels;
-    delete (issue as any).v2Metadata;
-    const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
-    issue.v2Metadata = resolveV2Metadata(issue, session);
+    finishWrite(false);
+    // Revert optimistic update on failure. A concurrent refresh may already have
+    // published a newer record for this issue, so revert that object too.
+    for (const target of new Set([issue, findIssueRecord(repo, issue)])) {
+      target.state = prevState;
+      target.labels = prevLabels;
+      delete (target as any).v2Metadata;
+      const targetSession = typeof getIssueSession === 'function' ? getIssueSession(target) : undefined;
+      target.v2Metadata = resolveV2Metadata(target, targetSession);
+    }
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue, true);

@@ -10,7 +10,7 @@ async function waitFor(predicate) {
   }
   assert.fail('Timed out waiting for recorded board state');
 }
-const issue = (number, repo = 'owner/a') => ({ number, title: `Task ${number}`, body: '', state: 'open', labels: [], html_url: `https://github.com/${repo}/issues/${number}` });
+const issue = (number, repo = 'owner/a', body = '') => ({ number, title: `Task ${number}`, body, state: 'open', labels: [], html_url: `https://github.com/${repo}/issues/${number}` });
 const response = (items, status = 200) => ({ status, body: JSON.stringify(items) });
 function deferred() {
   let resolve;
@@ -20,12 +20,15 @@ function deferred() {
 async function setup(read, options = {}) {
   const requests = [];
   const harness = createTestApp({ ...options, onRequest: async (payload) => {
+    if (payload.method && payload.method !== 'GET') {
+      return options.mutate ? options.mutate(payload) : { status: 200, body: '{}' };
+    }
     if (payload.path?.includes('/issues?')) {
       requests.push(payload);
       assert.equal(payload.method, 'GET', 'refresh must be read-only');
       return read(payload);
     }
-    return {};
+    return { status: 200, body: '{}' };
   } });
   await pause();
   harness.app.setState({ currentRepo: 'owner/a' });
@@ -177,4 +180,171 @@ test('current board: failed idle sync cannot report a new full-refresh success',
   const before = app.getState().lastSyncTimestamp;
   await app.handleIdleRefresh([{ id: 'idle-test', activity: 'idle' }], []);
   assert.equal(app.getState().lastSyncTimestamp, before);
+});
+
+test('current board: successful body edit survives an older full response (R1 regression)', async () => {
+  const slow = deferred();
+  let full = 0;
+  const { app, mockStorage, hostCalls } = await setup(
+    () => (++full === 1 ? response([issue(1, 'owner/a', 'old body')]) : slow.promise),
+    { mutate: () => ({ status: 200, body: JSON.stringify({ updated_at: '2026-10-23T12:00:00Z' }) }) }
+  );
+  await app.fetchIssues(true);
+  const pending = app.fetchIssues(true);
+  await pause();
+  await app.updateIssueBody(app.getState().issues[0], 'new saved body');
+  assert.equal(app.getState().issues[0].body, 'new saved body');
+  slow.resolve(response([issue(1, 'owner/a', 'old body')]));
+  await pending;
+  await pause();
+  assert.equal(app.getState().issues[0].body, 'new saved body', 'older full response must not undo an accepted body edit');
+  assert.equal(mockStorage.get('cached_issues_owner/a').issues[0].body, 'new saved body', 'persistent cache must keep the accepted edit');
+  assert.equal(hostCalls.filter((call) => call.payload?.method === 'PATCH').length, 1);
+});
+
+test('current board: successful status edit survives an older full response (R1 regression)', async () => {
+  const slow = deferred();
+  let full = 0;
+  const { app, mockStorage } = await setup(
+    () => (++full === 1 ? response([issue(1, 'owner/a', 'old body')]) : slow.promise),
+    { mutate: () => ({ status: 200, body: '{}' }) }
+  );
+  await app.fetchIssues(true);
+  const pending = app.fetchIssues(true);
+  await pause();
+  await app.updateIssueStatus(app.getState().issues[0], 'done');
+  assert.equal(app.getState().issues[0].state, 'closed');
+  slow.resolve(response([issue(1, 'owner/a', 'old body')]));
+  await pending;
+  await pause();
+  const shown = app.getState().issues[0];
+  assert.equal(shown.state, 'closed', 'older full response must not undo an accepted status edit');
+  assert.deepEqual(shown.labels.map((label) => label.name), ['status:done']);
+  const cached = mockStorage.get('cached_issues_owner/a').issues[0];
+  assert.equal(cached.state, 'closed');
+  assert.deepEqual(cached.labels.map((label) => label.name), ['status:done']);
+});
+
+test('current board: newer incremental fields survive an older full snapshot without regressing the watermark (R2 regression)', async () => {
+  const pageTwo = deferred();
+  let mode = 'initial';
+  const { app, mockStorage } = await setup((payload) => {
+    if (payload.path.includes('since=')) return response([issue(1, 'owner/a', 'incremental new')]);
+    if (mode === 'initial') return response([issue(1, 'owner/a', 'old body')]);
+    if (payload.path.endsWith('page=1')) return response(Array.from({ length: 100 }, (_, index) => issue(index + 1, 'owner/a', 'old body')));
+    return pageTwo.promise;
+  });
+  await app.fetchIssues(true);
+  mode = 'refresh';
+  const pending = app.fetchIssues(true);
+  await pause();
+  const incrementalWatermark = Date.now() + 60_000;
+  await app.syncRepoIncremental('owner/a', '2026-10-01T00:00:00Z', incrementalWatermark);
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'incremental new');
+  pageTwo.resolve(response([]));
+  await pending;
+  await pause();
+  assert.equal(app.getState().issues.length, 100, 'completed pagination remains authoritative for membership');
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'incremental new', 'older full snapshot must not undo newer incremental fields');
+  assert.equal(mockStorage.get('cached_issues_owner/a').issues.find((item) => item.number === 1).body, 'incremental new');
+  assert.equal(app.getState().repoSyncWatermarks.get('owner/a'), incrementalWatermark, 'publication must not regress the watermark below admitted incremental coverage');
+});
+
+test('current board: completed full membership removes absent rows but keeps newer admitted items (R2 membership)', async () => {
+  const pageTwo = deferred();
+  let mode = 'initial';
+  const { app } = await setup((payload) => {
+    if (payload.path.includes('since=')) return response([issue(1, 'owner/a', 'incremental new'), issue(500, 'owner/a', 'created upstream')]);
+    if (mode === 'initial') return response([issue(900, 'owner/a', 'doomed row'), issue(1, 'owner/a', 'old body')]);
+    if (payload.path.endsWith('page=1')) return response(Array.from({ length: 100 }, (_, index) => issue(index + 1, 'owner/a', 'old body')));
+    return pageTwo.promise;
+  });
+  await app.fetchIssues(true);
+  mode = 'refresh';
+  const pending = app.fetchIssues(true);
+  await pause();
+  await app.syncRepoIncremental('owner/a', '2026-10-01T00:00:00Z', Date.now());
+  pageTwo.resolve(response([]));
+  await pending;
+  await pause();
+  const numbers = app.getState().issues.map((item) => item.number);
+  assert.equal(numbers.includes(900), false, 'rows absent from a completed full response are still deleted');
+  assert.equal(numbers.includes(500), true, 'items admitted after the full request started survive it');
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'incremental new');
+  assert.equal(numbers.length, 101);
+});
+
+test('current board: in-flight edit whose write completes after an older full response still wins (R1 in-flight)', async () => {
+  const slow = deferred();
+  const patch = deferred();
+  let full = 0;
+  const { app, mockStorage } = await setup(
+    () => (++full === 1 ? response([issue(1, 'owner/a', 'old body')]) : slow.promise),
+    { mutate: () => patch.promise }
+  );
+  await app.fetchIssues(true);
+  const pending = app.fetchIssues(true);
+  await pause();
+  const editing = app.updateIssueBody(app.getState().issues[0], 'crossing write');
+  await pause();
+  slow.resolve(response([issue(1, 'owner/a', 'old body')]));
+  await pending;
+  await pause();
+  assert.equal(app.getState().issues[0].body, 'crossing write', 'publication must not clobber an in-flight edit');
+  patch.resolve({ status: 200, body: JSON.stringify({ updated_at: '2026-10-23T12:00:00Z' }) });
+  await editing;
+  await pause();
+  assert.equal(app.getState().issues[0].body, 'crossing write', 'a write accepted across the fetch window must stay visible');
+  assert.equal(mockStorage.get('cached_issues_owner/a').issues[0].body, 'crossing write');
+});
+
+test('current board: failed body edit is not permanently fresh; a later full response restores server truth (R1 failure)', async () => {
+  const slow = deferred();
+  const patch = deferred();
+  let full = 0;
+  let patchCalls = 0;
+  const { app } = await setup(
+    () => (++full === 1 ? response([issue(1, 'owner/a', 'old body')]) : full === 2 ? slow.promise : response([issue(1, 'owner/a', 'old body')])),
+    { mutate: () => (++patchCalls === 1 ? patch.promise : { status: 200, body: '{}' }) }
+  );
+  await app.fetchIssues(true);
+  const pending = app.fetchIssues(true);
+  await pause();
+  const editing = app.updateIssueBody(app.getState().issues[0], 'draft that fails');
+  await pause();
+  slow.resolve(response([issue(1, 'owner/a', 'old body')]));
+  await pending;
+  await pause();
+  assert.equal(app.getState().issues[0].body, 'draft that fails', 'in-flight edit is kept while the write is unresolved');
+  patch.resolve({ status: 500, body: '{}' });
+  await editing;
+  await pause();
+  await app.fetchIssues(true);
+  await pause();
+  assert.equal(app.getState().issues[0].body, 'old body', 'a failed write must not stay pinned against later authoritative data');
+});
+
+test('current board: failed status edit reverts on the record published mid-write (R1 failure status)', async () => {
+  const slow = deferred();
+  const patch = deferred();
+  let full = 0;
+  const { app } = await setup(
+    () => (++full === 1 ? response([issue(1, 'owner/a', 'old body')]) : slow.promise),
+    { mutate: () => patch.promise }
+  );
+  await app.fetchIssues(true);
+  const pending = app.fetchIssues(true);
+  await pause();
+  const moving = app.updateIssueStatus(app.getState().issues[0], 'done');
+  await pause();
+  slow.resolve(response([issue(1, 'owner/a', 'old body')]));
+  await pending;
+  await pause();
+  assert.equal(app.getState().issues[0].state, 'closed', 'in-flight move is kept while the write is unresolved');
+  patch.resolve({ status: 500, body: '{}' });
+  await moving;
+  await pause();
+  const shown = app.getState().issues[0];
+  assert.equal(shown.state, 'open', 'failed move must revert on the published record');
+  assert.deepEqual(shown.labels, []);
 });
