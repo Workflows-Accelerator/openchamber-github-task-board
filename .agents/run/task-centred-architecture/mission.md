@@ -1,8 +1,8 @@
 # Run work from the task board
 
-State: STAGE 1 LANDED. Human approved Stage 1 (Contract Shell & Read Compatibility). Integration merge completed on feat/v2-binding-and-ratelimit (commits 6ca57f6, 5de3816, 52974b7), bundle panel/main.js rebuilt, feature worktree removed, and all 386 tests pass green. Ready to align and plan Stage 2 (Single-Writer Pilot Coordinator & UI Surface Integration).
-Date: 2026-10-22
-Alignment: Issue #26 published, 5 strategic forks approved by user. Stage 1 merged into preview branch. Remote branch pushes to master and live GitHub issue mutations remain strictly gated.
+State: STAGE 2A LANDED. Interactive Attention View mode (with Needs Decision, Needs Permission, Needs Review action queues and sub-filters), alert-only card badges (minimalist zero-badge neutral states), and drawer Acceptance Criteria checklist with line-index precision write-back have landed on feat/v2-binding-and-ratelimit (merge commit 7cc6399, bundle rebuild cf9acf8). Hostile review L4 completed with PROCEED-WITH-CONDITIONS; 5 adversarial findings (ADV-01..ADV-06) remediated on commit f28f575. Worktree removed; 27 new tests and 414 total tests verified. Next: Stage 2B (Host Probing & Pilot Coordinator).
+Date: 2026-10-23
+Alignment: Issue #26 published, 5 strategic forks approved by user. Stage 1 and Stage 2A merged into preview branch. Remote branch pushes to master and live GitHub issue mutations remain strictly gated.
 Repository snapshot: /workspace/extensions/github-task-board, feat/v2-binding-and-ratelimit, 55ddeaa911180ac54b84ce9ff194d35e31874261. Only existing unrelated untracked .agents files were present. Do not touch them.
 Config snapshot: /workspace/config/opencode, master, e10fc86ec9d212f676f6e0baba24e7db5f7a4d26. Existing untracked devops skill folder and opencode.json.openchamber.backup must not be modified/read for secrets.
 
