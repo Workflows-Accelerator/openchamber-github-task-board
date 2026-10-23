@@ -3,36 +3,43 @@
 ## Status: completed
 
 ## Evidence:
-- `npm run typecheck`: PASS (0 errors)
-- `npm run build`: PASS (panel 610.6kb, service 26.9kb)
-- `node --test test/stage2b-pilot-coordinator.test.js`: PASS (39/39)
-- `node --test`: PASS (453/453)
-- Commit `d6050be` on `feat/stage2b-pilot-coordinator`
+- **Typecheck:** `npm run typecheck` PASS (0 errors)
+- **Bundle builds:** `npm run build` PASS (panel/main.js 610.6kb, service/main.js 26.9kb)
+- **Full test suite:** `node --test` 453/453 PASS (100%, 0 failures, 0 skipped)
+- **Stage 2B suite:** `node --test test/stage2b-pilot-coordinator.test.js` 39/39 PASS
+- **Commit:** `d6050be` on `feat/stage2b-pilot-coordinator`
 
 ## Remediated Findings:
-- **ADV-2B-01** (Idempotency): `reconcileTaskState` now guards against double-advance — `done` -> release, `verification`/`needs-review` -> poll, only `exploration`->`planning` and `execution`->`verification` advance.
-- **ADV-2B-02** (CRLF Normalization): `computeIssueSha` normalizes `\r\n`->`\n` before SHA-256 digest. Duplicated function removed from `task-claim.ts`; imports from `cas.ts`.
-- **ADV-2B-04** (Opt-In Scoping): `isTaskEligibleForPilot` requires `hasPilotLabel || (isEligiblePhase && isExplicitV2 === true)`. Legacy `status:in-progress` issues rejected.
-- **ADV-2B-06** (Corrupted Store Backup): `init()` copies corrupted `leases.json` to `.corrupted.<timestamp>.bak` before reset.
-- **ADV-2B-07** (Deduplication): 140-line private `inspectSession` removed from `reconciler.ts`; imports `inspectSessionLiveness` from `session-watcher.ts`.
 
-## New Tests (4 added, 39 Stage 2B total):
-- CRLF/LF digest equality
-- Reconciliation idempotency (tick 1 advance -> tick 2 poll -> tick 3 release)
-- Legacy task rejection
-- Corrupted file forensic backup
+### ADV-2B-01 (Reconciliation Idempotency): RESOLVED
+- `service/reconciler.ts`: `reconcileTaskState` now guards against double-advance. When a completed session is encountered:
+  - `phase: 'done'` (issue or lease) returns `{ action: 'release', reason: 'Task is complete' }`.
+  - `phase: 'verification'` (issue or lease) or `attention: 'needs-review'` returns `{ action: 'poll', reason: 'Awaiting human review' }`.
+  - `phase: 'exploration'` advances to `planning` + `needs-review`.
+  - `phase: 'execution'` advances to `verification` + `needs-review`.
+- Test: `Part 9: reconcileTaskState is idempotent: tick 1 advances execution to verification, tick 2 polls (ADV-2B-01)`.
 
-## Changes:
-- service/cas.ts — CRLF normalization in computeIssueSha
-- service/task-claim.ts — import from cas.ts, explicit opt-in eligibility
-- service/reconciler.ts — deduplication, idempotency guard
-- service/lease-store.ts — corrupted file forensic backup
-- test/stage2b-pilot-coordinator.test.js — 4 new tests
-- tsconfig.json — allowImportingTsExtensions + noEmit (required for .ts cross-file imports under Node type stripping)
-- service/main.js — rebuilt bundle
+### ADV-2B-02 (CRLF Normalization): RESOLVED
+- `service/cas.ts`: `computeIssueSha` now normalizes `\r\n` to `\n` before SHA-256 digest computation: `(body ?? '').replace(/\r\n/g, '\n')`.
+- `service/task-claim.ts`: Removed duplicated `computeIssueSha` definition; imports from `./cas.ts`.
+- Test: `Part 2: computeIssueSha normalizes CRLF and LF newlines to identical digests (ADV-2B-02)`.
 
-## Learning:
-- Node.js type stripping cannot resolve `./cas.js` to `cas.ts` at runtime; used `.ts` extensions in runtime cross-file imports + `allowImportingTsExtensions: true` in tsconfig.
+### ADV-2B-04 (Explicit Opt-In Scoping): RESOLVED
+- `service/task-claim.ts`: `isTaskEligibleForPilot` now requires `hasPilotLabel || (isEligiblePhase && isExplicitV2 === true)`. Legacy issues with only `status:in-progress` are strictly rejected.
+- Tests: `Part 7: isTaskEligibleForPilot correctly identifies eligible tasks with explicit opt-in (ADV-2B-04)` and `Part 7: isTaskEligibleForPilot strictly rejects legacy and un-migrated tasks (ADV-2B-04)`.
 
-## Not advanced (per PROCEED-WITH-CONDITIONS scope):
-- ADV-2B-03 (cross-process concurrency), ADV-2B-05 (in-memory drift on disk failure), ADV-2B-08 (clock skew)
+### ADV-2B-06 (Corrupted Store Backup): RESOLVED
+- `service/lease-store.ts`: `init()` now backs up corrupted JSON files to `${filePath}.corrupted.${Date.now()}.bak` via `fs.promises.copyFile` before resetting state.
+- Test: `Part 6: Store backs up corrupted disk file to .corrupted.<timestamp>.bak on init (ADV-2B-06)`.
+
+### ADV-2B-07 (Session Inspection Deduplication): RESOLVED
+- `service/reconciler.ts`: Removed 140-line private `inspectSession` function. Now imports `inspectSessionLiveness` from `./session-watcher.ts`.
+
+## Files Changed:
+- `service/cas.ts` — CRLF normalization in `computeIssueSha`
+- `service/task-claim.ts` — import from `cas.ts`, explicit opt-in eligibility
+- `service/reconciler.ts` — deduplication, idempotency guard
+- `service/lease-store.ts` — corrupted file forensic backup
+- `test/stage2b-pilot-coordinator.test.js` — 4 new tests (ADV-2B-01, ADV-2B-02, ADV-2B-04, ADV-2B-06)
+- `tsconfig.json` — `allowImportingTsExtensions: true`, `noEmit: true` (required for `.ts` cross-file imports in service modules loaded by Node.js type stripping)
+- `service/main.js` — rebuilt bundle

@@ -13,38 +13,106 @@
 TAP version 13
 # Subtest: Part 1: Manifest declares openchamber.contributes.service host service
 ok 1 - Part 1: Manifest declares openchamber.contributes.service host service
+  ---
+  duration_ms: 4.595804
+  type: 'test'
+  ...
 # Subtest: Part 1: loadCoordinatorConfig respects defaults and overrides
 ok 2 - Part 1: loadCoordinatorConfig respects defaults and overrides
+  ---
+  duration_ms: 0.787229
+  type: 'test'
+  ...
 # Subtest: Part 2: computeIssueSha computes deterministic SHA-256 digests
 ok 3 - Part 2: computeIssueSha computes deterministic SHA-256 digests
+  ---
+  duration_ms: 1.288329
+  type: 'test'
+  ...
 # Subtest: Part 2: computeIssueSha handles empty, null, and undefined values deterministically
 ok 4 - Part 2: computeIssueSha handles empty, null, and undefined values deterministically
+  ---
+  duration_ms: 0.323278
+  type: 'test'
+  ...
 # Subtest: Part 2: verifyIssueCas verifies baseline hash match and detects divergence
 ok 5 - Part 2: verifyIssueCas verifies baseline hash match and detects divergence
+  ---
+  duration_ms: 0.594112
+  type: 'test'
+  ...
 # Subtest: Part 2: CasManager utility class matches functional exports
 ok 6 - Part 2: CasManager utility class matches functional exports
+  ---
+  duration_ms: 0.338385
+  type: 'test'
+  ...
 # Subtest: Part 3: acquireLease claims available task and records metadata
 ok 7 - Part 3: acquireLease claims available task and records metadata
+  ---
+  duration_ms: 29.36713
+  type: 'test'
+  ...
 # Subtest: Part 3: Mutual Exclusion: second worker fails to acquire leased task
 ok 8 - Part 3: Mutual Exclusion: second worker fails to acquire leased task
+  ---
+  duration_ms: 6.942429
+  type: 'test'
+  ...
 # Subtest: Part 3: Same owner can re-acquire and update active lease
 ok 9 - Part 3: Same owner can re-acquire and update active lease
+  ---
+  duration_ms: 29.405985
+  type: 'test'
+  ...
 # Subtest: Part 4: renewHeartbeat extends lease expiration for owner
 ok 10 - Part 4: renewHeartbeat extends lease expiration for owner
+  ---
+  duration_ms: 47.781097
+  type: 'test'
+  ...
 # Subtest: Part 4: TTL expiration allows reclamation by a new worker
 ok 11 - Part 4: TTL expiration allows reclamation by a new worker
+  ---
+  duration_ms: 127.738954
+  type: 'test'
+  ...
 # Subtest: Part 5: releaseLease allows immediate takeover by another worker
 ok 12 - Part 5: releaseLease allows immediate takeover by another worker
+  ---
+  duration_ms: 18.600027
+  type: 'test'
+  ...
 # Subtest: Part 5: pruneExpired removes only expired leases and leaves active ones
 ok 13 - Part 5: pruneExpired removes only expired leases and leaves active ones
+  ---
+  duration_ms: 76.35045
+  type: 'test'
+  ...
 # Subtest: Part 6: Leases are atomically serialized to disk with version: 1 schema
 ok 14 - Part 6: Leases are atomically serialized to disk with version: 1 schema
+  ---
+  duration_ms: 25.355194
+  type: 'test'
+  ...
 # Subtest: Part 6: Independent LeaseStore instances synchronize through disk file
 ok 15 - Part 6: Independent LeaseStore instances synchronize through disk file
+  ---
+  duration_ms: 9.772253
+  type: 'test'
+  ...
 # Subtest: Part 6: Store recovers gracefully from corrupted disk file
 ok 16 - Part 6: Store recovers gracefully from corrupted disk file
+  ---
+  duration_ms: 8.075273
+  type: 'test'
+  ...
 # Subtest: Part 6: Rapid concurrent writes do not race or corrupt lease file
 ok 17 - Part 6: Rapid concurrent writes do not race or corrupt lease file
+  ---
+  duration_ms: 58.275064
+  type: 'test'
+  ...
 1..17
 # tests 17
 # suites 0
@@ -53,6 +121,7 @@ ok 17 - Part 6: Rapid concurrent writes do not race or corrupt lease file
 # cancelled 0
 # skipped 0
 # todo 0
+# duration_ms 675.267008
 ```
 
 ## Changes:
@@ -77,3 +146,4 @@ ok 17 - Part 6: Rapid concurrent writes do not race or corrupt lease file
 
 ## Verification:
 - `npm run typecheck && node --test test/stage2b-pilot-coordinator.test.js`: PASS (0 type errors, 17/17 tests passing).
+- `git diff --name-only`: modified/created files confined strictly to owned paths.

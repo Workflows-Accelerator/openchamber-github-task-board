@@ -13,7 +13,9 @@
   },
   "homepage": "https://github.com/Workflows-Accelerator/openchamber-github-task-board#readme",
   "scripts": {
-    "build": "esbuild panel/main.ts --bundle --format=iife --target=chrome100 --tree-shaking=false --outfile=panel/main.js",
+    "build:panel": "esbuild panel/main.ts --bundle --format=iife --target=chrome100 --tree-shaking=false --outfile=panel/main.js",
+    "build:service": "esbuild service/main.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=service/main.js",
+    "build": "npm run build:panel && npm run build:service",
     "typecheck": "tsc --noEmit",
     "test": "node --test test/*.test.js"
   },
@@ -40,6 +42,10 @@
         "name": "Task Board",
         "icon": "icon.svg",
         "entry": "panel/index.html"
+      },
+      "service": {
+        "entry": "service/main.js",
+        "runtime": "host"
       },
       "page": true,
       "attach": true,
