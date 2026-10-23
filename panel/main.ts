@@ -2291,7 +2291,7 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
 async function updateIssueStatus(
   issue: Issue,
   targetColumn: ColumnId,
-  options?: { newPriorityGroup?: string }
+  options?: { newPriorityGroup?: string; isHumanGesture?: boolean }
 ): Promise<void> {
   const repo = repoForIssue(issue);
   if (!issue || !repo) {
@@ -2303,6 +2303,12 @@ async function updateIssueStatus(
     }
     return;
   }
+
+  if (targetColumn === 'done' && !options?.isHumanGesture) {
+    addLog(`Blocked automatic closure of #${issue.number}: closing requires human gesture`, 'warn');
+    return;
+  }
+
   const prevLabels = [...(issue.labels || [])];
   const prevState = issue.state;
 
@@ -3372,7 +3378,7 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
       e.preventDefault();
       const target = btnNext.getAttribute('data-target') as ColumnId;
       if (target) {
-        await updateIssueStatus(issue, target);
+        await updateIssueStatus(issue, target, { isHumanGesture: true });
       }
     });
   }
@@ -3567,7 +3573,7 @@ function renderKanbanView(filteredIssues: Issue[]): void {
         ? subgroupId
         : undefined;
 
-      await updateIssueStatus(issue, col.id, { newPriorityGroup });
+      await updateIssueStatus(issue, col.id, { newPriorityGroup, isHumanGesture: true });
     });
 
     let displayIssues = colIssues;
@@ -5414,7 +5420,7 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
   if (chk) {
     chk.addEventListener('click', (e) => {
       e.stopPropagation();
-      void updateIssueStatus(node.issue, chk.checked ? 'done' : 'todo');
+      void updateIssueStatus(node.issue, chk.checked ? 'done' : 'todo', { isHumanGesture: true });
     });
   }
 
@@ -6003,7 +6009,7 @@ function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number =
     const isClosed = isIssueClosed(issue);
     elBtnDrawerToggleClose.textContent = isClosed ? 'Reopen Issue' : 'Close Issue';
     elBtnDrawerToggleClose.onclick = () => {
-      void updateIssueStatus(issue, isClosed ? 'todo' : 'done');
+      void updateIssueStatus(issue, isClosed ? 'todo' : 'done', { isHumanGesture: true });
     };
   }
 
@@ -7958,7 +7964,7 @@ function setupDragAndDrop(): void {
 
       const issue = issues.find((i) => i.number === issueNum);
       if (issue) {
-        void updateIssueStatus(issue, colId);
+        void updateIssueStatus(issue, colId, { isHumanGesture: true });
       }
     });
   });
@@ -8727,7 +8733,7 @@ function initEvents(): void {
         });
       } else {
         const targetCol = val as ColumnId;
-        void updateIssueStatus(activeIssue, targetCol);
+        void updateIssueStatus(activeIssue, targetCol, { isHumanGesture: true });
       }
     }
   });

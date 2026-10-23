@@ -881,7 +881,7 @@ test('Runtime: issue.v2Metadata is refreshed on updateIssueBody, reloadIssueBefo
 
   // 2. updateIssueStatus moves issue to done (closed)
   issue.v2Metadata.attention = 'needs-review'; // inject artificial stale metadata
-  await app.updateIssueStatus(issue, 'done');
+  await app.updateIssueStatus(issue, 'done', { isHumanGesture: true });
   assert.equal(
     issue.v2Metadata?.phase,
     'done',

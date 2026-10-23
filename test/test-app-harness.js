@@ -536,6 +536,7 @@ export function createTestApp(options = {}) {
       githubRequest,
       githubRequestWithRetry,
       updateIssueStatus,
+      statusReconciler,
       updateIssueBody,
       submitNewIssue,
       setRepository,

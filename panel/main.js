@@ -4068,7 +4068,8 @@ ${placeholder}
         if (!session) continue;
         const targetCol = resolveIssueColumn(issue, session);
         if (!targetCol) continue;
-        if (issue.state === "closed" && targetCol === "done") continue;
+        if (targetCol === "done") continue;
+        if (issue.state === "closed") continue;
         const currentLabels = (issue.labels || []).map(
           (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
         );
@@ -5534,7 +5535,7 @@ Instructions for the Agent:
    - Test Plan: Add a "## Test Plan (Issue):" section with interactive Markdown checkboxes (- [ ]) listing exact automated verification commands.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
    - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
-4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo".
+4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo". An agent never sets phase:done, phase:archive or status:done and never closes an issue.
 5. Creation: If a GitHub token is configured or available in ~/.git-credentials, create issues directly via curl:
    curl -s -X POST -H "Authorization: Bearer <token>" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/{repo}/issues -d '{"title":"...","body":"...","labels":["status:todo",...]}'
    Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
@@ -9023,6 +9024,10 @@ Blocked by ${blockerRef}`;
       }
       return;
     }
+    if (targetColumn === "done" && !options?.isHumanGesture) {
+      addLog(`Blocked automatic closure of #${issue.number}: closing requires human gesture`, "warn");
+      return;
+    }
     const prevLabels = [...issue.labels || []];
     const prevState = issue.state;
     const currentLabels = (issue.labels || []).map((l) => typeof l === "string" ? l : l.name || "");
@@ -9848,7 +9853,7 @@ Blocked by ${blockerRef}`;
         e.preventDefault();
         const target = btnNext.getAttribute("data-target");
         if (target) {
-          await updateIssueStatus(issue, target);
+          await updateIssueStatus(issue, target, { isHumanGesture: true });
         }
       });
     }
@@ -10012,7 +10017,7 @@ Blocked by ${blockerRef}`;
         const subEl = e.target?.closest?.(".kanban-subgroup");
         const subgroupId = subEl?.dataset?.subgroupId;
         const newPriorityGroup = currentGroupBy === "priority" && subgroupId ? subgroupId : void 0;
-        await updateIssueStatus(issue, col.id, { newPriorityGroup });
+        await updateIssueStatus(issue, col.id, { newPriorityGroup, isHumanGesture: true });
       });
       let displayIssues = colIssues;
       let doneRemaining = 0;
@@ -11549,7 +11554,7 @@ Blocked by ${blockerRef}`;
     if (chk) {
       chk.addEventListener("click", (e) => {
         e.stopPropagation();
-        void updateIssueStatus(node.issue, chk.checked ? "done" : "todo");
+        void updateIssueStatus(node.issue, chk.checked ? "done" : "todo", { isHumanGesture: true });
       });
     }
     const addBtn = card.querySelector(".graph-card-add-dep-btn");
@@ -12036,7 +12041,7 @@ Blocked by ${blockerRef}`;
       const isClosed = isIssueClosed3(issue);
       elBtnDrawerToggleClose.textContent = isClosed ? "Reopen Issue" : "Close Issue";
       elBtnDrawerToggleClose.onclick = () => {
-        void updateIssueStatus(issue, isClosed ? "todo" : "done");
+        void updateIssueStatus(issue, isClosed ? "todo" : "done", { isHumanGesture: true });
       };
     }
     renderDrawerLabels(issue);
@@ -13693,7 +13698,7 @@ ${transclusions.join("\n")}
         if (!issueNum) return;
         const issue = issues.find((i) => i.number === issueNum);
         if (issue) {
-          void updateIssueStatus(issue, colId);
+          void updateIssueStatus(issue, colId, { isHumanGesture: true });
         }
       });
     });
@@ -14348,7 +14353,7 @@ ${transclusions.join("\n")}
           });
         } else {
           const targetCol = val;
-          void updateIssueStatus(activeIssue, targetCol);
+          void updateIssueStatus(activeIssue, targetCol, { isHumanGesture: true });
         }
       }
     });

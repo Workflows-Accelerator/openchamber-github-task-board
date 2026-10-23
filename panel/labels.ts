@@ -615,7 +615,9 @@ export class StatusReconciler {
 
       const targetCol = resolveIssueColumn(issue, session);
       if (!targetCol) continue;
-      if (issue.state === 'closed' && targetCol === 'done') continue;
+      // StatusReconciler must never request 'done' or close an issue automatically
+      if (targetCol === 'done') continue;
+      if (issue.state === 'closed') continue;
 
       const currentLabels = (issue.labels || []).map((l: any) =>
         (typeof l === 'string' ? l : l.name || '').toLowerCase()

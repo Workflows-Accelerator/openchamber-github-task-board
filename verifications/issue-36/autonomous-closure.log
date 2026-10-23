@@ -1,0 +1,62 @@
+TAP version 13
+# [TaskBoard] Blocked automatic closure of \#201: closing requires human gesture
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/401
+# Subtest: 1. Reproduction investigation: issue with phase:done or phase:archive in body does not close on pre-fix code (missing condition)
+ok 1 - 1. Reproduction investigation: issue with phase:done or phase:archive in body does not close on pre-fix code (missing condition)
+  ---
+  duration_ms: 129.285646
+  type: 'test'
+  ...
+# Subtest: 2. Automatic closure path cut: un-signaled updateIssueStatus(issue, "done") is blocked
+ok 2 - 2. Automatic closure path cut: un-signaled updateIssueStatus(issue, "done") is blocked
+  ---
+  duration_ms: 86.504829
+  type: 'test'
+  ...
+# Subtest: 3. Reconciler guard cut: StatusReconciler never requests done or closes an issue
+ok 3 - 3. Reconciler guard cut: StatusReconciler never requests done or closes an issue
+  ---
+  duration_ms: 0.934552
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/401 -> 200
+# [TaskBoard] Moved \#401 to done
+# Subtest: 4. Human actions preserve legitimate closure: updateIssueStatus with isHumanGesture closes
+ok 4 - 4. Human actions preserve legitimate closure: updateIssueStatus with isHumanGesture closes
+  ---
+  duration_ms: 128.217654
+  type: 'test'
+  ...
+# Subtest: 5. Agent instruction guard: DEFAULT_AI_ISSUE_PROMPT contains autonomous closure prohibition
+ok 5 - 5. Agent instruction guard: DEFAULT_AI_ISSUE_PROMPT contains autonomous closure prohibition
+  ---
+  duration_ms: 0.491591
+  type: 'test'
+  ...
+# Subtest: 6. Preservation: non-terminal automatic status reconciliation remains active
+ok 6 - 6. Preservation: non-terminal automatic status reconciliation remains active
+  ---
+  duration_ms: 1.322803
+  type: 'test'
+  ...
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 611.306137
