@@ -40,7 +40,7 @@
 | Task 202: Alert-Only Badges & Drawer AC | COMPLETE | ses_ab81db24b068bfa3a0255322 / engineer | Brief `tasks/task-202-card-badges-and-drawer-ac.md` | 22/22 stage 2A tests pass; 407/407 regression pass |
 | Task 203: Proof Suite & Bundle Build | COMPLETE | ses_cfd0c821b8d2675506d5d760 / engineer | Brief `tasks/task-203-proof-and-bundle-build.md` | Commit 4b0c657; 18/18 parity; 409/409 full suite pass |
 | Task 204: Hostile Adversarial Review (L4) | COMPLETE | ses_3dd0745a99acbd0a854bee62 / engineer | Brief `tasks/task-204-hostile-adversarial-review.md` | PROCEED-WITH-CONDITIONS; 5 findings identified (ADV-01..ADV-06) |
-| Task 204b: Remediate Hostile Conditions | RUNNING | ses_pending / engineer | Brief `tasks/task-204b-remediate-hostile-conditions.md` | Dispatched to worktree |
+| Task 204b: Remediate Hostile Conditions | RUNNING | ses_f44f93bdd8b12b18c97896a9 / engineer | Brief `tasks/task-204b-remediate-hostile-conditions.md` | In progress in worktree |
 | Task 205: Integration Merge of Stage 2A | QUEUED | engineer | Brief `tasks/task-205-integrate-stage2a-merge.md` | Awaits Task 204b |
 
 ## Evidence and incident policy
