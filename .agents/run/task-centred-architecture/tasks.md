@@ -42,7 +42,13 @@
 | Task 204: Hostile Adversarial Review (L4) | COMPLETE | ses_3dd0745a99acbd0a854bee62 / engineer | Brief `tasks/task-204-hostile-adversarial-review.md` | PROCEED-WITH-CONDITIONS; 5 findings identified (ADV-01..ADV-06) |
 | Task 204b: Remediate Hostile Conditions | COMPLETE | ses_f44f93bdd8b12b18c97896a9 / engineer | Brief `tasks/task-204b-remediate-hostile-conditions.md` | Commit f28f575; 5 findings resolved; 414/414 pass |
 | Task 205: Integration Merge of Stage 2A | COMPLETE | ses_3b8d738aafbf3d2652a153e8 / engineer | Brief `tasks/task-205-integrate-stage2a-merge.md` | Merge commit 7cc6399; bundle rebuild cf9acf8; worktree removed; branch preserved; Stage 2A LANDED |
-| Stage 2B: Host Probing & Pilot Coordinator | READY | Manager | Briefing empirical host execution probe | Decoupled background service discovery |
+| Stage 2B: Host Probing & Pilot Coordinator | IN PROGRESS | Manager | Empirical probe complete (discovered `contributes.service`); authoring 6 tasks | Tasks 206–211 |
+| Task 206: Service Architecture & Build Pipeline | RUNNING | ses_pending / engineer | Brief `tasks/task-206-service-architecture.md` | Dispatched to worktree |
+| Task 207: Single-Writer Lease & CAS Pre-Flight | QUEUED | engineer | Brief `tasks/task-207-lease-and-cas.md` | Awaits Task 206 |
+| Task 208: Task Claiming & Reconciler | QUEUED | engineer | Brief `tasks/task-208-task-claiming-and-reconciler.md` | Awaits Task 207 |
+| Task 209: Stage 2B Proof & Bundle Build | QUEUED | engineer | Brief `tasks/task-209-proof-and-bundle-build.md` | Awaits Task 208 |
+| Task 210: Hostile Adversarial Review (L4) | QUEUED | engineer | Brief `tasks/task-210-hostile-adversarial-review.md` | Awaits Task 209 |
+| Task 211: Integration Merge of Stage 2B | QUEUED | engineer | Brief `tasks/task-211-integrate-stage2b-merge.md` | Awaits Task 210 |
 
 ## Evidence and incident policy
 All three research authors returned actual provider/model 9router/engineer. Board reviewer same. Remaining reviewer identities deferred to wakes; no polling. Original source research is untrusted until findings resolved in final draft; preserve original reports and reviews as audit trail, do not silently rewrite them. Final independent reviewer gets all caveats, especially source inspection != live proof.
