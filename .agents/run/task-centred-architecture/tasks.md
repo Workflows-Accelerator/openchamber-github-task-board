@@ -50,7 +50,7 @@
 | Task 210: Hostile Adversarial Review (L4) | COMPLETE | ses_586bfef36e609ca53b6327bd / engineer | Brief `tasks/task-210-hostile-adversarial-review.md` | PROCEED-WITH-CONDITIONS; 3 critical defects (ADV-2B-01..ADV-2B-04) |
 | Task 210b: Remediate Hostile Conditions | COMPLETE | ses_8803600f8599b18f6b71900e / engineer | ADV-2B-01/02/04/06/07 resolved; commit d6050be; 39/39 Stage 2B tests; 453/453 full suite pass | Proceed to Task 210c |
 | Task 210c: Remediation Hostile Review (Second Pass) | COMPLETE | ses_d4879c3f7332966a643ae8de / engineer | PROCEED-WITH-CONDITIONS; 10 findings (ADV-2C-01..10); bundle Node-20 clean; 453/453 pass | Proceed to Task 210d |
-| Task 210d: Second Remediation (ADV-2C-*) | QUEUED | engineer | Brief `tasks/task-210d-remediation-two.md` | Awaits dispatch |
+| Task 210d: Second Remediation (ADV-2C-*) | RUNNING | ses_1bff9ceb6029e7dfadd0f24a / engineer | Brief `tasks/task-210d-remediation-two.md` | In progress in worktree |
 | Task 211: Integration Merge of Stage 2B | QUEUED | engineer | Brief `tasks/task-211-integrate-stage2b-merge.md` | Awaits Task 210d |
 
 ## Evidence and incident policy
