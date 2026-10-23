@@ -5,11 +5,13 @@ This section overrides historical completion/policy claims below. No autonomous 
 
 | Issue / outcome | State | Worker / evidence | Next |
 |---|---|---|---|
-| #28 Current tasks on opening | IMPLEMENTED, INDEPENDENT REVIEW RUNNING | 29d1634; builder 475 tests; manager 23/23 targeted; reviewer ses_fb534dbdf65e662d7bcc72ea | Await wake; fix findings before preview integration |
-| #27 Full board at board.workflows.ac | ALIGNED, EXACT PLAN RUNNING | User chose full viewing/editing/questions/start/open agents, protected existing account; receipt issuecomment-6374341925; planner ses_cd8a150ea8b1c552dcda872f | Safe authenticated board-only route; no deployment approval |
-| #29 Workers use native sub-issues | INVESTIGATION RETURNED, INDEPENDENT REVIEW RUNNING | 37a3ecc report; 129 transport tests author-reported; reviewer ses_a713b5e79ae559c469045166 | Determine smallest approved instruction exception and recovery pilot; native API denied, no bypass |
-| #30 Feature versus bug path | CAPTURED, CONTRACT GAP MAPPING IN #29 | User direction preserved; expiration ambiguous | No destructive semantics or fixed swarm |
-| #31 Questions and notifications | CAPTURED, CONTRACT GAP MAPPING IN #29/#27 | Orthogonal attention, durable questions, scoped resume | Prove one complete loop before expansion |
+| #28 Current tasks on opening | FIX CANDIDATE 8625b0a, HOSTILE REVIEW RUNNING | builder: 7 red-first regressions, 482/482, typecheck/build green; reviewer ses_b1bab8b4b2a6812042618ba4 | Await review; compare with competing fix ses_0257d2d75d053ac4444b5294; integrate only the survivor |
+| #28 competing fix | RUNNING | ses_0257d2d75d053ac4444b5294 in .worktrees/team-dev-issue-28-review-races, brief issue-28-race-fix-tight.md | Discard unless it proves better than the reviewed survivor |
+| #27 Standalone web board (narrowed) | SUPERSEDED SHAPE, IMPLEMENTATION IN #33 | User rejected host `/board` route and agent control; earlier full-board receipt issuecomment-6374341925 is history | No deployment approval |
+| #33 Board in your browser | BUILD RUNNING | ses_ee32c171b7f64907e620a386 in .worktrees/team-dev-issue-33-standalone-board, brief issue-33-standalone-board.md | Hostile review (auth, credential exposure, lost updates, XSS, responsive); then local user look |
+| #29 Workers use native sub-issues | PARKED — WORDING ONLY | 9226ce6 exception wording; reviews becdcea / 04007e3; pilot #32 proved issue-only briefing with explicit limits | Do not activate live without user decision |
+| #30 Feature versus bug path | DESIGN RUNNING (integrated with #31) | ses_f8df99deaa1cad44b9fbfb93 | Present max 2-3 real decisions; no destructive "expiration" |
+| #31 Questions and notifications | DESIGN RUNNING (integrated with #30) | same worker; attention orthogonal to phase | Prove one complete loop before expansion |
 | Background service startup repair | REVIEWED, PARKED | 5c22202/81b8e27/411d919; inert inbound only | Not prerequisite; no activation or remote effects |
 
 Private reference security reports stay local; do not copy voice authentication or publish findings publicly. Shared prompts/skills/config have NOT been changed. Cross-repo manager read denied; use credential-free completion wakes, never bypass. Actual provider/model verification unavailable in wakes beyond supplied 9router/engineer; one attempted session metadata query failed on last/limit conflict, not retried or polled.
