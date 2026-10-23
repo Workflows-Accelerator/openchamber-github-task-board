@@ -35,7 +35,12 @@
 | Task 007: Human validation walkthrough | COMPLETE | ses_c8c1228511694908a3a3b0d4 / engineer | Full walkthrough and empirical receipts compiled | Present to user at L5 Review Gate |
 | Stage 1 Human Validation Gate (L5) | APPROVED | User | Human approved Stage 1 completion | Dispatched Task 008 (integration merge) |
 | Task 008: Stage 1 Integration Merge | COMPLETE | ses_3a077be973e9fd2c1e30efe9 / engineer | Merged into feat/v2-binding-and-ratelimit (6ca57f6); bundle rebuilt (5de3816); parity aligned (52974b7); worktree pruned; 386/386 pass | Stage 1 LANDED |
-| Stage 2 Planning: Coordinator Pilot & UI Surfaces | READY | Manager | Roadmap drafting | Author Stage 2 implementation plan |
+| Stage 2 Planning: Coordinator Pilot & UI Surfaces | COMPLETE | Manager | Roadmap drafted: decoupled into 2A (UI) and 2B (Host Pilot) | Dispatched Task 201 |
+| Task 201: Attention View & Action Sub-Queues | RUNNING | ses_pending / engineer | Brief `tasks/task-201-attention-view-mode.md` | In progress in worktree |
+| Task 202: Alert-Only Badges & Drawer AC | QUEUED | engineer | Brief `tasks/task-202-card-badges-and-drawer-ac.md` | Awaits Task 201 |
+| Task 203: Proof Suite & Bundle Build | QUEUED | engineer | Brief `tasks/task-203-proof-and-bundle-build.md` | Awaits Task 202 |
+| Task 204: Hostile Adversarial Review (L4) | QUEUED | engineer | Brief `tasks/task-204-hostile-adversarial-review.md` | Awaits Task 203 |
+| Task 205: Integration Merge of Stage 2A | QUEUED | engineer | Brief `tasks/task-205-integrate-stage2a-merge.md` | Awaits Task 204 |
 
 ## Evidence and incident policy
 All three research authors returned actual provider/model 9router/engineer. Board reviewer same. Remaining reviewer identities deferred to wakes; no polling. Original source research is untrusted until findings resolved in final draft; preserve original reports and reviews as audit trail, do not silently rewrite them. Final independent reviewer gets all caveats, especially source inspection != live proof.
