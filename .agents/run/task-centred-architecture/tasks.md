@@ -1,4 +1,20 @@
-# Research and draft delivery
+# Task-centred delivery
+
+## CURRENT — 2026-10-23
+This section overrides historical completion/policy claims below. No autonomous coordinator or installed startup is proven. The historical merge-regardless-of-findings policy is invalid; blocking defects prohibit release. Only human validates Done/master.
+
+| Issue / outcome | State | Worker / evidence | Next |
+|---|---|---|---|
+| #28 Current tasks on opening | IMPLEMENTED, INDEPENDENT REVIEW RUNNING | 29d1634; builder 475 tests; manager 23/23 targeted; reviewer ses_fb534dbdf65e662d7bcc72ea | Await wake; fix findings before preview integration |
+| #27 Full board at board.workflows.ac | ALIGNED, EXACT PLAN RUNNING | User chose full viewing/editing/questions/start/open agents, protected existing account; receipt issuecomment-6374341925; planner ses_cd8a150ea8b1c552dcda872f | Safe authenticated board-only route; no deployment approval |
+| #29 Workers use native sub-issues | INVESTIGATION RETURNED, INDEPENDENT REVIEW RUNNING | 37a3ecc report; 129 transport tests author-reported; reviewer ses_a713b5e79ae559c469045166 | Determine smallest approved instruction exception and recovery pilot; native API denied, no bypass |
+| #30 Feature versus bug path | CAPTURED, CONTRACT GAP MAPPING IN #29 | User direction preserved; expiration ambiguous | No destructive semantics or fixed swarm |
+| #31 Questions and notifications | CAPTURED, CONTRACT GAP MAPPING IN #29/#27 | Orthogonal attention, durable questions, scoped resume | Prove one complete loop before expansion |
+| Background service startup repair | REVIEWED, PARKED | 5c22202/81b8e27/411d919; inert inbound only | Not prerequisite; no activation or remote effects |
+
+Private reference security reports stay local; do not copy voice authentication or publish findings publicly. Shared prompts/skills/config have NOT been changed. Cross-repo manager read denied; use credential-free completion wakes, never bypass. Actual provider/model verification unavailable in wakes beyond supplied 9router/engineer; one attempted session metadata query failed on last/limit conflict, not retried or polled.
+
+## Historical research and delivery ledger
 
 | Item | Status | Session / actual model | Result | Next action |
 |---|---|---|---|---|
