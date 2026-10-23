@@ -308,7 +308,8 @@ test('Path 2: streamRemainingPages does not retry when a later page (page 2) fai
   });
 
   // Call streamRemainingPages directly starting from page 2
-  await app.streamRemainingPages('owner/repo-page2-oversized', 'storage_key', 2, 1, false);
+  // Propagate failure to the full-refresh owner so it can show stale state, not success.
+  await assert.rejects(app.streamRemainingPages('owner/repo-page2-oversized', 'storage_key', 2, 1, false), SyntaxError);
 
   // Page 2 should be attempted once and NOT retried
   assert.equal(page2Calls, 1);

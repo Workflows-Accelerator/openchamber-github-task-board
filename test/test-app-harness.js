@@ -426,7 +426,7 @@ export function createTestApp(options = {}) {
     removeEventListener: () => {},
     postMessage: () => {},
     parent: {
-      postMessage: (data) => {
+      postMessage: async (data) => {
         hostCalls.push(data);
         if (data && data.type === 'hello') {
           setTimeout(() => {
@@ -441,7 +441,7 @@ export function createTestApp(options = {}) {
                     directory: '/workspace',
                     session: null,
                     connection: { status: 'connected' },
-                    settings: {},
+                    settings: options.settings || {},
                     theme: { mode: 'dark', tokens: { font: 'sans', foreground: '#fff', background: '#000' } },
                   },
                 },
@@ -469,7 +469,7 @@ export function createTestApp(options = {}) {
             }
           } else if (options.onRequest) {
             try {
-              resultPayload = options.onRequest(data.payload);
+              resultPayload = await options.onRequest(data.payload);
             } catch (e) {
               ok = false;
               error = { code: 'CALL_FAILED', message: e.message };
