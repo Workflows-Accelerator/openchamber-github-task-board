@@ -930,6 +930,8 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
   allProjectsRepoRefs = [];
   workspaceRootNoticeShown = false;
   currentRepo = repo;
+  lastSyncTimestamp = 0;
+  lastSyncErrorState = null;
   issues = [];
   showAllDoneIssues = false;
   clearSelection();
@@ -1176,7 +1178,8 @@ function setCachedPage(path: string, items: any[], etag?: string): void {
 
 const repoIncrementalEtagCache = new Map<string, string>();
 const repoSyncWatermarks = new Map<string, number>();
-let lastSyncTimestamp: number = Date.now();
+const repoFullSyncTimestamps = new Map<string, number>();
+let lastSyncTimestamp: number = 0;
 
 async function getWorkspaceGitToken(): Promise<string | null> {
   if (workspaceGitToken) return workspaceGitToken;
@@ -1411,73 +1414,304 @@ function fetchRepoIssuePage(
   }, headers);
 }
 
+function renderBoardFreshness(state: 'refreshing' | 'partial' | 'stale' | 'complete', repo: string): void {
+  const element = document.getElementById('boardFreshness');
+  if (!element) return;
+  const timestamp = repoFullSyncTimestamps.get(repo);
+  const lastSuccess = timestamp ? `Last full sync: ${new Date(timestamp).toLocaleString()}` : 'No completed full sync';
+  element.textContent = state === 'complete'
+    ? `${repo} · ${lastSuccess}`
+    : `${repo} · ${state === 'refreshing' ? 'Refreshing — cached data is provisional' : state === 'partial' ? 'Partial results — refresh incomplete' : 'Stale / unavailable — refresh failed'} · ${lastSuccess}`;
+}
+
+function admitsIssueSnapshot(repo: string, epoch: number): boolean {
+  return !isAllProjectsMode && currentRepo === repo && activeStreamEpoch === epoch;
+}
+
+// --- Issue write admission (refresh/edit races) ---
+// A refresh response only reflects the repository as of its request start. A
+// local write that is still in flight, or that was accepted after that moment,
+// must therefore survive the publication of the older response. Each issue
+// keeps at most one small record per field group; records expire and the map is
+// capped, so this never becomes unbounded per-issue history.
+type IssueWriteGroup = 'body' | 'state' | 'labels' | 'record';
+interface IssueWriteTracker { time: number; pending: number }
+
+const ISSUE_WRITE_TTL_MS = 5 * 60_000;
+// One incremental scan can admit MAX_ISSUES_PER_REPO (1000) changed issues, so
+// the cap must hold two such scans (the current publication plus a concurrent
+// one) without evicting a record that scan still needs.
+const MAX_ISSUE_WRITE_TRACKERS = MAX_ISSUES_PER_REPO * 2;
+// Protected records may temporarily overflow the soft cap; at this ceiling the
+// older in-flight publication is abandoned instead of dropping its protection.
+const MAX_ISSUE_WRITE_TRACKERS_HARD = MAX_ISSUES_PER_REPO * 4;
+const issueWriteTrackers = new Map<string, Map<IssueWriteGroup, IssueWriteTracker>>();
+// Only the publication started by the newest fetchIssues can still commit;
+// older fetches are superseded. Records admitted after a publication's start
+// must survive that publication, so eviction has to treat them as pinned.
+const issueSnapshotStarts = new Map<number, { repo: string; startedAt: number }>();
+const obsoleteIssueSnapshotEpochs = new Set<number>();
+
+function issueWriteKey(repo: string, issue: Issue | number): string {
+  const number = typeof issue === 'number' ? issue : issue.number;
+  const owner = (typeof issue === 'number'
+    ? repo
+    : (getIssueRepoFullName(issue) || issue.repo || repo) || '').toLowerCase();
+  return `${owner}#${number}`;
+}
+
+function latestWriteTime(groups: Map<IssueWriteGroup, IssueWriteTracker> | undefined): number {
+  if (!groups) return 0;
+  let latest = 0;
+  for (const tracker of groups.values()) latest = Math.max(latest, tracker.time);
+  return latest;
+}
+
+function issueRecordRepo(key: string): string {
+  const separator = key.lastIndexOf('#');
+  return separator > 0 ? key.slice(0, separator) : '';
+}
+
+// Start time of the only publication that can still commit for this repository.
+function publishableIssueSnapshotStart(repo: string): number | null {
+  if (isAllProjectsMode) return null;
+  const epoch = activeStreamEpoch;
+  if (obsoleteIssueSnapshotEpochs.has(epoch)) return null;
+  const entry = issueSnapshotStarts.get(epoch);
+  if (!entry || entry.repo.toLowerCase() !== repo.toLowerCase()) return null;
+  return entry.startedAt;
+}
+
+// Pending writes are always pinned. A settled admission is pinned while a
+// publication that started before it could still overwrite it.
+function issueRecordIsPinned(key: string, groups: Map<IssueWriteGroup, IssueWriteTracker>): boolean {
+  for (const tracker of groups.values()) {
+    if (tracker.pending > 0) return true;
+  }
+  const start = publishableIssueSnapshotStart(issueRecordRepo(key));
+  return start !== null && latestWriteTime(groups) > start;
+}
+
+function trimIssueWriteTrackers(): void {
+  const excess = issueWriteTrackers.size - MAX_ISSUE_WRITE_TRACKERS;
+  if (excess <= 0) return;
+  const candidates: Array<{ key: string; time: number }> = [];
+  for (const [key, groups] of issueWriteTrackers) {
+    if (issueRecordIsPinned(key, groups)) continue;
+    candidates.push({ key, time: latestWriteTime(groups) });
+  }
+  candidates.sort((a, b) => a.time - b.time);
+  for (const candidate of candidates.slice(0, excess)) issueWriteTrackers.delete(candidate.key);
+}
+
+function pruneIssueWriteTrackers(): void {
+  const cutoff = Date.now() - ISSUE_WRITE_TTL_MS;
+  for (const [key, groups] of issueWriteTrackers) {
+    const start = publishableIssueSnapshotStart(issueRecordRepo(key));
+    for (const [group, tracker] of groups) {
+      // A record still needed by an in-flight publication outlives the TTL;
+      // once that publication ends the next prune expires it normally.
+      const neededNow = start !== null && tracker.time > start;
+      if (tracker.pending === 0 && tracker.time < cutoff && !neededNow) groups.delete(group);
+    }
+    if (groups.size === 0) issueWriteTrackers.delete(key);
+  }
+  trimIssueWriteTrackers();
+  if (issueWriteTrackers.size > MAX_ISSUE_WRITE_TRACKERS_HARD) {
+    // Every remaining record is pinned: abandon the older publication rather
+    // than let it clobber the records or let the map grow without a ceiling.
+    if (issueSnapshotStarts.has(activeStreamEpoch)) obsoleteIssueSnapshotEpochs.add(activeStreamEpoch);
+    trimIssueWriteTrackers();
+  }
+}
+
+// Marks one optimistic local edit; the returned callback settles it. A failed
+// edit drops its freshness so a later authoritative response may correct it.
+function trackIssueWrite(repo: string, issue: Issue | number, groups: IssueWriteGroup[]): (accepted: boolean) => void {
+  pruneIssueWriteTrackers();
+  const key = issueWriteKey(repo, issue);
+  const startedAt = Date.now();
+  let byGroup = issueWriteTrackers.get(key);
+  if (!byGroup) {
+    byGroup = new Map();
+    issueWriteTrackers.set(key, byGroup);
+  }
+  for (const group of groups) {
+    const tracker = byGroup.get(group) || { time: 0, pending: 0 };
+    tracker.pending += 1;
+    tracker.time = Math.max(tracker.time, startedAt);
+    byGroup.set(group, tracker);
+  }
+  return (accepted: boolean) => {
+    for (const group of groups) {
+      const tracker = byGroup!.get(group);
+      if (!tracker) continue;
+      tracker.pending = Math.max(0, tracker.pending - 1);
+      if (accepted) {
+        tracker.time = Math.max(tracker.time, Date.now());
+      } else if (tracker.pending === 0 && tracker.time <= startedAt) {
+        byGroup!.delete(group);
+      }
+    }
+    if (byGroup!.size === 0) issueWriteTrackers.delete(key);
+    pruneIssueWriteTrackers();
+  };
+}
+
+// Records a network read newer than in-flight refreshes (incremental sync
+// results) so publications of older full responses neither undo its fields nor
+// drop its membership.
+function admitIssueRecord(repo: string, issue: Issue, at: number = Date.now()): void {
+  pruneIssueWriteTrackers();
+  const key = issueWriteKey(repo, issue);
+  const byGroup = issueWriteTrackers.get(key) || new Map<IssueWriteGroup, IssueWriteTracker>();
+  const tracker = byGroup.get('record') || { time: 0, pending: 0 };
+  tracker.time = Math.max(tracker.time, at);
+  byGroup.set('record', tracker);
+  issueWriteTrackers.set(key, byGroup);
+}
+
+function protectedIssueGroups(repo: string, issue: Issue | number, startedAt: number): Set<IssueWriteGroup> {
+  const byGroup = issueWriteTrackers.get(issueWriteKey(repo, issue));
+  const groups = new Set<IssueWriteGroup>();
+  if (!byGroup) return groups;
+  for (const [group, tracker] of byGroup) {
+    if (tracker.pending > 0 || tracker.time > startedAt) groups.add(group);
+  }
+  return groups;
+}
+
+function findIssueRecord(repo: string, issue: Issue): Issue {
+  const key = issueWriteKey(repo, issue);
+  return issues.find((entry) => entry && issueWriteKey(repo, entry) === key) || issue;
+}
+
+function applyProtectedIssueFields(published: Issue, local: Issue | undefined, groups: Set<IssueWriteGroup>): Issue {
+  if (!local || groups.size === 0) return published;
+  if (groups.has('record')) return { ...published, ...local };
+  const merged = { ...published };
+  if (groups.has('body')) {
+    merged.body = local.body;
+    merged.subtasks = local.subtasks;
+    merged.openQuestions = local.openQuestions;
+    merged.humanTasks = local.humanTasks;
+    merged.acceptanceCriteria = local.acceptanceCriteria;
+  }
+  if (groups.has('state')) merged.state = local.state;
+  if (groups.has('labels')) merged.labels = local.labels;
+  merged.v2Metadata = local.v2Metadata;
+  if (local.updated_at) merged.updated_at = local.updated_at;
+  return merged;
+}
+
+// Overlays newer local fields onto a response without touching membership.
+function protectIssueFields(repo: string, published: Issue[], localIssues: Issue[], startedAt: number): Issue[] {
+  const localByKey = new Map<string, Issue>();
+  for (const entry of localIssues || []) {
+    if (entry && Number.isFinite(entry.number)) localByKey.set(issueWriteKey(repo, entry), entry);
+  }
+  return published.map((entry) => {
+    if (!entry || !Number.isFinite(entry.number)) return entry;
+    const key = issueWriteKey(repo, entry);
+    return applyProtectedIssueFields(entry, localByKey.get(key), protectedIssueGroups(repo, entry, startedAt));
+  });
+}
+
+// Full snapshots stay authoritative for membership (deletions and empty
+// repositories included); only issues with writes or admissions newer than this
+// response's request start are kept when the response cannot know them yet.
+function reconcileIssueSnapshot(repo: string, snapshot: Issue[], localIssues: Issue[], startedAt: number): Issue[] {
+  const reconciled = protectIssueFields(repo, snapshot, localIssues, startedAt);
+  const publishedKeys = new Set<string>();
+  for (const entry of snapshot) {
+    if (entry && Number.isFinite(entry.number)) publishedKeys.add(issueWriteKey(repo, entry));
+  }
+  const localByKey = new Map<string, Issue>();
+  for (const entry of localIssues || []) {
+    if (entry && Number.isFinite(entry.number)) localByKey.set(issueWriteKey(repo, entry), entry);
+  }
+  for (const [key, local] of localByKey) {
+    if (publishedKeys.has(key)) continue;
+    if (protectedIssueGroups(repo, local, startedAt).size > 0) reconciled.push(local);
+  }
+  return reconciled;
+}
+
+function publishIssueSnapshot(repo: string, storageKey: string, snapshot: Issue[], startedAt: number, epoch: number): void {
+  pruneIssueWriteTrackers();
+  if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+    // Hard tracker overflow abandoned this older publication rather than let it
+    // overwrite records that were just shed to keep memory bounded.
+    renderBoardFreshness('stale', repo);
+    return;
+  }
+  issues = reconcileIssueSnapshot(repo, snapshot, issues, startedAt);
+  const timestamp = Date.now();
+  issueCache.set(repo, { timestamp, issues });
+  repoFullSyncTimestamps.set(repo, timestamp);
+  void host.storage.set(storageKey, { timestamp, issues, fullSyncTimestamp: timestamp } as any).catch(() => {});
+  lastSyncTimestamp = timestamp;
+  // Use request start, not completion, so concurrent upstream changes are not skipped by incremental reads.
+  // Never regress below an incremental claim already admitted during this refresh.
+  repoSyncWatermarks.set(repo, Math.max(startedAt, repoSyncWatermarks.get(repo) || 0));
+  lastSyncErrorState = null;
+  renderViews();
+  statusReconciler.schedule(issues);
+  renderBoardFreshness('complete', repo);
+}
+
 async function streamRemainingPages(
   repo: string,
   storageKey: string,
   startPage: number,
   epoch: number,
-  force: boolean = false
+  force: boolean = false,
+  snapshot: Issue[] = [],
+  startedAt: number = Date.now()
 ): Promise<void> {
-  let page = startPage;
   const pageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
-  const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize); // Supports up to 1,000 issues while keeping memory bounded
-  while (page <= maxPages && currentRepo === repo && activeStreamEpoch === epoch) {
-    try {
-      const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
-      const cachedPage = !force ? pageBodyCache.get(pagePath) : undefined;
-      const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : undefined);
-      const canSendEtag = Boolean(pageEtag && cachedPage?.items);
-
-      let nextRaw = await githubRequestWithRetry(
-        'GET',
-        pagePath,
-        undefined,
-        undefined,
-        canSendEtag && pageEtag ? { 'If-None-Match': pageEtag } : undefined
-      );
-
-      let nextItems: any[] = [];
-      if (nextRaw && (nextRaw.notModified || nextRaw.status === 304)) {
-        if (cachedPage && cachedPage.items && cachedPage.items.length > 0) {
-          nextItems = cachedPage.items;
-          addLog(`Stream page ${page} -> 304 Not Modified (using cached page body)`, 'succ');
-        } else {
-          // Unconditional retry once without ETag
-          nextRaw = await githubRequestWithRetry('GET', pagePath);
-          nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
-        }
-      } else {
-        nextItems = Array.isArray(nextRaw) ? nextRaw : (nextRaw?.items || []);
-      }
-
-      if (nextRaw?.etag) {
-        issueListEtagCache.set(pagePath, nextRaw.etag);
-      }
-      if (nextItems.length > 0) {
-        setCachedPage(pagePath, nextItems, nextRaw?.etag || pageEtag);
-      }
-
-      if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
-
-      const nextIssues = normalizeGithubIssues(nextItems);
-      if (currentRepo !== repo || activeStreamEpoch !== epoch) break;
-
-      issues = mergeIssuePages(issues, nextIssues);
-      issueCache.set(repo, { timestamp: Date.now(), issues });
-      if (host?.storage) {
-        void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any).catch(() => {});
-      }
-      renderViews();
-      statusReconciler.schedule(issues);
-      addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
-
-      if (nextItems.length < pageSize) break;
-      page++;
-    } catch (err: any) {
-      addLog(`Background streaming stopped at page ${page}: ${err.message}`, 'warn');
-      break;
+  const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+  for (let page = startPage; page <= maxPages; page++) {
+    if (!admitsIssueSnapshot(repo, epoch)) return;
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+      renderBoardFreshness('stale', repo);
+      return;
     }
+    const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
+    const cachedPage = !force ? pageBodyCache.get(pagePath) : undefined;
+    let raw = await githubRequestWithRetry('GET', pagePath, undefined, undefined,
+      cachedPage?.etag ? { 'If-None-Match': cachedPage.etag } : undefined);
+    if (!admitsIssueSnapshot(repo, epoch)) return;
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+      renderBoardFreshness('stale', repo);
+      return;
+    }
+    if (raw?.notModified || raw?.status === 304) {
+      if (cachedPage) raw = Object.assign([...cachedPage.items], { etag: cachedPage.etag });
+      else {
+        raw = await githubRequestWithRetry('GET', pagePath);
+        if (!admitsIssueSnapshot(repo, epoch)) return;
+        if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+          renderBoardFreshness('stale', repo);
+          return;
+        }
+      }
+    }
+    if (!Array.isArray(raw) && !Array.isArray(raw?.items)) throw new Error('Invalid issue page response');
+    const items = Array.isArray(raw) ? raw : raw.items;
+    setCachedPage(pagePath, items, raw?.etag);
+    if (raw?.etag) issueListEtagCache.set(pagePath, raw.etag);
+    snapshot = mergeIssuePages(snapshot, normalizeGithubIssues(items));
+    if (items.length < pageSize) {
+      publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch);
+      return;
+    }
+    const priorIssues = issues;
+    issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
+    renderViews();
+    renderBoardFreshness('partial', repo);
   }
+  throw new Error(`Full refresh reached the ${MAX_ISSUES_PER_REPO}-issue limit; membership remains provisional`);
 }
 
 async function fetchIssues(force: boolean = false): Promise<void> {
@@ -1485,146 +1719,96 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     await fetchAllProjectIssues(force);
     return;
   }
-  if (!currentRepo) return;
-  const storageKey = `cached_issues_${currentRepo}`;
-  const streamEpoch = ++activeStreamEpoch;
-
-  // 1. Instant in-memory cache check (0ms UI latency)
-  if (!force) {
-    const cached = readCachedIssueCollection(issueCache, currentRepo, ISSUE_CACHE_TTL_MS);
-    if (cached) {
-      issues = cached;
-      if (!userSelectedTab) {
-        selectTab(resolveDefaultTab(issues));
-      }
-      renderViews();
-      addLog(`Rendered ${issues.length} issues from memory cache for ${currentRepo}`);
-      return;
-    }
-  }
-
-  // 2. Instant persistent storage check (0ms UI latency on fresh reload)
-  if (!force && issues.length === 0 && host?.storage) {
-    try {
-      const stored = (await host.storage.get(storageKey)) as any;
-      if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
-        issues = stored.issues;
-        issueCache.set(currentRepo, { timestamp: stored.timestamp || Date.now(), issues });
-        if (!userSelectedTab) {
-          selectTab(resolveDefaultTab(issues));
-        }
-        renderViews();
-        addLog(`Instantly rendered ${issues.length} issues from persistent storage for ${currentRepo}`);
-      }
-    } catch {}
-  }
-
+  const repo = currentRepo;
+  if (!repo) return;
+  const storageKey = `cached_issues_${repo}`;
+  const epoch = ++activeStreamEpoch;
+  const startedAt = Date.now();
+  issueSnapshotStarts.set(epoch, { repo, startedAt });
   isLoading = true;
   if (elIconRefresh) elIconRefresh.style.animation = 'spin 1s linear infinite';
-
+  renderBoardFreshness('refreshing', repo);
   try {
-    addLog(`Fetching issues for ${currentRepo}...`);
-    const initialPageSize = issuePageSizes.get(currentRepo) ?? FULL_ISSUE_PAGE_SIZE;
-    const initialPage1Path = `/repos/${currentRepo}/issues?state=all&per_page=${initialPageSize}&page=1`;
-    const cachedPage1 = !force ? pageBodyCache.get(initialPage1Path) : undefined;
-    const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(initialPage1Path) : undefined);
-    const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || issues.length > 0));
-    const page1Headers = canSendEtag && page1Etag ? { 'If-None-Match': page1Etag } : undefined;
-
-    // Page 1: Standard core issues endpoint (5,000 req/hr rate limit pool) with page-size fallback
-    const { items: page1FetchedItems, pageSize, raw: page1FetchedRaw } = await fetchRepoIssuePage(
-      currentRepo,
-      1,
-      githubRequestWithRetry,
-      page1Headers
-    );
-    const page1Path = `/repos/${currentRepo}/issues?state=all&per_page=${pageSize}&page=1`;
-    let page1Raw = page1FetchedRaw;
-    let page1Items: any[] = page1FetchedItems;
-
-    if (page1Raw && (page1Raw.notModified || page1Raw.status === 304)) {
-      addLog(`Page 1 for ${currentRepo} -> 304 Not Modified`, 'succ');
-      lastSyncTimestamp = Date.now();
-      repoSyncWatermarks.set(currentRepo, Date.now());
-      if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
-        page1Items = cachedPage1.items;
-      } else {
-        // Cold start 304 without usable body: retry unconditionally once
-        addLog(`Page 1 for ${currentRepo} -> 304 with no cached body; retrying unconditionally`, 'warn');
-        const retryRes = await fetchRepoIssuePage(currentRepo, 1, githubRequestWithRetry);
-        page1Raw = retryRes.raw;
-        page1Items = retryRes.items;
+    if (!force) {
+      const cached = issueCache.get(repo);
+      if (cached) {
+        issues = cached.issues;
+        renderViews();
+      } else if (issues.length === 0) {
+        const stored = await host.storage.get(storageKey) as any;
+        if (!admitsIssueSnapshot(repo, epoch)) return;
+        if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+          renderBoardFreshness('stale', repo);
+          return;
+        }
+        if (stored && Array.isArray(stored.issues)) {
+          issues = stored.issues;
+          issueCache.set(repo, { timestamp: stored.timestamp || 0, issues });
+          if (typeof stored.fullSyncTimestamp === 'number') repoFullSyncTimestamps.set(repo, stored.fullSyncTimestamp);
+          renderViews();
+        }
       }
+      renderBoardFreshness('refreshing', repo);
     }
-
-    if (page1Raw?.etag) {
-      issueListEtagCache.set(page1Path, page1Raw.etag);
-    }
-    if (page1Items.length > 0) {
-      setCachedPage(page1Path, page1Items, page1Raw?.etag || (pageSize === initialPageSize ? page1Etag : undefined));
-    }
-
-    const page1Issues = normalizeGithubIssues(page1Items);
-    issues = issues.length > 0 ? mergeIssuePages(issues, page1Issues) : page1Issues;
-    lastSyncErrorState = null;
-
-    // Cache results in memory and persistent storage
-    issueCache.set(currentRepo, {
-      timestamp: Date.now(),
-      issues,
-    });
-    if (host?.storage) {
-      void host.storage.set(storageKey, { timestamp: Date.now(), issues } as any).catch(() => {});
-    }
-    lastSyncTimestamp = Date.now();
-    repoSyncWatermarks.set(currentRepo, Date.now());
-
-    addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, 'succ');
-    if (issues.length === 0) {
-      renderEmptyState(`No open issues in ${currentRepo}. Create an issue or push tasks to get started.`, 'empty');
+    const initialPageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    const initialPath = `/repos/${repo}/issues?state=all&per_page=${initialPageSize}&page=1`;
+    const cachedPage = !force ? pageBodyCache.get(initialPath) : undefined;
+    let result = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry,
+      cachedPage?.etag ? { 'If-None-Match': cachedPage.etag } : undefined);
+    if (!admitsIssueSnapshot(repo, epoch)) return;
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+      renderBoardFreshness('stale', repo);
       return;
     }
-    if (!userSelectedTab) {
-      selectTab(resolveDefaultTab(issues));
+    if (result.raw?.notModified || result.raw?.status === 304) {
+      if (cachedPage) result = { ...result, items: cachedPage.items };
+      else {
+        result = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
+        if (!admitsIssueSnapshot(repo, epoch)) return;
+        if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+          renderBoardFreshness('stale', repo);
+          return;
+        }
+        if (result.raw?.notModified || result.raw?.status === 304) throw new Error('304 without cached issue page');
+      }
     }
-    renderViews();
-    statusReconciler.schedule(issues);
-
-    // Background streaming for remaining pages if 100 items returned or later pages exist
-    if (page1Items.length >= pageSize || issues.length >= pageSize) {
-      void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch, force);
+    if (!Array.isArray(result.raw) && !Array.isArray(result.raw?.items) && !result.raw?.notModified && result.raw?.status !== 304) {
+      throw new Error('Invalid issue page response');
+    }
+    const { items, pageSize, raw } = result;
+    const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=1`;
+    setCachedPage(pagePath, items, raw?.etag || cachedPage?.etag);
+    if (raw?.etag) issueListEtagCache.set(pagePath, raw.etag);
+    const snapshot = normalizeGithubIssues(items);
+    if (items.length < pageSize) {
+      publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch);
+    } else {
+      // Keep prior membership until all pages complete; stream changed fields provisionally.
+      const priorIssues = issues;
+      issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
+      renderViews();
+      renderBoardFreshness('partial', repo);
+      await streamRemainingPages(repo, storageKey, 2, epoch, force, snapshot, startedAt);
+    }
+    if (!obsoleteIssueSnapshotEpochs.has(epoch) && admitsIssueSnapshot(repo, epoch) && !userSelectedTab) {
+      selectTab(resolveDefaultTab(issues));
+      renderViews();
     }
   } catch (err: any) {
-    addLog(`Failed to fetch fresh issues: ${err.message}`, 'error');
-    const isRateLimited = Boolean(err?.rateLimited) || (err?.status === 403 && /rate limit/i.test(err?.message || '')) || /rate limit/i.test(err?.message || '');
+    if (!admitsIssueSnapshot(repo, epoch)) return;
     lastSyncErrorState = {
-      kind: isRateLimited ? 'rate-limited' : 'offline',
-      message: err?.message || (isRateLimited ? 'GitHub API rate limit exceeded.' : 'Failed to fetch fresh issues.'),
+      kind: err?.rateLimited ? 'rate-limited' : 'offline',
+      message: err?.message || 'Failed to refresh issues',
       timestamp: Date.now(),
     };
-    if (issues.length > 0) {
-      // Never break: keep showing cached issues!
-      if (host?.toast) {
-        void host.toast({
-          kind: 'info',
-          message: isRateLimited
-            ? `API Rate-limited. Showing ${issues.length} cached issues.`
-            : `Offline / Rate-limited. Showing ${issues.length} cached issues.`,
-        });
-      }
-    } else {
-      const isAccessError = err?.status === 401 || err?.status === 403 || err?.status === 404 ||
-        /401|403|404|token|auth|permission|not found|bad credentials|denied/i.test(err?.message || '');
-      renderEmptyState(
-        isRateLimited
-          ? `GitHub API rate limit exceeded for ${currentRepo}. Add a GitHub Personal Access Token to increase limits.`
-          : `Failed to load issues for ${currentRepo}: ${err?.message || 'Check GitHub integration tokens'}`,
-        isRateLimited ? 'rate-limited' : isAccessError ? 'inaccessible' : 'failed'
-      );
-    }
+    addLog(`Full refresh incomplete for ${repo}: ${err.message}`, 'warn');
+    renderBoardFreshness('stale', repo);
+    if (issues.length === 0) renderEmptyState(`Failed to load issues for ${repo}: ${err.message}`, 'failed');
   } finally {
-    // Only the newest fetch may clear the spinner; a superseded one must not.
-    if (activeStreamEpoch === streamEpoch) {
+    issueSnapshotStarts.delete(epoch);
+    obsoleteIssueSnapshotEpochs.delete(epoch);
+    pruneIssueWriteTrackers();
+    if (admitsIssueSnapshot(repo, epoch)) {
       isLoading = false;
       if (elIconRefresh) elIconRefresh.style.animation = '';
     }
@@ -1836,12 +2020,13 @@ async function syncRepoIncremental(repo: string, sinceIso: string, watermarkTime
   const cleanRepo = parseRepoFullName(repo) || repo;
   const etag = repoIncrementalEtagCache.get(cleanRepo);
   const epoch = activeStreamEpoch;
+  const baselineIssues = issues;
 
   try {
     const result = await syncIncrementalRepoIssues({
       repo: cleanRepo,
       since: sinceIso,
-      currentIssues: issues,
+      currentIssues: baselineIssues,
       etag,
       pageSizes: issuePageSizes,
       onShrink: (shrunkSize) => {
@@ -1850,6 +2035,16 @@ async function syncRepoIncremental(repo: string, sinceIso: string, watermarkTime
       requestFn: (method, reqPath, body, query, headers) =>
         githubRequestWithRetry(method, reqPath, body, query, headers),
     });
+
+    if (activeStreamEpoch !== epoch || (!isAllProjectsMode && currentRepo !== cleanRepo)) return false;
+
+    // Admitted results are newer than any refresh still in flight: mergeIssuePages
+    // returns fresh objects for the issues this scan touched, and those fields may
+    // not be undone by an older full snapshot that completes later (R2).
+    const baseline = new Set(baselineIssues);
+    for (const entry of result.issues) {
+      if (entry && !baseline.has(entry)) admitIssueRecord(cleanRepo, entry);
+    }
 
     if (result.etag && !result.truncated) {
       repoIncrementalEtagCache.set(cleanRepo, result.etag);
@@ -1965,7 +2160,7 @@ async function handleIdleRefresh(currentSessions: any[], previousSessions: any[]
         const sinceIso = new Date(sinceTime).toISOString();
         await syncRepoIncremental(cleanRepo, sinceIso, watermarkStart);
       }
-      lastSyncTimestamp = Date.now();
+      // Incremental activity is not evidence of a completed authoritative full snapshot.
     } while (pendingIdleRefresh);
   } finally {
     isIdleSyncing = false;
@@ -2058,6 +2253,7 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   const nextHumanTasks = parseHumanTasks(newBody);
   const shouldNotify = shouldNotifyAgentOnHumanTasksComplete(prevHumanTasks, nextHumanTasks);
 
+  const finishWrite = trackIssueWrite(repo, issue, ['body']);
   issue.body = newBody;
   issue.subtasks = parseSubtasks(newBody);
   issue.openQuestions = parseOpenQuestions(newBody);
@@ -2076,6 +2272,7 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
     const res = await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       body: newBody,
     });
+    finishWrite(true);
     if (res && res.updated_at) {
       issue.updated_at = res.updated_at;
     }
@@ -2085,6 +2282,7 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
       await notifyAgentOnHumanTasksComplete(issue, repo);
     }
   } catch (err: any) {
+    finishWrite(false);
     addLog(`Failed to sync body: ${err.message}`, 'error');
     await host.toast({ kind: 'error', message: `Failed to update #${issue.number} on GitHub` });
   }
@@ -2128,6 +2326,7 @@ async function updateIssueStatus(
   delete (issue as any).v2Metadata;
   const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
   issue.v2Metadata = resolveV2Metadata(issue, session);
+  const finishWrite = trackIssueWrite(repo, issue, ['state', 'labels']);
   issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
@@ -2139,15 +2338,20 @@ async function updateIssueStatus(
       state: newState,
       labels: filteredLabels,
     });
+    finishWrite(true);
     await host.toast({ kind: 'success', message: `Moved #${issue.number} to ${targetColumn}` });
     addLog(`Moved #${issue.number} to ${targetColumn}`, 'succ');
   } catch (err: any) {
-    // Revert optimistic update on failure
-    issue.state = prevState;
-    issue.labels = prevLabels;
-    delete (issue as any).v2Metadata;
-    const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
-    issue.v2Metadata = resolveV2Metadata(issue, session);
+    finishWrite(false);
+    // Revert optimistic update on failure. A concurrent refresh may already have
+    // published a newer record for this issue, so revert that object too.
+    for (const target of new Set([issue, findIssueRecord(repo, issue)])) {
+      target.state = prevState;
+      target.labels = prevLabels;
+      delete (target as any).v2Metadata;
+      const targetSession = typeof getIssueSession === 'function' ? getIssueSession(target) : undefined;
+      target.v2Metadata = resolveV2Metadata(target, targetSession);
+    }
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue, true);
@@ -8280,10 +8484,14 @@ function initEvents(): void {
     elScratchpadTextarea.addEventListener('input', handleScratchpadInput);
     elScratchpadTextarea.addEventListener('blur', flushScratchpadSave);
   }
+  let boardWasHidden = document.hidden;
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       flushScratchpadSave();
+    } else if (boardWasHidden && !isLoading && currentRepo && !isAllProjectsMode) {
+      void fetchIssues();
     }
+    boardWasHidden = document.hidden;
   });
   window.addEventListener('beforeunload', () => {
     flushScratchpadSave();
@@ -8802,7 +9010,9 @@ host.onReady(async (ctx) => {
   }
 
   // Run deep workspace repo discovery and auto-watch active project
+  const startupEpoch = activeStreamEpoch;
   await discoverWorkspaceRepositories();
+  if (ctx.settings?.repo && currentRepo && activeStreamEpoch === startupEpoch) await fetchIssues();
 });
 
 // React to directory change (when user switches projects, worktrees, or chats)

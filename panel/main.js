@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
@@ -65,20 +65,20 @@
   }
   var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_DEVICE_STORAGE_TOTAL_BYTES = 16777216;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
   var GUEST_SHELL_ID_MAX = 128;
   var GUEST_SHELLS_MAX = 200;
   var GUEST_SHELL_OUTPUT_TAIL_MAX = 65536;
   var GUEST_SHELL_END_STATUSES = ["exited", "timeout", "killed", "stopped", "unknown"];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
   var GUEST_STATUS_CONTROLS_MAX = 4;
   var GUEST_STATUS_CONTROL_ID = /^[a-z][a-z0-9-]{0,39}$/;
   var GUEST_STATUS_CONTROL_LABEL_MAX = 60;
@@ -121,7 +121,7 @@
     return true;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
   var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
@@ -179,7 +179,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
   var GUEST_POPOVER_ID = /^[A-Za-z0-9_-]{1,80}$/;
   var GUEST_POPOVER_COORDINATE_MAX = 1e5;
   var GUEST_POPOVER_WIDTH_MIN = 160;
@@ -223,7 +223,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -459,7 +459,7 @@
     return wire;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
   var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
@@ -1394,7 +1394,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1444,7 +1444,7 @@
     return { requestId, action, parameters, context: readContext(context) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1565,7 +1565,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1655,7 +1655,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1946,7 +1946,7 @@ ${GUEST_SCROLLBAR_CSS}
 ${UI_SIZE_CSS}
 ${GUEST_UI_LOOK_CSS}`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -2005,7 +2005,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -2053,7 +2053,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2101,7 +2101,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -2125,7 +2125,7 @@ ${GUEST_UI_LOOK_CSS}`;
     return node;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2186,7 +2186,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -2220,7 +2220,7 @@ ${GUEST_UI_LOOK_CSS}`;
     return target?.id ?? null;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -2261,7 +2261,7 @@ ${GUEST_UI_LOOK_CSS}`;
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -2300,7 +2300,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -2457,7 +2457,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2501,7 +2501,7 @@ ${GUEST_UI_LOOK_CSS}`;
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2561,7 +2561,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2586,7 +2586,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2674,7 +2674,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2716,7 +2716,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2745,7 +2745,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2791,7 +2791,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2817,7 +2817,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2860,7 +2860,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2966,7 +2966,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -7865,6 +7865,8 @@ Blocked by ${blockerRef}`;
     allProjectsRepoRefs = [];
     workspaceRootNoticeShown = false;
     currentRepo = repo;
+    lastSyncTimestamp = 0;
+    lastSyncErrorState = null;
     issues = [];
     showAllDoneIssues = false;
     clearSelection();
@@ -8060,7 +8062,8 @@ Blocked by ${blockerRef}`;
   }
   var repoIncrementalEtagCache = /* @__PURE__ */ new Map();
   var repoSyncWatermarks = /* @__PURE__ */ new Map();
-  var lastSyncTimestamp = Date.now();
+  var repoFullSyncTimestamps = /* @__PURE__ */ new Map();
+  var lastSyncTimestamp = 0;
   async function getWorkspaceGitToken() {
     if (workspaceGitToken) return workspaceGitToken;
     try {
@@ -8262,184 +8265,342 @@ Blocked by ${blockerRef}`;
       addLog(`Issue page for ${repo} is too large for the host; reading ${pageSize} per page`, "warn");
     }, headers);
   }
-  async function streamRemainingPages(repo, storageKey, startPage, epoch, force = false) {
-    let page = startPage;
+  function renderBoardFreshness(state, repo) {
+    const element = document.getElementById("boardFreshness");
+    if (!element) return;
+    const timestamp = repoFullSyncTimestamps.get(repo);
+    const lastSuccess = timestamp ? `Last full sync: ${new Date(timestamp).toLocaleString()}` : "No completed full sync";
+    element.textContent = state === "complete" ? `${repo} \xB7 ${lastSuccess}` : `${repo} \xB7 ${state === "refreshing" ? "Refreshing \u2014 cached data is provisional" : state === "partial" ? "Partial results \u2014 refresh incomplete" : "Stale / unavailable \u2014 refresh failed"} \xB7 ${lastSuccess}`;
+  }
+  function admitsIssueSnapshot(repo, epoch) {
+    return !isAllProjectsMode && currentRepo === repo && activeStreamEpoch === epoch;
+  }
+  var ISSUE_WRITE_TTL_MS = 5 * 6e4;
+  var MAX_ISSUE_WRITE_TRACKERS = MAX_ISSUES_PER_REPO * 2;
+  var MAX_ISSUE_WRITE_TRACKERS_HARD = MAX_ISSUES_PER_REPO * 4;
+  var issueWriteTrackers = /* @__PURE__ */ new Map();
+  var issueSnapshotStarts = /* @__PURE__ */ new Map();
+  var obsoleteIssueSnapshotEpochs = /* @__PURE__ */ new Set();
+  function issueWriteKey(repo, issue) {
+    const number = typeof issue === "number" ? issue : issue.number;
+    const owner = (typeof issue === "number" ? repo : getIssueRepoFullName(issue) || issue.repo || repo || "").toLowerCase();
+    return `${owner}#${number}`;
+  }
+  function latestWriteTime(groups) {
+    if (!groups) return 0;
+    let latest = 0;
+    for (const tracker of groups.values()) latest = Math.max(latest, tracker.time);
+    return latest;
+  }
+  function issueRecordRepo(key) {
+    const separator = key.lastIndexOf("#");
+    return separator > 0 ? key.slice(0, separator) : "";
+  }
+  function publishableIssueSnapshotStart(repo) {
+    if (isAllProjectsMode) return null;
+    const epoch = activeStreamEpoch;
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) return null;
+    const entry = issueSnapshotStarts.get(epoch);
+    if (!entry || entry.repo.toLowerCase() !== repo.toLowerCase()) return null;
+    return entry.startedAt;
+  }
+  function issueRecordIsPinned(key, groups) {
+    for (const tracker of groups.values()) {
+      if (tracker.pending > 0) return true;
+    }
+    const start = publishableIssueSnapshotStart(issueRecordRepo(key));
+    return start !== null && latestWriteTime(groups) > start;
+  }
+  function trimIssueWriteTrackers() {
+    const excess = issueWriteTrackers.size - MAX_ISSUE_WRITE_TRACKERS;
+    if (excess <= 0) return;
+    const candidates = [];
+    for (const [key, groups] of issueWriteTrackers) {
+      if (issueRecordIsPinned(key, groups)) continue;
+      candidates.push({ key, time: latestWriteTime(groups) });
+    }
+    candidates.sort((a, b) => a.time - b.time);
+    for (const candidate of candidates.slice(0, excess)) issueWriteTrackers.delete(candidate.key);
+  }
+  function pruneIssueWriteTrackers() {
+    const cutoff = Date.now() - ISSUE_WRITE_TTL_MS;
+    for (const [key, groups] of issueWriteTrackers) {
+      const start = publishableIssueSnapshotStart(issueRecordRepo(key));
+      for (const [group, tracker] of groups) {
+        const neededNow = start !== null && tracker.time > start;
+        if (tracker.pending === 0 && tracker.time < cutoff && !neededNow) groups.delete(group);
+      }
+      if (groups.size === 0) issueWriteTrackers.delete(key);
+    }
+    trimIssueWriteTrackers();
+    if (issueWriteTrackers.size > MAX_ISSUE_WRITE_TRACKERS_HARD) {
+      if (issueSnapshotStarts.has(activeStreamEpoch)) obsoleteIssueSnapshotEpochs.add(activeStreamEpoch);
+      trimIssueWriteTrackers();
+    }
+  }
+  function trackIssueWrite(repo, issue, groups) {
+    pruneIssueWriteTrackers();
+    const key = issueWriteKey(repo, issue);
+    const startedAt = Date.now();
+    let byGroup = issueWriteTrackers.get(key);
+    if (!byGroup) {
+      byGroup = /* @__PURE__ */ new Map();
+      issueWriteTrackers.set(key, byGroup);
+    }
+    for (const group of groups) {
+      const tracker = byGroup.get(group) || { time: 0, pending: 0 };
+      tracker.pending += 1;
+      tracker.time = Math.max(tracker.time, startedAt);
+      byGroup.set(group, tracker);
+    }
+    return (accepted) => {
+      for (const group of groups) {
+        const tracker = byGroup.get(group);
+        if (!tracker) continue;
+        tracker.pending = Math.max(0, tracker.pending - 1);
+        if (accepted) {
+          tracker.time = Math.max(tracker.time, Date.now());
+        } else if (tracker.pending === 0 && tracker.time <= startedAt) {
+          byGroup.delete(group);
+        }
+      }
+      if (byGroup.size === 0) issueWriteTrackers.delete(key);
+      pruneIssueWriteTrackers();
+    };
+  }
+  function admitIssueRecord(repo, issue, at = Date.now()) {
+    pruneIssueWriteTrackers();
+    const key = issueWriteKey(repo, issue);
+    const byGroup = issueWriteTrackers.get(key) || /* @__PURE__ */ new Map();
+    const tracker = byGroup.get("record") || { time: 0, pending: 0 };
+    tracker.time = Math.max(tracker.time, at);
+    byGroup.set("record", tracker);
+    issueWriteTrackers.set(key, byGroup);
+  }
+  function protectedIssueGroups(repo, issue, startedAt) {
+    const byGroup = issueWriteTrackers.get(issueWriteKey(repo, issue));
+    const groups = /* @__PURE__ */ new Set();
+    if (!byGroup) return groups;
+    for (const [group, tracker] of byGroup) {
+      if (tracker.pending > 0 || tracker.time > startedAt) groups.add(group);
+    }
+    return groups;
+  }
+  function findIssueRecord(repo, issue) {
+    const key = issueWriteKey(repo, issue);
+    return issues.find((entry) => entry && issueWriteKey(repo, entry) === key) || issue;
+  }
+  function applyProtectedIssueFields(published, local, groups) {
+    if (!local || groups.size === 0) return published;
+    if (groups.has("record")) return { ...published, ...local };
+    const merged = { ...published };
+    if (groups.has("body")) {
+      merged.body = local.body;
+      merged.subtasks = local.subtasks;
+      merged.openQuestions = local.openQuestions;
+      merged.humanTasks = local.humanTasks;
+      merged.acceptanceCriteria = local.acceptanceCriteria;
+    }
+    if (groups.has("state")) merged.state = local.state;
+    if (groups.has("labels")) merged.labels = local.labels;
+    merged.v2Metadata = local.v2Metadata;
+    if (local.updated_at) merged.updated_at = local.updated_at;
+    return merged;
+  }
+  function protectIssueFields(repo, published, localIssues, startedAt) {
+    const localByKey = /* @__PURE__ */ new Map();
+    for (const entry of localIssues || []) {
+      if (entry && Number.isFinite(entry.number)) localByKey.set(issueWriteKey(repo, entry), entry);
+    }
+    return published.map((entry) => {
+      if (!entry || !Number.isFinite(entry.number)) return entry;
+      const key = issueWriteKey(repo, entry);
+      return applyProtectedIssueFields(entry, localByKey.get(key), protectedIssueGroups(repo, entry, startedAt));
+    });
+  }
+  function reconcileIssueSnapshot(repo, snapshot, localIssues, startedAt) {
+    const reconciled = protectIssueFields(repo, snapshot, localIssues, startedAt);
+    const publishedKeys = /* @__PURE__ */ new Set();
+    for (const entry of snapshot) {
+      if (entry && Number.isFinite(entry.number)) publishedKeys.add(issueWriteKey(repo, entry));
+    }
+    const localByKey = /* @__PURE__ */ new Map();
+    for (const entry of localIssues || []) {
+      if (entry && Number.isFinite(entry.number)) localByKey.set(issueWriteKey(repo, entry), entry);
+    }
+    for (const [key, local] of localByKey) {
+      if (publishedKeys.has(key)) continue;
+      if (protectedIssueGroups(repo, local, startedAt).size > 0) reconciled.push(local);
+    }
+    return reconciled;
+  }
+  function publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch) {
+    pruneIssueWriteTrackers();
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+      renderBoardFreshness("stale", repo);
+      return;
+    }
+    issues = reconcileIssueSnapshot(repo, snapshot, issues, startedAt);
+    const timestamp = Date.now();
+    issueCache.set(repo, { timestamp, issues });
+    repoFullSyncTimestamps.set(repo, timestamp);
+    void host.storage.set(storageKey, { timestamp, issues, fullSyncTimestamp: timestamp }).catch(() => {
+    });
+    lastSyncTimestamp = timestamp;
+    repoSyncWatermarks.set(repo, Math.max(startedAt, repoSyncWatermarks.get(repo) || 0));
+    lastSyncErrorState = null;
+    renderViews();
+    statusReconciler.schedule(issues);
+    renderBoardFreshness("complete", repo);
+  }
+  async function streamRemainingPages(repo, storageKey, startPage, epoch, force = false, snapshot = [], startedAt = Date.now()) {
     const pageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
     const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
-    while (page <= maxPages && currentRepo === repo && activeStreamEpoch === epoch) {
-      try {
-        const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
-        const cachedPage = !force ? pageBodyCache.get(pagePath) : void 0;
-        const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : void 0);
-        const canSendEtag = Boolean(pageEtag && cachedPage?.items);
-        let nextRaw = await githubRequestWithRetry(
-          "GET",
-          pagePath,
-          void 0,
-          void 0,
-          canSendEtag && pageEtag ? { "If-None-Match": pageEtag } : void 0
-        );
-        let nextItems = [];
-        if (nextRaw && (nextRaw.notModified || nextRaw.status === 304)) {
-          if (cachedPage && cachedPage.items && cachedPage.items.length > 0) {
-            nextItems = cachedPage.items;
-            addLog(`Stream page ${page} -> 304 Not Modified (using cached page body)`, "succ");
-          } else {
-            nextRaw = await githubRequestWithRetry("GET", pagePath);
-            nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
-          }
-        } else {
-          nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
-        }
-        if (nextRaw?.etag) {
-          issueListEtagCache.set(pagePath, nextRaw.etag);
-        }
-        if (nextItems.length > 0) {
-          setCachedPage(pagePath, nextItems, nextRaw?.etag || pageEtag);
-        }
-        if (nextItems.length === 0 || activeStreamEpoch !== epoch) break;
-        const nextIssues = normalizeGithubIssues(nextItems);
-        if (currentRepo !== repo || activeStreamEpoch !== epoch) break;
-        issues = mergeIssuePages(issues, nextIssues);
-        issueCache.set(repo, { timestamp: Date.now(), issues });
-        if (host?.storage) {
-          void host.storage.set(storageKey, { timestamp: Date.now(), issues }).catch(() => {
-          });
-        }
-        renderViews();
-        statusReconciler.schedule(issues);
-        addLog(`Streamed page ${page} (${nextIssues.length} issues, total ${issues.length})`);
-        if (nextItems.length < pageSize) break;
-        page++;
-      } catch (err) {
-        addLog(`Background streaming stopped at page ${page}: ${err.message}`, "warn");
-        break;
+    for (let page = startPage; page <= maxPages; page++) {
+      if (!admitsIssueSnapshot(repo, epoch)) return;
+      if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+        renderBoardFreshness("stale", repo);
+        return;
       }
+      const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
+      const cachedPage = !force ? pageBodyCache.get(pagePath) : void 0;
+      let raw = await githubRequestWithRetry(
+        "GET",
+        pagePath,
+        void 0,
+        void 0,
+        cachedPage?.etag ? { "If-None-Match": cachedPage.etag } : void 0
+      );
+      if (!admitsIssueSnapshot(repo, epoch)) return;
+      if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+        renderBoardFreshness("stale", repo);
+        return;
+      }
+      if (raw?.notModified || raw?.status === 304) {
+        if (cachedPage) raw = Object.assign([...cachedPage.items], { etag: cachedPage.etag });
+        else {
+          raw = await githubRequestWithRetry("GET", pagePath);
+          if (!admitsIssueSnapshot(repo, epoch)) return;
+          if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+            renderBoardFreshness("stale", repo);
+            return;
+          }
+        }
+      }
+      if (!Array.isArray(raw) && !Array.isArray(raw?.items)) throw new Error("Invalid issue page response");
+      const items = Array.isArray(raw) ? raw : raw.items;
+      setCachedPage(pagePath, items, raw?.etag);
+      if (raw?.etag) issueListEtagCache.set(pagePath, raw.etag);
+      snapshot = mergeIssuePages(snapshot, normalizeGithubIssues(items));
+      if (items.length < pageSize) {
+        publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch);
+        return;
+      }
+      const priorIssues = issues;
+      issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
+      renderViews();
+      renderBoardFreshness("partial", repo);
     }
+    throw new Error(`Full refresh reached the ${MAX_ISSUES_PER_REPO}-issue limit; membership remains provisional`);
   }
   async function fetchIssues(force = false) {
     if (isAllProjectsMode) {
       await fetchAllProjectIssues(force);
       return;
     }
-    if (!currentRepo) return;
-    const storageKey = `cached_issues_${currentRepo}`;
-    const streamEpoch = ++activeStreamEpoch;
-    if (!force) {
-      const cached = readCachedIssueCollection(issueCache, currentRepo, ISSUE_CACHE_TTL_MS);
-      if (cached) {
-        issues = cached;
-        if (!userSelectedTab) {
-          selectTab(resolveDefaultTab2(issues));
-        }
-        renderViews();
-        addLog(`Rendered ${issues.length} issues from memory cache for ${currentRepo}`);
-        return;
-      }
-    }
-    if (!force && issues.length === 0 && host?.storage) {
-      try {
-        const stored = await host.storage.get(storageKey);
-        if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
-          issues = stored.issues;
-          issueCache.set(currentRepo, { timestamp: stored.timestamp || Date.now(), issues });
-          if (!userSelectedTab) {
-            selectTab(resolveDefaultTab2(issues));
-          }
-          renderViews();
-          addLog(`Instantly rendered ${issues.length} issues from persistent storage for ${currentRepo}`);
-        }
-      } catch {
-      }
-    }
+    const repo = currentRepo;
+    if (!repo) return;
+    const storageKey = `cached_issues_${repo}`;
+    const epoch = ++activeStreamEpoch;
+    const startedAt = Date.now();
+    issueSnapshotStarts.set(epoch, { repo, startedAt });
     isLoading = true;
     if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
+    renderBoardFreshness("refreshing", repo);
     try {
-      addLog(`Fetching issues for ${currentRepo}...`);
-      const initialPageSize = issuePageSizes.get(currentRepo) ?? FULL_ISSUE_PAGE_SIZE;
-      const initialPage1Path = `/repos/${currentRepo}/issues?state=all&per_page=${initialPageSize}&page=1`;
-      const cachedPage1 = !force ? pageBodyCache.get(initialPage1Path) : void 0;
-      const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(initialPage1Path) : void 0);
-      const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || issues.length > 0));
-      const page1Headers = canSendEtag && page1Etag ? { "If-None-Match": page1Etag } : void 0;
-      const { items: page1FetchedItems, pageSize, raw: page1FetchedRaw } = await fetchRepoIssuePage(
-        currentRepo,
+      if (!force) {
+        const cached = issueCache.get(repo);
+        if (cached) {
+          issues = cached.issues;
+          renderViews();
+        } else if (issues.length === 0) {
+          const stored = await host.storage.get(storageKey);
+          if (!admitsIssueSnapshot(repo, epoch)) return;
+          if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+            renderBoardFreshness("stale", repo);
+            return;
+          }
+          if (stored && Array.isArray(stored.issues)) {
+            issues = stored.issues;
+            issueCache.set(repo, { timestamp: stored.timestamp || 0, issues });
+            if (typeof stored.fullSyncTimestamp === "number") repoFullSyncTimestamps.set(repo, stored.fullSyncTimestamp);
+            renderViews();
+          }
+        }
+        renderBoardFreshness("refreshing", repo);
+      }
+      const initialPageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+      const initialPath = `/repos/${repo}/issues?state=all&per_page=${initialPageSize}&page=1`;
+      const cachedPage = !force ? pageBodyCache.get(initialPath) : void 0;
+      let result = await fetchRepoIssuePage(
+        repo,
         1,
         githubRequestWithRetry,
-        page1Headers
+        cachedPage?.etag ? { "If-None-Match": cachedPage.etag } : void 0
       );
-      const page1Path = `/repos/${currentRepo}/issues?state=all&per_page=${pageSize}&page=1`;
-      let page1Raw = page1FetchedRaw;
-      let page1Items = page1FetchedItems;
-      if (page1Raw && (page1Raw.notModified || page1Raw.status === 304)) {
-        addLog(`Page 1 for ${currentRepo} -> 304 Not Modified`, "succ");
-        lastSyncTimestamp = Date.now();
-        repoSyncWatermarks.set(currentRepo, Date.now());
-        if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
-          page1Items = cachedPage1.items;
-        } else {
-          addLog(`Page 1 for ${currentRepo} -> 304 with no cached body; retrying unconditionally`, "warn");
-          const retryRes = await fetchRepoIssuePage(currentRepo, 1, githubRequestWithRetry);
-          page1Raw = retryRes.raw;
-          page1Items = retryRes.items;
-        }
-      }
-      if (page1Raw?.etag) {
-        issueListEtagCache.set(page1Path, page1Raw.etag);
-      }
-      if (page1Items.length > 0) {
-        setCachedPage(page1Path, page1Items, page1Raw?.etag || (pageSize === initialPageSize ? page1Etag : void 0));
-      }
-      const page1Issues = normalizeGithubIssues(page1Items);
-      issues = issues.length > 0 ? mergeIssuePages(issues, page1Issues) : page1Issues;
-      lastSyncErrorState = null;
-      issueCache.set(currentRepo, {
-        timestamp: Date.now(),
-        issues
-      });
-      if (host?.storage) {
-        void host.storage.set(storageKey, { timestamp: Date.now(), issues }).catch(() => {
-        });
-      }
-      lastSyncTimestamp = Date.now();
-      repoSyncWatermarks.set(currentRepo, Date.now());
-      addLog(`Loaded ${issues.length} issues (Page 1) for ${currentRepo}`, "succ");
-      if (issues.length === 0) {
-        renderEmptyState(`No open issues in ${currentRepo}. Create an issue or push tasks to get started.`, "empty");
+      if (!admitsIssueSnapshot(repo, epoch)) return;
+      if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+        renderBoardFreshness("stale", repo);
         return;
       }
-      if (!userSelectedTab) {
-        selectTab(resolveDefaultTab2(issues));
+      if (result.raw?.notModified || result.raw?.status === 304) {
+        if (cachedPage) result = { ...result, items: cachedPage.items };
+        else {
+          result = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
+          if (!admitsIssueSnapshot(repo, epoch)) return;
+          if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+            renderBoardFreshness("stale", repo);
+            return;
+          }
+          if (result.raw?.notModified || result.raw?.status === 304) throw new Error("304 without cached issue page");
+        }
       }
-      renderViews();
-      statusReconciler.schedule(issues);
-      if (page1Items.length >= pageSize || issues.length >= pageSize) {
-        void streamRemainingPages(currentRepo, storageKey, 2, streamEpoch, force);
+      if (!Array.isArray(result.raw) && !Array.isArray(result.raw?.items) && !result.raw?.notModified && result.raw?.status !== 304) {
+        throw new Error("Invalid issue page response");
+      }
+      const { items, pageSize, raw } = result;
+      const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=1`;
+      setCachedPage(pagePath, items, raw?.etag || cachedPage?.etag);
+      if (raw?.etag) issueListEtagCache.set(pagePath, raw.etag);
+      const snapshot = normalizeGithubIssues(items);
+      if (items.length < pageSize) {
+        publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch);
+      } else {
+        const priorIssues = issues;
+        issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
+        renderViews();
+        renderBoardFreshness("partial", repo);
+        await streamRemainingPages(repo, storageKey, 2, epoch, force, snapshot, startedAt);
+      }
+      if (!obsoleteIssueSnapshotEpochs.has(epoch) && admitsIssueSnapshot(repo, epoch) && !userSelectedTab) {
+        selectTab(resolveDefaultTab2(issues));
+        renderViews();
       }
     } catch (err) {
-      addLog(`Failed to fetch fresh issues: ${err.message}`, "error");
-      const isRateLimited = Boolean(err?.rateLimited) || err?.status === 403 && /rate limit/i.test(err?.message || "") || /rate limit/i.test(err?.message || "");
+      if (!admitsIssueSnapshot(repo, epoch)) return;
       lastSyncErrorState = {
-        kind: isRateLimited ? "rate-limited" : "offline",
-        message: err?.message || (isRateLimited ? "GitHub API rate limit exceeded." : "Failed to fetch fresh issues."),
+        kind: err?.rateLimited ? "rate-limited" : "offline",
+        message: err?.message || "Failed to refresh issues",
         timestamp: Date.now()
       };
-      if (issues.length > 0) {
-        if (host?.toast) {
-          void host.toast({
-            kind: "info",
-            message: isRateLimited ? `API Rate-limited. Showing ${issues.length} cached issues.` : `Offline / Rate-limited. Showing ${issues.length} cached issues.`
-          });
-        }
-      } else {
-        const isAccessError = err?.status === 401 || err?.status === 403 || err?.status === 404 || /401|403|404|token|auth|permission|not found|bad credentials|denied/i.test(err?.message || "");
-        renderEmptyState(
-          isRateLimited ? `GitHub API rate limit exceeded for ${currentRepo}. Add a GitHub Personal Access Token to increase limits.` : `Failed to load issues for ${currentRepo}: ${err?.message || "Check GitHub integration tokens"}`,
-          isRateLimited ? "rate-limited" : isAccessError ? "inaccessible" : "failed"
-        );
-      }
+      addLog(`Full refresh incomplete for ${repo}: ${err.message}`, "warn");
+      renderBoardFreshness("stale", repo);
+      if (issues.length === 0) renderEmptyState(`Failed to load issues for ${repo}: ${err.message}`, "failed");
     } finally {
-      if (activeStreamEpoch === streamEpoch) {
+      issueSnapshotStarts.delete(epoch);
+      obsoleteIssueSnapshotEpochs.delete(epoch);
+      pruneIssueWriteTrackers();
+      if (admitsIssueSnapshot(repo, epoch)) {
         isLoading = false;
         if (elIconRefresh) elIconRefresh.style.animation = "";
       }
@@ -8622,11 +8783,12 @@ Blocked by ${blockerRef}`;
     const cleanRepo = parseRepoFullName(repo) || repo;
     const etag = repoIncrementalEtagCache.get(cleanRepo);
     const epoch = activeStreamEpoch;
+    const baselineIssues = issues;
     try {
       const result = await syncIncrementalRepoIssues({
         repo: cleanRepo,
         since: sinceIso,
-        currentIssues: issues,
+        currentIssues: baselineIssues,
         etag,
         pageSizes: issuePageSizes,
         onShrink: (shrunkSize) => {
@@ -8634,6 +8796,11 @@ Blocked by ${blockerRef}`;
         },
         requestFn: (method, reqPath, body, query, headers) => githubRequestWithRetry(method, reqPath, body, query, headers)
       });
+      if (activeStreamEpoch !== epoch || !isAllProjectsMode && currentRepo !== cleanRepo) return false;
+      const baseline = new Set(baselineIssues);
+      for (const entry of result.issues) {
+        if (entry && !baseline.has(entry)) admitIssueRecord(cleanRepo, entry);
+      }
       if (result.etag && !result.truncated) {
         repoIncrementalEtagCache.set(cleanRepo, result.etag);
       } else if (result.truncated) {
@@ -8730,7 +8897,6 @@ Blocked by ${blockerRef}`;
           const sinceIso = new Date(sinceTime).toISOString();
           await syncRepoIncremental(cleanRepo, sinceIso, watermarkStart);
         }
-        lastSyncTimestamp = Date.now();
       } while (pendingIdleRefresh);
     } finally {
       isIdleSyncing = false;
@@ -8814,6 +8980,7 @@ Blocked by ${blockerRef}`;
     const prevHumanTasks = issue.humanTasks || parseHumanTasks(issue.body);
     const nextHumanTasks = parseHumanTasks(newBody);
     const shouldNotify = shouldNotifyAgentOnHumanTasksComplete(prevHumanTasks, nextHumanTasks);
+    const finishWrite = trackIssueWrite(repo, issue, ["body"]);
     issue.body = newBody;
     issue.subtasks = parseSubtasks(newBody);
     issue.openQuestions = parseOpenQuestions(newBody);
@@ -8831,6 +8998,7 @@ Blocked by ${blockerRef}`;
       const res = await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         body: newBody
       });
+      finishWrite(true);
       if (res && res.updated_at) {
         issue.updated_at = res.updated_at;
       }
@@ -8839,6 +9007,7 @@ Blocked by ${blockerRef}`;
         await notifyAgentOnHumanTasksComplete(issue, repo);
       }
     } catch (err) {
+      finishWrite(false);
       addLog(`Failed to sync body: ${err.message}`, "error");
       await host.toast({ kind: "error", message: `Failed to update #${issue.number} on GitHub` });
     }
@@ -8873,6 +9042,7 @@ Blocked by ${blockerRef}`;
     delete issue.v2Metadata;
     const session = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
     issue.v2Metadata = resolveV2Metadata(issue, session);
+    const finishWrite = trackIssueWrite(repo, issue, ["state", "labels"]);
     issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
@@ -8883,14 +9053,18 @@ Blocked by ${blockerRef}`;
         state: newState,
         labels: filteredLabels
       });
+      finishWrite(true);
       await host.toast({ kind: "success", message: `Moved #${issue.number} to ${targetColumn}` });
       addLog(`Moved #${issue.number} to ${targetColumn}`, "succ");
     } catch (err) {
-      issue.state = prevState;
-      issue.labels = prevLabels;
-      delete issue.v2Metadata;
-      const session2 = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
-      issue.v2Metadata = resolveV2Metadata(issue, session2);
+      finishWrite(false);
+      for (const target of /* @__PURE__ */ new Set([issue, findIssueRecord(repo, issue)])) {
+        target.state = prevState;
+        target.labels = prevLabels;
+        delete target.v2Metadata;
+        const targetSession = typeof getIssueSession === "function" ? getIssueSession(target) : void 0;
+        target.v2Metadata = resolveV2Metadata(target, targetSession);
+      }
       renderViews();
       if (activeIssue && activeIssue.number === issue.number) {
         renderDrawer(issue, true);
@@ -13948,10 +14122,14 @@ ${transclusions.join("\n")}
       elScratchpadTextarea.addEventListener("input", handleScratchpadInput);
       elScratchpadTextarea.addEventListener("blur", flushScratchpadSave);
     }
+    let boardWasHidden = document.hidden;
     document.addEventListener("visibilitychange", () => {
       if (document.hidden) {
         flushScratchpadSave();
+      } else if (boardWasHidden && !isLoading && currentRepo && !isAllProjectsMode) {
+        void fetchIssues();
       }
+      boardWasHidden = document.hidden;
     });
     window.addEventListener("beforeunload", () => {
       flushScratchpadSave();
@@ -14407,7 +14585,9 @@ ${transclusions.join("\n")}
       elTxtRepoLabel.textContent = currentRepo.split("/")[1] || currentRepo;
       addLog(`Repo set from extension settings: ${currentRepo}`, "info");
     }
+    const startupEpoch = activeStreamEpoch;
     await discoverWorkspaceRepositories();
+    if (ctx.settings?.repo && currentRepo && activeStreamEpoch === startupEpoch) await fetchIssues();
   });
   host.onDirectory(async (dir) => {
     addLog(`Directory changed: ${dir}`);
