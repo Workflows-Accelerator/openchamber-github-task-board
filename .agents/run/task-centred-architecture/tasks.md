@@ -43,7 +43,7 @@
 | Task 204b: Remediate Hostile Conditions | COMPLETE | ses_f44f93bdd8b12b18c97896a9 / engineer | Brief `tasks/task-204b-remediate-hostile-conditions.md` | Commit f28f575; 5 findings resolved; 414/414 pass |
 | Task 205: Integration Merge of Stage 2A | COMPLETE | ses_3b8d738aafbf3d2652a153e8 / engineer | Brief `tasks/task-205-integrate-stage2a-merge.md` | Merge commit 7cc6399; bundle rebuild cf9acf8; worktree removed; branch preserved; Stage 2A LANDED |
 | Stage 2B: Host Probing & Pilot Coordinator | IN PROGRESS | Manager | Empirical probe complete (discovered `contributes.service`); authoring 6 tasks | Tasks 206–211 |
-| Task 206: Service Architecture & Build Pipeline | RUNNING | ses_pending / engineer | Brief `tasks/task-206-service-architecture.md` | Dispatched to worktree |
+| Task 206: Service Architecture & Build Pipeline | RUNNING | ses_cf83f53c9a5421924e3a4e7f / engineer | Brief `tasks/task-206-service-architecture.md` | In progress in worktree |
 | Task 207: Single-Writer Lease & CAS Pre-Flight | QUEUED | engineer | Brief `tasks/task-207-lease-and-cas.md` | Awaits Task 206 |
 | Task 208: Task Claiming & Reconciler | QUEUED | engineer | Brief `tasks/task-208-task-claiming-and-reconciler.md` | Awaits Task 207 |
 | Task 209: Stage 2B Proof & Bundle Build | QUEUED | engineer | Brief `tasks/task-209-proof-and-bundle-build.md` | Awaits Task 208 |
