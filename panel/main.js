@@ -8276,8 +8276,11 @@ Blocked by ${blockerRef}`;
     return !isAllProjectsMode && currentRepo === repo && activeStreamEpoch === epoch;
   }
   var ISSUE_WRITE_TTL_MS = 5 * 6e4;
-  var MAX_ISSUE_WRITE_TRACKERS = 400;
+  var MAX_ISSUE_WRITE_TRACKERS = MAX_ISSUES_PER_REPO * 2;
+  var MAX_ISSUE_WRITE_TRACKERS_HARD = MAX_ISSUES_PER_REPO * 4;
   var issueWriteTrackers = /* @__PURE__ */ new Map();
+  var issueSnapshotStarts = /* @__PURE__ */ new Map();
+  var obsoleteIssueSnapshotEpochs = /* @__PURE__ */ new Set();
   function issueWriteKey(repo, issue) {
     const number = typeof issue === "number" ? issue : issue.number;
     const owner = (typeof issue === "number" ? repo : getIssueRepoFullName(issue) || issue.repo || repo || "").toLowerCase();
@@ -8289,19 +8292,50 @@ Blocked by ${blockerRef}`;
     for (const tracker of groups.values()) latest = Math.max(latest, tracker.time);
     return latest;
   }
+  function issueRecordRepo(key) {
+    const separator = key.lastIndexOf("#");
+    return separator > 0 ? key.slice(0, separator) : "";
+  }
+  function publishableIssueSnapshotStart(repo) {
+    if (isAllProjectsMode) return null;
+    const epoch = activeStreamEpoch;
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) return null;
+    const entry = issueSnapshotStarts.get(epoch);
+    if (!entry || entry.repo.toLowerCase() !== repo.toLowerCase()) return null;
+    return entry.startedAt;
+  }
+  function issueRecordIsPinned(key, groups) {
+    for (const tracker of groups.values()) {
+      if (tracker.pending > 0) return true;
+    }
+    const start = publishableIssueSnapshotStart(issueRecordRepo(key));
+    return start !== null && latestWriteTime(groups) > start;
+  }
+  function trimIssueWriteTrackers() {
+    const excess = issueWriteTrackers.size - MAX_ISSUE_WRITE_TRACKERS;
+    if (excess <= 0) return;
+    const candidates = [];
+    for (const [key, groups] of issueWriteTrackers) {
+      if (issueRecordIsPinned(key, groups)) continue;
+      candidates.push({ key, time: latestWriteTime(groups) });
+    }
+    candidates.sort((a, b) => a.time - b.time);
+    for (const candidate of candidates.slice(0, excess)) issueWriteTrackers.delete(candidate.key);
+  }
   function pruneIssueWriteTrackers() {
     const cutoff = Date.now() - ISSUE_WRITE_TTL_MS;
     for (const [key, groups] of issueWriteTrackers) {
+      const start = publishableIssueSnapshotStart(issueRecordRepo(key));
       for (const [group, tracker] of groups) {
-        if (tracker.pending === 0 && tracker.time < cutoff) groups.delete(group);
+        const neededNow = start !== null && tracker.time > start;
+        if (tracker.pending === 0 && tracker.time < cutoff && !neededNow) groups.delete(group);
       }
       if (groups.size === 0) issueWriteTrackers.delete(key);
     }
-    if (issueWriteTrackers.size > MAX_ISSUE_WRITE_TRACKERS) {
-      const oldestFirst = [...issueWriteTrackers.keys()].sort((a, b) => latestWriteTime(issueWriteTrackers.get(a)) - latestWriteTime(issueWriteTrackers.get(b)));
-      for (const key of oldestFirst.slice(0, issueWriteTrackers.size - MAX_ISSUE_WRITE_TRACKERS)) {
-        issueWriteTrackers.delete(key);
-      }
+    trimIssueWriteTrackers();
+    if (issueWriteTrackers.size > MAX_ISSUE_WRITE_TRACKERS_HARD) {
+      if (issueSnapshotStarts.has(activeStreamEpoch)) obsoleteIssueSnapshotEpochs.add(activeStreamEpoch);
+      trimIssueWriteTrackers();
     }
   }
   function trackIssueWrite(repo, issue, groups) {
@@ -8331,6 +8365,7 @@ Blocked by ${blockerRef}`;
         }
       }
       if (byGroup.size === 0) issueWriteTrackers.delete(key);
+      pruneIssueWriteTrackers();
     };
   }
   function admitIssueRecord(repo, issue, at = Date.now()) {
@@ -8399,7 +8434,12 @@ Blocked by ${blockerRef}`;
     }
     return reconciled;
   }
-  function publishIssueSnapshot(repo, storageKey, snapshot, startedAt) {
+  function publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch) {
+    pruneIssueWriteTrackers();
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+      renderBoardFreshness("stale", repo);
+      return;
+    }
     issues = reconcileIssueSnapshot(repo, snapshot, issues, startedAt);
     const timestamp = Date.now();
     issueCache.set(repo, { timestamp, issues });
@@ -8418,6 +8458,10 @@ Blocked by ${blockerRef}`;
     const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
     for (let page = startPage; page <= maxPages; page++) {
       if (!admitsIssueSnapshot(repo, epoch)) return;
+      if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+        renderBoardFreshness("stale", repo);
+        return;
+      }
       const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
       const cachedPage = !force ? pageBodyCache.get(pagePath) : void 0;
       let raw = await githubRequestWithRetry(
@@ -8428,11 +8472,19 @@ Blocked by ${blockerRef}`;
         cachedPage?.etag ? { "If-None-Match": cachedPage.etag } : void 0
       );
       if (!admitsIssueSnapshot(repo, epoch)) return;
+      if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+        renderBoardFreshness("stale", repo);
+        return;
+      }
       if (raw?.notModified || raw?.status === 304) {
         if (cachedPage) raw = Object.assign([...cachedPage.items], { etag: cachedPage.etag });
         else {
           raw = await githubRequestWithRetry("GET", pagePath);
           if (!admitsIssueSnapshot(repo, epoch)) return;
+          if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+            renderBoardFreshness("stale", repo);
+            return;
+          }
         }
       }
       if (!Array.isArray(raw) && !Array.isArray(raw?.items)) throw new Error("Invalid issue page response");
@@ -8441,7 +8493,7 @@ Blocked by ${blockerRef}`;
       if (raw?.etag) issueListEtagCache.set(pagePath, raw.etag);
       snapshot = mergeIssuePages(snapshot, normalizeGithubIssues(items));
       if (items.length < pageSize) {
-        publishIssueSnapshot(repo, storageKey, snapshot, startedAt);
+        publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch);
         return;
       }
       const priorIssues = issues;
@@ -8461,6 +8513,7 @@ Blocked by ${blockerRef}`;
     const storageKey = `cached_issues_${repo}`;
     const epoch = ++activeStreamEpoch;
     const startedAt = Date.now();
+    issueSnapshotStarts.set(epoch, { repo, startedAt });
     isLoading = true;
     if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
     renderBoardFreshness("refreshing", repo);
@@ -8473,6 +8526,10 @@ Blocked by ${blockerRef}`;
         } else if (issues.length === 0) {
           const stored = await host.storage.get(storageKey);
           if (!admitsIssueSnapshot(repo, epoch)) return;
+          if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+            renderBoardFreshness("stale", repo);
+            return;
+          }
           if (stored && Array.isArray(stored.issues)) {
             issues = stored.issues;
             issueCache.set(repo, { timestamp: stored.timestamp || 0, issues });
@@ -8492,11 +8549,19 @@ Blocked by ${blockerRef}`;
         cachedPage?.etag ? { "If-None-Match": cachedPage.etag } : void 0
       );
       if (!admitsIssueSnapshot(repo, epoch)) return;
+      if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+        renderBoardFreshness("stale", repo);
+        return;
+      }
       if (result.raw?.notModified || result.raw?.status === 304) {
         if (cachedPage) result = { ...result, items: cachedPage.items };
         else {
           result = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
           if (!admitsIssueSnapshot(repo, epoch)) return;
+          if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+            renderBoardFreshness("stale", repo);
+            return;
+          }
           if (result.raw?.notModified || result.raw?.status === 304) throw new Error("304 without cached issue page");
         }
       }
@@ -8509,7 +8574,7 @@ Blocked by ${blockerRef}`;
       if (raw?.etag) issueListEtagCache.set(pagePath, raw.etag);
       const snapshot = normalizeGithubIssues(items);
       if (items.length < pageSize) {
-        publishIssueSnapshot(repo, storageKey, snapshot, startedAt);
+        publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch);
       } else {
         const priorIssues = issues;
         issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
@@ -8517,7 +8582,7 @@ Blocked by ${blockerRef}`;
         renderBoardFreshness("partial", repo);
         await streamRemainingPages(repo, storageKey, 2, epoch, force, snapshot, startedAt);
       }
-      if (admitsIssueSnapshot(repo, epoch) && !userSelectedTab) {
+      if (!obsoleteIssueSnapshotEpochs.has(epoch) && admitsIssueSnapshot(repo, epoch) && !userSelectedTab) {
         selectTab(resolveDefaultTab2(issues));
         renderViews();
       }
@@ -8532,6 +8597,9 @@ Blocked by ${blockerRef}`;
       renderBoardFreshness("stale", repo);
       if (issues.length === 0) renderEmptyState(`Failed to load issues for ${repo}: ${err.message}`, "failed");
     } finally {
+      issueSnapshotStarts.delete(epoch);
+      obsoleteIssueSnapshotEpochs.delete(epoch);
+      pruneIssueWriteTrackers();
       if (admitsIssueSnapshot(repo, epoch)) {
         isLoading = false;
         if (elIconRefresh) elIconRefresh.style.animation = "";

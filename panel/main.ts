@@ -1438,8 +1438,19 @@ type IssueWriteGroup = 'body' | 'state' | 'labels' | 'record';
 interface IssueWriteTracker { time: number; pending: number }
 
 const ISSUE_WRITE_TTL_MS = 5 * 60_000;
-const MAX_ISSUE_WRITE_TRACKERS = 400;
+// One incremental scan can admit MAX_ISSUES_PER_REPO (1000) changed issues, so
+// the cap must hold two such scans (the current publication plus a concurrent
+// one) without evicting a record that scan still needs.
+const MAX_ISSUE_WRITE_TRACKERS = MAX_ISSUES_PER_REPO * 2;
+// Protected records may temporarily overflow the soft cap; at this ceiling the
+// older in-flight publication is abandoned instead of dropping its protection.
+const MAX_ISSUE_WRITE_TRACKERS_HARD = MAX_ISSUES_PER_REPO * 4;
 const issueWriteTrackers = new Map<string, Map<IssueWriteGroup, IssueWriteTracker>>();
+// Only the publication started by the newest fetchIssues can still commit;
+// older fetches are superseded. Records admitted after a publication's start
+// must survive that publication, so eviction has to treat them as pinned.
+const issueSnapshotStarts = new Map<number, { repo: string; startedAt: number }>();
+const obsoleteIssueSnapshotEpochs = new Set<number>();
 
 function issueWriteKey(repo: string, issue: Issue | number): string {
   const number = typeof issue === 'number' ? issue : issue.number;
@@ -1456,20 +1467,61 @@ function latestWriteTime(groups: Map<IssueWriteGroup, IssueWriteTracker> | undef
   return latest;
 }
 
+function issueRecordRepo(key: string): string {
+  const separator = key.lastIndexOf('#');
+  return separator > 0 ? key.slice(0, separator) : '';
+}
+
+// Start time of the only publication that can still commit for this repository.
+function publishableIssueSnapshotStart(repo: string): number | null {
+  if (isAllProjectsMode) return null;
+  const epoch = activeStreamEpoch;
+  if (obsoleteIssueSnapshotEpochs.has(epoch)) return null;
+  const entry = issueSnapshotStarts.get(epoch);
+  if (!entry || entry.repo.toLowerCase() !== repo.toLowerCase()) return null;
+  return entry.startedAt;
+}
+
+// Pending writes are always pinned. A settled admission is pinned while a
+// publication that started before it could still overwrite it.
+function issueRecordIsPinned(key: string, groups: Map<IssueWriteGroup, IssueWriteTracker>): boolean {
+  for (const tracker of groups.values()) {
+    if (tracker.pending > 0) return true;
+  }
+  const start = publishableIssueSnapshotStart(issueRecordRepo(key));
+  return start !== null && latestWriteTime(groups) > start;
+}
+
+function trimIssueWriteTrackers(): void {
+  const excess = issueWriteTrackers.size - MAX_ISSUE_WRITE_TRACKERS;
+  if (excess <= 0) return;
+  const candidates: Array<{ key: string; time: number }> = [];
+  for (const [key, groups] of issueWriteTrackers) {
+    if (issueRecordIsPinned(key, groups)) continue;
+    candidates.push({ key, time: latestWriteTime(groups) });
+  }
+  candidates.sort((a, b) => a.time - b.time);
+  for (const candidate of candidates.slice(0, excess)) issueWriteTrackers.delete(candidate.key);
+}
+
 function pruneIssueWriteTrackers(): void {
   const cutoff = Date.now() - ISSUE_WRITE_TTL_MS;
   for (const [key, groups] of issueWriteTrackers) {
+    const start = publishableIssueSnapshotStart(issueRecordRepo(key));
     for (const [group, tracker] of groups) {
-      if (tracker.pending === 0 && tracker.time < cutoff) groups.delete(group);
+      // A record still needed by an in-flight publication outlives the TTL;
+      // once that publication ends the next prune expires it normally.
+      const neededNow = start !== null && tracker.time > start;
+      if (tracker.pending === 0 && tracker.time < cutoff && !neededNow) groups.delete(group);
     }
     if (groups.size === 0) issueWriteTrackers.delete(key);
   }
-  if (issueWriteTrackers.size > MAX_ISSUE_WRITE_TRACKERS) {
-    const oldestFirst = [...issueWriteTrackers.keys()]
-      .sort((a, b) => latestWriteTime(issueWriteTrackers.get(a)) - latestWriteTime(issueWriteTrackers.get(b)));
-    for (const key of oldestFirst.slice(0, issueWriteTrackers.size - MAX_ISSUE_WRITE_TRACKERS)) {
-      issueWriteTrackers.delete(key);
-    }
+  trimIssueWriteTrackers();
+  if (issueWriteTrackers.size > MAX_ISSUE_WRITE_TRACKERS_HARD) {
+    // Every remaining record is pinned: abandon the older publication rather
+    // than let it clobber the records or let the map grow without a ceiling.
+    if (issueSnapshotStarts.has(activeStreamEpoch)) obsoleteIssueSnapshotEpochs.add(activeStreamEpoch);
+    trimIssueWriteTrackers();
   }
 }
 
@@ -1502,6 +1554,7 @@ function trackIssueWrite(repo: string, issue: Issue | number, groups: IssueWrite
       }
     }
     if (byGroup!.size === 0) issueWriteTrackers.delete(key);
+    pruneIssueWriteTrackers();
   };
 }
 
@@ -1584,7 +1637,14 @@ function reconcileIssueSnapshot(repo: string, snapshot: Issue[], localIssues: Is
   return reconciled;
 }
 
-function publishIssueSnapshot(repo: string, storageKey: string, snapshot: Issue[], startedAt: number): void {
+function publishIssueSnapshot(repo: string, storageKey: string, snapshot: Issue[], startedAt: number, epoch: number): void {
+  pruneIssueWriteTrackers();
+  if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+    // Hard tracker overflow abandoned this older publication rather than let it
+    // overwrite records that were just shed to keep memory bounded.
+    renderBoardFreshness('stale', repo);
+    return;
+  }
   issues = reconcileIssueSnapshot(repo, snapshot, issues, startedAt);
   const timestamp = Date.now();
   issueCache.set(repo, { timestamp, issues });
@@ -1613,16 +1673,28 @@ async function streamRemainingPages(
   const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
   for (let page = startPage; page <= maxPages; page++) {
     if (!admitsIssueSnapshot(repo, epoch)) return;
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+      renderBoardFreshness('stale', repo);
+      return;
+    }
     const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
     const cachedPage = !force ? pageBodyCache.get(pagePath) : undefined;
     let raw = await githubRequestWithRetry('GET', pagePath, undefined, undefined,
       cachedPage?.etag ? { 'If-None-Match': cachedPage.etag } : undefined);
     if (!admitsIssueSnapshot(repo, epoch)) return;
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+      renderBoardFreshness('stale', repo);
+      return;
+    }
     if (raw?.notModified || raw?.status === 304) {
       if (cachedPage) raw = Object.assign([...cachedPage.items], { etag: cachedPage.etag });
       else {
         raw = await githubRequestWithRetry('GET', pagePath);
         if (!admitsIssueSnapshot(repo, epoch)) return;
+        if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+          renderBoardFreshness('stale', repo);
+          return;
+        }
       }
     }
     if (!Array.isArray(raw) && !Array.isArray(raw?.items)) throw new Error('Invalid issue page response');
@@ -1631,7 +1703,7 @@ async function streamRemainingPages(
     if (raw?.etag) issueListEtagCache.set(pagePath, raw.etag);
     snapshot = mergeIssuePages(snapshot, normalizeGithubIssues(items));
     if (items.length < pageSize) {
-      publishIssueSnapshot(repo, storageKey, snapshot, startedAt);
+      publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch);
       return;
     }
     const priorIssues = issues;
@@ -1652,6 +1724,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
   const storageKey = `cached_issues_${repo}`;
   const epoch = ++activeStreamEpoch;
   const startedAt = Date.now();
+  issueSnapshotStarts.set(epoch, { repo, startedAt });
   isLoading = true;
   if (elIconRefresh) elIconRefresh.style.animation = 'spin 1s linear infinite';
   renderBoardFreshness('refreshing', repo);
@@ -1664,6 +1737,10 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       } else if (issues.length === 0) {
         const stored = await host.storage.get(storageKey) as any;
         if (!admitsIssueSnapshot(repo, epoch)) return;
+        if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+          renderBoardFreshness('stale', repo);
+          return;
+        }
         if (stored && Array.isArray(stored.issues)) {
           issues = stored.issues;
           issueCache.set(repo, { timestamp: stored.timestamp || 0, issues });
@@ -1679,11 +1756,19 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     let result = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry,
       cachedPage?.etag ? { 'If-None-Match': cachedPage.etag } : undefined);
     if (!admitsIssueSnapshot(repo, epoch)) return;
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+      renderBoardFreshness('stale', repo);
+      return;
+    }
     if (result.raw?.notModified || result.raw?.status === 304) {
       if (cachedPage) result = { ...result, items: cachedPage.items };
       else {
         result = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
         if (!admitsIssueSnapshot(repo, epoch)) return;
+        if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+          renderBoardFreshness('stale', repo);
+          return;
+        }
         if (result.raw?.notModified || result.raw?.status === 304) throw new Error('304 without cached issue page');
       }
     }
@@ -1696,7 +1781,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     if (raw?.etag) issueListEtagCache.set(pagePath, raw.etag);
     const snapshot = normalizeGithubIssues(items);
     if (items.length < pageSize) {
-      publishIssueSnapshot(repo, storageKey, snapshot, startedAt);
+      publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch);
     } else {
       // Keep prior membership until all pages complete; stream changed fields provisionally.
       const priorIssues = issues;
@@ -1705,7 +1790,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       renderBoardFreshness('partial', repo);
       await streamRemainingPages(repo, storageKey, 2, epoch, force, snapshot, startedAt);
     }
-    if (admitsIssueSnapshot(repo, epoch) && !userSelectedTab) {
+    if (!obsoleteIssueSnapshotEpochs.has(epoch) && admitsIssueSnapshot(repo, epoch) && !userSelectedTab) {
       selectTab(resolveDefaultTab(issues));
       renderViews();
     }
@@ -1720,6 +1805,9 @@ async function fetchIssues(force: boolean = false): Promise<void> {
     renderBoardFreshness('stale', repo);
     if (issues.length === 0) renderEmptyState(`Failed to load issues for ${repo}: ${err.message}`, 'failed');
   } finally {
+    issueSnapshotStarts.delete(epoch);
+    obsoleteIssueSnapshotEpochs.delete(epoch);
+    pruneIssueWriteTrackers();
     if (admitsIssueSnapshot(repo, epoch)) {
       isLoading = false;
       if (elIconRefresh) elIconRefresh.style.animation = '';

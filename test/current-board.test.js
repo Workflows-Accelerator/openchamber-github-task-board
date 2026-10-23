@@ -12,6 +12,7 @@ async function waitFor(predicate) {
 }
 const issue = (number, repo = 'owner/a', body = '') => ({ number, title: `Task ${number}`, body, state: 'open', labels: [], html_url: `https://github.com/${repo}/issues/${number}` });
 const response = (items, status = 200) => ({ status, body: JSON.stringify(items) });
+const pageNumberOf = (path) => Number(/[?&]page=(\d+)/.exec(path || '')?.[1] || 1);
 function deferred() {
   let resolve;
   const promise = new Promise((done) => { resolve = done; });
@@ -347,4 +348,109 @@ test('current board: failed status edit reverts on the record published mid-writ
   const shown = app.getState().issues[0];
   assert.equal(shown.state, 'open', 'failed move must revert on the published record');
   assert.deepEqual(shown.labels, []);
+});
+
+// F1: one incremental scan admits up to MAX_ISSUES_PER_REPO (1000) issues, so a
+// 400-key cap let a 500-issue scan evict its own admissions and a pending edit.
+test('current board: a 500-issue incremental scan cannot evict an in-flight edit before an older full snapshot (F1)', async () => {
+  const pageTwo = deferred();
+  const patch = deferred();
+  let mode = 'initial';
+  const { app } = await setup((payload) => {
+    if (payload.path.includes('since=')) {
+      const page = pageNumberOf(payload.path);
+      if (page > 5) return response([]);
+      return response(Array.from({ length: 100 }, (_, index) => issue(2 + (page - 1) * 100 + index, 'owner/a', 'incremental')));
+    }
+    if (mode === 'initial') return response([issue(1, 'owner/a', 'old body')]);
+    if (pageNumberOf(payload.path) === 1) return response(Array.from({ length: 100 }, (_, index) => issue(index + 1, 'owner/a', 'old body')));
+    return pageTwo.promise;
+  }, { mutate: () => patch.promise });
+  await app.fetchIssues(true);
+  mode = 'refresh';
+  const pending = app.fetchIssues(true);
+  await pause();
+  const editing = app.updateIssueBody(app.getState().issues.find((item) => item.number === 1), 'in-flight user edit');
+  await pause();
+  await app.syncRepoIncremental('owner/a', '2026-10-01T00:00:00Z', Date.now());
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'in-flight user edit', 'admissions may not evict the pending edit');
+  pageTwo.resolve(response([]));
+  await pending;
+  await pause();
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'in-flight user edit', 'an older full snapshot must not undo the edit after cap pressure');
+  patch.resolve({ status: 200, body: JSON.stringify({ updated_at: '2026-10-23T12:00:00Z' }) });
+  await editing;
+  await pause();
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'in-flight user edit', 'the accepted edit survives settlement too');
+});
+
+test('current board: a pending write is never evicted under tracker cap pressure (F1)', async () => {
+  const pageTwo = deferred();
+  const patch = deferred();
+  let mode = 'initial';
+  let scan = 0;
+  let scanStart = 1;
+  const { app, mockStorage } = await setup((payload) => {
+    if (payload.path.includes('since=')) {
+      const page = pageNumberOf(payload.path);
+      if (page === 1) {
+        scan += 1;
+        scanStart = 2 + (scan - 1) * 1000;
+      }
+      return response(Array.from({ length: 100 }, (_, index) => issue(scanStart + (page - 1) * 100 + index, 'owner/a', 'admitted')));
+    }
+    if (mode === 'initial') return response([issue(1, 'owner/a', 'old body')]);
+    if (pageNumberOf(payload.path) === 1) return response(Array.from({ length: 100 }, (_, index) => issue(index + 1, 'owner/a', 'old body')));
+    return pageTwo.promise;
+  }, { mutate: () => patch.promise });
+  await app.fetchIssues(true);
+  const editing = app.updateIssueBody(app.getState().issues.find((item) => item.number === 1), 'pending edit survives');
+  await pause();
+  await app.syncRepoIncremental('owner/a', '2026-10-01T00:00:00Z', Date.now());
+  await app.syncRepoIncremental('owner/a', '2026-10-01T00:00:00Z', Date.now());
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'pending edit survives', 'cap pressure must not drop a pending write record');
+  mode = 'refresh';
+  const pending = app.fetchIssues(true);
+  await pause();
+  pageTwo.resolve(response([]));
+  await pending;
+  await pause();
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'pending edit survives', 'the pending edit survives the older publication');
+  assert.equal(mockStorage.get('cached_issues_owner/a').issues.find((item) => item.number === 1).body, 'pending edit survives');
+  patch.resolve({ status: 200, body: JSON.stringify({ updated_at: '2026-10-23T12:00:00Z' }) });
+  await editing;
+  await pause();
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'pending edit survives');
+});
+
+test('current board: an overflow of protected tracker records does not clobber a successful edit (F1)', async () => {
+  const pageTwo = deferred();
+  let mode = 'initial';
+  let scan = 0;
+  let scanStart = 1;
+  const { app } = await setup((payload) => {
+    if (payload.path.includes('since=')) {
+      const page = pageNumberOf(payload.path);
+      if (page === 1) {
+        scan += 1;
+        scanStart = 2 + (scan - 1) * 1000;
+      }
+      return response(Array.from({ length: 100 }, (_, index) => issue(scanStart + (page - 1) * 100 + index, 'owner/a', 'admitted')));
+    }
+    if (mode === 'initial') return response([issue(1, 'owner/a', 'old body')]);
+    if (pageNumberOf(payload.path) === 1) return response(Array.from({ length: 100 }, (_, index) => issue(index + 1, 'owner/a', 'old body')));
+    return pageTwo.promise;
+  });
+  await app.fetchIssues(true);
+  mode = 'refresh';
+  const pending = app.fetchIssues(true);
+  await pause();
+  await app.updateIssueBody(app.getState().issues.find((item) => item.number === 1), 'protected edit');
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'protected edit');
+  await app.syncRepoIncremental('owner/a', '2026-10-01T00:00:00Z', Date.now());
+  await app.syncRepoIncremental('owner/a', '2026-10-01T00:00:00Z', Date.now());
+  pageTwo.resolve(response([]));
+  await pending;
+  await pause();
+  assert.equal(app.getState().issues.find((item) => item.number === 1).body, 'protected edit', 'protected overflow must keep a settled edit through an older publication');
 });
