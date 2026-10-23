@@ -7,7 +7,7 @@
 - **Bundle builds:** `npm run build` PASS (panel/main.js 610.6kb, service/main.js 26.9kb)
 - **Full test suite:** `node --test` 453/453 PASS (100%, 0 failures, 0 skipped)
 - **Stage 2B suite:** `node --test test/stage2b-pilot-coordinator.test.js` 39/39 PASS
-- **Commit:** `928e4b3` on `feat/stage2b-pilot-coordinator`
+- **Commit:** `d6050be` on `feat/stage2b-pilot-coordinator`
 
 ## Remediated Findings:
 
