@@ -2034,6 +2034,9 @@ async function reloadIssueBeforeMutation(issue: Issue): Promise<{ body: string; 
       issue.openQuestions = parseOpenQuestions(raw.body);
       issue.humanTasks = parseHumanTasks(raw.body);
       issue.acceptanceCriteria = parseAcceptanceCriteria(raw.body);
+      delete (issue as any).v2Metadata;
+      const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
+      issue.v2Metadata = resolveV2Metadata(issue, session);
       return { body: raw.body, updated_at: remoteUpdatedAt };
     }
   } catch (err: any) {
@@ -2060,6 +2063,9 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   issue.openQuestions = parseOpenQuestions(newBody);
   issue.humanTasks = nextHumanTasks;
   issue.acceptanceCriteria = parseAcceptanceCriteria(newBody);
+  delete (issue as any).v2Metadata;
+  const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
+  issue.v2Metadata = resolveV2Metadata(issue, session);
   issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
@@ -2119,6 +2125,9 @@ async function updateIssueStatus(
 
   issue.state = newState;
   issue.labels = filteredLabels.map((name) => ({ name }));
+  delete (issue as any).v2Metadata;
+  const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
+  issue.v2Metadata = resolveV2Metadata(issue, session);
   issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
@@ -2136,6 +2145,9 @@ async function updateIssueStatus(
     // Revert optimistic update on failure
     issue.state = prevState;
     issue.labels = prevLabels;
+    delete (issue as any).v2Metadata;
+    const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
+    issue.v2Metadata = resolveV2Metadata(issue, session);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue, true);
@@ -4633,6 +4645,7 @@ export function renderAttentionView(filteredIssues: Issue[]): void {
       const repoBadge = document.createElement('span');
       repoBadge.className = 'attention-repo-badge';
       repoBadge.textContent = repoName.split('/')[1] || repoName;
+      repoBadge.title = repoName;
       metaEl.appendChild(repoBadge);
     }
 
@@ -5909,6 +5922,10 @@ function renderChecklist(issue: Issue): void {
 }
 
 function renderDrawerAcceptanceCriteria(issue: Issue): void {
+  if (!issue) {
+    if (elDrawerAcceptanceCriteriaSection) elDrawerAcceptanceCriteriaSection.style.display = 'none';
+    return;
+  }
   if (!elDrawerAcceptanceCriteriaSection || !elDrawerAcceptanceCriteriaContainer) return;
 
   if (!issue.acceptanceCriteria && issue.body) {
@@ -5941,6 +5958,7 @@ function renderDrawerAcceptanceCriteria(issue: Issue): void {
     const cb = document.createElement('input');
     cb.type = 'checkbox';
     cb.checked = item.completed;
+    cb.setAttribute('aria-label', item.text);
     cb.setAttribute('data-index', String(idx));
     if (typeof item.lineIndex === 'number') {
       cb.setAttribute('data-line-index', String(item.lineIndex));
@@ -5975,10 +5993,13 @@ function renderDrawerAcceptanceCriteria(issue: Issue): void {
       }
 
       await reloadIssueBeforeMutation(issue);
-      const finalTargetLine = typeof item.lineIndex === 'number' ? item.lineIndex : -1;
+      const freshAc = parseAcceptanceCriteria(issue.body);
+      const matched = freshAc.find((it) => it.text.trim() === item.text.trim());
+      const freshLineIndex = matched && typeof matched.lineIndex === 'number' ? matched.lineIndex : item.lineIndex;
+      const finalTargetLine = typeof freshLineIndex === 'number' ? freshLineIndex : -1;
       const finalBody = finalTargetLine >= 0
         ? updateSubtaskInMarkdown(issue.body, finalTargetLine, newChecked)
-        : newBody;
+        : issue.body;
       void updateIssueBody(issue, finalBody);
     };
 
@@ -7742,9 +7763,10 @@ function setupDragAndDrop(): void {
 if (typeof window !== 'undefined') {
   (window as any).formatAlertBadges = formatAlertBadges;
   (window as any).renderDrawerAcceptanceCriteria = renderDrawerAcceptanceCriteria;
+  (window as any).reloadIssueBeforeMutation = reloadIssueBeforeMutation;
 }
 
-export { setupCustomDropdown, initAllCustomDropdowns, formatAlertBadges, renderDrawerAcceptanceCriteria };
+export { setupCustomDropdown, initAllCustomDropdowns, formatAlertBadges, renderDrawerAcceptanceCriteria, reloadIssueBeforeMutation };
 
 
 // ==========================================

@@ -8792,6 +8792,9 @@ Blocked by ${blockerRef}`;
         issue.openQuestions = parseOpenQuestions(raw.body);
         issue.humanTasks = parseHumanTasks(raw.body);
         issue.acceptanceCriteria = parseAcceptanceCriteria(raw.body);
+        delete issue.v2Metadata;
+        const session = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
+        issue.v2Metadata = resolveV2Metadata(issue, session);
         return { body: raw.body, updated_at: remoteUpdatedAt };
       }
     } catch (err) {
@@ -8816,6 +8819,9 @@ Blocked by ${blockerRef}`;
     issue.openQuestions = parseOpenQuestions(newBody);
     issue.humanTasks = nextHumanTasks;
     issue.acceptanceCriteria = parseAcceptanceCriteria(newBody);
+    delete issue.v2Metadata;
+    const session = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
+    issue.v2Metadata = resolveV2Metadata(issue, session);
     issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
@@ -8864,6 +8870,9 @@ Blocked by ${blockerRef}`;
     }
     issue.state = newState;
     issue.labels = filteredLabels.map((name) => ({ name }));
+    delete issue.v2Metadata;
+    const session = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
+    issue.v2Metadata = resolveV2Metadata(issue, session);
     issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
@@ -8879,6 +8888,9 @@ Blocked by ${blockerRef}`;
     } catch (err) {
       issue.state = prevState;
       issue.labels = prevLabels;
+      delete issue.v2Metadata;
+      const session2 = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
+      issue.v2Metadata = resolveV2Metadata(issue, session2);
       renderViews();
       if (activeIssue && activeIssue.number === issue.number) {
         renderDrawer(issue, true);
@@ -10891,6 +10903,7 @@ Blocked by ${blockerRef}`;
         const repoBadge = document.createElement("span");
         repoBadge.className = "attention-repo-badge";
         repoBadge.textContent = repoName.split("/")[1] || repoName;
+        repoBadge.title = repoName;
         metaEl.appendChild(repoBadge);
       }
       const numBadge = document.createElement("span");
@@ -11944,6 +11957,10 @@ Blocked by ${blockerRef}`;
     });
   }
   function renderDrawerAcceptanceCriteria(issue) {
+    if (!issue) {
+      if (elDrawerAcceptanceCriteriaSection) elDrawerAcceptanceCriteriaSection.style.display = "none";
+      return;
+    }
     if (!elDrawerAcceptanceCriteriaSection || !elDrawerAcceptanceCriteriaContainer) return;
     if (!issue.acceptanceCriteria && issue.body) {
       issue.acceptanceCriteria = parseAcceptanceCriteria(issue.body);
@@ -11970,6 +11987,7 @@ Blocked by ${blockerRef}`;
       const cb = document.createElement("input");
       cb.type = "checkbox";
       cb.checked = item.completed;
+      cb.setAttribute("aria-label", item.text);
       cb.setAttribute("data-index", String(idx));
       if (typeof item.lineIndex === "number") {
         cb.setAttribute("data-line-index", String(item.lineIndex));
@@ -11994,8 +12012,11 @@ Blocked by ${blockerRef}`;
           elDrawerAcceptanceCriteriaCountBadge.textContent = `${curDone} / ${curTotal}`;
         }
         await reloadIssueBeforeMutation(issue);
-        const finalTargetLine = typeof item.lineIndex === "number" ? item.lineIndex : -1;
-        const finalBody = finalTargetLine >= 0 ? updateSubtaskInMarkdown(issue.body, finalTargetLine, newChecked) : newBody;
+        const freshAc = parseAcceptanceCriteria(issue.body);
+        const matched = freshAc.find((it) => it.text.trim() === item.text.trim());
+        const freshLineIndex = matched && typeof matched.lineIndex === "number" ? matched.lineIndex : item.lineIndex;
+        const finalTargetLine = typeof freshLineIndex === "number" ? freshLineIndex : -1;
+        const finalBody = finalTargetLine >= 0 ? updateSubtaskInMarkdown(issue.body, finalTargetLine, newChecked) : issue.body;
         void updateIssueBody(issue, finalBody);
       };
       cb.addEventListener("change", () => {
@@ -13506,6 +13527,7 @@ ${transclusions.join("\n")}
   if (typeof window !== "undefined") {
     window.formatAlertBadges = formatAlertBadges;
     window.renderDrawerAcceptanceCriteria = renderDrawerAcceptanceCriteria;
+    window.reloadIssueBeforeMutation = reloadIssueBeforeMutation;
   }
   function initEvents() {
     initAllCustomDropdowns();

@@ -704,3 +704,204 @@ test('Runtime: Toggling Acceptance Criteria checkbox updates markdown body with 
     'Count badge must update to 1 / 2'
   );
 });
+
+// ============================================================================
+// 8. Remediations for Hostile Review Findings (ADV-01..ADV-06)
+// ============================================================================
+test('CSS: panel/index.html attention repo badge defines ellipsis truncation styles (ADV-06)', () => {
+  const badgeCssMatch = INDEX_HTML.match(/\.attention-repo-badge\s*\{([^}]+)\}/);
+  assert.ok(badgeCssMatch, '.attention-repo-badge CSS rule must exist in index.html');
+  const css = badgeCssMatch[1];
+  assert.match(css, /max-width:\s*90px;?/, '.attention-repo-badge must have max-width: 90px');
+  assert.match(css, /text-overflow:\s*ellipsis;?/, '.attention-repo-badge must have text-overflow: ellipsis');
+  assert.match(css, /overflow:\s*hidden;?/, '.attention-repo-badge must have overflow: hidden');
+  assert.match(css, /white-space:\s*nowrap;?/, '.attention-repo-badge must have white-space: nowrap');
+});
+
+test('Runtime: renderDrawerAcceptanceCriteria handles null and undefined safely without throwing (ADV-03)', () => {
+  const { elements, mockWindow } = createTestApp();
+  const renderAc = mockWindow.renderDrawerAcceptanceCriteria;
+  assert.equal(typeof renderAc, 'function', 'renderDrawerAcceptanceCriteria must be available');
+
+  const acSection = elements.get('drawerAcceptanceCriteriaSection');
+  acSection.style.display = 'block';
+
+  // ADV-03: Invoking with null or undefined must not throw and must hide section
+  assert.doesNotThrow(() => {
+    renderAc(null);
+  }, 'renderDrawerAcceptanceCriteria(null) must not throw');
+  assert.equal(acSection.style.display, 'none', 'AC section must be hidden when issue is null');
+
+  acSection.style.display = 'block';
+  assert.doesNotThrow(() => {
+    renderAc(undefined);
+  }, 'renderDrawerAcceptanceCriteria(undefined) must not throw');
+  assert.equal(acSection.style.display, 'none', 'AC section must be hidden when issue is undefined');
+});
+
+test('Runtime: renderDrawerAcceptanceCriteria sets aria-label on checkbox inputs (ADV-05)', () => {
+  const { app, elements } = createTestApp();
+  const issueWithAc = {
+    number: 91,
+    title: 'AC with accessible label',
+    body: '### Acceptance Criteria\n- [ ] Fast performance\n- [x] Zero regressions',
+    labels: [],
+    subtasks: [],
+  };
+
+  app.renderDrawer(issueWithAc);
+  const container = elements.get('drawerAcceptanceCriteriaContainer');
+  const checkboxes = container.querySelectorAll('input');
+  assert.equal(checkboxes.length, 2);
+  assert.equal(checkboxes[0].getAttribute('aria-label'), 'Fast performance');
+  assert.equal(checkboxes[1].getAttribute('aria-label'), 'Zero regressions');
+});
+
+test('Runtime: AC toggle re-locates target item lineIndex when body lines shifted remotely (ADV-01)', async () => {
+  let patchBody = null;
+  const initialBody = [
+    '### Acceptance Criteria',
+    '- [ ] Criterion 1',
+    '- [ ] Criterion 2',
+  ].join('\n');
+
+  const remoteFreshBody = [
+    '# Shifted Title',
+    'Remote added this line 1',
+    'Remote added this line 2',
+    '',
+    '### Acceptance Criteria',
+    '- [ ] Criterion 1',
+    '- [ ] Criterion 2',
+  ].join('\n');
+
+  const { app, elements } = createTestApp({
+    onRequest: (payload) => {
+      if (payload.method === 'GET' && payload.path === '/repos/test-owner/test-repo/issues/701') {
+        return {
+          status: 200,
+          body: JSON.stringify({
+            number: 701,
+            body: remoteFreshBody,
+            updated_at: '2026-10-23T12:00:00Z',
+          }),
+        };
+      }
+      if (payload.method === 'PATCH' && payload.path === '/repos/test-owner/test-repo/issues/701') {
+        const parsed = JSON.parse(payload.body || '{}');
+        patchBody = parsed.body;
+        return {
+          status: 200,
+          body: JSON.stringify({
+            number: 701,
+            body: patchBody,
+            updated_at: '2026-10-23T12:01:00Z',
+          }),
+        };
+      }
+      return { status: 200, body: '{}' };
+    },
+  });
+
+  const issue = {
+    number: 701,
+    repo: 'test-owner/test-repo',
+    title: 'Drift test issue',
+    body: initialBody,
+    labels: [],
+    subtasks: [],
+  };
+
+  app.renderDrawer(issue);
+
+  const container = elements.get('drawerAcceptanceCriteriaContainer');
+  const checkboxes = container.querySelectorAll('input');
+  assert.equal(checkboxes.length, 2);
+
+  // Click criterion 2 (index 1)
+  checkboxes[1].click();
+
+  // Wait for async reload and patch
+  for (let i = 0; i < 50; i++) {
+    if (patchBody) break;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+
+  assert.ok(patchBody, 'A PATCH request should have been dispatched');
+  assert.ok(patchBody.includes('# Shifted Title'), 'PATCH body must retain remote shifted content');
+  assert.ok(patchBody.includes('- [ ] Criterion 1'), 'Criterion 1 must remain unchecked');
+  assert.ok(patchBody.includes('- [x] Criterion 2'), 'Criterion 2 must be checked at its shifted line');
+  assert.ok(patchBody.includes('Remote added this line 2'), 'Remote lines must not be corrupted by drift');
+});
+
+test('Runtime: issue.v2Metadata is refreshed on updateIssueBody, reloadIssueBeforeMutation, and updateIssueStatus (ADV-02)', async () => {
+  const { app, mockWindow } = createTestApp({
+    onRequest: (payload) => {
+      if (payload.method === 'GET' && payload.path === '/repos/test-owner/test-repo/issues/801') {
+        return {
+          status: 200,
+          body: JSON.stringify({
+            number: 801,
+            body: '## Work\nAll questions resolved remotely.',
+            updated_at: '2026-10-23T14:00:00Z',
+          }),
+        };
+      }
+      return { status: 200, body: '{}' };
+    },
+  });
+
+  const issue = {
+    number: 801,
+    repo: 'test-owner/test-repo',
+    title: 'Question issue',
+    body: '## Work\n### Open Questions\n- [ ] Should we use SQLite or PostgreSQL?\n',
+    state: 'open',
+    labels: [{ name: 'status:in-progress' }],
+    openQuestions: [{ text: 'Should we use SQLite or PostgreSQL?', completed: false, lineIndex: 2 }],
+    subtasks: [],
+  };
+
+  // Initially compute and cache v2Metadata
+  issue.v2Metadata = resolveV2Metadata(issue);
+  assert.equal(issue.v2Metadata.attention, 'needs-decision', 'Initial attention must be needs-decision');
+
+  // 1. updateIssueBody clears open questions
+  await app.updateIssueBody(issue, '## Work\nQuestions answered.');
+  assert.equal(
+    issue.v2Metadata?.attention,
+    'none',
+    'issue.v2Metadata must be recomputed on updateIssueBody, clearing needs-decision'
+  );
+  assert.equal(
+    mockWindow.formatAlertBadges(issue),
+    '',
+    'formatAlertBadges must return empty string once questions are cleared'
+  );
+
+  // 2. updateIssueStatus moves issue to done (closed)
+  issue.v2Metadata.attention = 'needs-review'; // inject artificial stale metadata
+  await app.updateIssueStatus(issue, 'done');
+  assert.equal(
+    issue.v2Metadata?.phase,
+    'done',
+    'issue.v2Metadata.phase must be recomputed to done on updateIssueStatus'
+  );
+  assert.equal(
+    issue.v2Metadata?.attention,
+    'none',
+    'issue.v2Metadata.attention must be none when closed/done'
+  );
+
+  // 3. reloadIssueBeforeMutation recomputes issue.v2Metadata
+  issue.v2Metadata.attention = 'needs-decision'; // inject stale
+  if (typeof mockWindow.reloadIssueBeforeMutation === 'function') {
+    await mockWindow.reloadIssueBeforeMutation(issue);
+    assert.equal(
+      issue.v2Metadata?.attention,
+      'none',
+      'reloadIssueBeforeMutation must refresh issue.v2Metadata from reloaded body'
+    );
+  }
+});
+
