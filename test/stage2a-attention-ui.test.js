@@ -382,3 +382,325 @@ test('Runtime: clicking attention card opens drawer for that issue', () => {
   assert.ok(drawer.classList.contains('active'), 'Task drawer must be active after card click');
   assert.equal(elements.get('drawerIssueNumber').textContent, '#99', 'Drawer must inspect clicked issue #99');
 });
+
+// ============================================================================
+// 7. Task 202: Alert-Only Card Badges & Drawer Acceptance Criteria
+// ============================================================================
+test('DOM: panel/index.html defines Acceptance Criteria section and elements in drawer', () => {
+  assert.ok(INDEX_HTML.includes('id="drawerAcceptanceCriteriaSection"'), '#drawerAcceptanceCriteriaSection must exist');
+  assert.ok(INDEX_HTML.includes('id="drawerAcceptanceCriteriaContainer"'), '#drawerAcceptanceCriteriaContainer must exist');
+  assert.ok(INDEX_HTML.includes('id="drawerAcceptanceCriteriaCountBadge"'), '#drawerAcceptanceCriteriaCountBadge must exist');
+
+  const taskDrawerIdx = INDEX_HTML.indexOf('id="taskDrawer"');
+  const acSectionIdx = INDEX_HTML.indexOf('id="drawerAcceptanceCriteriaSection"');
+  const checklistIdx = INDEX_HTML.indexOf('id="drawerChecklistContainer"');
+
+  assert.ok(acSectionIdx > taskDrawerIdx, 'AC section must be placed inside #taskDrawer');
+  assert.ok(acSectionIdx > checklistIdx, 'AC section must be positioned right after subtasks checklist');
+});
+
+test('CSS: panel/index.html defines alert-only badge styles and AC section styles', () => {
+  const requiredSelectors = [
+    '.badge-attention',
+    '.badge-attention.attention-decision',
+    '.badge-attention.attention-permission',
+    '.badge-attention.attention-review',
+    '.badge-liveness',
+    '.badge-liveness.liveness-running',
+    '.pulse-dot',
+    '.drawer-section',
+    '.drawer-section-header',
+  ];
+
+  for (const sel of requiredSelectors) {
+    assert.ok(INDEX_HTML.includes(sel), `CSS must include selector ${sel}`);
+  }
+});
+
+test('Main.ts: declares formatAlertBadges and renderDrawerAcceptanceCriteria', () => {
+  assert.match(
+    MAIN_TS,
+    /function\s+formatAlertBadges\s*\(/,
+    'main.ts must declare formatAlertBadges'
+  );
+  assert.match(
+    MAIN_TS,
+    /function\s+renderDrawerAcceptanceCriteria\s*\(/,
+    'main.ts must declare renderDrawerAcceptanceCriteria'
+  );
+  assert.ok(
+    MAIN_TS.includes('renderDrawerAcceptanceCriteria('),
+    'main.ts must invoke renderDrawerAcceptanceCriteria in drawer'
+  );
+  assert.ok(
+    MAIN_TS.includes('formatAlertBadges('),
+    'main.ts must invoke formatAlertBadges during card rendering'
+  );
+});
+
+test('Runtime: formatAlertBadges returns empty string for neutral states (alert-only minimalism)', () => {
+  const { mockWindow } = createTestApp();
+  const formatBadges = mockWindow.formatAlertBadges;
+  assert.equal(typeof formatBadges, 'function', 'formatAlertBadges must be exposed');
+
+  // 1. None attention + idle liveness
+  assert.equal(
+    formatBadges({ v2Metadata: { attention: 'none', liveness: 'idle', phase: 'execution', dependencyState: 'ready', isExplicitV2: true } }),
+    '',
+    'attention: none + liveness: idle must produce strictly zero badge HTML'
+  );
+
+  // 2. None attention + completed liveness
+  assert.equal(
+    formatBadges({ v2Metadata: { attention: 'none', liveness: 'completed', phase: 'done', dependencyState: 'ready', isExplicitV2: true } }),
+    '',
+    'attention: none + liveness: completed must produce strictly zero badge HTML'
+  );
+
+  // 3. Issue with neutral label (no attention labels)
+  assert.equal(
+    formatBadges({ number: 1, title: 'task', body: '', labels: [{ name: 'phase:execution' }] }),
+    '',
+    'Neutral issue with only phase label must produce strictly zero badge HTML'
+  );
+
+  // 4. Edge cases: null or undefined
+  assert.equal(formatBadges(null), '');
+  assert.equal(formatBadges(undefined), '');
+});
+
+test('Runtime: formatAlertBadges returns exact badge HTML chips for alert states', () => {
+  const { mockWindow } = createTestApp();
+  const formatBadges = mockWindow.formatAlertBadges;
+
+  // 1. needs-decision
+  const decisionHtml = formatBadges({
+    v2Metadata: { attention: 'needs-decision', liveness: 'idle' },
+  });
+  assert.equal(
+    decisionHtml,
+    '<span class="badge-attention attention-decision" title="Requires human decision">needs-decision</span>',
+    'needs-decision must render exact amber chip'
+  );
+
+  // 2. needs-permission
+  const permissionHtml = formatBadges({
+    v2Metadata: { attention: 'needs-permission', liveness: 'idle' },
+  });
+  assert.equal(
+    permissionHtml,
+    '<span class="badge-attention attention-permission" title="Blocked on agent permission">needs-permission</span>',
+    'needs-permission must render exact purple chip'
+  );
+
+  // 3. needs-review
+  const reviewHtml = formatBadges({
+    v2Metadata: { attention: 'needs-review', liveness: 'idle' },
+  });
+  assert.equal(
+    reviewHtml,
+    '<span class="badge-attention attention-review" title="Awaiting human review">needs-review</span>',
+    'needs-review must render exact blue chip'
+  );
+
+  // 4. running liveness
+  const runningHtml = formatBadges({
+    v2Metadata: { attention: 'none', liveness: 'running' },
+  });
+  assert.equal(
+    runningHtml,
+    '<span class="badge-liveness liveness-running" title="Agent session active"><span class="pulse-dot"></span>running</span>',
+    'running liveness must render pulsing dot badge'
+  );
+
+  // 5. Combined attention alert + running liveness
+  const combinedHtml = formatBadges({
+    v2Metadata: { attention: 'needs-review', liveness: 'running' },
+  });
+  assert.ok(combinedHtml.includes('badge-attention attention-review'), 'Combined must include attention chip');
+  assert.ok(combinedHtml.includes('badge-liveness liveness-running'), 'Combined must include liveness chip');
+});
+
+test('Runtime: Card rendering injects alert badges and excludes them on neutral tasks', () => {
+  const { app, elements } = createTestApp();
+  const mockIssues = [
+    {
+      number: 10,
+      title: 'Task Needing Decision',
+      body: 'Body',
+      labels: [{ name: 'phase:planning' }, { name: 'attention:needs-decision' }],
+      status: 'in-progress',
+      subtasks: [],
+    },
+    {
+      number: 20,
+      title: 'Neutral Routine Task',
+      body: 'Body',
+      labels: [{ name: 'phase:execution' }],
+      status: 'todo',
+      subtasks: [],
+    },
+  ];
+
+  app.setState({ issues: mockIssues });
+
+  // Use flat list view (currentGroupBy = 'none')
+  const selectGroupBy = elements.get('selectGroupBy');
+  selectGroupBy.value = 'none';
+  selectGroupBy.dispatchEvent({ type: 'change', target: selectGroupBy });
+
+  app.renderViews();
+
+  const listContainer = elements.get('listViewContainer');
+  const cards = listContainer.querySelectorAll('.card');
+  assert.equal(cards.length, 2, 'Must render two cards');
+
+  // Card #20 (neutral) must have ZERO badge HTML
+  const neutralCard = Array.from(cards).find((c) => c.dataset.issueNumber === '20');
+  assert.ok(neutralCard, 'Neutral card #20 must exist');
+  assert.ok(!neutralCard.innerHTML.includes('badge-attention'), 'Neutral card #20 must NOT contain badge-attention');
+  assert.ok(!neutralCard.innerHTML.includes('badge-liveness'), 'Neutral card #20 must NOT contain badge-liveness');
+
+  // Card #10 (alert) must have attention badge HTML
+  const alertCard = Array.from(cards).find((c) => c.dataset.issueNumber === '10');
+  assert.ok(alertCard, 'Alert card #10 must exist');
+  assert.ok(alertCard.innerHTML.includes('badge-attention attention-decision'), 'Card #10 must include needs-decision badge');
+});
+
+test('Runtime: Drawer Acceptance Criteria hides section on issue without AC', () => {
+  const { app, elements } = createTestApp();
+  const issueNoAc = {
+    number: 55,
+    title: 'Task with no acceptance criteria',
+    body: 'Regular description with no AC headers or checkboxes.',
+    labels: [],
+    subtasks: [],
+    acceptanceCriteria: [],
+  };
+
+  app.renderDrawer(issueNoAc);
+
+  const acSection = elements.get('drawerAcceptanceCriteriaSection');
+  assert.equal(acSection.style.display, 'none', 'AC section must be hidden when issue has zero AC items');
+
+  const countBadge = elements.get('drawerAcceptanceCriteriaCountBadge');
+  assert.equal(countBadge.textContent, '0 / 0', 'Count badge must reset to 0 / 0');
+});
+
+test('Runtime: Drawer Acceptance Criteria renders checklist and count badge for issue with AC', () => {
+  const { app, elements } = createTestApp();
+  const issueWithAc = {
+    number: 77,
+    title: 'Task with rich acceptance criteria',
+    body: [
+      '## Overview',
+      'Feature implementation.',
+      '',
+      '### Acceptance Criteria',
+      '- [ ] Unit tests pass across all platforms',
+      '- [x] No regressions in shipped-parity bundle',
+      '- [ ] Mobile layout works under 360px width',
+    ].join('\n'),
+    labels: [],
+    subtasks: [],
+  };
+
+  app.renderDrawer(issueWithAc);
+
+  const acSection = elements.get('drawerAcceptanceCriteriaSection');
+  assert.equal(acSection.style.display, 'block', 'AC section must be visible when items exist');
+
+  const countBadge = elements.get('drawerAcceptanceCriteriaCountBadge');
+  assert.equal(countBadge.textContent, '1 / 3', 'Count badge must display "1 / 3"');
+
+  const container = elements.get('drawerAcceptanceCriteriaContainer');
+  const items = container.querySelectorAll('.check-item');
+  assert.equal(items.length, 3, 'Must render 3 check items in container');
+
+  const checkboxes = container.querySelectorAll('input');
+  assert.equal(checkboxes.length, 3, 'Must render 3 checkbox inputs');
+
+  // Validate data-index and lineIndex
+  assert.equal(checkboxes[0].getAttribute('data-index'), '0');
+  assert.equal(checkboxes[0].getAttribute('data-line-index'), '4');
+  assert.equal(checkboxes[0].checked, false);
+
+  assert.equal(checkboxes[1].getAttribute('data-index'), '1');
+  assert.equal(checkboxes[1].getAttribute('data-line-index'), '5');
+  assert.equal(checkboxes[1].checked, true);
+
+  assert.equal(checkboxes[2].getAttribute('data-index'), '2');
+  assert.equal(checkboxes[2].getAttribute('data-line-index'), '6');
+  assert.equal(checkboxes[2].checked, false);
+});
+
+test('Runtime: Toggling Acceptance Criteria checkbox updates markdown body with lineIndex precision', () => {
+  const { app, elements } = createTestApp();
+  const initialBody = [
+    '## Overview',
+    'Some text',
+    '',
+    '### Acceptance Criteria',
+    '- [ ] First criterion',
+    '- [x] Second criterion',
+  ].join('\n');
+
+  const issue = {
+    number: 88,
+    title: 'Issue with AC toggle test',
+    body: initialBody,
+    labels: [],
+    subtasks: [],
+  };
+
+  app.renderDrawer(issue);
+
+  const container = elements.get('drawerAcceptanceCriteriaContainer');
+  const checkboxes = container.querySelectorAll('input');
+  assert.equal(checkboxes.length, 2);
+
+  // Initially: item 0 is unchecked, item 1 is checked
+  assert.equal(checkboxes[0].checked, false);
+  assert.equal(elements.get('drawerAcceptanceCriteriaCountBadge').textContent, '1 / 2');
+
+  // Toggle item 0 (click first checkbox)
+  checkboxes[0].click();
+
+  // Assert lineIndex precision update in issue.body: line 4 changed from - [ ] to - [x]
+  assert.ok(
+    issue.body.includes('- [x] First criterion'),
+    'issue.body must be updated to mark First criterion checked'
+  );
+  assert.ok(
+    issue.body.includes('- [x] Second criterion'),
+    'Second criterion must remain checked'
+  );
+  assert.equal(
+    issue.acceptanceCriteria[0].completed,
+    true,
+    'issue.acceptanceCriteria[0].completed must be optimistically true'
+  );
+  assert.equal(
+    elements.get('drawerAcceptanceCriteriaCountBadge').textContent,
+    '2 / 2',
+    'Count badge must immediately update to 2 / 2'
+  );
+
+  // Toggle item 1 (uncheck second criterion)
+  checkboxes[1].click();
+
+  assert.ok(
+    issue.body.includes('- [ ] Second criterion'),
+    'issue.body line 5 must be updated to mark Second criterion unchecked'
+  );
+  assert.equal(
+    issue.acceptanceCriteria[1].completed,
+    false,
+    'issue.acceptanceCriteria[1].completed must be false'
+  );
+  assert.equal(
+    elements.get('drawerAcceptanceCriteriaCountBadge').textContent,
+    '1 / 2',
+    'Count badge must update to 1 / 2'
+  );
+});

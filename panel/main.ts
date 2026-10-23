@@ -176,6 +176,7 @@ import {
   groupIssuesByAttention,
   filterIssuesByAttention,
   resolveV2Metadata,
+  parseAcceptanceCriteria,
   type HumanAttention,
 } from './core.js';
 export type { TestItem, DraftIssue, HumanAttention };
@@ -433,6 +434,11 @@ const elChecklistProgressFill = document.getElementById('checklistProgressFill')
 const elDrawerChecklistContainer = document.getElementById('drawerChecklistContainer') as HTMLDivElement;
 const elInputAddSubtask = document.getElementById('inputAddSubtask') as HTMLInputElement;
 const elBtnAddSubtask = document.getElementById('btnAddSubtask') as HTMLButtonElement;
+
+// Acceptance Criteria elements
+const elDrawerAcceptanceCriteriaSection = document.getElementById('drawerAcceptanceCriteriaSection') as HTMLDivElement | null;
+const elDrawerAcceptanceCriteriaContainer = document.getElementById('drawerAcceptanceCriteriaContainer') as HTMLDivElement | null;
+const elDrawerAcceptanceCriteriaCountBadge = document.getElementById('drawerAcceptanceCriteriaCountBadge') as HTMLSpanElement | null;
 
 // Open questions elements
 const elQuestionsProgressText = document.getElementById('questionsProgressText') as HTMLSpanElement | null;
@@ -2027,6 +2033,7 @@ async function reloadIssueBeforeMutation(issue: Issue): Promise<{ body: string; 
       issue.subtasks = parseSubtasks(raw.body);
       issue.openQuestions = parseOpenQuestions(raw.body);
       issue.humanTasks = parseHumanTasks(raw.body);
+      issue.acceptanceCriteria = parseAcceptanceCriteria(raw.body);
       return { body: raw.body, updated_at: remoteUpdatedAt };
     }
   } catch (err: any) {
@@ -2052,6 +2059,7 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   issue.subtasks = parseSubtasks(newBody);
   issue.openQuestions = parseOpenQuestions(newBody);
   issue.humanTasks = nextHumanTasks;
+  issue.acceptanceCriteria = parseAcceptanceCriteria(newBody);
   issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
@@ -2904,6 +2912,27 @@ function renderViews(): void {
   updateBatchBar();
 }
 
+function formatAlertBadges(issue: Issue): string {
+  if (!issue) return '';
+  const meta = issue.v2Metadata || resolveV2Metadata(issue, typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined);
+  if (!meta) return '';
+
+  const badges: string[] = [];
+  if (meta.attention === 'needs-decision') {
+    badges.push('<span class="badge-attention attention-decision" title="Requires human decision">needs-decision</span>');
+  } else if (meta.attention === 'needs-permission') {
+    badges.push('<span class="badge-attention attention-permission" title="Blocked on agent permission">needs-permission</span>');
+  } else if (meta.attention === 'needs-review') {
+    badges.push('<span class="badge-attention attention-review" title="Awaiting human review">needs-review</span>');
+  }
+
+  if (meta.liveness === 'running') {
+    badges.push('<span class="badge-liveness liveness-running" title="Agent session active"><span class="pulse-dot"></span>running</span>');
+  }
+
+  return badges.join(' ');
+}
+
 function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
   const session = getIssueSession(issue);
   const card = document.createElement('div');
@@ -3052,6 +3081,8 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
     ? `<div class="card-subtitle-tech" style="font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;">${escapeHtml(titles.subtitle)}</div>`
     : '';
 
+  const alertBadgesHtml = formatAlertBadges(issue);
+
   card.innerHTML = `
     <div class="card-meta">
       <div class="card-id-wrap">
@@ -3061,6 +3092,7 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
         ${complexityHtml}
         ${vagueBadgeHtml}
         ${awaitingBatchHtml}
+        ${alertBadgesHtml}
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ''}
         ${archiveCategoryBadge}
       </div>
@@ -5799,6 +5831,9 @@ function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number =
   // Render subtasks checklist
   renderChecklist(issue);
 
+  // Render acceptance criteria
+  renderDrawerAcceptanceCriteria(issue);
+
   // Render open questions
   renderQuestions(issue);
 
@@ -5870,6 +5905,98 @@ function renderChecklist(issue: Issue): void {
     itemEl.appendChild(cb);
     itemEl.appendChild(span);
     elDrawerChecklistContainer.appendChild(itemEl);
+  });
+}
+
+function renderDrawerAcceptanceCriteria(issue: Issue): void {
+  if (!elDrawerAcceptanceCriteriaSection || !elDrawerAcceptanceCriteriaContainer) return;
+
+  if (!issue.acceptanceCriteria && issue.body) {
+    issue.acceptanceCriteria = parseAcceptanceCriteria(issue.body);
+  }
+
+  const items = issue.acceptanceCriteria || [];
+  if (items.length === 0) {
+    elDrawerAcceptanceCriteriaSection.style.display = 'none';
+    elDrawerAcceptanceCriteriaContainer.innerHTML = '';
+    if (elDrawerAcceptanceCriteriaCountBadge) {
+      elDrawerAcceptanceCriteriaCountBadge.textContent = '0 / 0';
+    }
+    return;
+  }
+
+  elDrawerAcceptanceCriteriaSection.style.display = 'block';
+  const total = items.length;
+  const done = items.filter((item) => item.completed).length;
+  if (elDrawerAcceptanceCriteriaCountBadge) {
+    elDrawerAcceptanceCriteriaCountBadge.textContent = `${done} / ${total}`;
+  }
+
+  elDrawerAcceptanceCriteriaContainer.innerHTML = '';
+
+  items.forEach((item, idx) => {
+    const itemEl = document.createElement('div');
+    itemEl.className = `check-item ${item.completed ? 'done' : ''}`;
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = item.completed;
+    cb.setAttribute('data-index', String(idx));
+    if (typeof item.lineIndex === 'number') {
+      cb.setAttribute('data-line-index', String(item.lineIndex));
+      cb.dataset.lineIndex = String(item.lineIndex);
+      (cb as any).lineIndex = item.lineIndex;
+    }
+    (cb as any).dataIndex = idx;
+
+    const span = document.createElement('span');
+    span.textContent = item.text;
+
+    const onToggle = async () => {
+      const newChecked = cb.checked;
+      itemEl.className = `check-item ${newChecked ? 'done' : ''}`;
+
+      const targetLine = typeof item.lineIndex === 'number' ? item.lineIndex : -1;
+      const newBody = targetLine >= 0
+        ? updateSubtaskInMarkdown(issue.body, targetLine, newChecked)
+        : issue.body;
+
+      // Optimistic in-memory update
+      issue.body = newBody;
+      if (issue.acceptanceCriteria && issue.acceptanceCriteria[idx]) {
+        issue.acceptanceCriteria[idx].completed = newChecked;
+      }
+
+      // Update badge count immediately
+      const curTotal = issue.acceptanceCriteria ? issue.acceptanceCriteria.length : total;
+      const curDone = issue.acceptanceCriteria ? issue.acceptanceCriteria.filter((it) => it.completed).length : (newChecked ? done + 1 : done - 1);
+      if (elDrawerAcceptanceCriteriaCountBadge) {
+        elDrawerAcceptanceCriteriaCountBadge.textContent = `${curDone} / ${curTotal}`;
+      }
+
+      await reloadIssueBeforeMutation(issue);
+      const finalTargetLine = typeof item.lineIndex === 'number' ? item.lineIndex : -1;
+      const finalBody = finalTargetLine >= 0
+        ? updateSubtaskInMarkdown(issue.body, finalTargetLine, newChecked)
+        : newBody;
+      void updateIssueBody(issue, finalBody);
+    };
+
+    cb.addEventListener('change', () => {
+      void onToggle();
+    });
+
+    cb.addEventListener('click', () => {
+      // In synthetic test environments where click does not toggle checked or fire change
+      if (cb.checked === item.completed) {
+        cb.checked = !item.completed;
+        void onToggle();
+      }
+    });
+
+    itemEl.appendChild(cb);
+    itemEl.appendChild(span);
+    elDrawerAcceptanceCriteriaContainer.appendChild(itemEl);
   });
 }
 
@@ -7612,7 +7739,12 @@ function setupDragAndDrop(): void {
   });
 }
 
-export { setupCustomDropdown, initAllCustomDropdowns };
+if (typeof window !== 'undefined') {
+  (window as any).formatAlertBadges = formatAlertBadges;
+  (window as any).renderDrawerAcceptanceCriteria = renderDrawerAcceptanceCriteria;
+}
+
+export { setupCustomDropdown, initAllCustomDropdowns, formatAlertBadges, renderDrawerAcceptanceCriteria };
 
 
 // ==========================================

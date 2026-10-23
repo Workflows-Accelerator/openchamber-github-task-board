@@ -125,6 +125,19 @@ test('parseSubtasks / parseOpenQuestions: shipped == core', () => {
   }
 });
 
+test('parseAcceptanceCriteria: shipped == core', () => {
+  const bodies = [
+    '### Acceptance Criteria:\n- [ ] A\n- [x] B',
+    '### Acceptance Criteria\n- [ ] AC1\n## Next\n- [ ] Other',
+    '### Actionable Subtasks Checklist:\n- [ ] S1',
+    'no checklist at all',
+    '',
+  ];
+  for (const b of bodies) {
+    assert.deepEqual(Shipped.parseAcceptanceCriteria(b), Core.parseAcceptanceCriteria(b), 'acceptanceCriteria: ' + JSON.stringify(b));
+  }
+});
+
 test('parseHumanTasks / collectHumanTodos: shipped == core', () => {
   const bodies = [
     '### Human Tasks:\n- [ ] Action 1\n- [x] Action 2',

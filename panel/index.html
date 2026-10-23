@@ -1737,6 +1737,62 @@
       border: 1px solid #3498db;
     }
 
+    /* Alert-only Card Badge Chips */
+    .badge-attention {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 3px;
+      line-height: 1.4;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      white-space: nowrap;
+    }
+    .badge-attention.attention-decision {
+      background: color-mix(in srgb, var(--warn, #f59e0b) 18%, transparent);
+      color: var(--warn, #d97706);
+      border: 1px solid color-mix(in srgb, var(--warn, #f59e0b) 40%, transparent);
+    }
+    .badge-attention.attention-permission {
+      background: color-mix(in srgb, #a855f7 18%, transparent);
+      color: #9333ea;
+      border: 1px solid color-mix(in srgb, #a855f7 40%, transparent);
+    }
+    .badge-attention.attention-review {
+      background: color-mix(in srgb, var(--prim, #3b82f6) 18%, transparent);
+      color: var(--prim, #2563eb);
+      border: 1px solid color-mix(in srgb, var(--prim, #3b82f6) 40%, transparent);
+    }
+
+    .badge-liveness {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 3px;
+      line-height: 1.4;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+    .badge-liveness.liveness-running {
+      background: color-mix(in srgb, var(--succ, #10b981) 18%, transparent);
+      color: var(--succ, #059669);
+      border: 1px solid color-mix(in srgb, var(--succ, #10b981) 40%, transparent);
+    }
+    .pulse-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 4px currentColor;
+      animation: pulse 1.5s infinite;
+      display: inline-block;
+    }
+
     /* Related Issue Cards in Drawer */
     .related-issue-card {
       display: flex;
@@ -1901,6 +1957,23 @@
     }
 
     .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--fg-muted);
+      margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .drawer-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .drawer-section-header {
       font-size: 11px;
       font-weight: 600;
       text-transform: uppercase;
@@ -3973,6 +4046,15 @@
           <input type="text" id="inputAddSubtask" class="form-ctrl" style="flex: 1;" placeholder="Add new checklist subtask..." />
           <button class="btn btn-sm" id="btnAddSubtask">Add</button>
         </div>
+      </div>
+
+      <!-- Acceptance Criteria Checklist -->
+      <div class="drawer-section" id="drawerAcceptanceCriteriaSection" style="display: none;">
+        <div class="drawer-section-header">
+          <span>Acceptance Criteria</span>
+          <span class="status-pill" id="drawerAcceptanceCriteriaCountBadge">0 / 0</span>
+        </div>
+        <div class="check-list" id="drawerAcceptanceCriteriaContainer"></div>
       </div>
 
       <!-- Open Questions -->

@@ -7485,6 +7485,9 @@ Blocked by ${blockerRef}`;
   var elDrawerChecklistContainer = document.getElementById("drawerChecklistContainer");
   var elInputAddSubtask = document.getElementById("inputAddSubtask");
   var elBtnAddSubtask = document.getElementById("btnAddSubtask");
+  var elDrawerAcceptanceCriteriaSection = document.getElementById("drawerAcceptanceCriteriaSection");
+  var elDrawerAcceptanceCriteriaContainer = document.getElementById("drawerAcceptanceCriteriaContainer");
+  var elDrawerAcceptanceCriteriaCountBadge = document.getElementById("drawerAcceptanceCriteriaCountBadge");
   var elQuestionsProgressText = document.getElementById("questionsProgressText");
   var elDrawerQuestionsContainer = document.getElementById("drawerQuestionsContainer");
   var elInputAddQuestion = document.getElementById("inputAddQuestion");
@@ -8788,6 +8791,7 @@ Blocked by ${blockerRef}`;
         issue.subtasks = parseSubtasks(raw.body);
         issue.openQuestions = parseOpenQuestions(raw.body);
         issue.humanTasks = parseHumanTasks(raw.body);
+        issue.acceptanceCriteria = parseAcceptanceCriteria(raw.body);
         return { body: raw.body, updated_at: remoteUpdatedAt };
       }
     } catch (err) {
@@ -8811,6 +8815,7 @@ Blocked by ${blockerRef}`;
     issue.subtasks = parseSubtasks(newBody);
     issue.openQuestions = parseOpenQuestions(newBody);
     issue.humanTasks = nextHumanTasks;
+    issue.acceptanceCriteria = parseAcceptanceCriteria(newBody);
     issueCache.delete(repo);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
@@ -9469,6 +9474,23 @@ Blocked by ${blockerRef}`;
     currentRenderedLayout = activeLayout;
     updateBatchBar();
   }
+  function formatAlertBadges(issue) {
+    if (!issue) return "";
+    const meta = issue.v2Metadata || resolveV2Metadata(issue, typeof getIssueSession === "function" ? getIssueSession(issue) : void 0);
+    if (!meta) return "";
+    const badges = [];
+    if (meta.attention === "needs-decision") {
+      badges.push('<span class="badge-attention attention-decision" title="Requires human decision">needs-decision</span>');
+    } else if (meta.attention === "needs-permission") {
+      badges.push('<span class="badge-attention attention-permission" title="Blocked on agent permission">needs-permission</span>');
+    } else if (meta.attention === "needs-review") {
+      badges.push('<span class="badge-attention attention-review" title="Awaiting human review">needs-review</span>');
+    }
+    if (meta.liveness === "running") {
+      badges.push('<span class="badge-liveness liveness-running" title="Agent session active"><span class="pulse-dot"></span>running</span>');
+    }
+    return badges.join(" ");
+  }
   function renderIssueCard(issue, inKanban) {
     const session = getIssueSession(issue);
     const card = document.createElement("div");
@@ -9572,6 +9594,7 @@ Blocked by ${blockerRef}`;
   `;
     const titles = parseFriendlyTitle(issue.body, issue.title);
     const subtitleHtml = titles.subtitle ? `<div class="card-subtitle-tech" style="font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;">${escapeHtml(titles.subtitle)}</div>` : "";
+    const alertBadgesHtml = formatAlertBadges(issue);
     card.innerHTML = `
     <div class="card-meta">
       <div class="card-id-wrap">
@@ -9581,6 +9604,7 @@ Blocked by ${blockerRef}`;
         ${complexityHtml}
         ${vagueBadgeHtml}
         ${awaitingBatchHtml}
+        ${alertBadgesHtml}
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ""}
         ${archiveCategoryBadge}
       </div>
@@ -11863,6 +11887,7 @@ Blocked by ${blockerRef}`;
       elBtnDrawerJumpSession.style.display = "none";
     }
     renderChecklist(issue);
+    renderDrawerAcceptanceCriteria(issue);
     renderQuestions(issue);
     renderTestPlans(issue);
     elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
@@ -11916,6 +11941,75 @@ Blocked by ${blockerRef}`;
       itemEl.appendChild(cb);
       itemEl.appendChild(span);
       elDrawerChecklistContainer.appendChild(itemEl);
+    });
+  }
+  function renderDrawerAcceptanceCriteria(issue) {
+    if (!elDrawerAcceptanceCriteriaSection || !elDrawerAcceptanceCriteriaContainer) return;
+    if (!issue.acceptanceCriteria && issue.body) {
+      issue.acceptanceCriteria = parseAcceptanceCriteria(issue.body);
+    }
+    const items = issue.acceptanceCriteria || [];
+    if (items.length === 0) {
+      elDrawerAcceptanceCriteriaSection.style.display = "none";
+      elDrawerAcceptanceCriteriaContainer.innerHTML = "";
+      if (elDrawerAcceptanceCriteriaCountBadge) {
+        elDrawerAcceptanceCriteriaCountBadge.textContent = "0 / 0";
+      }
+      return;
+    }
+    elDrawerAcceptanceCriteriaSection.style.display = "block";
+    const total = items.length;
+    const done = items.filter((item) => item.completed).length;
+    if (elDrawerAcceptanceCriteriaCountBadge) {
+      elDrawerAcceptanceCriteriaCountBadge.textContent = `${done} / ${total}`;
+    }
+    elDrawerAcceptanceCriteriaContainer.innerHTML = "";
+    items.forEach((item, idx) => {
+      const itemEl = document.createElement("div");
+      itemEl.className = `check-item ${item.completed ? "done" : ""}`;
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = item.completed;
+      cb.setAttribute("data-index", String(idx));
+      if (typeof item.lineIndex === "number") {
+        cb.setAttribute("data-line-index", String(item.lineIndex));
+        cb.dataset.lineIndex = String(item.lineIndex);
+        cb.lineIndex = item.lineIndex;
+      }
+      cb.dataIndex = idx;
+      const span = document.createElement("span");
+      span.textContent = item.text;
+      const onToggle = async () => {
+        const newChecked = cb.checked;
+        itemEl.className = `check-item ${newChecked ? "done" : ""}`;
+        const targetLine = typeof item.lineIndex === "number" ? item.lineIndex : -1;
+        const newBody = targetLine >= 0 ? updateSubtaskInMarkdown(issue.body, targetLine, newChecked) : issue.body;
+        issue.body = newBody;
+        if (issue.acceptanceCriteria && issue.acceptanceCriteria[idx]) {
+          issue.acceptanceCriteria[idx].completed = newChecked;
+        }
+        const curTotal = issue.acceptanceCriteria ? issue.acceptanceCriteria.length : total;
+        const curDone = issue.acceptanceCriteria ? issue.acceptanceCriteria.filter((it) => it.completed).length : newChecked ? done + 1 : done - 1;
+        if (elDrawerAcceptanceCriteriaCountBadge) {
+          elDrawerAcceptanceCriteriaCountBadge.textContent = `${curDone} / ${curTotal}`;
+        }
+        await reloadIssueBeforeMutation(issue);
+        const finalTargetLine = typeof item.lineIndex === "number" ? item.lineIndex : -1;
+        const finalBody = finalTargetLine >= 0 ? updateSubtaskInMarkdown(issue.body, finalTargetLine, newChecked) : newBody;
+        void updateIssueBody(issue, finalBody);
+      };
+      cb.addEventListener("change", () => {
+        void onToggle();
+      });
+      cb.addEventListener("click", () => {
+        if (cb.checked === item.completed) {
+          cb.checked = !item.completed;
+          void onToggle();
+        }
+      });
+      itemEl.appendChild(cb);
+      itemEl.appendChild(span);
+      elDrawerAcceptanceCriteriaContainer.appendChild(itemEl);
     });
   }
   function renderQuestions(issue) {
@@ -13408,6 +13502,10 @@ ${transclusions.join("\n")}
         }
       });
     });
+  }
+  if (typeof window !== "undefined") {
+    window.formatAlertBadges = formatAlertBadges;
+    window.renderDrawerAcceptanceCriteria = renderDrawerAcceptanceCriteria;
   }
   function initEvents() {
     initAllCustomDropdowns();
