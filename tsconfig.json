@@ -7,7 +7,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "lib": ["DOM", "DOM.Iterable", "ESNext"]
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "typeRoots": [
+      "./node_modules/@types",
+      "/workspace/extensions/chambervoice/node_modules/@types"
+    ],
+    "types": ["node"]
   },
-  "include": ["panel/**/*.ts"]
+  "include": ["panel/**/*.ts", "service/**/*.ts"]
 }
