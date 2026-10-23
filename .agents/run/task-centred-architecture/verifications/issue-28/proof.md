@@ -79,3 +79,34 @@ Batch/preview not assigned by reviewer. After fixes and integration authorizatio
 - All evidence above is synthetic recording-host/unit level (L0/L1/L4-shipped-bundle). No credential file read, no live GitHub request or mutation, no installed activation.
 - Real-browser (Obscura iframe) and installed-host L3/L5 remain **NOT RUN / AWAITING HUMAN**; the earlier blank screenshot is still not visual proof and is not relabelled.
 - Residuals: archive/tag/priority/complexity label PATCHes and issue creation are not wired to the admission helper; All Projects aggregation unchanged per scope; All Projects and label-surface races therefore remain outside this correction.
+
+---
+
+## Independent hostile review — `8625b0a` (appended; prior findings kept)
+
+**Status:** FAIL for integration readiness (quality NEEDS-FIXES); Spec PASS against #28 acceptance criteria; reviewed-race closure PARTIAL. **Machine verdict:** PROCEED-WITH-CONDITIONS — fix F1 and re-review before L5. Supplied and actual model: Engineer, `9router/engineer`. Full report: `.agents/run/task-centred-architecture/outputs/issue-28-hostile-review-8625b0a.md`.
+
+### Verdict detail
+- R1 (body edit, status edit, in-flight write crossing publication, failed write release) independently PASS on the shipped bundle. R2 PASS up to 400 concurrent admissions; watermark non-regression PASS.
+- Spec mapping: AC1 PASS, AC2 PASS (creation exception F2 separate), AC3 PASS, AC4 PASS, AC5 PASS (GET-only refresh, explicit PATCH only, editing controls available).
+- **F1 Moderate (introduced, gating):** cap 400 is below one incremental scan (up to `MAX_ISSUES_PER_REPO` = 1000, `panel/core.ts:3985`); cap eviction ignores `pending`, so a 500-issue incremental during a paged refresh evicts 100 admissions and can evict a successful in-flight edit, which an older full publication then clobbers in board and cache (`panel/main.ts:1440-1442,1459-1473,1493-1505,1521-1529,1587-1601,1951-1959`). `S3` and `S3b` reproduce.
+- **F2 Moderate (pre-existing, separate):** issue created during a refresh is dropped by the older publication (`panel/main.ts:7738-7764`, second path `7077-7100`); `S7`.
+- **F3 Moderate (pre-existing, separate):** archive/tag/priority/status-none/complexity label PATCHes still clobbered (`panel/main.ts:2408-2412,5845-5847,5873-5875,8607-8610,8637-8639,8665-8668`); `S5`, `S6`.
+- **F4 Low:** 5-minute TTL expiry + lazy prune can clobber a successful edit only if a refresh lasts >5 min and another write triggers prune; `S2`.
+- **F5 Low (pre-existing):** failure of an older status write reverts a newer successful retry (`2256-2266`); `S4`.
+- **F6 Low (design caveat):** a failed body save stays pinned for the already in-flight refresh only; the report's "failure drops the record" is imprecise.
+- Verified not defects: watermark max() (no permanent freeze), membership retention bounded by next completed full snapshot, no unbounded tracker growth, repo-scoped keys, refresh read-only.
+
+### Minimum remediation for F1
+Raise `MAX_ISSUE_WRITE_TRACKERS` to at least `MAX_ISSUES_PER_REPO` (1000) so one incremental scan cannot evict its own admissions, and exclude `pending > 0` keys from cap eviction; add a regression with paged refresh + 500-issue incremental + in-flight edit on the evicted key. File F2/F3 separately; F4-F6 documented residuals.
+
+### Evidence
+- L0: `npm run typecheck` exit 0; `npm run build` exit 0; `git status --short` empty; bundle matches HEAD. Logs `/tmp/opencode/r28v2-typecheck.log`, `/tmp/opencode/r28v2-build.log`.
+- L1: `node --test test/current-board.test.js` exit 0, 16 pass (`/tmp/opencode/r28v2-current-board-final.log`); `npm test` exit 0, 482 pass, 0 fail/skipped (`/tmp/opencode/r28v2-suite.log`).
+- Red-first: reverted `panel/main.ts`/`panel/main.js` to `88d3970`, rebuilt, `node --test test/current-board.test.js` exit 1, 9 pass / 7 fail for the reviewed reasons (`/tmp/opencode/r28v2-red.log`); restored and rebuilt clean.
+- L4 probes: `node /tmp/opencode/r28v2-probe.mjs all` exit 0 (`/tmp/opencode/r28v2-probes-final.log`); R1/R2 core PASS (`/tmp/opencode/r28v2-core-final.log`).
+- Fuzz: `node /tmp/opencode/r28v2-fuzz.mjs 100` exit 0, 0 failed (`/tmp/opencode/r28v2-fuzz-100.log`); same fuzz on `88d3970` 20/20 failed. Chaos fuzz with PATCH failures and repo switch: 30/30 pass (`/tmp/opencode/r28v2-fuzz2-30.log`).
+- Hygiene: `git diff --check` exit 0.
+
+### Boundaries
+All evidence is shipped-bundle/recording-host synthetic (L0/L1/L4); no credential or live GitHub request, no installed-host activation. L3 and L5 remain **NOT RUN / AWAITING HUMAN**; no merge, push, close or deploy. F1 is a concurrency-scale defect proven only in the recording harness (deterministic timing), not on a live host.
