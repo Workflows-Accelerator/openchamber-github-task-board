@@ -173,8 +173,13 @@ import {
   resolveOptimisticSubtaskUpdate,
   resolveOptimisticQuestionAnswer,
   resolveOptimisticTestItemUpdate,
+  groupIssuesByAttention,
+  filterIssuesByAttention,
+  resolveV2Metadata,
+  parseAcceptanceCriteria,
+  type HumanAttention,
 } from './core.js';
-export type { TestItem, DraftIssue };
+export type { TestItem, DraftIssue, HumanAttention };
 export {
   buildSessionIndex,
   scopeDoneIssues,
@@ -184,6 +189,9 @@ export {
   renderBlockerChips,
   parseFriendlyTitle,
   resolveSimplifiedViewTitle,
+  groupIssuesByAttention,
+  filterIssuesByAttention,
+  resolveV2Metadata,
   formatTaskTextWithLinks,
   extractQuestionOptions,
   extractQuestionContext,
@@ -254,7 +262,8 @@ let filterTag: string = 'all';
 let currentGroupBy: 'theme' | 'priority' | 'none' | 'status' | 'tag' | 'project' = 'theme';
 let isFilterBarOpen: boolean = false;
 let selectedIssueNumbers = new Set<number>();
-let userLayoutPreference: 'auto' | 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' = 'auto';
+let userLayoutPreference: 'auto' | 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention' = 'auto';
+let currentAttentionFilter: 'all' | 'needs-decision' | 'needs-permission' | 'needs-review' = 'all';
 let graphSelectedTheme: string = 'all';
 let graphShowDone: boolean = false;
 let isDraggingEdge: boolean = false;
@@ -263,7 +272,7 @@ let currentGraph: DependencyGraph | null = null;
 let isWideScreen: boolean = false;
 let draggedIssueNumber: number | null = null;
 let isLoading: boolean = false;
-let currentRenderedLayout: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | null = null;
+let currentRenderedLayout: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention' | null = null;
 let lastRateLimitRemaining: number | null = null;
 let activeStreamEpoch = 0;
 let currentSessionRepo: string | null = null;
@@ -319,6 +328,8 @@ const elViewSelectPopover = document.getElementById('viewSelectPopover') as HTML
 const elViewSelectCurrentLabel = document.getElementById('viewSelectCurrentLabel') as HTMLSpanElement | null;
 const elViewSelectCurrentIcon = document.getElementById('viewSelectCurrentIcon') as HTMLSpanElement | null;
 const elBtnGraphToggle = document.getElementById('btnGraphToggle') as HTMLButtonElement | null;
+const elBtnViewAttention = document.getElementById('btnViewAttention') as HTMLButtonElement | null;
+const elAttentionViewBadge = document.getElementById('attentionViewBadge') as HTMLSpanElement | null;
 const elBtnViewHuman = document.getElementById('btnViewHuman') as HTMLButtonElement | null;
 const elBtnViewAllTasks = document.getElementById('btnViewAllTasks') as HTMLButtonElement | null;
 const elBtnViewQuestions = document.getElementById('btnViewQuestions') as HTMLButtonElement | null;
@@ -380,6 +391,7 @@ const elKanbanViewContainer = document.getElementById('kanbanViewContainer') as 
 const elHumanViewContainer = document.getElementById('humanViewContainer') as HTMLElement | null;
 const elAllTasksViewContainer = document.getElementById('allTasksViewContainer') as HTMLElement | null;
 const elQuestionsViewContainer = document.getElementById('questionsViewContainer') as HTMLElement | null;
+const elAttentionViewContainer = document.getElementById('attentionViewContainer') as HTMLElement | null;
 
 // Kanban column references
 const kanbanCardContainers: Record<ColumnId, HTMLDivElement> = {
@@ -422,6 +434,11 @@ const elChecklistProgressFill = document.getElementById('checklistProgressFill')
 const elDrawerChecklistContainer = document.getElementById('drawerChecklistContainer') as HTMLDivElement;
 const elInputAddSubtask = document.getElementById('inputAddSubtask') as HTMLInputElement;
 const elBtnAddSubtask = document.getElementById('btnAddSubtask') as HTMLButtonElement;
+
+// Acceptance Criteria elements
+const elDrawerAcceptanceCriteriaSection = document.getElementById('drawerAcceptanceCriteriaSection') as HTMLDivElement | null;
+const elDrawerAcceptanceCriteriaContainer = document.getElementById('drawerAcceptanceCriteriaContainer') as HTMLDivElement | null;
+const elDrawerAcceptanceCriteriaCountBadge = document.getElementById('drawerAcceptanceCriteriaCountBadge') as HTMLSpanElement | null;
 
 // Open questions elements
 const elQuestionsProgressText = document.getElementById('questionsProgressText') as HTMLSpanElement | null;
@@ -2016,6 +2033,10 @@ async function reloadIssueBeforeMutation(issue: Issue): Promise<{ body: string; 
       issue.subtasks = parseSubtasks(raw.body);
       issue.openQuestions = parseOpenQuestions(raw.body);
       issue.humanTasks = parseHumanTasks(raw.body);
+      issue.acceptanceCriteria = parseAcceptanceCriteria(raw.body);
+      delete (issue as any).v2Metadata;
+      const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
+      issue.v2Metadata = resolveV2Metadata(issue, session);
       return { body: raw.body, updated_at: remoteUpdatedAt };
     }
   } catch (err: any) {
@@ -2041,6 +2062,10 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
   issue.subtasks = parseSubtasks(newBody);
   issue.openQuestions = parseOpenQuestions(newBody);
   issue.humanTasks = nextHumanTasks;
+  issue.acceptanceCriteria = parseAcceptanceCriteria(newBody);
+  delete (issue as any).v2Metadata;
+  const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
+  issue.v2Metadata = resolveV2Metadata(issue, session);
   issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
@@ -2100,6 +2125,9 @@ async function updateIssueStatus(
 
   issue.state = newState;
   issue.labels = filteredLabels.map((name) => ({ name }));
+  delete (issue as any).v2Metadata;
+  const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
+  issue.v2Metadata = resolveV2Metadata(issue, session);
   issueCache.delete(repo);
   renderViews();
   if (activeIssue && activeIssue.number === issue.number) {
@@ -2117,6 +2145,9 @@ async function updateIssueStatus(
     // Revert optimistic update on failure
     issue.state = prevState;
     issue.labels = prevLabels;
+    delete (issue as any).v2Metadata;
+    const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
+    issue.v2Metadata = resolveV2Metadata(issue, session);
     renderViews();
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue, true);
@@ -2717,6 +2748,20 @@ function renderArchiveView(archivedIssues: Issue[]): void {
   });
 }
 
+function updateAttentionBadge(issuesList: Issue[]): void {
+  if (!elAttentionViewBadge) return;
+  const targetSessionIndex = sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex;
+  const grouped = groupIssuesByAttention(issuesList, targetSessionIndex);
+  const total = grouped['needs-decision'].length + grouped['needs-permission'].length + grouped['needs-review'].length;
+  if (total > 0) {
+    elAttentionViewBadge.textContent = String(total);
+    elAttentionViewBadge.style.display = 'inline-flex';
+  } else {
+    elAttentionViewBadge.textContent = '0';
+    elAttentionViewBadge.style.display = 'none';
+  }
+}
+
 function renderViews(): void {
   updateBadgeCounts();
 
@@ -2807,6 +2852,7 @@ function renderViews(): void {
     if (elHumanViewContainer) elHumanViewContainer.style.display = 'none';
     if (elAllTasksViewContainer) elAllTasksViewContainer.style.display = 'none';
     if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = 'none';
+    if (elAttentionViewContainer) elAttentionViewContainer.style.display = 'none';
     if (elListViewContainer) {
       elListViewContainer.style.display = 'flex';
       renderArchiveView(sorted);
@@ -2822,28 +2868,35 @@ function renderViews(): void {
   if (elHumanViewContainer) elHumanViewContainer.style.display = '';
   if (elAllTasksViewContainer) elAllTasksViewContainer.style.display = '';
   if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = '';
+  if (elAttentionViewContainer) elAttentionViewContainer.style.display = '';
 
   // Synchronize layout attributes and tab visibility
   applyLayoutMode(false);
 
-  const activeLayout: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' =
+  const activeLayout: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention' =
     document.body.getAttribute('data-layout') === 'graph'
       ? 'graph'
       : document.body.getAttribute('data-layout') === 'kanban'
         ? 'kanban'
-        : document.body.getAttribute('data-layout') === 'human'
-          ? 'human'
-          : document.body.getAttribute('data-layout') === 'all-tasks'
-            ? 'all-tasks'
-            : document.body.getAttribute('data-layout') === 'questions'
-              ? 'questions'
-              : 'list';
+        : document.body.getAttribute('data-layout') === 'attention'
+          ? 'attention'
+          : document.body.getAttribute('data-layout') === 'human'
+            ? 'human'
+            : document.body.getAttribute('data-layout') === 'all-tasks'
+              ? 'all-tasks'
+              : document.body.getAttribute('data-layout') === 'questions'
+                ? 'questions'
+                : 'list';
+
+  // Always keep toolbar attention badge synchronized
+  updateAttentionBadge(filtered);
 
   // Clear previously rendered container if switching away from it to prevent stale DOM & listeners
   if (currentRenderedLayout && currentRenderedLayout !== activeLayout) {
     if (currentRenderedLayout === 'human' && elHumanViewContainer) elHumanViewContainer.innerHTML = '';
     if (currentRenderedLayout === 'all-tasks' && elAllTasksViewContainer) elAllTasksViewContainer.innerHTML = '';
     if (currentRenderedLayout === 'questions' && elQuestionsViewContainer) elQuestionsViewContainer.innerHTML = '';
+    if (currentRenderedLayout === 'attention' && elAttentionViewContainer) elAttentionViewContainer.innerHTML = '';
     if (currentRenderedLayout === 'kanban' && elKanbanViewContainer) elKanbanViewContainer.innerHTML = '';
     if (currentRenderedLayout === 'list' && elListViewContainer) elListViewContainer.innerHTML = '';
     if (currentRenderedLayout === 'graph' && elGraphViewContainer) elGraphViewContainer.innerHTML = '';
@@ -2862,11 +2915,34 @@ function renderViews(): void {
     renderAllTasksView(sorted);
   } else if (activeLayout === 'questions') {
     renderQuestionsView(sorted);
+  } else if (activeLayout === 'attention') {
+    renderAttentionView(sorted);
   }
   currentRenderedLayout = activeLayout;
 
   // Sync batch bar & card selections
   updateBatchBar();
+}
+
+function formatAlertBadges(issue: Issue): string {
+  if (!issue) return '';
+  const meta = issue.v2Metadata || resolveV2Metadata(issue, typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined);
+  if (!meta) return '';
+
+  const badges: string[] = [];
+  if (meta.attention === 'needs-decision') {
+    badges.push('<span class="badge-attention attention-decision" title="Requires human decision">needs-decision</span>');
+  } else if (meta.attention === 'needs-permission') {
+    badges.push('<span class="badge-attention attention-permission" title="Blocked on agent permission">needs-permission</span>');
+  } else if (meta.attention === 'needs-review') {
+    badges.push('<span class="badge-attention attention-review" title="Awaiting human review">needs-review</span>');
+  }
+
+  if (meta.liveness === 'running') {
+    badges.push('<span class="badge-liveness liveness-running" title="Agent session active"><span class="pulse-dot"></span>running</span>');
+  }
+
+  return badges.join(' ');
 }
 
 function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
@@ -3017,6 +3093,8 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
     ? `<div class="card-subtitle-tech" style="font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;">${escapeHtml(titles.subtitle)}</div>`
     : '';
 
+  const alertBadgesHtml = formatAlertBadges(issue);
+
   card.innerHTML = `
     <div class="card-meta">
       <div class="card-id-wrap">
@@ -3026,6 +3104,7 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
         ${complexityHtml}
         ${vagueBadgeHtml}
         ${awaitingBatchHtml}
+        ${alertBadgesHtml}
         ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ''}
         ${archiveCategoryBadge}
       </div>
@@ -4422,42 +4501,334 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
   elQuestionsViewContainer.appendChild(fragment);
 }
 
-function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions'): void {
-  elBtnViewHuman?.classList.toggle('active', mode === 'human');
-  elBtnViewHuman?.setAttribute('aria-checked', mode === 'human' ? 'true' : 'false');
+export function renderAttentionView(filteredIssues: Issue[]): void {
+  if (!elAttentionViewContainer) return;
+  elAttentionViewContainer.innerHTML = '';
 
-  elBtnViewAllTasks?.classList.toggle('active', mode === 'all-tasks');
-  elBtnViewAllTasks?.setAttribute('aria-checked', mode === 'all-tasks' ? 'true' : 'false');
+  const targetSessionIndex = sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex;
+  const grouped = groupIssuesByAttention(filteredIssues, targetSessionIndex);
 
-  elBtnViewQuestions?.classList.toggle('active', mode === 'questions');
-  elBtnViewQuestions?.setAttribute('aria-checked', mode === 'questions' ? 'true' : 'false');
+  const decisions = grouped['needs-decision'];
+  const permissions = grouped['needs-permission'];
+  const reviews = grouped['needs-review'];
+  const totalAttention = decisions.length + permissions.length + reviews.length;
 
-  elBtnViewList?.classList.toggle('active', mode === 'list');
-  elBtnViewList?.setAttribute('aria-checked', mode === 'list' ? 'true' : 'false');
+  // Update badge
+  if (elAttentionViewBadge) {
+    if (totalAttention > 0) {
+      elAttentionViewBadge.textContent = String(totalAttention);
+      elAttentionViewBadge.style.display = 'inline-flex';
+    } else {
+      elAttentionViewBadge.textContent = '0';
+      elAttentionViewBadge.style.display = 'none';
+    }
+  }
 
-  elBtnViewKanban?.classList.toggle('active', mode === 'kanban');
-  elBtnViewKanban?.setAttribute('aria-checked', mode === 'kanban' ? 'true' : 'false');
+  // Handle Loading & Zero Attention Empty States
+  if (totalAttention === 0) {
+    if (isLoading && filteredIssues.length === 0) {
+      elAttentionViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading attention queue...</span>
+        </div>
+      `;
+      return;
+    }
 
-  elBtnViewGraph?.classList.toggle('active', mode === 'graph');
-  elBtnViewGraph?.setAttribute('aria-checked', mode === 'graph' ? 'true' : 'false');
+    elAttentionViewContainer.innerHTML = `
+      <div class="empty-box empty-state-empty attention-empty-state">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" style="color: var(--succ);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <span style="font-weight: 600; font-size: 13px; color: var(--fg);">All systems clear — no tasks currently require human attention.</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">All tasks and sessions are moving forward without blockers.</span>
+      </div>
+    `;
+    return;
+  }
+
+  const fragment = document.createDocumentFragment();
+
+  // Header with Sub-Filter Pills
+  const header = document.createElement('div');
+  header.className = 'attention-header';
+
+  const headerTop = document.createElement('div');
+  headerTop.className = 'attention-header-top';
+
+  const titleEl = document.createElement('div');
+  titleEl.className = 'attention-title';
+  titleEl.innerHTML = `
+    <svg class="icon" viewBox="0 0 24 24" style="color: var(--warn);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+    <span>Attention Action Queues</span>
+  `;
+  headerTop.appendChild(titleEl);
+
+  const filtersBar = document.createElement('div');
+  filtersBar.className = 'attention-sub-filters';
+  filtersBar.setAttribute('role', 'tablist');
+  filtersBar.setAttribute('aria-label', 'Attention Queue Sub-filters');
+
+  const filterConfigs: Array<{
+    key: 'all' | 'needs-decision' | 'needs-permission' | 'needs-review';
+    label: string;
+    count: number;
+  }> = [
+    { key: 'all', label: 'All Attention', count: totalAttention },
+    { key: 'needs-decision', label: 'Needs Decision', count: decisions.length },
+    { key: 'needs-permission', label: 'Needs Permission', count: permissions.length },
+    { key: 'needs-review', label: 'Needs Review', count: reviews.length },
+  ];
+
+  filterConfigs.forEach((cfg) => {
+    const btn = document.createElement('button');
+    btn.className = `attention-sub-filter-btn${currentAttentionFilter === cfg.key ? ' active' : ''}`;
+    btn.setAttribute('role', 'tab');
+    btn.setAttribute('aria-selected', currentAttentionFilter === cfg.key ? 'true' : 'false');
+    btn.setAttribute('data-subfilter', cfg.key);
+    btn.innerHTML = `<span>${escapeHtml(cfg.label)}</span><span class="filter-count">${cfg.count}</span>`;
+    btn.addEventListener('click', () => {
+      currentAttentionFilter = cfg.key;
+      renderAttentionView(filteredIssues);
+    });
+    filtersBar.appendChild(btn);
+  });
+
+  header.appendChild(headerTop);
+  header.appendChild(filtersBar);
+  fragment.appendChild(header);
+
+  // Helper to build an attention card
+  const buildAttentionCard = (issue: Issue, category: 'needs-decision' | 'needs-permission' | 'needs-review'): HTMLElement => {
+    const card = document.createElement('div');
+    card.className = 'attention-card';
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+
+    const session = getIssueSession(issue);
+    const v2 = resolveV2Metadata(issue, session);
+    const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
+    const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+
+    card.setAttribute('aria-label', `Issue #${issue.number}: ${displayTitle}. Requires ${category}.`);
+
+    // Top Row: Title + Meta
+    const topRow = document.createElement('div');
+    topRow.className = 'attention-card-top';
+
+    const titleGroup = document.createElement('div');
+    titleGroup.className = 'attention-card-title-group';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'attention-card-title';
+    titleEl.textContent = displayTitle;
+    if (isPlaceholder) {
+      titleEl.style.fontStyle = 'italic';
+      titleEl.style.color = 'var(--fg-muted)';
+    }
+    titleGroup.appendChild(titleEl);
+
+    if (displaySubtitle) {
+      const subEl = document.createElement('div');
+      subEl.className = 'card-subtitle-tech';
+      subEl.style.cssText = 'font-size: 10.5px; color: var(--fg-muted);';
+      subEl.textContent = displaySubtitle;
+      titleGroup.appendChild(subEl);
+    }
+
+    topRow.appendChild(titleGroup);
+
+    // Meta Badges
+    const metaEl = document.createElement('div');
+    metaEl.className = 'attention-card-meta';
+
+    if ((isAllProjectsMode || currentRepo === null) && repoName) {
+      const repoBadge = document.createElement('span');
+      repoBadge.className = 'attention-repo-badge';
+      repoBadge.textContent = repoName.split('/')[1] || repoName;
+      repoBadge.title = repoName;
+      metaEl.appendChild(repoBadge);
+    }
+
+    const numBadge = document.createElement('span');
+    numBadge.style.cssText = 'font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); font-weight: 600;';
+    numBadge.textContent = `#${issue.number}`;
+    metaEl.appendChild(numBadge);
+
+    const phaseBadge = document.createElement('span');
+    phaseBadge.className = 'attention-phase-badge';
+    phaseBadge.textContent = v2.phase;
+    metaEl.appendChild(phaseBadge);
+
+    topRow.appendChild(metaEl);
+    card.appendChild(topRow);
+
+    // Reason Snippet
+    const reasonEl = document.createElement('div');
+    let snippetText = '';
+    let reasonClass = '';
+    let actionBtnLabel = '';
+
+    if (category === 'needs-decision') {
+      reasonClass = 'reason-decision';
+      actionBtnLabel = 'Decide';
+      const openQs = Array.isArray(issue.openQuestions) ? issue.openQuestions.filter((q: any) => !q.completed) : [];
+      if (openQs.length === 1) {
+        snippetText = '1 open question requires decision';
+      } else if (openQs.length > 1) {
+        snippetText = `${openQs.length} open questions require decisions`;
+      } else {
+        snippetText = 'Pending design or implementation decision';
+      }
+    } else if (category === 'needs-permission') {
+      reasonClass = 'reason-permission';
+      actionBtnLabel = 'Authorize';
+      snippetText = 'Session blocked awaiting tool or permission approval';
+    } else {
+      reasonClass = 'reason-review';
+      actionBtnLabel = 'Review';
+      const subtasks = Array.isArray(issue.subtasks) ? issue.subtasks : [];
+      const completedSubtasks = subtasks.filter((s: any) => s.completed);
+      if (completedSubtasks.length > 0) {
+        snippetText = `${completedSubtasks.length} completed subtask${completedSubtasks.length > 1 ? 's' : ''} awaiting review`;
+      } else {
+        snippetText = 'Completed work awaiting human review';
+      }
+    }
+
+    reasonEl.className = `attention-reason-snippet ${reasonClass}`;
+    reasonEl.textContent = snippetText;
+    card.appendChild(reasonEl);
+
+    // Bottom Row: Action button
+    const bottomRow = document.createElement('div');
+    bottomRow.className = 'attention-card-bottom';
+
+    const actionBtn = document.createElement('button');
+    actionBtn.className = 'btn btn-sm btn-primary';
+    actionBtn.style.cssText = 'margin-left: auto; height: 22px; font-size: 11px; padding: 0 8px;';
+    actionBtn.textContent = actionBtnLabel;
+
+    const onCardAction = (e?: Event) => {
+      e?.stopPropagation();
+      openDrawer(issue);
+    };
+
+    actionBtn.addEventListener('click', onCardAction);
+    card.addEventListener('click', () => openDrawer(issue));
+    card.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openDrawer(issue);
+      }
+    });
+
+    bottomRow.appendChild(actionBtn);
+    card.appendChild(bottomRow);
+
+    return card;
+  };
+
+  // Helper to render one queue section
+  const renderQueueSection = (
+    category: 'needs-decision' | 'needs-permission' | 'needs-review',
+    title: string,
+    dotClass: string,
+    items: Issue[]
+  ) => {
+    if (currentAttentionFilter !== 'all' && currentAttentionFilter !== category) {
+      return;
+    }
+
+    const section = document.createElement('section');
+    section.className = 'attention-queue-section';
+    section.setAttribute('aria-label', `${title} queue`);
+
+    const secHeader = document.createElement('div');
+    secHeader.className = 'attention-queue-header';
+
+    const secHeaderLeft = document.createElement('div');
+    secHeaderLeft.className = 'attention-queue-header-left';
+
+    const dot = document.createElement('span');
+    dot.className = `attention-queue-dot ${dotClass}`;
+
+    const titleSpan = document.createElement('span');
+    titleSpan.textContent = title;
+
+    secHeaderLeft.appendChild(dot);
+    secHeaderLeft.appendChild(titleSpan);
+
+    const countPill = document.createElement('span');
+    countPill.className = 'filter-count';
+    countPill.style.cssText = 'font-size: 10px; font-family: var(--font-mono);';
+    countPill.textContent = String(items.length);
+
+    secHeader.appendChild(secHeaderLeft);
+    secHeader.appendChild(countPill);
+    section.appendChild(secHeader);
+
+    const cardsContainer = document.createElement('div');
+    cardsContainer.className = 'attention-queue-cards';
+
+    if (items.length === 0) {
+      const emptyNote = document.createElement('div');
+      emptyNote.style.cssText = 'font-size: 12px; color: var(--fg-muted); padding: 12px 8px; font-style: italic;';
+      emptyNote.textContent = `No tasks currently in ${title.toLowerCase()}.`;
+      cardsContainer.appendChild(emptyNote);
+    } else {
+      items.forEach((issue) => {
+        cardsContainer.appendChild(buildAttentionCard(issue, category));
+      });
+    }
+
+    section.appendChild(cardsContainer);
+    fragment.appendChild(section);
+  };
+
+  renderQueueSection('needs-decision', 'Needs Decision', 'queue-dot-decision', decisions);
+  renderQueueSection('needs-permission', 'Needs Permission', 'queue-dot-permission', permissions);
+  renderQueueSection('needs-review', 'Needs Review', 'queue-dot-review', reviews);
+
+  elAttentionViewContainer.appendChild(fragment);
+}
+
+function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention'): void {
+  const syncBtn = (btn: HTMLButtonElement | null, isActive: boolean) => {
+    if (!btn) return;
+    if (isActive) btn.classList.add('active');
+    else btn.classList.remove('active');
+    btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
+  };
+
+  syncBtn(elBtnViewAttention, mode === 'attention');
+  syncBtn(elBtnViewHuman, mode === 'human');
+  syncBtn(elBtnViewAllTasks, mode === 'all-tasks');
+  syncBtn(elBtnViewQuestions, mode === 'questions');
+  syncBtn(elBtnViewList, mode === 'list');
+  syncBtn(elBtnViewKanban, mode === 'kanban');
+  syncBtn(elBtnViewGraph, mode === 'graph');
 
   if (elViewSelectCurrentLabel) {
     elViewSelectCurrentLabel.textContent =
-      mode === 'human'
-        ? 'Human Tasks'
-        : mode === 'questions'
-          ? 'Questions'
-          : mode === 'kanban'
-            ? 'Board'
-            : mode === 'graph'
-              ? 'Graph'
-              : mode === 'all-tasks'
-                ? 'All Tasks'
-                : 'List';
+      mode === 'attention'
+        ? 'Attention'
+        : mode === 'human'
+          ? 'Human Tasks'
+          : mode === 'questions'
+            ? 'Questions'
+            : mode === 'kanban'
+              ? 'Board'
+              : mode === 'graph'
+                ? 'Graph'
+                : mode === 'all-tasks'
+                  ? 'All Tasks'
+                  : 'List';
   }
 
   if (elViewSelectCurrentIcon) {
-    if (mode === 'human') {
+    if (mode === 'attention') {
+      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+    } else if (mode === 'human') {
       elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
     } else if (mode === 'questions') {
       elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
@@ -4478,7 +4849,11 @@ function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph' | 'human' | 'al
   });
 
   if (elBtnLayoutToggle) {
-    if (mode === 'human') {
+    if (mode === 'attention') {
+      elBtnLayoutToggle.title = 'View: Attention (click to switch to Human Tasks)';
+      elBtnLayoutToggle.setAttribute('aria-label', 'View: Attention (click to switch to Human Tasks)');
+      elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+    } else if (mode === 'human') {
       elBtnLayoutToggle.title = 'View: Human Tasks (click to switch to All Tasks)';
       elBtnLayoutToggle.setAttribute('aria-label', 'View: Human Tasks (click to switch to All Tasks)');
       elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
@@ -4499,8 +4874,8 @@ function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph' | 'human' | 'al
       elBtnLayoutToggle.setAttribute('aria-label', 'View: Board (click to switch to Graph)');
       elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>';
     } else {
-      elBtnLayoutToggle.title = 'View: Graph (click to switch to Human Tasks)';
-      elBtnLayoutToggle.setAttribute('aria-label', 'View: Graph (click to switch to Human Tasks)');
+      elBtnLayoutToggle.title = 'View: Graph (click to switch to Attention)';
+      elBtnLayoutToggle.setAttribute('aria-label', 'View: Graph (click to switch to Attention)');
       elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>';
     }
   }
@@ -4513,8 +4888,12 @@ function applyLayoutMode(triggerRender: boolean = true): void {
   }
   isWideScreen = window.innerWidth >= 680;
 
-  let newLayout: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' = 'list';
-  if (userLayoutPreference === 'human') {
+  let newLayout: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention' = 'list';
+  if (userLayoutPreference === 'attention') {
+    newLayout = 'attention';
+    document.body.setAttribute('data-layout', 'attention');
+    updateViewModeButtons('attention');
+  } else if (userLayoutPreference === 'human') {
     newLayout = 'human';
     document.body.setAttribute('data-layout', 'human');
     updateViewModeButtons('human');
@@ -4892,7 +5271,9 @@ function drawGraphEdges(graph: DependencyGraph): void {
   const canvasW = Math.max(elGraphCanvas.scrollWidth, elGraphCanvas.clientWidth, elGraphCanvas.offsetWidth);
   const canvasH = Math.max(elGraphCanvas.scrollHeight, elGraphCanvas.clientHeight, elGraphCanvas.offsetHeight);
   if (canvasW === 0 || canvasH === 0) {
-    requestAnimationFrame(() => drawGraphEdges(graph));
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => drawGraphEdges(graph));
+    }
     return;
   }
   elGraphSvgOverlay.setAttribute('width', String(canvasW));
@@ -5151,10 +5532,14 @@ function renderGraphView(filteredIssues: Issue[]): void {
 
   // Draw after two frames: the first lets the browser lay out the freshly
   // appended cards, the second covers late font/image reflow on slow panes.
-  requestAnimationFrame(() => {
-    drawCurrentGraphEdges();
-    requestAnimationFrame(() => drawCurrentGraphEdges());
-  });
+  if (typeof requestAnimationFrame === 'function') {
+    requestAnimationFrame(() => {
+      drawCurrentGraphEdges();
+      if (typeof requestAnimationFrame === 'function') {
+        requestAnimationFrame(() => drawCurrentGraphEdges());
+      }
+    });
+  }
 }
 
 function renderDrawerDependencies(issue: Issue): void {
@@ -5242,7 +5627,7 @@ function openDrawer(issue: Issue): void {
   elDrawerScrim.classList.add('active');
   elTaskDrawer.classList.add('active');
   document.body.classList.add('drawer-open');
-  if (document.body.getAttribute('data-layout') === 'graph') {
+  if (document.body.getAttribute('data-layout') === 'graph' && typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(() => drawCurrentGraphEdges());
   }
 }
@@ -5253,7 +5638,7 @@ function closeDrawer(): void {
   elDrawerScrim.classList.remove('active');
   elTaskDrawer.classList.remove('active');
   document.body.classList.remove('drawer-open');
-  if (document.body.getAttribute('data-layout') === 'graph') {
+  if (document.body.getAttribute('data-layout') === 'graph' && typeof requestAnimationFrame === 'function') {
     requestAnimationFrame(() => drawCurrentGraphEdges());
   }
 }
@@ -5459,6 +5844,9 @@ function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number =
   // Render subtasks checklist
   renderChecklist(issue);
 
+  // Render acceptance criteria
+  renderDrawerAcceptanceCriteria(issue);
+
   // Render open questions
   renderQuestions(issue);
 
@@ -5470,12 +5858,16 @@ function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number =
   elDrawerDescriptionViewBox.style.display = 'block';
   elDrawerDescriptionEditBox.style.display = 'none';
 
-  requestAnimationFrame(() => {
-    if (elDrawerDescriptionContent.scrollHeight > 220) {
+  const scheduleFrame = typeof requestAnimationFrame === 'function'
+    ? requestAnimationFrame
+    : (cb: () => void) => setTimeout(cb, 0);
+
+  scheduleFrame(() => {
+    if (elDrawerDescriptionContent && elDrawerDescriptionContent.scrollHeight > 220) {
       elDrawerDescriptionCollapsible.classList.remove('expanded');
       elDrawerDescriptionToggleRow.style.display = 'block';
       elBtnToggleCollapse.textContent = 'Show more';
-    } else {
+    } else if (elDrawerDescriptionCollapsible && elDrawerDescriptionToggleRow) {
       elDrawerDescriptionCollapsible.classList.add('expanded');
       elDrawerDescriptionToggleRow.style.display = 'none';
     }
@@ -5526,6 +5918,106 @@ function renderChecklist(issue: Issue): void {
     itemEl.appendChild(cb);
     itemEl.appendChild(span);
     elDrawerChecklistContainer.appendChild(itemEl);
+  });
+}
+
+function renderDrawerAcceptanceCriteria(issue: Issue): void {
+  if (!issue) {
+    if (elDrawerAcceptanceCriteriaSection) elDrawerAcceptanceCriteriaSection.style.display = 'none';
+    return;
+  }
+  if (!elDrawerAcceptanceCriteriaSection || !elDrawerAcceptanceCriteriaContainer) return;
+
+  if (!issue.acceptanceCriteria && issue.body) {
+    issue.acceptanceCriteria = parseAcceptanceCriteria(issue.body);
+  }
+
+  const items = issue.acceptanceCriteria || [];
+  if (items.length === 0) {
+    elDrawerAcceptanceCriteriaSection.style.display = 'none';
+    elDrawerAcceptanceCriteriaContainer.innerHTML = '';
+    if (elDrawerAcceptanceCriteriaCountBadge) {
+      elDrawerAcceptanceCriteriaCountBadge.textContent = '0 / 0';
+    }
+    return;
+  }
+
+  elDrawerAcceptanceCriteriaSection.style.display = 'block';
+  const total = items.length;
+  const done = items.filter((item) => item.completed).length;
+  if (elDrawerAcceptanceCriteriaCountBadge) {
+    elDrawerAcceptanceCriteriaCountBadge.textContent = `${done} / ${total}`;
+  }
+
+  elDrawerAcceptanceCriteriaContainer.innerHTML = '';
+
+  items.forEach((item, idx) => {
+    const itemEl = document.createElement('div');
+    itemEl.className = `check-item ${item.completed ? 'done' : ''}`;
+
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.checked = item.completed;
+    cb.setAttribute('aria-label', item.text);
+    cb.setAttribute('data-index', String(idx));
+    if (typeof item.lineIndex === 'number') {
+      cb.setAttribute('data-line-index', String(item.lineIndex));
+      cb.dataset.lineIndex = String(item.lineIndex);
+      (cb as any).lineIndex = item.lineIndex;
+    }
+    (cb as any).dataIndex = idx;
+
+    const span = document.createElement('span');
+    span.textContent = item.text;
+
+    const onToggle = async () => {
+      const newChecked = cb.checked;
+      itemEl.className = `check-item ${newChecked ? 'done' : ''}`;
+
+      const targetLine = typeof item.lineIndex === 'number' ? item.lineIndex : -1;
+      const newBody = targetLine >= 0
+        ? updateSubtaskInMarkdown(issue.body, targetLine, newChecked)
+        : issue.body;
+
+      // Optimistic in-memory update
+      issue.body = newBody;
+      if (issue.acceptanceCriteria && issue.acceptanceCriteria[idx]) {
+        issue.acceptanceCriteria[idx].completed = newChecked;
+      }
+
+      // Update badge count immediately
+      const curTotal = issue.acceptanceCriteria ? issue.acceptanceCriteria.length : total;
+      const curDone = issue.acceptanceCriteria ? issue.acceptanceCriteria.filter((it) => it.completed).length : (newChecked ? done + 1 : done - 1);
+      if (elDrawerAcceptanceCriteriaCountBadge) {
+        elDrawerAcceptanceCriteriaCountBadge.textContent = `${curDone} / ${curTotal}`;
+      }
+
+      await reloadIssueBeforeMutation(issue);
+      const freshAc = parseAcceptanceCriteria(issue.body);
+      const matched = freshAc.find((it) => it.text.trim() === item.text.trim());
+      const freshLineIndex = matched && typeof matched.lineIndex === 'number' ? matched.lineIndex : item.lineIndex;
+      const finalTargetLine = typeof freshLineIndex === 'number' ? freshLineIndex : -1;
+      const finalBody = finalTargetLine >= 0
+        ? updateSubtaskInMarkdown(issue.body, finalTargetLine, newChecked)
+        : issue.body;
+      void updateIssueBody(issue, finalBody);
+    };
+
+    cb.addEventListener('change', () => {
+      void onToggle();
+    });
+
+    cb.addEventListener('click', () => {
+      // In synthetic test environments where click does not toggle checked or fire change
+      if (cb.checked === item.completed) {
+        cb.checked = !item.completed;
+        void onToggle();
+      }
+    });
+
+    itemEl.appendChild(cb);
+    itemEl.appendChild(span);
+    elDrawerAcceptanceCriteriaContainer.appendChild(itemEl);
   });
 }
 
@@ -7268,7 +7760,13 @@ function setupDragAndDrop(): void {
   });
 }
 
-export { setupCustomDropdown, initAllCustomDropdowns };
+if (typeof window !== 'undefined') {
+  (window as any).formatAlertBadges = formatAlertBadges;
+  (window as any).renderDrawerAcceptanceCriteria = renderDrawerAcceptanceCriteria;
+  (window as any).reloadIssueBeforeMutation = reloadIssueBeforeMutation;
+}
+
+export { setupCustomDropdown, initAllCustomDropdowns, formatAlertBadges, renderDrawerAcceptanceCriteria, reloadIssueBeforeMutation };
 
 
 // ==========================================
@@ -7337,7 +7835,11 @@ function initEvents(): void {
     }
   });
 
-  // Segmented View Switcher (Human / All Tasks / Questions / List / Board / Graph)
+  // Segmented View Switcher (Attention / Human / All Tasks / Questions / List / Board / Graph)
+  elBtnViewAttention?.addEventListener('click', () => {
+    userLayoutPreference = 'attention';
+    applyLayoutMode();
+  });
   elBtnViewHuman?.addEventListener('click', () => {
     userLayoutPreference = 'human';
     applyLayoutMode();
@@ -7384,7 +7886,7 @@ function initEvents(): void {
 
   document.querySelectorAll<HTMLElement>('.view-opt-item').forEach((item) => {
     item.addEventListener('click', () => {
-      const mode = item.getAttribute('data-mode') as 'list' | 'kanban' | 'graph' | 'human' | 'questions' | null;
+      const mode = item.getAttribute('data-mode') as 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention' | null;
       if (mode) {
         userLayoutPreference = mode;
         applyLayoutMode();
@@ -7431,6 +7933,11 @@ function initEvents(): void {
   });
 
   // More menu direct view items
+  document.getElementById('menuItemViewAttention')?.addEventListener('click', () => {
+    userLayoutPreference = 'attention';
+    applyLayoutMode();
+    closeMoreMenu();
+  });
   document.getElementById('menuItemViewHuman')?.addEventListener('click', () => {
     userLayoutPreference = 'human';
     applyLayoutMode();
@@ -7468,27 +7975,31 @@ function initEvents(): void {
       userLayoutPreference = cur === 'kanban'
         ? 'graph'
         : cur === 'graph'
-          ? 'human'
-          : cur === 'human'
-            ? 'all-tasks'
-            : cur === 'all-tasks'
-              ? 'questions'
-              : cur === 'questions'
-                ? 'list'
-                : 'kanban';
+          ? 'attention'
+          : cur === 'attention'
+            ? 'human'
+            : cur === 'human'
+              ? 'all-tasks'
+              : cur === 'all-tasks'
+                ? 'questions'
+                : cur === 'questions'
+                  ? 'list'
+                  : 'kanban';
       applyLayoutMode();
       if (host?.toast) {
         const name = userLayoutPreference === 'kanban'
           ? 'Board'
           : userLayoutPreference === 'graph'
             ? 'Graph'
-            : userLayoutPreference === 'human'
-              ? 'Human Tasks'
-              : userLayoutPreference === 'all-tasks'
-                ? 'All Tasks'
-                : userLayoutPreference === 'questions'
-                  ? 'Questions'
-                  : 'List';
+            : userLayoutPreference === 'attention'
+              ? 'Attention'
+              : userLayoutPreference === 'human'
+                ? 'Human Tasks'
+                : userLayoutPreference === 'all-tasks'
+                  ? 'All Tasks'
+                  : userLayoutPreference === 'questions'
+                    ? 'Questions'
+                    : 'List';
         void host.toast({ kind: 'info', message: `Switched to ${name} view` });
       }
     });
