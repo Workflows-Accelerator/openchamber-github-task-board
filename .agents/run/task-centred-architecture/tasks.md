@@ -42,7 +42,7 @@
 | Task 204: Hostile Adversarial Review (L4) | COMPLETE | ses_3dd0745a99acbd0a854bee62 / engineer | Brief `tasks/task-204-hostile-adversarial-review.md` | PROCEED-WITH-CONDITIONS; 5 findings identified (ADV-01..ADV-06) |
 | Task 204b: Remediate Hostile Conditions | COMPLETE | ses_f44f93bdd8b12b18c97896a9 / engineer | Brief `tasks/task-204b-remediate-hostile-conditions.md` | Commit f28f575; 5 findings resolved; 414/414 pass |
 | Task 205: Integration Merge of Stage 2A | COMPLETE | ses_3b8d738aafbf3d2652a153e8 / engineer | Brief `tasks/task-205-integrate-stage2a-merge.md` | Merge commit 7cc6399; bundle rebuild cf9acf8; worktree removed; branch preserved; Stage 2A LANDED |
-| Stage 2B: Host Probing & Pilot Coordinator | IN PROGRESS | Manager | Empirical probe complete (discovered `contributes.service`); authoring 6 tasks | Tasks 206–211 |
+| Stage 2B: Host Probing & Pilot Coordinator | COMPLETE — LANDED (L5 pending) | Manager + User | Empirical probe -> coordinator built -> 4 hostile passes -> merged b4c65e5 -> pushed to origin | Tasks 206–211 all COMPLETE |
 | Task 206: Service Architecture & Build Pipeline | COMPLETE | ses_cf83f53c9a5421924e3a4e7f / engineer | package.json service contributes, esbuild script, types.ts, config.ts, main.ts; 0 type errors; 413 tests pass | Proceed to Task 207 |
 | Task 207: Single-Writer Lease & CAS Pre-Flight | COMPLETE | ses_8a5d6a3f02d06c0a3eae8433 / engineer | LeaseStore atomic persistence, TTL, renewals, reclamation, CAS SHA-256; 17/17 tests pass | Proceed to Task 208 |
 | Task 208: Task Claiming & Reconciler | COMPLETE | ses_1650a227b9848f9195eec6b1 / engineer | opt-in task claiming, session liveness watcher, lifecycle reconciler; 35/35 Stage 2B tests pass, 448/448 full suite pass | Proceed to Task 209 |
@@ -53,7 +53,7 @@
 | Task 210d: Second Remediation (ADV-2C-*) | COMPLETE | ses_1bff9ceb6029e7dfadd0f24a / engineer | ADV-2C-01/02/03/04/05/07/08 fixed w/ 10 red-first regression tests; commit 656500b; 463/463 pass | Proceed to Task 210e |
 | Task 210e: Final Hostile Review (Third Pass, Bounded) | COMPLETE | ses_9a310f8ec993035fa204caf2 / engineer | PROCEED-WITH-CONDITIONS; all 6 probes PASS; changed tests LEGITIMATE; 1 new Moderate (ADV-2E-01 array-shape bypass) | Proceed to Task 210f (final fix round per bound) |
 | Task 210f: Final Fix Round (ADV-2E-01 + shutdown release) | COMPLETE | ses_cfa5b75828d6c1f239bdb944 / engineer | Array-shape bypass rejected w/ forensic backup; releaseHeldLeases real release; commit a09115c; 467/467 pass | Proceed to Task 211 |
-| Task 211: Integration Merge of Stage 2B | RUNNING | ses_b2ac62370a045844724f3ac9 / engineer | Brief `tasks/task-211-integrate-stage2b-merge.md` | Merge + push in root checkout |
+| Task 211: Integration Merge of Stage 2B | COMPLETE | ses_b2ac62370a045844724f3ac9 / engineer | Merge b4c65e5 + rebuild 3648447; 467/467 pass; both branches pushed to origin; worktree removed; branch preserved; master untouched | Stage 2B LANDED |
 
 ## Evidence and incident policy
 Stage 2B review loop bound (manager decision 2026-10-23, user informed): hostile passes 210, 210c, 210e done. 210e found new Moderate ADV-2E-01, so the ONE final fix round is 210f; after 210f the branch merges via 211 REGARDLESS of any further findings (which become documented residuals). Residuals held out of merge scope: ADV-2E-02/03/04/05, ADV-2C-06 (test-suite Node floor), ADV-2C-09 (conservative eligibility edges), ADV-2C-10 (test discovery naming), ADV-2B-03/05/08 (cross-process locking, disk-failure drift, clock skew — single-daemon pilot scope).
