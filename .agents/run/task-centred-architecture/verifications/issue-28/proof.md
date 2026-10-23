@@ -52,3 +52,30 @@ Batch/preview not assigned by reviewer. After fixes and integration authorizatio
 - Existing reconciliation can write labels; not universally read-only. Recording A-B-A fixture observed zero writes, explicit-edit fixture exactly one intentionally requested synthetic PATCH.
 - `python` server attempt exit 127; first browser navigation exit 1 connection refused. `python3` fixed serving. Obscura DOM navigation succeeded; visual proof did not.
 - Provider/model actual and supplied identity: Engineer / 9router/engineer. Same model identity does not imply builder's session or human independence.
+
+---
+
+## Remediation pass — R1/R2 review-race fix (appended; prior findings kept)
+
+**Status:** remediation implemented and proven on the shipped bundle; fresh independent hostile review still required. Supplied and actual identity: Engineer, `9router/engineer`.
+
+**Changed source paths:** `panel/main.ts`, generated `panel/main.js`, `test/current-board.test.js`. Report: `.agents/run/task-centred-architecture/outputs/issue-28-review-race-fix.md`.
+
+### Red-first (before source patch, shipped bundle = HEAD `88d3970`)
+`node --test test/current-board.test.js` exit 1 — 9 existing tests passed, 7 new regressions failed at the race assertions (`/tmp/opencode/issue28-fix-red.log`): R1 body (`new saved body` → `old body`), R1 status (`closed` → `open`), R2 fields (`incremental new` → `old body`), R2 membership (issue 500 dropped), R1 in-flight crossing write (`crossing write` → `old body`), failed body edit clobbered during pending write, failed status move clobbered during pending write.
+
+### Green
+- `node --test test/current-board.test.js` — exit 0, 16 passed (`/tmp/opencode/issue28-fix-current-board.log`).
+- `node --test test/current-board.test.js test/d12-origins-cache.test.js test/v2-binding-and-ratelimit.test.js` — exit 0, 30 passed, 0 failed/skipped (`/tmp/opencode/issue28-fix-targeted.log`).
+- `npm run typecheck` — exit 0 (`/tmp/opencode/issue28-fix-typecheck.log`).
+- `npm run build` — exit 0 (`/tmp/opencode/issue28-fix-build.log`).
+- `npm test` — exit 0, 482 passed, 0 failed/skipped (`/tmp/opencode/issue28-fix-suite.log`).
+- `git diff --check` — exit 0.
+
+### Probe re-run (synthetic)
+`node /tmp/opencode/issue28-review-probes.mjs` exit 1, now failing exactly on its own defect assertion for R2 (`actual 'incremental new'`, expected `'old'`), i.e. R2 no longer reproduces (`/tmp/opencode/issue28-fix-probes-after.log`). Its R1 fixture returns a PATCH payload without `status`, so that probe's PATCH is rejected (`Host request result was empty`) and it measures a failed write; the permanent R1 regressions use a genuine 2xx PATCH.
+
+### Boundaries
+- All evidence above is synthetic recording-host/unit level (L0/L1/L4-shipped-bundle). No credential file read, no live GitHub request or mutation, no installed activation.
+- Real-browser (Obscura iframe) and installed-host L3/L5 remain **NOT RUN / AWAITING HUMAN**; the earlier blank screenshot is still not visual proof and is not relabelled.
+- Residuals: archive/tag/priority/complexity label PATCHes and issue creation are not wired to the admission helper; All Projects aggregation unchanged per scope; All Projects and label-surface races therefore remain outside this correction.
