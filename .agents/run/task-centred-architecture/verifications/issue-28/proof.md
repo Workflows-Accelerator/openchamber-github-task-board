@@ -139,3 +139,28 @@ On `8625b0a` source/bundle with the new test file: `node --test test/current-boa
 - Synthetic recording-host/shipped-bundle evidence only; no credential, live GitHub request, installed activation, push, merge, close or deploy. L3/L5 remain **NOT RUN / AWAITING HUMAN**.
 - The hard ceiling is proved by the synthetic probe rather than a committed test; triggering it requires five scans for one repository during a single stalled refresh. F2/F3 remain separate; F4-F6 unchanged.
 - The 500/2000-issue fixtures exceed the host's 64 KB per-key storage limit, so F1 tests 1 and 3 assert displayed state; cache is asserted by the pre-existing R1 tests and F1 test 2 (whose publication membership is small).
+
+---
+
+## Independent hostile re-review — `74038a3` (appended; prior findings kept)
+
+**Status:** PASS. Gating finding F1 CLOSED on the shipped bundle. Quality APPROVED. Machine verdict: PROCEED (cleared for batched integration / L5 human validation). Supplied and actual model: Engineer, `9router/engineer`. Full report: `.agents/run/task-centred-architecture/outputs/issue-28-f1-re-review.md`.
+
+### Verdict detail
+- F1 CLOSED: Raising tracker soft cap to 2000 (`MAX_ISSUES_PER_REPO * 2`), pinning un-settled (`pending > 0`) and snapshot-protective settled records (`latestWriteTime > start`), oldest-first eviction among unpinned only, and hard-ceiling (4000) publication abandonment completely close F1.
+- Evaluated and confirmed: Author's claim that reviewer's proposed minimum ("cap 1000, never evict `pending > 0`") was insufficient is correct; settled edits before subsequent scans are evicted under that minimum.
+- Hard ceiling: Safely abandons older publication with freshness `stale`, preserves local edits/membership, bounds memory at 4000 entries, and allows subsequent refresh to cleanly recover to `complete`.
+- No new defects introduced. Residuals F2–F6 unchanged and remain outside issue #28 scope.
+
+### Executed Evidence
+- L0: `npm run typecheck` exit 0; `npm run build` exit 0; `git status --short` empty; bundle byte-identical to `HEAD:panel/main.js`.
+- L1: `node --test test/current-board.test.js` exit 0, 19 pass, 0 fail; `npm test` exit 0, 485 pass, 0 fail/skipped.
+- Red-first: Reverted `panel/main.ts`/`panel/main.js` to `8625b0a`, rebuilt, `node --test test/current-board.test.js` exit 1, 16 pass / 3 fail (tests 17–19 failed on exact F1 assertions); restored `HEAD` and rebuilt clean.
+- L4 independent probe: `node /tmp/opencode/f1-rereview-probe.mjs` exit 0, 30 checks passed, 0 failed (covers 500-issue scan + pending edit display survival, cache persistence under <64 KiB, 2000-admission settled edit survival, 5000-admission hard ceiling abandonment and recovery, TTL preservation while in flight and post-quiescence expiry, repo switch isolation).
+- Regression suite: `node /tmp/opencode/verify-regressions.mjs` exit 0 (repo switch, empty snapshot deletion, superseded refresh, watermark monotonicity, failed-PATCH release, R1 body/status, R2 incremental).
+- Fuzzing: `node /tmp/opencode/r28v2-fuzz.mjs 100` exit 0, 100/100 pass; `node /tmp/opencode/r28v2-fuzz2.mjs 30` (chaos fuzz with PATCH failure & repo switch) exit 0, 30/30 pass.
+- Hygiene: `git diff --check` exit 0.
+
+### Boundaries
+All evidence is synthetic recording-host/shipped-bundle (L0/L1/L4). L3 installed-host testing and L5 human validation remain **AWAITING HUMAN** per protocol. No merge, push, close, or deploy performed.
+
