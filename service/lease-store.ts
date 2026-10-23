@@ -98,7 +98,15 @@ export class LeaseStore {
           this.leases = {};
           await this.saveToDisk();
         } else {
-          // Unreadable or corrupted JSON fallback
+          // Unreadable or corrupted JSON fallback: preserve forensic backup
+          if (err instanceof SyntaxError || err?.name === 'SyntaxError') {
+            try {
+              const backupPath = `${this.filePath}.corrupted.${Date.now()}.bak`;
+              await fs.promises.copyFile(this.filePath, backupPath);
+            } catch {
+              // Ignore backup copy failure
+            }
+          }
           this.leases = {};
           await this.saveToDisk();
         }

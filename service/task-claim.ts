@@ -1,14 +1,6 @@
-import crypto from 'node:crypto';
+import { computeIssueSha } from './cas.ts';
 import type { LeaseStore } from './lease-store.js';
 import type { ClaimResult } from './types.js';
-
-/**
- * Computes SHA-256 digest of issue body for CAS baseline tracking.
- */
-function computeIssueSha(body?: string | null): string {
-  const content = body ?? '';
-  return crypto.createHash('sha256').update(content).digest('hex');
-}
 
 /**
  * Determines whether an issue is eligible for autonomous coordinator pilot claiming.
@@ -18,8 +10,9 @@ function computeIssueSha(body?: string | null): string {
  * - Must not be in terminal phase ('done', 'archive').
  * - Must not have active human attention required (attention !== 'none' && attention !== '').
  * - Must either:
- *   a) Have label 'coordinator:pilot' or 'pilot', OR
- *   b) Have phase 'exploration' or 'execution' with attention 'none'.
+ *   a) Have explicit pilot label ('coordinator:pilot' or 'pilot'), OR
+ *   b) Have explicit v2 metadata (isExplicitV2 === true) with active phase ('exploration' or 'execution') and attention 'none'.
+ * Legacy unmigrated issues without explicit v2 or pilot labels are strictly rejected.
  */
 export function isTaskEligibleForPilot(issue: any): boolean {
   if (!issue || typeof issue !== 'object') {
@@ -57,10 +50,11 @@ export function isTaskEligibleForPilot(issue: any): boolean {
   );
   const hasPilotLabel = labelNames.includes('coordinator:pilot') || labelNames.includes('pilot');
 
-  // 5. Active workflow phases
-  const isEligiblePhase = phase === 'exploration' || phase === 'execution';
+  // 5. Active workflow phases with explicit opt-in
+  const isExplicitV2 = issue.v2Metadata?.isExplicitV2 === true;
+  const isEligiblePhase = (phase === 'exploration' || phase === 'execution') && attention === 'none';
 
-  return hasPilotLabel || isEligiblePhase;
+  return hasPilotLabel || (isEligiblePhase && isExplicitV2);
 }
 
 /**

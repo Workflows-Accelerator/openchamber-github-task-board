@@ -8,9 +8,10 @@ export interface CasValidationResult {
 /**
  * Computes the SHA-256 hex digest of an issue body.
  * If body is null or undefined, empty string is hashed.
+ * Normalizes CRLF newlines (\r\n) to LF (\n) to prevent false CAS conflicts.
  */
 export function computeIssueSha(body?: string | null): string {
-  const content = body ?? '';
+  const content = (body ?? '').replace(/\r\n/g, '\n');
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 

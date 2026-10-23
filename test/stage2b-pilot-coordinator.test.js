@@ -84,6 +84,18 @@ test('Part 2: computeIssueSha handles empty, null, and undefined values determin
   assert.equal(shaUndefined, expectedEmptySha);
 });
 
+test('Part 2: computeIssueSha normalizes CRLF and LF newlines to identical digests (ADV-2B-02)', () => {
+  const lfBody = 'Line 1\nLine 2\nLine 3';
+  const crlfBody = 'Line 1\r\nLine 2\r\nLine 3';
+
+  assert.equal(computeIssueSha(crlfBody), computeIssueSha(lfBody));
+
+  const shaLf = computeIssueSha(lfBody);
+  const verifyResult = verifyIssueCas(crlfBody, shaLf);
+  assert.equal(verifyResult.match, true);
+  assert.equal(verifyResult.currentSha, shaLf);
+});
+
 test('Part 2: verifyIssueCas verifies baseline hash match and detects divergence', () => {
   const originalBody = 'Task definition v1\nLine 2';
   const originalSha = computeIssueSha(originalBody);
@@ -442,6 +454,26 @@ test('Part 6: Store recovers gracefully from corrupted disk file', async () => {
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
+test('Part 6: Store backs up corrupted disk file to .corrupted.<timestamp>.bak on init (ADV-2B-06)', async () => {
+  const tempDir = createTempDir('lease-corrupt-bak-');
+  const filePath = path.join(tempDir, 'leases.json');
+  const corruptedContent = '{ corrupted json syntax error';
+
+  fs.writeFileSync(filePath, corruptedContent, 'utf8');
+
+  const store = new LeaseStore(filePath, 60000);
+  await store.init();
+
+  const files = fs.readdirSync(tempDir);
+  const bakFiles = files.filter((f) => f.startsWith('leases.json.corrupted.') && f.endsWith('.bak'));
+  assert.equal(bakFiles.length, 1, 'Should create exactly one .corrupted.<timestamp>.bak backup file');
+
+  const backupContent = fs.readFileSync(path.join(tempDir, bakFiles[0]), 'utf8');
+  assert.equal(backupContent, corruptedContent, 'Backup file must preserve corrupted contents');
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
 test('Part 6: Rapid concurrent writes do not race or corrupt lease file', async () => {
   const tempDir = createTempDir('lease-concurrency-');
   const filePath = path.join(tempDir, 'leases.json');
@@ -476,7 +508,7 @@ test('Part 6: Rapid concurrent writes do not race or corrupt lease file', async 
 // Part 7: Opt-in Task Claiming Engine & Eligibility Filter
 // ============================================================================
 
-test('Part 7: isTaskEligibleForPilot correctly identifies eligible tasks', () => {
+test('Part 7: isTaskEligibleForPilot correctly identifies eligible tasks with explicit opt-in (ADV-2B-04)', () => {
   // 1. Explicit coordinator:pilot label
   assert.equal(
     isTaskEligibleForPilot({ labels: ['coordinator:pilot'], v2Metadata: { phase: 'planning', attention: 'none' } }),
@@ -489,22 +521,45 @@ test('Part 7: isTaskEligibleForPilot correctly identifies eligible tasks', () =>
     true
   );
 
-  // 3. Unlabeled task in exploration phase with attention: 'none'
+  // 3. Explicit pilot label 'pilot'
   assert.equal(
-    isTaskEligibleForPilot({ v2Metadata: { phase: 'exploration', attention: 'none' } }),
+    isTaskEligibleForPilot({ labels: ['pilot'] }),
     true
   );
 
-  // 4. Unlabeled task in execution phase with attention: 'none'
+  // 4. Task in exploration phase with explicit v2 opt-in and attention: 'none'
+  assert.equal(
+    isTaskEligibleForPilot({ v2Metadata: { phase: 'exploration', attention: 'none', isExplicitV2: true } }),
+    true
+  );
+
+  // 5. Task in execution phase with explicit v2 opt-in and attention: 'none'
+  assert.equal(
+    isTaskEligibleForPilot({ v2Metadata: { phase: 'execution', attention: 'none', isExplicitV2: true } }),
+    true
+  );
+});
+
+test('Part 7: isTaskEligibleForPilot strictly rejects legacy and un-migrated tasks (ADV-2B-04)', () => {
+  // Legacy task with only status:in-progress
+  const legacyTask = {
+    number: 99,
+    labels: ['status:in-progress'],
+    phase: 'execution',
+    v2Metadata: { phase: 'execution', attention: 'none', isExplicitV2: false },
+  };
+  assert.equal(isTaskEligibleForPilot(legacyTask), false);
+
+  // Unlabeled task without explicit v2 flag
   assert.equal(
     isTaskEligibleForPilot({ v2Metadata: { phase: 'execution', attention: 'none' } }),
-    true
+    false
   );
 
-  // 5. Bare phase/attention properties without v2Metadata wrapper
+  // Bare phase property without v2Metadata wrapper
   assert.equal(
     isTaskEligibleForPilot({ phase: 'execution', attention: 'none' }),
-    true
+    false
   );
 });
 
@@ -550,6 +605,7 @@ test('Part 7: claimPilotTask verifies eligibility, computes baseline SHA, and ac
     v2Metadata: {
       phase: 'execution',
       attention: 'none',
+      isExplicitV2: true,
     },
   };
 
@@ -814,6 +870,29 @@ test('Part 9: reconcileTaskState polls actively running or idle sessions', () =>
   const idleResult = reconcileTaskState(issue, { status: 'idle' });
   assert.equal(idleResult.action, 'poll');
   assert.equal(idleResult.reason, 'Worker session is idle');
+});
+
+test('Part 9: reconcileTaskState is idempotent: tick 1 advances execution to verification, tick 2 polls (ADV-2B-01)', () => {
+  const session = { status: 'completed' };
+
+  // Tick 1: task in execution phase completes
+  const issueTick1 = { number: 301, v2Metadata: { phase: 'execution', attention: 'none', isExplicitV2: true } };
+  const tick1Result = reconcileTaskState(issueTick1, session);
+  assert.equal(tick1Result.action, 'advance');
+  assert.equal(tick1Result.targetPhase, 'verification');
+  assert.equal(tick1Result.targetAttention, 'needs-review');
+
+  // Tick 2: task has transitioned to verification with attention needs-review
+  const issueTick2 = { number: 301, v2Metadata: { phase: 'verification', attention: 'needs-review', isExplicitV2: true } };
+  const tick2Result = reconcileTaskState(issueTick2, session);
+  assert.equal(tick2Result.action, 'poll');
+  assert.equal(tick2Result.reason, 'Awaiting human review');
+
+  // Tick 3: task in done phase releases lease
+  const issueDone = { number: 301, v2Metadata: { phase: 'done', attention: 'none', isExplicitV2: true } };
+  const doneResult = reconcileTaskState(issueDone, session);
+  assert.equal(doneResult.action, 'release');
+  assert.equal(doneResult.reason, 'Task is complete');
 });
 
 test('Part 9: CoordinatorReconciler class wrapper delegates cleanly', () => {

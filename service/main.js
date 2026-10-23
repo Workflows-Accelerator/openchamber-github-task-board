@@ -138,6 +138,13 @@ var LeaseStore = class {
           this.leases = {};
           await this.saveToDisk();
         } else {
+          if (err instanceof SyntaxError || err?.name === "SyntaxError") {
+            try {
+              const backupPath = `${this.filePath}.corrupted.${Date.now()}.bak`;
+              await fs2.promises.copyFile(this.filePath, backupPath);
+            } catch {
+            }
+          }
           this.leases = {};
           await this.saveToDisk();
         }
@@ -327,7 +334,7 @@ var LeaseStore = class {
 // service/cas.ts
 import crypto from "node:crypto";
 function computeIssueSha(body) {
-  const content = body ?? "";
+  const content = (body ?? "").replace(/\r\n/g, "\n");
   return crypto.createHash("sha256").update(content).digest("hex");
 }
 function verifyIssueCas(currentBody, expectedSha) {
@@ -349,11 +356,6 @@ var CasManager = class {
 };
 
 // service/task-claim.ts
-import crypto2 from "node:crypto";
-function computeIssueSha2(body) {
-  const content = body ?? "";
-  return crypto2.createHash("sha256").update(content).digest("hex");
-}
 function isTaskEligibleForPilot(issue) {
   if (!issue || typeof issue !== "object") {
     return false;
@@ -376,8 +378,9 @@ function isTaskEligibleForPilot(issue) {
     (l) => (typeof l === "string" ? l : l?.name || "").trim().toLowerCase()
   );
   const hasPilotLabel = labelNames.includes("coordinator:pilot") || labelNames.includes("pilot");
-  const isEligiblePhase = phase === "exploration" || phase === "execution";
-  return hasPilotLabel || isEligiblePhase;
+  const isExplicitV2 = issue.v2Metadata?.isExplicitV2 === true;
+  const isEligiblePhase = (phase === "exploration" || phase === "execution") && attention === "none";
+  return hasPilotLabel || isEligiblePhase && isExplicitV2;
 }
 async function claimPilotTask(issue, repo, leaseStore, workerId, ttlMs) {
   if (!issue || typeof issue !== "object") {
@@ -399,7 +402,7 @@ async function claimPilotTask(issue, repo, leaseStore, workerId, ttlMs) {
       conflictReason: "Issue must have a valid issue number"
     };
   }
-  const claimedSha = computeIssueSha2(issue.body);
+  const claimedSha = computeIssueSha(issue.body);
   const rawPhase = issue.v2Metadata?.phase ?? issue.phase ?? "exploration";
   const phase = typeof rawPhase === "string" && rawPhase.trim() ? rawPhase.trim().toLowerCase() : "exploration";
   return await leaseStore.acquireLease(repo, issueNumber, workerId, claimedSha, phase, ttlMs);
@@ -532,81 +535,8 @@ var SessionWatcher = class {
 };
 
 // service/reconciler.ts
-function inspectSession(session) {
-  if (!session) {
-    return { state: "idle", details: "No session provided", reason: "No session provided" };
-  }
-  if (typeof session === "string") {
-    const norm = session.trim().toLowerCase();
-    if (norm === "blocked-permission" || norm === "waiting-permission") {
-      return { state: "blocked-permission", details: "Session blocked on permissions", reason: "Session blocked on permissions" };
-    }
-    if (norm === "blocked-question" || norm === "waiting-question") {
-      return { state: "blocked-question", details: "Session waiting for human decision", reason: "Session waiting for human decision" };
-    }
-    if (norm === "completed" || norm === "done" || norm === "success") {
-      return { state: "completed", details: "Session completed successfully", reason: "Session completed successfully" };
-    }
-    if (norm === "failed" || norm === "error") {
-      return { state: "failed", details: "Session failed", reason: "Session failed" };
-    }
-    if (norm === "running" || norm === "busy") {
-      return { state: "running", details: "Session is running", reason: "Session is running" };
-    }
-    return { state: "idle", details: "Session is idle", reason: "Session is idle" };
-  }
-  const hasPendingPermissions = Array.isArray(session.pendingPermissions) && session.pendingPermissions.length > 0 || Array.isArray(session.permissionRequests) && session.permissionRequests.length > 0 || Array.isArray(session.permissions) && session.permissions.length > 0 || session.waitingForPermission === true || session.hasPendingPermissions === true || session.activity === "waiting-permission" || session.activity === "blocked-permission" || session.status === "waiting-permission" || session.status === "blocked-permission" || session.state === "waiting-permission" || session.state === "blocked-permission";
-  if (hasPendingPermissions) {
-    return {
-      state: "blocked-permission",
-      details: session.reason || "Session waiting on tool permissions",
-      reason: session.reason || "Session waiting on tool permissions"
-    };
-  }
-  const hasPendingQuestions = Array.isArray(session.pendingQuestions) && session.pendingQuestions.length > 0 || Array.isArray(session.questions) && session.questions.some((q) => !q.answered && !q.completed) || session.waitingForQuestion === true || session.hasPendingQuestions === true || session.activity === "waiting-question" || session.activity === "blocked-question" || session.status === "waiting-question" || session.status === "blocked-question" || session.state === "waiting-question" || session.state === "blocked-question";
-  if (hasPendingQuestions) {
-    return {
-      state: "blocked-question",
-      details: session.reason || "Session waiting on human response",
-      reason: session.reason || "Session waiting on human response"
-    };
-  }
-  const isFailed = Boolean(session.error) || typeof session.exitCode === "number" && session.exitCode !== 0 || session.failed === true || session.status === "failed" || session.status === "error" || session.state === "failed" || session.state === "error" || session.activity === "failed" || session.activity === "error";
-  if (isFailed) {
-    let details = "Session failed";
-    if (session.error) {
-      details = typeof session.error === "object" ? session.error.message || JSON.stringify(session.error) : String(session.error);
-    } else if (typeof session.exitCode === "number" && session.exitCode !== 0) {
-      details = `Session process exited with error code ${session.exitCode}`;
-    } else if (session.reason) {
-      details = String(session.reason);
-    }
-    return { state: "failed", details, reason: details };
-  }
-  const isCompleted = session.status === "completed" || session.status === "done" || session.status === "success" || session.state === "completed" || session.state === "done" || session.state === "success" || session.activity === "completed" || session.activity === "done" || session.completed === true || session.exitCode === 0;
-  if (isCompleted) {
-    return {
-      state: "completed",
-      details: session.reason || "Session completed successfully",
-      reason: session.reason || "Session completed successfully"
-    };
-  }
-  const isRunning = session.status === "running" || session.status === "busy" || session.state === "running" || session.state === "busy" || session.activity === "running" || session.busy === true || session.active === true;
-  if (isRunning) {
-    return {
-      state: "running",
-      details: session.reason || "Session is actively running",
-      reason: session.reason || "Session is actively running"
-    };
-  }
-  return {
-    state: "idle",
-    details: session.reason || "Session is idle",
-    reason: session.reason || "Session is idle"
-  };
-}
 function reconcileTaskState(issue, session, lease) {
-  const liveness = inspectSession(session);
+  const liveness = inspectSessionLiveness(session);
   switch (liveness.state) {
     case "blocked-permission":
       return {
@@ -621,22 +551,44 @@ function reconcileTaskState(issue, session, lease) {
         reason: "Linked session waiting for human response"
       };
     case "completed": {
-      const currentPhase = (lease?.phase || issue?.v2Metadata?.phase || issue?.phase || "exploration").trim().toLowerCase();
-      let targetPhase = "verification";
+      const rawIssuePhase = issue?.v2Metadata?.phase || issue?.phase;
+      const rawLeasePhase = lease?.phase;
+      const issuePhase = typeof rawIssuePhase === "string" ? rawIssuePhase.trim().toLowerCase() : "";
+      const leasePhase = typeof rawLeasePhase === "string" ? rawLeasePhase.trim().toLowerCase() : "";
+      const rawAttention = issue?.v2Metadata?.attention || issue?.attention || "none";
+      const currentAttention = typeof rawAttention === "string" ? rawAttention.trim().toLowerCase() : "none";
+      if (issuePhase === "done" || leasePhase === "done") {
+        return {
+          action: "release",
+          reason: "Task is complete"
+        };
+      }
+      if (issuePhase === "verification" || leasePhase === "verification" || currentAttention === "needs-review") {
+        return {
+          action: "poll",
+          reason: "Awaiting human review"
+        };
+      }
+      const currentPhase = leasePhase || issuePhase || "exploration";
       if (currentPhase === "exploration") {
-        targetPhase = "planning";
-      } else if (currentPhase === "execution") {
-        targetPhase = "verification";
-      } else if (currentPhase === "planning") {
-        targetPhase = "execution";
-      } else if (currentPhase === "verification") {
-        targetPhase = "done";
+        return {
+          action: "advance",
+          targetPhase: "planning",
+          targetAttention: "needs-review",
+          reason: "Worker completed execution cleanly"
+        };
+      }
+      if (currentPhase === "execution") {
+        return {
+          action: "advance",
+          targetPhase: "verification",
+          targetAttention: "needs-review",
+          reason: "Worker completed execution cleanly"
+        };
       }
       return {
-        action: "advance",
-        targetPhase,
-        targetAttention: "needs-review",
-        reason: "Worker completed execution cleanly"
+        action: "poll",
+        reason: "Awaiting human review"
       };
     }
     case "failed": {
