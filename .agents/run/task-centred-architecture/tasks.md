@@ -38,9 +38,8 @@
 | Stage 2 Planning: Coordinator Pilot & UI Surfaces | COMPLETE | Manager | Roadmap drafted: decoupled into 2A (UI) and 2B (Host Pilot) | Dispatched Task 201 |
 | Task 201: Attention View & Action Sub-Queues | COMPLETE | ses_01eb72144518ddf1dd6b54af / engineer | Brief `tasks/task-201-attention-view-mode.md` | 13/13 view tests pass; 398/398 regression pass |
 | Task 202: Alert-Only Badges & Drawer AC | COMPLETE | ses_ab81db24b068bfa3a0255322 / engineer | Brief `tasks/task-202-card-badges-and-drawer-ac.md` | 22/22 stage 2A tests pass; 407/407 regression pass |
-| Task 203: Proof Suite & Bundle Build | RUNNING | ses_cfd0c821b8d2675506d5d760 / engineer | Brief `tasks/task-203-proof-and-bundle-build.md` | In progress in worktree |
-| Task 203: Proof Suite & Bundle Build | QUEUED | engineer | Brief `tasks/task-203-proof-and-bundle-build.md` | Awaits Task 202 |
-| Task 204: Hostile Adversarial Review (L4) | QUEUED | engineer | Brief `tasks/task-204-hostile-adversarial-review.md` | Awaits Task 203 |
+| Task 203: Proof Suite & Bundle Build | COMPLETE | ses_cfd0c821b8d2675506d5d760 / engineer | Brief `tasks/task-203-proof-and-bundle-build.md` | Commit 4b0c657; 18/18 parity; 409/409 full suite pass |
+| Task 204: Hostile Adversarial Review (L4) | RUNNING | ses_pending / engineer | Brief `tasks/task-204-hostile-adversarial-review.md` | Dispatched to worktree |
 | Task 205: Integration Merge of Stage 2A | QUEUED | engineer | Brief `tasks/task-205-integrate-stage2a-merge.md` | Awaits Task 204 |
 
 ## Evidence and incident policy
