@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { loadCoordinatorConfig, resolveStorageDir } from './config.js';
-import { LeaseStore } from './lease-store.js';
+import { loadCoordinatorConfig, resolveStorageDir } from './config.ts';
+import { LeaseStore } from './lease-store.ts';
 import type { CoordinatorConfig, CoordinatorStatus } from './types.js';
 
 export class CoordinatorService {
@@ -49,6 +49,16 @@ export class CoordinatorService {
       }
     } catch (err) {
       console.error(`[Coordinator Service] Failed to create storage dir ${this.config.storageDir}:`, err);
+      this.status = 'stopped';
+      throw err;
+    }
+
+    // ADV-2C-03: load lease state through init() before the first tick so prior
+    // state is backed up forensically instead of silently overwritten.
+    try {
+      await this.leaseStore.init();
+    } catch (err) {
+      console.error('[Coordinator Service] Failed to initialize lease store:', err);
       this.status = 'stopped';
       throw err;
     }
@@ -116,13 +126,13 @@ export class CoordinatorService {
   }
 }
 
-export * from './types.js';
-export * from './config.js';
-export * from './cas.js';
-export { LeaseStore, resolveLeaseStorageDir, getDefaultLeasesFilePath } from './lease-store.js';
-export * from './task-claim.js';
-export * from './session-watcher.js';
-export * from './reconciler.js';
+export * from './types.ts';
+export * from './config.ts';
+export * from './cas.ts';
+export { LeaseStore, resolveLeaseStorageDir, getDefaultLeasesFilePath } from './lease-store.ts';
+export * from './task-claim.ts';
+export * from './session-watcher.ts';
+export * from './reconciler.ts';
 
 // If executed directly, run the coordinator service
 if (process.argv[1] && import.meta.url) {

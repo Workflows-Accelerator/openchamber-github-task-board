@@ -46,6 +46,7 @@ export class LeaseStore {
   private defaultTtlMs: number;
   private leases: Record<string, TaskLease> = {};
   private queue: Promise<unknown> = Promise.resolve();
+  private backupBlocked = false;
 
   constructor(filePath?: string, defaultTtlMs: number = DEFAULT_LEASE_TTL_MS) {
     this.filePath = filePath || getDefaultLeasesFilePath();
@@ -78,6 +79,8 @@ export class LeaseStore {
 
   /**
    * Initialize the store: loads existing state or creates empty structure with version: 1.
+   * Any load failure (read error, unparseable JSON, valid-JSON-but-wrong-shape) is backed up
+   * forensically before the store is reset (ADV-2C-03).
    */
   public async init(): Promise<void> {
     return this.runExclusive(async () => {
@@ -89,33 +92,65 @@ export class LeaseStore {
         const parsed = JSON.parse(raw) as LeaseStoreState;
         if (parsed && typeof parsed.leases === 'object' && parsed.leases !== null) {
           this.leases = { ...parsed.leases };
-        } else {
-          this.leases = {};
-          await this.saveToDisk();
+          this.backupBlocked = false;
+          return;
         }
+        // Valid JSON but wrong shape (null, 42, {"leases":null}, ...)
+        await this.resetPreservingPriorState('unexpected store shape');
       } catch (err: any) {
-        if (err.code === 'ENOENT') {
+        if (err?.code === 'ENOENT') {
           this.leases = {};
+          this.backupBlocked = false;
           await this.saveToDisk();
-        } else {
-          // Unreadable or corrupted JSON fallback: preserve forensic backup
-          if (err instanceof SyntaxError || err?.name === 'SyntaxError') {
-            try {
-              const backupPath = `${this.filePath}.corrupted.${Date.now()}.bak`;
-              await fs.promises.copyFile(this.filePath, backupPath);
-            } catch {
-              // Ignore backup copy failure
-            }
-          }
-          this.leases = {};
-          await this.saveToDisk();
+          return;
         }
+        const reason = err instanceof SyntaxError || err?.name === 'SyntaxError'
+          ? 'unparseable JSON'
+          : `read error (${err?.code || err?.message || 'unknown'})`;
+        await this.resetPreservingPriorState(reason);
       }
     });
   }
 
   /**
+   * Preserve a forensic copy of the on-disk state before it can be overwritten.
+   * Returns true when there is nothing to preserve (no file) or the backup succeeded.
+   * On failure, logs the error and returns false (ADV-2C-07): callers must not
+   * perform destructive writes without a successful backup.
+   */
+  private async backupPriorState(reason: string): Promise<boolean> {
+    try {
+      if (!fs.existsSync(this.filePath)) {
+        return true;
+      }
+      const backupPath = `${this.filePath}.corrupted.${Date.now()}.bak`;
+      await fs.promises.copyFile(this.filePath, backupPath);
+      return true;
+    } catch (err) {
+      console.error(`[LeaseStore] Failed to back up prior lease state (${reason}):`, err);
+      return false;
+    }
+  }
+
+  /**
+   * Reset in-memory state after a load failure. The prior file is backed up first;
+   * when the backup fails the destructive reset write is skipped entirely
+   * (ADV-2C-07) — the unreadable file stays on disk untouched and later writes
+   * are refused until a backup succeeds.
+   */
+  private async resetPreservingPriorState(reason: string): Promise<void> {
+    const backedUp = await this.backupPriorState(reason);
+    this.leases = {};
+    this.backupBlocked = !backedUp;
+    if (backedUp) {
+      await this.saveToDisk();
+    }
+  }
+
+  /**
    * Reload state from disk to synchronize with any external writes.
+   * On load failures the prior file is backed up before any later write can
+   * overwrite it (ADV-2C-03); in-memory state is kept on transient read errors.
    */
   public async loadFromDisk(): Promise<void> {
     try {
@@ -123,11 +158,19 @@ export class LeaseStore {
       const parsed = JSON.parse(raw) as LeaseStoreState;
       if (parsed && typeof parsed.leases === 'object' && parsed.leases !== null) {
         this.leases = { ...parsed.leases };
+        this.backupBlocked = false;
+        return;
       }
+      this.backupBlocked = !(await this.backupPriorState('unexpected store shape'));
     } catch (err: any) {
-      if (err.code !== 'ENOENT') {
-        // Keep in-memory state on transient read errors
+      if (err?.code === 'ENOENT') {
+        return;
       }
+      // Keep in-memory state on read/parse failures; preserve forensic backup
+      // before any later write can overwrite unreadable prior state.
+      this.backupBlocked = !(await this.backupPriorState(
+        `read error (${err?.code || err?.message || 'unknown'})`
+      ));
     }
   }
 
@@ -317,8 +360,18 @@ export class LeaseStore {
 
   /**
    * Atomically save state to disk via temp file write and atomic rename.
+   * Refuses to overwrite when prior state could not be read or backed up
+   * (ADV-2C-03, ADV-2C-07): never destroy prior state without a successful backup.
    */
   private async saveToDisk(): Promise<void> {
+    if (this.backupBlocked) {
+      const backedUp = await this.backupPriorState('prior state unreadable before overwrite');
+      if (!backedUp) {
+        throw new Error('Refusing to overwrite lease store: prior state could not be read or backed up');
+      }
+      this.backupBlocked = false;
+    }
+
     const dir = path.dirname(this.filePath);
     await fs.promises.mkdir(dir, { recursive: true });
 

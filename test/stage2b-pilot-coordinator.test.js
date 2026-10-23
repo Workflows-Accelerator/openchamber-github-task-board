@@ -11,6 +11,7 @@ import { loadCoordinatorConfig, resolveStorageDir } from '../service/config.ts';
 import { isTaskEligibleForPilot, claimPilotTask, TaskClaimEngine } from '../service/task-claim.ts';
 import { inspectSessionLiveness, SessionWatcher } from '../service/session-watcher.ts';
 import { reconcileTaskState, CoordinatorReconciler } from '../service/reconciler.ts';
+import { CoordinatorService } from '../service/main.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(here, '..');
@@ -94,6 +95,24 @@ test('Part 2: computeIssueSha normalizes CRLF and LF newlines to identical diges
   const verifyResult = verifyIssueCas(crlfBody, shaLf);
   assert.equal(verifyResult.match, true);
   assert.equal(verifyResult.currentSha, shaLf);
+});
+
+test('Part 2: computeIssueSha normalizes bare CR and mixed line endings to LF digests (ADV-2C-04)', () => {
+  const lfBody = 'Line 1\nLine 2\nLine 3';
+  const bareCrBody = 'Line 1\rLine 2\rLine 3';
+  const mixedLfBody = 'Line 1\nLine 2\nLine 3\nLine 4';
+  const mixedBody = 'Line 1\r\nLine 2\rLine 3\nLine 4';
+
+  assert.equal(computeIssueSha(bareCrBody), computeIssueSha(lfBody), 'bare CR bodies must digest equal to LF bodies');
+  assert.equal(computeIssueSha(mixedBody), computeIssueSha(mixedLfBody), 'mixed line endings must digest equal to LF bodies');
+
+  const shaLf = computeIssueSha(lfBody);
+  assert.equal(verifyIssueCas(bareCrBody, shaLf).match, true);
+  assert.equal(verifyIssueCas(mixedBody, computeIssueSha(mixedLfBody)).match, true);
+
+  // Deliberate: trailing whitespace is NOT normalized. A false match there could
+  // clobber a real edit; a false CAS conflict aborts safely instead.
+  assert.notEqual(computeIssueSha('Line 2   \n'), computeIssueSha('Line 2\n'));
 });
 
 test('Part 2: verifyIssueCas verifies baseline hash match and detects divergence', () => {
@@ -474,6 +493,148 @@ test('Part 6: Store backs up corrupted disk file to .corrupted.<timestamp>.bak o
   fs.rmSync(tempDir, { recursive: true, force: true });
 });
 
+test('Part 6: Store backs up valid-JSON-but-wrong-shape files before reset (ADV-2C-03)', async () => {
+  const wrongShapeVariants = ['null', '42', '{"leases":null}'];
+
+  for (const variant of wrongShapeVariants) {
+    const tempDir = createTempDir('lease-wrong-shape-');
+    const filePath = path.join(tempDir, 'leases.json');
+    fs.writeFileSync(filePath, variant, 'utf8');
+
+    const store = new LeaseStore(filePath, 60000);
+    await store.init();
+
+    const files = fs.readdirSync(tempDir);
+    const bakFiles = files.filter((f) => f.startsWith('leases.json.corrupted.') && f.endsWith('.bak'));
+    assert.equal(bakFiles.length, 1, `wrong-shape payload ${variant} must be backed up before reset`);
+    assert.equal(fs.readFileSync(path.join(tempDir, bakFiles[0]), 'utf8'), variant, 'backup must preserve the wrong-shape payload');
+
+    const onDisk = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.equal(onDisk.version, 1);
+    assert.deepEqual(onDisk.leases, {});
+
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('Part 6: Store backs up prior file on read errors before resetting state (ADV-2C-03)', async () => {
+  const tempDir = createTempDir('lease-read-error-');
+  const filePath = path.join(tempDir, 'leases.json');
+  const originalContent = JSON.stringify(
+    {
+      version: 1,
+      leases: {
+        'org/repo#1': {
+          issueNumber: 1,
+          repo: 'org/repo',
+          ownerId: 'worker-1',
+          claimedAt: 1000,
+          expiresAt: Date.now() + 60000,
+          heartbeatAt: 1000,
+          claimedSha: 'sha',
+          phase: 'execution',
+        },
+      },
+    },
+    null,
+    2
+  );
+  fs.writeFileSync(filePath, originalContent, 'utf8');
+
+  // Simulate a transient read error (EIO) on the lease file
+  const originalReadFile = fs.promises.readFile;
+  fs.promises.readFile = async () => {
+    const err = new Error('simulated EIO');
+    err.code = 'EIO';
+    throw err;
+  };
+
+  try {
+    const store = new LeaseStore(filePath, 60000);
+    await store.init();
+  } finally {
+    fs.promises.readFile = originalReadFile;
+  }
+
+  const files = fs.readdirSync(tempDir);
+  const bakFiles = files.filter((f) => f.startsWith('leases.json.corrupted.') && f.endsWith('.bak'));
+  assert.equal(bakFiles.length, 1, 'read-error load must back up prior state before any reset');
+  assert.equal(fs.readFileSync(path.join(tempDir, bakFiles[0]), 'utf8'), originalContent, 'backup must preserve the unread prior state');
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
+test('Part 6: Store never destroys prior state when the backup itself fails (ADV-2C-07)', async () => {
+  const tempDir = createTempDir('lease-backup-fail-');
+  const filePath = path.join(tempDir, 'leases.json');
+  const corruptedContent = '{ corrupted json and backup will fail';
+  fs.writeFileSync(filePath, corruptedContent, 'utf8');
+
+  const originalCopyFile = fs.promises.copyFile;
+  const originalConsoleError = console.error;
+  const logged = [];
+  fs.promises.copyFile = async () => {
+    const err = new Error('simulated EACCES');
+    err.code = 'EACCES';
+    throw err;
+  };
+  console.error = (...args) => {
+    logged.push(args.map((a) => (typeof a === 'string' ? a : String(a))).join(' '));
+  };
+
+  try {
+    const store = new LeaseStore(filePath, 60000);
+    // init() must not throw or crash-loop when the backup fails
+    await store.init();
+
+    assert.equal(store.listActiveLeases().length, 0, 'operates on empty in-memory state');
+    assert.equal(fs.readFileSync(filePath, 'utf8'), corruptedContent, 'prior file must remain untouched when backup fails');
+    assert.equal(fs.readdirSync(tempDir).filter((f) => f.endsWith('.bak')).length, 0, 'no backup should be claimed on failed backup');
+    assert.ok(
+      logged.some((line) => line.includes('Failed to back up prior lease state')),
+      'backup failure must be logged'
+    );
+
+    // While prior state is unreadable and unbacked, no destructive write may happen
+    await assert.rejects(
+      () => store.acquireLease('org/repo', 1, 'worker-1', 'sha', 'execution'),
+      /Refusing to overwrite/
+    );
+    assert.equal(fs.readFileSync(filePath, 'utf8'), corruptedContent, 'lease file must stay untouched after refused write');
+  } finally {
+    fs.promises.copyFile = originalCopyFile;
+    console.error = originalConsoleError;
+  }
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
+test('Part 6: CoordinatorService.start() initializes lease store and preserves corrupted state forensically (ADV-2C-03)', async () => {
+  const tempDir = createTempDir('service-init-');
+  const filePath = path.join(tempDir, 'leases.json');
+  const corruptedContent = '{ service level corruption';
+  fs.writeFileSync(filePath, corruptedContent, 'utf8');
+
+  const store = new LeaseStore(filePath, 60000);
+  const service = new CoordinatorService(
+    { storageDir: tempDir, pollIntervalMs: 600000, leaseTtlMs: 60000, dryRun: true },
+    store
+  );
+
+  await service.start();
+  await service.stop();
+
+  const files = fs.readdirSync(tempDir);
+  const bakFiles = files.filter((f) => f.startsWith('leases.json.corrupted.') && f.endsWith('.bak'));
+  assert.equal(bakFiles.length, 1, 'start() must load the lease store via init() and back up corrupted state');
+  assert.equal(fs.readFileSync(path.join(tempDir, bakFiles[0]), 'utf8'), corruptedContent, 'backup must preserve corrupted contents');
+
+  const onDisk = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  assert.equal(onDisk.version, 1);
+
+  fs.rmSync(tempDir, { recursive: true, force: true });
+});
+
 test('Part 6: Rapid concurrent writes do not race or corrupt lease file', async () => {
   const tempDir = createTempDir('lease-concurrency-');
   const filePath = path.join(tempDir, 'leases.json');
@@ -826,8 +987,8 @@ test('Part 9: reconcileTaskState advances completed execution session to verific
   assert.equal(result.reason, 'Worker completed execution cleanly');
 });
 
-test('Part 9: reconcileTaskState respects phase from TaskLease when available', () => {
-  const issue = { number: 205, v2Metadata: { phase: 'draft', attention: 'none' } };
+test('Part 9: reconcileTaskState falls back to TaskLease phase when the issue carries no phase (ADV-2C-02 fallback)', () => {
+  const issue = { number: 205, v2Metadata: { attention: 'none' } };
   const session = { status: 'completed' };
   const lease = {
     issueNumber: 205,
@@ -886,13 +1047,133 @@ test('Part 9: reconcileTaskState is idempotent: tick 1 advances execution to ver
   const issueTick2 = { number: 301, v2Metadata: { phase: 'verification', attention: 'needs-review', isExplicitV2: true } };
   const tick2Result = reconcileTaskState(issueTick2, session);
   assert.equal(tick2Result.action, 'poll');
-  assert.equal(tick2Result.reason, 'Awaiting human review');
+  assert.equal(tick2Result.reason, 'Awaiting human verification');
 
   // Tick 3: task in done phase releases lease
   const issueDone = { number: 301, v2Metadata: { phase: 'done', attention: 'none', isExplicitV2: true } };
   const doneResult = reconcileTaskState(issueDone, session);
   assert.equal(doneResult.action, 'release');
   assert.equal(doneResult.reason, 'Task is complete');
+});
+
+test('Part 9: reconcileTaskState polls without overwriting attention for non-completed sessions on verification tasks (ADV-2C-01)', () => {
+  const hostileSessions = [
+    { status: 'failed', error: 'Worker crashed' },
+    { pendingPermissions: ['tools.execute'] },
+    { pendingQuestions: ['Ship it?'] },
+  ];
+
+  for (const session of hostileSessions) {
+    const issue = { number: 401, v2Metadata: { phase: 'verification', attention: 'needs-review' } };
+    const result = reconcileTaskState(issue, session);
+
+    assert.equal(result.action, 'poll', JSON.stringify(session));
+    assert.equal(result.targetAttention, undefined, 'needs-review must never be overwritten');
+    assert.equal(result.targetPhase, undefined);
+    assert.equal(issue.v2Metadata.attention, 'needs-review', 'issue attention must remain untouched');
+  }
+});
+
+test('Part 9: reconcileTaskState releases done/archive and closed tasks for every liveness state (ADV-2C-01, ADV-2C-08)', () => {
+  const sessions = [
+    { status: 'failed', error: 'Worker crashed' },
+    { pendingPermissions: ['tools.execute'] },
+    { pendingQuestions: ['Ship it?'] },
+    { status: 'completed' },
+    { status: 'running' },
+    { status: 'idle' },
+  ];
+
+  for (const phase of ['done', 'archive']) {
+    for (const session of sessions) {
+      const issue = { number: 402, v2Metadata: { phase, attention: 'none' } };
+      const result = reconcileTaskState(issue, session);
+
+      assert.equal(result.action, 'release', `${phase} + ${JSON.stringify(session)}`);
+      assert.equal(result.reason, 'Task is complete');
+      assert.equal(result.targetAttention, undefined, 'terminal tasks must never have attention mutated');
+    }
+  }
+
+  // Closed issues are terminal regardless of liveness state
+  const closedResult = reconcileTaskState(
+    { number: 403, state: 'closed', v2Metadata: { phase: 'execution', attention: 'none' } },
+    { status: 'failed', error: 'Worker crashed' }
+  );
+  assert.equal(closedResult.action, 'release');
+  assert.equal(closedResult.targetAttention, undefined);
+});
+
+test('Part 9: reconcileTaskState prefers live issue phase over stale lease phase (ADV-2C-02)', () => {
+  const session = { status: 'completed' };
+  const staleLease = (phase) => ({
+    issueNumber: 501,
+    repo: 'test/repo',
+    ownerId: 'w1',
+    claimedAt: 1000,
+    expiresAt: Date.now() + 60000,
+    heartbeatAt: 1000,
+    claimedSha: 'sha',
+    phase,
+  });
+
+  // Issue moved to planning after the claim; stale lease snapshot still says execution
+  const planningResult = reconcileTaskState(
+    { number: 501, v2Metadata: { phase: 'planning', attention: 'none' } },
+    session,
+    staleLease('execution')
+  );
+  assert.equal(planningResult.action, 'poll', 'stale lease snapshot must not advance planning to verification');
+  assert.equal(planningResult.targetPhase, undefined);
+
+  // Live issue still in execution; stale lease snapshot says done — must not release a live task
+  const executionResult = reconcileTaskState(
+    { number: 501, v2Metadata: { phase: 'execution', attention: 'none' } },
+    session,
+    staleLease('done')
+  );
+  assert.equal(executionResult.action, 'advance');
+  assert.equal(executionResult.targetPhase, 'verification');
+});
+
+test('Part 9: reconcileTaskState does not discard open human decisions (ADV-2C-05)', () => {
+  const session = { status: 'completed' };
+
+  for (const attention of ['needs-decision', 'needs-permission', 'needs-review']) {
+    const result = reconcileTaskState(
+      { number: 502, v2Metadata: { phase: 'execution', attention } },
+      session
+    );
+    assert.equal(result.action, 'poll', `attention ${attention} must block advance`);
+    assert.equal(result.targetAttention, undefined);
+    assert.equal(result.targetPhase, undefined);
+  }
+
+  // A non-completed session may not re-escalate over an open decision either
+  const failedResult = reconcileTaskState(
+    { number: 502, v2Metadata: { phase: 'execution', attention: 'needs-decision' } },
+    { status: 'failed', error: 'Worker crashed' }
+  );
+  assert.equal(failedResult.action, 'poll');
+  assert.equal(failedResult.targetAttention, undefined);
+});
+
+test('Part 9: reconcileTaskState polls on missing or empty issue data instead of advancing (ADV-2C-08)', () => {
+  const session = { status: 'completed' };
+  const emptyIssues = [
+    null,
+    undefined,
+    {},
+    { number: 503 },
+    { number: 503, v2Metadata: { attention: 'none' } },
+  ];
+
+  for (const issue of emptyIssues) {
+    const result = reconcileTaskState(issue, session);
+    assert.equal(result.action, 'poll', JSON.stringify(issue));
+    assert.equal(result.reason, 'No issue data');
+    assert.equal(result.targetPhase, undefined);
+  }
 });
 
 test('Part 9: CoordinatorReconciler class wrapper delegates cleanly', () => {

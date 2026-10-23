@@ -92,6 +92,7 @@ var LeaseStore = class {
   defaultTtlMs;
   leases = {};
   queue = Promise.resolve();
+  backupBlocked = false;
   constructor(filePath, defaultTtlMs = DEFAULT_LEASE_TTL_MS2) {
     this.filePath = filePath || getDefaultLeasesFilePath();
     this.defaultTtlMs = defaultTtlMs > 0 ? defaultTtlMs : DEFAULT_LEASE_TTL_MS2;
@@ -119,6 +120,8 @@ var LeaseStore = class {
   }
   /**
    * Initialize the store: loads existing state or creates empty structure with version: 1.
+   * Any load failure (read error, unparseable JSON, valid-JSON-but-wrong-shape) is backed up
+   * forensically before the store is reset (ADV-2C-03).
    */
   async init() {
     return this.runExclusive(async () => {
@@ -129,30 +132,59 @@ var LeaseStore = class {
         const parsed = JSON.parse(raw);
         if (parsed && typeof parsed.leases === "object" && parsed.leases !== null) {
           this.leases = { ...parsed.leases };
-        } else {
-          this.leases = {};
-          await this.saveToDisk();
+          this.backupBlocked = false;
+          return;
         }
+        await this.resetPreservingPriorState("unexpected store shape");
       } catch (err) {
-        if (err.code === "ENOENT") {
+        if (err?.code === "ENOENT") {
           this.leases = {};
+          this.backupBlocked = false;
           await this.saveToDisk();
-        } else {
-          if (err instanceof SyntaxError || err?.name === "SyntaxError") {
-            try {
-              const backupPath = `${this.filePath}.corrupted.${Date.now()}.bak`;
-              await fs2.promises.copyFile(this.filePath, backupPath);
-            } catch {
-            }
-          }
-          this.leases = {};
-          await this.saveToDisk();
+          return;
         }
+        const reason = err instanceof SyntaxError || err?.name === "SyntaxError" ? "unparseable JSON" : `read error (${err?.code || err?.message || "unknown"})`;
+        await this.resetPreservingPriorState(reason);
       }
     });
   }
   /**
+   * Preserve a forensic copy of the on-disk state before it can be overwritten.
+   * Returns true when there is nothing to preserve (no file) or the backup succeeded.
+   * On failure, logs the error and returns false (ADV-2C-07): callers must not
+   * perform destructive writes without a successful backup.
+   */
+  async backupPriorState(reason) {
+    try {
+      if (!fs2.existsSync(this.filePath)) {
+        return true;
+      }
+      const backupPath = `${this.filePath}.corrupted.${Date.now()}.bak`;
+      await fs2.promises.copyFile(this.filePath, backupPath);
+      return true;
+    } catch (err) {
+      console.error(`[LeaseStore] Failed to back up prior lease state (${reason}):`, err);
+      return false;
+    }
+  }
+  /**
+   * Reset in-memory state after a load failure. The prior file is backed up first;
+   * when the backup fails the destructive reset write is skipped entirely
+   * (ADV-2C-07) — the unreadable file stays on disk untouched and later writes
+   * are refused until a backup succeeds.
+   */
+  async resetPreservingPriorState(reason) {
+    const backedUp = await this.backupPriorState(reason);
+    this.leases = {};
+    this.backupBlocked = !backedUp;
+    if (backedUp) {
+      await this.saveToDisk();
+    }
+  }
+  /**
    * Reload state from disk to synchronize with any external writes.
+   * On load failures the prior file is backed up before any later write can
+   * overwrite it (ADV-2C-03); in-memory state is kept on transient read errors.
    */
   async loadFromDisk() {
     try {
@@ -160,10 +192,17 @@ var LeaseStore = class {
       const parsed = JSON.parse(raw);
       if (parsed && typeof parsed.leases === "object" && parsed.leases !== null) {
         this.leases = { ...parsed.leases };
+        this.backupBlocked = false;
+        return;
       }
+      this.backupBlocked = !await this.backupPriorState("unexpected store shape");
     } catch (err) {
-      if (err.code !== "ENOENT") {
+      if (err?.code === "ENOENT") {
+        return;
       }
+      this.backupBlocked = !await this.backupPriorState(
+        `read error (${err?.code || err?.message || "unknown"})`
+      );
     }
   }
   /**
@@ -304,8 +343,17 @@ var LeaseStore = class {
   }
   /**
    * Atomically save state to disk via temp file write and atomic rename.
+   * Refuses to overwrite when prior state could not be read or backed up
+   * (ADV-2C-03, ADV-2C-07): never destroy prior state without a successful backup.
    */
   async saveToDisk() {
+    if (this.backupBlocked) {
+      const backedUp = await this.backupPriorState("prior state unreadable before overwrite");
+      if (!backedUp) {
+        throw new Error("Refusing to overwrite lease store: prior state could not be read or backed up");
+      }
+      this.backupBlocked = false;
+    }
     const dir = path2.dirname(this.filePath);
     await fs2.promises.mkdir(dir, { recursive: true });
     const baseName = path2.basename(this.filePath);
@@ -334,7 +382,7 @@ var LeaseStore = class {
 // service/cas.ts
 import crypto from "node:crypto";
 function computeIssueSha(body) {
-  const content = (body ?? "").replace(/\r\n/g, "\n");
+  const content = (body ?? "").replace(/\r\n?/g, "\n");
   return crypto.createHash("sha256").update(content).digest("hex");
 }
 function verifyIssueCas(currentBody, expectedSha) {
@@ -537,6 +585,38 @@ var SessionWatcher = class {
 // service/reconciler.ts
 function reconcileTaskState(issue, session, lease) {
   const liveness = inspectSessionLiveness(session);
+  if (!issue || typeof issue !== "object") {
+    return {
+      action: "poll",
+      reason: "No issue data"
+    };
+  }
+  const rawIssuePhase = issue.v2Metadata?.phase || issue.phase;
+  const rawLeasePhase = lease?.phase;
+  const issuePhase = typeof rawIssuePhase === "string" ? rawIssuePhase.trim().toLowerCase() : "";
+  const leasePhase = typeof rawLeasePhase === "string" ? rawLeasePhase.trim().toLowerCase() : "";
+  const rawAttention = issue.v2Metadata?.attention || issue.attention || "none";
+  const currentAttention = typeof rawAttention === "string" ? rawAttention.trim().toLowerCase() : "none";
+  const currentPhase = issuePhase || leasePhase;
+  const isClosed = typeof issue.state === "string" && issue.state.toLowerCase() === "closed" || issue.closed === true || Boolean(issue.closed_at);
+  if (isClosed || currentPhase === "done" || currentPhase === "archive") {
+    return {
+      action: "release",
+      reason: "Task is complete"
+    };
+  }
+  if (!currentPhase) {
+    return {
+      action: "poll",
+      reason: "No issue data"
+    };
+  }
+  if (currentPhase === "verification" || currentAttention !== "none") {
+    return {
+      action: "poll",
+      reason: "Awaiting human verification"
+    };
+  }
   switch (liveness.state) {
     case "blocked-permission":
       return {
@@ -551,26 +631,7 @@ function reconcileTaskState(issue, session, lease) {
         reason: "Linked session waiting for human response"
       };
     case "completed": {
-      const rawIssuePhase = issue?.v2Metadata?.phase || issue?.phase;
-      const rawLeasePhase = lease?.phase;
-      const issuePhase = typeof rawIssuePhase === "string" ? rawIssuePhase.trim().toLowerCase() : "";
-      const leasePhase = typeof rawLeasePhase === "string" ? rawLeasePhase.trim().toLowerCase() : "";
-      const rawAttention = issue?.v2Metadata?.attention || issue?.attention || "none";
-      const currentAttention = typeof rawAttention === "string" ? rawAttention.trim().toLowerCase() : "none";
-      if (issuePhase === "done" || leasePhase === "done") {
-        return {
-          action: "release",
-          reason: "Task is complete"
-        };
-      }
-      if (issuePhase === "verification" || leasePhase === "verification" || currentAttention === "needs-review") {
-        return {
-          action: "poll",
-          reason: "Awaiting human review"
-        };
-      }
-      const currentPhase = leasePhase || issuePhase || "exploration";
-      if (currentPhase === "exploration") {
+      if (currentAttention === "none" && currentPhase === "exploration") {
         return {
           action: "advance",
           targetPhase: "planning",
@@ -578,7 +639,7 @@ function reconcileTaskState(issue, session, lease) {
           reason: "Worker completed execution cleanly"
         };
       }
-      if (currentPhase === "execution") {
+      if (currentAttention === "none" && currentPhase === "execution") {
         return {
           action: "advance",
           targetPhase: "verification",
@@ -662,6 +723,13 @@ var CoordinatorService = class {
       }
     } catch (err) {
       console.error(`[Coordinator Service] Failed to create storage dir ${this.config.storageDir}:`, err);
+      this.status = "stopped";
+      throw err;
+    }
+    try {
+      await this.leaseStore.init();
+    } catch (err) {
+      console.error("[Coordinator Service] Failed to initialize lease store:", err);
       this.status = "stopped";
       throw err;
     }
