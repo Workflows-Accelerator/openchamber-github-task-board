@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <title>Task Board</title>
+  <link rel="stylesheet" href="/theme.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="topbar">
+    <div class="topbar-main">
+      <span class="brand">Task Board</span>
+      <span id="repo-label" class="repo-label"></span>
+    </div>
+    <div class="topbar-actions">
+      <span id="freshness" class="freshness"></span>
+      <button id="refresh-btn" class="button" type="button" hidden>Refresh</button>
+      <button id="signout-btn" class="button" type="button" hidden>Sign out</button>
+    </div>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+
+    <section id="login-view" class="view" aria-labelledby="login-title">
+      <h1 id="login-title">Sign in</h1>
+      <p class="muted">This board is private. Enter the board password to continue.</p>
+      <form id="login-form" class="login-form">
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required>
+        <button id="login-btn" class="button primary" type="submit">Sign in</button>
+        <p id="login-error" class="form-error" role="alert" hidden></p>
+      </form>
+    </section>
+
+    <section id="board-view" class="view" aria-labelledby="board-title" hidden>
+      <div class="section-head">
+        <h1 id="board-title" tabindex="-1">Tasks</h1>
+        <p id="board-count" class="muted"></p>
+      </div>
+      <div id="empty-state" class="empty" hidden>
+        <p>No tasks in this repository.</p>
+        <p class="muted">Open issues appear here when they are created on GitHub.</p>
+      </div>
+      <ul id="task-list" class="task-list" aria-label="Tasks"></ul>
+    </section>
+
+    <section id="detail-view" class="view" aria-labelledby="detail-title" hidden>
+      <button id="back-btn" class="button back" type="button">Back to board</button>
+
+      <div class="detail-head">
+        <h1 id="detail-title" tabindex="-1"></h1>
+        <div id="detail-meta" class="badges"></div>
+        <p id="detail-freshness" class="muted small"></p>
+      </div>
+
+      <div id="conflict-banner" class="banner warn" role="alert" hidden>
+        <p id="conflict-message">This task changed on GitHub after you opened it. Nothing was written.</p>
+        <button id="conflict-reload" class="button" type="button">Reload this task</button>
+      </div>
+
+      <section class="panel" aria-labelledby="overview-title">
+        <h2 id="overview-title">Overview</h2>
+        <p id="overview-empty" class="muted" hidden>This issue has no editable overview section.</p>
+        <label class="sr-only" for="overview-text">Overview text</label>
+        <textarea id="overview-text" rows="8"></textarea>
+        <div class="row">
+          <button id="save-overview" class="button primary" type="button">Save overview</button>
+          <span id="save-status" class="muted small" role="status"></span>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="questions-title">
+        <h2 id="questions-title">Open questions</h2>
+        <p id="no-questions" class="muted" hidden>No open questions.</p>
+        <ul id="question-list" class="question-list"></ul>
+      </section>
+
+      <section class="panel" aria-labelledby="status-title">
+        <h2 id="status-title">Status</h2>
+        <div class="row">
+          <label for="status-select">Status label</label>
+          <select id="status-select"></select>
+          <button id="apply-status" class="button primary" type="button">Apply status</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="human-title">
+        <h2 id="human-title">Human tasks</h2>
+        <p id="no-human" class="muted" hidden>No human tasks.</p>
+        <ul id="human-list" class="plain-list"></ul>
+      </section>
+    </section>
+  </main>
+
+  <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
+  <script src="/app.js" defer></script>
+</body>
+</html>
