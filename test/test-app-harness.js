@@ -316,6 +316,8 @@ export function createTestApp(options = {}) {
       value: '',
       checked: false,
       disabled: false,
+      focus: () => {},
+      blur: () => {},
     };
     return el;
   };
@@ -472,7 +474,7 @@ export function createTestApp(options = {}) {
               resultPayload = await options.onRequest(data.payload);
             } catch (e) {
               ok = false;
-              error = { code: 'CALL_FAILED', message: e.message };
+              error = e.message || 'Host call failed';
             }
           } else {
             resultPayload = {};
@@ -488,7 +490,8 @@ export function createTestApp(options = {}) {
                   id: data.id,
                   ok,
                   payload: resultPayload,
-                  error,
+                  code: ok ? undefined : 'HOST_REJECTED',
+                  error: ok ? undefined : error,
                 },
               });
               Object.defineProperty(evt, 'source', { value: mockWindow.parent });
@@ -538,6 +541,7 @@ export function createTestApp(options = {}) {
       updateIssueStatus,
       statusReconciler,
       updateIssueBody,
+      answerQuestion,
       submitNewIssue,
       setRepository,
       renderEmptyState,

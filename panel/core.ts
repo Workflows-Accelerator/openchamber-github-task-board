@@ -1238,36 +1238,59 @@ export function resolveOptimisticSubtaskUpdate(
   return { updatedBody: body, found: false };
 }
 
+export interface ResolveQuestionAnswerResult {
+  updatedBody: string;
+  found: boolean;
+  reason?: 'not-found' | 'ambiguous' | 'already-answered';
+}
+
 export function resolveOptimisticQuestionAnswer(
   body: string,
   questionText: string,
   answerText: string
-): { updatedBody: string; found: boolean } {
+): ResolveQuestionAnswerResult {
   if (!body || typeof body !== 'string') {
-    return { updatedBody: body || '', found: false };
+    return { updatedBody: body || '', found: false, reason: 'not-found' };
   }
-  const cleanTarget = questionText.trim();
+  const cleanTarget = (questionText || '').trim();
+  if (!cleanTarget) {
+    return { updatedBody: body, found: false, reason: 'not-found' };
+  }
   const questions = parseOpenQuestions(body);
   const openQuestions = questions.filter((q) => !q.completed);
-  let targetIdx = openQuestions.findIndex((q) => q.text.trim() === cleanTarget);
 
-  if (targetIdx >= 0) {
+  // Exact, case-preserving match on source question text
+  const matchingIndices: number[] = [];
+  openQuestions.forEach((q, idx) => {
+    if (q.text.trim() === cleanTarget) {
+      matchingIndices.push(idx);
+    }
+  });
+
+  if (matchingIndices.length > 1) {
+    // Ambiguous: two unresolved questions have identical source text. Refuse ambiguity.
+    return { updatedBody: body, found: false, reason: 'ambiguous' };
+  }
+
+  if (matchingIndices.length === 1) {
+    const targetIdx = matchingIndices[0];
     return {
       updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
       found: true,
     };
   }
 
-  // Fallback: match among all questions
-  targetIdx = questions.findIndex((q) => q.text.trim() === cleanTarget);
-  if (targetIdx >= 0) {
-    return {
-      updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
-      found: true,
-    };
-  }
-
-  return { updatedBody: body, found: false };
+  // Check if it already exists among completed questions
+  const alreadyCompleted = questions.some((q) => {
+    if (!q.completed) return false;
+    const cleanQ = q.text.replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, '').trim();
+    return cleanQ === cleanTarget;
+  });
+  return {
+    updatedBody: body,
+    found: false,
+    reason: alreadyCompleted ? 'already-answered' : 'not-found',
+  };
 }
 
 export function resolveOptimisticTestItemUpdate(

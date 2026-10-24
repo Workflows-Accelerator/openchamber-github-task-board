@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
@@ -65,20 +65,20 @@
   }
   var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_DEVICE_STORAGE_TOTAL_BYTES = 16777216;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
   var GUEST_SHELL_ID_MAX = 128;
   var GUEST_SHELLS_MAX = 200;
   var GUEST_SHELL_OUTPUT_TAIL_MAX = 65536;
   var GUEST_SHELL_END_STATUSES = ["exited", "timeout", "killed", "stopped", "unknown"];
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
   var GUEST_STATUS_CONTROLS_MAX = 4;
   var GUEST_STATUS_CONTROL_ID = /^[a-z][a-z0-9-]{0,39}$/;
   var GUEST_STATUS_CONTROL_LABEL_MAX = 60;
@@ -121,7 +121,7 @@
     return true;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
   var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
@@ -179,7 +179,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
   var GUEST_POPOVER_ID = /^[A-Za-z0-9_-]{1,80}$/;
   var GUEST_POPOVER_COORDINATE_MAX = 1e5;
   var GUEST_POPOVER_WIDTH_MIN = 160;
@@ -223,7 +223,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -459,7 +459,7 @@
     return wire;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
   var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
@@ -1394,7 +1394,7 @@
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1444,7 +1444,7 @@
     return { requestId, action, parameters, context: readContext(context) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1565,7 +1565,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1655,7 +1655,7 @@
     }
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -1946,7 +1946,7 @@ ${GUEST_SCROLLBAR_CSS}
 ${UI_SIZE_CSS}
 ${GUEST_UI_LOOK_CSS}`;
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -2005,7 +2005,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -2053,7 +2053,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2101,7 +2101,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -2125,7 +2125,7 @@ ${GUEST_UI_LOOK_CSS}`;
     return node;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2186,7 +2186,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -2220,7 +2220,7 @@ ${GUEST_UI_LOOK_CSS}`;
     return target?.id ?? null;
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -2261,7 +2261,7 @@ ${GUEST_UI_LOOK_CSS}`;
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -2300,7 +2300,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -2457,7 +2457,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2501,7 +2501,7 @@ ${GUEST_UI_LOOK_CSS}`;
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2561,7 +2561,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2586,7 +2586,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2674,7 +2674,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2716,7 +2716,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2745,7 +2745,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2791,7 +2791,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2817,7 +2817,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2860,7 +2860,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -2966,7 +2966,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {
@@ -5090,26 +5090,40 @@ ${lines.join("\n")}`;
   }
   function resolveOptimisticQuestionAnswer(body, questionText, answerText) {
     if (!body || typeof body !== "string") {
-      return { updatedBody: body || "", found: false };
+      return { updatedBody: body || "", found: false, reason: "not-found" };
     }
-    const cleanTarget = questionText.trim();
+    const cleanTarget = (questionText || "").trim();
+    if (!cleanTarget) {
+      return { updatedBody: body, found: false, reason: "not-found" };
+    }
     const questions = parseOpenQuestions(body);
     const openQuestions = questions.filter((q) => !q.completed);
-    let targetIdx = openQuestions.findIndex((q) => q.text.trim() === cleanTarget);
-    if (targetIdx >= 0) {
+    const matchingIndices = [];
+    openQuestions.forEach((q, idx) => {
+      if (q.text.trim() === cleanTarget) {
+        matchingIndices.push(idx);
+      }
+    });
+    if (matchingIndices.length > 1) {
+      return { updatedBody: body, found: false, reason: "ambiguous" };
+    }
+    if (matchingIndices.length === 1) {
+      const targetIdx = matchingIndices[0];
       return {
         updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
         found: true
       };
     }
-    targetIdx = questions.findIndex((q) => q.text.trim() === cleanTarget);
-    if (targetIdx >= 0) {
-      return {
-        updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
-        found: true
-      };
-    }
-    return { updatedBody: body, found: false };
+    const alreadyCompleted = questions.some((q) => {
+      if (!q.completed) return false;
+      const cleanQ = q.text.replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, "").trim();
+      return cleanQ === cleanTarget;
+    });
+    return {
+      updatedBody: body,
+      found: false,
+      reason: alreadyCompleted ? "already-answered" : "not-found"
+    };
   }
   function resolveOptimisticTestItemUpdate(body, itemText, completed) {
     if (!body || typeof body !== "string") {
@@ -8965,20 +8979,24 @@ Blocked by ${blockerRef}`;
         return { body: raw.body, updated_at: remoteUpdatedAt };
       }
     } catch (err) {
-      addLog(`Could not reload issue #${issue.number} (${err.message}); proceeding with cached body`, "warn");
+      addLog(`Could not reload issue #${issue.number} (${err.message})`, "warn");
     }
     return null;
   }
-  async function updateIssueBody(issue, newBody) {
+  async function updateIssueBody(issue, newBody, options) {
     const repo = repoForIssue(issue);
     if (!repo) {
       addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
       if (host?.toast) {
         void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
       }
-      return;
+      return false;
     }
+    const prevBody = issue.body;
+    const prevSubtasks = issue.subtasks;
+    const prevOpenQuestions = issue.openQuestions;
     const prevHumanTasks = issue.humanTasks || parseHumanTasks(issue.body);
+    const prevAcceptanceCriteria = issue.acceptanceCriteria;
     const nextHumanTasks = parseHumanTasks(newBody);
     const shouldNotify = shouldNotifyAgentOnHumanTasksComplete(prevHumanTasks, nextHumanTasks);
     const finishWrite = trackIssueWrite(repo, issue, ["body"]);
@@ -9003,15 +9021,103 @@ Blocked by ${blockerRef}`;
       if (res && res.updated_at) {
         issue.updated_at = res.updated_at;
       }
-      await host.toast({ kind: "info", message: `Updated issue #${issue.number}` });
+      if (!options?.suppressToast) {
+        const msg = options?.toastMessage || `Updated issue #${issue.number}`;
+        await host.toast({ kind: "info", message: msg });
+      }
       if (shouldNotify) {
         await notifyAgentOnHumanTasksComplete(issue, repo);
       }
+      return true;
     } catch (err) {
       finishWrite(false);
-      addLog(`Failed to sync body: ${err.message}`, "error");
-      await host.toast({ kind: "error", message: `Failed to update #${issue.number} on GitHub` });
+      issue.body = prevBody;
+      issue.subtasks = prevSubtasks || parseSubtasks(prevBody);
+      issue.openQuestions = prevOpenQuestions || parseOpenQuestions(prevBody);
+      issue.humanTasks = prevHumanTasks;
+      issue.acceptanceCriteria = prevAcceptanceCriteria || parseAcceptanceCriteria(prevBody);
+      delete issue.v2Metadata;
+      const session2 = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
+      issue.v2Metadata = resolveV2Metadata(issue, session2);
+      issueCache.delete(repo);
+      renderViews();
+      if (activeIssue && activeIssue.number === issue.number) {
+        renderDrawer(issue, true);
+      }
+      const isExplicitHttpRejection = Boolean(
+        typeof err?.status === "number" && err.status >= 400 || typeof err?.statusCode === "number" && err.statusCode >= 400 || /\b(?:API error:\s*|failed\s*\(?|HTTP\s*|status\s*:?\s*)(\d{3})\b/i.test(err?.message || "")
+      );
+      if (isExplicitHttpRejection) {
+        addLog(`Failed to sync body for #${issue.number}: ${err.message}`, "error");
+        await host.toast({ kind: "error", message: `Failed to update #${issue.number} on GitHub` });
+      } else {
+        addLog(`Ambiguous outcome syncing body for #${issue.number}: ${err.message}`, "warn");
+        await host.toast({ kind: "error", message: "outcome unknown \u2014 check the issue on GitHub" });
+      }
+      return false;
     }
+  }
+  async function answerQuestion(issue, questionText, answerText) {
+    const cleanAnswer = (answerText || "").trim();
+    if (!cleanAnswer) {
+      return false;
+    }
+    const cleanQuestion = (questionText || "").trim();
+    if (!cleanQuestion) {
+      return false;
+    }
+    const fresh = await reloadIssueBeforeMutation(issue);
+    if (!fresh || typeof fresh.body !== "string") {
+      addLog(`Cannot answer question on #${issue.number}: fresh reload failed`, "error");
+      if (host?.toast) {
+        await host.toast({
+          kind: "error",
+          message: `Failed to refresh issue #${issue.number}; answer not saved`
+        });
+      }
+      return false;
+    }
+    const freshBody = fresh.body;
+    const result = resolveOptimisticQuestionAnswer(freshBody, cleanQuestion, cleanAnswer);
+    if (!result.found) {
+      renderViews();
+      if (activeIssue && activeIssue.number === issue.number) {
+        renderDrawer(issue, true);
+      }
+      if (result.reason === "already-answered") {
+        addLog(`Question on #${issue.number} was already answered remotely; refusing to overwrite`, "warn");
+        if (host?.toast) {
+          await host.toast({
+            kind: "error",
+            message: `Question on #${issue.number} was already answered; refreshed.`
+          });
+        }
+      } else if (result.reason === "ambiguous") {
+        addLog(`Question on #${issue.number} has ambiguous duplicates; refusing to guess`, "warn");
+        if (host?.toast) {
+          await host.toast({
+            kind: "error",
+            message: `Multiple identical open questions on #${issue.number}; cannot answer ambiguously.`
+          });
+        }
+      } else {
+        const currentOpen = parseOpenQuestions(freshBody).filter((q) => !q.completed);
+        const currentText = currentOpen.length > 0 ? currentOpen[0].text : "";
+        const msg = currentText ? `Question changed on #${issue.number}. Current text: "${currentText}"` : `Question on #${issue.number} is no longer open; refreshed.`;
+        addLog(`Question on #${issue.number} was modified remotely; refusing write`, "warn");
+        if (host?.toast) {
+          await host.toast({ kind: "error", message: msg });
+        }
+      }
+      return false;
+    }
+    const ok = await updateIssueBody(issue, result.updatedBody, {
+      toastMessage: "Recorded answer to question"
+    });
+    if (ok && activeIssue && activeIssue.number === issue.number) {
+      renderDrawer(issue, true);
+    }
+    return ok;
   }
   async function updateIssueStatus(issue, targetColumn, options) {
     const repo = repoForIssue(issue);
@@ -10406,10 +10512,10 @@ Blocked by ${blockerRef}`;
                 answerInput?.focus();
                 return;
               }
-              await reloadIssueBeforeMutation(issue);
-              const result = resolveOptimisticQuestionAnswer(issue.body, todo.text, ans);
-              await updateIssueBody(issue, result.updatedBody);
-              await host.toast({ kind: "info", message: "Recorded answer to question" });
+              const ok = await answerQuestion(issue, todo.text, ans);
+              if (ok && answerRow) {
+                answerRow.style.display = "none";
+              }
             };
             btnSubmit?.addEventListener("click", (e) => {
               e.stopPropagation();
@@ -10912,11 +11018,11 @@ Blocked by ${blockerRef}`;
             input?.focus();
             return;
           }
-          await reloadIssueBeforeMutation(issue);
-          const result = resolveOptimisticQuestionAnswer(issue.body, question.text, answerText);
-          await updateIssueBody(issue, result.updatedBody);
-          btnAnswer.setAttribute("aria-expanded", "false");
-          await host.toast({ kind: "info", message: "Recorded answer to question" });
+          const ok = await answerQuestion(issue, question.text, answerText);
+          if (ok) {
+            answerRow.style.display = "none";
+            btnAnswer.setAttribute("aria-expanded", "false");
+          }
         };
         btnSave?.addEventListener("click", (ev) => {
           ev.stopPropagation();
@@ -12297,18 +12403,14 @@ Blocked by ${blockerRef}`;
             }
             const targetIssue = activeIssue || issue;
             if (!targetIssue) return;
-            await reloadIssueBeforeMutation(targetIssue);
-            const result = resolveOptimisticQuestionAnswer(targetIssue.body, question.text, answerText);
-            const newBody = result.updatedBody;
-            if (issue && issue !== targetIssue) {
-              issue.body = newBody;
-              issue.subtasks = parseSubtasks(newBody);
-              issue.openQuestions = parseOpenQuestions(newBody);
-            }
-            await updateIssueBody(targetIssue, newBody);
-            await host.toast({ kind: "info", message: "Recorded answer to question" });
-            if (activeIssue && activeIssue.number === targetIssue.number) {
-              renderDrawer(targetIssue, true);
+            const ok = await answerQuestion(targetIssue, question.text, answerText);
+            if (ok) {
+              if (issue && issue !== targetIssue) {
+                issue.body = targetIssue.body;
+                issue.subtasks = targetIssue.subtasks;
+                issue.openQuestions = targetIssue.openQuestions;
+              }
+              if (answerRow) answerRow.style.display = "none";
             }
           };
           btnSave?.addEventListener("click", (ev) => {
@@ -13707,6 +13809,8 @@ ${transclusions.join("\n")}
     window.formatAlertBadges = formatAlertBadges;
     window.renderDrawerAcceptanceCriteria = renderDrawerAcceptanceCriteria;
     window.reloadIssueBeforeMutation = reloadIssueBeforeMutation;
+    window.answerQuestion = answerQuestion;
+    window.updateIssueBody = updateIssueBody;
   }
   function initEvents() {
     initAllCustomDropdowns();

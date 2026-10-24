@@ -2235,21 +2235,29 @@ async function reloadIssueBeforeMutation(issue: Issue): Promise<{ body: string; 
       return { body: raw.body, updated_at: remoteUpdatedAt };
     }
   } catch (err: any) {
-    addLog(`Could not reload issue #${issue.number} (${err.message}); proceeding with cached body`, 'warn');
+    addLog(`Could not reload issue #${issue.number} (${err.message})`, 'warn');
   }
   return null;
 }
 
-async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
+async function updateIssueBody(
+  issue: Issue,
+  newBody: string,
+  options?: { toastMessage?: string; suppressToast?: boolean }
+): Promise<boolean> {
   const repo = repoForIssue(issue);
   if (!repo) {
     addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
     if (host?.toast) {
       void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
     }
-    return;
+    return false;
   }
+  const prevBody = issue.body;
+  const prevSubtasks = issue.subtasks;
+  const prevOpenQuestions = issue.openQuestions;
   const prevHumanTasks = issue.humanTasks || parseHumanTasks(issue.body);
+  const prevAcceptanceCriteria = issue.acceptanceCriteria;
   const nextHumanTasks = parseHumanTasks(newBody);
   const shouldNotify = shouldNotifyAgentOnHumanTasksComplete(prevHumanTasks, nextHumanTasks);
 
@@ -2276,16 +2284,120 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
     if (res && res.updated_at) {
       issue.updated_at = res.updated_at;
     }
-    await host.toast({ kind: 'info', message: `Updated issue #${issue.number}` });
+    if (!options?.suppressToast) {
+      const msg = options?.toastMessage || `Updated issue #${issue.number}`;
+      await host.toast({ kind: 'info', message: msg });
+    }
 
     if (shouldNotify) {
       await notifyAgentOnHumanTasksComplete(issue, repo);
     }
+    return true;
   } catch (err: any) {
     finishWrite(false);
-    addLog(`Failed to sync body: ${err.message}`, 'error');
-    await host.toast({ kind: 'error', message: `Failed to update #${issue.number} on GitHub` });
+    issue.body = prevBody;
+    issue.subtasks = prevSubtasks || parseSubtasks(prevBody);
+    issue.openQuestions = prevOpenQuestions || parseOpenQuestions(prevBody);
+    issue.humanTasks = prevHumanTasks;
+    issue.acceptanceCriteria = prevAcceptanceCriteria || parseAcceptanceCriteria(prevBody);
+    delete (issue as any).v2Metadata;
+    const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
+    issue.v2Metadata = resolveV2Metadata(issue, session);
+    issueCache.delete(repo);
+    renderViews();
+    if (activeIssue && activeIssue.number === issue.number) {
+      renderDrawer(issue, true);
+    }
+
+    const isExplicitHttpRejection = Boolean(
+      (typeof err?.status === 'number' && err.status >= 400) ||
+      (typeof err?.statusCode === 'number' && err.statusCode >= 400) ||
+      /\b(?:API error:\s*|failed\s*\(?|HTTP\s*|status\s*:?\s*)(\d{3})\b/i.test(err?.message || '')
+    );
+
+    if (isExplicitHttpRejection) {
+      addLog(`Failed to sync body for #${issue.number}: ${err.message}`, 'error');
+      await host.toast({ kind: 'error', message: `Failed to update #${issue.number} on GitHub` });
+    } else {
+      addLog(`Ambiguous outcome syncing body for #${issue.number}: ${err.message}`, 'warn');
+      await host.toast({ kind: 'error', message: 'outcome unknown — check the issue on GitHub' });
+    }
+    return false;
   }
+}
+
+async function answerQuestion(
+  issue: Issue,
+  questionText: string,
+  answerText: string
+): Promise<boolean> {
+  const cleanAnswer = (answerText || '').trim();
+  if (!cleanAnswer) {
+    return false;
+  }
+  const cleanQuestion = (questionText || '').trim();
+  if (!cleanQuestion) {
+    return false;
+  }
+
+  const fresh = await reloadIssueBeforeMutation(issue);
+  if (!fresh || typeof fresh.body !== 'string') {
+    addLog(`Cannot answer question on #${issue.number}: fresh reload failed`, 'error');
+    if (host?.toast) {
+      await host.toast({
+        kind: 'error',
+        message: `Failed to refresh issue #${issue.number}; answer not saved`,
+      });
+    }
+    return false;
+  }
+
+  const freshBody = fresh.body;
+  const result = resolveOptimisticQuestionAnswer(freshBody, cleanQuestion, cleanAnswer);
+
+  if (!result.found) {
+    renderViews();
+    if (activeIssue && activeIssue.number === issue.number) {
+      renderDrawer(issue, true);
+    }
+
+    if (result.reason === 'already-answered') {
+      addLog(`Question on #${issue.number} was already answered remotely; refusing to overwrite`, 'warn');
+      if (host?.toast) {
+        await host.toast({
+          kind: 'error',
+          message: `Question on #${issue.number} was already answered; refreshed.`,
+        });
+      }
+    } else if (result.reason === 'ambiguous') {
+      addLog(`Question on #${issue.number} has ambiguous duplicates; refusing to guess`, 'warn');
+      if (host?.toast) {
+        await host.toast({
+          kind: 'error',
+          message: `Multiple identical open questions on #${issue.number}; cannot answer ambiguously.`,
+        });
+      }
+    } else {
+      const currentOpen = parseOpenQuestions(freshBody).filter((q) => !q.completed);
+      const currentText = currentOpen.length > 0 ? currentOpen[0].text : '';
+      const msg = currentText
+        ? `Question changed on #${issue.number}. Current text: "${currentText}"`
+        : `Question on #${issue.number} is no longer open; refreshed.`;
+      addLog(`Question on #${issue.number} was modified remotely; refusing write`, 'warn');
+      if (host?.toast) {
+        await host.toast({ kind: 'error', message: msg });
+      }
+    }
+    return false;
+  }
+
+  const ok = await updateIssueBody(issue, result.updatedBody, {
+    toastMessage: 'Recorded answer to question',
+  });
+  if (ok && activeIssue && activeIssue.number === issue.number) {
+    renderDrawer(issue, true);
+  }
+  return ok;
 }
 
 async function updateIssueStatus(
@@ -4040,10 +4152,10 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
               answerInput?.focus();
               return;
             }
-            await reloadIssueBeforeMutation(issue);
-            const result = resolveOptimisticQuestionAnswer(issue.body, todo.text, ans);
-            await updateIssueBody(issue, result.updatedBody);
-            await host.toast({ kind: 'info', message: 'Recorded answer to question' });
+            const ok = await answerQuestion(issue, todo.text, ans);
+            if (ok && answerRow) {
+              answerRow.style.display = 'none';
+            }
           };
 
           btnSubmit?.addEventListener('click', (e) => {
@@ -4640,11 +4752,11 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
           input?.focus();
           return;
         }
-        await reloadIssueBeforeMutation(issue);
-        const result = resolveOptimisticQuestionAnswer(issue.body, question.text, answerText);
-        await updateIssueBody(issue, result.updatedBody);
-        btnAnswer.setAttribute('aria-expanded', 'false');
-        await host.toast({ kind: 'info', message: 'Recorded answer to question' });
+        const ok = await answerQuestion(issue, question.text, answerText);
+        if (ok) {
+          answerRow.style.display = 'none';
+          btnAnswer.setAttribute('aria-expanded', 'false');
+        }
       };
 
       btnSave?.addEventListener('click', (ev) => {
@@ -6332,18 +6444,14 @@ function renderQuestions(issue: Issue): void {
           }
           const targetIssue = activeIssue || issue;
           if (!targetIssue) return;
-          await reloadIssueBeforeMutation(targetIssue);
-          const result = resolveOptimisticQuestionAnswer(targetIssue.body, question.text, answerText);
-          const newBody = result.updatedBody;
-          if (issue && issue !== targetIssue) {
-            issue.body = newBody;
-            issue.subtasks = parseSubtasks(newBody);
-            issue.openQuestions = parseOpenQuestions(newBody);
-          }
-          await updateIssueBody(targetIssue, newBody);
-          await host.toast({ kind: 'info', message: 'Recorded answer to question' });
-          if (activeIssue && activeIssue.number === targetIssue.number) {
-            renderDrawer(targetIssue, true);
+          const ok = await answerQuestion(targetIssue, question.text, answerText);
+          if (ok) {
+            if (issue && issue !== targetIssue) {
+              issue.body = targetIssue.body;
+              issue.subtasks = targetIssue.subtasks;
+              issue.openQuestions = targetIssue.openQuestions;
+            }
+            if (answerRow) answerRow.style.display = 'none';
           }
         };
 
@@ -7974,9 +8082,11 @@ if (typeof window !== 'undefined') {
   (window as any).formatAlertBadges = formatAlertBadges;
   (window as any).renderDrawerAcceptanceCriteria = renderDrawerAcceptanceCriteria;
   (window as any).reloadIssueBeforeMutation = reloadIssueBeforeMutation;
+  (window as any).answerQuestion = answerQuestion;
+  (window as any).updateIssueBody = updateIssueBody;
 }
 
-export { setupCustomDropdown, initAllCustomDropdowns, formatAlertBadges, renderDrawerAcceptanceCriteria, reloadIssueBeforeMutation };
+export { setupCustomDropdown, initAllCustomDropdowns, formatAlertBadges, renderDrawerAcceptanceCriteria, reloadIssueBeforeMutation, answerQuestion, updateIssueBody };
 
 
 // ==========================================
