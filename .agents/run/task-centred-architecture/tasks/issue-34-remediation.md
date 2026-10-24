@@ -12,7 +12,7 @@ Close the five independent-review findings so no answer path can show success or
 </goal>
 <context_files>
 [@/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/.agents/run/task-centred-architecture/outputs/issue-34-answer-fix.md]
-[@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/tasks/issue-34-hostile-review-v2.md]
+[@/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/.agents/run/task-centred-architecture/outputs/issue-34-hostile-review.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/decisions-2026-10-24.md]
 </context_files>
 <skills>
@@ -27,6 +27,8 @@ Test first for each finding; reproduce with the named reviewer probe, then fix. 
 3. Medium — dependency add/remove ignores updateIssueBody's result and toasts success. Make every such caller honor the result: success only on confirmed apply; unknown on ambiguous; visible failure otherwise.
 4. Medium — after an ambiguous outcome the restored local body is presented as confirmed and further writes can proceed. Mark the issue visibly unconfirmed, block dependent writes until a successful refresh reconciles it, and clear the marker on reconciliation. Never auto-repeat the ambiguous write.
 5. Medium — save/answer controls lack in-flight disabling, so a double click can send two mutations and two toasts. Disable the control (and ignore re-entry) until the operation settles, then restore it. Test the second click produces no second request.
+6. Important (second review, ef9710b) — a refusal wipes the typed answer across all three entry points because the view re-renders. Preserve what the person typed: after the refresh/refusal, put their text back in the same answer field (or keep the field mounted) so refusing never costs them their work. Test all three entry points.
+7. Important (second review) — a post-mutation notification call runs inside the mutation try block, so a UI/notification error can be caught as a write failure and trigger a false rollback. Move notifications outside the write's error boundary, or guard them separately; a toast failure must never change the reported write outcome. Test by making the notification throw.
 Also check other callers of updateIssueBody in the same answer/edit family for the same false-success pattern; fix only those that can show success without a confirmed apply, and list them.
 No new question-identity/hash system; no #31 work; no unrelated refactor; keep #36 human-close guards.
 </scope>
