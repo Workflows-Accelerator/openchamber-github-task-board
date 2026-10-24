@@ -16,7 +16,12 @@ Issues are the durable work record; the board is the human interface. User chose
 - ses_fa681e4ae2d74fc24b210e0c read-only DevOps investigation (brief tasks/devops-board-deployment-investigation.md, engineer) -> outputs/devops-board-deployment.md. No changes without owner go.
 - #30/#31 correction DONE eb9d86c (9router/worker). Owner answered: D1 labels, D3 refuse+show new text, D2 wants real notifications (web/PWA/OpenChamber?). Recorded in decisions file; receipts #30 issuecomment-6382674703, #31 issuecomment-6382674683.
 - ses_2957a387b7a55e601717f44f notification channel spike (brief tasks/notification-channel-spike.md, engineer) -> outputs/notification-channel-spike.md -> owner chooses channel.
-- After #36 merges and #34 lands: implementation of #30 (labels formalized + Work Log) and #31 base (question identity, refuse-stale, views/badge) — panel files, so sequenced after #34.
+- #36 MERGED dd5cb2f, PUSHED to feat/v2-binding-and-ratelimit; receipt #36 issuecomment-6382776493. L5 pending.
+- DevOps look DONE (outputs/devops-board-deployment.md, LOCAL ONLY — contains infra details, never commit/push). Notification spike DONE (outputs/notification-channel-spike.md). Owner chose: board push + 60s poll; hosting inside OpenChamber container; repo openchamber-github-task-board; secrets in SOPS (decisions items 7–8).
+- ses_d11a8739017717794a85146f #34 fix (brief tasks/issue-34-answer-integrity.md, engineer) in .worktrees/team-dev-issue-34-answer-integrity from dd5cb2f.
+- ses_4e344bffc15927e7a30172ee #33 hostile re-review of a795985 (brief tasks/issue-33-rereview.md, genius). a795985 claims F1 MITIGATED, F2/F4–F10 CLOSED, F3 SUPERSEDED, 88/88 web, 30/30 browser.
+- Next on #33 branch after re-review: configurable BOARD_HOST bind, then push slice (PWA manifest + service worker + VAPID + test button, then 60s ETag poller) — sequential on the same branch/worktree.
+- After #34 lands: implementation of #30 (labels formalized + Work Log) and #31 base (question identity, refuse-stale, views/badge) — panel files, so sequenced after #34.
 
 ## Earlier workers
 - #28 MERGED AND PUSHED to working branch feat/v2-binding-and-ratelimit: merge 3109935, follow-up 9c235a9. Integration worker ses_754d3ff94df8d409414a2bb1 actual 9router/engineer: 19/19 targeted, 485/485 full, typecheck/build/parity green; no source conflicts; halted candidate excluded. Re-review 0821897: F1 CLOSED, Quality APPROVED, no new defects, 100/100 fuzz + 30/30 chaos. Master/deployment untouched, L3 installed-host/L5 outstanding. Receipt issuecomment-6376320313.
