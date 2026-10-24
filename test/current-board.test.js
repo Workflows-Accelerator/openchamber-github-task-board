@@ -213,7 +213,7 @@ test('current board: successful status edit survives an older full response (R1 
   await app.fetchIssues(true);
   const pending = app.fetchIssues(true);
   await pause();
-  await app.updateIssueStatus(app.getState().issues[0], 'done');
+  await app.updateIssueStatus(app.getState().issues[0], 'done', { isHumanGesture: true });
   assert.equal(app.getState().issues[0].state, 'closed');
   slow.resolve(response([issue(1, 'owner/a', 'old body')]));
   await pending;
@@ -336,7 +336,7 @@ test('current board: failed status edit reverts on the record published mid-writ
   await app.fetchIssues(true);
   const pending = app.fetchIssues(true);
   await pause();
-  const moving = app.updateIssueStatus(app.getState().issues[0], 'done');
+  const moving = app.updateIssueStatus(app.getState().issues[0], 'done', { isHumanGesture: true });
   await pause();
   slow.resolve(response([issue(1, 'owner/a', 'old body')]));
   await pending;
