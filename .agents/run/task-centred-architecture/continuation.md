@@ -23,7 +23,10 @@ Issues are the durable work record; the board is the human interface. User chose
 - ses_1407f97fe07bc26f3e8a4356 read-only deployment preflight RUNNING (brief tasks/deployment-readonly-preflight.md, engineer): SOPS key presence/names only; supervisor persistence; bridged-container reachability; proxy trust. Output outputs/deployment-preflight-private.md LOCAL ONLY, never commit/push. No deployment approval or mutations.
 - ses_4e344bffc15927e7a30172ee #33 hostile re-review of a795985 (brief tasks/issue-33-rereview.md, genius). a795985 claims F1 MITIGATED, F2/F4–F10 CLOSED, F3 SUPERSEDED, 88/88 web, 30/30 browser.
 - Next on #33 branch after re-review: configurable BOARD_HOST bind, then push slice (PWA manifest + service worker + VAPID + test button, then 60s ETag poller) — sequential on the same branch/worktree.
-- After #34 lands: implementation of #30 (labels formalized + Work Log) and #31 base (question identity, refuse-stale, views/badge) — panel files, so sequenced after #34.
+- ses_f79b26d999d9576414e0f501 independent hostile review RUNNING on #30/#31 correction eb9d86c (tasks/issue-30-31-correction-hostile.md, engineer). Key doubts: source-vs-display text, body-counter rollback detection, ambiguous-write contradiction; no code edits.
+- Panel frontier after #34: #35 remaining write/refresh protections (all write paths + All Projects, issue inspected 2026-10-24), then #30 labels/Work Log and #31 base; no simultaneous panel editors.
+- #36 merged worktree removed cleanly; local branch retained as approved. #28 cleanups also complete. No registration was created, so no DB cleanup required.
+- Human review skeleton corrected: verifications/review-batch.md. #29 remains excluded/parked; #28/#36 await batch, #34/#33 not ready, #35 and push not forgotten.
 
 ## Earlier workers
 - #28 MERGED AND PUSHED to working branch feat/v2-binding-and-ratelimit: merge 3109935, follow-up 9c235a9. Integration worker ses_754d3ff94df8d409414a2bb1 actual 9router/engineer: 19/19 targeted, 485/485 full, typecheck/build/parity green; no source conflicts; halted candidate excluded. Re-review 0821897: F1 CLOSED, Quality APPROVED, no new defects, 100/100 fuzz + 30/30 chaos. Master/deployment untouched, L3 installed-host/L5 outstanding. Receipt issuecomment-6376320313.
