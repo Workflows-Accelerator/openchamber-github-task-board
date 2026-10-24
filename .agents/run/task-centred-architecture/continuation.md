@@ -1,5 +1,14 @@
 # Current continuation — 2026-10-23 (late)
 
+## Restart recovery 2026-10-24 (after server restart)
+- Server restarted mid-turn. Manager checked both worktrees and the session record rather than trusting memory.
+- #34 builder fix is intact: 309f9f1, clean, 503/503, 12/12 targeted, bundle parity. No review report had been written, so the review was redispatched (ses_027acdf173f180e53e05bc34, engineer, brief tasks/issue-34-hostile-review-v2.md). A second zero-token idle child ses_951a286ad4d5ff930c9c801b exists from the interrupted dispatch; it never ran and is left untouched, not reused.
+- #33 worktree at 2151ce2 was clean; no remediation had started. Redispatched remediation v3 (ses_3925094fa8d048c832201eab, engineer). A duplicate zero-token child from the interrupted dispatch may exist; only one worker is writing (browser-verification artifacts observed).
+- #33 hostile re-review result accepted and ruled: outputs/issue-33-rereview-ruling.md. Fix R1–R8; do not adopt the reviewer's claim that every 4xx/5xx is a rejection.
+- Deploy preflight result accepted: board secrets are NOT in SOPS (owner premise refuted); container is bridged with only 3000 and 8477 published; publishing 8787 requires container recreation and downtime; no supervisor restarts a standalone board; BOARD_TRUST_PROXY must stay off; no /health endpoint; loopback bind hardcoded. Private report stays untracked.
+- Owner chose: keep the board in the OpenChamber container and accept brief downtime (brief, not zero); and the board is for all repos. Board scope ruling written; #37 created and linked for multi-repository support after #33.
+- #33 title corrected to "A board in your browser for the tasks you own" because GitHub sign-in is superseded by the board password.
+
 ## Aligned direction
 Issues are the durable work record; the board is the human interface. User chose a **standalone web board with no agent control** (GitHub tasks fully viewable/editable in a browser, own sign-in, no OpenChamber change, no agent starting). Background coordinator and host startup work are parked and not prerequisites. Feature vs bug paths and the questions/notification loop are being designed before implementation. "Expiration" in the bug path stays undefined; no destructive semantics. Only the human moves Done and authorizes master/deployment.
 
