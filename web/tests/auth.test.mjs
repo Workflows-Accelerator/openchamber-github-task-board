@@ -135,6 +135,30 @@ test('login limiter blocks repeated failures, then recovers after the window', (
   assert.equal(limiter.check(key).allowed, true, 'success clears the failure window');
 });
 
+test('login limiter enforces bounded cooldown of at most 60 seconds with no accumulating lockout', () => {
+  let now = 1_000_000;
+  const limiter = new LoginRateLimiter({ maxFailures: 3, windowMs: 60_000, now: () => now });
+  const key = '192.168.1.1';
+
+  for (let i = 0; i < 3; i += 1) {
+    limiter.recordFailure(key);
+  }
+
+  const initialVerdict = limiter.check(key);
+  assert.equal(initialVerdict.allowed, false);
+  assert.ok(initialVerdict.retryAfterSeconds > 0 && initialVerdict.retryAfterSeconds <= 60);
+
+  // Advance time partially and verify repeated checks do not extend lockout
+  now += 30_000;
+  const midVerdict = limiter.check(key);
+  assert.equal(midVerdict.allowed, false);
+  assert.equal(midVerdict.retryAfterSeconds, 30);
+
+  // Once window expires from original failure, limiter recovers cleanly
+  now += 30_001;
+  assert.deepEqual(limiter.check(key), { allowed: true, retryAfterSeconds: 0 });
+});
+
 test('session store caps stored sessions and evicts oldest when full', () => {
   const store = new SessionStore({ secret: SECRET, maxSessions: 3 });
   const s1 = store.create();

@@ -309,6 +309,14 @@ label {
   margin: 0;
 }
 
+.edit-warning {
+  margin: 0 0 14px 0;
+  padding: 8px 12px;
+  border-radius: var(--rad);
+  background: var(--warn-subtle);
+  border-left: 3px solid var(--warn);
+}
+
 .empty {
   border: 1px dashed var(--border);
   border-radius: var(--rad-lg);

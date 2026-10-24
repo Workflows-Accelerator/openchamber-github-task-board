@@ -125,3 +125,25 @@ Sign-in model (F3) remains out of scope and preserved as designed.
 | `node web/tests/browser-verify.mjs` | **PASS** | 29 checks passed, 10 screenshots captured |
 
 Remediation details documented in `.agents/run/task-centred-architecture/outputs/issue-33-remediation.md`.
+
+## Amendment v2 Hardening Proof (2026-10-24)
+
+Aligned standalone board with owner decisions of 2026-10-24 and `issue-33-amendment-v2.md`.
+F1 mitigated as best-effort editing with zero write retries and pre-save conflict checks; ambiguous write outcomes return 502 write_outcome_unknown.
+F2 rate limiting bounded to <= 60s cooldown with bounded memory; existing authenticated sessions remain unaffected.
+Warning visible on page and in README: simultaneous edits can be overwritten.
+
+### Verification Results
+
+| Command | Status | Evidence |
+| --- | --- | --- |
+| `node --test web/tests/*.test.mjs` | **PASS** | 88 / 88 tests passed |
+| `npx tsc -p web/tsconfig.json` | **PASS** | Exit code 0, 0 diagnostics |
+| `npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=web/dist/server.mjs` | **PASS** | 91.1kb bundle |
+| `node --check web/dist/server.mjs` | **PASS** | Exit code 0 |
+| `sha256sum web/dist/server.mjs` | **PASS** | `5a188e69c903759380db3bb2481bde34782deb854ee07c08a329f8221461cfcb` |
+| `node web/tests/browser-verify.mjs` | **PASS** | 30 checks passed, 10 screenshots captured |
+| `npm test` | **PASS** | 466 / 466 tests passed in root suite |
+
+Remediation details documented in `.agents/run/task-centred-architecture/outputs/issue-33-remediation.md`.
+

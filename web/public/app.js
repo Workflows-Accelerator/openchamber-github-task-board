@@ -506,6 +506,8 @@
         $('save-status').textContent = 'Not saved: conflict.';
       } else if (error.status === 429) {
         $('save-status').textContent = 'Too many attempts. Wait and try again.';
+      } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
+        $('save-status').textContent = 'Outcome unknown — check the issue on GitHub.';
       } else {
         $('save-status').textContent = error.message + '.';
       }
@@ -539,6 +541,8 @@
       if (error.status === 401) return;
       if (error.status === 409) {
         handleConflict(error);
+      } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
+        setNotice('Outcome unknown — check the issue on GitHub.', true);
       } else {
         setNotice(error.message + '.', true);
       }
@@ -568,6 +572,8 @@
       if (error.status === 401) return;
       if (error.status === 409) {
         handleConflict(error);
+      } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
+        setNotice('Outcome unknown — check the issue on GitHub.', true);
       } else {
         setNotice(error.message + '.', true);
       }

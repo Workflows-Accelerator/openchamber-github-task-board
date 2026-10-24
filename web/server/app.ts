@@ -24,7 +24,7 @@ import {
   csrfMatches,
   parseCookieHeader,
 } from './auth.ts';
-import { GitHubClient, GitHubError, parseIssueNumber } from './github.ts';
+import { GitHubClient, GitHubError, parseIssueNumber, type IssueRead } from './github.ts';
 import { STATUS_METADATA } from '../../panel/labels.ts';
 import { findSections, replaceSectionText, SectionError } from './sections.ts';
 import {
@@ -551,17 +551,27 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   async function login(req: http.IncomingMessage): Promise<HandlerResponse> {
     const ip = getClientIp(req, config.trustProxy);
     const verdict = limiter.check(ip);
+    if (!verdict.allowed) {
+      return {
+        status: 429,
+        body: {
+          error: 'rate_limited',
+          message: 'Too many failed sign-ins; wait a moment and try again',
+          retryAfterSeconds: verdict.retryAfterSeconds,
+        },
+        headers: { 'retry-after': String(verdict.retryAfterSeconds) },
+      };
+    }
 
     if (inFlightLogins.has(ip)) {
-      const retrySec = Math.max(1, verdict.retryAfterSeconds || 1);
       return {
         status: 429,
         body: {
           error: 'rate_limited',
           message: 'A login request is already in progress for this client; try again in a moment',
-          retryAfterSeconds: retrySec,
+          retryAfterSeconds: 1,
         },
-        headers: { 'retry-after': String(retrySec) },
+        headers: { 'retry-after': '1' },
       };
     }
 
@@ -578,17 +588,6 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
 
     if (!valid) {
-      if (!verdict.allowed) {
-        return {
-          status: 429,
-          body: {
-            error: 'rate_limited',
-            message: 'Too many failed sign-ins; wait a moment and try again',
-            retryAfterSeconds: verdict.retryAfterSeconds,
-          },
-          headers: { 'retry-after': String(verdict.retryAfterSeconds) },
-        };
-      }
       limiter.recordFailure(ip);
       return { status: 401, body: { error: 'invalid_credentials', message: 'That password is not correct' } };
     }
@@ -686,104 +685,85 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         }
       }
 
-      const MAX_RETRIES = 2;
-      let currentItem = fresh.item;
-      let lastPatch: Record<string, unknown> = {};
-
-      for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
-        let patch: Record<string, unknown>;
-        try {
-          if (op.kind === 'section') {
-            patch = { body: replaceSectionText(currentItem.body ?? '', baseSectionId, op.text) };
-          } else if (op.kind === 'question') {
-            const curDetail = buildIssueDetail(currentItem);
-            const curQView = curDetail.openQuestions[baseQuestionIndex];
-            const answerIdx = curQView?.answerIndex ?? op.index;
-            patch = { body: applyQuestionAnswer(currentItem, answerIdx, op.answer) };
-          } else {
-            patch = { labels: applyStatusChange(currentItem, op.status) };
-          }
-        } catch (error) {
-          if (error instanceof BoardError) throw new HttpError(400, 'invalid_edit', error.message);
-          if (error instanceof SectionError) throw new HttpError(400, 'invalid_edit', error.message);
-          throw error;
-        }
-        lastPatch = patch;
-
-        try {
-          await github.updateIssue(number, patch, { etag: fresh.etag });
-        } catch (error) {
-          if (error instanceof GitHubError && error.status === 412) {
-            const reread = await github.getIssue(number).catch(mapGitHubError);
-            throw new HttpError(409, 'conflict', 'This task changed on GitHub while saving; nothing was written', {
-              issue: buildIssueDetail(reread.item),
-              statusOptions: statusOptions(),
-            });
-          }
-          mapGitHubError(error);
-        }
-
-        const reread = await github.getIssue(number).catch(mapGitHubError);
-        currentItem = reread.item;
-
-        let verified = false;
-        let matchesBase = false;
-
+      let patch: Record<string, unknown>;
+      try {
         if (op.kind === 'section') {
-          const curSec = findSections(currentItem.body ?? '').find((s) => s.id === op.sectionId);
-          const curText = curSec?.text ?? '';
-          if (curText === targetText) {
-            verified = true;
-          } else if (curText === baseText) {
-            matchesBase = true;
-          }
+          patch = { body: replaceSectionText(fresh.item.body ?? '', baseSectionId, op.text) };
         } else if (op.kind === 'question') {
-          const curDetail = buildIssueDetail(currentItem);
-          const curQ = curDetail.openQuestions[baseQuestionIndex];
-          const cleanAnswer = targetAnswer.trim().replace(/\r?\n+/g, ' ');
-          if (curQ && curQ.completed && curQ.text.includes(cleanAnswer)) {
-            verified = true;
-          } else if (curQ && !curQ.completed && curQ.text === baseQuestionText) {
-            matchesBase = true;
-          }
-        } else if (op.kind === 'status') {
-          const curStatus = statusLabelOf(labelNames(currentItem));
-          if (curStatus === targetStatus) {
-            verified = true;
-          } else if (curStatus === baseStatus) {
-            matchesBase = true;
-          }
+          const curDetail = buildIssueDetail(fresh.item);
+          const curQView = curDetail.openQuestions[baseQuestionIndex];
+          const answerIdx = curQView?.answerIndex ?? op.index;
+          patch = { body: applyQuestionAnswer(fresh.item, answerIdx, op.answer) };
+        } else {
+          patch = { labels: applyStatusChange(fresh.item, op.status) };
         }
+      } catch (error) {
+        if (error instanceof BoardError) throw new HttpError(400, 'invalid_edit', error.message);
+        if (error instanceof SectionError) throw new HttpError(400, 'invalid_edit', error.message);
+        throw error;
+      }
 
-        if (verified) {
-          log(`write issue=${number} fields=${Object.keys(lastPatch).join(',')}${attempt > 0 ? ` retries=${attempt}` : ''}`);
-          return {
-            status: 200,
-            body: {
-              issue: buildIssueDetail(currentItem),
-              savedAt: new Date(now()).toISOString(),
-              statusOptions: statusOptions(),
-            },
-          };
+      try {
+        await github.updateIssue(number, patch, { etag: fresh.etag });
+      } catch (error) {
+        if (error instanceof GitHubError && error.status === 412) {
+          const reread = await github.getIssue(number).catch(mapGitHubError);
+          throw new HttpError(409, 'conflict', 'This task changed on GitHub while saving; nothing was written', {
+            issue: buildIssueDetail(reread.item),
+            statusOptions: statusOptions(),
+          });
         }
+        if (error instanceof GitHubError && (error.kind === 'network' || error.kind === 'server')) {
+          throw new HttpError(502, 'write_outcome_unknown', 'Outcome unknown \u2014 check the issue on GitHub');
+        }
+        mapGitHubError(error);
+      }
 
-        if (!matchesBase) {
-          throw new HttpError(
-            409,
-            'conflict',
-            'This task changed on GitHub while saving; nothing was written',
-            {
-              issue: buildIssueDetail(currentItem),
-              statusOptions: statusOptions(),
-            },
-          );
+      let reread: IssueRead;
+      try {
+        reread = await github.getIssue(number);
+      } catch {
+        throw new HttpError(502, 'write_outcome_unknown', 'Outcome unknown \u2014 check the issue on GitHub');
+      }
+
+      const currentItem = reread.item;
+      let verified = false;
+
+      if (op.kind === 'section') {
+        const curSec = findSections(currentItem.body ?? '').find((s) => s.id === op.sectionId);
+        if (curSec?.text === targetText) {
+          verified = true;
+        }
+      } else if (op.kind === 'question') {
+        const curDetail = buildIssueDetail(currentItem);
+        const curQ = curDetail.openQuestions[baseQuestionIndex];
+        const cleanAnswer = targetAnswer.trim().replace(/\r?\n+/g, ' ');
+        if (curQ && curQ.completed && curQ.text.includes(cleanAnswer)) {
+          verified = true;
+        }
+      } else if (op.kind === 'status') {
+        const curStatus = statusLabelOf(labelNames(currentItem));
+        if (curStatus === targetStatus) {
+          verified = true;
         }
       }
 
+      if (verified) {
+        log(`write issue=${number} fields=${Object.keys(patch).join(',')}`);
+        return {
+          status: 200,
+          body: {
+            issue: buildIssueDetail(currentItem),
+            savedAt: new Date(now()).toISOString(),
+            statusOptions: statusOptions(),
+          },
+        };
+      }
+
       throw new HttpError(
-        409,
-        'conflict',
-        'This task could not be saved due to concurrent modifications; try reloading',
+        502,
+        'write_outcome_unknown',
+        'Outcome unknown \u2014 check the issue on GitHub',
         {
           issue: buildIssueDetail(currentItem),
           statusOptions: statusOptions(),

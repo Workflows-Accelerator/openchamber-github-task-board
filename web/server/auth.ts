@@ -198,9 +198,8 @@ interface LoginRateLimiterOptions {
 /**
  * Sliding-window limiter for failed logins.
  *
- * A blocked client is refused before a wrong password is answered, but the
- * server still compares a correct password so the owner can never be locked
- * out of their own board by an attacker or a forgotten attempt.
+ * Blocked clients are refused early with 429 before password verification
+ * occurs. Cooldown is bounded to at most 60 seconds without permanent lockout.
  */
 export class LoginRateLimiter {
   private readonly maxFailures: number;
@@ -211,7 +210,7 @@ export class LoginRateLimiter {
 
   constructor(options: LoginRateLimiterOptions = {}) {
     this.maxFailures = options.maxFailures ?? 5;
-    this.windowMs = options.windowMs ?? 60_000;
+    this.windowMs = Math.min(options.windowMs ?? 60_000, 60_000);
     this.maxEntries = options.maxEntries ?? DEFAULT_MAX_LIMITER_ENTRIES;
     this.now = options.now ?? Date.now;
   }
@@ -243,7 +242,7 @@ export class LoginRateLimiter {
     if (recent.length < this.maxFailures) return { allowed: true, retryAfterSeconds: 0 };
     const oldest = recent[0];
     const waitMs = Math.max(0, oldest + this.windowMs - this.now());
-    return { allowed: false, retryAfterSeconds: Math.max(1, Math.ceil(waitMs / 1000)) };
+    return { allowed: false, retryAfterSeconds: Math.max(1, Math.min(60, Math.ceil(waitMs / 1000))) };
   }
 
   recordFailure(key: string): void {

@@ -343,6 +343,12 @@ async function main() {
       'detail has no agent or session controls',
       !(await evaluate('/start\\s+agent|open\\s+session|agent\\s+activity/i.test(document.body.textContent)')),
     );
+    check(
+      'detail shows warning that simultaneous edit can be overwritten',
+      (await evaluate('document.getElementById("edit-warning").textContent')).includes(
+        'a simultaneous edit on GitHub or by an agent can still be overwritten',
+      ),
+    );
     await screenshot('task-detail-desktop');
     await noOverflow('desktop task detail');
 

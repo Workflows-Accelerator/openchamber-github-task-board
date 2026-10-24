@@ -161,7 +161,7 @@ test('the shell page loads without a session and exposes no data or agent contro
   }
 });
 
-test('a wrong password is rejected and the correct one is never locked out', async () => {
+test('a wrong password is rejected and rate limiting blocks early on cooldown', async () => {
   const { board, close } = await fixture();
   try {
     const client = new HttpSession(board.url);
@@ -173,11 +173,12 @@ test('a wrong password is rejected and the correct one is never locked out', asy
     }
     const limited = await client.login('wrong password value');
     assert.equal(limited.status, 429);
-    assert.ok(Number(limited.headers.get('retry-after')) > 0);
+    const retrySec = Number(limited.headers.get('retry-after'));
+    assert.ok(retrySec > 0 && retrySec <= 60);
 
-    const owner = await new HttpSession(board.url).login();
-    assert.equal(owner.status, 200, 'a correct password still works while the limiter cools down');
-    assert.ok(owner.json.csrfToken.length >= 32);
+    const owner = await new HttpSession(board.url).login(BOARD_PASSWORD);
+    assert.equal(owner.status, 429, 'owner login on the same address is rate limited during cooldown');
+    assert.ok(Number(owner.headers.get('retry-after')) <= 60);
   } finally {
     await close();
   }
@@ -687,36 +688,34 @@ test('Origin and Referer validation rejects cross-origin writes when BOARD_BASE_
   }
 });
 
-test('concurrent mutation between GET and PATCH in another section converges with both edits preserved', async () => {
-  const { fake, board, close } = await fixture();
+test('existing authenticated sessions remain usable during rate limit cooldown', async () => {
+  const { board, close } = await fixture();
   try {
-    const client = new HttpSession(board.url);
-    await client.login();
-    const detail = await client.request('/api/issues/1');
-    const fingerprint = detail.json.issue.fingerprint;
+    const sessionClient = new HttpSession(board.url);
+    const loginRes = await sessionClient.login();
+    assert.equal(loginRes.status, 200);
 
-    fake.setPatchHook((issue) => {
-      // Simulate concurrent remote write winning over first PATCH attempt
-      issue.body = issue.body.replace('- [ ] Approve the rollout', '- [x] Approve the rollout');
-      fake.setPatchHook(null);
-      return { applyPayload: false };
-    });
+    const unauthClient = new HttpSession(board.url);
+    for (let i = 0; i < 5; i += 1) {
+      const fail = await unauthClient.login('bad-pass');
+      assert.equal(fail.status, 401);
+    }
+    const limited = await unauthClient.login('bad-pass');
+    assert.equal(limited.status, 429);
 
-    const res = await client.request('/api/issues/1/section', {
-      method: 'PUT',
-      body: { sectionId: 'overview', text: 'Updated overview prose.', fingerprint },
-    });
+    const ownerAttempt = await unauthClient.login(BOARD_PASSWORD);
+    assert.equal(ownerAttempt.status, 429);
 
-    assert.equal(res.status, 200);
-    assert.equal(res.json.issue.editableSections[0].text, 'Updated overview prose.');
-    assert.ok(res.json.issue.body.includes('- [x] Approve the rollout'));
-    assert.ok(res.json.issue.body.includes('- [ ] node --test web/tests/*.test.mjs'));
+    const boardRes = await sessionClient.request('/api/board');
+    assert.equal(boardRes.status, 200);
+    const detailRes = await sessionClient.request('/api/issues/1');
+    assert.equal(detailRes.status, 200);
   } finally {
     await close();
   }
 });
 
-test('concurrent mutation in the same section results in 409 conflict without retry', async () => {
+test('an ambiguous write outcome (readback mismatch) returns 502 write_outcome_unknown and makes zero retries', async () => {
   const { fake, board, close } = await fixture();
   try {
     const client = new HttpSession(board.url);
@@ -724,49 +723,58 @@ test('concurrent mutation in the same section results in 409 conflict without re
     const detail = await client.request('/api/issues/1');
     const fingerprint = detail.json.issue.fingerprint;
 
-    fake.setPatchHook((issue) => {
-      // Concurrent write to the same section
-      issue.body = issue.body.replace('Board overview prose.', 'Remote author changed overview.');
-      fake.setPatchHook(null);
-      return { applyPayload: false };
-    });
-
-    const res = await client.request('/api/issues/1/section', {
-      method: 'PUT',
-      body: { sectionId: 'overview', text: 'My local edit.', fingerprint },
-    });
-
-    assert.equal(res.status, 409);
-    assert.equal(res.json.error, 'conflict');
-    assert.ok(res.json.issue.body.includes('Remote author changed overview.'));
-  } finally {
-    await close();
-  }
-});
-
-test('retries are bounded to at most 2 retries when verification keeps failing', async () => {
-  const { fake, board, close } = await fixture();
-  try {
-    const client = new HttpSession(board.url);
-    await client.login();
-    const detail = await client.request('/api/issues/1');
-    const fingerprint = detail.json.issue.fingerprint;
-
-    let mutationCount = 0;
     fake.setPatchHook(() => {
-      mutationCount += 1;
+      // Simulate readback mismatch: do not apply payload to issue body
       return { applyPayload: false };
     });
 
     const res = await client.request('/api/issues/1/section', {
       method: 'PUT',
-      body: { sectionId: 'overview', text: 'Persistent new text.', fingerprint },
+      body: { sectionId: 'overview', text: 'New proposed overview.', fingerprint },
     });
 
-    assert.equal(res.status, 409);
-    assert.equal(res.json.error, 'conflict');
-    assert.equal(mutationCount, 3);
+    assert.equal(res.status, 502);
+    assert.equal(res.json.error, 'write_outcome_unknown');
+    assert.match(res.json.message, /outcome unknown \u2014 check the issue on GitHub/i);
+    assert.equal(fake.patchCalls.length, 1);
   } finally {
     await close();
   }
+});
+
+test('an ambiguous write outcome on upstream server error returns 502 write_outcome_unknown and makes zero retries', async () => {
+  const { fake, board, close } = await fixture();
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+    const detail = await client.request('/api/issues/1');
+    const fingerprint = detail.json.issue.fingerprint;
+
+    fake.setPatchHook(() => ({ status: 500, payload: { message: 'Internal Server Error' } }));
+
+    const res = await client.request('/api/issues/1/section', {
+      method: 'PUT',
+      body: { sectionId: 'overview', text: 'Another proposed overview.', fingerprint },
+    });
+
+    assert.equal(res.status, 502);
+    assert.equal(res.json.error, 'write_outcome_unknown');
+    assert.match(res.json.message, /outcome unknown \u2014 check the issue on GitHub/i);
+    assert.equal(fake.patchCalls.length, 1);
+  } finally {
+    await close();
+  }
+});
+
+test('warning regarding simultaneous overwrite is present in page and README', async () => {
+  const fs = await import('node:fs/promises');
+  const path = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const html = await fs.readFile(path.resolve(here, '../public/index.html'), 'utf8');
+  const readme = await fs.readFile(path.resolve(here, '../README.md'), 'utf8');
+  const warningText = 'a simultaneous edit on GitHub or by an agent can still be overwritten';
+
+  assert.ok(html.includes(warningText), 'warning present in index.html');
+  assert.ok(readme.includes(warningText), 'warning present in README.md');
 });

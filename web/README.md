@@ -86,9 +86,9 @@ accept on `https` origins (and on `http://localhost` for local testing).
 - **Failed logins & rate limiting:** an in-memory sliding-window limiter (5 failures per
   minute per client address) answers `429` with `Retry-After`. The limiter state is bounded
   (capped at 1,000 entries with LRU eviction). Client IP addresses are derived from the
-  direct socket connection unless `BOARD_TRUST_PROXY=true` is set. A correct password is still
-  accepted while the limiter is cooling down, so the owner cannot be locked out by an
-  attacker or by their own typos. There is no account lockout state.
+  direct socket connection unless `BOARD_TRUST_PROXY=true` is set. Unauthenticated owner sign-in
+  from the same address can be briefly rate limited (up to 60s cooldown) if failed attempts occur
+  from that address. Existing authenticated sessions are not affected. There is no account lockout state.
 - **Sessions:** absolute 12-hour lifetime, 2-hour idle timeout, in memory only. The
   session store is bounded to 50 concurrent active sessions with LRU eviction. A server
   restart or change to `BOARD_SESSION_SECRET` immediately invalidates every session.
@@ -98,14 +98,14 @@ accept on `https` origins (and on `http://localhost` for local testing).
 - **Repository allowlist:** every GitHub call is built from `BOARD_REPO` on the
   server. Requests carrying `repo`, `repository`, `owner`, `name` or `org`
   parameters, or any `/repos/...` path, are refused before they reach GitHub.
-- **Conditional writes & concurrency:** the read model includes a SHA-256 fingerprint over the
-  issue body, label names and state. A write must send the fingerprint it read.
-  The server acquires an in-process per-issue lock, re-reads the issue, compares fingerprints,
-  and refuses with `409` plus the current issue if anything changed. When writing, the server
-  sends `If-Match` with the latest ETag. Because GitHub's REST API does not guarantee conditional
-  `PATCH` support on issues, the server performs post-write verification by re-reading the issue.
-  If a non-conflicting concurrent change occurred elsewhere, it retries up to 2 times to converge;
-  if the edited section was touched or retries are exhausted, it fails closed with `409 Conflict`.
+- **Editing & concurrency:** best-effort editing with pre-save conflict checks.
+  The read model includes a SHA-256 fingerprint over the issue body, label names and state.
+  A write must send the fingerprint it read. The server acquires an in-process per-issue lock,
+  re-reads the issue from GitHub, compares fingerprints, and refuses with `409 Conflict` if anything changed.
+  When writing, the server sends `If-Match` with the latest ETag.
+  Warning: a simultaneous edit on GitHub or by an agent can still be overwritten.
+  If a write's outcome is ambiguous (timeout, network error after send, or readback mismatch),
+  the server returns "Outcome unknown — check the issue on GitHub" and never repeats the write automatically.
 - **Section scoping:** only the Overview prose is replaceable. Every other byte
   of the body (checklists, questions, human tasks, test plan, spacing) is
   compared byte-for-byte in tests. Open-question answers reuse
@@ -121,10 +121,9 @@ accept on `https` origins (and on `http://localhost` for local testing).
   multi-tenant service.
 - The board is read-through: if GitHub is unavailable the page shows plain error
   and stale states; it does not keep a mirror of issue bodies.
-- While the board eliminates server-side races between concurrent board clients with per-issue locks
-  and post-write verification, GitHub's API does not support transactional or conditional issue PATCH.
-  The remaining window for writes occurring directly on GitHub between the server's final read and GitHub's
-  internal commit is a known residual risk.
+- Best-effort editing: while the board serializes concurrent board clients with in-process locks
+  and refuses detected pre-save conflicts, GitHub's API does not support transactional or conditional issue PATCH.
+  A simultaneous edit on GitHub or by an agent can still be overwritten.
 - There is no notification/question loop and no agent integration. Those are
   separate, parked workstreams.
 
