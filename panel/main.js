@@ -8957,6 +8957,60 @@ Blocked by ${blockerRef}`;
     }
     return notified;
   }
+  function isDefinitivePreCommitRejection(err) {
+    if (err?.name === "AbortError" || err?.name === "TimeoutError") {
+      return false;
+    }
+    const msg = typeof err?.message === "string" ? err.message.toLowerCase() : "";
+    if (msg.includes("timeout") || msg.includes("abort") || msg.includes("fetch failed") || msg.includes("networkerror") || msg.includes("econnreset")) {
+      return false;
+    }
+    let statusCode = null;
+    if (typeof err?.status === "number" && !isNaN(err.status)) {
+      statusCode = err.status;
+    } else if (typeof err?.statusCode === "number" && !isNaN(err.statusCode)) {
+      statusCode = err.statusCode;
+    } else if (typeof err?.message === "string") {
+      const match = /\b(?:API error:\s*|failed\s*\(?|HTTP\s*|status\s*:?\s*)(\d{3})\b/i.exec(err.message);
+      if (match) {
+        const code = parseInt(match[1], 10);
+        if (!isNaN(code)) statusCode = code;
+      }
+    }
+    if (statusCode === null) {
+      return false;
+    }
+    if (statusCode === 408) {
+      return false;
+    }
+    return statusCode >= 400 && statusCode < 500;
+  }
+  var questionAnswerDrafts = /* @__PURE__ */ new Map();
+  function saveQuestionDraft(issueNumber, questionText, answerText) {
+    const cleanQ = (questionText || "").trim();
+    const cleanA = (answerText || "").trim();
+    if (!cleanA) return;
+    if (cleanQ) {
+      questionAnswerDrafts.set(`${issueNumber}::${cleanQ}`, cleanA);
+    }
+    questionAnswerDrafts.set(`issue::${issueNumber}`, cleanA);
+  }
+  function getQuestionDraft(issueNumber, questionText) {
+    const cleanQ = (questionText || "").trim();
+    if (cleanQ) {
+      const exact = questionAnswerDrafts.get(`${issueNumber}::${cleanQ}`);
+      if (exact !== void 0) return exact;
+    }
+    return questionAnswerDrafts.get(`issue::${issueNumber}`);
+  }
+  function clearQuestionDraft(issueNumber, questionText) {
+    const cleanQ = (questionText || "").trim();
+    if (cleanQ) {
+      questionAnswerDrafts.delete(`${issueNumber}::${cleanQ}`);
+    }
+    questionAnswerDrafts.delete(`issue::${issueNumber}`);
+  }
+  var inFlightQuestions = /* @__PURE__ */ new Set();
   async function reloadIssueBeforeMutation(issue) {
     const repo = repoForIssue(issue);
     if (!repo) return null;
@@ -8974,6 +9028,10 @@ Blocked by ${blockerRef}`;
         issue.humanTasks = parseHumanTasks(raw.body);
         issue.acceptanceCriteria = parseAcceptanceCriteria(raw.body);
         delete issue.v2Metadata;
+        if (issue.unconfirmed) {
+          delete issue.unconfirmed;
+          addLog(`Reconciled unconfirmed state for issue #${issue.number}`, "info");
+        }
         const session = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
         issue.v2Metadata = resolveV2Metadata(issue, session);
         return { body: raw.body, updated_at: remoteUpdatedAt };
@@ -8989,6 +9047,16 @@ Blocked by ${blockerRef}`;
       addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
       if (host?.toast) {
         void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return false;
+    }
+    if (issue.unconfirmed) {
+      addLog(`Cannot update issue #${issue.number}: state is unconfirmed; refresh required`, "warn");
+      if (host?.toast) {
+        await host.toast({
+          kind: "error",
+          message: `Issue #${issue.number} state is unconfirmed; refresh to reconcile before modifying.`
+        });
       }
       return false;
     }
@@ -9013,22 +9081,16 @@ Blocked by ${blockerRef}`;
     if (activeIssue && activeIssue.number === issue.number) {
       renderDrawer(issue, true);
     }
+    let patchResponse = null;
     try {
-      const res = await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
+      patchResponse = await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
         body: newBody
       });
       finishWrite(true);
-      if (res && res.updated_at) {
-        issue.updated_at = res.updated_at;
+      if (patchResponse && patchResponse.updated_at) {
+        issue.updated_at = patchResponse.updated_at;
       }
-      if (!options?.suppressToast) {
-        const msg = options?.toastMessage || `Updated issue #${issue.number}`;
-        await host.toast({ kind: "info", message: msg });
-      }
-      if (shouldNotify) {
-        await notifyAgentOnHumanTasksComplete(issue, repo);
-      }
-      return true;
+      delete issue.unconfirmed;
     } catch (err) {
       finishWrite(false);
       issue.body = prevBody;
@@ -9040,22 +9102,46 @@ Blocked by ${blockerRef}`;
       const session2 = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
       issue.v2Metadata = resolveV2Metadata(issue, session2);
       issueCache.delete(repo);
-      renderViews();
-      if (activeIssue && activeIssue.number === issue.number) {
-        renderDrawer(issue, true);
-      }
-      const isExplicitHttpRejection = Boolean(
-        typeof err?.status === "number" && err.status >= 400 || typeof err?.statusCode === "number" && err.statusCode >= 400 || /\b(?:API error:\s*|failed\s*\(?|HTTP\s*|status\s*:?\s*)(\d{3})\b/i.test(err?.message || "")
-      );
+      const isExplicitHttpRejection = isDefinitivePreCommitRejection(err);
       if (isExplicitHttpRejection) {
+        delete issue.unconfirmed;
+        renderViews();
+        if (activeIssue && activeIssue.number === issue.number) {
+          renderDrawer(issue, true);
+        }
         addLog(`Failed to sync body for #${issue.number}: ${err.message}`, "error");
-        await host.toast({ kind: "error", message: `Failed to update #${issue.number} on GitHub` });
+        if (host?.toast) {
+          await host.toast({ kind: "error", message: `Failed to update #${issue.number} on GitHub` });
+        }
       } else {
+        issue.unconfirmed = true;
+        renderViews();
+        if (activeIssue && activeIssue.number === issue.number) {
+          renderDrawer(issue, true);
+        }
         addLog(`Ambiguous outcome syncing body for #${issue.number}: ${err.message}`, "warn");
-        await host.toast({ kind: "error", message: "outcome unknown \u2014 check the issue on GitHub" });
+        if (host?.toast) {
+          await host.toast({ kind: "error", message: "outcome unknown \u2014 check the issue on GitHub" });
+        }
       }
       return false;
     }
+    try {
+      if (!options?.suppressToast && host?.toast) {
+        const msg = options?.toastMessage || `Updated issue #${issue.number}`;
+        await host.toast({ kind: "info", message: msg });
+      }
+    } catch (toastErr) {
+      addLog(`Post-mutation toast failed for #${issue.number}: ${toastErr?.message || toastErr}`, "warn");
+    }
+    try {
+      if (shouldNotify) {
+        await notifyAgentOnHumanTasksComplete(issue, repo);
+      }
+    } catch (notifyErr) {
+      addLog(`Post-mutation agent notification failed for #${issue.number}: ${notifyErr?.message || notifyErr}`, "warn");
+    }
+    return true;
   }
   async function answerQuestion(issue, questionText, answerText) {
     const cleanAnswer = (answerText || "").trim();
@@ -9066,58 +9152,82 @@ Blocked by ${blockerRef}`;
     if (!cleanQuestion) {
       return false;
     }
-    const fresh = await reloadIssueBeforeMutation(issue);
-    if (!fresh || typeof fresh.body !== "string") {
-      addLog(`Cannot answer question on #${issue.number}: fresh reload failed`, "error");
-      if (host?.toast) {
-        await host.toast({
-          kind: "error",
-          message: `Failed to refresh issue #${issue.number}; answer not saved`
-        });
-      }
+    const inFlightKey = `${repoForIssue(issue) || ""}#${issue.number}::${cleanQuestion}`;
+    if (inFlightQuestions.has(inFlightKey)) {
+      addLog(`Answer submission already in flight for #${issue.number}; ignoring duplicate`, "warn");
       return false;
     }
-    const freshBody = fresh.body;
-    const result = resolveOptimisticQuestionAnswer(freshBody, cleanQuestion, cleanAnswer);
-    if (!result.found) {
-      renderViews();
-      if (activeIssue && activeIssue.number === issue.number) {
-        renderDrawer(issue, true);
-      }
-      if (result.reason === "already-answered") {
-        addLog(`Question on #${issue.number} was already answered remotely; refusing to overwrite`, "warn");
+    inFlightQuestions.add(inFlightKey);
+    try {
+      const prevOpen = (issue.openQuestions || parseOpenQuestions(issue.body || "")).filter((q) => !q.completed);
+      const fresh = await reloadIssueBeforeMutation(issue);
+      if (!fresh || typeof fresh.body !== "string") {
+        addLog(`Cannot answer question on #${issue.number}: fresh reload failed`, "error");
+        saveQuestionDraft(issue.number, cleanQuestion, cleanAnswer);
         if (host?.toast) {
           await host.toast({
             kind: "error",
-            message: `Question on #${issue.number} was already answered; refreshed.`
+            message: `Failed to refresh issue #${issue.number}; answer not saved`
           });
         }
-      } else if (result.reason === "ambiguous") {
-        addLog(`Question on #${issue.number} has ambiguous duplicates; refusing to guess`, "warn");
-        if (host?.toast) {
-          await host.toast({
-            kind: "error",
-            message: `Multiple identical open questions on #${issue.number}; cannot answer ambiguously.`
-          });
+        return false;
+      }
+      const freshBody = fresh.body;
+      const result = resolveOptimisticQuestionAnswer(freshBody, cleanQuestion, cleanAnswer);
+      if (!result.found) {
+        saveQuestionDraft(issue.number, cleanQuestion, cleanAnswer);
+        renderViews();
+        if (activeIssue && activeIssue.number === issue.number) {
+          renderDrawer(issue, true);
+        }
+        if (result.reason === "already-answered") {
+          addLog(`Question on #${issue.number} was already answered remotely; refusing to overwrite`, "warn");
+          if (host?.toast) {
+            await host.toast({
+              kind: "error",
+              message: `Question on #${issue.number} was already answered; refreshed.`
+            });
+          }
+        } else if (result.reason === "ambiguous") {
+          addLog(`Question on #${issue.number} has ambiguous duplicates; refusing to guess`, "warn");
+          if (host?.toast) {
+            await host.toast({
+              kind: "error",
+              message: `Multiple identical open questions on #${issue.number}; cannot answer ambiguously.`
+            });
+          }
+        } else {
+          const currentOpen = parseOpenQuestions(freshBody).filter((q) => !q.completed);
+          let msg = "";
+          if (currentOpen.length === 0) {
+            msg = `Question on #${issue.number} is no longer open; refreshed.`;
+          } else if (prevOpen.length === 1 && currentOpen.length === 1) {
+            msg = `Question changed on #${issue.number}. Current text: "${currentOpen[0].text}"`;
+          } else {
+            msg = `Question changed on #${issue.number}; refreshed.`;
+          }
+          addLog(`Question on #${issue.number} was modified remotely; refusing write`, "warn");
+          if (host?.toast) {
+            await host.toast({ kind: "error", message: msg });
+          }
+        }
+        return false;
+      }
+      const ok = await updateIssueBody(issue, result.updatedBody, {
+        toastMessage: "Recorded answer to question"
+      });
+      if (ok) {
+        clearQuestionDraft(issue.number, cleanQuestion);
+        if (activeIssue && activeIssue.number === issue.number) {
+          renderDrawer(issue, true);
         }
       } else {
-        const currentOpen = parseOpenQuestions(freshBody).filter((q) => !q.completed);
-        const currentText = currentOpen.length > 0 ? currentOpen[0].text : "";
-        const msg = currentText ? `Question changed on #${issue.number}. Current text: "${currentText}"` : `Question on #${issue.number} is no longer open; refreshed.`;
-        addLog(`Question on #${issue.number} was modified remotely; refusing write`, "warn");
-        if (host?.toast) {
-          await host.toast({ kind: "error", message: msg });
-        }
+        saveQuestionDraft(issue.number, cleanQuestion, cleanAnswer);
       }
-      return false;
+      return ok;
+    } finally {
+      inFlightQuestions.delete(inFlightKey);
     }
-    const ok = await updateIssueBody(issue, result.updatedBody, {
-      toastMessage: "Recorded answer to question"
-    });
-    if (ok && activeIssue && activeIssue.number === issue.number) {
-      renderDrawer(issue, true);
-    }
-    return ok;
   }
   async function updateIssueStatus(issue, targetColumn, options) {
     const repo = repoForIssue(issue);
@@ -9897,6 +10007,7 @@ Blocked by ${blockerRef}`;
       <div class="card-id-wrap">
         <input type="checkbox" class="card-checkbox" data-issue="${issue.number}" ${isSelected ? "checked" : ""} title="Select issue for batch actions" />
         <span class="card-id">#${issue.number}</span>
+        ${issue.unconfirmed ? '<span class="badge badge-unconfirmed" style="background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4); font-size: 10px; padding: 1px 4px; border-radius: 3px; font-weight: 500;" title="Write outcome unconfirmed \u2014 refresh required">unconfirmed</span>' : ""}
         ${priorityHtml}
         ${complexityHtml}
         ${vagueBadgeHtml}
@@ -10301,6 +10412,8 @@ Blocked by ${blockerRef}`;
     }
   }
   function renderHumanTasksView(filteredIssues) {
+    userLayoutPreference = "human";
+    document.body.setAttribute("data-layout", "human");
     if (!elHumanViewContainer) return;
     elHumanViewContainer.innerHTML = "";
     const getCompletedTasksForIssue = (issue) => {
@@ -10458,7 +10571,7 @@ Blocked by ${blockerRef}`;
             headerRow.appendChild(actionsWrap);
             itemEl.appendChild(headerRow);
             const answerRow = document.createElement("div");
-            answerRow.className = "inline-answer-row";
+            answerRow.className = "inline-answer-row human-todo-answer-box";
             answerRow.style.cssText = "display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px; padding: 6px 8px; background: var(--surf-muted); border-radius: 6px; border: 1px solid var(--border);";
             const options = extractQuestionOptions(todo.text, issue.body);
             let optionsHtml = "";
@@ -10486,12 +10599,21 @@ Blocked by ${blockerRef}`;
             const answerInput = answerRow.querySelector(".input-human-answer");
             const btnSubmit = answerRow.querySelector(".btn-submit-human-answer");
             const btnCancel = answerRow.querySelector(".btn-cancel-human-answer");
+            const existingDraft = getQuestionDraft(issue.number, todo.text);
+            if (existingDraft && answerInput) {
+              answerInput.value = existingDraft;
+              answerRow.style.display = "flex";
+            }
+            answerInput?.addEventListener("input", () => {
+              saveQuestionDraft(issue.number, todo.text, answerInput.value);
+            });
             answerRow.querySelectorAll(".question-option-btn").forEach((optBtn) => {
               optBtn.addEventListener("click", (e) => {
                 e.stopPropagation();
                 const optVal = optBtn.getAttribute("data-opt");
                 if (optVal && answerInput) {
                   answerInput.value = optVal;
+                  saveQuestionDraft(issue.number, todo.text, optVal);
                   answerInput.focus();
                 }
               });
@@ -10504,17 +10626,28 @@ Blocked by ${blockerRef}`;
             });
             btnCancel?.addEventListener("click", (e) => {
               e.stopPropagation();
+              clearQuestionDraft(issue.number, todo.text);
+              if (answerInput) answerInput.value = "";
               answerRow.style.display = "none";
             });
             const doSubmitAnswer = async () => {
+              if (btnSubmit?.disabled) return;
               const ans = answerInput?.value.trim();
               if (!ans) {
                 answerInput?.focus();
                 return;
               }
-              const ok = await answerQuestion(issue, todo.text, ans);
-              if (ok && answerRow) {
-                answerRow.style.display = "none";
+              if (btnSubmit) btnSubmit.disabled = true;
+              if (answerInput) answerInput.disabled = true;
+              try {
+                const ok = await answerQuestion(issue, todo.text, ans);
+                if (ok) {
+                  clearQuestionDraft(issue.number, todo.text);
+                  if (answerRow) answerRow.style.display = "none";
+                }
+              } finally {
+                if (btnSubmit) btnSubmit.disabled = false;
+                if (answerInput) answerInput.disabled = false;
               }
             };
             btnSubmit?.addEventListener("click", (e) => {
@@ -10812,6 +10945,8 @@ Blocked by ${blockerRef}`;
     elAllTasksViewContainer.appendChild(fragment);
   }
   function renderQuestionsView(filteredIssues) {
+    userLayoutPreference = "questions";
+    document.body.setAttribute("data-layout", "questions");
     if (!elQuestionsViewContainer) return;
     elQuestionsViewContainer.innerHTML = "";
     const issuesWithQuestions = [];
@@ -10980,6 +11115,7 @@ Blocked by ${blockerRef}`;
               btnAnswer.setAttribute("aria-expanded", "true");
               if (input) {
                 input.value = opt;
+                saveQuestionDraft(issue.number, question.text, opt);
                 input.focus();
               }
             });
@@ -10989,6 +11125,7 @@ Blocked by ${blockerRef}`;
         }
         const answerRow = document.createElement("div");
         answerRow.className = "inline-answer-row";
+        answerRow.style.display = "none";
         answerRow.style.cssText = "display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px;";
         answerRow.innerHTML = `
         <div class="inline-answer-input-bar">
@@ -11003,6 +11140,15 @@ Blocked by ${blockerRef}`;
         const input = answerRow.querySelector(".input-inline-answer");
         const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
         const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
+        const existingDraft = getQuestionDraft(issue.number, question.text);
+        if (existingDraft && input) {
+          input.value = existingDraft;
+          answerRow.style.display = "flex";
+          btnAnswer.setAttribute("aria-expanded", "true");
+        }
+        input?.addEventListener("input", () => {
+          saveQuestionDraft(issue.number, question.text, input.value);
+        });
         btnAnswer.addEventListener("click", (e) => {
           e.stopPropagation();
           const isVisible = answerRow.style.display !== "none";
@@ -11013,15 +11159,24 @@ Blocked by ${blockerRef}`;
           }
         });
         const submitAnswer = async () => {
+          if (btnSave?.disabled) return;
           const answerText = input?.value.trim();
           if (!answerText) {
             input?.focus();
             return;
           }
-          const ok = await answerQuestion(issue, question.text, answerText);
-          if (ok) {
-            answerRow.style.display = "none";
-            btnAnswer.setAttribute("aria-expanded", "false");
+          if (btnSave) btnSave.disabled = true;
+          if (input) input.disabled = true;
+          try {
+            const ok = await answerQuestion(issue, question.text, answerText);
+            if (ok) {
+              clearQuestionDraft(issue.number, question.text);
+              answerRow.style.display = "none";
+              btnAnswer.setAttribute("aria-expanded", "false");
+            }
+          } finally {
+            if (btnSave) btnSave.disabled = false;
+            if (input) input.disabled = false;
           }
         };
         btnSave?.addEventListener("click", (ev) => {
@@ -11040,6 +11195,8 @@ Blocked by ${blockerRef}`;
         });
         btnCancel?.addEventListener("click", (ev) => {
           ev.stopPropagation();
+          clearQuestionDraft(issue.number, question.text);
+          if (input) input.value = "";
           answerRow.style.display = "none";
           btnAnswer.setAttribute("aria-expanded", "false");
         });
@@ -11454,8 +11611,8 @@ Blocked by ${blockerRef}`;
     if (!targetIssue) return;
     const newBody = addDependencyToMarkdown(targetIssue.body, blockerNum);
     if (newBody !== targetIssue.body) {
-      await updateIssueBody(targetIssue, newBody);
-      if (host?.toast) {
+      const ok = await updateIssueBody(targetIssue, newBody, { suppressToast: true });
+      if (ok && host?.toast) {
         await host.toast({ kind: "info", message: `Linked #${targetNum} as blocked by #${blockerNum}` });
       }
     }
@@ -11465,8 +11622,8 @@ Blocked by ${blockerRef}`;
     if (!targetIssue) return;
     const newBody = removeDependencyFromMarkdown(targetIssue.body, blockerNum);
     if (newBody !== targetIssue.body) {
-      await updateIssueBody(targetIssue, newBody);
-      if (host?.toast) {
+      const ok = await updateIssueBody(targetIssue, newBody, { suppressToast: true });
+      if (ok && host?.toast) {
         await host.toast({ kind: "info", message: `Removed dependency: #${blockerNum} no longer blocks #${targetNum}` });
       }
     }
@@ -12120,6 +12277,21 @@ Blocked by ${blockerRef}`;
   }
   function renderDrawer(issue, skipComments = false, gen = drawerGeneration, forceFreshComments = false) {
     elDrawerIssueNumber.textContent = `#${issue.number}`;
+    let elUnconfirmedBadge = elDrawerIssueNumber?.parentElement?.querySelector(".badge-drawer-unconfirmed");
+    if (issue.unconfirmed) {
+      if (!elUnconfirmedBadge && elDrawerIssueNumber?.parentElement) {
+        elUnconfirmedBadge = document.createElement("span");
+        elUnconfirmedBadge.className = "badge badge-drawer-unconfirmed";
+        elUnconfirmedBadge.style.cssText = "background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4); font-size: 11px; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-left: 6px; vertical-align: middle;";
+        elUnconfirmedBadge.textContent = "unconfirmed";
+        elUnconfirmedBadge.title = "Remote outcome unknown \u2014 refresh to reconcile";
+        elDrawerIssueNumber.parentElement.appendChild(elUnconfirmedBadge);
+      } else if (elUnconfirmedBadge) {
+        elUnconfirmedBadge.style.display = "inline-block";
+      }
+    } else if (elUnconfirmedBadge) {
+      elUnconfirmedBadge.style.display = "none";
+    }
     elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : "";
     elDrawerGithubLink.href = issue.html_url;
     elDrawerIssueTitle.textContent = issue.title;
@@ -12374,67 +12546,97 @@ Blocked by ${blockerRef}`;
         btnAnswer.title = "Record decision or answer";
         btnAnswer.textContent = "Answer";
         textRow.appendChild(btnAnswer);
+        const existingDraft = getQuestionDraft(issue.number, question.text);
+        const createOrGetAnswerRow = () => {
+          let answerRow = contentEl.querySelector(".inline-answer-row");
+          if (!answerRow) {
+            answerRow = document.createElement("div");
+            answerRow.className = "inline-answer-row";
+            answerRow.style.display = "flex";
+            answerRow.style.gap = "6px";
+            answerRow.style.marginTop = "4px";
+            answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>`;
+            contentEl.appendChild(answerRow);
+            const input = answerRow.querySelector(".input-inline-answer");
+            const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
+            const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
+            const draft = getQuestionDraft(issue.number, question.text);
+            if (draft && input) {
+              input.value = draft;
+            }
+            input?.addEventListener("input", () => {
+              saveQuestionDraft(issue.number, question.text, input.value);
+            });
+            const submitAnswer = async () => {
+              if (btnSave?.disabled) return;
+              const answerText = input?.value.trim();
+              if (!answerText) {
+                input?.focus();
+                return;
+              }
+              if (btnSave) btnSave.disabled = true;
+              if (input) input.disabled = true;
+              try {
+                const targetIssue = activeIssue || issue;
+                if (!targetIssue) return;
+                const ok = await answerQuestion(targetIssue, question.text, answerText);
+                if (ok) {
+                  clearQuestionDraft(issue.number, question.text);
+                  if (issue && issue !== targetIssue) {
+                    issue.body = targetIssue.body;
+                    issue.subtasks = targetIssue.subtasks;
+                    issue.openQuestions = targetIssue.openQuestions;
+                  }
+                  if (answerRow) answerRow.style.display = "none";
+                }
+              } finally {
+                if (btnSave) btnSave.disabled = false;
+                if (input) input.disabled = false;
+              }
+            };
+            btnSave?.addEventListener("click", (ev) => {
+              ev.stopPropagation();
+              void submitAnswer();
+            });
+            btnCancel?.addEventListener("click", (ev) => {
+              ev.stopPropagation();
+              clearQuestionDraft(issue.number, question.text);
+              if (input) input.value = "";
+              if (answerRow) answerRow.style.display = "none";
+              btnAnswer.focus();
+            });
+            input?.addEventListener("keydown", (ev) => {
+              if (ev.key === "Enter") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                void submitAnswer();
+              } else if (ev.key === "Escape") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                if (answerRow) answerRow.style.display = "none";
+                btnAnswer.focus();
+              }
+            });
+          }
+          return answerRow;
+        };
+        if (existingDraft) {
+          createOrGetAnswerRow();
+        }
         btnAnswer.addEventListener("click", (e) => {
           e.stopPropagation();
-          let answerRow = contentEl.querySelector(".inline-answer-row");
-          if (answerRow) {
-            const isVisible = answerRow.style.display !== "none";
-            answerRow.style.display = isVisible ? "none" : "flex";
+          let row = contentEl.querySelector(".inline-answer-row");
+          if (row) {
+            const isVisible = row.style.display !== "none";
+            row.style.display = isVisible ? "none" : "flex";
             if (!isVisible) {
-              answerRow.querySelector(".input-inline-answer")?.focus();
+              row.querySelector(".input-inline-answer")?.focus();
             }
             return;
           }
-          answerRow = document.createElement("div");
-          answerRow.className = "inline-answer-row";
-          answerRow.style.display = "flex";
-          answerRow.style.gap = "6px";
-          answerRow.style.marginTop = "4px";
-          answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>`;
-          contentEl.appendChild(answerRow);
-          const input = answerRow.querySelector(".input-inline-answer");
-          const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
-          const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
-          const submitAnswer = async () => {
-            const answerText = input?.value.trim();
-            if (!answerText) {
-              input?.focus();
-              return;
-            }
-            const targetIssue = activeIssue || issue;
-            if (!targetIssue) return;
-            const ok = await answerQuestion(targetIssue, question.text, answerText);
-            if (ok) {
-              if (issue && issue !== targetIssue) {
-                issue.body = targetIssue.body;
-                issue.subtasks = targetIssue.subtasks;
-                issue.openQuestions = targetIssue.openQuestions;
-              }
-              if (answerRow) answerRow.style.display = "none";
-            }
-          };
-          btnSave?.addEventListener("click", (ev) => {
-            ev.stopPropagation();
-            void submitAnswer();
-          });
-          btnCancel?.addEventListener("click", (ev) => {
-            ev.stopPropagation();
-            if (answerRow) answerRow.style.display = "none";
-            btnAnswer.focus();
-          });
-          input?.addEventListener("keydown", (ev) => {
-            if (ev.key === "Enter") {
-              ev.preventDefault();
-              ev.stopPropagation();
-              void submitAnswer();
-            } else if (ev.key === "Escape") {
-              ev.preventDefault();
-              ev.stopPropagation();
-              if (answerRow) answerRow.style.display = "none";
-              btnAnswer.focus();
-            }
-          });
-          input?.focus();
+          row = createOrGetAnswerRow();
+          row.style.display = "flex";
+          row.querySelector(".input-inline-answer")?.focus();
         });
       }
       contentEl.appendChild(textRow);

@@ -57,3 +57,22 @@ Captured red test log: `verifications/issue-34/red-tests.log`.
 - Zero atomic claims: all comments and UI strings follow best-effort semantics.
 - No #31 content hash / generation scheme introduced; uses source question text and fresh GET before mutation.
 - Closed issue #36 guards intact: status transitions remain untouched during question answering.
+
+## Hostile Review Findings Remediation Matrix
+
+| Finding | Severity | Defect Description | RED Reproduction Test | Remediation Applied | GREEN Verification |
+|---|---|---|---|---|---|
+| **Finding 1** | CRITICAL | 5xx server errors, gateway timeouts, and regex matches misclassified as definitive rejections | `test/issue-34-answer-integrity.test.js` (Test 13) | Classified only HTTP 4xx (excluding 408) as definitive pre-commit rejections; all 5xx, 502/503/504, 408, network drops, and parse errors route to UNKNOWN | PASS (`verifications/issue-34/remediation-green.log`) |
+| **Finding 2** | CRITICAL | Ambiguous write outcomes restored un-authoritative body risking silent overwrite | `test/issue-34-answer-integrity.test.js` (Test 14) | Reverted local state, marked `issue.unconfirmed = true`, added card/drawer unconfirmed warning badges, and blocked dependent writes until `reloadIssueBeforeMutation` reconciles | PASS (`verifications/issue-34/remediation-green.log`) |
+| **Finding 3** | IMPORTANT | Dependency management call sites ignored `updateIssueBody` return, showing false success toast on write failure | `test/issue-34-answer-integrity.test.js` (Test 15) | Updated `handleAddDependency` and `handleRemoveDependency` to call `updateIssueBody(..., { suppressToast: true })` and only toast on confirmed success | PASS (`verifications/issue-34/remediation-green.log`) |
+| **Finding 4** | IMPORTANT | Multi-question issue toast falsely attributed unrelated question text when question changed/removed | `test/issue-34-answer-integrity.test.js` (Test 16) | Checked open question counts; toasts neutral `Question changed on #${issue.number}; refreshed.` unless a single question unambiguously changed text | PASS (`verifications/issue-34/remediation-green.log`) |
+| **Finding 5** | IMPORTANT | Rapid double-clicking Save sent duplicate PATCH requests and triggered false error toasts | `test/issue-34-answer-integrity.test.js` (Test 17) | Disabled submit button and input during submission across all three views; added `inFlightQuestions` guard per question key | PASS (`verifications/issue-34/remediation-green.log`) |
+| **Finding 6** | IMPORTANT | Typed answers discarded upon question refusal across Questions View, Drawer, and Human Tasks | `test/issue-34-answer-integrity.test.js` (Test 18) | Preserved typed drafts in `questionAnswerDrafts` map across refusal re-renders and mounted/kept answer rows open | PASS (`verifications/issue-34/remediation-green.log`) |
+| **Finding 7** | IMPORTANT | Post-mutation toast / agent notification failures triggered write rollback | `test/issue-34-answer-integrity.test.js` (Test 19) | Moved post-mutation toast and agent notification into isolated, non-throwing `try/catch` blocks outside the mutation write error boundary | PASS (`verifications/issue-34/remediation-green.log`) |
+
+### Final Suite Metrics
+- **Remediation Suite**: 19/19 passing (`node --test test/issue-34-answer-integrity.test.js`).
+- **Full Extension Suite**: 510/510 passing (`npm test`).
+- **Typecheck**: `tsc --noEmit` passed with 0 errors (`npm run typecheck`).
+- **Bundle Parity**: Clean esbuild bundle `panel/main.js` with verified deterministic SHA-256 (`19f686e582ed3b9ee9deac0973fe88e48d9608e533f0157a7d6a719a4a94c213`).
+
