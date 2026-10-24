@@ -194,3 +194,28 @@ test('duplicate headings only allow the first matching overview to be editable',
   assert.ok(replaced.includes('## Overview\nUpdated text.'));
   assert.ok(replaced.includes('## Overview\nSecond text.'));
 });
+
+test('closing fence must contain only marker characters and whitespace (R4)', () => {
+  const body = [
+    '## Overview',
+    'Intro',
+    '```text',
+    'example',
+    '```not-a-closing-fence',
+    '## Not a heading (still in code)',
+    'example',
+    '```',
+    '',
+    '## Human Tasks',
+    '- [ ] keep',
+    '',
+  ].join('\n');
+
+  const sections = findSections(body);
+  const titles = sections.map((s) => s.title);
+  assert.deepEqual(titles, ['Overview', 'Human Tasks']);
+  assert.ok(sections[0].text.includes('```not-a-closing-fence\n## Not a heading (still in code)'));
+
+  const updated = replaceSectionText(body, 'overview', 'NEW');
+  assert.equal(updated, '## Overview\nNEW\n\n## Human Tasks\n- [ ] keep\n');
+});

@@ -32,18 +32,20 @@ printing its value.
 | `BOARD_SESSION_SECRET` | yes | At least 32 characters. Signs session cookies; changing it ends every session. |
 | `BOARD_PORT` | no | Listen port, default `8787`. |
 | `BOARD_BASE_URL` | no | Public origin, e.g. `https://board.example.test` (used for HSTS and Origin/Referer write validation). |
-| `BOARD_TRUST_PROXY` | no | Set to `true` when behind a trusted reverse proxy to honor client IP in `X-Forwarded-For`. |
 
 If both password variables are set, `BOARD_PASSWORD_HASH` wins.
 
-Generate a hash (pass the password via standard input or interactive prompt to prevent recording in shell history; use `umask 077` if writing to a file):
+Generate a hash using an interactive hidden prompt, restricted file redirection, or a secret manager to prevent recording secrets in shell history:
 
 ```sh
-# generate password hash via stdin (keeps secrets out of shell history)
-printf '%s' 'your-secret-password' | node web/tools/hash-password.mjs
+# interactive hidden prompt (no echo, not stored in shell history)
+node web/tools/hash-password.mjs
 
-# or write to an environment file with restricted permissions
-(umask 077 && printf 'BOARD_PASSWORD_HASH=%s\n' "$(printf '%s' 'your-secret-password' | node web/tools/hash-password.mjs)" > .env.board)
+# or read password from a restricted-permission file
+(umask 077 && node web/tools/hash-password.mjs < /path/to/password-file)
+
+# or write to an environment file with restricted permissions using hidden shell input
+(umask 077 && read -rs P && printf 'BOARD_PASSWORD_HASH=%s\n' "$(printf '%s' "$P" | node web/tools/hash-password.mjs)" > .env.board && unset P)
 ```
 
 ## Run
@@ -79,16 +81,18 @@ accept on `https` origins (and on `http://localhost` for local testing).
 - **Sign-in:** the browser posts the password (over HTTPS in deployment). The
   server compares it using asynchronous scrypt (`N=16384,r=8,p=1`, per-deployment salt)
   and `timingSafeEqual`. Scrypt operations run through a concurrency queue (max 2
-  concurrent workers) and in-flight login requests are deduplicated per client IP to
-  prevent CPU/memory exhaustion during login floods. A successful sign-in issues a
+  concurrent workers, bounded waiting queue of 8 entries with `429` retry guidance)
+  and in-flight login requests are bounded and deduplicated per client IP with a request body deadline (5s).
+  Authenticated routes run independently of unauthenticated login verification. A successful sign-in issues a
   random session id, signed with `BOARD_SESSION_SECRET`, in an `HttpOnly; Secure; SameSite=Strict`
   cookie, plus a CSRF token bound to that session.
 - **Failed logins & rate limiting:** an in-memory sliding-window limiter (5 failures per
   minute per client address) answers `429` with `Retry-After`. The limiter state is bounded
-  (capped at 1,000 entries with LRU eviction). Client IP addresses are derived from the
-  direct socket connection unless `BOARD_TRUST_PROXY=true` is set. Unauthenticated owner sign-in
-  from the same address can be briefly rate limited (up to 60s cooldown) if failed attempts occur
-  from that address. Existing authenticated sessions are not affected. There is no account lockout state.
+  (capped at 1,000 entries with LRU eviction). Client IP addresses are derived strictly from the
+  direct socket connection; forwarded headers (`X-Forwarded-For`, `Forwarded`) are never trusted.
+  When hosted behind a reverse proxy, rate limiting applies to the immediate peer connection.
+  Unauthenticated owner sign-in from that address can be briefly rate limited (up to 60s cooldown)
+  if failed attempts occur. Existing authenticated sessions are not affected. There is no account lockout state.
 - **Sessions:** absolute 12-hour lifetime, 2-hour idle timeout, in memory only. The
   session store is bounded to 50 concurrent active sessions with LRU eviction. A server
   restart or change to `BOARD_SESSION_SECRET` immediately invalidates every session.

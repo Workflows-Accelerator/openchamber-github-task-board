@@ -159,19 +159,20 @@ test('login limiter enforces bounded cooldown of at most 60 seconds with no accu
   assert.deepEqual(limiter.check(key), { allowed: true, retryAfterSeconds: 0 });
 });
 
-test('session store caps stored sessions and evicts oldest when full', () => {
+test('session store caps stored sessions and evicts least recently used when full', () => {
+  // Per manager ruling R6: session store uses true LRU eviction (accessing s1 promotes it so s2 is evicted when full)
   const store = new SessionStore({ secret: SECRET, maxSessions: 3 });
   const s1 = store.create();
   const s2 = store.create();
   const s3 = store.create();
 
   assert.equal(store.size, 3);
-  assert.ok(store.get(s1.cookieValue));
+  assert.ok(store.get(s1.cookieValue), 's1 accessed and promoted to most recently used');
 
   const s4 = store.create();
   assert.equal(store.size, 3);
-  assert.equal(store.get(s1.cookieValue), null, 'oldest session evicted');
-  assert.ok(store.get(s2.cookieValue));
+  assert.equal(store.get(s2.cookieValue), null, 'least recently used session (s2) evicted');
+  assert.ok(store.get(s1.cookieValue), 'recently accessed session (s1) retained');
   assert.ok(store.get(s3.cookieValue));
   assert.ok(store.get(s4.cookieValue));
 });

@@ -146,6 +146,38 @@ test('listIssues rejects a malicious origin in the Link header', async () => {
   );
 });
 
+test('listIssues rejects a Link header naming a different repository path (R8)', async () => {
+  const paths = [];
+  const mockFetch = async (url) => {
+    paths.push(url);
+    return new Response(
+      JSON.stringify([{ number: paths.length, title: paths.length === 1 ? 'Allowed' : 'Other' }]),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+          link:
+            paths.length === 1
+              ? '<https://api.github.com/repos/other/repo/issues?page=2>; rel="next"'
+              : '',
+        },
+      },
+    );
+  };
+
+  const client = new GitHubClient({
+    apiBase: 'https://api.github.com',
+    token: TOKEN,
+    repo: { owner: 'owner', name: 'repo', full: 'owner/repo' },
+    fetchImpl: mockFetch,
+  });
+
+  await assert.rejects(
+    () => client.listIssues(),
+    (err) => err instanceof GitHubError && /repository path/i.test(err.message),
+  );
+});
+
 test('listIssues dedupes issues and stops when a page adds nothing new', async () => {
   let callCount = 0;
   const mockFetch = async () => {

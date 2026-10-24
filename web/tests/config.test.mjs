@@ -156,12 +156,33 @@ test('verifyPassword returns false for malformed stored hashes', () => {
   }
 });
 
-test('BOARD_TRUST_PROXY parses truthy and falsy values', () => {
-  assert.equal(loadConfig(validEnv()).trustProxy, false);
-  assert.equal(loadConfig(validEnv({ BOARD_TRUST_PROXY: 'false' })).trustProxy, false);
-  assert.equal(loadConfig(validEnv({ BOARD_TRUST_PROXY: 'true' })).trustProxy, true);
-  assert.equal(loadConfig(validEnv({ BOARD_TRUST_PROXY: '1' })).trustProxy, true);
-  assert.equal(loadConfig(validEnv({ BOARD_TRUST_PROXY: 'yes' })).trustProxy, true);
+test('BOARD_TRUST_PROXY is removed and forwarded headers are untrusted (R3)', () => {
+  // Per manager ruling R3: blanket forwarded-header trust removed; config no longer parses or exposes trustProxy
+  const config = loadConfig(validEnv({ BOARD_TRUST_PROXY: 'true' }));
+  assert.equal('trustProxy' in config, false);
+});
+
+test('hash-password CLI tool runs on Node 22 via stdin pipe (R5)', async () => {
+  const { execFile } = await import('node:child_process');
+  const { fileURLToPath } = await import('node:url');
+  const path = await import('node:path');
+  const here = path.dirname(fileURLToPath(import.meta.url));
+  const tool = path.resolve(here, '../tools/hash-password.mjs');
+  const child = execFile(process.execPath, [tool]);
+  child.stdin.end('test-cli-password-1234\n');
+  const { stdout } = await new Promise((resolve, reject) => {
+    let out = '';
+    let err = '';
+    child.stdout.on('data', (d) => (out += d));
+    child.stderr.on('data', (d) => (err += d));
+    child.on('close', (code) => {
+      if (code === 0) resolve({ stdout: out, stderr: err });
+      else reject(new Error(`hash-password exited ${code}: ${err}`));
+    });
+  });
+  const hash = stdout.trim();
+  assert.ok(hash.startsWith('scrypt$'), `expected scrypt hash, got: ${hash}`);
+  assert.equal(verifyPassword('test-cli-password-1234', hash), true);
 });
 
 test('verifyPasswordAsync matches valid password and rejects invalid', async () => {

@@ -46,6 +46,7 @@ export interface BoardServerOptions {
   now?: () => number;
   sessionTtlMs?: number;
   idleTtlMs?: number;
+  loginTimeoutMs?: number;
   logger?: (line: string) => void;
 }
 
@@ -68,12 +69,20 @@ class HttpError extends Error {
   status: number;
   code: string;
   extra: Record<string, unknown>;
+  headers: Record<string, string>;
 
-  constructor(status: number, code: string, message: string, extra: Record<string, unknown> = {}) {
+  constructor(
+    status: number,
+    code: string,
+    message: string,
+    extra: Record<string, unknown> = {},
+    headers: Record<string, string> = {},
+  ) {
     super(message);
     this.status = status;
     this.code = code;
     this.extra = extra;
+    this.headers = headers;
   }
 }
 
@@ -104,12 +113,45 @@ function redactLine(line: string, secrets: string[]): string {
     .replace(/board_session=[^;\s]+/g, 'board_session=[redacted]');
 }
 
-function readJsonBody(req: http.IncomingMessage): Promise<any> {
+function readJsonBody(req: http.IncomingMessage, timeoutMs = 10_000): Promise<any> {
   return new Promise((resolve, reject) => {
+    if (req.destroyed || req.closed) {
+      reject(new HttpError(400, 'invalid_request', 'The request was aborted'));
+      return;
+    }
+
     const chunks: Buffer[] = [];
     let size = 0;
     let tooLarge = false;
-    req.on('data', (chunk: Buffer) => {
+    let done = false;
+    let timer: NodeJS.Timeout | null = null;
+
+    const cleanup = () => {
+      if (timer) {
+        clearTimeout(timer);
+        timer = null;
+      }
+      req.removeListener('data', onData);
+      req.removeListener('end', onEnd);
+      req.removeListener('error', onError);
+      req.removeListener('close', onClose);
+    };
+
+    const finishReject = (error: Error) => {
+      if (done) return;
+      done = true;
+      cleanup();
+      reject(error);
+    };
+
+    const finishResolve = (val: any) => {
+      if (done) return;
+      done = true;
+      cleanup();
+      resolve(val);
+    };
+
+    const onData = (chunk: Buffer) => {
       size += chunk.length;
       if (size > MAX_BODY_BYTES) {
         tooLarge = true;
@@ -117,21 +159,43 @@ function readJsonBody(req: http.IncomingMessage): Promise<any> {
         return;
       }
       if (!tooLarge) chunks.push(chunk);
-    });
-    req.on('end', () => {
+    };
+
+    const onEnd = () => {
       if (tooLarge) {
-        reject(new HttpError(413, 'payload_too_large', 'The request body is too large'));
+        finishReject(new HttpError(413, 'payload_too_large', 'The request body is too large'));
         return;
       }
       const raw = Buffer.concat(chunks).toString('utf8');
-      if (!raw) return resolve(null);
+      if (!raw) return finishResolve(null);
       try {
-        resolve(JSON.parse(raw));
+        finishResolve(JSON.parse(raw));
       } catch {
-        reject(new HttpError(400, 'invalid_json', 'The request body must be JSON'));
+        finishReject(new HttpError(400, 'invalid_json', 'The request body must be JSON'));
       }
-    });
-    req.on('error', () => reject(new HttpError(400, 'invalid_request', 'The request could not be read')));
+    };
+
+    const onError = () => {
+      finishReject(new HttpError(400, 'invalid_request', 'The request could not be read'));
+    };
+
+    const onClose = () => {
+      if (!req.readableEnded) {
+        finishReject(new HttpError(400, 'invalid_request', 'The request connection was closed prematurely'));
+      }
+    };
+
+    if (timeoutMs > 0) {
+      timer = setTimeout(() => {
+        req.destroy();
+        finishReject(new HttpError(408, 'request_timeout', 'Request body timed out'));
+      }, timeoutMs);
+    }
+
+    req.on('data', onData);
+    req.on('end', onEnd);
+    req.on('error', onError);
+    req.on('close', onClose);
   });
 }
 
@@ -161,14 +225,25 @@ function mapGitHubError(error: unknown): never {
 class ScryptQueue {
   private active = 0;
   private readonly maxConcurrent: number;
+  private readonly maxQueue: number;
   private readonly queue: Array<() => void> = [];
 
-  constructor(maxConcurrent = 2) {
+  constructor(maxConcurrent = 2, maxQueue = 4) {
     this.maxConcurrent = maxConcurrent;
+    this.maxQueue = maxQueue;
   }
 
   async run<T>(fn: () => Promise<T>): Promise<T> {
     if (this.active >= this.maxConcurrent) {
+      if (this.queue.length >= this.maxQueue) {
+        throw new HttpError(
+          429,
+          'rate_limited',
+          'The sign-in service is busy; try again in a moment',
+          { retryAfterSeconds: 2 },
+          { 'retry-after': '2' },
+        );
+      }
       await new Promise<void>((resolve) => this.queue.push(resolve));
     }
     this.active += 1;
@@ -182,19 +257,7 @@ class ScryptQueue {
   }
 }
 
-function getClientIp(req: http.IncomingMessage, trustProxy: boolean): string {
-  if (trustProxy) {
-    const forwarded = req.headers['x-forwarded-for'];
-    if (typeof forwarded === 'string' && forwarded.trim()) {
-      const first = forwarded.split(',')[0].trim();
-      if (first) return first;
-    }
-    const standardForwarded = req.headers['forwarded'];
-    if (typeof standardForwarded === 'string' && standardForwarded.trim()) {
-      const match = /for="?([^";, ]+)/i.exec(standardForwarded);
-      if (match && match[1]) return match[1];
-    }
-  }
+function getClientIp(req: http.IncomingMessage): string {
   return req.socket.remoteAddress ?? 'unknown';
 }
 
@@ -304,6 +367,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           response = {
             status: error.status,
             body: { error: error.code, message: error.message, ...error.extra },
+            headers: error.headers,
           };
         } else {
           response = {
@@ -523,8 +587,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     | { kind: 'question'; index: number; answer: unknown }
     | { kind: 'status'; status: unknown };
 
+  const MAX_IN_FLIGHT_LOGINS = 10;
+  const LOGIN_BODY_TIMEOUT_MS = 2_000;
+  const LOGIN_SLOT_TIMEOUT_MS = 3_000;
   const inFlightLogins = new Set<string>();
-  const scryptQueue = new ScryptQueue(2);
+  const scryptQueue = new ScryptQueue(2, 4);
   const issueLocks = new Map<number, Promise<void>>();
 
   async function withIssueLock<T>(number: number, fn: () => Promise<T>): Promise<T> {
@@ -549,7 +616,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   }
 
   async function login(req: http.IncomingMessage): Promise<HandlerResponse> {
-    const ip = getClientIp(req, config.trustProxy);
+    const ip = getClientIp(req);
     const verdict = limiter.check(ip);
     if (!verdict.allowed) {
       return {
@@ -575,15 +642,31 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       };
     }
 
+    if (inFlightLogins.size >= MAX_IN_FLIGHT_LOGINS) {
+      return {
+        status: 429,
+        body: {
+          error: 'rate_limited',
+          message: 'Too many concurrent sign-in attempts; try again in a moment',
+          retryAfterSeconds: 2,
+        },
+        headers: { 'retry-after': '2' },
+      };
+    }
+
     inFlightLogins.add(ip);
+    const slotTimer = setTimeout(() => {
+      inFlightLogins.delete(ip);
+    }, LOGIN_SLOT_TIMEOUT_MS);
     let valid = false;
     try {
-      const body = await readJsonBody(req).catch((error) => {
+      const body = await readJsonBody(req, LOGIN_BODY_TIMEOUT_MS).catch((error) => {
         throw error instanceof HttpError ? error : new HttpError(400, 'invalid_json', 'The request body must be JSON');
       });
       const password = body && typeof body.password === 'string' ? body.password : '';
       valid = await scryptQueue.run(() => verifyPasswordAsync(password, config.passwordHash));
     } finally {
+      clearTimeout(slotTimer);
       inFlightLogins.delete(ip);
     }
 
@@ -731,8 +814,12 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
       if (op.kind === 'section') {
         const curSec = findSections(currentItem.body ?? '').find((s) => s.id === op.sectionId);
-        if (curSec?.text === targetText) {
-          verified = true;
+        if (curSec) {
+          const canonicalCur = curSec.text.replace(/\r\n/g, '\n').trim();
+          const canonicalTarget = targetText.replace(/\r\n/g, '\n').trim();
+          if (canonicalCur === canonicalTarget) {
+            verified = true;
+          }
         }
       } else if (op.kind === 'question') {
         const curDetail = buildIssueDetail(currentItem);

@@ -427,6 +427,33 @@ async function main() {
     check('non-status labels were preserved', labels.includes('bug'));
     await screenshot('task-detail-after-edits-desktop');
 
+    // Browser write transport loss probe (R1)
+    const beforeTransport = fake.patchCalls.length;
+    await evaluate(`(() => {
+      window._realFetch = window.fetch;
+      window.fetch = async function(input, options) {
+        const response = await window._realFetch(input, options);
+        if (options && (options.method === 'PUT' || options.method === 'POST')) {
+          await response.clone().text();
+          throw new TypeError('Synthetic browser response loss');
+        }
+        return response;
+      };
+      document.getElementById('overview-text').value = 'Browser transport loss committed edit';
+      document.getElementById('save-overview').click();
+    })()`);
+    await waitFor('document.getElementById("save-status").textContent.toLowerCase().includes("outcome unknown")', 'browser transport loss message');
+    check(
+      'browser transport failure on write classifies outcome as unknown and offers refresh (R1)',
+      (await evaluate('document.getElementById("save-status").textContent')).toLowerCase().includes('outcome unknown') &&
+        (await evaluate('document.getElementById("save-status").textContent')).toLowerCase().includes('refresh'),
+    );
+    check(
+      'browser transport failure makes zero write retries (R1)',
+      fake.patchCalls.length === beforeTransport + 1,
+    );
+    await evaluate('window.fetch = window._realFetch; delete window._realFetch;');
+
     // Stale state: GitHub fails while a board is already loaded.
     await setViewport(1280, 900, false);
     fake.setFailure(true);

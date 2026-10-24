@@ -73,14 +73,30 @@
     var headers = {};
     if (options.body !== undefined) headers['content-type'] = 'application/json';
     if (method !== 'GET' && state.csrf) headers['x-csrf-token'] = state.csrf;
-    var response = await fetch(path, {
-      method: method,
-      headers: headers,
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
-      credentials: 'same-origin',
-      cache: 'no-store',
-    });
-    var text = await response.text();
+    var response;
+    var text;
+    try {
+      response = await fetch(path, {
+        method: method,
+        headers: headers,
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      text = await response.text();
+    } catch (networkError) {
+      if (method !== 'GET' && !path.startsWith('/api/session')) {
+        throw new ApiError('write_outcome_unknown', 0, {
+          error: 'write_outcome_unknown',
+          message: 'Browser network error: outcome unknown \u2014 refresh to check GitHub state',
+        });
+      }
+      throw new ApiError('network_error', 0, {
+        error: 'network_error',
+        message: networkError && networkError.message ? networkError.message : 'Network request failed',
+      });
+    }
+
     var payload = null;
     if (text) {
       try {
@@ -507,7 +523,8 @@
       } else if (error.status === 429) {
         $('save-status').textContent = 'Too many attempts. Wait and try again.';
       } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
-        $('save-status').textContent = 'Outcome unknown — check the issue on GitHub.';
+        var msg = error.message || 'Outcome unknown — check the issue on GitHub.';
+        $('save-status').textContent = msg.endsWith('.') ? msg : msg + '.';
       } else {
         $('save-status').textContent = error.message + '.';
       }
@@ -542,7 +559,7 @@
       if (error.status === 409) {
         handleConflict(error);
       } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
-        setNotice('Outcome unknown — check the issue on GitHub.', true);
+        setNotice(error.message || 'Outcome unknown — check the issue on GitHub.', true);
       } else {
         setNotice(error.message + '.', true);
       }
@@ -573,7 +590,7 @@
       if (error.status === 409) {
         handleConflict(error);
       } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
-        setNotice('Outcome unknown — check the issue on GitHub.', true);
+        setNotice(error.message || 'Outcome unknown — check the issue on GitHub.', true);
       } else {
         setNotice(error.message + '.', true);
       }

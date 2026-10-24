@@ -115,6 +115,8 @@ export class SessionStore {
       return null;
     }
     record.lastSeenAt = now;
+    this.sessions.delete(id);
+    this.sessions.set(id, record);
     return record;
   }
 

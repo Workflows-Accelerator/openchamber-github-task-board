@@ -331,6 +331,29 @@ test('a conditional section write succeeds and preserves every other section', a
   }
 });
 
+test('end-to-end CRLF section write succeeds and is verified on readback (R7)', async () => {
+  const crlfBody = '## Overview\r\n\r\nOriginal\r\n\r\n## Human Tasks\r\n- [ ] Keep\r\n';
+  const { fake, board, close } = await fixture({
+    issues: [makeIssue({ number: 1, body: crlfBody })],
+  });
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+    const detail = await client.request('/api/issues/1');
+    const fingerprint = detail.json.issue.fingerprint;
+
+    const res = await client.request('/api/issues/1/section', {
+      method: 'PUT',
+      body: { sectionId: 'overview', text: 'Changed', fingerprint },
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.json.issue.editableSections[0].text, 'Changed');
+    assert.ok(fake.findIssue(1).body.includes('\r\n'));
+  } finally {
+    await close();
+  }
+});
+
 test('a concurrent edit conflicts instead of overwriting', async () => {
   const { fake, board, close } = await fixture();
   try {
@@ -622,7 +645,8 @@ test('parallel login flood does not block the process and finishes quickly', asy
   }
 });
 
-test('forwarded headers cannot bypass rate limiting unless proxy is explicitly trusted', async () => {
+test('forwarded headers are ignored and cannot bypass rate limiting (direct socket peer is always used) (R3)', async () => {
+  // Per manager ruling R3: blanket forwarded-header trust removed; direct socket peer is always used
   const { board, close } = await fixture();
   try {
     for (let i = 0; i < 5; i += 1) {
@@ -766,6 +790,59 @@ test('an ambiguous write outcome on upstream server error returns 502 write_outc
   }
 });
 
+test('an ambiguous write outcome on truncated upstream response returns 502 write_outcome_unknown and makes zero retries (R1)', async () => {
+  const http = await import('node:http');
+  const upstream = await startFakeGitHub({ issues: [makeIssue({ number: 1, body: '## Overview\n\nBefore\n' })] });
+  let patches = 0;
+  const proxy = http.createServer(async (req, res) => {
+    const data = [];
+    for await (const chunk of req) data.push(chunk);
+    const result = await fetch(upstream.url + req.url, {
+      method: req.method,
+      headers: { ...req.headers, host: undefined },
+      body: req.method === 'PATCH' ? Buffer.concat(data) : undefined,
+    });
+    const text = await result.text();
+    if (req.method === 'PATCH') {
+      patches += 1;
+      res.writeHead(200, {
+        'content-type': 'application/json',
+        'content-length': String(Buffer.byteLength(text) + 100),
+      });
+      res.write(text.slice(0, 8));
+      setTimeout(() => res.destroy(), 50);
+    } else {
+      res.writeHead(result.status, { 'content-type': 'application/json' });
+      res.end(text);
+    }
+  });
+  await new Promise((resolve) => proxy.listen(0, '127.0.0.1', resolve));
+  const board = await startBoard(upstream, {
+    githubApiBase: `http://127.0.0.1:${proxy.address().port}`,
+  });
+  try {
+    const owner = new HttpSession(board.url);
+    await owner.login();
+    const loaded = await owner.request('/api/issues/1');
+    const result = await owner.request('/api/issues/1/section', {
+      method: 'PUT',
+      body: {
+        sectionId: 'overview',
+        text: 'After commit before response loss',
+        fingerprint: loaded.json.issue.fingerprint,
+      },
+    });
+    assert.equal(result.status, 502);
+    assert.equal(result.json.error, 'write_outcome_unknown');
+    assert.match(result.json.message, /outcome unknown \u2014 check the issue on GitHub/i);
+    assert.equal(patches, 1);
+  } finally {
+    await board.app.close();
+    await new Promise((r) => proxy.close(r));
+    await upstream.close();
+  }
+});
+
 test('warning regarding simultaneous overwrite is present in page and README', async () => {
   const fs = await import('node:fs/promises');
   const path = await import('node:path');
@@ -777,4 +854,126 @@ test('warning regarding simultaneous overwrite is present in page and README', a
 
   assert.ok(html.includes(warningText), 'warning present in index.html');
   assert.ok(readme.includes(warningText), 'warning present in README.md');
+});
+
+test('slow-body login request releases per-address occupancy within deadline while authenticated routes remain 200 (R2)', async () => {
+  const http = await import('node:http');
+  const { setTimeout: sleep } = await import('node:timers/promises');
+  const { board, close } = await fixture();
+  try {
+    const owner = new HttpSession(board.url);
+    await owner.login();
+
+    // Open a slow unauthenticated POST /api/session
+    const slowReq = http.request(`${board.url}/api/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'content-length': '1000' },
+      agent: false,
+    });
+    slowReq.on('error', () => {});
+    slowReq.write('{"password":');
+
+    await sleep(100);
+    // At 100ms, the slot is occupied -> 429
+    const fastAttempt = await new HttpSession(board.url).login('any-password');
+    assert.equal(fastAttempt.status, 429);
+    assert.equal(fastAttempt.json.error, 'rate_limited');
+
+    // Authenticated routes stay 200 during slow body
+    const authCheck = await owner.request('/api/board');
+    assert.equal(authCheck.status, 200);
+
+    // Wait past the 2000ms body timeout
+    await sleep(2100);
+
+    // Now that the slow request deadline expired, new login attempt is admitted
+    const nextAttempt = await new HttpSession(board.url).login(BOARD_PASSWORD);
+    assert.equal(nextAttempt.status, 200);
+    assert.equal(nextAttempt.json.authenticated, true);
+
+    slowReq.destroy();
+  } finally {
+    await close();
+  }
+});
+
+test('aborted login attempt releases in-flight slot immediately (R2)', async () => {
+  const http = await import('node:http');
+  const { setTimeout: sleep } = await import('node:timers/promises');
+  const { board, close } = await fixture();
+  try {
+    const req = http.request(`${board.url}/api/session`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'content-length': '100' },
+      agent: false,
+    });
+    req.on('error', () => {});
+    req.write('{"pass');
+    await sleep(50);
+    req.destroy();
+    await sleep(50);
+
+    const session = new HttpSession(board.url);
+    const loginRes = await session.login(BOARD_PASSWORD);
+    assert.equal(loginRes.status, 200);
+    assert.equal(loginRes.json.authenticated, true);
+  } finally {
+    await close();
+  }
+});
+
+test('concurrent login flood across distinct addresses is bounded with 429 retry guidance while authenticated routes stay 200 (R2)', async () => {
+  const http = await import('node:http');
+  const { board, close } = await fixture();
+  try {
+    const owner = new HttpSession(board.url);
+    await owner.login();
+
+    const makeLogin = (ipSuffix) =>
+      new Promise((resolve) => {
+        const req = http.request(
+          `${board.url}/api/session`,
+          {
+            method: 'POST',
+            localAddress: `127.0.0.${ipSuffix}`,
+            headers: { 'content-type': 'application/json' },
+            agent: false,
+          },
+          (res) => {
+            const chunks = [];
+            res.on('data', (c) => chunks.push(c));
+            res.on('end', () => {
+              const text = Buffer.concat(chunks).toString('utf8');
+              let json = null;
+              try {
+                json = JSON.parse(text);
+              } catch {}
+              resolve({ status: res.statusCode, headers: res.headers, json });
+            });
+          },
+        );
+        req.on('error', (err) => resolve({ status: 0, error: err }));
+        req.end(JSON.stringify({ password: 'wrong-password' }));
+      });
+
+    const attempts = await Promise.all(
+      Array.from({ length: 30 }, (_, i) => makeLogin(i + 2)),
+    );
+
+    const authCheck = await owner.request('/api/board');
+    assert.equal(authCheck.status, 200);
+
+    const statuses = attempts.map((a) => a.status);
+    assert.ok(statuses.every((s) => s === 401 || s === 429));
+    assert.ok(statuses.includes(429), 'expected requests exceeding queue capacity to receive 429');
+
+    const rateLimited = attempts.filter((a) => a.status === 429);
+    for (const res of rateLimited) {
+      assert.equal(res.json.error, 'rate_limited');
+      assert.ok(res.json.retryAfterSeconds > 0);
+      assert.ok(res.headers['retry-after']);
+    }
+  } finally {
+    await close();
+  }
 });

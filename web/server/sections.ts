@@ -29,6 +29,7 @@ export interface Section {
 const statusSet = new Set<string>(STATUS_LABELS as readonly string[]);
 const headingPattern = /^ {0,3}(#{1,6})[ \t]+(.*?)[ \t]*$/;
 const fencePattern = /^ {0,3}(`{3,}|~{3,})/;
+const closeFencePattern = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
 const overviewTitlePattern = /^(?:overview|summary|description|context|background|goals?)$/i;
 
 function slugifyHeading(title: string): string {
@@ -52,7 +53,7 @@ function trimRange(lines: string[], start: number, end: number): string[] {
 export function findSections(body: string): Section[] {
   if (typeof body !== 'string') return [];
   const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
-  const lines = cleanBody.split('\n');
+  const lines = cleanBody.split(/\r?\n/);
   const headings: Array<{ line: number; level: number; title: string }> = [];
 
   let inFence = false;
@@ -74,7 +75,7 @@ export function findSections(body: string): Section[] {
         headings.push({ line: index, level: match[1].length, title: match[2] });
       }
     } else {
-      const fenceMatch = fencePattern.exec(cleanLine);
+      const fenceMatch = closeFencePattern.exec(cleanLine);
       if (fenceMatch && fenceMatch[1][0] === fenceChar && fenceMatch[1].length >= fenceLen) {
         inFence = false;
       }

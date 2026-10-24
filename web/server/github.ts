@@ -117,6 +117,7 @@ export class GitHubClient {
     }
 
     let response: Response;
+    let text = '';
     try {
       response = await this.fetchImpl(url, {
         method: options.method ?? 'GET',
@@ -124,11 +125,12 @@ export class GitHubClient {
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
         signal: AbortSignal.timeout(this.timeoutMs),
       });
-    } catch {
-      throw new GitHubError('network', 0, 'GitHub request failed before a response arrived');
+      text = await response.text();
+    } catch (error) {
+      if (error instanceof GitHubError) throw error;
+      throw new GitHubError('network', 0, 'GitHub request failed before completion');
     }
 
-    const text = await response.text();
     let data: any = null;
     if (text) {
       try {
@@ -230,6 +232,10 @@ export class GitHubClient {
         }
         if (parsedNext.origin !== apiOrigin) {
           throw new GitHubError('server', 200, 'GitHub pagination left the configured API origin');
+        }
+        const expectedPath = `${new URL(this.issuesBase()).pathname}/issues`;
+        if (parsedNext.pathname !== expectedPath) {
+          throw new GitHubError('server', 200, 'GitHub pagination left the configured repository path');
         }
         nextUrl = parsedNext.toString();
       } else if (data.length >= this.perPage) {

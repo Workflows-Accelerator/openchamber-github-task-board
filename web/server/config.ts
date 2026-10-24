@@ -29,7 +29,6 @@ export interface BoardConfig {
   port: number;
   baseUrl: string | null;
   githubApiBase: string;
-  trustProxy: boolean;
 }
 
 export class ConfigError extends Error {
@@ -189,12 +188,6 @@ export async function verifyPasswordAsync(password: string, stored: string): Pro
   });
 }
 
-function parseTrustProxy(value: string | undefined): boolean {
-  if (value === undefined || value.trim() === '') return false;
-  const lower = value.trim().toLowerCase();
-  return lower === 'true' || lower === '1' || lower === 'yes';
-}
-
 export function loadConfig(env: Record<string, string | undefined>): BoardConfig {
   const githubToken = requireValue(
     env,
@@ -255,7 +248,6 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
 
   const port = parsePort(read(env, 'BOARD_PORT'));
   const baseUrl = parseBaseUrl(read(env, 'BOARD_BASE_URL'));
-  const trustProxy = parseTrustProxy(read(env, 'BOARD_TRUST_PROXY'));
 
   return {
     githubToken: githubToken.trim(),
@@ -267,7 +259,6 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
     port,
     baseUrl,
     githubApiBase: DEFAULT_GITHUB_API_BASE,
-    trustProxy,
   };
 }
 
@@ -278,7 +269,6 @@ export function describeConfig(config: BoardConfig): Record<string, unknown> {
     port: config.port,
     baseUrl: config.baseUrl,
     githubApiBase: config.githubApiBase,
-    trustProxy: config.trustProxy,
     passwordSource: config.passwordWasGenerated ? 'BOARD_PASSWORD (hashed at startup)' : 'BOARD_PASSWORD_HASH',
   };
 }

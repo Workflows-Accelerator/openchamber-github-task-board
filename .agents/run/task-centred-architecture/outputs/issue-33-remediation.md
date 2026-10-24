@@ -1,121 +1,56 @@
-# Issue #33 Remediation Report — Standalone Task Board (Amendment v2)
+# Issue #33 Remediation Report — Standalone Task Board (Amendment v2 & Hostile Re-Review Ruling)
 
 ## Summary & Scope
 
-Remediation and hardening of the standalone task board (issue #33) aligned with owner decisions of 2026-10-24 and task brief `issue-33-amendment-v2.md`.
+Remediation and hardening of the standalone task board (issue #33) aligned with owner decisions of 2026-10-24, task brief `issue-33-amendment-v2.md`, and the manager ruling on independent hostile re-review findings R1–R8.
 
-- **In Scope:** F1, F2, F4, F5, F6, F7, F8, F9, F10, cosmetic nit, and removal of retry loops and unsupported safety claims.
+- **In Scope:** Findings R1–R8 from hostile re-review (correctness/security of owner-accepted design, closing fence grammar, hash tool execution, true LRU session eviction, CRLF readback canonicalization, pagination path validation, and removal of forwarded-header trust).
 - **Superseded by Owner Decision:** F3 (separate board password retained; server-held token; single configured repository; GitHub user check omitted).
 - **Boundaries Preserved:** All changes strictly confined to `web/**`, `web/tests/**`, and documentation/verification artifacts. Zero changes to `panel/**`, `service/**`, `test/**`, root `package.json`, or git branch topology.
 
-## Per-Finding Remediation Status
+## Manager Ruling Finding Remediation (R1–R8)
 
-### F1 (Moderate) — Lost Update TOCTOU & If-Match Assumption
-- **Status:** MITIGATED (best-effort, owner-accepted)
-- **Resolution:**
-  - Implemented best-effort editing with a pre-save conflict check: server re-reads the issue from GitHub via fresh GET, compares the SHA-256 fingerprint against the version the user loaded, and refuses with `409 Conflict` if diverged.
-  - In-process per-issue lock (`withIssueLock`) serializes write requests within the board process.
-  - All automatic retries, re-apply, and repeat loops removed.
-  - If a write's outcome is ambiguous (timeout, network error after send, upstream server error, or readback mismatch), the board returns `502 write_outcome_unknown` with message "Outcome unknown — check the issue on GitHub" and never repeats the write.
-  - Visible warning added on the page near editing controls and in `web/README.md`: "Best-effort editing: a simultaneous edit on GitHub or by an agent can still be overwritten."
-  - Fake GitHub defaults `honorIfMatch = false` to reflect production GitHub issue PATCH behavior.
-- **Exact Remaining TOCTOU Interleaving:**
-  1. Client loads issue at $t_0$ (body $B_0$, fingerprint $FP_0$).
-  2. Client submits edit at $t_1$.
-  3. Server performs fresh GET at $t_2$ (body $B_0$, matching $FP_0$).
-  4. An external writer (human on GitHub web/mobile or agent) submits PATCH directly to GitHub at $t_3$, setting body $B_{ext}$.
-  5. Board server sends PATCH at $t_4$ with $B_{local}$. Because GitHub REST API does not support conditional `If-Match` on issue PATCH, GitHub applies $B_{local}$, overwriting $B_{ext}$.
-  6. Board server readback at $t_5$ observes $B_{local}$ and reports success, but $B_{ext}$ was overwritten.
-  Because GitHub provides no conditional unsafe issue endpoint, this window between fresh GET ($t_2$) and GitHub's internal commit ($t_4$) cannot be closed from the client side. The owner accepted best-effort editing with full disclosure.
-- **Tests Added/Verified:**
-  - `web/tests/app.test.mjs`: pre-save conflict refused without PATCH call; ambiguous outcome (readback mismatch or upstream 500) returns 502 with zero retries; simultaneous overwrite warning verified in index.html and README.
+| Finding | Severity | Status | Resolution Summary | Red / Green Evidence |
+| --- | --- | --- | --- | --- |
+| **R1** | Medium | **CLOSED** | Upstream `response.text()` wrapped inside network-error catch; browser `api()` catches network/protocol transport failure on writes and returns `write_outcome_unknown` with instructions to refresh and check GitHub; zero automatic write retries. | RED: `/tmp/opencode/issue33-rereview/body-loss.mjs` returned 500.<br>GREEN: `web/tests/app.test.mjs:793` returns 502 `write_outcome_unknown`; `web/tests/browser-verify.mjs:430` verifies browser unknown notice and 0 retries. |
+| **R2** | Medium | **CLOSED** | In-flight login occupancy bounded per-IP with short deadline (2s body timeout, 3s slot safety deadline); slot always released on error, abort, timeout, or completion. Concurrency and queue admission capped in `ScryptQueue` (max 2 active, max 4 queue); excess requests immediately rejected with `429` and `Retry-After: 2`. Authenticated routes remain completely unaffected. | RED: `/tmp/opencode/issue33-rereview/slow-login.mjs` 429 after 61s; unbounded queue on 200 addresses.<br>GREEN: `web/tests/app.test.mjs:859,900,925` verify slow-body release at 2.1s, aborted slot release, bounded distinct addresses flood with 429 guidance, and authenticated route stays 200. |
+| **R3** | Medium | **CLOSED** | Blanket forwarded-header trust (`BOARD_TRUST_PROXY`) deleted from `config.ts`, `app.ts`, `README.md`, and test suites. Client IP derived strictly from direct socket peer (`req.socket.remoteAddress`). Forwarded headers cannot bypass rate limits. | RED: `BOARD_TRUST_PROXY=true` trusted arbitrary peer headers without hop validation.<br>GREEN: `web/tests/config.test.mjs:159` verifies removal of `trustProxy`; `web/tests/app.test.mjs:648` verifies forwarded headers are ignored. |
+| **R4** | Low | **CLOSED** | Fenced code closing pattern in `web/server/sections.ts` restricted to fence markers followed only by optional whitespace (`closeFencePattern = /^ {0,3}(`{3,}|~{3,})[ \t]*$/`). Suffix text like ` ```not-a-closing-fence ` keeps block open. | RED: `/tmp/opencode/issue33-rereview/fences.mjs` recognized code heading as real section.<br>GREEN: `web/tests/sections.test.mjs:198` reproduces exact case, confirms heading inside fence ignored, and Overview replaces cleanly. |
+| **R5** | Low | **CLOSED** | Removed TypeScript syntax annotations from `web/tools/hash-password.mjs` so it executes natively on Node 22+. Added interactive hidden prompt support (no echo to terminal or shell history) and file redirection with `umask 077` in `web/README.md`. Stdin pipe retained. | RED: `printf '...' \| node web/tools/hash-password.mjs` crashed with `SyntaxError: Unexpected token ':'`.<br>GREEN: `web/tests/config.test.mjs:165` executes tool subprocess via stdin on Node 22, verifies exit 0 and valid scrypt hash. |
+| **R6** | Low | **CLOSED** | Implemented true LRU eviction in `SessionStore` (`web/server/auth.ts`): accessing an existing session in `get()` updates `lastSeenAt` and moves the entry to the end of the Map. On eviction, oldest least-recently-used entry is dropped. Cap (50) preserved. | RED: Accessing oldest session did not reorder Map; s1 was evicted before unused s2.<br>GREEN: `web/tests/auth.test.mjs:162` verifies accessed s1 is retained and unused s2 is evicted when full, citing manager ruling R6. |
+| **R7** | Low | **CLOSED** | Canonicalized readback comparison in `web/server/app.ts` (`canonicalCur === canonicalTarget`) and line trimming in `sections.ts:trimRange`. Writes to CRLF bodies succeed without false unknown outcomes while preserving concurrent-change conflict detection. | RED: `/tmp/opencode/issue33-rereview/readback.mjs` returned 502 `write_outcome_unknown` on valid CRLF write.<br>GREEN: `web/tests/app.test.mjs:334` reproduces end-to-end CRLF write, verifies 200 success on readback, and retains conflict detection on concurrent mismatch. |
+| **R8** | Low | **CLOSED** | In `web/server/github.ts:listIssues`, pagination Link header validation now checks both the exact API origin AND that the Link pathname strictly matches the configured repository issues collection path (`${new URL(this.issuesBase()).pathname}/issues`). | RED: `/tmp/opencode/issue33-rereview/pagination.mjs` followed Link to another repo on same origin.<br>GREEN: `web/tests/github.test.mjs:149` verifies Link to `/repos/other/repo/issues` is rejected with `GitHubError`. |
 
-### F2 (Moderate) — Unauthenticated Login CPU/Memory DoS
-- **Status:** CLOSED
-- **Resolution:**
-  - Early rate limiting in `web/server/app.ts`: requests from blocked client addresses receive `429 Too Many Requests` immediately before reading body or executing password hashing work.
-  - Limiter failure tracking does not record failures on blocked 429 requests, ensuring no accumulating or permanent lockout.
-  - Cooldown bounded to at most 60 seconds (`windowMs = 60_000`, `retryAfterSeconds <= 60`).
-  - Memory bounded in `web/server/auth.ts`: `LoginRateLimiter` capped at 1,000 entries with LRU eviction of oldest addresses.
-  - In-flight login deduplication per IP rejects concurrent requests with 429 without duplicate hashing.
-  - Password hashing uses asynchronous `scrypt` with a concurrency queue (max 2 concurrent workers).
-  - Existing authenticated sessions are unaffected during rate limit cooldown because authenticated routes do not consult login limiter.
-  - Client address derived from direct socket by default (`trustProxy: false`).
-  - README states plainly that unauthenticated owner sign-in from the same address can be briefly rate limited.
-- **Tests Added/Verified:**
-  - `web/tests/auth.test.mjs`: bounded cooldown of at most 60s without accumulating lockout; memory bounded under 5,000 failures; sliding window recovery.
-  - `web/tests/app.test.mjs`: early 429 on cooldown; parallel login flood finishes quickly; forwarded headers ignored unless proxy trusted; existing authenticated session remains usable during cooldown.
+## Status of Original Findings F1–F10 (Adjudicated at HEAD)
 
-### F3 (High) — Board Password Replaces GitHub Sign-in
-- **Status:** SUPERSEDED
-- **Owner Decision (2026-10-24):** Keep separate board password and server-held GitHub token. Access is limited to holders of board password; token stays server-side; one configured repository only. GitHub identity check and OAuth omitted per owner direction.
-
-### F4 (Low) — Origin / Referer Validation on Writes
-- **Status:** CLOSED
-- **Resolution:**
-  - `assertOriginAllowed` in `web/server/app.ts` validates incoming `Origin` and `Referer` headers on all CSRF-protected write endpoints against `BOARD_BASE_URL` origin when configured.
-- **Tests Added/Verified:**
-  - `web/tests/app.test.mjs`: cross-origin writes rejected with `403 cross_origin_rejected` when `BOARD_BASE_URL` is set, while matching origin is accepted.
-
-### F5 (Low) — Upstream GitHub Error Classification
-- **Status:** CLOSED
-- **Resolution:**
-  - In `web/server/github.ts`: added `forbidden` error kind; maps 401 to `unauthorized`, 403 primary rate limit (`x-ratelimit-remaining: 0`) to `rate_limited`, other 403s to `forbidden`, 422 to `invalid`, and 5xx to `unavailable`.
-  - In `web/server/app.ts`: mapped 401 to `502 github_unauthorized`, 403 rate limit to `503 github_rate_limited`, 403 forbidden to `502 github_forbidden`, 422 to `400 invalid_request`, and 5xx to `502 github_unavailable`.
-- **Tests Added/Verified:**
-  - `web/tests/github.test.mjs`: error kind distinction for 401, 403 rate limit, 403 forbidden, 422, and 500.
-  - `web/tests/app.test.mjs`: API error status and JSON error codes for upstream failures.
-
-### F6 (Low) — Pagination Duplication & Link Header Origin Validation
-- **Status:** CLOSED
-- **Resolution:**
-  - In `web/server/github.ts`: parses `new URL(next).origin` and strictly compares against `new URL(this.apiBase).origin`.
-  - Issues deduplicated by issue number across paginated requests; loop terminates immediately if a page yields zero new issues.
-- **Tests Added/Verified:**
-  - `web/tests/github.test.mjs`: rejection of untrusted origin in Link header; issue deduplication and early loop termination.
-
-### F7 (Low/Moderate) — Section Parser BOM & Fenced Code Handling
-- **Status:** CLOSED
-- **Resolution:**
-  - In `web/server/sections.ts`: strips leading UTF-8 BOM (`\uFEFF`) before scanning headings, and preserves BOM when replacing section text.
-  - Excludes headings inside fenced code blocks (` ``` ` or `~~~`).
-  - Refuses ambiguous preambles containing code fences (`editable: false`).
-  - Restricts editable sections to first duplicate heading.
-- **Tests Added/Verified:**
-  - `web/tests/sections.test.mjs`: BOM handling, code fence exclusion, ambiguous preamble rejection, duplicate heading disambiguation.
-
-### F8 (Low) — Password & Vault Hygiene Documentation
-- **Status:** CLOSED
-- **Resolution:**
-  - Updated `web/README.md` to demonstrate generating hashes via stdin (`printf '%s' ... | node web/tools/hash-password.mjs`), setting `umask 077` when writing env files, and running server with `--env-file` rather than inline shell assignments.
-
-### F9 (Low) — In-Memory Session Cap
-- **Status:** CLOSED
-- **Resolution:**
-  - In `web/server/auth.ts`: bounded session store to 50 active sessions (`DEFAULT_MAX_SESSIONS = 50`) with LRU eviction of oldest sessions.
-  - Documented session lifecycle and restart behavior in `web/README.md`.
-- **Tests Added/Verified:**
-  - `web/tests/auth.test.mjs`: session store caps stored sessions at max and evicts oldest.
-
-### F10 (Low) — Pessimistic Fake GitHub & Test Gaps
-- **Status:** CLOSED
-- **Resolution:**
-  - `web/tests/fake-github.mjs` sets `honorIfMatch = false` by default, accurately simulating GitHub issue PATCH.
-  - Comprehensive tests added for primary rate limits (403), forbidden (403), invalid references (422), network/server errors (500), cross-origin writes, BOM/fenced markdown, and session rate limit cooldown.
-
-### Cosmetic Nit — Answered Question Wrapper Display
-- **Status:** CLOSED
-- **Resolution:**
-  - In `web/public/app.js`: strips `*(Answer: ...)*` wrapper formatting when rendering answered questions, showing clean plain text.
+| Finding | Re-Review Status | Remediation Resolution |
+| --- | --- | --- |
+| **F1** (Lost update TOCTOU) | **MITIGATED (best-effort, owner-accepted)** | Pre-save fresh GET fingerprint check (409 on conflict), in-process lock, zero automatic write retries, full disclosure warning on page and README. Outcome reporting gap resolved by R1 and R7. |
+| **F2** (Login CPU/memory DoS) | **CLOSED** | Early rate limit check, bounded failure map (1,000 buckets, LRU), async scrypt with capped queue (2 active, 4 queue), login slot deadline (2s body, 3s slot), global concurrency cap (10), socket-peer IP derivation (R2, R3). |
+| **F3** (Browser GitHub identity) | **SUPERSEDED** | Replaced by owner decision: separate board password, server-held token, single configured repository, GitHub user check omitted. |
+| **F4** (Origin / Referer validation) | **CLOSED** | Validates incoming `Origin` and `Referer` against `BOARD_BASE_URL` origin on all CSRF-protected write endpoints. |
+| **F5** (Upstream error mapping) | **CLOSED** | Maps 401, 403 primary limit, 403 forbidden, 422, 5xx; R1 wraps upstream response stream read so truncated bodies map to `write_outcome_unknown`. |
+| **F6** (Pagination duplication / Link prefix) | **CLOSED** | Deduplicates by issue number, breaks on zero-new pages, validates Link origin AND exact repo path (R8). |
+| **F7** (BOM / Fenced code) | **CLOSED** | BOM preserved; headings in code blocks ignored; ambiguous preambles rejected; closing fence grammar restricted to marker characters + whitespace (R4). |
+| **F8** (Password hygiene & CLI tool) | **CLOSED** | Hash tool executable on Node 22+ (R5); interactive hidden prompt and `umask 077` file redirection documented; secrets omitted from logs and tests. |
+| **F9** (Session store) | **CLOSED** | Capacity 50 enforced; true LRU eviction implemented in `get()` (R6); restart-only rotation documented. |
+| **F10** (Test & evidence gaps) | **CLOSED** | Pessimistic fake GitHub (`honorIfMatch: false`), regressions added for R1, R2, R4, R5, R6, R7, and R8. |
+| **Cosmetic Nit** (Answered question wrapper) | **CLOSED** | Strips `*(Answer: ...)*` wrapper formatting in `web/public/app.js` when rendering answered questions. |
 
 ## Verification Evidence
 
 | Command | Result | Notes |
 | --- | --- | --- |
-| `node --test web/tests/*.test.mjs` | **PASS** | 88 / 88 tests passed |
-| `npx tsc -p web/tsconfig.json` | **PASS** | 0 type errors |
-| `npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=web/dist/server.mjs` | **PASS** | 91.1kb bundle |
-| `node --check web/dist/server.mjs` | **PASS** | Syntax valid |
-| `sha256sum web/dist/server.mjs` | **PASS** | `5a188e69c903759380db3bb2481bde34782deb854ee07c08a329f8221461cfcb` |
-| `node web/tests/browser-verify.mjs` | **PASS** | 30 checks passed, 10 screenshots captured |
+| `node --test web/tests/*.test.mjs` | **PASS** | 96 / 96 tests passed |
 | `npm test` | **PASS** | 466 / 466 tests passed in root suite |
+| `npx tsc -p web/tsconfig.json` | **PASS** | 0 type errors |
+| `npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=web/dist/server.mjs` | **PASS** | 93.2kb bundle |
+| `node --check web/dist/server.mjs` | **PASS** | Syntax valid |
+| `sha256sum web/dist/server.mjs` | **PASS** | `c594f2c0b8cce90ca9f331ce63dfd3a1aaa73907b627e3b6dfccbbd9de22b1e6` |
+| `node web/tests/browser-verify.mjs` | **PASS** | 32 / 32 checks passed, 10 screenshots captured |
+
+## Scope & Deployment Boundaries
+
+- All changes strictly confined to `web/**` and `.agents/run/task-centred-architecture/outputs/issue-33-remediation.md`.
+- No changes made to `panel/**`, `service/**`, `test/**`, root `package.json`, or git branch topology.
+- Deployment invariants: Server listens on loopback (`127.0.0.1`); `BOARD_BASE_URL` required for HTTPS / Origin validation in production; production container routing and multi-repo support are deferred to subsequent slices per owner rulings.
