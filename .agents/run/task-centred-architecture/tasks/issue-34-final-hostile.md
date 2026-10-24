@@ -1,7 +1,7 @@
 <env_preflight>
 Repo: /workspace/extensions/github-task-board
 Worktree: /workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity
-Branch: fix/issue-34-answer-integrity. Base dd5cb2f; builder 309f9f1; reviews 7accbf8 + ef9710b; remediation commit = HEAD at dispatch (manager fills in). No other worker owns this worktree at dispatch.
+Branch: fix/issue-34-answer-integrity. Base dd5cb2f; builder 309f9f1; reviews 7accbf8 + ef9710b; remediation a8f55c2 (clean at dispatch). No other worker owns this worktree at dispatch.
 Owned: review/proof only: .agents/run/task-centred-architecture/outputs/issue-34-final-hostile.md and verifications/issue-34/. No product edits.
 Tests: node --test test/issue-34-answer-integrity.test.js; npm test; npm run typecheck; npm run build. Root node_modules symlink. Disposable probes under /tmp/opencode.
 Do not touch web/**, service/**, shared skills/config, credentials, opencode.db, installed extension, real GitHub, master, other worktrees. No push, merge, issue closure, deployment.
@@ -19,6 +19,7 @@ One bounded, final hostile pass: prove or disprove that all seven findings are c
 <skills>
 [@/workspace/config/opencode/.agents/skills/review/adversarial/doubt-driven-development/SKILL.md]
 [@/workspace/config/opencode/.agents/skills/review/quality/code-review-and-quality/SKILL.md]
+[@/workspace/config/opencode/.agents/skills/communication/terse/caveman-lite/SKILL.md]
 </skills>
 <scope>
 Conduct a hostile review of any edits or changes that you made to figure out what you might have missed or what might be broken. Don't assume that what you did is right.

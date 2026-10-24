@@ -1,6 +1,18 @@
 # Task-centred delivery
 
-## CURRENT — 2026-10-24
+## CURRENT — final reviews 2026-10-24
+
+| Outcome | State | Worker / proof | Next |
+|---|---|---|---|
+| #33 Browser board secure base | FINAL HOSTILE RUNNING | f50519d candidate; ses_26ee4e9daa4d87851a9a7df8 genius; 96 web/466 root/32 browser claimed | Review actual tree after duplicate-worker collision; new High => owner |
+| #34 Safe answers | FINAL HOSTILE RUNNING | a8f55c2 candidate; ses_e1043143a0899bf0665556ca engineer; 19 targeted/510 root claimed | Seven findings independently checked; then integration only |
+| #37 All repos | ALIGNED, waiting #33 | Every bot-token-readable repo; picker + combined; decision 13; receipt 6391068455 | Build after secure web base |
+| Hosting | BLOCKED, no production go | secrets not provisioned; bind/health/start hook/port/TLS pending | Bind/health after #33; safe deployment plan then owner go |
+| #35, #30, #31 | ALIGNED FRONTIER QUEUE | Same panel file ownership waits #34; web push waits #33 | No overlapping implementation worker |
+
+Final-review models verified on completion, no polling. Master/deploy/closure remain human-gated.
+
+## Earlier snapshot — 2026-10-24
 
 | Outcome | State | Worker / proof | Next |
 |---|---|---|---|

@@ -20,4 +20,6 @@ Asked once, answered in chat by the owner. These override the written #33 accept
 
 12. **Board covers all repositories.** Owner instruction: the board is for all repos. Working shape recorded in `outputs/board-all-repositories-ruling.md`: every repository the supplied token can read, picker plus combined view, writes routed by repository-qualified identity, no silent narrowing. Single-repository support remains as the secure base; multi-repository is the next slice, not part of the in-flight #33 remediation.
 
+13. **Repository coverage and token identity confirmed.** Owner selected every repo the token sees, with picker plus combined view. Token is the Workflows Accelerator bot's token (owner wording: "It's workflows accelerator bot's token"). This is NOT approval to reuse the container's existing token or a claim about the bot token's current permission scope. No token value requested or recorded. Deploy-time presence and least necessary permissions remain to be verified safely.
+
 Master and deployment remain human-gated.

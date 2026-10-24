@@ -1,5 +1,11 @@
 # Current continuation — 2026-10-23 (late)
 
+## Latest checkpoint — final review dispatch
+- All restart duplicate #33 sessions finished. HEAD f50519d clean. e88126a vs f50519d only 6 report lines differ; product tree identical. Do NOT credit claims of "nothing unverified"; production/token/TLS/real focus remain NOT RUN. Independent final reviewer ses_26ee4e9daa4d87851a9a7df8 genius, brief tasks/issue-33-final-hostile.md.
+- #34 remediation a8f55c2 clean, 19/19 + 510/510 claimed. Independent final reviewer ses_e1043143a0899bf0665556ca engineer, brief tasks/issue-34-final-hostile.md. No merge before verdict. Final reviewer tiers verified on wake only.
+- Owner answered bundled questions: every repo token can read; token is Workflows Accelerator bot token. Decision 13 appended; #37 receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/37#issuecomment-6391068455. No token reuse permission inferred.
+- Review receipts #33 6391071163; #34 6391072962. Do not poll workers. While reviews run, prepare on-disk queued briefs, no implementation collisions. New #33 High => HALT and ask owner.
+
 ## Restart recovery 2026-10-24 (after server restart)
 - Server restarted mid-turn. Manager checked both worktrees and the session record rather than trusting memory.
 - #34 builder fix is intact: 309f9f1, clean, 503/503, 12/12 targeted, bundle parity. No review report had been written, so the review was redispatched (ses_027acdf173f180e53e05bc34, engineer, brief tasks/issue-34-hostile-review-v2.md). A second zero-token idle child ses_951a286ad4d5ff930c9c801b exists from the interrupted dispatch; it never ran and is left untouched, not reused.

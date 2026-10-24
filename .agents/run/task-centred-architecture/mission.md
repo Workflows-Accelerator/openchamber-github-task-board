@@ -1,6 +1,15 @@
 # Run work from the task board
 
-## CURRENT — 2026-10-24 (overrides historical state below)
+## Latest checkpoint — 2026-10-24 final review dispatch
+State: proving. Alignment: CONFIRMED for decisions-2026-10-24.md items 1–13 only.
+- #33 remediation accepted as candidate only: f50519d, clean. All three restart duplicate builders finished. e88126a vs f50519d differs only in report (6 lines), same product tree. Final hostile security check ses_26ee4e9daa4d87851a9a7df8 (genius), tasks/issue-33-final-hostile.md. New High => HALT and owner, no new loop.
+- #34 remediation candidate a8f55c2, clean; 19/19 targeted, 510/510 full self-reported. Independent final hostile ses_e1043143a0899bf0665556ca (engineer), tasks/issue-34-final-hostile.md. Seven findings must all close before integration.
+- Provider/model of final reviewers deferred to completion metadata (no safe session model check/poll).
+- Owner confirmed every repo the token sees and Workflows Accelerator bot token. No secrets requested. Receipt #37 issuecomment-6391068455; #33 review receipt 6391071163; #34 review receipt 6391072962.
+- Both reviews now occupy the one repository frontier; no application build dispatched until their wakes. Next #35/#30/#31 panel work after #34 integration; host/health then #37/push web work after #33 integration.
+- No master approval, no deployment approval. Private reports remain untracked. Worktree release cleanup still gated on reviewed integration.
+
+## Earlier CURRENT — 2026-10-24 (historical snapshot)
 State: building/proving. Alignment: CONFIRMED for recorded decisions only. Current authority: continuation.md and decisions-2026-10-24.md; all 2026-10-23 work-in-flight entries below are historical.
 - #28 and #36 merged/pushed to working branch; master untouched; installed-host and L5 validation outstanding.
 - #34 first child failed with no assistant output or surviving edits (cause UNKNOWN); fresh recovery ses_d9d38783db87fb3a31698121 in same worktree, brief tasks/issue-34-recovery.md. Failure receipt outputs/issue-34-worker-failure.md.
