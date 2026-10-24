@@ -1,6 +1,20 @@
 # Task-centred delivery
 
-## CURRENT — 2026-10-23
+## CURRENT — 2026-10-24
+
+| Outcome | State | Worker / proof | Next |
+|---|---|---|---|
+| #28 Fresh tasks on opening | MERGED/PUSHED, awaiting batch | hostile 0821897, integration 3109935/9c235a9 | Installed-host proof and human validation |
+| #36 Only a person closes a task | MERGED/PUSHED, awaiting batch | 7c6fd33, review 4f22605, merge dd5cb2f, 491/491 | Installed-host proof and human validation |
+| #34 Correct question answers | RECOVERY RUNNING | First child errored without output/edits; ses_d9d38783db87fb3a31698121 engineer, tasks/issue-34-recovery.md | Red/green fix, then independent hostile review |
+| #33 Standalone board | HOSTILE RE-REVIEW RUNNING | a795985, ses_4e344bffc15927e7a30172ee genius | Review result; bind-host preparation then approved push work |
+| #30 Bug/feature paths | DESIGN CORRECTED, CHOICE ALIGNED | eb9d86c; existing bug/enhancement labels + Work Log | Implement after answer fix (panel file collision) |
+| #31 Questions/notifications | CHOICES ALIGNED, NOT IMPLEMENTED | Changed question refused; PWA push + 60s poll | Question loop after #34; push after #33 review |
+| Board hosting | READ-ONLY READINESS RUNNING | ses_1407f97fe07bc26f3e8a4356 engineer, tasks/deployment-readonly-preflight.md | Key presence, persistent launch, container reachability; actual deployment needs owner go |
+
+Provider/model for new children deferred to finish metadata; no polling. Private deployment/voice/auth reports never staged or published. Master and all issue closure remain human-gated.
+
+## HISTORICAL — 2026-10-23
 This section overrides historical completion/policy claims below. No autonomous coordinator or installed startup is proven. The historical merge-regardless-of-findings policy is invalid; blocking defects prohibit release. Only human validates Done/master.
 
 | Issue / outcome | State | Worker / evidence | Next |

@@ -1,6 +1,14 @@
 # Run work from the task board
 
-## CURRENT — 2026-10-23 (overrides historical state below)
+## CURRENT — 2026-10-24 (overrides historical state below)
+State: building/proving. Alignment: CONFIRMED for recorded decisions only. Current authority: continuation.md and decisions-2026-10-24.md; all 2026-10-23 work-in-flight entries below are historical.
+- #28 and #36 merged/pushed to working branch; master untouched; installed-host and L5 validation outstanding.
+- #34 first child failed with no assistant output or surviving edits (cause UNKNOWN); fresh recovery ses_d9d38783db87fb3a31698121 in same worktree, brief tasks/issue-34-recovery.md. Failure receipt outputs/issue-34-worker-failure.md.
+- #33 independent hostile re-review ses_4e344bffc15927e7a30172ee still active; no overlapping worker on web files.
+- Read-only hosting readiness ses_1407f97fe07bc26f3e8a4356: secrets presence/names, launch persistence and network path; private report stays untracked. Deployment and master still require explicit owner go.
+- D1 existing labels / Work Log; D3 refuse changed question; D2 PWA push + 60s conditional GitHub poll; hosting inside OpenChamber container; secrets already in SOPS per owner. No credentials printed/recorded, no private auth reuse.
+
+## Historical 2026-10-23 direction
 User clarified current outcomes: opening the board shows fresh tasks/session information; agents keep GitHub issues/sub-issues current; board is the human interface. No always-running coordinator or host engine change is a prerequisite. The user later narrowed #27 from the earlier "Full board" shape (receipt issuecomment-6374341925) to **a standalone web board with no agent control**: tasks viewable/editable in a browser, own sign-in, no agent starting, no OpenChamber change. Issue #33 carries that narrowed scope; #27 keeps the earlier receipt as history. No deployment or master approval was given.
 
 Work in flight: #28 fix candidate 8625b0a in .worktrees/team-dev-issue-28-current-board under independent hostile review ses_b1bab8b4b2a6812042618ba4; a second competing fix ses_0257d2d75d053ac4444b5294 is still building in .worktrees/team-dev-issue-28-review-races and must not both merge. #33 standalone board ses_ee32c171b7f64907e620a386 in .worktrees/team-dev-issue-33-standalone-board. #30/#31 integrated design ses_f8df99deaa1cad44b9fbfb93 in .worktrees/team-dev-issue-30-31-design. Wait for wakes, no polling or duplicates.
