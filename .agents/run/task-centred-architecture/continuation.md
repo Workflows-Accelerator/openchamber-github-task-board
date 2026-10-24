@@ -14,7 +14,9 @@ Issues are the durable work record; the board is the human interface. User chose
 - ses_4b454cc21272200797fe3978 #36 hostile review of 7c6fd33 (brief tasks/issue-36-hostile-review.md, engineer). Pass -> merge into working branch, push, comment #36, then #34 fix.
 - ses_95f098ef985fb627f15d97bb #33 amendment v2 aligned to owner decisions (brief tasks/issue-33-amendment-v2.md, engineer). Then one bounded hostile re-review, then merge.
 - ses_fa681e4ae2d74fc24b210e0c read-only DevOps investigation (brief tasks/devops-board-deployment-investigation.md, engineer) -> outputs/devops-board-deployment.md. No changes without owner go.
-- ses_9928bc98d625649190399581 #30/#31 correction pass (brief tasks/issue-30-31-correction.md, worker) -> then ask owner D1–D3 once.
+- #30/#31 correction DONE eb9d86c (9router/worker). Owner answered: D1 labels, D3 refuse+show new text, D2 wants real notifications (web/PWA/OpenChamber?). Recorded in decisions file; receipts #30 issuecomment-6382674703, #31 issuecomment-6382674683.
+- ses_2957a387b7a55e601717f44f notification channel spike (brief tasks/notification-channel-spike.md, engineer) -> outputs/notification-channel-spike.md -> owner chooses channel.
+- After #36 merges and #34 lands: implementation of #30 (labels formalized + Work Log) and #31 base (question identity, refuse-stale, views/badge) — panel files, so sequenced after #34.
 
 ## Earlier workers
 - #28 MERGED AND PUSHED to working branch feat/v2-binding-and-ratelimit: merge 3109935, follow-up 9c235a9. Integration worker ses_754d3ff94df8d409414a2bb1 actual 9router/engineer: 19/19 targeted, 485/485 full, typecheck/build/parity green; no source conflicts; halted candidate excluded. Re-review 0821897: F1 CLOSED, Quality APPROVED, no new defects, 100/100 fuzz + 30/30 chaos. Master/deployment untouched, L3 installed-host/L5 outstanding. Receipt issuecomment-6376320313.
