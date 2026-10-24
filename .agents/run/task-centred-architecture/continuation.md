@@ -9,7 +9,14 @@ Issues are the durable work record; the board is the human interface. User chose
 - #29 governed exception wording: three instruction files (team, dynamic-agent, xml-briefs) at 9226ce6, 129 + 46 tests green. Two hostile rounds each found attack paths; PARKED, not enabled live. Permission isolation is prose only.
 - #27 route resolved: extension-only self-mount falsified (SDK top-level HOST_UNAVAILABLE; frame only talks to window.parent; sandboxed asset URL cannot reach /api). Persistent board-only URL would need a host `/board` route; user rejected that path and chose the standalone app instead.
 
-## Active workers (no polling)
+## 2026-10-24 dispatch (no polling)
+- Owner decisions committed 54ee40e; receipt on #33 issuecomment-6382593765.
+- ses_4b454cc21272200797fe3978 #36 hostile review of 7c6fd33 (brief tasks/issue-36-hostile-review.md, engineer). Pass -> merge into working branch, push, comment #36, then #34 fix.
+- ses_95f098ef985fb627f15d97bb #33 amendment v2 aligned to owner decisions (brief tasks/issue-33-amendment-v2.md, engineer). Then one bounded hostile re-review, then merge.
+- ses_fa681e4ae2d74fc24b210e0c read-only DevOps investigation (brief tasks/devops-board-deployment-investigation.md, engineer) -> outputs/devops-board-deployment.md. No changes without owner go.
+- ses_9928bc98d625649190399581 #30/#31 correction pass (brief tasks/issue-30-31-correction.md, worker) -> then ask owner D1–D3 once.
+
+## Earlier workers
 - #28 MERGED AND PUSHED to working branch feat/v2-binding-and-ratelimit: merge 3109935, follow-up 9c235a9. Integration worker ses_754d3ff94df8d409414a2bb1 actual 9router/engineer: 19/19 targeted, 485/485 full, typecheck/build/parity green; no source conflicts; halted candidate excluded. Re-review 0821897: F1 CLOSED, Quality APPROVED, no new defects, 100/100 fuzz + 30/30 chaos. Master/deployment untouched, L3 installed-host/L5 outstanding. Receipt issuecomment-6376320313.
 - ses_6226673a206604947e601fb8 #36 automatic-closure fix RUNNING in .worktrees/team-dev-issue-36-autonomous-closure, branch fix/issue-36-autonomous-closure, base 9c235a9; brief tasks/issue-36-autonomous-closure.md. Regression first; reproduce phase done/archive -> reconciliation -> closed, preserve human controls; no automatic status:done. Symlink dependencies as needed, no env copying or DB registration. #34 queued behind it for same-file ownership.
 - ses_e3084386d7422e36b44f5828 #33 remediation RUNNING in .worktrees/team-dev-issue-33-standalone-board. CRITICAL manager correction: ordinary GET/PATCH/readback CANNOT detect an external edit overwritten by PATCH; per-process serialization protects only that process. F1 remains OPEN pending owner choice (read-only first vs knowingly best-effort edits). Original remediation brief wrongly requested an impossible guarantee and contradictory cooldown requirements. Amendment on disk tasks/issue-33-remediation-amendment.md; send rejected because worker busy, so NOT DELIVERED. At its wake, dispatch a fresh worker with amendment before review/integration. No duplicate while running; do not credit claimed F1 closure.
