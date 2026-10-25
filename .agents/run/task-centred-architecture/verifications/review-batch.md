@@ -9,7 +9,8 @@ One request only when every included member passes independent hostile review. N
 | #34 — Answering saves the answer you saw | L4 PASS 0e1a6be; merged c44ed58/proof a2d3fe1, pushed aea7031; awaiting batch | Answer from Questions, Human Tasks and drawer; check exact line on GitHub. Change/delete question before submitting: save refuses and keeps original answer as a separately labelled recoverable draft. Two repositories sharing issue numbers do not share answers/drafts. Failed reads/writes must not report success. |
 | #33 — Board in your browser | Final review N1–N5 unresolved; owner-approved web-only correction RUNNING | Sign in at approved preview; view/edit tasks on desktop/phone; unknown write outcomes give refresh guidance and never retry. Confirm overwrite warning, meaningful Markdown whitespace and no agent controls. Deployment needs owner go. |
 
-Preview: NOT AVAILABLE YET. One integrated working-branch preview required. No L5 verdict exists for the above changes.
+## Preview: NOT AVAILABLE YET. One integrated working-branch preview required. No L5 verdict exists for the above changes.
+Preview prerequisites, deployment blockers and the eventual single-request shape are recorded in `L5-preview-plan.md`. Do not request validation before every member passes L4.
 
 ## Dependencies and planned additions
 - #35 — Other board writes survive refresh: approved bug backlog, after #34 due panel file collisions. Include after its own hostile review; do not quietly waive or call addressed by #28.
