@@ -6,7 +6,7 @@ Nothing here is a request yet. The batch stays NOT READY until every member pass
 
 | Member | Where the owner validates it | Ready? |
 |---|---|---|
-| #28 Current tasks when opening | Installed board panel (agents.workflows.ac) OR standalone board when deployed | Panel path likely available; installed-host behavior NOT RUN by us. Standalone not deployed. |
+| #28 Current tasks when opening | Installed board panel using the accepted integration-branch bundle | Installed-host behavior NOT RUN by us. A standalone board uses different refresh code and cannot validate this panel fix. |
 | #36 Only a person closes a task | Same panel | Same. |
 | #34 Answers match the question | Same panel (answer from Questions, Human Tasks, drawer) | Same. |
 | #35 Other board writes keep their edits | Same panel (create, archive, tags, priority, status-none, complexity, All Projects) | Implementation running. |
@@ -21,6 +21,10 @@ Nothing here is a request yet. The batch stays NOT READY until every member pass
 3. Nothing restarts the board after a crash or container restart; a start hook in `/workspace/config/opencode/entrypoint.sh` (outside this repository) is required and needs owner approval.
 4. Board secrets (`BOARD_GITHUB_TOKEN`, `BOARD_PASSWORD_HASH`, `BOARD_SESSION_SECRET`, `BOARD_BASE_URL`) are not provisioned anywhere; reusing the container's existing token or UI password is not approved.
 5. The board binds loopback only today; `BOARD_HOST` and `/health` do not exist yet.
+
+## Two user interfaces, one review request
+
+A standalone web preview is not proof of the panel's refresh/write fixes. The combined request must name both surfaces: an installed extension loading the accepted integration-branch panel bundle for #28/#34/#35/#36, and the standalone web board for #33. The owner should not be told to validate panel-only changes on the independent web implementation. The installed panel's actual bundle/branch must be verified before requesting its checks; that installed-host verification is still NOT RUN. One batched ask can contain both surfaces without pretending they are the same runtime.
 
 ## Repo-side preparation that is still unbuilt
 
