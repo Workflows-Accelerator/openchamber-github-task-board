@@ -1,6 +1,16 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — #34 final draft review running
+## Latest checkpoint — #34 integration accepted, push/cleanup pending
+- Release wake ses_d1fa94bbda791d532c2bcbe5 actual 9router/worker: clean merge c44ed58, proof a2d3fe1, targeted26/full517/types/build/parity PASS; bundle0ec437c5e6a5b2d4d63b53c3ced634a992357b4ac2e73ba9ca4f82fe40c3dc8a. Manager read proof and inspected integrated scope. No source dirt. Real browser/installed host/live GitHub NOT RUN, L5 pending.
+- Folded mission/tasks/proof/review-batch and reconciled journal: earlier journal incorrectly claimed all manager edits reverted; only mission was reverted, tasks/continuation remained dirty. No product edits lost. Commit explicit owned state, push only feat/v2-binding-and-ratelimit, remove #34 worktree after clean/ancestry proof; preserve local feature branch. No DB registration was authorized at creation.
+- Then confirm #33 worktree 8818b94 clean; fill final-protocol-correction preflight and dispatch owner-approved N1–N5 only. One independent final check; if fails STOP/owner. No master/deployment/closure/credential reuse.
+
+## Previous checkpoint — #34 L4 PASS, integration running
+- Final independent review wake 0e1a6be, actual 9router/engineer, PASS/APPROVED no findings; hostile11/regression7/targeted26/full517/types/build parity. Manager inspected report/source scope and accepted outputs/issue-34-review-gate.md; report synthetic DOM is not L3, real browser/installed host/production writes NOT RUN.
+- Fresh release ses_d1fa94bbda791d532c2bcbe5 worker runs tasks/issue-34-integration.md from same #34 worktree into root feat/v2-binding-and-ratelimit only. Reviewed tip 0e1a6be/product eef57bd. Root at dispatch 12e3e1e, unrelated/private untracked untouched. Manager mission/tasks/continuation now dirty; DO NOT git checkpoint until release wake to avoid root index collision. Release brief excludes these manager files. No push until proof accepted, no master/deploy/close.
+- After release: accept proof, push working branch if safe; manager cleanup worktree (proof merged first, feature branch retained). Then #33 queued final correction; confirm8818b94 clean/fill preflight. If #33 final check fails STOP/owner.
+
+## Previous checkpoint — #34 final draft review running
 - #34 builder wake eef57bd clean; 7 red/green, targeted26/full517/types/build claimed, bundle 0ec437c5e6a5b2d4d63b53c3ced634a992357b4ac2e73ba9ca4f82fe40c3dc8a. Report outputs/issue-34-final-draft-correction.md in #34 worktree. Independent final check ses_691b16d7beb0bc7cdc2ac338 engineer, tasks/issue-34-final-draft-hostile.md. Wait wake; if failure STOP/owner; no repeat fix loop. Builder actual model absent wake, pending safe record verification; reviewer actual model on wake.
 - #33 approved correction still QUEUED under one repo frontier; start only after #34 final check, confirm 8818b94 clean/fill brief. No master/deployment/closure approval.
 

@@ -1,6 +1,14 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-25 owner-authorized final corrections
+## Latest checkpoint — 2026-10-25 #34 integrated, push pending
+State: proving. Alignment: decisions1–15 CONFIRMED within recorded scope.
+- #34 L4 PASS/APPROVED: candidate eef57bd, independent final proof 0e1a6be, actual 9router/engineer. Hostile11/regression7/targeted26/full517/types/build parity, no findings. Review gate outputs/issue-34-review-gate.md accepted.
+- #34 integrated cleanly into feat/v2-binding-and-ratelimit at c44ed58, proof a2d3fe1; release ses_d1fa94bbda791d532c2bcbe5 actual 9router/worker. Merged targeted26/full517/types/build parity passed. Bundle 0ec437c5e6a5b2d4d63b53c3ced634a992357b4ac2e73ba9ca4f82fe40c3dc8a. Push and worktree cleanup pending, then awaiting batch. Real browser/installed host/production GitHub NOT RUN; L5 pending.
+- Journal outputs/issue-34-integration-dispatch-state.md reconciled: only mission.md had been reverted during release, tasks/continuation remained dirty; no source work lost. Explicit manager checkpoint now folds all success in.
+- #33 approved final N1–N5 web-only correction next. Confirm 8818b94 clean/fill brief, then dispatch. One independent final check; stop/owner if it fails. #35/#30/#31/#37 follow, no overlapping repository build.
+- No master, deployment, issue closure or credential reuse authority. Private/unrelated untracked files untouched.
+
+## Previous checkpoint — 2026-10-25 owner-authorized final corrections
 State: building. Alignment: decisions14–15 CONFIRMED. Owner "Correct both and recheck" and "Show all".
 - #34 final draft correction RETURNED eef57bd clean; builder ses_de503a8db65a350c9dc23a1b, 7/7 red->green, 26 targeted/517 full, types/build claimed. Independent final check RUNNING ses_691b16d7beb0bc7cdc2ac338 engineer, tasks/issue-34-final-draft-hostile.md; if fails STOP/owner, no further autonomous fixes. Actual reviewer model verified on wake; builder model verification not supplied in wake, do not invent it.
 - #33 final protocol correction QUEUED (not dispatched) tasks/issue-33-final-protocol-correction.md. Complete #34 correction/check first under one repository frontier; then confirm 8818b94 clean and fill draft preflight. One independent check, no further loop.
