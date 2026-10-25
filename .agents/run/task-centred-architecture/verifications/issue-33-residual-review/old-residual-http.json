@@ -1,0 +1,1103 @@
+{
+  "results": [
+    {
+      "name": "F2.genericObject",
+      "pass": false,
+      "payload": {
+        "message": "Gateway lost upstream"
+      },
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 400,
+      "body": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.html",
+      "pass": true,
+      "payload": "<h1>Gateway lost upstream</h1>",
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.malformed",
+      "pass": true,
+      "payload": "{\"message\":",
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.null",
+      "pass": true,
+      "payload": null,
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.string",
+      "pass": true,
+      "payload": "Gateway lost upstream",
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.number",
+      "pass": true,
+      "payload": 42,
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.array",
+      "pass": false,
+      "payload": [],
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 400,
+      "body": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.arrayObjects",
+      "pass": false,
+      "payload": [
+        {
+          "message": "Gateway lost upstream"
+        }
+      ],
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 400,
+      "body": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.genericErrorsEmpty",
+      "pass": false,
+      "payload": {
+        "message": "Gateway lost upstream",
+        "errors": []
+      },
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 400,
+      "body": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.genericErrorsStrings",
+      "pass": false,
+      "payload": {
+        "message": "Gateway lost upstream",
+        "errors": [
+          "connection reset"
+        ]
+      },
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 400,
+      "body": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.gatewayValidationWords",
+      "pass": false,
+      "payload": {
+        "message": "Gateway validation failed while relaying committed response"
+      },
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 400,
+      "body": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.githubValidation",
+      "pass": true,
+      "payload": {
+        "message": "Validation Failed",
+        "errors": [
+          {
+            "resource": "Issue",
+            "field": "body",
+            "code": "invalid"
+          }
+        ]
+      },
+      "expected": {
+        "status": 400,
+        "error": "invalid_request"
+      },
+      "status": 400,
+      "body": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false
+    },
+    {
+      "name": "F3.projection.fourSpacesOnly",
+      "pass": false,
+      "count": {
+        "total": 1,
+        "done": 0,
+        "open": 1
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Code?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [],
+      "body": "## Open Questions\n\n    - [ ] Code?\n"
+    },
+    {
+      "name": "F3.refusal.fourSpacesOnly",
+      "pass": false,
+      "index": 0,
+      "status": 200,
+      "response": {
+        "issue": {
+          "number": 1,
+          "title": "Synthetic issue 1",
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/repo/issues/1",
+          "body": "## Open Questions\n\n    - [x] Code? *(Answer: must refuse code)*\n",
+          "fingerprint": "b92785bd3d0a3d79ce9d4349dd6956cab04a41b3c686ed7c808fd4d059d06f0b",
+          "labels": [],
+          "statusLabel": null,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-10-25T23:38:44.050Z",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [],
+          "openQuestions": [
+            {
+              "index": 0,
+              "answerIndex": null,
+              "text": "Code? *(Answer: must refuse code)*",
+              "completed": true
+            }
+          ],
+          "humanTasks": [],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "savedAt": "2026-10-25T23:38:44.052Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      },
+      "patches": 1,
+      "unchanged": false,
+      "body": "## Open Questions\n\n    - [x] Code? *(Answer: must refuse code)*\n"
+    },
+    {
+      "name": "F3.projection.tabOnly",
+      "pass": false,
+      "count": {
+        "total": 1,
+        "done": 0,
+        "open": 1
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Code?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [],
+      "body": "## Open Questions\n\n\t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.refusal.tabOnly",
+      "pass": false,
+      "index": 0,
+      "status": 200,
+      "response": {
+        "issue": {
+          "number": 1,
+          "title": "Synthetic issue 1",
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/repo/issues/1",
+          "body": "## Open Questions\n\n\t- [x] Code? *(Answer: must refuse code)*\n",
+          "fingerprint": "0fcfab6911f93e21a54d1caf1dea161370db0ca1cc224e00a8d1ecad49e9cf5d",
+          "labels": [],
+          "statusLabel": null,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-10-25T23:38:44.201Z",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [],
+          "openQuestions": [
+            {
+              "index": 0,
+              "answerIndex": null,
+              "text": "Code? *(Answer: must refuse code)*",
+              "completed": true
+            }
+          ],
+          "humanTasks": [],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "savedAt": "2026-10-25T23:38:44.203Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      },
+      "patches": 1,
+      "unchanged": false,
+      "body": "## Open Questions\n\n\t- [x] Code? *(Answer: must refuse code)*\n"
+    },
+    {
+      "name": "F3.projection.spaceTabOnly",
+      "pass": false,
+      "count": {
+        "total": 1,
+        "done": 0,
+        "open": 1
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Code?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [],
+      "body": "## Open Questions\n\n \t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.refusal.spaceTabOnly",
+      "pass": false,
+      "index": 0,
+      "status": 200,
+      "response": {
+        "issue": {
+          "number": 1,
+          "title": "Synthetic issue 1",
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/repo/issues/1",
+          "body": "## Open Questions\n\n \t- [x] Code? *(Answer: must refuse code)*\n",
+          "fingerprint": "6d4eebdfad7fc585b794efe760ccaa9a5124b074a3a35858735bf77c796d6a91",
+          "labels": [],
+          "statusLabel": null,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-10-25T23:38:44.392Z",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [],
+          "openQuestions": [
+            {
+              "index": 0,
+              "answerIndex": null,
+              "text": "Code? *(Answer: must refuse code)*",
+              "completed": true
+            }
+          ],
+          "humanTasks": [],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "savedAt": "2026-10-25T23:38:44.394Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      },
+      "patches": 1,
+      "unchanged": false,
+      "body": "## Open Questions\n\n \t- [x] Code? *(Answer: must refuse code)*\n"
+    },
+    {
+      "name": "F3.projection.twoSpacesTabOnly",
+      "pass": false,
+      "count": {
+        "total": 1,
+        "done": 0,
+        "open": 1
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Code?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [],
+      "body": "## Open Questions\n\n  \t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.refusal.twoSpacesTabOnly",
+      "pass": false,
+      "index": 0,
+      "status": 200,
+      "response": {
+        "issue": {
+          "number": 1,
+          "title": "Synthetic issue 1",
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/repo/issues/1",
+          "body": "## Open Questions\n\n  \t- [x] Code? *(Answer: must refuse code)*\n",
+          "fingerprint": "38d04c72029e8bb293bbb396f6b062e089977a8bfb32c5ddb02c756fb28f7251",
+          "labels": [],
+          "statusLabel": null,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-10-25T23:38:44.525Z",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [],
+          "openQuestions": [
+            {
+              "index": 0,
+              "answerIndex": null,
+              "text": "Code? *(Answer: must refuse code)*",
+              "completed": true
+            }
+          ],
+          "humanTasks": [],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "savedAt": "2026-10-25T23:38:44.527Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      },
+      "patches": 1,
+      "unchanged": false,
+      "body": "## Open Questions\n\n  \t- [x] Code? *(Answer: must refuse code)*\n"
+    },
+    {
+      "name": "F3.projection.threeSpacesTabOnly",
+      "pass": false,
+      "count": {
+        "total": 1,
+        "done": 0,
+        "open": 1
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Code?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [],
+      "body": "## Open Questions\n\n   \t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.refusal.threeSpacesTabOnly",
+      "pass": false,
+      "index": 0,
+      "status": 200,
+      "response": {
+        "issue": {
+          "number": 1,
+          "title": "Synthetic issue 1",
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/repo/issues/1",
+          "body": "## Open Questions\n\n   \t- [x] Code? *(Answer: must refuse code)*\n",
+          "fingerprint": "7f3054f288ecdbb3eb5f16f282c541dbc6571d49cdc0e5d69541e6a2c782b394",
+          "labels": [],
+          "statusLabel": null,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-10-25T23:38:44.761Z",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [],
+          "openQuestions": [
+            {
+              "index": 0,
+              "answerIndex": null,
+              "text": "Code? *(Answer: must refuse code)*",
+              "completed": true
+            }
+          ],
+          "humanTasks": [],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "savedAt": "2026-10-25T23:38:44.766Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      },
+      "patches": 1,
+      "unchanged": false,
+      "body": "## Open Questions\n\n   \t- [x] Code? *(Answer: must refuse code)*\n"
+    },
+    {
+      "name": "F3.projection.nestedCode",
+      "pass": false,
+      "count": {
+        "total": 1,
+        "done": 0,
+        "open": 1
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Nested code?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [],
+      "body": "## Open Questions\n- Parent list\n\n      - [ ] Nested code?\n"
+    },
+    {
+      "name": "F3.refusal.nestedCode",
+      "pass": false,
+      "index": 0,
+      "status": 200,
+      "response": {
+        "issue": {
+          "number": 1,
+          "title": "Synthetic issue 1",
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/repo/issues/1",
+          "body": "## Open Questions\n- Parent list\n\n      - [x] Nested code? *(Answer: must refuse code)*\n",
+          "fingerprint": "d4d8a43a4aefa7d2a1f577b02a39b43a9a0180311de2e558a910d58304b2b501",
+          "labels": [],
+          "statusLabel": null,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-10-25T23:38:44.921Z",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [],
+          "openQuestions": [
+            {
+              "index": 0,
+              "answerIndex": null,
+              "text": "Nested code? *(Answer: must refuse code)*",
+              "completed": true
+            }
+          ],
+          "humanTasks": [],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "savedAt": "2026-10-25T23:38:44.924Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      },
+      "patches": 1,
+      "unchanged": false,
+      "body": "## Open Questions\n- Parent list\n\n      - [x] Nested code? *(Answer: must refuse code)*\n"
+    },
+    {
+      "name": "F3.projection.realBeforeAfter",
+      "pass": false,
+      "count": {
+        "total": 4,
+        "done": 0,
+        "open": 4
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Before?",
+          "completed": false
+        },
+        {
+          "index": 1,
+          "answerIndex": 1,
+          "text": "Four-space code?",
+          "completed": false
+        },
+        {
+          "index": 2,
+          "answerIndex": 2,
+          "text": "Tab code?",
+          "completed": false
+        },
+        {
+          "index": 3,
+          "answerIndex": 3,
+          "text": "After?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [
+        "Before?",
+        "After?"
+      ],
+      "body": "## Open Questions\n- [ ] Before?\n\n    - [ ] Four-space code?\n\n\t- [ ] Tab code?\n\n- [ ] After?\n"
+    },
+    {
+      "name": "F3.refusal.realBeforeAfter",
+      "pass": true,
+      "index": 4,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n- [ ] Before?\n\n    - [ ] Four-space code?\n\n\t- [ ] Tab code?\n\n- [ ] After?\n"
+    },
+    {
+      "name": "F3.realTarget.realBeforeAfter",
+      "pass": false,
+      "status": 200,
+      "patches": 1,
+      "body": "## Open Questions\n- [ ] Before?\n\n    - [x] Four-space code? *(Answer: exact nested answer)*\n\n\t- [ ] Tab code?\n\n- [ ] After?\n",
+      "expected": "## Open Questions\n- [ ] Before?\n\n    - [ ] Four-space code?\n\n\t- [ ] Tab code?\n\n- [x] After? *(Answer: exact nested answer)*\n"
+    },
+    {
+      "name": "F3.projection.realNestedContinuation",
+      "pass": true,
+      "count": {
+        "total": 3,
+        "done": 0,
+        "open": 3
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "First?",
+          "completed": false
+        },
+        {
+          "index": 1,
+          "answerIndex": 1,
+          "text": "Nested real?",
+          "completed": false
+        },
+        {
+          "index": 2,
+          "answerIndex": 2,
+          "text": "Last?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [
+        "First?",
+        "Nested real?",
+        "Last?"
+      ],
+      "body": "## Open Questions\n- [ ] First?\n  continuation without a checkbox\n  - [ ] Nested real?\n    continuation four spaces\n- [ ] Last?\n"
+    },
+    {
+      "name": "F3.refusal.realNestedContinuation",
+      "pass": true,
+      "index": 3,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n- [ ] First?\n  continuation without a checkbox\n  - [ ] Nested real?\n    continuation four spaces\n- [ ] Last?\n"
+    },
+    {
+      "name": "F3.realTarget.realNestedContinuation",
+      "pass": true,
+      "status": 200,
+      "patches": 1,
+      "body": "## Open Questions\n- [ ] First?\n  continuation without a checkbox\n  - [x] Nested real? *(Answer: exact nested answer)*\n    continuation four spaces\n- [ ] Last?\n",
+      "expected": "## Open Questions\n- [ ] First?\n  continuation without a checkbox\n  - [x] Nested real? *(Answer: exact nested answer)*\n    continuation four spaces\n- [ ] Last?\n"
+    },
+    {
+      "name": "F3.projection.nestedCodeAndReal",
+      "pass": false,
+      "count": {
+        "total": 2,
+        "done": 0,
+        "open": 2
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Nested code?",
+          "completed": false
+        },
+        {
+          "index": 1,
+          "answerIndex": 1,
+          "text": "Last?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [
+        "Last?"
+      ],
+      "body": "## Open Questions\n- Parent list\n\n      - [ ] Nested code?\n\n- [ ] Last?\n"
+    },
+    {
+      "name": "F3.refusal.nestedCodeAndReal",
+      "pass": true,
+      "index": 2,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n- Parent list\n\n      - [ ] Nested code?\n\n- [ ] Last?\n"
+    },
+    {
+      "name": "F3.realTarget.nestedCodeAndReal",
+      "pass": false,
+      "status": 200,
+      "patches": 1,
+      "body": "## Open Questions\n- Parent list\n\n      - [x] Nested code? *(Answer: exact nested answer)*\n\n- [ ] Last?\n",
+      "expected": "## Open Questions\n- Parent list\n\n      - [ ] Nested code?\n\n- [x] Last? *(Answer: exact nested answer)*\n"
+    },
+    {
+      "name": "F3.projection.crlf",
+      "pass": false,
+      "count": {
+        "total": 3,
+        "done": 1,
+        "open": 2
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": null,
+          "text": "Completed? *(Answer: yes)*",
+          "completed": true
+        },
+        {
+          "index": 1,
+          "answerIndex": 0,
+          "text": "Code?",
+          "completed": false
+        },
+        {
+          "index": 2,
+          "answerIndex": 1,
+          "text": "Nested real?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [
+        "Completed? *(Answer: yes)*",
+        "Nested real?"
+      ],
+      "body": "## Open Questions\r\n- [x] Completed? *(Answer: yes)*\r\n\r\n    - [ ] Code?\r\n\r\n  - [ ] Nested real?\r\n"
+    },
+    {
+      "name": "F3.refusal.crlf",
+      "pass": true,
+      "index": 3,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\r\n- [x] Completed? *(Answer: yes)*\r\n\r\n    - [ ] Code?\r\n\r\n  - [ ] Nested real?\r\n"
+    },
+    {
+      "name": "F3.realTarget.crlf",
+      "pass": false,
+      "status": 200,
+      "patches": 1,
+      "body": "## Open Questions\r\n- [x] Completed? *(Answer: yes)*\r\n\r\n    - [x] Code? *(Answer: exact nested answer)*\r\n\r\n  - [ ] Nested real?\r\n",
+      "expected": "## Open Questions\r\n- [x] Completed? *(Answer: yes)*\r\n\r\n    - [ ] Code?\r\n\r\n  - [x] Nested real? *(Answer: exact nested answer)*\r\n"
+    }
+  ],
+  "logs": [
+    "POST /api/session 200 91ms",
+    "GET /api/issues/1 200 24ms",
+    "PUT /api/issues/1/section 400 11ms",
+    "GET /api/issues/1 200 7ms",
+    "PUT /api/issues/1/section 502 15ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 6ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 22ms",
+    "GET /api/issues/1 200 13ms",
+    "PUT /api/issues/1/section 502 4ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 502 3ms",
+    "GET /api/issues/1 200 1ms",
+    "PUT /api/issues/1/section 400 5ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 400 3ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 400 5ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 400 5ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 400 4ms",
+    "GET /api/issues/1 200 1ms",
+    "PUT /api/issues/1/section 400 3ms",
+    "POST /api/session 200 105ms",
+    "GET /api/board 200 9ms",
+    "GET /api/issues/1 200 3ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/0/answer 200 9ms",
+    "POST /api/session 200 65ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 2ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/0/answer 200 5ms",
+    "POST /api/session 200 88ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 3ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/0/answer 200 8ms",
+    "POST /api/session 200 54ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 2ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/0/answer 200 4ms",
+    "POST /api/session 200 83ms",
+    "GET /api/board 200 8ms",
+    "GET /api/issues/1 200 5ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/0/answer 200 11ms",
+    "POST /api/session 200 71ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 1ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/0/answer 200 6ms",
+    "POST /api/session 200 60ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/4/answer 400 1ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/1/answer 200 12ms",
+    "POST /api/session 200 63ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/3/answer 400 2ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/1/answer 200 4ms",
+    "POST /api/session 200 60ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/2/answer 400 2ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/0/answer 200 7ms",
+    "POST /api/session 200 56ms",
+    "GET /api/board 200 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/3/answer 400 2ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/0/answer 200 5ms"
+  ],
+  "summary": {
+    "total": 36,
+    "passed": 12,
+    "failed": 24
+  }
+}

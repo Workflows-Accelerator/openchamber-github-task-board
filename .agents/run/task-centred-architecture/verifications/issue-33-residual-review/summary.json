@@ -1,0 +1,35 @@
+{
+  "candidate-browser-matrix": {
+    "total": 84,
+    "passed": 51,
+    "failed": 33
+  },
+  "old-browser-matrix": {
+    "total": 84,
+    "passed": 15,
+    "failed": 69
+  },
+  "candidate-residual-http": {
+    "total": 36,
+    "passed": 27,
+    "failed": 9
+  },
+  "old-residual-http": {
+    "total": 36,
+    "passed": 12,
+    "failed": 24
+  },
+  "browser-verification": {
+    "checks": 32,
+    "passed": 32,
+    "failed": 0,
+    "screenshots": 10
+  },
+  "legacy-gateway": {
+    "total": 19,
+    "unknown": 19,
+    "allOnePatch": true,
+    "allCommitted": true,
+    "runtimeEvents": 0
+  }
+}
