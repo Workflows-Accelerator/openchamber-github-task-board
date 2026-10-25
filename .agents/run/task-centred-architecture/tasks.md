@@ -5,7 +5,7 @@
 | Outcome | State | Worker / next |
 |---|---|---|
 | #34 draft safety | MERGED/PUSHED, awaiting batch | L4 0e1a6be PASS; merge c44ed58/proof a2d3fe1; targeted26/full517/types/build/parity green. Pushed aea7031; worktree removed/pruned, branch retained. Receipt6402496611; real browser/host/GitHub NOT RUN |
-| #33 browser protocol safety | FINAL INDEPENDENT CHECK RUNNING | correction06ed4a3 (8 protocol/104 web/466 root/types/bundle f4efd592) from clean8818b94; reviewer ses_edd838f4f0ddffb3e32ebc3d genius; receipt6402945060; FAIL => stop/owner |
+| #33 browser protocol safety | L4 FAILED, OWNER DECISION NEEDED | check f6ee7da genius: security APPROVED, spec PARTIAL, quality NEEDS-FIXES; N2/N3 closed, N4 partial, N1/N5 open; new F1 Medium raw TypeError on 3 invalid shapes, F2 Low post-commit 422 misread, F3 Low indented code checkbox, F4 report overclaim, F5 stale comments. One-check rule => stop/owner. Worktree clean, product unchanged at 06ed4a3; label needs-human; receipt6403257977 |
 | #37 visible repositories | FULLY ALIGNED | decision15 show archived/empty; issue body corrected; blocked #33 |
 | #35 refresh write coverage | CORRECTION RUNNING after HALT | hostile e49ddbe 9router/genius: Spec PARTIAL/Quality NEEDS-FIXES; 3 defects red->green, F1/F2 High introduced, F3-F8 in scope. Correction ses_c1b1f4e26f5cdd9270f22e17 engineer tasks/issue-35-correction.md from clean e49ddbe; one bounded re-review follows; receipt6403154853 |
 | #30 work type from labels | BRIEF READY, BLOCKED on #35 | tasks/issue-30-work-type.md; decision4 labels+Work Log sentence; expiration stays an open owner question |

@@ -10,7 +10,7 @@ Timestamp: 2026-10-25
 | #28 opening/current tasks | Prior green (see issue-28/proof.md) | Prior green | Synthetic host only | Installed-host NOT RUN | PASS, merged working branch | AWAITING HUMAN |
 | #36 human-only close | Prior green | Prior green, 491 full at integration | Synthetic host only | Installed-host NOT RUN | PASS 4f22605 | AWAITING HUMAN |
 | #34 safe answers | PASS eef57bd + merged tree | Reviewer targeted26/full517; merged targeted26/full517, all green | Synthetic DOM/host (no real GitHub); merged c44ed58/proof a2d3fe1 | Real browser/installed-host NOT RUN | PASS/APPROVED 0e1a6be, hostile11/regression7, no findings; manager gate accepted | AWAITING BATCH HUMAN, not Done |
-| #33 browser board | PASS f50519d types/bundle | 96 web / 466 root | Real localhost HTTP with synthetic GitHub upstream | Real Obscura browser 32 baseline + 33 hostile checks, screenshots/logs inspected (not production auth/GitHub/TLS) | NEEDS-FIXES 8818b94; N1–N5 correction running ses_7c6609612c200168dfae85d1 | AWAITING HUMAN, batch not ready |
+| #33 browser board | PASS f50519d types/bundle; correction 06ed4a3 | 104 web / 466 root / 8 protocol; correction types0 | Real localhost HTTP with synthetic GitHub upstream; real Obscura browser 19 mutation cases + 32 baseline, screenshots inspected | L4 FAILED: security APPROVED, Spec PARTIAL, Quality NEEDS-FIXES at f6ee7da. N2/N3+ named N4 closed; N1 open (raw TypeError on 3 invalid shapes, post-commit generic 422 as 400), N5 report overclaim, F3 indented code checkbox mutable | STOPPED FOR OWNER DECISION; needs-human, not merged |
 | #35/#30/#31/#37 | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT READY |
 
 ## Traceable evidence
@@ -23,7 +23,7 @@ Timestamp: 2026-10-25
 | Member | Finding | Disposition |
 |---|---|---|
 | #34 | Former cross-repo/question and orphan draft defects | CLOSED by eef57bd and independent 0e1a6be; merge c44ed58/proof a2d3fe1. Human validation still pending |
-| #33 | N1 protocol/gateway/malformed4xx unknown reporting; N2 redirect forwarding; N3 meaningful whitespace readback; N4 fenced-question mutation; N5 doc mismatch | Owner-approved web-only correction queued; no shared parser edits; one final check then stop on failure |
+| #33 | N1 protocol/gateway/malformed4xx unknown reporting; N2 redirect forwarding; N3 meaningful whitespace readback; N4 fenced-question mutation; N5 doc mismatch | Correction 06ed4a3 closed N2/N3/named N4; N1 still open for 3 invalid shapes and post-commit generic 422, N5 overclaim, indented code checkbox still mutable. One-check rule exhausted, owner decision pending |
 
 ## Human gate
 Batch NOT READY. No preview is yet verified as integrated/running. Plain-language click list and blind spots maintained in review-batch.md. Only owner may record per-member pass/bounce, move issues Done and approve master/deployment. No waiver for UI/UX/workflow changes.

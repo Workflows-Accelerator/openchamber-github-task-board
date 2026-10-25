@@ -1,6 +1,13 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — #35 correction running after HALT, #33 final check running
+## Latest checkpoint — #33 stopped for owner, #35 correction running
+- #33 final independent check f6ee7da (docs only, product unchanged 06ed4a3, clean) actual 9router/genius: security APPROVED, Spec PARTIAL, Quality NEEDS-FIXES. N2/N3 and named N4 cases closed; N1 open (3 invalid shapes throw raw TypeError instead of UNKNOWN; generic JSON 422 after possible commit shown as 400 invalid_request), N5 partial; new F1 Medium, F2/F3/F4 Low, F5 Nit. Evidence web104/root466/protocol8, tsc0, bundle f4efd592 matches, 28 probes 27 pass, 19 browser cases, 32 screenshots.
+- decision14 one-check rule exhausted: STOP, no autonomous fix, label status:needs-human, receipt6403257977. Owner choice pending: bounded fix of N1/F2/F3 plus report/comments, accept with the five limits recorded, or park #33. Nothing merged.
+- #35 hostile HALT accepted; correction ses_c1b1f4e26f5cdd9270f22e17 engineer RUNNING from clean e49ddbe with a regression per finding (F1-F8), one bounded re-review after. #35 receipt6403154853.
+- Note for future gh writes: long comment bodies are refused by the shell guard, keep them short and ASCII; no workaround attempted.
+- Next after wakes: owner decision on #33; #35 re-review verdict then integration into feat/v2-binding-and-ratelimit and push; then hosting slice and #30, then #37/#31. Owner gates on master, deployment, secrets and closure unchanged.
+
+## Previous checkpoint — #35 correction running after HALT, #33 final check running
 - #35 hostile review e49ddbe actual 9router/genius: Spec PARTIAL, Quality NEEDS-FIXES, HALT. Three target defects reproduced red->green and no second admission system, but two High defects are introduced by the fix (F1 creation repo attribution during a switch and a later PATCH to the wrong repository, F2 drawer rollback hitting another issue) plus F3-F8 in-scope gaps. Manager accepted the verdict; nothing merged. Receipt6403154853 (posted short, long bodies were refused by the shell guard, no workaround attempted).
 - Correction ses_c1b1f4e26f5cdd9270f22e17 engineer RUNNING from clean e49ddbe, tasks/issue-35-correction.md, regression per finding, one bounded re-review after; FAIL of that re-review stops and returns to the owner.
 - #33 final independent check ses_edd838f4f0ddffb3e32ebc3d genius still RUNNING, web/** only. Trees disjoint, no duplicate workers, no polling.
