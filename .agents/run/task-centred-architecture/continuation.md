@@ -1,6 +1,12 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — final review dispatch
+## Latest checkpoint — 2026-10-25 gate results
+- Restart recovered root at 83b065d. Both final wakes present, no polling/repeat. #33 final 8818b94 NEEDS-FIXES, no new High; N1 Medium/N2–N5 Low accepted, owner gate before further correction. #34 72f3f76 seven-finding PASS, but manager diff found draft isolation hypothesis. Focused independent check ses_2fadeaf8ebd848b2df3e96cb engineer in same #34 worktree, tasks/issue-34-draft-isolation-check.md; no product edit/full-suite repeat.
+- Rulings outputs/final-review-rulings-2026-10-25.md; receipts #33 6401828138, #34 6401830025. Do not integrate until draft isolation result.
+- #37 filter question (show archived/empty vs hide) aborted by restart, unanswered. Issue currently embeds an unapproved default; correct with owner answer. Token-readable coverage + bot identity already decided, never re-ask.
+- #35 queued brief uncommitted at tasks/issue-35-refresh-write-coverage.md; fill authoritative base after #34 lands before dispatch. No master/deployment authority. Private/unrelated root files not staged.
+
+## Previous checkpoint — final review dispatch
 - All restart duplicate #33 sessions finished. HEAD f50519d clean. e88126a vs f50519d only 6 report lines differ; product tree identical. Do NOT credit claims of "nothing unverified"; production/token/TLS/real focus remain NOT RUN. Independent final reviewer ses_26ee4e9daa4d87851a9a7df8 genius, brief tasks/issue-33-final-hostile.md.
 - #34 remediation a8f55c2 clean, 19/19 + 510/510 claimed. Independent final reviewer ses_e1043143a0899bf0665556ca engineer, brief tasks/issue-34-final-hostile.md. No merge before verdict. Final reviewer tiers verified on wake only.
 - Owner answered bundled questions: every repo token can read; token is Workflows Accelerator bot token. Decision 13 appended; #37 receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/37#issuecomment-6391068455. No token reuse permission inferred.

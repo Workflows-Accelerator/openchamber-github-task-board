@@ -1,6 +1,13 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-24 final review dispatch
+## Latest checkpoint — 2026-10-25 review gate
+State: proving/aligning. Root recovered at 83b065d; both final review wakes complete, no repeat workers.
+- #33 8818b94: Security NEEDS-FIXES, Spec PARTIAL, Quality NEEDS-FIXES, no new High. N1 Medium + N2–N5 Low accepted; blocked for owner's bounded correction authority. Full ruling outputs/final-review-rulings-2026-10-25.md. Receipt 6401828138.
+- #34 72f3f76: seven findings PASS/APPROVED, 19/510 checks. Manager diff found draft repository/question isolation hypothesis; held integration for independent focused check ses_2fadeaf8ebd848b2df3e96cb engineer. No product edits/full-suite repetition. Receipt 6401830025.
+- #37 archived/empty visibility question aborted by restart; unanswered; issue contains unapproved default and needs correction on answer. Bot identity/coverage already aligned, do not re-ask those.
+- Master/deployment/closure remain unapproved. No production secret handling. Known untracked private reports not staged.
+
+## Previous checkpoint — 2026-10-24 final review dispatch
 State: proving. Alignment: CONFIRMED for decisions-2026-10-24.md items 1–13 only.
 - #33 remediation accepted as candidate only: f50519d, clean. All three restart duplicate builders finished. e88126a vs f50519d differs only in report (6 lines), same product tree. Final hostile security check ses_26ee4e9daa4d87851a9a7df8 (genius), tasks/issue-33-final-hostile.md. New High => HALT and owner, no new loop.
 - #34 remediation candidate a8f55c2, clean; 19/19 targeted, 510/510 full self-reported. Independent final hostile ses_e1043143a0899bf0665556ca (engineer), tasks/issue-34-final-hostile.md. Seven findings must all close before integration.
