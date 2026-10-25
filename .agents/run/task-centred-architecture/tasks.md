@@ -5,9 +5,9 @@
 | Outcome | State | Worker / next |
 |---|---|---|
 | #34 draft safety | MERGED/PUSHED, awaiting batch | L4 0e1a6be PASS; merge c44ed58/proof a2d3fe1; targeted26/full517/types/build/parity green. Pushed aea7031; worktree removed/pruned, branch retained. Receipt6402496611; real browser/host/GitHub NOT RUN |
-| #33 browser protocol safety | L4 FAILED, OWNER DECISION NEEDED | check f6ee7da genius: security APPROVED, spec PARTIAL, quality NEEDS-FIXES; N2/N3 closed, N4 partial, N1/N5 open; new F1 Medium raw TypeError on 3 invalid shapes, F2 Low post-commit 422 misread, F3 Low indented code checkbox, F4 report overclaim, F5 stale comments. One-check rule => stop/owner. Worktree clean, product unchanged at 06ed4a3; label needs-human; receipt6403257977 |
+| #33 browser protocol safety | OWNER-APPROVED RESIDUAL CORRECTION RUNNING | decision16: F1 invalid response detail, F2 generic post-commit422, F3 indented code checkbox + report/comments; ses_2021ba6f89fc4c9bcc636b07 engineer from clean f6ee7da; tasks/issue-33-residual-correction.md; then one independent recheck; receipt6404693351 |
 | #37 visible repositories | FULLY ALIGNED | decision15 show archived/empty; issue body corrected; blocked #33 |
-| #35 refresh write coverage | CORRECTION RUNNING after HALT | hostile e49ddbe 9router/genius: Spec PARTIAL/Quality NEEDS-FIXES; 3 defects red->green, F1/F2 High introduced, F3-F8 in scope. Correction ses_c1b1f4e26f5cdd9270f22e17 engineer tasks/issue-35-correction.md from clean e49ddbe; one bounded re-review follows; receipt6403154853 |
+| #35 refresh write coverage | CORRECTION IN BOUNDED RE-REVIEW | 0af35ae builder claims F1–F8 closed, 9 red/25 targeted/542 full/types/build, bundle d759549; reviewer ses_efe868d487a6439e5ba4bfc5 genius tasks/issue-35-correction-hostile.md; FAIL returns owner, no fix loop; receipt6404697544 |
 | #30 work type from labels | BRIEF READY, BLOCKED on #35 | tasks/issue-30-work-type.md; decision4 labels+Work Log sentence; expiration stays an open owner question |
 | Board hosting slice | BRIEF READY, BLOCKED on #33 | tasks/board-hosting-slice.md; BOARD_HOST, /health, start command, honest ops limits; no deployment authority |
 | Master/deployment | NOT APPROVED | no secret reuse; owner retains release |

@@ -1,6 +1,11 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — #33 stopped for owner, #35 correction running
+## Latest checkpoint — decision16 dispatched, #35 bounded re-review running
+- Owner approved exactly one #33 residual correction + independent recheck. Decision16 in decisions-2026-10-24.md, receipt6404693351. Correction RUNNING ses_2021ba6f89fc4c9bcc636b07 engineer from clean f6ee7da (product06ed4a3), tasks/issue-33-residual-correction.md. Fix only invalid response shape/unknown outcome, generic post-commit422, web indented code, active report/comments. Then single independent recheck; failure => owner. No shared parser/feature/deploy authority.
+- #35 correction 0af35ae returned clean; claimed F1-F8 closed, 9 red/25 targeted/542 full/types/build, hash d759549234c180918eaef4ca7efe8bbc3892256ced8ca1d0e973cbad45bca383. Manager inspected scope/stat; 587-line source delta demands full review, not count acceptance. Bounded independent reviewer ses_efe868d487a6439e5ba4bfc5 genius RUNNING, tasks/issue-35-correction-hostile.md; FAIL returns owner. Receipt6404697544, status:in-review. Builder actual model absent wake; reviewer actual model on wake, no polling.
+- Worker scopes disjoint (web vs panel), neither owns root. No more implementation dispatch until appropriate frontier clears. Ready-next blocked briefs #30 and hosting have no filled preflight yet. No master/deploy/secrets/closure.
+
+## Previous checkpoint — #33 stopped for owner, #35 correction running
 - #33 final independent check f6ee7da (docs only, product unchanged 06ed4a3, clean) actual 9router/genius: security APPROVED, Spec PARTIAL, Quality NEEDS-FIXES. N2/N3 and named N4 cases closed; N1 open (3 invalid shapes throw raw TypeError instead of UNKNOWN; generic JSON 422 after possible commit shown as 400 invalid_request), N5 partial; new F1 Medium, F2/F3/F4 Low, F5 Nit. Evidence web104/root466/protocol8, tsc0, bundle f4efd592 matches, 28 probes 27 pass, 19 browser cases, 32 screenshots.
 - decision14 one-check rule exhausted: STOP, no autonomous fix, label status:needs-human, receipt6403257977. Owner choice pending: bounded fix of N1/F2/F3 plus report/comments, accept with the five limits recorded, or park #33. Nothing merged.
 - #35 hostile HALT accepted; correction ses_c1b1f4e26f5cdd9270f22e17 engineer RUNNING from clean e49ddbe with a regression per finding (F1-F8), one bounded re-review after. #35 receipt6403154853.
