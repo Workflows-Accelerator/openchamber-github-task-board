@@ -84,7 +84,13 @@ function kindForStatus(
     return 'forbidden';
   }
   if (status === 404) return 'not_found';
-  if (status === 422) return 'invalid';
+  if (status === 422) {
+    const msg = typeof data?.message === 'string' ? data.message.toLowerCase() : '';
+    if (msg.includes('validation failed') || Array.isArray(data?.errors)) {
+      return 'invalid';
+    }
+    return 'server';
+  }
   if (status === 429) return 'rate_limited';
   return 'server';
 }

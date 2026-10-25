@@ -1,8 +1,9 @@
 // ==========================================
 // Board projection: GitHub issue shape to the standalone board's read model.
 //
-// Parsing, phase/attention identity and open-question answering all reuse
-// panel/core.ts by import. Nothing here is a second parser.
+// Phase/attention identity and issue normalization reuse panel/core.ts by import.
+// Open questions are scanned and answered in the web layer to enforce fence
+// and indentation safety.
 // ==========================================
 
 import { createHash } from 'node:crypto';
@@ -36,6 +37,7 @@ export class BoardError extends Error {
 const statusSet = new Set<string>(STATUS_LABELS as readonly string[]);
 const fencePattern = /^ {0,3}(`{3,}|~{3,})/;
 const closeFencePattern = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
+const indentedCodeLinePattern = /^(?: {4,}|\t)/;
 const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
 const questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
 const humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
@@ -84,6 +86,10 @@ export function parseWebOpenQuestions(body: string | null | undefined): Array<{
       if (match && match[1][0] === fenceChar && match[1].length >= fenceLen) {
         inCodeFence = false;
       }
+      continue;
+    }
+
+    if (indentedCodeLinePattern.test(cleanLine)) {
       continue;
     }
 
@@ -374,6 +380,9 @@ export function applyQuestionAnswer(raw: any, index: unknown, answer: unknown): 
   }
   const hasCr = rawLine.endsWith('\r');
   const cleanLine = hasCr ? rawLine.slice(0, -1) : rawLine;
+  if (indentedCodeLinePattern.test(cleanLine)) {
+    throw new BoardError('invalid', 'That open question is no longer answerable');
+  }
   const match = cleanLine.match(checklistRegex);
   if (!match) {
     throw new BoardError('invalid', 'That open question is no longer answerable');

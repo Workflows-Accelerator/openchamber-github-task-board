@@ -67,6 +67,25 @@
   }
   ApiError.prototype = Object.create(Error.prototype);
 
+  function isValidMutationPayload(payload, expectedNumber) {
+    if (!payload || typeof payload !== 'object') return false;
+    var issue = payload.issue;
+    if (!issue || typeof issue !== 'object') return false;
+    if (typeof issue.number !== 'number' || !Number.isInteger(issue.number) || issue.number <= 0) return false;
+    if (expectedNumber !== undefined && expectedNumber !== null && issue.number !== expectedNumber) return false;
+    if (typeof issue.fingerprint !== 'string' || !issue.fingerprint) return false;
+    if (typeof issue.title !== 'string') return false;
+    if (typeof issue.state !== 'string') return false;
+    if (!Array.isArray(issue.editableSections)) return false;
+    if (!Array.isArray(issue.openQuestions)) return false;
+    if (!Array.isArray(issue.humanTasks)) return false;
+    if (!Array.isArray(issue.acceptanceCriteria)) return false;
+    if (!Array.isArray(issue.subtasks) && !Array.isArray(issue.subtests)) return false;
+    var statusOpts = payload.statusOptions || issue.statusOptions;
+    if (!Array.isArray(statusOpts)) return false;
+    return true;
+  }
+
   async function api(path, options) {
     options = options || {};
     var method = options.method || 'GET';
@@ -112,7 +131,9 @@
 
     if (isMutation) {
       if (response.ok) {
-        if (!jsonParsed || !payload || typeof payload !== 'object' || !payload.issue) {
+        var numMatch = /^\/api\/issues\/(\d+)(?:\/|$)/.exec(path);
+        var expectedNum = numMatch ? Number(numMatch[1]) : undefined;
+        if (!jsonParsed || !isValidMutationPayload(payload, expectedNum)) {
           throw new ApiError('write_outcome_unknown', response.status, {
             error: 'write_outcome_unknown',
             message: 'Outcome unknown \u2014 refresh to check GitHub state',
@@ -362,24 +383,28 @@
     container.textContent = '';
     container.appendChild(badge(issue.state === 'closed' ? 'closed' : 'open', 'state-' + (issue.state === 'closed' ? 'closed' : 'open')));
     container.appendChild(badge(statusText(issue.statusLabel), 'status'));
-    if (issue.phase) container.appendChild(badge('phase: ' + issue.phase.replace(/_/g, ' '), 'phase'));
+    if (issue.phase) container.appendChild(badge('phase: ' + String(issue.phase).replace(/_/g, ' '), 'phase'));
     if (issue.attention && issue.attention !== 'none') {
-      container.appendChild(badge('needs ' + issue.attention.replace('needs-', ''), 'attention'));
+      container.appendChild(badge('needs ' + String(issue.attention).replace('needs-', ''), 'attention'));
     }
-    container.appendChild(badge('#' + issue.number));
+    if (issue.number !== undefined && issue.number !== null) {
+      container.appendChild(badge('#' + issue.number));
+    }
   }
 
   function renderQuestions(issue) {
     var list = $('question-list');
     list.textContent = '';
-    var open = issue.openQuestions.filter(function (question) {
-      return question.answerIndex !== null;
+    var questions = Array.isArray(issue.openQuestions) ? issue.openQuestions : [];
+    var open = questions.filter(function (question) {
+      return question && question.answerIndex !== null && question.answerIndex !== undefined;
     });
     $('no-questions').hidden = open.length > 0;
 
-    issue.openQuestions.forEach(function (question) {
-      if (question.answerIndex === null) {
-        var text = question.text;
+    questions.forEach(function (question) {
+      if (!question) return;
+      if (question.answerIndex === null || question.answerIndex === undefined) {
+        var text = question.text || '';
         var answerMatch = /^(.*?)\s*\*\s*\(Answer:\s*([\s\S]*?)\)\s*\*$/i.exec(text);
         var questionSpans = [
           el('span', { text: '✓', 'aria-hidden': 'true' }),
@@ -428,7 +453,8 @@
     select.textContent = '';
     var placeholder = el('option', { value: '', text: 'Select a status' });
     select.appendChild(placeholder);
-    state.statusOptions.forEach(function (option) {
+    var opts = Array.isArray(state.statusOptions) ? state.statusOptions : [];
+    opts.forEach(function (option) {
       var node = el('option', { value: option.value, text: option.label });
       if (issue.statusLabel === option.value) node.selected = true;
       select.appendChild(node);
@@ -439,11 +465,13 @@
   function renderHumanTasks(issue) {
     var list = $('human-list');
     list.textContent = '';
-    $('no-human').hidden = issue.humanTasks.length > 0;
-    issue.humanTasks.forEach(function (task) {
+    var tasks = Array.isArray(issue.humanTasks) ? issue.humanTasks : [];
+    $('no-human').hidden = tasks.length > 0;
+    tasks.forEach(function (task) {
+      if (!task) return;
       list.appendChild(
         el('li', {}, [
-          el('span', { text: (task.completed ? '✓ ' : '○ ') + task.text }),
+          el('span', { text: (task.completed ? '✓ ' : '○ ') + (task.text || '') }),
         ]),
       );
     });
@@ -452,7 +480,7 @@
   function renderDetail(focusHeading) {
     var issue = state.detail;
     if (!issue) return;
-    $('detail-title').textContent = issue.title;
+    $('detail-title').textContent = issue.title || '';
     detailBadges(issue);
     $('detail-freshness').textContent = 'Updated on GitHub ' + relative(issue.updatedAt);
 
@@ -463,12 +491,13 @@
         'This task changed on GitHub after you opened it. Nothing was written. Review the current version, then edit again.';
     }
 
-    var overview = issue.editableSections.length > 0 ? issue.editableSections[0] : null;
+    var sections = Array.isArray(issue.editableSections) ? issue.editableSections : [];
+    var overview = sections.length > 0 ? sections[0] : null;
     var textarea = $('overview-text');
     var save = $('save-overview');
     if (overview) {
       textarea.hidden = false;
-      textarea.value = overview.text;
+      textarea.value = overview.text || '';
       textarea.disabled = false;
       save.hidden = false;
       save.disabled = false;
@@ -542,7 +571,8 @@
     if (!state.detail) return;
     var issue = state.detail;
     var text = $('overview-text').value;
-    var sectionId = issue.editableSections.length > 0 ? issue.editableSections[0].id : 'overview';
+    var sections = Array.isArray(issue.editableSections) ? issue.editableSections : [];
+    var sectionId = sections.length > 0 ? sections[0].id : 'overview';
     state.busy = true;
     $('save-overview').disabled = true;
     $('save-status').textContent = 'Saving…';
@@ -551,6 +581,12 @@
         method: 'PUT',
         body: { sectionId: sectionId, text: text, fingerprint: issue.fingerprint },
       });
+      if (!isValidMutationPayload(response, issue.number)) {
+        throw new ApiError('write_outcome_unknown', 200, {
+          error: 'write_outcome_unknown',
+          message: 'Outcome unknown \u2014 refresh to check GitHub state',
+        });
+      }
       state.detail = response.issue;
       state.statusOptions = response.statusOptions || state.statusOptions;
       state.conflict = false;
@@ -589,11 +625,18 @@
       return;
     }
     input.removeAttribute('aria-invalid');
+    var currentNumber = state.detail.number;
     try {
-      var response = await api('/api/issues/' + state.detail.number + '/questions/' + answerIndex + '/answer', {
+      var response = await api('/api/issues/' + currentNumber + '/questions/' + answerIndex + '/answer', {
         method: 'POST',
         body: { answer: value, fingerprint: state.detail.fingerprint },
       });
+      if (!isValidMutationPayload(response, currentNumber)) {
+        throw new ApiError('write_outcome_unknown', 200, {
+          error: 'write_outcome_unknown',
+          message: 'Outcome unknown \u2014 refresh to check GitHub state',
+        });
+      }
       state.detail = response.issue;
       state.statusOptions = response.statusOptions || state.statusOptions;
       state.conflict = false;
@@ -624,11 +667,18 @@
       announce('Choose a status first.');
       return;
     }
+    var currentNumber = state.detail.number;
     try {
-      var response = await api('/api/issues/' + state.detail.number + '/status', {
+      var response = await api('/api/issues/' + currentNumber + '/status', {
         method: 'POST',
         body: { status: value, fingerprint: state.detail.fingerprint },
       });
+      if (!isValidMutationPayload(response, currentNumber)) {
+        throw new ApiError('write_outcome_unknown', 200, {
+          error: 'write_outcome_unknown',
+          message: 'Outcome unknown \u2014 refresh to check GitHub state',
+        });
+      }
       state.detail = response.issue;
       state.statusOptions = response.statusOptions || state.statusOptions;
       state.conflict = false;

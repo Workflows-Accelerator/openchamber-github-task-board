@@ -3,7 +3,7 @@
 //
 // Only the Overview prose is writable. Every other byte of the issue body
 // (checklists, questions, human tasks, test plans, trailing whitespace) is
-// passed through untouched. Open-question answers reuse panel/core.ts.
+// passed through untouched.
 // ==========================================
 
 import { STATUS_LABELS } from '../../panel/labels.ts';
