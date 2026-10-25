@@ -10,7 +10,7 @@ Timestamp: 2026-10-25
 | #28 opening/current tasks | Prior green (see issue-28/proof.md) | Prior green | Synthetic host only | Installed-host NOT RUN | PASS, merged working branch | AWAITING HUMAN |
 | #36 human-only close | Prior green | Prior green, 491 full at integration | Synthetic host only | Installed-host NOT RUN | PASS 4f22605 | AWAITING HUMAN |
 | #34 safe answers | PASS eef57bd + merged tree | Reviewer targeted26/full517; merged targeted26/full517, all green | Synthetic DOM/host (no real GitHub); merged c44ed58/proof a2d3fe1 | Real browser/installed-host NOT RUN | PASS/APPROVED 0e1a6be, hostile11/regression7, no findings; manager gate accepted | AWAITING BATCH HUMAN, not Done |
-| #33 browser board | PASS f50519d types/bundle | 96 web / 466 root | Real localhost HTTP with synthetic GitHub upstream | Real Obscura browser 32 baseline + 33 hostile checks, screenshots/logs inspected (not production auth/GitHub/TLS) | NEEDS-FIXES 8818b94; N1–N5 unresolved; final correction queued | AWAITING HUMAN, batch not ready |
+| #33 browser board | PASS f50519d types/bundle | 96 web / 466 root | Real localhost HTTP with synthetic GitHub upstream | Real Obscura browser 32 baseline + 33 hostile checks, screenshots/logs inspected (not production auth/GitHub/TLS) | NEEDS-FIXES 8818b94; N1–N5 correction running ses_7c6609612c200168dfae85d1 | AWAITING HUMAN, batch not ready |
 | #35/#30/#31/#37 | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT READY |
 
 ## Traceable evidence

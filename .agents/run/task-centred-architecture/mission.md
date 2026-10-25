@@ -1,6 +1,12 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-25 #34 integrated, push pending
+## Latest checkpoint — 2026-10-25 #34 pushed, #33 correction running
+State: building. Alignment: decisions1–15 CONFIRMED within recorded scope.
+- #34 integrated c44ed58/proof a2d3fe1 and pushed review branch through aea7031. Source worktree removed/pruned after clean/ancestry checks; feature branch retained, no DB registration existed. All review/proof preserved. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/34#issuecomment-6402496611. Awaiting batch, no human verdict.
+- #33 final N1–N5 correction RUNNING ses_7c6609612c200168dfae85d1 engineer from clean8818b94; tasks/issue-33-final-protocol-correction.md. Actual model deferred to completion metadata, no polling. Only approved web scope; independent final check on wake, stop/owner if fails. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/33#issuecomment-6402500306.
+- Next frontier #35, then #30/#31 base; web host preparation/PWA/#37 queued behind secure #33. No production merge/deploy/credential reuse/closure authorized. Real browser/installed host/live GitHub for #34 NOT RUN.
+
+## Previous checkpoint — 2026-10-25 #34 integrated, push pending
 State: proving. Alignment: decisions1–15 CONFIRMED within recorded scope.
 - #34 L4 PASS/APPROVED: candidate eef57bd, independent final proof 0e1a6be, actual 9router/engineer. Hostile11/regression7/targeted26/full517/types/build parity, no findings. Review gate outputs/issue-34-review-gate.md accepted.
 - #34 integrated cleanly into feat/v2-binding-and-ratelimit at c44ed58, proof a2d3fe1; release ses_d1fa94bbda791d532c2bcbe5 actual 9router/worker. Merged targeted26/full517/types/build parity passed. Bundle 0ec437c5e6a5b2d4d63b53c3ced634a992357b4ac2e73ba9ca4f82fe40c3dc8a. Push and worktree cleanup pending, then awaiting batch. Real browser/installed host/production GitHub NOT RUN; L5 pending.

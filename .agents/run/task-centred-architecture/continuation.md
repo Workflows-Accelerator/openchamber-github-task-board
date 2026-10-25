@@ -1,6 +1,11 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — #34 integration accepted, push/cleanup pending
+## Latest checkpoint — #34 pushed/cleaned, #33 final correction running
+- #34 pushed feat/v2-binding-and-ratelimit through aea7031 after merge/proof acceptance. Clean source worktree removed and pruned, branch retained; no DB registration existed. All proof merged. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/34#issuecomment-6402496611. Awaiting batch, not Done.
+- #33 correction ses_7c6609612c200168dfae85d1 engineer RUNNING, final-protocol-correction brief at root. Clean8818b94 confirmed before dispatch; worktree root suite466 baseline, not integrated517; no panel changes/merge into builder. One independent final check on wake then stop/owner if failed. Actual model verify on wake; no polling/duplicate. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/33#issuecomment-6402500306.
+- Manager owns root state only, worker owns #33 tree. No simultaneous repository implementation. Queue #35/#30/#31; web operational prep/PWA/#37 after secure base. Master/deploy/secret reuse/issue closure still human-gated. Private/unrelated files untouched.
+
+## Previous checkpoint — #34 integration accepted, push/cleanup pending
 - Release wake ses_d1fa94bbda791d532c2bcbe5 actual 9router/worker: clean merge c44ed58, proof a2d3fe1, targeted26/full517/types/build/parity PASS; bundle0ec437c5e6a5b2d4d63b53c3ced634a992357b4ac2e73ba9ca4f82fe40c3dc8a. Manager read proof and inspected integrated scope. No source dirt. Real browser/installed host/live GitHub NOT RUN, L5 pending.
 - Folded mission/tasks/proof/review-batch and reconciled journal: earlier journal incorrectly claimed all manager edits reverted; only mission was reverted, tasks/continuation remained dirty. No product edits lost. Commit explicit owned state, push only feat/v2-binding-and-ratelimit, remove #34 worktree after clean/ancestry proof; preserve local feature branch. No DB registration was authorized at creation.
 - Then confirm #33 worktree 8818b94 clean; fill final-protocol-correction preflight and dispatch owner-approved N1–N5 only. One independent final check; if fails STOP/owner. No master/deployment/closure/credential reuse.

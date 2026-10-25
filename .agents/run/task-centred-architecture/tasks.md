@@ -4,8 +4,8 @@
 
 | Outcome | State | Worker / next |
 |---|---|---|
-| #34 draft safety | MERGED, PUSH/CLEANUP PENDING; awaiting batch | L4 0e1a6be PASS; merge c44ed58/proof a2d3fe1; targeted26/full517/types/build/parity green. Release actual 9router/worker; real browser/host/GitHub NOT RUN |
-| #33 browser protocol safety | FINAL CORRECTION QUEUED | tasks/issue-33-final-protocol-correction.md; owner approved, wait #34 correction/check; fill clean snapshot before dispatch |
+| #34 draft safety | MERGED/PUSHED, awaiting batch | L4 0e1a6be PASS; merge c44ed58/proof a2d3fe1; targeted26/full517/types/build/parity green. Pushed aea7031; worktree removed/pruned, branch retained. Receipt6402496611; real browser/host/GitHub NOT RUN |
+| #33 browser protocol safety | FINAL CORRECTION RUNNING | ses_7c6609612c200168dfae85d1 engineer; clean8818b94; tasks/issue-33-final-protocol-correction.md. One independent final check then stop/owner on failure; receipt6402500306 |
 | #37 visible repositories | FULLY ALIGNED | decision15 show archived/empty; issue body corrected; blocked #33 |
 | Master/deployment | NOT APPROVED | no secret reuse; owner retains release |
 

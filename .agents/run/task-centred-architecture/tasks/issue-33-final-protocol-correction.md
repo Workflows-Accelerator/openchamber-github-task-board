@@ -1,8 +1,8 @@
 <env_preflight>
-DRAFT QUEUED; manager must confirm clean HEAD before dispatch. No simultaneous repository implementation worker under frontier rule; #34 correction/check goes first.
+Ready at dispatch: HEAD and clean state confirmed by manager; #34 correction, independent check, integration and cleanup finished. No other repository implementation worker is running.
 Repo /workspace/extensions/github-task-board
 Worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board
-Branch feat/issue-33-standalone-board; expected HEAD 8818b94 report/proof, product f50519d. Expected clean, FILL_AT_DISPATCH.
+Branch feat/issue-33-standalone-board; HEAD 8818b94 report/proof, product f50519d. Clean at dispatch. This worktree predates integrated #34, so its root suite baseline is466, not517; do not merge/update unrelated panel files. Final merged-tree verification follows independent review.
 Key paths web/public/app.js api/mutation feedback; web/server/github.ts request dispatch/parse provenance; web/server/app.ts mutation/readback; web/server/board.ts question projection/answer target; web/server/sections.ts serializer; web/README.md; tests and bundle web/dist/server.mjs. Root node_modules symlink; no env copy/DB registration.
 Tests node --test web/tests/*.test.mjs; npm test; npx tsc -p web/tsconfig.json; node web/tests/browser-verify.mjs; build npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=web/dist/server.mjs. npm run build:web does NOT exist.
 Do not touch panel/**, service/**, root package metadata, shared skills/config, real GitHub, installed extension, credentials, private reports, other worktrees, master, push/merge/deploy/issue closure. Synthetic localhost upstream only.
