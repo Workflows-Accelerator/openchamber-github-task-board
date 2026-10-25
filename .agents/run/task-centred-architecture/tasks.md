@@ -8,6 +8,8 @@
 | #33 browser protocol safety | FINAL CORRECTION RUNNING | ses_7c6609612c200168dfae85d1 engineer; clean8818b94; tasks/issue-33-final-protocol-correction.md. One independent final check then stop/owner on failure; receipt6402500306 |
 | #37 visible repositories | FULLY ALIGNED | decision15 show archived/empty; issue body corrected; blocked #33 |
 | #35 refresh write coverage | HOSTILE REVIEW RUNNING | builder6b4032d: 12red/16targeted/533full/typecheck/bundle; reviewer ses_a3fd08b28817ee7c7baae151 genius tasks/issue-35-hostile.md; receipt6402883945 |
+| #30 work type from labels | BRIEF READY, BLOCKED on #35 | tasks/issue-30-work-type.md; decision4 labels+Work Log sentence; expiration stays an open owner question |
+| Board hosting slice | BRIEF READY, BLOCKED on #33 | tasks/board-hosting-slice.md; BOARD_HOST, /health, start command, honest ops limits; no deployment authority |
 | Master/deployment | NOT APPROVED | no secret reuse; owner retains release |
 
 ## Prior — review gate 2026-10-25
