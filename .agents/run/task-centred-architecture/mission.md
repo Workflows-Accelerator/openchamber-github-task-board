@@ -1,10 +1,10 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-25 #34 pushed, #33 and #35 running
+## Latest checkpoint — 2026-10-25 #34 pushed; #33 correcting, #35 in hostile review
 State: building. Alignment: decisions1–15 CONFIRMED within recorded scope.
 - #34 integrated c44ed58/proof a2d3fe1 and pushed review branch through aea7031. Source worktree removed/pruned after clean/ancestry checks; feature branch retained, no DB registration existed. All review/proof preserved. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/34#issuecomment-6402496611. Awaiting batch, no human verdict.
 - #33 final N1–N5 correction RUNNING ses_7c6609612c200168dfae85d1 engineer from clean8818b94; tasks/issue-33-final-protocol-correction.md. Actual model deferred to completion metadata, no polling. Only approved web scope; independent final check on wake, stop/owner if fails. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/33#issuecomment-6402500306.
-- Next frontier #35 dispatched in parallel because its ownership is panel/** only and #33 owns web/**: worktree .worktrees/team-dev-issue-35-write-refresh, branch fix/issue-35-write-refresh, base12cb9c6 (already containing #28/#36/#34), clean, node_modules symlinked. ses_0e896cd47ce7984276678043 engineer, tasks/issue-35-refresh-write-coverage.md. Three known stale-refresh defects only; independent hostile review follows. Receipt6402568867. No panel/web file overlap.
+- #35 builder returned 6b4032d clean (12 red/16 targeted/533 full/typecheck/bundle claimed). Independent hostile review RUNNING ses_a3fd08b28817ee7c7baae151 genius, tasks/issue-35-hostile.md, in same worktree. Scope includes post-send failure truthfulness, tracker settlement, repo-qualified identity, partial/superseded aggregates, #34 unconfirmed interaction. Receipt6402883945. No merge before verdict.
 - Web host preparation/PWA/#37 queued behind secure #33. No production merge/deploy/credential reuse/closure authorized. Real browser/installed host/live GitHub for #34 NOT RUN.
 
 ## Previous checkpoint — 2026-10-25 #34 integrated, push pending
