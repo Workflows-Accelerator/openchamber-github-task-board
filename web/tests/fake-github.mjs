@@ -179,7 +179,13 @@ export async function startFakeGitHub(options = {}) {
         let applyPayload = true;
         if (state.patchHook) {
           const result = await state.patchHook(issue, payload, req, res);
+          if (res.writableEnded) return;
           if (result && typeof result.status === 'number') {
+            if (typeof result.rawBody === 'string') {
+              for (const [name, value] of Object.entries(result.headers ?? {})) res.setHeader(name, value);
+              res.statusCode = result.status;
+              return res.end(result.rawBody);
+            }
             return send(result.status, result.payload ?? {}, result.headers ?? {});
           }
           if (result && result.applyPayload === false) {

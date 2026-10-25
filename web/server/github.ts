@@ -18,12 +18,21 @@ export type GitHubErrorKind =
 export class GitHubError extends Error {
   status: number;
   kind: GitHubErrorKind;
+  jsonParsed: boolean;
+  data: any;
 
-  constructor(kind: GitHubErrorKind, status: number, message: string) {
+  constructor(
+    kind: GitHubErrorKind,
+    status: number,
+    message: string,
+    options: { jsonParsed?: boolean; data?: any } = {},
+  ) {
     super(message);
     this.name = 'GitHubError';
     this.kind = kind;
     this.status = status;
+    this.jsonParsed = options.jsonParsed ?? false;
+    this.data = options.data ?? null;
   }
 }
 
@@ -56,7 +65,15 @@ export interface IssueList {
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
 
-function kindForStatus(status: number, headers?: Headers, data?: any): GitHubErrorKind {
+function kindForStatus(
+  status: number,
+  headers?: Headers,
+  data?: any,
+  jsonParsed = false,
+): GitHubErrorKind {
+  if (!jsonParsed || !data || typeof data !== 'object') {
+    return 'server';
+  }
   if (status === 401) return 'unauthorized';
   if (status === 403) {
     const remaining = headers?.get('x-ratelimit-remaining');
@@ -124,6 +141,7 @@ export class GitHubClient {
         headers,
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
         signal: AbortSignal.timeout(this.timeoutMs),
+        redirect: 'manual',
       });
       text = await response.text();
     } catch (error) {
@@ -131,17 +149,28 @@ export class GitHubClient {
       throw new GitHubError('network', 0, 'GitHub request failed before completion');
     }
 
+    if (response.status >= 300 && response.status < 400) {
+      throw new GitHubError(
+        'server',
+        response.status,
+        `GitHub redirected with status ${response.status}; redirects are not permitted`,
+      );
+    }
+
     let data: any = null;
+    let jsonParsed = false;
     if (text) {
       try {
         data = JSON.parse(text);
+        jsonParsed = true;
       } catch {
         data = null;
+        jsonParsed = false;
       }
     }
 
     if (!response.ok) {
-      const kind = kindForStatus(response.status, response.headers, data);
+      const kind = kindForStatus(response.status, response.headers, data, jsonParsed);
       const message =
         kind === 'unauthorized'
           ? 'GitHub rejected the stored token'
@@ -154,7 +183,7 @@ export class GitHubClient {
                 : kind === 'invalid'
                   ? (typeof data?.message === 'string' ? data.message : 'GitHub rejected the request as invalid')
                   : `GitHub responded with status ${response.status}`;
-      throw new GitHubError(kind, response.status, message);
+      throw new GitHubError(kind, response.status, message, { jsonParsed, data });
     }
 
     if (Buffer.byteLength(text, 'utf8') > MAX_BODY_BYTES) {

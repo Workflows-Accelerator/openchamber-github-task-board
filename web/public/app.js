@@ -73,6 +73,7 @@
     var headers = {};
     if (options.body !== undefined) headers['content-type'] = 'application/json';
     if (method !== 'GET' && state.csrf) headers['x-csrf-token'] = state.csrf;
+    var isMutation = method !== 'GET' && !path.startsWith('/api/session');
     var response;
     var text;
     try {
@@ -85,7 +86,7 @@
       });
       text = await response.text();
     } catch (networkError) {
-      if (method !== 'GET' && !path.startsWith('/api/session')) {
+      if (isMutation) {
         throw new ApiError('write_outcome_unknown', 0, {
           error: 'write_outcome_unknown',
           message: 'Browser network error: outcome unknown \u2014 refresh to check GitHub state',
@@ -98,13 +99,54 @@
     }
 
     var payload = null;
+    var jsonParsed = false;
     if (text) {
       try {
         payload = JSON.parse(text);
+        jsonParsed = true;
       } catch (error) {
         payload = null;
+        jsonParsed = false;
       }
     }
+
+    if (isMutation) {
+      if (response.ok) {
+        if (!jsonParsed || !payload || typeof payload !== 'object' || !payload.issue) {
+          throw new ApiError('write_outcome_unknown', response.status, {
+            error: 'write_outcome_unknown',
+            message: 'Outcome unknown \u2014 refresh to check GitHub state',
+          });
+        }
+        return payload;
+      }
+
+      if (response.status === 401) {
+        showLogin();
+        throw new ApiError('unauthenticated', 401, payload);
+      }
+
+      if (response.status >= 500) {
+        var msg500 = (payload && payload.message) || 'Outcome unknown \u2014 refresh to check GitHub state';
+        if (!msg500.toLowerCase().includes('outcome unknown')) {
+          msg500 = 'Outcome unknown \u2014 refresh to check GitHub state';
+        }
+        throw new ApiError('write_outcome_unknown', response.status, {
+          error: 'write_outcome_unknown',
+          message: msg500,
+        });
+      }
+
+      if (!jsonParsed || !payload || typeof payload !== 'object' || typeof payload.error !== 'string') {
+        throw new ApiError('write_outcome_unknown', response.status, {
+          error: 'write_outcome_unknown',
+          message: 'Outcome unknown \u2014 refresh to check GitHub state',
+        });
+      }
+
+      throw new ApiError(payload.error, response.status, payload);
+    }
+
     if (!response.ok) {
       if (response.status === 401) {
         showLogin();
@@ -523,7 +565,10 @@
       } else if (error.status === 429) {
         $('save-status').textContent = 'Too many attempts. Wait and try again.';
       } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
-        var msg = error.message || 'Outcome unknown — check the issue on GitHub.';
+        var msg = error.message || 'Outcome unknown \u2014 refresh to check GitHub state';
+        if (!msg.toLowerCase().includes('refresh')) {
+          msg = 'Outcome unknown \u2014 refresh to check GitHub state';
+        }
         $('save-status').textContent = msg.endsWith('.') ? msg : msg + '.';
       } else {
         $('save-status').textContent = error.message + '.';
@@ -559,7 +604,11 @@
       if (error.status === 409) {
         handleConflict(error);
       } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
-        setNotice(error.message || 'Outcome unknown — check the issue on GitHub.', true);
+        var msg = error.message || 'Outcome unknown \u2014 refresh to check GitHub state';
+        if (!msg.toLowerCase().includes('refresh')) {
+          msg = 'Outcome unknown \u2014 refresh to check GitHub state';
+        }
+        setNotice(msg, true);
       } else {
         setNotice(error.message + '.', true);
       }
@@ -590,7 +639,11 @@
       if (error.status === 409) {
         handleConflict(error);
       } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
-        setNotice(error.message || 'Outcome unknown — check the issue on GitHub.', true);
+        var msg = error.message || 'Outcome unknown \u2014 refresh to check GitHub state';
+        if (!msg.toLowerCase().includes('refresh')) {
+          msg = 'Outcome unknown \u2014 refresh to check GitHub state';
+        }
+        setNotice(msg, true);
       } else {
         setNotice(error.message + '.', true);
       }

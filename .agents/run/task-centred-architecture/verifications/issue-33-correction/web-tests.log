@@ -1,0 +1,634 @@
+TAP version 13
+# Subtest: the server entry refuses a missing configuration and names the variable
+ok 1 - the server entry refuses a missing configuration and names the variable
+  ---
+  duration_ms: 914.498976
+  type: 'test'
+  ...
+# Subtest: the server entry refuses an invalid repository without echoing secrets
+ok 2 - the server entry refuses an invalid repository without echoing secrets
+  ---
+  duration_ms: 1112.252817
+  type: 'test'
+  ...
+# Subtest: startup is refused when the token belongs to another account
+ok 3 - startup is refused when the token belongs to another account
+  ---
+  duration_ms: 455.926484
+  type: 'test'
+  ...
+# Subtest: startup is refused when the repository is not accessible
+ok 4 - startup is refused when the repository is not accessible
+  ---
+  duration_ms: 269.294075
+  type: 'test'
+  ...
+# Subtest: every API route denies data without a session
+ok 5 - every API route denies data without a session
+  ---
+  duration_ms: 317.85348
+  type: 'test'
+  ...
+# Subtest: the shell page loads without a session and exposes no data or agent controls
+ok 6 - the shell page loads without a session and exposes no data or agent controls
+  ---
+  duration_ms: 173.107888
+  type: 'test'
+  ...
+# Subtest: a wrong password is rejected and rate limiting blocks early on cooldown
+ok 7 - a wrong password is rejected and rate limiting blocks early on cooldown
+  ---
+  duration_ms: 1119.338646
+  type: 'test'
+  ...
+# Subtest: a successful login issues a hardened cookie and a bound CSRF token
+ok 8 - a successful login issues a hardened cookie and a bound CSRF token
+  ---
+  duration_ms: 352.404878
+  type: 'test'
+  ...
+# Subtest: state-changing requests are rejected without a valid CSRF token
+ok 9 - state-changing requests are rejected without a valid CSRF token
+  ---
+  duration_ms: 282.992875
+  type: 'test'
+  ...
+# Subtest: the board lists pages, excludes pull requests and reports freshness fields
+ok 10 - the board lists pages, excludes pull requests and reports freshness fields
+  ---
+  duration_ms: 215.346896
+  type: 'test'
+  ...
+# Subtest: issue detail exposes a fingerprint, the overview and answerable questions
+ok 11 - issue detail exposes a fingerprint, the overview and answerable questions
+  ---
+  duration_ms: 241.059412
+  type: 'test'
+  ...
+# Subtest: a conditional section write succeeds and preserves every other section
+ok 12 - a conditional section write succeeds and preserves every other section
+  ---
+  duration_ms: 303.183625
+  type: 'test'
+  ...
+# Subtest: end-to-end CRLF section write succeeds and is verified on readback (R7)
+ok 13 - end-to-end CRLF section write succeeds and is verified on readback (R7)
+  ---
+  duration_ms: 229.1964
+  type: 'test'
+  ...
+# Subtest: a concurrent edit conflicts instead of overwriting
+ok 14 - a concurrent edit conflicts instead of overwriting
+  ---
+  duration_ms: 291.130841
+  type: 'test'
+  ...
+# Subtest: an inline open-question answer is written without touching other sections
+ok 15 - an inline open-question answer is written without touching other sections
+  ---
+  duration_ms: 246.511768
+  type: 'test'
+  ...
+# Subtest: a status change rewrites only the agreed status labels
+ok 16 - a status change rewrites only the agreed status labels
+  ---
+  duration_ms: 303.968988
+  type: 'test'
+  ...
+# Subtest: protected sections and oversized writes are refused without a PATCH
+ok 17 - protected sections and oversized writes are refused without a PATCH
+  ---
+  duration_ms: 349.531692
+  type: 'test'
+  ...
+# Subtest: the client cannot name another repository
+ok 18 - the client cannot name another repository
+  ---
+  duration_ms: 280.645172
+  type: 'test'
+  ...
+# Subtest: sessions expire and are cleared from the store
+ok 19 - sessions expire and are cleared from the store
+  ---
+  duration_ms: 322.185859
+  type: 'test'
+  ...
+# Subtest: signing out destroys the session and clears the cookie
+ok 20 - signing out destroys the session and clears the cookie
+  ---
+  duration_ms: 244.615581
+  type: 'test'
+  ...
+# Subtest: neither the token nor the password reaches HTML, JS, API responses or logs
+ok 21 - neither the token nor the password reaches HTML, JS, API responses or logs
+  ---
+  duration_ms: 242.226489
+  type: 'test'
+  ...
+# Subtest: the API answers unknown routes and methods plainly
+ok 22 - the API answers unknown routes and methods plainly
+  ---
+  duration_ms: 268.612871
+  type: 'test'
+  ...
+# Subtest: GitHub error mapping distinguishes 401, 403 rate limit, 403 forbidden, 422, and 5xx
+ok 23 - GitHub error mapping distinguishes 401, 403 rate limit, 403 forbidden, 422, and 5xx
+  ---
+  duration_ms: 357.502796
+  type: 'test'
+  ...
+# Subtest: parallel login flood does not block the process and finishes quickly
+ok 24 - parallel login flood does not block the process and finishes quickly
+  ---
+  duration_ms: 393.976387
+  type: 'test'
+  ...
+# Subtest: forwarded headers are ignored and cannot bypass rate limiting (direct socket peer is always used) (R3)
+ok 25 - forwarded headers are ignored and cannot bypass rate limiting (direct socket peer is always used) (R3)
+  ---
+  duration_ms: 903.458114
+  type: 'test'
+  ...
+# Subtest: Origin and Referer validation rejects cross-origin writes when BOARD_BASE_URL is set
+ok 26 - Origin and Referer validation rejects cross-origin writes when BOARD_BASE_URL is set
+  ---
+  duration_ms: 439.55832
+  type: 'test'
+  ...
+# Subtest: existing authenticated sessions remain usable during rate limit cooldown
+ok 27 - existing authenticated sessions remain usable during rate limit cooldown
+  ---
+  duration_ms: 1025.012131
+  type: 'test'
+  ...
+# Subtest: an ambiguous write outcome (readback mismatch) returns 502 write_outcome_unknown and makes zero retries
+ok 28 - an ambiguous write outcome (readback mismatch) returns 502 write_outcome_unknown and makes zero retries
+  ---
+  duration_ms: 250.003086
+  type: 'test'
+  ...
+# Subtest: an ambiguous write outcome on upstream server error returns 502 write_outcome_unknown and makes zero retries
+ok 29 - an ambiguous write outcome on upstream server error returns 502 write_outcome_unknown and makes zero retries
+  ---
+  duration_ms: 142.955347
+  type: 'test'
+  ...
+# Subtest: an ambiguous write outcome on truncated upstream response returns 502 write_outcome_unknown and makes zero retries (R1)
+ok 30 - an ambiguous write outcome on truncated upstream response returns 502 write_outcome_unknown and makes zero retries (R1)
+  ---
+  duration_ms: 204.101504
+  type: 'test'
+  ...
+# Subtest: warning regarding simultaneous overwrite is present in page and README
+ok 31 - warning regarding simultaneous overwrite is present in page and README
+  ---
+  duration_ms: 20.417114
+  type: 'test'
+  ...
+# Subtest: slow-body login request releases per-address occupancy within deadline while authenticated routes remain 200 (R2)
+ok 32 - slow-body login request releases per-address occupancy within deadline while authenticated routes remain 200 (R2)
+  ---
+  duration_ms: 2481.751718
+  type: 'test'
+  ...
+# Subtest: aborted login attempt releases in-flight slot immediately (R2)
+ok 33 - aborted login attempt releases in-flight slot immediately (R2)
+  ---
+  duration_ms: 325.514195
+  type: 'test'
+  ...
+# Subtest: concurrent login flood across distinct addresses is bounded with 429 retry guidance while authenticated routes stay 200 (R2)
+ok 34 - concurrent login flood across distinct addresses is bounded with 429 retry guidance while authenticated routes stay 200 (R2)
+  ---
+  duration_ms: 354.152925
+  type: 'test'
+  ...
+# Subtest: session cookie is HttpOnly, Secure, SameSite=Strict and path scoped
+ok 35 - session cookie is HttpOnly, Secure, SameSite=Strict and path scoped
+  ---
+  duration_ms: 1.797844
+  type: 'test'
+  ...
+# Subtest: clear cookie expires the session cookie
+ok 36 - clear cookie expires the session cookie
+  ---
+  duration_ms: 2.269124
+  type: 'test'
+  ...
+# Subtest: parseCookieHeader handles multiple cookies and encoding
+ok 37 - parseCookieHeader handles multiple cookies and encoding
+  ---
+  duration_ms: 1.304985
+  type: 'test'
+  ...
+# Subtest: sessions are created, signed, validated and destroyed
+ok 38 - sessions are created, signed, validated and destroyed
+  ---
+  duration_ms: 8.218569
+  type: 'test'
+  ...
+# Subtest: sessions reject forged and unsigned cookie values
+ok 39 - sessions reject forged and unsigned cookie values
+  ---
+  duration_ms: 0.508465
+  type: 'test'
+  ...
+# Subtest: sessions expire on absolute and idle timeouts
+ok 40 - sessions expire on absolute and idle timeouts
+  ---
+  duration_ms: 5.504981
+  type: 'test'
+  ...
+# Subtest: csrfMatches compares exact tokens
+ok 41 - csrfMatches compares exact tokens
+  ---
+  duration_ms: 4.918941
+  type: 'test'
+  ...
+# Subtest: login limiter blocks repeated failures, then recovers after the window
+ok 42 - login limiter blocks repeated failures, then recovers after the window
+  ---
+  duration_ms: 0.718741
+  type: 'test'
+  ...
+# Subtest: login limiter enforces bounded cooldown of at most 60 seconds with no accumulating lockout
+ok 43 - login limiter enforces bounded cooldown of at most 60 seconds with no accumulating lockout
+  ---
+  duration_ms: 0.574785
+  type: 'test'
+  ...
+# Subtest: session store caps stored sessions and evicts least recently used when full
+ok 44 - session store caps stored sessions and evicts least recently used when full
+  ---
+  duration_ms: 5.310504
+  type: 'test'
+  ...
+# Subtest: login limiter bounds failure map size and does not grow without bound on 5000 failures
+ok 45 - login limiter bounds failure map size and does not grow without bound on 5000 failures
+  ---
+  duration_ms: 17.241498
+  type: 'test'
+  ...
+# Subtest: buildBoardList normalizes issues and drops pull requests
+ok 46 - buildBoardList normalizes issues and drops pull requests
+  ---
+  duration_ms: 25.803108
+  type: 'test'
+  ...
+# Subtest: issueFingerprint binds body, labels and state, not timestamps
+ok 47 - issueFingerprint binds body, labels and state, not timestamps
+  ---
+  duration_ms: 1.088267
+  type: 'test'
+  ...
+# Subtest: buildIssueDetail exposes the editable overview and answerable questions
+ok 48 - buildIssueDetail exposes the editable overview and answerable questions
+  ---
+  duration_ms: 5.278669
+  type: 'test'
+  ...
+# Subtest: buildIssueDetail refuses pull requests
+ok 49 - buildIssueDetail refuses pull requests
+  ---
+  duration_ms: 4.889078
+  type: 'test'
+  ...
+# Subtest: applySectionEdit only rewrites the overview
+ok 50 - applySectionEdit only rewrites the overview
+  ---
+  duration_ms: 1.013552
+  type: 'test'
+  ...
+# Subtest: applySectionEdit refuses protected sections
+ok 51 - applySectionEdit refuses protected sections
+  ---
+  duration_ms: 0.598621
+  type: 'test'
+  ...
+# Subtest: applyQuestionAnswer marks the question and preserves all other bytes
+ok 52 - applyQuestionAnswer marks the question and preserves all other bytes
+  ---
+  duration_ms: 1.508192
+  type: 'test'
+  ...
+# Subtest: applyQuestionAnswer refuses an out-of-range or empty answer
+ok 53 - applyQuestionAnswer refuses an out-of-range or empty answer
+  ---
+  duration_ms: 0.513761
+  type: 'test'
+  ...
+# Subtest: applyStatusChange preserves non-status labels
+ok 54 - applyStatusChange preserves non-status labels
+  ---
+  duration_ms: 8.751931
+  type: 'test'
+  ...
+# Subtest: applyStatusChange refuses labels outside the agreed set
+ok 55 - applyStatusChange refuses labels outside the agreed set
+  ---
+  duration_ms: 1.087068
+  type: 'test'
+  ...
+# Subtest: loadConfig accepts a complete environment
+ok 56 - loadConfig accepts a complete environment
+  ---
+  duration_ms: 319.861787
+  type: 'test'
+  ...
+# Subtest: loadConfig prefers an explicit BOARD_PASSWORD_HASH over BOARD_PASSWORD
+ok 57 - loadConfig prefers an explicit BOARD_PASSWORD_HASH over BOARD_PASSWORD
+  ---
+  duration_ms: 407.513574
+  type: 'test'
+  ...
+# Subtest: loadConfig reports each missing core variable by name
+ok 58 - loadConfig reports each missing core variable by name
+  ---
+  duration_ms: 1.077364
+  type: 'test'
+  ...
+# Subtest: loadConfig rejects invalid values and names the variable
+ok 59 - loadConfig rejects invalid values and names the variable
+  ---
+  duration_ms: 817.80911
+  type: 'test'
+  ...
+# Subtest: loadConfig accepts a valid base URL and port
+ok 60 - loadConfig accepts a valid base URL and port
+  ---
+  duration_ms: 294.560722
+  type: 'test'
+  ...
+# Subtest: config errors never contain secret values
+ok 61 - config errors never contain secret values
+  ---
+  duration_ms: 120.503624
+  type: 'test'
+  ...
+# Subtest: describeConfig exposes no secrets
+ok 62 - describeConfig exposes no secrets
+  ---
+  duration_ms: 80.470984
+  type: 'test'
+  ...
+# Subtest: hashPassword round-trips and salts every call
+ok 63 - hashPassword round-trips and salts every call
+  ---
+  duration_ms: 705.099757
+  type: 'test'
+  ...
+# Subtest: verifyPassword returns false for malformed stored hashes
+ok 64 - verifyPassword returns false for malformed stored hashes
+  ---
+  duration_ms: 0.803224
+  type: 'test'
+  ...
+# Subtest: BOARD_TRUST_PROXY is removed and forwarded headers are untrusted (R3)
+ok 65 - BOARD_TRUST_PROXY is removed and forwarded headers are untrusted (R3)
+  ---
+  duration_ms: 199.80955
+  type: 'test'
+  ...
+# Subtest: hash-password CLI tool runs on Node 22 via stdin pipe (R5)
+ok 66 - hash-password CLI tool runs on Node 22 via stdin pipe (R5)
+  ---
+  duration_ms: 693.261674
+  type: 'test'
+  ...
+# Subtest: verifyPasswordAsync matches valid password and rejects invalid
+ok 67 - verifyPasswordAsync matches valid password and rejects invalid
+  ---
+  duration_ms: 607.034958
+  type: 'test'
+  ...
+# Subtest: listIssues follows pagination and returns every raw item
+ok 68 - listIssues follows pagination and returns every raw item
+  ---
+  duration_ms: 136.498516
+  type: 'test'
+  ...
+# Subtest: listIssues stops at the page cap and reports truncation
+ok 69 - listIssues stops at the page cap and reports truncation
+  ---
+  duration_ms: 59.797734
+  type: 'test'
+  ...
+# Subtest: getIssue returns the item and its ETag
+ok 70 - getIssue returns the item and its ETag
+  ---
+  duration_ms: 31.804278
+  type: 'test'
+  ...
+# Subtest: updateIssue sends a conditional PATCH with the token only in the header
+ok 71 - updateIssue sends a conditional PATCH with the token only in the header
+  ---
+  duration_ms: 76.702132
+  type: 'test'
+  ...
+# Subtest: getIssue refuses non-numeric issue references
+ok 72 - getIssue refuses non-numeric issue references
+  ---
+  duration_ms: 11.332503
+  type: 'test'
+  ...
+# Subtest: an inaccessible repository is reported as not_found
+ok 73 - an inaccessible repository is reported as not_found
+  ---
+  duration_ms: 22.911955
+  type: 'test'
+  ...
+# Subtest: a rejected token is reported as unauthorized and never echoed
+ok 74 - a rejected token is reported as unauthorized and never echoed
+  ---
+  duration_ms: 23.428667
+  type: 'test'
+  ...
+# Subtest: unknown repository paths are never requested
+ok 75 - unknown repository paths are never requested
+  ---
+  duration_ms: 30.240737
+  type: 'test'
+  ...
+# Subtest: listIssues rejects a malicious origin in the Link header
+ok 76 - listIssues rejects a malicious origin in the Link header
+  ---
+  duration_ms: 4.895771
+  type: 'test'
+  ...
+# Subtest: listIssues rejects a Link header naming a different repository path (R8)
+ok 77 - listIssues rejects a Link header naming a different repository path (R8)
+  ---
+  duration_ms: 6.760603
+  type: 'test'
+  ...
+# Subtest: listIssues dedupes issues and stops when a page adds nothing new
+ok 78 - listIssues dedupes issues and stops when a page adds nothing new
+  ---
+  duration_ms: 9.91886
+  type: 'test'
+  ...
+# Subtest: error kinds distinguish 401, 403 rate-limit, 403 forbidden, 422 invalid, 500 server
+ok 79 - error kinds distinguish 401, 403 rate-limit, 403 forbidden, 422 invalid, 500 server
+  ---
+  duration_ms: 12.827637
+  type: 'test'
+  ...
+# Subtest: N2: GitHubClient rejects 302 and 307 redirects before following (zero requests sent to destination)
+ok 80 - N2: GitHubClient rejects 302 and 307 redirects before following (zero requests sent to destination)
+  ---
+  duration_ms: 143.864462
+  type: 'test'
+  ...
+# Subtest: N1 (client): api() treats malformed success, 5xx, and untrusted responses on mutations as write_outcome_unknown
+ok 81 - N1 (client): api() treats malformed success, 5xx, and untrusted responses on mutations as write_outcome_unknown
+  ---
+  duration_ms: 19.312922
+  type: 'test'
+  ...
+# Subtest: N1: upstream malformed/HTML 422 after PATCH maps to 502 write_outcome_unknown
+ok 82 - N1: upstream malformed/HTML 422 after PATCH maps to 502 write_outcome_unknown
+  ---
+  duration_ms: 637.07146
+  type: 'test'
+  ...
+# Subtest: N3: indentation-only mismatch on readback maps to 502 write_outcome_unknown
+ok 83 - N3: indentation-only mismatch on readback maps to 502 write_outcome_unknown
+  ---
+  duration_ms: 654.092068
+  type: 'test'
+  ...
+# Subtest: N4: malformed fence does not expose code checkbox as open question in list or detail
+ok 84 - N4: malformed fence does not expose code checkbox as open question in list or detail
+  ---
+  duration_ms: 9.713269
+  type: 'test'
+  ...
+# Subtest: N4: fence variants (longer backticks, tildes) preserve fences and exclude code checkboxes
+ok 85 - N4: fence variants (longer backticks, tildes) preserve fences and exclude code checkboxes
+  ---
+  duration_ms: 6.056087
+  type: 'test'
+  ...
+# Subtest: N4: exact hostile review fixture (no questions outside fence) exposes 0 questions and refuses answer mutation via HTTP
+ok 86 - N4: exact hostile review fixture (no questions outside fence) exposes 0 questions and refuses answer mutation via HTTP
+  ---
+  duration_ms: 586.201227
+  type: 'test'
+  ...
+# Subtest: N4: real question after fenced code block can be answered via HTTP without touching code block
+ok 87 - N4: real question after fenced code block can be answered via HTTP without touching code block
+  ---
+  duration_ms: 441.637217
+  type: 'test'
+  ...
+# Subtest: findSections splits headings and keeps the preamble
+ok 88 - findSections splits headings and keeps the preamble
+  ---
+  duration_ms: 2.931795
+  type: 'test'
+  ...
+# Subtest: editableSections exposes the overview prose only
+ok 89 - editableSections exposes the overview prose only
+  ---
+  duration_ms: 1.38648
+  type: 'test'
+  ...
+# Subtest: editableSections falls back to an Overview heading when there is no preamble
+ok 90 - editableSections falls back to an Overview heading when there is no preamble
+  ---
+  duration_ms: 0.359194
+  type: 'test'
+  ...
+# Subtest: replaceSectionText preserves every other byte unchanged
+ok 91 - replaceSectionText preserves every other byte unchanged
+  ---
+  duration_ms: 0.586637
+  type: 'test'
+  ...
+# Subtest: replaceSectionText preserves CRLF line endings
+ok 92 - replaceSectionText preserves CRLF line endings
+  ---
+  duration_ms: 0.401014
+  type: 'test'
+  ...
+# Subtest: replaceSectionText can create content in an empty body
+ok 93 - replaceSectionText can create content in an empty body
+  ---
+  duration_ms: 0.245428
+  type: 'test'
+  ...
+# Subtest: replaceSectionText inserts an overview before a leading heading
+ok 94 - replaceSectionText inserts an overview before a leading heading
+  ---
+  duration_ms: 0.379181
+  type: 'test'
+  ...
+# Subtest: replaceSectionText refuses unknown or protected sections
+ok 95 - replaceSectionText refuses unknown or protected sections
+  ---
+  duration_ms: 0.884594
+  type: 'test'
+  ...
+# Subtest: replaceSectionText rejects non-string text
+ok 96 - replaceSectionText rejects non-string text
+  ---
+  duration_ms: 0.631529
+  type: 'test'
+  ...
+# Subtest: setStatusLabel replaces status labels, preserving every other label
+ok 97 - setStatusLabel replaces status labels, preserving every other label
+  ---
+  duration_ms: 0.78787
+  type: 'test'
+  ...
+# Subtest: setStatusLabel accepts every agreed status and rejects anything else
+ok 98 - setStatusLabel accepts every agreed status and rejects anything else
+  ---
+  duration_ms: 0.741975
+  type: 'test'
+  ...
+# Subtest: setStatusLabel can clear the status without touching other labels
+ok 99 - setStatusLabel can clear the status without touching other labels
+  ---
+  duration_ms: 0.170371
+  type: 'test'
+  ...
+# Subtest: findSections and replaceSectionText handle BOM correctly
+ok 100 - findSections and replaceSectionText handle BOM correctly
+  ---
+  duration_ms: 0.358593
+  type: 'test'
+  ...
+# Subtest: headings inside fenced code blocks are ignored
+ok 101 - headings inside fenced code blocks are ignored
+  ---
+  duration_ms: 0.380977
+  type: 'test'
+  ...
+# Subtest: ambiguous preamble containing a code fence is not offered as editable
+ok 102 - ambiguous preamble containing a code fence is not offered as editable
+  ---
+  duration_ms: 0.359547
+  type: 'test'
+  ...
+# Subtest: duplicate headings only allow the first matching overview to be editable
+ok 103 - duplicate headings only allow the first matching overview to be editable
+  ---
+  duration_ms: 0.180929
+  type: 'test'
+  ...
+# Subtest: closing fence must contain only marker characters and whitespace (R4)
+ok 104 - closing fence must contain only marker characters and whitespace (R4)
+  ---
+  duration_ms: 0.195603
+  type: 'test'
+  ...
+1..104
+# tests 104
+# suites 0
+# pass 104
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16201.084415

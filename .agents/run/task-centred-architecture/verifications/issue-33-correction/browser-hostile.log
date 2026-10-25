@@ -1,0 +1,31 @@
+PASS: 37/37 browser checks passed
+Hostile observations: [
+  {
+    "name": "malformed200",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "patches": 1,
+    "committed": true,
+    "unknownGuidance": true
+  },
+  {
+    "name": "gateway502",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "patches": 1,
+    "committed": true,
+    "unknownGuidance": true
+  },
+  {
+    "name": "empty200",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "patches": 1,
+    "committed": true,
+    "unknownGuidance": true
+  },
+  {
+    "name": "generic500",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "patches": 1,
+    "committed": true,
+    "unknownGuidance": true
+  }
+]

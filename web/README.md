@@ -81,8 +81,8 @@ accept on `https` origins (and on `http://localhost` for local testing).
 - **Sign-in:** the browser posts the password (over HTTPS in deployment). The
   server compares it using asynchronous scrypt (`N=16384,r=8,p=1`, per-deployment salt)
   and `timingSafeEqual`. Scrypt operations run through a concurrency queue (max 2
-  concurrent workers, bounded waiting queue of 8 entries with `429` retry guidance)
-  and in-flight login requests are bounded and deduplicated per client IP with a request body deadline (5s).
+  concurrent workers, bounded waiting queue of 4 entries with `429` retry guidance)
+  and in-flight login requests are bounded (max 10 in-flight login slots) and deduplicated per client IP with a request body deadline (2s).
   Authenticated routes run independently of unauthenticated login verification. A successful sign-in issues a
   random session id, signed with `BOARD_SESSION_SECRET`, in an `HttpOnly; Secure; SameSite=Strict`
   cookie, plus a CSRF token bound to that session.
@@ -93,27 +93,31 @@ accept on `https` origins (and on `http://localhost` for local testing).
   When hosted behind a reverse proxy, rate limiting applies to the immediate peer connection.
   Unauthenticated owner sign-in from that address can be briefly rate limited (up to 60s cooldown)
   if failed attempts occur. Existing authenticated sessions are not affected. There is no account lockout state.
+  These bounds protect against local resource exhaustion under normal operational conditions; they do not provide unbounded network or socket denial-of-service immunity.
 - **Sessions:** absolute 12-hour lifetime, 2-hour idle timeout, in memory only. The
   session store is bounded to 50 concurrent active sessions with LRU eviction. A server
   restart or change to `BOARD_SESSION_SECRET` immediately invalidates every session.
 - **CSRF & Origin checks:** every state-changing request needs `X-CSRF-Token` matching the
   session's token. When `BOARD_BASE_URL` is configured, incoming `Origin` and `Referer`
   headers on write requests are validated against the base URL origin.
-- **Repository allowlist:** every GitHub call is built from `BOARD_REPO` on the
+- **Repository allowlist & redirect refusal:** every GitHub call is built from `BOARD_REPO` on the
   server. Requests carrying `repo`, `repository`, `owner`, `name` or `org`
   parameters, or any `/repos/...` path, are refused before they reach GitHub.
+  HTTP redirects (3xx) from upstream endpoints are refused before following (`redirect: 'manual'`);
+  authorization headers and mutation bodies are never forwarded across redirect hops, and any redirect on a mutation yields an unknown outcome.
 - **Editing & concurrency:** best-effort editing with pre-save conflict checks.
   The read model includes a SHA-256 fingerprint over the issue body, label names and state.
   A write must send the fingerprint it read. The server acquires an in-process per-issue lock,
   re-reads the issue from GitHub, compares fingerprints, and refuses with `409 Conflict` if anything changed.
   When writing, the server sends `If-Match` with the latest ETag.
   Warning: a simultaneous edit on GitHub or by an agent can still be overwritten.
-  If a write's outcome is ambiguous (timeout, network error after send, or readback mismatch),
-  the server returns "Outcome unknown — check the issue on GitHub" and never repeats the write automatically.
-- **Section scoping:** only the Overview prose is replaceable. Every other byte
+  If a write's outcome is ambiguous (timeout, post-send network or gateway failure, malformed/empty response, untrusted 4xx/5xx proxy reply, or serializer-projection readback mismatch including indentation differences),
+  the board reports outcome unknown with guidance to refresh and check GitHub state, and never repeats the write automatically.
+- **Section scoping & fenced content:** only the Overview prose is replaceable. Every other byte
   of the body (checklists, questions, human tasks, test plan, spacing) is
-  compared byte-for-byte in tests. Open-question answers reuse
-  `panel/core.ts:answerOpenQuestionInMarkdown`. Status changes reuse the agreed
+  compared byte-for-byte in tests. Markdown code fences are tracked with strict closer grammar;
+  code-block checkboxes are excluded from actionable questions and cannot be targeted for answer mutation.
+  Open-question answers update the target question without disturbing fenced examples. Status changes reuse the agreed
   `status:*` set and keep all other labels.
 - **Response hardening:** `Content-Security-Policy` with no inline script,
   `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`,
@@ -128,6 +132,8 @@ accept on `https` origins (and on `http://localhost` for local testing).
 - Best-effort editing: while the board serializes concurrent board clients with in-process locks
   and refuses detected pre-save conflicts, GitHub's API does not support transactional or conditional issue PATCH.
   A simultaneous edit on GitHub or by an agent can still be overwritten.
+- Ambiguous write outcomes require human refresh and inspection; the board will not guess or retry.
+- Protocol corrections and hostile review remediations (N1–N5) are documented in `.agents/run/task-centred-architecture/outputs/issue-33-final-protocol-correction.md`, which supersedes previous closure claims. Prior reports are immutable.
 - There is no notification/question loop and no agent integration. Those are
   separate, parked workstreams.
 

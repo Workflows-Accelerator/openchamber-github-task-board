@@ -1,0 +1,51 @@
+{
+  "results": [
+    {
+      "mode": "gateway502",
+      "text": "Outcome unknown — refresh to check GitHub state.",
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "mode": "malformed200",
+      "text": "Outcome unknown — refresh to check GitHub state.",
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "mode": "truncated200",
+      "text": "Browser network error: outcome unknown — refresh to check GitHub state.",
+      "patches": 1,
+      "committed": true
+    }
+  ],
+  "writes": 3,
+  "logs": [
+    "GET / 200 1ms",
+    "GET /theme.css 200 1ms",
+    "GET /app.js 200 1ms",
+    "GET /api/session 200 1ms",
+    "POST /api/session 200 67ms",
+    "GET /api/board 200 6ms",
+    "GET /api/issues/1 200 6ms",
+    "write issue=1 fields=body",
+    "PUT /api/issues/1/section 200 16ms",
+    "GET / 200 1ms",
+    "GET /theme.css 200 1ms",
+    "GET /app.js 200 0ms",
+    "GET /api/session 200 1ms",
+    "GET /api/board 200 4ms",
+    "GET /api/issues/1 200 4ms",
+    "write issue=1 fields=body",
+    "PUT /api/issues/1/section 200 11ms",
+    "GET / 200 1ms",
+    "GET /theme.css 200 0ms",
+    "GET /app.js 200 3ms",
+    "GET /api/session 200 1ms",
+    "GET /api/board 200 4ms",
+    "GET /api/issues/1 200 3ms",
+    "write issue=1 fields=body",
+    "PUT /api/issues/1/section 200 11ms"
+  ],
+  "runtimeEvents": []
+}

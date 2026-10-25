@@ -814,10 +814,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
       if (op.kind === 'section') {
         const curSec = findSections(currentItem.body ?? '').find((s) => s.id === op.sectionId);
-        if (curSec) {
-          const canonicalCur = curSec.text.replace(/\r\n/g, '\n').trim();
-          const canonicalTarget = targetText.replace(/\r\n/g, '\n').trim();
-          if (canonicalCur === canonicalTarget) {
+        const expectedSec = findSections((patch.body as string) ?? '').find((s) => s.id === op.sectionId);
+        if (curSec && expectedSec) {
+          const canonicalCur = curSec.text.replace(/\r\n/g, '\n').replace(/^\n+/, '').replace(/\n+$/, '');
+          const canonicalExpected = expectedSec.text.replace(/\r\n/g, '\n').replace(/^\n+/, '').replace(/\n+$/, '');
+          if (canonicalCur === canonicalExpected) {
             verified = true;
           }
         }

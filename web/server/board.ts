@@ -7,7 +7,6 @@
 
 import { createHash } from 'node:crypto';
 import {
-  answerOpenQuestionInMarkdown,
   normalizeGithubIssues,
   parseTestPlan,
   resolveIssueColumn,
@@ -35,6 +34,137 @@ export class BoardError extends Error {
 }
 
 const statusSet = new Set<string>(STATUS_LABELS as readonly string[]);
+const fencePattern = /^ {0,3}(`{3,}|~{3,})/;
+const closeFencePattern = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
+const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
+const questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
+const humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
+const headingRegex = /^[ ]{0,3}#{1,6}\s+/;
+
+export function parseWebOpenQuestions(body: string | null | undefined): Array<{
+  id: string;
+  lineIndex: number;
+  completed: boolean;
+  text: string;
+  rawLine: string;
+}> {
+  if (!body || typeof body !== 'string' || !body.includes('[')) return [];
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  if (!/question/i.test(cleanBody)) return [];
+  const hasCR = cleanBody.includes('\r');
+  const lines = cleanBody.split('\n');
+  const questions: Array<{
+    id: string;
+    lineIndex: number;
+    completed: boolean;
+    text: string;
+    rawLine: string;
+  }> = [];
+  let inQuestionsSection = false;
+  let inHumanTasksSection = false;
+  let inCodeFence = false;
+  let fenceChar = '';
+  let fenceLen = 0;
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const rawLine = lines[i];
+    const line = hasCR && rawLine.includes('\r') ? rawLine.replace(/\r/g, '') : rawLine;
+    const cleanLine = line.replace(/\r$/, '');
+
+    if (!inCodeFence) {
+      const match = fencePattern.exec(cleanLine);
+      if (match) {
+        inCodeFence = true;
+        fenceChar = match[1][0];
+        fenceLen = match[1].length;
+        continue;
+      }
+    } else {
+      const match = closeFencePattern.exec(cleanLine);
+      if (match && match[1][0] === fenceChar && match[1].length >= fenceLen) {
+        inCodeFence = false;
+      }
+      continue;
+    }
+
+    if (line.includes('#')) {
+      const isQuestions = questionsSectionRegex.test(line);
+      const isHuman = humanTasksSectionRegex.test(line);
+      if (isQuestions || isHuman || headingRegex.test(line)) {
+        inQuestionsSection = isQuestions;
+        inHumanTasksSection = isHuman;
+        continue;
+      }
+    }
+
+    if (inQuestionsSection) {
+      let completed = false;
+      let text = '';
+      if (
+        line.charCodeAt(0) === 45 &&
+        line.charCodeAt(1) === 32 &&
+        line.charCodeAt(2) === 91 &&
+        (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) &&
+        line.charCodeAt(4) === 93 &&
+        line.charCodeAt(5) === 32
+      ) {
+        completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+        text = line.slice(6).trim();
+      } else {
+        const match = line.match(checklistRegex);
+        if (match) {
+          completed = match[2].toLowerCase() === 'x';
+          text = match[4].trim();
+        }
+      }
+      if (text) {
+        questions.push({
+          id: `question-${i}`,
+          lineIndex: i,
+          completed,
+          text,
+          rawLine,
+        });
+      }
+    } else if (!inHumanTasksSection) {
+      if (line.includes('?') || line.includes('Q:') || line.includes('q:') || /question/i.test(line)) {
+        let completed = false;
+        let text = '';
+        if (
+          line.charCodeAt(0) === 45 &&
+          line.charCodeAt(1) === 32 &&
+          line.charCodeAt(2) === 91 &&
+          (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) &&
+          line.charCodeAt(4) === 93 &&
+          line.charCodeAt(5) === 32
+        ) {
+          completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+          text = line.slice(6).trim();
+        } else {
+          const match = line.match(checklistRegex);
+          if (match) {
+            completed = match[2].toLowerCase() === 'x';
+            text = match[4].trim();
+          }
+        }
+        if (text && /^(?:\?|Q:|Question:)/i.test(text)) {
+          const qText = text.replace(/^(?:\?|Q:|Question:)\s*/i, '').trim();
+          if (qText) {
+            questions.push({
+              id: `question-${i}`,
+              lineIndex: i,
+              completed,
+              text: qText,
+              rawLine,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  return questions;
+}
 
 export interface BoardListItem {
   number: number;
@@ -131,6 +261,7 @@ export function buildBoardList(rawItems: any[]): { issues: BoardListItem[]; excl
   const issues: BoardListItem[] = normalized.map((issue) => {
     const metadata = resolveV2Metadata(issue);
     const labels = labelNames(issue);
+    const questions = parseWebOpenQuestions(issue.body ?? '');
     return {
       number: issue.number,
       title: issue.title,
@@ -144,7 +275,7 @@ export function buildBoardList(rawItems: any[]): { issues: BoardListItem[]; excl
       updatedAt: issue.updated_at ?? null,
       counts: {
         subtasks: countsOf(issue.subtasks),
-        openQuestions: countsOf(issue.openQuestions ?? []),
+        openQuestions: countsOf(questions),
         humanTasks: countsOf(issue.humanTasks ?? []),
       },
     };
@@ -162,7 +293,7 @@ export function buildIssueDetail(raw: any): IssueDetail {
   }
   const metadata = resolveV2Metadata(issue);
   const labels = labelNames(raw);
-  const questions = issue.openQuestions ?? [];
+  const questions = parseWebOpenQuestions(issue.body ?? '');
   let answerIndex = 0;
   const openQuestions: OpenQuestionView[] = questions.map((question, index) => {
     const view: OpenQuestionView = {
@@ -230,11 +361,30 @@ export function applyQuestionAnswer(raw: any, index: unknown, answer: unknown): 
     throw new BoardError('invalid', 'A question index is required');
   }
   const body = typeof raw?.body === 'string' ? raw.body : '';
-  const next = answerOpenQuestionInMarkdown(body, index, answer);
-  if (next === body) {
+  const questions = parseWebOpenQuestions(body);
+  const unresolved = questions.filter((q) => !q.completed);
+  if (index >= unresolved.length) {
     throw new BoardError('invalid', 'That open question is no longer answerable');
   }
-  return next;
+  const target = unresolved[index];
+  const lines = body.split('\n');
+  const rawLine = lines[target.lineIndex];
+  if (!rawLine) {
+    throw new BoardError('invalid', 'That open question is no longer answerable');
+  }
+  const hasCr = rawLine.endsWith('\r');
+  const cleanLine = hasCr ? rawLine.slice(0, -1) : rawLine;
+  const match = cleanLine.match(checklistRegex);
+  if (!match) {
+    throw new BoardError('invalid', 'That open question is no longer answerable');
+  }
+  const cleanAnswer = answer.trim().replace(/\r?\n+/g, ' ');
+  const lineEnding = hasCr ? '\r' : '';
+  const questionContent = match[4]
+    .replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, '')
+    .trimEnd();
+  lines[target.lineIndex] = `${match[1]}x${match[3]}${questionContent} *(Answer: ${cleanAnswer})*${lineEnding}`;
+  return lines.join('\n');
 }
 
 export function applyStatusChange(raw: any, status: unknown): string[] {
