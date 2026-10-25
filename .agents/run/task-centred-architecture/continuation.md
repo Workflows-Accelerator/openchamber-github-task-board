@@ -1,6 +1,12 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — #33 correction returned, final check running
+## Latest checkpoint — #35 correction running after HALT, #33 final check running
+- #35 hostile review e49ddbe actual 9router/genius: Spec PARTIAL, Quality NEEDS-FIXES, HALT. Three target defects reproduced red->green and no second admission system, but two High defects are introduced by the fix (F1 creation repo attribution during a switch and a later PATCH to the wrong repository, F2 drawer rollback hitting another issue) plus F3-F8 in-scope gaps. Manager accepted the verdict; nothing merged. Receipt6403154853 (posted short, long bodies were refused by the shell guard, no workaround attempted).
+- Correction ses_c1b1f4e26f5cdd9270f22e17 engineer RUNNING from clean e49ddbe, tasks/issue-35-correction.md, regression per finding, one bounded re-review after; FAIL of that re-review stops and returns to the owner.
+- #33 final independent check ses_edd838f4f0ddffb3e32ebc3d genius still RUNNING, web/** only. Trees disjoint, no duplicate workers, no polling.
+- Queue unchanged: each integrated tree then hosting slice (#33) and #30 (panel), then #37/#31. Master, deployment, secrets and closure remain owner-only.
+
+## Previous checkpoint — #33 correction returned, final check running
 - #33 builder ses_7c6609612c200168dfae85d1 finished: 06ed4a3 clean from base8818b94, web-only product scope verified by manager. Claims 8 protocol/104 web/466 root/types0/bundle f4efd59222139830510074035bd3fb55bd70475c7cdb5e7ccdc6ebf1904e38df; NOT accepted. Final independent check RUNNING ses_edd838f4f0ddffb3e32ebc3d genius, tasks/issue-33-final-protocol-hostile.md. One check only; FAIL returns owner, no fix loop. Receipt6402945060.
 - #35 hostile review still RUNNING ses_a3fd08b28817ee7c7baae151 genius on candidate6b4032d; no merge, no duplicate. Two workers own disjoint trees (web/** vs panel/**).
 - Queue unchanged: #33 verdict then integration into feat/v2-binding-and-ratelimit and hosting slice; #35 verdict then integration and #30; #37/#31 after the secure web base. All owner gates on master/deploy/secrets/closure untouched.
