@@ -7,6 +7,7 @@
 | #34 draft safety | MERGED/PUSHED, awaiting batch | L4 0e1a6be PASS; merge c44ed58/proof a2d3fe1; targeted26/full517/types/build/parity green. Pushed aea7031; worktree removed/pruned, branch retained. Receipt6402496611; real browser/host/GitHub NOT RUN |
 | #33 browser protocol safety | FINAL CORRECTION RUNNING | ses_7c6609612c200168dfae85d1 engineer; clean8818b94; tasks/issue-33-final-protocol-correction.md. One independent final check then stop/owner on failure; receipt6402500306 |
 | #37 visible repositories | FULLY ALIGNED | decision15 show archived/empty; issue body corrected; blocked #33 |
+| #35 refresh write coverage | IMPLEMENTATION RUNNING | base12cb9c6 (merged #28/#36/#34); ses_0e896cd47ce7984276678043 engineer; panel-only; regression-first then independent review; receipt6402568867 |
 | Master/deployment | NOT APPROVED | no secret reuse; owner retains release |
 
 ## Prior — review gate 2026-10-25
@@ -16,7 +17,7 @@
 | #33 secure browser board | BLOCKED, owner correction gate | 8818b94 final review NEEDS-FIXES; N1 Medium + N2–N5 Low; no new High; ruling outputs/final-review-rulings-2026-10-25.md |
 | #34 safe answers | BLOCKED, draft isolation FAILED | 7f7e8cc six probes; cross-repo/cross-question draft contamination/deletion. Owner gate for final exact-source scoped correction |
 | #37 all repos | Coverage confirmed; filter unanswered | Archived/empty question aborted by restart; no fabricated default approval |
-| #35 refresh write coverage | Brief drafted, NOT DISPATCHABLE | tasks/issue-35-refresh-write-coverage.md; snapshot pending #34 integration |
+| #35 refresh write coverage | IMPLEMENTATION RUNNING | worktree/base12cb9c6 with merged #28/#36/#34; ses_0e896cd47ce7984276678043 engineer; regression-first, then independent hostile review; receipt6402568867 |
 
 ## Previous — final reviews 2026-10-24
 

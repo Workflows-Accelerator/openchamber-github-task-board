@@ -1,11 +1,11 @@
 <env_preflight>
-DRAFT, NOT DISPATCHABLE until manager fills snapshot after #34 integration.
+Ready: worktree created from review branch after #34 merge; clean at dispatch. No other worker owns panel/**.
 Repo: /workspace/extensions/github-task-board
 Worktree: /workspace/extensions/github-task-board/.worktrees/team-dev-issue-35-write-refresh
-Branch: fix/issue-35-write-refresh. Base: FILL_AFTER_34. Clean state: FILL_AT_DISPATCH. No other worker may own panel/** at dispatch.
+Branch: fix/issue-35-write-refresh. Base: 12cb9c6 (feat/v2-binding-and-ratelimit including merged #28, #36, #34). node_modules symlink to root already present. Clean at dispatch. Expected baseline: full suite 517 passing.
 Key files: panel/main.ts admission helpers trackIssueWrite/admitIssueRecord/protectedIssueGroups; single-repo and All Projects fetch publication paths; create/archive/tag/priority/status-none/complexity handlers; test/issue-28* and test/test-app-harness.js. Generated panel/main.js.
-Tests: node --test test/issue-35-write-refresh.test.js; npm test; npm run typecheck; npm run build. Symlink root node_modules only, no env copy or DB registration.
-Do not touch web/**, service/**, shared skills/config, private reports, credentials, installed extension, real GitHub, master, other worktrees. No push/merge/closure/deployment. Synthetic fixtures only. Preflight authoritative at startup; targeted mutation checks allowed.
+Tests: node --test test/issue-35-write-refresh.test.js; npm test; npm run typecheck; npm run build. Root dependencies via existing symlink, no installs, no env copy or DB registration.
+Do not touch web/** (the #33 correction is running there in another worktree), service/**, shared skills/config, private reports, credentials, installed extension, real GitHub, master, other worktrees. No push/merge/closure/deployment. Synthetic fixtures only. Preflight authoritative at startup; targeted mutation checks allowed.
 </env_preflight>
 <goal>
 Every offered panel write stays visible when an older refresh completes, in one repository and All Projects.
@@ -15,6 +15,7 @@ GitHub issue is authoritative: https://github.com/Workflows-Accelerator/opencham
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/outputs/issue-28-fix-adjudication.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/outputs/issue-28-hostile-review-8625b0a.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/decisions-2026-10-24.md]
+[@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/outputs/issue-34-review-gate.md]
 </context_files>
 <skills>
 [@/workspace/config/opencode/.agents/skills/build/refactoring/surgical-patch/SKILL.md]
