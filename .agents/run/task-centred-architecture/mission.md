@@ -1,9 +1,11 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-25 #34 pushed; #33 correcting, #35 in hostile review
+## Latest checkpoint — 2026-10-25 #33 final check running, #35 in hostile review
 State: building. Alignment: decisions1–15 CONFIRMED within recorded scope.
+- #33 correction returned 06ed4a3 clean on branch feat/issue-33-standalone-board, base 8818b94. Manager inspected scope: web/README.md, web/public/app.js, web/server/{app,board,github}.ts, web/tests/{fake-github,protocol-corrections}.mjs plus committed proofs/screenshots; no panel/** or shared parser edit. Builder claims 8 protocol tests, 104 web, 466 root, types0, bundle f4efd59222139830510074035bd3fb55bd70475c7cdb5e7ccdc6ebf1904e38df. Independent final check RUNNING ses_edd838f4f0ddffb3e32ebc3d genius, tasks/issue-33-final-protocol-hostile.md. One check only; FAIL => stop and return to owner, no further autonomous fix. Actual model on wake.
+- #35 hostile reviewer ses_a3fd08b28817ee7c7baae151 genius RUNNING in its own worktree on candidate 6b4032d; no merge before verdict.
 - #34 integrated c44ed58/proof a2d3fe1 and pushed review branch through aea7031. Source worktree removed/pruned after clean/ancestry checks; feature branch retained, no DB registration existed. All review/proof preserved. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/34#issuecomment-6402496611. Awaiting batch, no human verdict.
-- #33 final N1–N5 correction RUNNING ses_7c6609612c200168dfae85d1 engineer from clean8818b94; tasks/issue-33-final-protocol-correction.md. Actual model deferred to completion metadata, no polling. Only approved web scope; independent final check on wake, stop/owner if fails. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/33#issuecomment-6402500306.
+- #33 final N1–N5 correction returned and is in the single independent check above; the correction worker ses_7c6609612c200168dfae85d1 is finished and must not be re-prompted. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/33#issuecomment-6402500306 (dispatch) and 6402945060 (correction returned).
 - #35 builder returned 6b4032d clean (12 red/16 targeted/533 full/typecheck/bundle claimed). Independent hostile review RUNNING ses_a3fd08b28817ee7c7baae151 genius, tasks/issue-35-hostile.md, in same worktree. Scope includes post-send failure truthfulness, tracker settlement, repo-qualified identity, partial/superseded aggregates, #34 unconfirmed interaction. Receipt6402883945. No merge before verdict.
 - Web host preparation/PWA/#37 queued behind secure #33. No production merge/deploy/credential reuse/closure authorized. Real browser/installed host/live GitHub for #34 NOT RUN.
 

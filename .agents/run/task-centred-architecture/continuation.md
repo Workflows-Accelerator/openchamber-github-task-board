@@ -1,6 +1,11 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — #34 pushed/cleaned, #33 final correction running
+## Latest checkpoint — #33 correction returned, final check running
+- #33 builder ses_7c6609612c200168dfae85d1 finished: 06ed4a3 clean from base8818b94, web-only product scope verified by manager. Claims 8 protocol/104 web/466 root/types0/bundle f4efd59222139830510074035bd3fb55bd70475c7cdb5e7ccdc6ebf1904e38df; NOT accepted. Final independent check RUNNING ses_edd838f4f0ddffb3e32ebc3d genius, tasks/issue-33-final-protocol-hostile.md. One check only; FAIL returns owner, no fix loop. Receipt6402945060.
+- #35 hostile review still RUNNING ses_a3fd08b28817ee7c7baae151 genius on candidate6b4032d; no merge, no duplicate. Two workers own disjoint trees (web/** vs panel/**).
+- Queue unchanged: #33 verdict then integration into feat/v2-binding-and-ratelimit and hosting slice; #35 verdict then integration and #30; #37/#31 after the secure web base. All owner gates on master/deploy/secrets/closure untouched.
+
+## Previous checkpoint — #34 pushed/cleaned, #33 final correction running
 - #34 pushed feat/v2-binding-and-ratelimit through aea7031 after merge/proof acceptance. Clean source worktree removed and pruned, branch retained; no DB registration existed. All proof merged. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/34#issuecomment-6402496611. Awaiting batch, not Done.
 - #33 correction ses_7c6609612c200168dfae85d1 engineer RUNNING, final-protocol-correction brief at root. Clean8818b94 confirmed before dispatch; worktree root suite466 baseline, not integrated517; no panel changes/merge into builder. One independent final check on wake then stop/owner if failed. Actual model verify on wake; no polling/duplicate. Receipt https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/33#issuecomment-6402500306.
 - #35 builder returned 6b4032d clean; claimed12red/16targeted/533full/typecheck/bundle1e937643f9265bb86aee09f84cf2e3354241d98f587028b66067ab50811a30d1. Independent hostile review ses_a3fd08b28817ee7c7baae151 genius RUNNING in same worktree, tasks/issue-35-hostile.md; attacks post-send failure truthfulness, tracker settlement/leaks, repo-qualified identity, partial/superseded aggregates and #34 unconfirmed interaction. Receipt6402883945. No merge before verdict, no duplicate worker.

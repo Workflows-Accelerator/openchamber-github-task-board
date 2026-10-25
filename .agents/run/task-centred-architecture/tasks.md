@@ -5,7 +5,7 @@
 | Outcome | State | Worker / next |
 |---|---|---|
 | #34 draft safety | MERGED/PUSHED, awaiting batch | L4 0e1a6be PASS; merge c44ed58/proof a2d3fe1; targeted26/full517/types/build/parity green. Pushed aea7031; worktree removed/pruned, branch retained. Receipt6402496611; real browser/host/GitHub NOT RUN |
-| #33 browser protocol safety | FINAL CORRECTION RUNNING | ses_7c6609612c200168dfae85d1 engineer; clean8818b94; tasks/issue-33-final-protocol-correction.md. One independent final check then stop/owner on failure; receipt6402500306 |
+| #33 browser protocol safety | FINAL INDEPENDENT CHECK RUNNING | correction06ed4a3 (8 protocol/104 web/466 root/types/bundle f4efd592) from clean8818b94; reviewer ses_edd838f4f0ddffb3e32ebc3d genius; receipt6402945060; FAIL => stop/owner |
 | #37 visible repositories | FULLY ALIGNED | decision15 show archived/empty; issue body corrected; blocked #33 |
 | #35 refresh write coverage | HOSTILE REVIEW RUNNING | builder6b4032d: 12red/16targeted/533full/typecheck/bundle; reviewer ses_a3fd08b28817ee7c7baae151 genius tasks/issue-35-hostile.md; receipt6402883945 |
 | #30 work type from labels | BRIEF READY, BLOCKED on #35 | tasks/issue-30-work-type.md; decision4 labels+Work Log sentence; expiration stays an open owner question |

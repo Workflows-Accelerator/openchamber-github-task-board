@@ -1,8 +1,8 @@
 <env_preflight>
-DRAFT: fill corrected HEAD/clean state at wake before dispatch. No other worker may own worktree.
+Ready: correction committed and tree clean at dispatch. Manager confirmed web-only product scope (web/README.md, web/public/app.js, web/server/{app,board,github}.ts, web/tests/{fake-github,protocol-corrections}.mjs) with no panel/** or shared-parser edit. No other worker owns this worktree; the #35 worker owns panel/** in a different worktree and its changes are NOT part of this tree.
 Repo /workspace/extensions/github-task-board
 Worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board
-Branch feat/issue-33-standalone-board; product prior f50519d, prior final report 8818b94; correction FILL_AT_DISPATCH. Root node_modules symlink; no env or DB setup.
+Branch feat/issue-33-standalone-board; product prior f50519d, prior final report 8818b94; correction candidate 06ed4a3. Root node_modules symlink; no env or DB setup. This worktree predates the merged #34, so its root suite baseline is 466; do not merge or update unrelated panel files.
 Key paths web/server/github.ts/app.ts/board.ts/sections.ts; web/public/app.js; web/tests; web/README.md; web/dist/server.mjs.
 Commands node --test web/tests/*.test.mjs; npm test; npx tsc -p web/tsconfig.json; documented esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external to disposable outfile; browser test using safe relocated artifacts if required. npm run build:web absent.
 Own only .agents/run/task-centred-architecture/outputs/issue-33-final-protocol-hostile.md and verifications/issue-33-protocol-final-review/**. Product/tests are read-only. No panel/service/shared skills/private reports/credentials/installed extension/real GitHub/other worktrees/master/push/merge/deploy/closure. No installs. Disposable probes /tmp/opencode. Facts authoritative, no startup git status/pwd/ls discovery; targeted commit/action failure checks allowed.
