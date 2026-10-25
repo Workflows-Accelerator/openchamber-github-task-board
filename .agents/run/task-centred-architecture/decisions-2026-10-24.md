@@ -22,4 +22,8 @@ Asked once, answered in chat by the owner. These override the written #33 accept
 
 13. **Repository coverage and token identity confirmed.** Owner selected every repo the token sees, with picker plus combined view. Token is the Workflows Accelerator bot's token (owner wording: "It's workflows accelerator bot's token"). This is NOT approval to reuse the container's existing token or a claim about the bot token's current permission scope. No token value requested or recorded. Deploy-time presence and least necessary permissions remain to be verified safely.
 
+14. **One last focused correction/check for #33 and #34 approved — 2026-10-25.** Owner selected "Correct both and recheck". #33: only the five final-review save/protocol, redirect, Markdown/readback/fenced-question and documentation findings, web-only; no shared parser edits. #34: repository-qualified exact-question draft keys; no automatic reassignment to changed questions; separately labelled recoverable draft with original source question when changed/deleted; remove unrelated renderer additions. One independent final check each, stop and return to owner if either fails. No production merge, deployment, secret reuse or new feature authority.
+
+15. **Show all token-visible repositories in the picker — 2026-10-25.** Owner selected "Show all": archived repositories remain marked, repositories without tasks remain selectable and show no tasks. Explain that GitHub only exposes what the bot token can see; previously known repositories that become inaccessible show unavailable. This supersedes the unapproved exclude-by-default answer previously embedded in #37.
+
 Master and deployment remain human-gated.

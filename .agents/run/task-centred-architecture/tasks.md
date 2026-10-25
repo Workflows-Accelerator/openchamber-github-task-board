@@ -1,6 +1,15 @@
 # Task-centred delivery
 
-## CURRENT — review gate 2026-10-25
+## CURRENT — final corrections owner-approved 2026-10-25
+
+| Outcome | State | Worker / next |
+|---|---|---|
+| #34 draft safety | FINAL CORRECTION RUNNING | ses_de503a8db65a350c9dc23a1b engineer; tasks/issue-34-final-draft-correction.md; one independent final check then stop on failure |
+| #33 browser protocol safety | FINAL CORRECTION QUEUED | tasks/issue-33-final-protocol-correction.md; owner approved, wait #34 correction/check; fill clean snapshot before dispatch |
+| #37 visible repositories | FULLY ALIGNED | decision15 show archived/empty; issue body corrected; blocked #33 |
+| Master/deployment | NOT APPROVED | no secret reuse; owner retains release |
+
+## Prior — review gate 2026-10-25
 
 | Outcome | State | Proof / next |
 |---|---|---|

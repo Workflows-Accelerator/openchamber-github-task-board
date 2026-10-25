@@ -1,6 +1,11 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — 2026-10-25 gate results
+## Latest checkpoint — owner decision14–15 final corrections
+- Owner approved "Correct both and recheck" and "Show all". Recorded decisions14–15. #34 correction RUNNING ses_de503a8db65a350c9dc23a1b engineer, tasks/issue-34-final-draft-correction.md; HEAD before dispatch 7f7e8cc clean. Wait wake, one independent final check, if fails STOP/owner. Do not repeat old checks or duplicate workers.
+- #33 queued approved brief tasks/issue-33-final-protocol-correction.md, NOT dispatched (one repo frontier); expected 8818b94 clean, fill/confirm at dispatch after #34 correction/check. N1–N5 only web, no shared parser/host/health/push/#37 expansion. One independent final check then stop on failure.
+- #37 issue body updated show archived/empty and honest token-visible scope. First gh edit TLS handshake failed, readback old body, one deliberate retry succeeded. No unapproved exclude default remains. Receipt #33 6402026297/#34 6402028397. No master/deployment approval.
+
+## Prior checkpoint — 2026-10-25 gate results
 - Restart recovered root at 83b065d. Both final wakes present, no polling/repeat. #33 final 8818b94 NEEDS-FIXES, no new High; N1 Medium/N2–N5 Low accepted, owner gate before further correction. #34 72f3f76 seven-finding PASS, but manager diff found draft isolation hypothesis. Focused independent check ses_2fadeaf8ebd848b2df3e96cb engineer in same #34 worktree, tasks/issue-34-draft-isolation-check.md; no product edit/full-suite repeat.
 - Draft isolation wake received: 7f7e8cc, actual 9router/engineer, six probes FAIL product. Cross-repo/cross-question draft leak/delete confirmed; changed/deleted question draft misattributed/trapped. Proposed exact repo-qualified source keys, no fallback, separately recoverable draft with original question. Owner approval required for this bounded fix/UI; don't dispatch yet. Reviewer's single-question fallback recommendation rejected as insufficient identity. Direct renderer test does not prove normal-user layout regression; collateral assignments can be removed within fix. Rulings outputs/final-review-rulings-2026-10-25.md; receipts #33 6401828138, #34 6401949985. Do not integrate.
 - #37 filter question (show archived/empty vs hide) aborted by restart, unanswered. Issue currently embeds an unapproved default; correct with owner answer. Token-readable coverage + bot identity already decided, never re-ask.

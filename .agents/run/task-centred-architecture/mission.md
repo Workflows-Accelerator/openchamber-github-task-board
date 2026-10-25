@@ -1,6 +1,13 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-25 review gate
+## Latest checkpoint — 2026-10-25 owner-authorized final corrections
+State: building. Alignment: decisions14–15 CONFIRMED. Owner "Correct both and recheck" and "Show all".
+- #34 final draft correction RUNNING ses_de503a8db65a350c9dc23a1b engineer in existing worktree at 7f7e8cc; brief tasks/issue-34-final-draft-correction.md. One independent final check after wake; if fails stop/owner.
+- #33 final protocol correction QUEUED (not dispatched) tasks/issue-33-final-protocol-correction.md. Complete #34 correction/check first under one repository frontier; then confirm 8818b94 clean and fill draft preflight. One independent check, no further loop.
+- #37 issue body corrected to owner show-all archived/empty decision and honest token-visibility boundary. Initial gh TLS timeout read back old body, then explicit retry succeeded; no blind retry. Bot-token scope still unverified.
+- Receipts: #33 owner approval 6402026297; #34 approval 6402028397. No master/deployment/secrets/closure authority. No new feature expansion.
+
+## Prior checkpoint — 2026-10-25 review gate
 State: proving/aligning. Root recovered at 83b065d; both final review wakes complete, no repeat workers.
 - #33 8818b94: Security NEEDS-FIXES, Spec PARTIAL, Quality NEEDS-FIXES, no new High. N1 Medium + N2–N5 Low accepted; blocked for owner's bounded correction authority. Full ruling outputs/final-review-rulings-2026-10-25.md. Receipt 6401828138.
 - #34 72f3f76: seven findings PASS/APPROVED, 19/510 checks, but focused independent check ses_2fadeaf8ebd848b2df3e96cb engineer FAILED at 7f7e8cc: draft cross-repo/cross-question leakage/deletion and orphaned/misattributed drafts. Integration HELD for owner-approved bounded correction; proposed exact repo-qualified source keys + clearly separate recoverable original-question draft, no changed-question reassignment. Report ruling updated; receipt 6401949985. Renderer direct-call side effect not proven normal-user failure, but collateral additions should be removed.
