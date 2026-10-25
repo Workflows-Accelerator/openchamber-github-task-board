@@ -1,16 +1,25 @@
 # Task-centred delivery
 
-## CURRENT — final corrections owner-approved 2026-10-25
+## CURRENT — both bounded rechecks failed, owner decision pending 2026-10-25
 
 | Outcome | State | Worker / next |
 |---|---|---|
 | #34 draft safety | MERGED/PUSHED, awaiting batch | L4 0e1a6be PASS; merge c44ed58/proof a2d3fe1; targeted26/full517/types/build/parity green. Pushed aea7031; worktree removed/pruned, branch retained. Receipt6402496611; real browser/host/GitHub NOT RUN |
-| #33 browser protocol safety | SINGLE RESIDUAL RECHECK RUNNING | builderd41ff34 actual9router/engineer, clean; claims protocol12/web108/root466/types0/browser19 unknown/baseline32/hash97ad1611. Reviewer ses_6f740247134713dd1a74137a genius tasks/issue-33-residual-hostile.md; decision16 FAIL returns owner, no loop; receipt6404936552 |
+| #33 browser protocol safety | BLOCKED-ON-OWNER, recheck HALT | Recheck a4191a4 d41ff34: Security APPROVED/Spec PARTIAL/Quality NEEDS-FIXES. F1 Medium shallow detail guard, F2/F3 Low 422 classification + tab-stop indentation. 12/108/466/types/bundle reproduced; 51/84 browser, 27/36 and 18/24 HTTP. Needs new owner authority; receipt pending |
+| #35 refresh write coverage | BLOCKED-ON-OWNER, recheck HALT | Recheck 220d1d5 on 0af35ae: R1 High foreign creation reply claims another repo row and routes next PATCH there; R2-R8 moderate unknown/rollback/membership/staleness/honesty; R9 weak test. 165 observations 125/40; 25/542/types/parity reproduced. Two attempts used; no third without owner |
 | #37 visible repositories | FULLY ALIGNED | decision15 show archived/empty; issue body corrected; blocked #33 |
-| #35 refresh write coverage | CORRECTION IN BOUNDED RE-REVIEW | 0af35ae builder claims F1–F8 closed, 9 red/25 targeted/542 full/types/build, bundle d759549; reviewer ses_efe868d487a6439e5ba4bfc5 genius tasks/issue-35-correction-hostile.md; FAIL returns owner, no fix loop; receipt6404697544 |
 | #30 work type from labels | BRIEF READY, BLOCKED on #35 | tasks/issue-30-work-type.md; decision4 labels+Work Log sentence; expiration stays an open owner question |
 | Board hosting slice | BRIEF READY, BLOCKED on #33 | tasks/board-hosting-slice.md; BOARD_HOST, /health, start command, honest ops limits; no deployment authority |
 | Master/deployment | NOT APPROVED | no secret reuse; owner retains release |
+
+Owner decision recorded in outputs/owner-decision-bounded-checks-2026-10-25.md: (1) one full narrow pass each, (2) narrow #35 to R1/R3/R8/R9 plus follow-up, (3) park both and validate #28/#34/#36 only. No third autonomous pass before an answer.
+
+## Prior — decision16 residual passes 2026-10-25
+
+| Outcome | State | Proof / next |
+|---|---|---|
+| #33 browser protocol safety | CORRECTION RETURNED, RECHECK RUNNING | d41ff34 builder claims protocol12/web108/root466/browser19/baseline32/hash97ad1611; recheck ses_6f740247134713dd1a74137a genius |
+| #35 refresh write coverage | CORRECTION RETURNED, RE-REVIEW RUNNING | 0af35ae claims F1–F8 closed, 9 red/25 targeted/542 full; recheck ses_efe868d487a6439e5ba4bfc5 genius |
 
 ## Prior — review gate 2026-10-25
 
