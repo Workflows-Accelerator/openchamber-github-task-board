@@ -10,8 +10,9 @@ Timestamp: 2026-10-25
 | #28 opening/current tasks | Prior green (see issue-28/proof.md) | Prior green | Synthetic host only | Installed-host NOT RUN | PASS, merged working branch | AWAITING HUMAN |
 | #36 human-only close | Prior green | Prior green, 491 full at integration | Synthetic host only | Installed-host NOT RUN | PASS 4f22605 | AWAITING HUMAN |
 | #34 safe answers | PASS eef57bd + merged tree | Reviewer targeted26/full517; merged targeted26/full517, all green | Synthetic DOM/host (no real GitHub); merged c44ed58/proof a2d3fe1 | Real browser/installed-host NOT RUN | PASS/APPROVED 0e1a6be, hostile11/regression7, no findings; manager gate accepted | AWAITING BATCH HUMAN, not Done |
-| #33 browser board | PASS f50519d types/bundle; correction 06ed4a3 | 104 web / 466 root / 8 protocol; correction types0 | Real localhost HTTP with synthetic GitHub upstream; real Obscura browser 19 mutation cases + 32 baseline, screenshots inspected | L4 FAILED: security APPROVED, Spec PARTIAL, Quality NEEDS-FIXES at f6ee7da. N2/N3+ named N4 closed; N1 open (raw TypeError on 3 invalid shapes, post-commit generic 422 as 400), N5 report overclaim, F3 indented code checkbox mutable | STOPPED FOR OWNER DECISION; needs-human, not merged |
-| #35/#30/#31/#37 | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT READY |
+| #33 browser board | PASS 06ed4a3 types/build parity | 104 web / 466 root / 8 protocol on old candidate | Real localhost HTTP, synthetic GitHub upstream | Obscura 19 mutation cases +32 baseline; raw TypeError in3 cases, screenshots inspected | FAILED f6ee7da: Security APPROVED/Spec PARTIAL/Quality NEEDS-FIXES. Decision16 correction RUNNING ses_2021ba6f89fc4c9bcc636b07, then one recheck | AWAITING BATCH, not ready/not merged |
+| #35 write-refresh | PASS 6b4032d types/build parity | Reviewer16 targeted/533 full on first candidate | Synthetic host/cache barriers; F1/F2 High introduced, F3–F8 gaps | Real browser/installed-host NOT RUN | HALT e49ddbe. Correction0af35ae claims25 targeted/542 full; bounded independent re-review RUNNING ses_efe868d487a6439e5ba4bfc5, not accepted closed | AWAITING BATCH, not ready/not merged |
+| #30/#31/#37 | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT READY |
 
 ## Traceable evidence
 1. #34 reviewer 72f3f76, report in source worktree outputs/issue-34-final-hostile.md: `node --test test/issue-34-answer-integrity.test.js` exit0 19/19; `npm test` exit0 510/510; `npm run typecheck` exit0; `npm run build` exit0; panel bundle SHA256 19f686e582ed3b9ee9deac0973fe88e48d9608e533f0157a7d6a719a4a94c213. Prior red-before probes on 309f9f1 documented. No installed-host E2E.
@@ -23,7 +24,8 @@ Timestamp: 2026-10-25
 | Member | Finding | Disposition |
 |---|---|---|
 | #34 | Former cross-repo/question and orphan draft defects | CLOSED by eef57bd and independent 0e1a6be; merge c44ed58/proof a2d3fe1. Human validation still pending |
-| #33 | N1 protocol/gateway/malformed4xx unknown reporting; N2 redirect forwarding; N3 meaningful whitespace readback; N4 fenced-question mutation; N5 doc mismatch | Correction 06ed4a3 closed N2/N3/named N4; N1 still open for 3 invalid shapes and post-commit generic 422, N5 overclaim, indented code checkbox still mutable. One-check rule exhausted, owner decision pending |
+| #33 | N1 protocol/gateway/malformed4xx unknown reporting; N2 redirect forwarding; N3 meaningful whitespace readback; N4 fenced-question mutation; N5 doc mismatch | Correction06ed4a3 independently closed N2/N3/named N4. Owner decision16 approved residual fix for invalid shapes, generic422, indented code plus reports/comments; correction running, then single independent recheck. No accepted closure yet |
+| #35 | F1 wrong repo on creation, F2 wrong issue rollback (High); F3 unknown outcome, F4 incremental clobber, F5 partial aggregate, F6 unconfirmed guard, F7 settlement, F8 vacuous test | Correction0af35ae returned; independent re-review running, failure returns owner, no further autonomous loop |
 
 ## Human gate
 Batch NOT READY. No preview is yet verified as integrated/running. Plain-language click list and blind spots maintained in review-batch.md. Only owner may record per-member pass/bounce, move issues Done and approve master/deployment. No waiver for UI/UX/workflow changes.
