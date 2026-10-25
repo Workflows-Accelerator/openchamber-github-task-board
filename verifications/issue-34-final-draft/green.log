@@ -1,0 +1,126 @@
+TAP version 13
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/2/comments
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-b/issues/2/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments
+# [TaskBoard] API GET /repos/owner/repo-main/issues/20
+# Subtest: Desired A1: Cross-repo draft isolation with identical question text
+ok 1 - Desired A1: Cross-repo draft isolation with identical question text
+  ---
+  duration_ms: 159.693731
+  type: 'test'
+  ...
+# Subtest: Desired A2: Cross-repo draft isolation with different question text
+ok 2 - Desired A2: Cross-repo draft isolation with different question text
+  ---
+  duration_ms: 105.731214
+  type: 'test'
+  ...
+# Subtest: Desired B1: Single issue with multiple questions isolation (Q1 and Q2)
+ok 3 - Desired B1: Single issue with multiple questions isolation (Q1 and Q2)
+  ---
+  duration_ms: 133.103101
+  type: 'test'
+  ...
+# Subtest: Desired C1: Emptying an input field deletes the draft and does not resurrect it on re-render
+ok 4 - Desired C1: Emptying an input field deletes the draft and does not resurrect it on re-render
+  ---
+  duration_ms: 153.062202
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/2/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/issues/2/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/20 -> 200
+# [TaskBoard] Question on \#20 was modified remotely; refusing write
+# [TaskBoard] API GET /repos/owner/repo-main/issues/21
+# Subtest: Desired C2: Remotely changed question leaves current input empty and renders recoverable draft labelled with original question
+ok 5 - Desired C2: Remotely changed question leaves current input empty and renders recoverable draft labelled with original question
+  ---
+  duration_ms: 219.565214
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-main/issues/21 -> 200
+# [TaskBoard] Question on \#21 was modified remotely; refusing write
+# Subtest: Desired C3: Remotely deleted questions renders issue with recoverable draft rather than empty-box
+ok 6 - Desired C3: Remotely deleted questions renders issue with recoverable draft rather than empty-box
+  ---
+  duration_ms: 111.413571
+  type: 'test'
+  ...
+# Subtest: Desired D1: Direct renderers do not mutate userLayoutPreference or data-layout
+ok 7 - Desired D1: Direct renderers do not mutate userLayoutPreference or data-layout
+  ---
+  duration_ms: 81.288623
+  type: 'test'
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+1..7
+# tests 7
+# suites 0
+# pass 7
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1127.931916

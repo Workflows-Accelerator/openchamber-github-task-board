@@ -587,6 +587,11 @@ export function createTestApp(options = {}) {
       closeDrawer,
       renderDrawer,
       repoForIssue,
+      applyLayoutMode,
+      saveQuestionDraft,
+      getQuestionDraft,
+      clearQuestionDraft,
+      getRecoverableQuestionDrafts,
       addLog,
       getElements: () => elements,
       setWorkspaceGitToken: (t) => { workspaceGitToken = t; },
@@ -594,6 +599,7 @@ export function createTestApp(options = {}) {
         issues,
         currentRepo,
         isManualRepoOverride,
+        userLayoutPreference,
         activeSessionId,
         currentActiveSession,
         currentSessionRepo,
@@ -618,6 +624,7 @@ export function createTestApp(options = {}) {
         if (updates.issues !== undefined) issues = updates.issues;
         if (updates.currentRepo !== undefined) currentRepo = updates.currentRepo;
         if (updates.isManualRepoOverride !== undefined) isManualRepoOverride = updates.isManualRepoOverride;
+        if (updates.userLayoutPreference !== undefined) userLayoutPreference = updates.userLayoutPreference;
         if (updates.activeSessionId !== undefined) activeSessionId = updates.activeSessionId;
         if (updates.currentActiveSession !== undefined) currentActiveSession = updates.currentActiveSession;
         if (updates.currentSessionRepo !== undefined) currentSessionRepo = updates.currentSessionRepo;

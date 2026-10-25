@@ -264,7 +264,9 @@
   var GUEST_GENERATE_SYSTEM_MAX = 8e3;
   var GUEST_GENERATE_OUTPUT_TOKENS_MAX = 4e3;
   var GUEST_GENERATE_TEXT_MAX = 256e3;
-  var GUEST_GENERATE_TIMEOUT_MS = 9e4;
+  var GUEST_GENERATE_TIMEOUT_MS = 96e4;
+  var GUEST_GENERATE_LATE_KEEP_MS = 60 * 6e4;
+  var GUEST_GENERATE_LATE_MAX = 8;
   var GUEST_ITEM_MESSAGE_TEXT_MAX = 2e5;
   var GUEST_ITEM_SESSION_MAX = 2e6;
   var GUEST_BADGE_MAX = 999;
@@ -415,7 +417,8 @@
     "popover-closed",
     "file-open",
     "file-snapshot",
-    "file-saved"
+    "file-saved",
+    "generate-late"
   ]);
   var asWireRecord = (data) => Object(data) === data ? data : null;
   var isNonEmptyString = (value) => String(value) === value && value.length > 0;
@@ -500,6 +503,8 @@
     const itemListeners = /* @__PURE__ */ new Set();
     const statusControlListeners = /* @__PURE__ */ new Set();
     const popoverClosedListeners = /* @__PURE__ */ new Set();
+    const lateGenerateListeners = /* @__PURE__ */ new Set();
+    const unclaimedLateGenerate = [];
     let resolveHandler = null;
     let actionHandler = null;
     const fileOpenListeners = /* @__PURE__ */ new Set();
@@ -527,6 +532,11 @@
     };
     const post = (message) => {
       target.parent.postMessage(message, "*");
+    };
+    const listenForLateGenerate = () => {
+      if (disposed || target.parent === target || lateGenerateListeners.size === 0 || lastReady?.features?.lateGenerateResults !== true)
+        return;
+      post({ channel: OPENCHAMBER_SDK_CHANNEL, v: OPENCHAMBER_SDK_API_VERSION, type: "generate-late-listen" });
     };
     const emit = (listeners, value) => {
       for (const listener of listeners) {
@@ -569,6 +579,14 @@
         emit(connectionListeners, message.payload.connection);
         emit(settingsListeners, message.payload.settings);
         emit(itemListeners, message.payload.item);
+        listenForLateGenerate();
+        return;
+      }
+      if (message.type === "generate-late") {
+        if (lateGenerateListeners.size === 0)
+          unclaimedLateGenerate.push(message.payload);
+        else
+          emit(lateGenerateListeners, message.payload);
         return;
       }
       if (message.type === "directory") {
@@ -1310,6 +1328,15 @@
           return result;
         });
       },
+      onLateGenerateResult: (listener) => {
+        lateGenerateListeners.add(listener);
+        for (const result of unclaimedLateGenerate.splice(0))
+          emit([listener], result);
+        listenForLateGenerate();
+        return () => {
+          lateGenerateListeners.delete(listener);
+        };
+      },
       setBadge: (count) => request({
         channel: OPENCHAMBER_SDK_CHANNEL,
         v: OPENCHAMBER_SDK_API_VERSION,
@@ -1390,6 +1417,8 @@
         itemListeners.clear();
         statusControlListeners.clear();
         popoverClosedListeners.clear();
+        lateGenerateListeners.clear();
+        unclaimedLateGenerate.length = 0;
       }
     };
   };
@@ -1401,12 +1430,14 @@
     "browser.snapshot",
     "browser.click",
     "browser.type",
+    "browser.select",
     "browser.scroll",
     "browser.back",
     "browser.forward",
     "browser.inspect",
     "browser.capture",
-    "browser.resize"
+    "browser.resize",
+    "browser.close"
   ];
   var BROWSER_VIEWPORT_MODES = ["mobile", "tablet", "desktop", "fill"];
   var BROWSER_SCROLL_DIRECTIONS = ["up", "down", "top", "bottom"];
@@ -1442,6 +1473,158 @@
     if (Object(parameters) !== parameters)
       return null;
     return { requestId, action, parameters, context: readContext(context) };
+  };
+  var SOURCE_CONTROL_PROVIDER_PATH = "/source-control";
+  var SOURCE_CONTROL_PROVIDER_WIRE_VERSION = 1;
+  var SOURCE_CONTROL_PROVIDER_METHODS = [
+    "auth.verify",
+    "auth.probe",
+    "changeRequestStatus",
+    "listChangeRequests",
+    "changeRequestContext",
+    "listIssues",
+    "getIssue",
+    "issueComments",
+    "projectUpstream",
+    "projectBranches",
+    "listLabels",
+    "listReviewerCandidates",
+    "readChangeRequestPatch",
+    "readChangeRequestFile",
+    "liveSummaries",
+    "readChangeRequestHead",
+    "resolveChangeRequestSource",
+    "mutation.resolveTarget",
+    "mutation.perform",
+    "mutation.reconcile"
+  ];
+  var SOURCE_CONTROL_PROVIDER_STATUS_TIMEOUT_MS = 12e3;
+  var SOURCE_CONTROL_PROVIDER_READ_TIMEOUT_MS = 2e4;
+  var SOURCE_CONTROL_PROVIDER_MUTATION_TIMEOUT_MS = 3e4;
+  var SOURCE_CONTROL_PROVIDER_AUTH_TIMEOUT_MS = 15e3;
+  var SOURCE_CONTROL_PROVIDER_RESPONSE_MAX = 8e6;
+  var SOURCE_CONTROL_PROVIDER_ERROR_MESSAGE_MAX = 2e3;
+  var SOURCE_CONTROL_PROVIDER_IDLE_MS = 10 * 6e4;
+  var SOURCE_CONTROL_PROVIDER_TARGET_MAX = 4096;
+  var sourceControlProviderTimeoutMs = (method) => {
+    if (method === "changeRequestStatus")
+      return SOURCE_CONTROL_PROVIDER_STATUS_TIMEOUT_MS;
+    if (method === "auth.verify" || method === "auth.probe")
+      return SOURCE_CONTROL_PROVIDER_AUTH_TIMEOUT_MS;
+    if (method.startsWith("mutation."))
+      return SOURCE_CONTROL_PROVIDER_MUTATION_TIMEOUT_MS;
+    return SOURCE_CONTROL_PROVIDER_READ_TIMEOUT_MS;
+  };
+  var OPENCHAMBER_HOST_CALLBACK_URL = "OPENCHAMBER_HOST_CALLBACK_URL";
+  var SOURCE_CONTROL_OUTBOUND_PATH = "/source-control/outbound";
+  var SOURCE_CONTROL_OUTBOUND_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+  var SOURCE_CONTROL_OUTBOUND_REQUEST_HEADERS = ["accept", "content-type", "if-none-match", "range"];
+  var SOURCE_CONTROL_OUTBOUND_RESPONSE_HEADERS = ["content-type", "link", "etag", "x-total-count", "x-total", "retry-after"];
+  var SOURCE_CONTROL_OUTBOUND_RESPONSE_HEADER_PREFIX = "x-ratelimit-";
+  var SOURCE_CONTROL_OUTBOUND_BODY_MAX = 1e6;
+  var SOURCE_CONTROL_OUTBOUND_RESPONSE_MAX = 8e6;
+  var SOURCE_CONTROL_OUTBOUND_TIMEOUT_MS = 2e4;
+  var isSourceControlProviderMethod = (value) => SOURCE_CONTROL_PROVIDER_METHODS.some((method) => method === value);
+  var readSessionUser = (user) => {
+    if (user === null)
+      return null;
+    if (Object(user) !== user || user === void 0)
+      return void 0;
+    const { id, login } = user;
+    if (!Number.isSafeInteger(id) || String(login) !== login || login.length === 0)
+      return void 0;
+    return { id: Number(id), login };
+  };
+  var readSession = (session) => {
+    if (session === null)
+      return null;
+    if (Object(session) !== session || session === void 0)
+      return void 0;
+    const { instance, handle } = session;
+    if (String(instance) !== instance || instance.length === 0 || String(handle) !== handle || handle.length === 0)
+      return void 0;
+    const user = readSessionUser(session.user);
+    if (user === void 0)
+      return void 0;
+    return { instance, handle, user };
+  };
+  var readSourceControlProviderRequest = (body) => {
+    let wire;
+    try {
+      const parsed = JSON.parse(body);
+      if (Object(parsed) !== parsed || parsed === null)
+        return null;
+      wire = parsed;
+    } catch {
+      return null;
+    }
+    const { v: v2, requestId, method, provider, input } = wire;
+    if (v2 !== SOURCE_CONTROL_PROVIDER_WIRE_VERSION)
+      return null;
+    if (String(requestId) !== requestId || requestId.length === 0)
+      return null;
+    if (String(provider) !== provider || provider.length === 0)
+      return null;
+    if (String(method) !== method || !isSourceControlProviderMethod(method))
+      return null;
+    if (Object(input) !== input || Array.isArray(input))
+      return null;
+    const session = readSession(wire.session);
+    if (session === void 0)
+      return null;
+    return { v: SOURCE_CONTROL_PROVIDER_WIRE_VERSION, requestId, method, provider, session, input };
+  };
+  var SourceControlForgeError = class extends Error {
+    code;
+    status;
+    constructor(message, code, status) {
+      super(message);
+      this.name = "SourceControlForgeError";
+      this.code = code;
+      this.status = status;
+    }
+  };
+  var createSourceControlForge = ({ env }) => {
+    const base = env[OPENCHAMBER_HOST_CALLBACK_URL];
+    if (!base)
+      throw new Error(`${OPENCHAMBER_HOST_CALLBACK_URL} is not set: only a service that provides "source-control" can reach a forge.`);
+    const url = `${base.replace(/\/+$/, "")}${SOURCE_CONTROL_OUTBOUND_PATH}`;
+    return {
+      async request(handle, request) {
+        let response;
+        try {
+          response = await fetch(url, {
+            method: "POST",
+            headers: { authorization: `Bearer ${handle}`, "content-type": "application/json" },
+            body: JSON.stringify(request),
+            // A little past OpenChamber's own deadline, so its answer wins.
+            signal: AbortSignal.timeout(SOURCE_CONTROL_OUTBOUND_TIMEOUT_MS + 5e3)
+          });
+        } catch (error) {
+          throw new SourceControlForgeError(`OpenChamber did not answer: ${error instanceof Error ? error.message : String(error)}`, "HOST_UNAVAILABLE", 0);
+        }
+        let answer;
+        try {
+          answer = Object(await response.json());
+        } catch {
+          throw new SourceControlForgeError("OpenChamber answered with something other than JSON", "HOST_UNAVAILABLE", response.status);
+        }
+        if (!response.ok) {
+          const message = answer.error?.message;
+          const code = answer.error?.code;
+          throw new SourceControlForgeError(String(message) === message && message.length > 0 ? message : `OpenChamber refused the request (${response.status})`, String(code) === code && code.length > 0 ? code : "OUTBOUND_REFUSED", response.status);
+        }
+        if (!Number.isSafeInteger(answer.status) || String(answer.body) !== answer.body) {
+          throw new SourceControlForgeError("OpenChamber relayed a malformed forge answer", "HOST_UNAVAILABLE", response.status);
+        }
+        const headers = {};
+        for (const [name, text] of Object.entries(Object(answer.headers ?? {}))) {
+          if (String(text) === text)
+            headers[name] = text;
+        }
+        return { status: Number(answer.status), headers, body: answer.body };
+      }
+    };
   };
 
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
@@ -1708,7 +1891,7 @@
   var mix = (color, pct, base = "transparent") => `color-mix(in srgb, ${color} ${pct}%, ${base})`;
   var focusFill = `background-image: linear-gradient(${hover}, ${hover});`;
   var field = (edge) => `box-shadow: inset 0 0 0 1px ${edge}, var(--oc-sdk-field-lift);`;
-  var raised = "box-shadow: inset 0 0 0 1px var(--oc-sdk-edge), var(--oc-sdk-raised-lift);";
+  var raised = "border-color: var(--oc-sdk-edge); box-shadow: var(--oc-sdk-raised-lift);";
   var litButton = "box-shadow: var(--oc-sdk-lit);";
   var darkLift = `inset 0 1px 0 0 ${mix(fg, 1.5)}, 0 1px 1px 0 rgb(0 0 0 / 0.28), 0 2px 3px -2px rgb(0 0 0 / 0.2)`;
   var THEME_VARS = `
@@ -1719,7 +1902,8 @@
   --oc-sdk-field-lift: inset 0 1px 2px 0 rgb(0 0 0 / 0.04);
   --oc-sdk-raised-lift: 0 1px 2px 0 rgb(0 0 0 / 0.06);
   --oc-sdk-lit: inset 0 1px 0 0 rgb(255 255 255 / 0.45), 0 1px 2px 0 rgb(0 0 0 / 0.08);
-  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.8), inset 0 0 0 1px rgb(0 0 0 / 0.04), 0 0 0 1px rgb(0 0 0 / 0.1), 0 1px 2px -0.5px rgb(0 0 0 / 0.08), 0 4px 8px -2px rgb(0 0 0 / 0.08), 0 12px 20px -4px rgb(0 0 0 / 0.08);
+  --oc-sdk-float-edge: rgb(0 0 0 / 0.1);
+  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.8), inset 0 0 0 1px rgb(0 0 0 / 0.04), 0 1px 2px -0.5px rgb(0 0 0 / 0.08), 0 4px 8px -2px rgb(0 0 0 / 0.08), 0 12px 20px -4px rgb(0 0 0 / 0.08);
 }
 :root[data-oc-theme="dark"] {
   --oc-sdk-edge: ${mix(fg, 6)};
@@ -1728,7 +1912,8 @@
   --oc-sdk-field-lift: ${darkLift};
   --oc-sdk-raised-lift: ${darkLift};
   --oc-sdk-lit: inset 0 1px 0 0 ${mix(fg, 1.5)}, 0 1px 1px 0 rgb(0 0 0 / 0.28), 0 2px 3px -2px rgb(0 0 0 / 0.2);
-  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.06), inset 0 0 0 1px rgb(255 255 255 / 0.08), 0 0 0 1px rgb(0 0 0 / 0.36), 0 1px 1px -0.5px rgb(0 0 0 / 0.22), 0 3px 3px -1.5px rgb(0 0 0 / 0.2), 0 6px 6px -3px rgb(0 0 0 / 0.16);
+  --oc-sdk-float-edge: rgb(0 0 0 / 0.36);
+  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.06), inset 0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 1px -0.5px rgb(0 0 0 / 0.22), 0 3px 3px -1.5px rgb(0 0 0 / 0.2), 0 6px 6px -3px rgb(0 0 0 / 0.16);
 }`;
   var tone = (name) => {
     const color = v(`status-${name}`, "currentColor");
@@ -1848,9 +2033,9 @@ ${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
 .oc-sdk-btn[data-variant="secondary"] { background: ${secondary}; color: var(--oc-fg); }
 .oc-sdk-btn[data-variant="secondary"]:hover { background-image: linear-gradient(${hover}, ${hover}); }
 .oc-sdk-btn[data-variant="secondary"]:active { background-image: linear-gradient(${active}, ${active}); }
-.oc-sdk-btn[data-variant="outline"] { background: var(--oc-sdk-raised-bg); color: ${elevatedFg}; border-color: transparent; ${raised} }
+.oc-sdk-btn[data-variant="outline"] { background: var(--oc-sdk-raised-bg); color: ${elevatedFg}; ${raised} }
 .oc-sdk-btn[data-variant="outline"]:hover { background-image: linear-gradient(${hover}, ${hover}); }
-.oc-sdk-btn[data-variant="outline"]:active { background-image: linear-gradient(${active}, ${active}); box-shadow: inset 0 0 0 1px var(--oc-sdk-edge); }
+.oc-sdk-btn[data-variant="outline"]:active { background-image: linear-gradient(${active}, ${active}); box-shadow: none; }
 .oc-sdk-btn[data-variant="ghost"] { background: transparent; }
 .oc-sdk-btn[data-variant="ghost"]:hover { background: ${hover}; }
 .oc-sdk-btn[data-variant="ghost"]:active { background: ${active}; }
@@ -1872,13 +2057,13 @@ ${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
 .oc-sdk-search-clear { border-radius: ${smallRadius}; color: ${muted}; }
 .oc-sdk-search-clear:hover { background: ${hover}; color: ${fg}; }
 
-.oc-sdk-trigger { border-color: transparent; border-radius: ${controlRadius}; background: var(--oc-sdk-raised-bg); color: ${elevatedFg}; ${raised} transition: background 150ms ease-out; }
+.oc-sdk-trigger { border-radius: ${controlRadius}; background: var(--oc-sdk-raised-bg); color: ${elevatedFg}; ${raised} transition: background 150ms ease-out; }
 .oc-sdk-trigger:hover { background-image: linear-gradient(${hover}, ${hover}); }
 .oc-sdk-trigger[aria-expanded="true"] { background-image: linear-gradient(${active}, ${active}); }
 .oc-sdk-trigger-value[data-empty="true"] { color: ${muted}; }
 .oc-sdk-trigger-chevron { color: ${muted}; }
-/* The app's dropdown light: lit top, hairline rings and a layered shadow, no border. */
-.oc-sdk-popup { --surface-foreground: ${elevatedFg}; border-color: transparent; border-radius: 12px; background: ${elevated}; color: ${elevatedFg}; box-shadow: var(--oc-sdk-float); }
+/* The app's dropdown light: lit top, hairline rings and a layered shadow. Its outer ring is the border, over the page like the app's. */
+.oc-sdk-popup { --surface-foreground: ${elevatedFg}; border-color: var(--oc-sdk-float-edge); border-radius: 12px; background: ${elevated}; background-clip: padding-box; color: ${elevatedFg}; box-shadow: var(--oc-sdk-float); }
 .oc-sdk-option { border-radius: 8px; }
 .oc-sdk-option[data-active="true"] { background: ${hover}; }
 /* A selected option shows a check mark in the text colour, like the app's own pickers. Options without the mark come
@@ -1906,7 +2091,7 @@ ${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
 .oc-sdk-tab { border-radius: 8px; color: ${muted}; transition: color 150ms ease-out, background 150ms ease-out; }
 .oc-sdk-tab:hover { color: ${fg}; }
 .oc-sdk-tab[aria-selected="true"] { color: ${selectionFg}; background: ${selection}; border-color: ${border}; }
-.oc-sdk-tabs[data-track="true"] .oc-sdk-tab[aria-selected="true"] { color: ${elevatedFg}; background: var(--oc-sdk-raised-bg); border-color: transparent; ${raised} }
+.oc-sdk-tabs[data-track="true"] .oc-sdk-tab[aria-selected="true"] { color: ${elevatedFg}; background: var(--oc-sdk-raised-bg); ${raised} }
 .oc-sdk-tab-count { color: ${muted}; }
 
 .oc-sdk-badge { border-radius: 9999px; background: ${hover}; color: ${muted}; }
@@ -8986,29 +9171,150 @@ Blocked by ${blockerRef}`;
     return statusCode >= 400 && statusCode < 500;
   }
   var questionAnswerDrafts = /* @__PURE__ */ new Map();
-  function saveQuestionDraft(issueNumber, questionText, answerText) {
-    const cleanQ = (questionText || "").trim();
+  function getDraftKey(target, second, third) {
+    let repo = "";
+    let issueNumber = 0;
+    let questionText = "";
+    if (target && typeof target === "object") {
+      repo = repoForIssue(target);
+      issueNumber = target.number;
+      questionText = typeof second === "string" ? second : "";
+    } else if (typeof target === "string") {
+      repo = target.trim();
+      issueNumber = typeof second === "number" ? second : parseInt(String(second), 10);
+      questionText = third || "";
+    } else {
+      return null;
+    }
+    if (!repo || !issueNumber || !questionText) return null;
+    const cleanQ = questionText.trim();
+    if (!cleanQ) return null;
+    return `${repo}#${issueNumber}::${cleanQ}`;
+  }
+  function saveQuestionDraft(target, second, third, fourth) {
+    let key = null;
+    let answerText = "";
+    if (target && typeof target === "object") {
+      key = getDraftKey(target, second);
+      answerText = third || "";
+    } else {
+      key = getDraftKey(target, second, third);
+      answerText = fourth || "";
+    }
+    if (!key) return;
     const cleanA = (answerText || "").trim();
-    if (!cleanA) return;
-    if (cleanQ) {
-      questionAnswerDrafts.set(`${issueNumber}::${cleanQ}`, cleanA);
+    if (!cleanA) {
+      questionAnswerDrafts.delete(key);
+      return;
     }
-    questionAnswerDrafts.set(`issue::${issueNumber}`, cleanA);
+    questionAnswerDrafts.set(key, cleanA);
   }
-  function getQuestionDraft(issueNumber, questionText) {
-    const cleanQ = (questionText || "").trim();
-    if (cleanQ) {
-      const exact = questionAnswerDrafts.get(`${issueNumber}::${cleanQ}`);
-      if (exact !== void 0) return exact;
+  function getQuestionDraft(target, second, third) {
+    let key = null;
+    if (target && typeof target === "object") {
+      key = getDraftKey(target, second);
+    } else {
+      key = getDraftKey(target, second, third);
     }
-    return questionAnswerDrafts.get(`issue::${issueNumber}`);
+    if (!key) return void 0;
+    return questionAnswerDrafts.get(key);
   }
-  function clearQuestionDraft(issueNumber, questionText) {
-    const cleanQ = (questionText || "").trim();
-    if (cleanQ) {
-      questionAnswerDrafts.delete(`${issueNumber}::${cleanQ}`);
+  function clearQuestionDraft(target, second, third) {
+    let key = null;
+    if (target && typeof target === "object") {
+      key = getDraftKey(target, second);
+    } else {
+      key = getDraftKey(target, second, third);
     }
-    questionAnswerDrafts.delete(`issue::${issueNumber}`);
+    if (!key) return;
+    questionAnswerDrafts.delete(key);
+  }
+  function getRecoverableQuestionDrafts(issue) {
+    if (!issue) return [];
+    const repo = repoForIssue(issue);
+    if (!repo) return [];
+    const prefix = `${repo}#${issue.number}::`;
+    const openQuestions = (issue.openQuestions || parseOpenQuestions(issue.body || "")).filter((q) => !q.completed).map((q) => q.text.trim());
+    const list = [];
+    for (const [key, answerText] of questionAnswerDrafts.entries()) {
+      if (key.startsWith(prefix)) {
+        const qText = key.slice(prefix.length).trim();
+        if (!openQuestions.includes(qText)) {
+          list.push({ questionText: qText, answerText });
+        }
+      }
+    }
+    return list;
+  }
+  function renderRecoverableDraftsElement(issue, onDiscard) {
+    const drafts = getRecoverableQuestionDrafts(issue);
+    if (drafts.length === 0) return null;
+    const container = document.createElement("div");
+    container.className = "recoverable-drafts-list";
+    container.style.cssText = "margin-top: 8px; display: flex; flex-direction: column; gap: 8px; width: 100%;";
+    drafts.forEach((draft) => {
+      const box = document.createElement("div");
+      box.className = "recoverable-draft-box";
+      box.style.cssText = "padding: 8px 10px; background: var(--surf-muted); border: 1px dashed var(--border); border-radius: 6px; font-size: 11.5px;";
+      const header = document.createElement("div");
+      header.className = "recoverable-draft-header";
+      header.style.cssText = "display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;";
+      const titleEl = document.createElement("span");
+      titleEl.className = "recoverable-draft-badge";
+      titleEl.style.cssText = "font-weight: 600; font-size: 10.5px; color: var(--warn); text-transform: uppercase; letter-spacing: 0.5px;";
+      titleEl.textContent = "Recoverable Draft (Unsaved)";
+      header.appendChild(titleEl);
+      const actions2 = document.createElement("div");
+      actions2.className = "recoverable-draft-actions";
+      actions2.style.cssText = "display: flex; gap: 4px;";
+      const btnCopy = document.createElement("button");
+      btnCopy.className = "btn btn-xs btn-copy-draft";
+      btnCopy.type = "button";
+      btnCopy.textContent = "Copy";
+      btnCopy.title = "Copy draft answer to clipboard";
+      btnCopy.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+          void navigator.clipboard.writeText(draft.answerText);
+        }
+        if (host?.toast) {
+          void host.toast({ kind: "info", message: "Draft copied to clipboard" });
+        }
+      });
+      const btnDiscard = document.createElement("button");
+      btnDiscard.className = "btn btn-xs btn-discard-draft";
+      btnDiscard.type = "button";
+      btnDiscard.textContent = "Discard";
+      btnDiscard.title = "Discard this draft";
+      btnDiscard.addEventListener("click", (e) => {
+        e.stopPropagation();
+        clearQuestionDraft(issue, draft.questionText);
+        if (onDiscard) {
+          onDiscard();
+        } else {
+          renderViews();
+          if (activeIssue && activeIssue.number === issue.number) {
+            renderDrawer(issue, true);
+          }
+        }
+      });
+      actions2.appendChild(btnCopy);
+      actions2.appendChild(btnDiscard);
+      header.appendChild(actions2);
+      box.appendChild(header);
+      const questionRow = document.createElement("div");
+      questionRow.className = "recoverable-draft-question";
+      questionRow.style.cssText = "color: var(--fg-muted); font-size: 11px; margin-bottom: 4px; word-break: break-word;";
+      questionRow.innerHTML = `<span style="font-weight: 500;">Original question:</span> ${escapeHtml(draft.questionText)}`;
+      box.appendChild(questionRow);
+      const answerRow = document.createElement("div");
+      answerRow.className = "recoverable-draft-text";
+      answerRow.style.cssText = "background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; font-family: var(--font-mono); font-size: 11px; color: var(--fg); white-space: pre-wrap; word-break: break-word; user-select: text; -webkit-user-select: text;";
+      answerRow.textContent = draft.answerText;
+      box.appendChild(answerRow);
+      container.appendChild(box);
+    });
+    return container;
   }
   var inFlightQuestions = /* @__PURE__ */ new Set();
   async function reloadIssueBeforeMutation(issue) {
@@ -9163,7 +9469,7 @@ Blocked by ${blockerRef}`;
       const fresh = await reloadIssueBeforeMutation(issue);
       if (!fresh || typeof fresh.body !== "string") {
         addLog(`Cannot answer question on #${issue.number}: fresh reload failed`, "error");
-        saveQuestionDraft(issue.number, cleanQuestion, cleanAnswer);
+        saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
         if (host?.toast) {
           await host.toast({
             kind: "error",
@@ -9175,7 +9481,7 @@ Blocked by ${blockerRef}`;
       const freshBody = fresh.body;
       const result = resolveOptimisticQuestionAnswer(freshBody, cleanQuestion, cleanAnswer);
       if (!result.found) {
-        saveQuestionDraft(issue.number, cleanQuestion, cleanAnswer);
+        saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
         renderViews();
         if (activeIssue && activeIssue.number === issue.number) {
           renderDrawer(issue, true);
@@ -9217,12 +9523,12 @@ Blocked by ${blockerRef}`;
         toastMessage: "Recorded answer to question"
       });
       if (ok) {
-        clearQuestionDraft(issue.number, cleanQuestion);
+        clearQuestionDraft(issue, cleanQuestion);
         if (activeIssue && activeIssue.number === issue.number) {
           renderDrawer(issue, true);
         }
       } else {
-        saveQuestionDraft(issue.number, cleanQuestion, cleanAnswer);
+        saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
       }
       return ok;
     } finally {
@@ -10412,8 +10718,6 @@ Blocked by ${blockerRef}`;
     }
   }
   function renderHumanTasksView(filteredIssues) {
-    userLayoutPreference = "human";
-    document.body.setAttribute("data-layout", "human");
     if (!elHumanViewContainer) return;
     elHumanViewContainer.innerHTML = "";
     const getCompletedTasksForIssue = (issue) => {
@@ -10434,7 +10738,9 @@ Blocked by ${blockerRef}`;
       const todos = collectHumanTodos(i, session);
       if (todos.length > 0) return true;
       const completed = getCompletedTasksForIssue(i);
-      return completed.length > 0;
+      if (completed.length > 0) return true;
+      if (getRecoverableQuestionDrafts(i).length > 0) return true;
+      return false;
     });
     if (humanIssues.length === 0) {
       if (isLoading && issues.length === 0) {
@@ -10460,7 +10766,8 @@ Blocked by ${blockerRef}`;
     for (const issue of humanIssues) {
       const session = getIssueSession(issue);
       const activeTodos = collectHumanTodos(issue, session);
-      if (activeTodos.length > 0) {
+      const recoverable = getRecoverableQuestionDrafts(issue);
+      if (activeTodos.length > 0 || recoverable.length > 0) {
         pendingIssues.push(issue);
       } else {
         completedIssues.push(issue);
@@ -10599,13 +10906,13 @@ Blocked by ${blockerRef}`;
             const answerInput = answerRow.querySelector(".input-human-answer");
             const btnSubmit = answerRow.querySelector(".btn-submit-human-answer");
             const btnCancel = answerRow.querySelector(".btn-cancel-human-answer");
-            const existingDraft = getQuestionDraft(issue.number, todo.text);
+            const existingDraft = getQuestionDraft(issue, todo.text);
             if (existingDraft && answerInput) {
               answerInput.value = existingDraft;
               answerRow.style.display = "flex";
             }
             answerInput?.addEventListener("input", () => {
-              saveQuestionDraft(issue.number, todo.text, answerInput.value);
+              saveQuestionDraft(issue, todo.text, answerInput.value);
             });
             answerRow.querySelectorAll(".question-option-btn").forEach((optBtn) => {
               optBtn.addEventListener("click", (e) => {
@@ -10613,7 +10920,7 @@ Blocked by ${blockerRef}`;
                 const optVal = optBtn.getAttribute("data-opt");
                 if (optVal && answerInput) {
                   answerInput.value = optVal;
-                  saveQuestionDraft(issue.number, todo.text, optVal);
+                  saveQuestionDraft(issue, todo.text, optVal);
                   answerInput.focus();
                 }
               });
@@ -10626,7 +10933,7 @@ Blocked by ${blockerRef}`;
             });
             btnCancel?.addEventListener("click", (e) => {
               e.stopPropagation();
-              clearQuestionDraft(issue.number, todo.text);
+              clearQuestionDraft(issue, todo.text);
               if (answerInput) answerInput.value = "";
               answerRow.style.display = "none";
             });
@@ -10642,7 +10949,7 @@ Blocked by ${blockerRef}`;
               try {
                 const ok = await answerQuestion(issue, todo.text, ans);
                 if (ok) {
-                  clearQuestionDraft(issue.number, todo.text);
+                  clearQuestionDraft(issue, todo.text);
                   if (answerRow) answerRow.style.display = "none";
                 }
               } finally {
@@ -10757,6 +11064,12 @@ Blocked by ${blockerRef}`;
         }
       }
       card.appendChild(list);
+      const recoverableDraftsEl = renderRecoverableDraftsElement(issue, () => {
+        renderViews();
+      });
+      if (recoverableDraftsEl) {
+        card.appendChild(recoverableDraftsEl);
+      }
       return card;
     };
     if (isAllProjectsMode) {
@@ -10945,15 +11258,14 @@ Blocked by ${blockerRef}`;
     elAllTasksViewContainer.appendChild(fragment);
   }
   function renderQuestionsView(filteredIssues) {
-    userLayoutPreference = "questions";
-    document.body.setAttribute("data-layout", "questions");
     if (!elQuestionsViewContainer) return;
     elQuestionsViewContainer.innerHTML = "";
     const issuesWithQuestions = [];
     for (const issue of filteredIssues) {
       const questions = parseOpenQuestions(issue.body || "");
       const unanswered = questions.filter((q) => !q.completed);
-      if (unanswered.length > 0) {
+      const recoverable = getRecoverableQuestionDrafts(issue);
+      if (unanswered.length > 0 || recoverable.length > 0) {
         issuesWithQuestions.push({ issue, questions: unanswered });
       }
     }
@@ -11050,6 +11362,13 @@ Blocked by ${blockerRef}`;
         }
       });
       card.appendChild(header);
+      if (questions.length === 0) {
+        const emptyNote = document.createElement("div");
+        emptyNote.className = "no-questions-notice";
+        emptyNote.style.cssText = "font-size: 11px; color: var(--fg-muted); padding: 6px 0; font-style: italic;";
+        emptyNote.textContent = "No open questions remaining on this issue.";
+        card.appendChild(emptyNote);
+      }
       const list = document.createElement("div");
       list.className = "question-items-list";
       const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
@@ -11115,7 +11434,7 @@ Blocked by ${blockerRef}`;
               btnAnswer.setAttribute("aria-expanded", "true");
               if (input) {
                 input.value = opt;
-                saveQuestionDraft(issue.number, question.text, opt);
+                saveQuestionDraft(issue, question.text, opt);
                 input.focus();
               }
             });
@@ -11140,14 +11459,14 @@ Blocked by ${blockerRef}`;
         const input = answerRow.querySelector(".input-inline-answer");
         const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
         const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
-        const existingDraft = getQuestionDraft(issue.number, question.text);
+        const existingDraft = getQuestionDraft(issue, question.text);
         if (existingDraft && input) {
           input.value = existingDraft;
           answerRow.style.display = "flex";
           btnAnswer.setAttribute("aria-expanded", "true");
         }
         input?.addEventListener("input", () => {
-          saveQuestionDraft(issue.number, question.text, input.value);
+          saveQuestionDraft(issue, question.text, input.value);
         });
         btnAnswer.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -11170,7 +11489,7 @@ Blocked by ${blockerRef}`;
           try {
             const ok = await answerQuestion(issue, question.text, answerText);
             if (ok) {
-              clearQuestionDraft(issue.number, question.text);
+              clearQuestionDraft(issue, question.text);
               answerRow.style.display = "none";
               btnAnswer.setAttribute("aria-expanded", "false");
             }
@@ -11195,7 +11514,7 @@ Blocked by ${blockerRef}`;
         });
         btnCancel?.addEventListener("click", (ev) => {
           ev.stopPropagation();
-          clearQuestionDraft(issue.number, question.text);
+          clearQuestionDraft(issue, question.text);
           if (input) input.value = "";
           answerRow.style.display = "none";
           btnAnswer.setAttribute("aria-expanded", "false");
@@ -11203,6 +11522,12 @@ Blocked by ${blockerRef}`;
         list.appendChild(itemEl);
       });
       card.appendChild(list);
+      const draftsEl = renderRecoverableDraftsElement(issue, () => {
+        renderViews();
+      });
+      if (draftsEl) {
+        card.appendChild(draftsEl);
+      }
       return card;
     };
     if (isAllProjectsMode) {
@@ -12504,6 +12829,13 @@ Blocked by ${blockerRef}`;
         No open questions. Add one below to align on specifications.
       </div>
     `;
+      const draftsEl = renderRecoverableDraftsElement(issue, () => {
+        renderDrawer(issue, true);
+        renderViews();
+      });
+      if (draftsEl) {
+        elDrawerQuestionsContainer.appendChild(draftsEl);
+      }
       return;
     }
     elQuestionsProgressText.textContent = `${open} open (${resolved} resolved)`;
@@ -12546,7 +12878,7 @@ Blocked by ${blockerRef}`;
         btnAnswer.title = "Record decision or answer";
         btnAnswer.textContent = "Answer";
         textRow.appendChild(btnAnswer);
-        const existingDraft = getQuestionDraft(issue.number, question.text);
+        const existingDraft = getQuestionDraft(issue, question.text);
         const createOrGetAnswerRow = () => {
           let answerRow = contentEl.querySelector(".inline-answer-row");
           if (!answerRow) {
@@ -12560,12 +12892,12 @@ Blocked by ${blockerRef}`;
             const input = answerRow.querySelector(".input-inline-answer");
             const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
             const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
-            const draft = getQuestionDraft(issue.number, question.text);
+            const draft = getQuestionDraft(issue, question.text);
             if (draft && input) {
               input.value = draft;
             }
             input?.addEventListener("input", () => {
-              saveQuestionDraft(issue.number, question.text, input.value);
+              saveQuestionDraft(issue, question.text, input.value);
             });
             const submitAnswer = async () => {
               if (btnSave?.disabled) return;
@@ -12581,7 +12913,7 @@ Blocked by ${blockerRef}`;
                 if (!targetIssue) return;
                 const ok = await answerQuestion(targetIssue, question.text, answerText);
                 if (ok) {
-                  clearQuestionDraft(issue.number, question.text);
+                  clearQuestionDraft(issue, question.text);
                   if (issue && issue !== targetIssue) {
                     issue.body = targetIssue.body;
                     issue.subtasks = targetIssue.subtasks;
@@ -12600,7 +12932,7 @@ Blocked by ${blockerRef}`;
             });
             btnCancel?.addEventListener("click", (ev) => {
               ev.stopPropagation();
-              clearQuestionDraft(issue.number, question.text);
+              clearQuestionDraft(issue, question.text);
               if (input) input.value = "";
               if (answerRow) answerRow.style.display = "none";
               btnAnswer.focus();
@@ -12644,6 +12976,13 @@ Blocked by ${blockerRef}`;
       itemEl.appendChild(contentEl);
       elDrawerQuestionsContainer.appendChild(itemEl);
     });
+    const recoverableDraftsEl = renderRecoverableDraftsElement(issue, () => {
+      renderDrawer(issue, true);
+      renderViews();
+    });
+    if (recoverableDraftsEl) {
+      elDrawerQuestionsContainer.appendChild(recoverableDraftsEl);
+    }
   }
   function renderTestPlans(issue) {
     if (!elDrawerIssueTestsContainer || !elDrawerBatchTestsContainer) return;

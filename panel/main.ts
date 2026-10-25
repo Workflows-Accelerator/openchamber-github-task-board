@@ -2260,36 +2260,204 @@ function isDefinitivePreCommitRejection(err: any): boolean {
 }
 
 // Question answer draft preservation:
-// When an answer is refused or rejected (e.g. question modified remotely, already answered,
-// ambiguous, or write failed), the view re-renders with fresh data.
-// We preserve the user's typed text so refusing never costs them their work.
+// Drafts are keyed by repository, issue number, and exact source question text:
+// ${repo}#${issueNumber}::${cleanQuestionText}
+// No generic issue-number fallback. If repo is unknown, no draft is saved or retrieved.
 const questionAnswerDrafts = new Map<string, string>();
 
-function saveQuestionDraft(issueNumber: number, questionText: string, answerText: string): void {
-  const cleanQ = (questionText || '').trim();
+interface RecoverableQuestionDraft {
+  questionText: string;
+  answerText: string;
+}
+
+function getDraftKey(
+  target: Issue | string | null | undefined,
+  second: number | string,
+  third?: string
+): string | null {
+  let repo = '';
+  let issueNumber = 0;
+  let questionText = '';
+
+  if (target && typeof target === 'object') {
+    repo = repoForIssue(target);
+    issueNumber = target.number;
+    questionText = typeof second === 'string' ? second : '';
+  } else if (typeof target === 'string') {
+    repo = target.trim();
+    issueNumber = typeof second === 'number' ? second : parseInt(String(second), 10);
+    questionText = third || '';
+  } else {
+    return null;
+  }
+
+  if (!repo || !issueNumber || !questionText) return null;
+  const cleanQ = questionText.trim();
+  if (!cleanQ) return null;
+  return `${repo}#${issueNumber}::${cleanQ}`;
+}
+
+function saveQuestionDraft(
+  target: Issue | string | null | undefined,
+  second: number | string,
+  third?: string,
+  fourth?: string
+): void {
+  let key: string | null = null;
+  let answerText = '';
+
+  if (target && typeof target === 'object') {
+    key = getDraftKey(target, second as string);
+    answerText = third || '';
+  } else {
+    key = getDraftKey(target, second as number, third as string);
+    answerText = fourth || '';
+  }
+
+  if (!key) return;
   const cleanA = (answerText || '').trim();
-  if (!cleanA) return;
-  if (cleanQ) {
-    questionAnswerDrafts.set(`${issueNumber}::${cleanQ}`, cleanA);
+  if (!cleanA) {
+    questionAnswerDrafts.delete(key);
+    return;
   }
-  questionAnswerDrafts.set(`issue::${issueNumber}`, cleanA);
+  questionAnswerDrafts.set(key, cleanA);
 }
 
-function getQuestionDraft(issueNumber: number, questionText: string): string | undefined {
-  const cleanQ = (questionText || '').trim();
-  if (cleanQ) {
-    const exact = questionAnswerDrafts.get(`${issueNumber}::${cleanQ}`);
-    if (exact !== undefined) return exact;
+function getQuestionDraft(
+  target: Issue | string | null | undefined,
+  second: number | string,
+  third?: string
+): string | undefined {
+  let key: string | null = null;
+  if (target && typeof target === 'object') {
+    key = getDraftKey(target, second as string);
+  } else {
+    key = getDraftKey(target, second as number, third as string);
   }
-  return questionAnswerDrafts.get(`issue::${issueNumber}`);
+  if (!key) return undefined;
+  return questionAnswerDrafts.get(key);
 }
 
-function clearQuestionDraft(issueNumber: number, questionText?: string): void {
-  const cleanQ = (questionText || '').trim();
-  if (cleanQ) {
-    questionAnswerDrafts.delete(`${issueNumber}::${cleanQ}`);
+function clearQuestionDraft(
+  target: Issue | string | null | undefined,
+  second: number | string,
+  third?: string
+): void {
+  let key: string | null = null;
+  if (target && typeof target === 'object') {
+    key = getDraftKey(target, second as string);
+  } else {
+    key = getDraftKey(target, second as number, third as string);
   }
-  questionAnswerDrafts.delete(`issue::${issueNumber}`);
+  if (!key) return;
+  questionAnswerDrafts.delete(key);
+}
+
+function getRecoverableQuestionDrafts(issue: Issue | null | undefined): RecoverableQuestionDraft[] {
+  if (!issue) return [];
+  const repo = repoForIssue(issue);
+  if (!repo) return [];
+  const prefix = `${repo}#${issue.number}::`;
+  const openQuestions = (issue.openQuestions || parseOpenQuestions(issue.body || ''))
+    .filter((q) => !q.completed)
+    .map((q) => q.text.trim());
+
+  const list: RecoverableQuestionDraft[] = [];
+  for (const [key, answerText] of questionAnswerDrafts.entries()) {
+    if (key.startsWith(prefix)) {
+      const qText = key.slice(prefix.length).trim();
+      if (!openQuestions.includes(qText)) {
+        list.push({ questionText: qText, answerText });
+      }
+    }
+  }
+  return list;
+}
+
+function renderRecoverableDraftsElement(
+  issue: Issue,
+  onDiscard?: () => void
+): HTMLElement | null {
+  const drafts = getRecoverableQuestionDrafts(issue);
+  if (drafts.length === 0) return null;
+
+  const container = document.createElement('div');
+  container.className = 'recoverable-drafts-list';
+  container.style.cssText = 'margin-top: 8px; display: flex; flex-direction: column; gap: 8px; width: 100%;';
+
+  drafts.forEach((draft) => {
+    const box = document.createElement('div');
+    box.className = 'recoverable-draft-box';
+    box.style.cssText = 'padding: 8px 10px; background: var(--surf-muted); border: 1px dashed var(--border); border-radius: 6px; font-size: 11.5px;';
+
+    const header = document.createElement('div');
+    header.className = 'recoverable-draft-header';
+    header.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;';
+
+    const titleEl = document.createElement('span');
+    titleEl.className = 'recoverable-draft-badge';
+    titleEl.style.cssText = 'font-weight: 600; font-size: 10.5px; color: var(--warn); text-transform: uppercase; letter-spacing: 0.5px;';
+    titleEl.textContent = 'Recoverable Draft (Unsaved)';
+    header.appendChild(titleEl);
+
+    const actions = document.createElement('div');
+    actions.className = 'recoverable-draft-actions';
+    actions.style.cssText = 'display: flex; gap: 4px;';
+
+    const btnCopy = document.createElement('button');
+    btnCopy.className = 'btn btn-xs btn-copy-draft';
+    btnCopy.type = 'button';
+    btnCopy.textContent = 'Copy';
+    btnCopy.title = 'Copy draft answer to clipboard';
+    btnCopy.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        void navigator.clipboard.writeText(draft.answerText);
+      }
+      if (host?.toast) {
+        void host.toast({ kind: 'info', message: 'Draft copied to clipboard' });
+      }
+    });
+
+    const btnDiscard = document.createElement('button');
+    btnDiscard.className = 'btn btn-xs btn-discard-draft';
+    btnDiscard.type = 'button';
+    btnDiscard.textContent = 'Discard';
+    btnDiscard.title = 'Discard this draft';
+    btnDiscard.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearQuestionDraft(issue, draft.questionText);
+      if (onDiscard) {
+        onDiscard();
+      } else {
+        renderViews();
+        if (activeIssue && activeIssue.number === issue.number) {
+          renderDrawer(issue, true);
+        }
+      }
+    });
+
+    actions.appendChild(btnCopy);
+    actions.appendChild(btnDiscard);
+    header.appendChild(actions);
+    box.appendChild(header);
+
+    const questionRow = document.createElement('div');
+    questionRow.className = 'recoverable-draft-question';
+    questionRow.style.cssText = 'color: var(--fg-muted); font-size: 11px; margin-bottom: 4px; word-break: break-word;';
+    questionRow.innerHTML = `<span style="font-weight: 500;">Original question:</span> ${escapeHtml(draft.questionText)}`;
+    box.appendChild(questionRow);
+
+    const answerRow = document.createElement('div');
+    answerRow.className = 'recoverable-draft-text';
+    answerRow.style.cssText = 'background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; font-family: var(--font-mono); font-size: 11px; color: var(--fg); white-space: pre-wrap; word-break: break-word; user-select: text; -webkit-user-select: text;';
+    answerRow.textContent = draft.answerText;
+    box.appendChild(answerRow);
+
+    container.appendChild(box);
+  });
+
+  return container;
 }
 
 const inFlightQuestions = new Set<string>();
@@ -2469,7 +2637,7 @@ async function answerQuestion(
     const fresh = await reloadIssueBeforeMutation(issue);
     if (!fresh || typeof fresh.body !== 'string') {
       addLog(`Cannot answer question on #${issue.number}: fresh reload failed`, 'error');
-      saveQuestionDraft(issue.number, cleanQuestion, cleanAnswer);
+      saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
       if (host?.toast) {
         await host.toast({
           kind: 'error',
@@ -2483,7 +2651,7 @@ async function answerQuestion(
     const result = resolveOptimisticQuestionAnswer(freshBody, cleanQuestion, cleanAnswer);
 
     if (!result.found) {
-      saveQuestionDraft(issue.number, cleanQuestion, cleanAnswer);
+      saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
       renderViews();
       if (activeIssue && activeIssue.number === issue.number) {
         renderDrawer(issue, true);
@@ -2527,12 +2695,12 @@ async function answerQuestion(
       toastMessage: 'Recorded answer to question',
     });
     if (ok) {
-      clearQuestionDraft(issue.number, cleanQuestion);
+      clearQuestionDraft(issue, cleanQuestion);
       if (activeIssue && activeIssue.number === issue.number) {
         renderDrawer(issue, true);
       }
     } else {
-      saveQuestionDraft(issue.number, cleanQuestion, cleanAnswer);
+      saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
     }
     return ok;
   } finally {
@@ -4030,8 +4198,6 @@ async function handleFilePathClick(pathStr: string, e?: Event): Promise<void> {
 }
 
 function renderHumanTasksView(filteredIssues: Issue[]): void {
-  userLayoutPreference = 'human';
-  document.body.setAttribute('data-layout', 'human');
   if (!elHumanViewContainer) return;
   elHumanViewContainer.innerHTML = '';
 
@@ -4059,7 +4225,9 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
     const todos = collectHumanTodos(i, session);
     if (todos.length > 0) return true;
     const completed = getCompletedTasksForIssue(i);
-    return completed.length > 0;
+    if (completed.length > 0) return true;
+    if (getRecoverableQuestionDrafts(i).length > 0) return true;
+    return false;
   });
 
   if (humanIssues.length === 0) {
@@ -4089,7 +4257,8 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
   for (const issue of humanIssues) {
     const session = getIssueSession(issue);
     const activeTodos = collectHumanTodos(issue, session);
-    if (activeTodos.length > 0) {
+    const recoverable = getRecoverableQuestionDrafts(issue);
+    if (activeTodos.length > 0 || recoverable.length > 0) {
       pendingIssues.push(issue);
     } else {
       completedIssues.push(issue);
@@ -4266,14 +4435,14 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
           const btnSubmit = answerRow.querySelector<HTMLButtonElement>('.btn-submit-human-answer');
           const btnCancel = answerRow.querySelector<HTMLButtonElement>('.btn-cancel-human-answer');
 
-          const existingDraft = getQuestionDraft(issue.number, todo.text);
+          const existingDraft = getQuestionDraft(issue, todo.text);
           if (existingDraft && answerInput) {
             answerInput.value = existingDraft;
             answerRow.style.display = 'flex';
           }
 
           answerInput?.addEventListener('input', () => {
-            saveQuestionDraft(issue.number, todo.text, answerInput.value);
+            saveQuestionDraft(issue, todo.text, answerInput.value);
           });
 
           answerRow.querySelectorAll<HTMLButtonElement>('.question-option-btn').forEach((optBtn) => {
@@ -4282,7 +4451,7 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
               const optVal = optBtn.getAttribute('data-opt');
               if (optVal && answerInput) {
                 answerInput.value = optVal;
-                saveQuestionDraft(issue.number, todo.text, optVal);
+                saveQuestionDraft(issue, todo.text, optVal);
                 answerInput.focus();
               }
             });
@@ -4297,7 +4466,7 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
 
           btnCancel?.addEventListener('click', (e) => {
             e.stopPropagation();
-            clearQuestionDraft(issue.number, todo.text);
+            clearQuestionDraft(issue, todo.text);
             if (answerInput) answerInput.value = '';
             answerRow.style.display = 'none';
           });
@@ -4314,7 +4483,7 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
             try {
               const ok = await answerQuestion(issue, todo.text, ans);
               if (ok) {
-                clearQuestionDraft(issue.number, todo.text);
+                clearQuestionDraft(issue, todo.text);
                 if (answerRow) answerRow.style.display = 'none';
               }
             } finally {
@@ -4450,6 +4619,14 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
     }
 
     card.appendChild(list);
+
+    const recoverableDraftsEl = renderRecoverableDraftsElement(issue, () => {
+      renderViews();
+    });
+    if (recoverableDraftsEl) {
+      card.appendChild(recoverableDraftsEl);
+    }
+
     return card;
   };
 
@@ -4671,8 +4848,6 @@ function renderAllTasksView(filteredIssues: Issue[]): void {
 }
 
 function renderQuestionsView(filteredIssues: Issue[]): void {
-  userLayoutPreference = 'questions';
-  document.body.setAttribute('data-layout', 'questions');
   if (!elQuestionsViewContainer) return;
   elQuestionsViewContainer.innerHTML = '';
 
@@ -4680,7 +4855,8 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
   for (const issue of filteredIssues) {
     const questions = parseOpenQuestions(issue.body || '');
     const unanswered = questions.filter((q) => !q.completed);
-    if (unanswered.length > 0) {
+    const recoverable = getRecoverableQuestionDrafts(issue);
+    if (unanswered.length > 0 || recoverable.length > 0) {
       issuesWithQuestions.push({ issue, questions: unanswered });
     }
   }
@@ -4797,6 +4973,14 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
 
     card.appendChild(header);
 
+    if (questions.length === 0) {
+      const emptyNote = document.createElement('div');
+      emptyNote.className = 'no-questions-notice';
+      emptyNote.style.cssText = 'font-size: 11px; color: var(--fg-muted); padding: 6px 0; font-style: italic;';
+      emptyNote.textContent = 'No open questions remaining on this issue.';
+      card.appendChild(emptyNote);
+    }
+
     // Questions List
     const list = document.createElement('div');
     list.className = 'question-items-list';
@@ -4877,7 +5061,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
             btnAnswer.setAttribute('aria-expanded', 'true');
             if (input) {
               input.value = opt;
-              saveQuestionDraft(issue.number, question.text, opt);
+              saveQuestionDraft(issue, question.text, opt);
               input.focus();
             }
           });
@@ -4905,7 +5089,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
       const btnSave = answerRow.querySelector<HTMLButtonElement>('.btn-submit-inline-answer');
       const btnCancel = answerRow.querySelector<HTMLButtonElement>('.btn-cancel-inline-answer');
 
-      const existingDraft = getQuestionDraft(issue.number, question.text);
+      const existingDraft = getQuestionDraft(issue, question.text);
       if (existingDraft && input) {
         input.value = existingDraft;
         answerRow.style.display = 'flex';
@@ -4913,7 +5097,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
       }
 
       input?.addEventListener('input', () => {
-        saveQuestionDraft(issue.number, question.text, input.value);
+        saveQuestionDraft(issue, question.text, input.value);
       });
 
       btnAnswer.addEventListener('click', (e) => {
@@ -4938,7 +5122,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
         try {
           const ok = await answerQuestion(issue, question.text, answerText);
           if (ok) {
-            clearQuestionDraft(issue.number, question.text);
+            clearQuestionDraft(issue, question.text);
             answerRow.style.display = 'none';
             btnAnswer.setAttribute('aria-expanded', 'false');
           }
@@ -4966,7 +5150,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
 
       btnCancel?.addEventListener('click', (ev) => {
         ev.stopPropagation();
-        clearQuestionDraft(issue.number, question.text);
+        clearQuestionDraft(issue, question.text);
         if (input) input.value = '';
         answerRow.style.display = 'none';
         btnAnswer.setAttribute('aria-expanded', 'false');
@@ -4976,6 +5160,14 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
     });
 
     card.appendChild(list);
+
+    const draftsEl = renderRecoverableDraftsElement(issue, () => {
+      renderViews();
+    });
+    if (draftsEl) {
+      card.appendChild(draftsEl);
+    }
+
     return card;
   };
 
@@ -6566,6 +6758,13 @@ function renderQuestions(issue: Issue): void {
         No open questions. Add one below to align on specifications.
       </div>
     `;
+    const draftsEl = renderRecoverableDraftsElement(issue, () => {
+      renderDrawer(issue, true);
+      renderViews();
+    });
+    if (draftsEl) {
+      elDrawerQuestionsContainer.appendChild(draftsEl);
+    }
     return;
   }
 
@@ -6618,7 +6817,7 @@ function renderQuestions(issue: Issue): void {
       btnAnswer.textContent = 'Answer';
       textRow.appendChild(btnAnswer);
 
-      const existingDraft = getQuestionDraft(issue.number, question.text);
+      const existingDraft = getQuestionDraft(issue, question.text);
 
       const createOrGetAnswerRow = () => {
         let answerRow = contentEl.querySelector<HTMLDivElement>('.inline-answer-row');
@@ -6635,13 +6834,13 @@ function renderQuestions(issue: Issue): void {
           const btnSave = answerRow.querySelector<HTMLButtonElement>('.btn-submit-inline-answer');
           const btnCancel = answerRow.querySelector<HTMLButtonElement>('.btn-cancel-inline-answer');
 
-          const draft = getQuestionDraft(issue.number, question.text);
+          const draft = getQuestionDraft(issue, question.text);
           if (draft && input) {
             input.value = draft;
           }
 
           input?.addEventListener('input', () => {
-            saveQuestionDraft(issue.number, question.text, input.value);
+            saveQuestionDraft(issue, question.text, input.value);
           });
 
           const submitAnswer = async () => {
@@ -6658,7 +6857,7 @@ function renderQuestions(issue: Issue): void {
               if (!targetIssue) return;
               const ok = await answerQuestion(targetIssue, question.text, answerText);
               if (ok) {
-                clearQuestionDraft(issue.number, question.text);
+                clearQuestionDraft(issue, question.text);
                 if (issue && issue !== targetIssue) {
                   issue.body = targetIssue.body;
                   issue.subtasks = targetIssue.subtasks;
@@ -6679,7 +6878,7 @@ function renderQuestions(issue: Issue): void {
 
           btnCancel?.addEventListener('click', (ev) => {
             ev.stopPropagation();
-            clearQuestionDraft(issue.number, question.text);
+            clearQuestionDraft(issue, question.text);
             if (input) input.value = '';
             if (answerRow) answerRow.style.display = 'none';
             btnAnswer.focus();
@@ -6727,6 +6926,14 @@ function renderQuestions(issue: Issue): void {
     itemEl.appendChild(contentEl);
     elDrawerQuestionsContainer.appendChild(itemEl);
   });
+
+  const recoverableDraftsEl = renderRecoverableDraftsElement(issue, () => {
+    renderDrawer(issue, true);
+    renderViews();
+  });
+  if (recoverableDraftsEl) {
+    elDrawerQuestionsContainer.appendChild(recoverableDraftsEl);
+  }
 }
 
 function renderTestPlans(issue: Issue): void {

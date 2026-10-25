@@ -1,0 +1,252 @@
+TAP version 13
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/2/comments
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-b/issues/2/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments
+# [TaskBoard] API GET /repos/owner/repo-main/issues/20
+# Subtest: Desired A1: Cross-repo draft isolation with identical question text
+not ok 1 - Desired A1: Cross-repo draft isolation with identical question text
+  ---
+  duration_ms: 201.925396
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:5:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Repo B #1 must not be prefilled with draft from Repo A #1
+    + actual - expected
+    
+    + 'Distinctive draft for Repo A'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: 'Distinctive draft for Repo A'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:55:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: Desired A2: Cross-repo draft isolation with different question text
+not ok 2 - Desired A2: Cross-repo draft isolation with different question text
+  ---
+  duration_ms: 101.399103
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:83:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Repo B #2 must not be prefilled with Repo A #2 draft via issue fallback
+    + actual - expected
+    
+    + 'Secret answer for Repo A'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: 'Secret answer for Repo A'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:123:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: Desired B1: Single issue with multiple questions isolation (Q1 and Q2)
+not ok 3 - Desired B1: Single issue with multiple questions isolation (Q1 and Q2)
+  ---
+  duration_ms: 84.304826
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:130:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Q2 must NOT be prefilled with Q1 draft ("Postgres 16")
+    
+    'Postgres 16' !== ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: 'Postgres 16'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:173:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Desired C1: Emptying an input field deletes the draft and does not resurrect it on re-render
+not ok 4 - Desired C1: Emptying an input field deletes the draft and does not resurrect it on re-render
+  ---
+  duration_ms: 112.630903
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:198:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Cleared draft must NOT resurrect old cached value on re-render
+    + actual - expected
+    
+    + 'Temporary draft'
+    - ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: 'Temporary draft'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:230:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/2/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/issues/2/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/20 -> 200
+# [TaskBoard] Question on \#20 was modified remotely; refusing write
+# [TaskBoard] API GET /repos/owner/repo-main/issues/21
+# Subtest: Desired C2: Remotely changed question leaves current input empty and renders recoverable draft labelled with original question
+not ok 5 - Desired C2: Remotely changed question leaves current input empty and renders recoverable draft labelled with original question
+  ---
+  duration_ms: 282.534164
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:237:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    New question input must remain empty after refusal
+    
+    '30 seconds' !== ''
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ''
+  actual: '30 seconds'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:273:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-main/issues/21 -> 200
+# [TaskBoard] Question on \#21 was modified remotely; refusing write
+# Subtest: Desired C3: Remotely deleted questions renders issue with recoverable draft rather than empty-box
+not ok 6 - Desired C3: Remotely deleted questions renders issue with recoverable draft rather than empty-box
+  ---
+  duration_ms: 606.067958
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:300:1'
+  failureType: 'testCodeFailure'
+  error: 'Draft for deleted question must be displayed in recoverable draft UI'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:336:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: Desired D1: Direct renderers do not mutate userLayoutPreference or data-layout
+not ok 7 - Desired D1: Direct renderers do not mutate userLayoutPreference or data-layout
+  ---
+  duration_ms: 110.401266
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:356:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    renderQuestionsView must NOT mutate document.body data-layout
+    + actual - expected
+    
+    + 'questions'
+    - null
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: ~
+  actual: 'questions'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/verifications/issue-34-final-draft/draft-isolation-regression.test.js:380:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+1..7
+# tests 7
+# suites 0
+# pass 0
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1656.392467
