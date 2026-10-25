@@ -1,6 +1,12 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — decision16 dispatched, #35 bounded re-review running
+## Latest checkpoint — #33 residual recheck and #35 bounded re-review running
+- #33 builder returned d41ff34 clean, actual9router/engineer, claims F1–F5 remediated; protocol12/web108/root466/types0/probes29/browser19 UNKNOWN/baseline32/hash97ad16115fd88c7956a786100730ad2e31741efb6c6a5af816857ecb03c190cd. Manager inspected full product diff; narrow validation plus downstream fallback changes need independent scrutiny, not accepted closure.
+- #33 single independent residual check RUNNING ses_6f740247134713dd1a74137a genius tasks/issue-33-residual-hostile.md on d41ff34; decision16 exhausted if fails => owner, no further autonomous fix. Receipt6404936552/status:in-review. Model verify on wake.
+- #35 reviewer ses_efe868d487a6439e5ba4bfc5 genius still RUNNING on correction0af35ae; same bounded failure rule. No polling or duplicate.
+- After an accepted verdict: manager inspect full report/diff, fill blocked integration brief; fresh release worker into same source worktree, merge only feat/v2-binding-and-ratelimit and prove merged tree. Push working branch after proof; preserve local feature branch and clean worktree. No master/deployment/closure. Source root remains 466 panel baseline for #33, integration panel517 before #35.
+
+## Previous checkpoint — decision16 dispatched, #35 bounded re-review running
 - Owner approved exactly one #33 residual correction + independent recheck. Decision16 in decisions-2026-10-24.md, receipt6404693351. Correction RUNNING ses_2021ba6f89fc4c9bcc636b07 engineer from clean f6ee7da (product06ed4a3), tasks/issue-33-residual-correction.md. Fix only invalid response shape/unknown outcome, generic post-commit422, web indented code, active report/comments. Then single independent recheck; failure => owner. No shared parser/feature/deploy authority.
 - #35 correction 0af35ae returned clean; claimed F1-F8 closed, 9 red/25 targeted/542 full/types/build, hash d759549234c180918eaef4ca7efe8bbc3892256ced8ca1d0e973cbad45bca383. Manager inspected scope/stat; 587-line source delta demands full review, not count acceptance. Bounded independent reviewer ses_efe868d487a6439e5ba4bfc5 genius RUNNING, tasks/issue-35-correction-hostile.md; FAIL returns owner. Receipt6404697544, status:in-review. Builder actual model absent wake; reviewer actual model on wake, no polling.
 - Worker scopes disjoint (web vs panel), neither owns root. No more implementation dispatch until appropriate frontier clears. Ready-next blocked briefs #30 and hosting have no filled preflight yet. No master/deploy/secrets/closure.

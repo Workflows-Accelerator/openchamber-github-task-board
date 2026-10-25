@@ -1,8 +1,8 @@
 <env_preflight>
-BLOCKED DRAFT. Fill corrected candidate, clean/dirty state and changed files after builder ses_2021ba6f89fc4c9bcc636b07 completes; never dispatch while it owns this tree.
+READY. Builder ses_2021ba6f89fc4c9bcc636b07 completed as actual9router/engineer. Candidate d41ff34 clean at dispatch; manager checked diff scope: web/README.md, web/public/app.js, web/server/{board,github,sections}.ts, web/tests/protocol-corrections.test.mjs, new owned report/proofs only. No active builder. Builder claims protocol12/web108/root466/types0/browser19 unknown/baseline32, not accepted. Bundle97ad16115fd88c7956a786100730ad2e31741efb6c6a5af816857ecb03c190cd gitignored.
 Repo /workspace/extensions/github-task-board
 Worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board
-Branch feat/issue-33-standalone-board; prior f6ee7da (product06ed4a3); correction FILL_AT_DISPATCH. Root node_modules symlink present; no installs/env/DB setup. Root suite baseline466 predates integrated panel changes: no unrelated branch merge.
+Branch feat/issue-33-standalone-board; prior f6ee7da (product06ed4a3); correction d41ff34. Root node_modules symlink present; no installs/env/DB setup. Root suite baseline466 predates integrated panel changes: no unrelated branch merge.
 Files web/public/app.js, web/server/{github,board,sections}.ts, web/tests residual regressions, web/README.md active-report pointer.
 Commands node --test web/tests/*.test.mjs; npm test; npx tsc -p web/tsconfig.json; npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/tmp/opencode/issue33-residual-review/server.mjs. npm run build:web absent; web/dist gitignored, parity only.
 Own .agents/run/task-centred-architecture/outputs/issue-33-residual-hostile.md and verifications/issue-33-residual-review/**. Product/tests/docs/prior proofs read-only. Disposable probes /tmp/opencode. No panel/**, service/**, root metadata, shared skills/config, private reports, credentials, production GitHub, installed host, other worktrees, push/merge/close/master/deploy. Synthetic localhost only.
@@ -15,7 +15,7 @@ Give the single owner-approved independent verdict on the three residual browser
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/decisions-2026-10-24.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/tasks/issue-33-residual-correction.md]
 [@/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/.agents/run/task-centred-architecture/outputs/issue-33-final-protocol-hostile.md]
-Builder report FILL_AT_DISPATCH: .agents/run/task-centred-architecture/outputs/issue-33-residual-correction.md inside worktree.
+[@/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/.agents/run/task-centred-architecture/outputs/issue-33-residual-correction.md]
 Original independent probes: verifications/issue-33-protocol-final-review/{probes,browser-gateway,browser-baseline-relocated}.mjs. Preserve originals; adapt copies into owned proof only.
 </context_files>
 <skills>

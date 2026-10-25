@@ -5,7 +5,7 @@
 | Outcome | State | Worker / next |
 |---|---|---|
 | #34 draft safety | MERGED/PUSHED, awaiting batch | L4 0e1a6be PASS; merge c44ed58/proof a2d3fe1; targeted26/full517/types/build/parity green. Pushed aea7031; worktree removed/pruned, branch retained. Receipt6402496611; real browser/host/GitHub NOT RUN |
-| #33 browser protocol safety | OWNER-APPROVED RESIDUAL CORRECTION RUNNING | decision16: F1 invalid response detail, F2 generic post-commit422, F3 indented code checkbox + report/comments; ses_2021ba6f89fc4c9bcc636b07 engineer from clean f6ee7da; tasks/issue-33-residual-correction.md; then one independent recheck; receipt6404693351 |
+| #33 browser protocol safety | SINGLE RESIDUAL RECHECK RUNNING | builderd41ff34 actual9router/engineer, clean; claims protocol12/web108/root466/types0/browser19 unknown/baseline32/hash97ad1611. Reviewer ses_6f740247134713dd1a74137a genius tasks/issue-33-residual-hostile.md; decision16 FAIL returns owner, no loop; receipt6404936552 |
 | #37 visible repositories | FULLY ALIGNED | decision15 show archived/empty; issue body corrected; blocked #33 |
 | #35 refresh write coverage | CORRECTION IN BOUNDED RE-REVIEW | 0af35ae builder claims F1–F8 closed, 9 red/25 targeted/542 full/types/build, bundle d759549; reviewer ses_efe868d487a6439e5ba4bfc5 genius tasks/issue-35-correction-hostile.md; FAIL returns owner, no fix loop; receipt6404697544 |
 | #30 work type from labels | BRIEF READY, BLOCKED on #35 | tasks/issue-30-work-type.md; decision4 labels+Work Log sentence; expiration stays an open owner question |
