@@ -6,8 +6,8 @@ One request only when every included member passes independent hostile review. N
 |---|---|---|
 | #28 — Current tasks on opening | Hostile review PASS; merged/pushed to working branch | Open board, switch repository, refresh. Tasks belong to the chosen repository; a saved edit stays saved. |
 | #36 — Only a person closes a task | Hostile review PASS; merged/pushed to working branch | Verify an agent/session change does not close a test task. Explicitly move it to Done, reopen, and archive: human controls still work. Use a disposable owner-approved task. |
-| #34 — Answering saves the answer you saw | Fix recovery RUNNING; no proof yet | Answer from Questions, Human Tasks and drawer; check exact line on GitHub. Change the question before submitting: save refuses and shows current text. Failed reads/writes must not report success. |
-| #33 — Board in your browser | Independent hostile re-review RUNNING; not merged | Sign in at the approved preview; view/edit tasks on desktop and phone; verify conflict/overwrite warning and absence of agent controls. Deployment still needs owner go. |
+| #34 — Answering saves the answer you saw | Seven prior findings PASS, draft isolation FAIL; final owner-approved correction RUNNING | Answer from Questions, Human Tasks and drawer; check exact line on GitHub. Change/delete question before submitting: save refuses and keeps original answer as a separately labelled recoverable draft. Two repositories sharing issue numbers do not share answers/drafts. Failed reads/writes must not report success. |
+| #33 — Board in your browser | Final review N1–N5 unresolved; owner-approved web-only correction QUEUED | Sign in at approved preview; view/edit tasks on desktop/phone; unknown write outcomes give refresh guidance and never retry. Confirm overwrite warning, meaningful Markdown whitespace and no agent controls. Deployment needs owner go. |
 
 Preview: NOT AVAILABLE YET. One integrated working-branch preview required. No L5 verdict exists for the above changes.
 
@@ -19,9 +19,10 @@ Preview: NOT AVAILABLE YET. One integrated working-branch preview required. No L
 ## Known blind spots
 - #28/#36: installed authenticated OpenChamber end-to-end testing not performed; bundle/harness tests are not installed-host proof.
 - #36: original body-phase automatic closure could not be reproduced. Defensive guards tested; review notes some gesture plumbing evidence is harness-based.
-- #34: no completed fix yet. Startup failure left no edits; recovery has no empirical result yet.
+- #34: 19 targeted/510 root and synthetic-host seven-finding pass do NOT prove installed-host behavior. Focused isolation review found real cross-repository/question draft defects. Final correction/check still pending; no L5 request until clean verdict.
 - #33: synthetic GitHub fakes/browser checks do not prove live repository writes. No route, TLS or board sign-in deployed. Best-effort writes retain the owner-accepted simultaneous-overwrite window.
-- Hosting: selected same-container topology exposes board secrets to local agents. Startup persistence and worker/container port path still being checked read-only. Merely binding a bridged container to 0.0.0.0 may not expose a host port.
+- Hosting: selected same-container topology exposes board secrets to local agents. Read-only preflight found bridged container publishes only existing app ports; publishing board port requires container recreation, brief downtime and a start hook. Secrets are not provisioned in SOPS. No /health or configurable bind yet. Actual change needs explicit owner go.
+- #37: owner confirmed picker includes all token-visible repositories, archived marked and empty selectable. GitHub cannot enumerate hidden private repositories. Known lost-access repositories must be unavailable, not empty. Multi-repository implementation not started.
 - Push: OS permission, iOS Home Screen installation/background power behavior and real device delivery require human checks. No push slice has been built.
 
 ## Explicitly excluded
