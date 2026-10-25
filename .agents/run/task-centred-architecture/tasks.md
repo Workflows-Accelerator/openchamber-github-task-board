@@ -5,7 +5,7 @@
 | Outcome | State | Proof / next |
 |---|---|---|
 | #33 secure browser board | BLOCKED, owner correction gate | 8818b94 final review NEEDS-FIXES; N1 Medium + N2–N5 Low; no new High; ruling outputs/final-review-rulings-2026-10-25.md |
-| #34 safe answers | Seven findings passed; draft isolation CHECK RUNNING | 72f3f76; 19/510; ses_2fadeaf8ebd848b2df3e96cb engineer focused proof, no fix authority |
+| #34 safe answers | BLOCKED, draft isolation FAILED | 7f7e8cc six probes; cross-repo/cross-question draft contamination/deletion. Owner gate for final exact-source scoped correction |
 | #37 all repos | Coverage confirmed; filter unanswered | Archived/empty question aborted by restart; no fabricated default approval |
 | #35 refresh write coverage | Brief drafted, NOT DISPATCHABLE | tasks/issue-35-refresh-write-coverage.md; snapshot pending #34 integration |
 

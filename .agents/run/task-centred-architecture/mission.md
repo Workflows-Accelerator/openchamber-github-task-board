@@ -3,7 +3,7 @@
 ## Latest checkpoint — 2026-10-25 review gate
 State: proving/aligning. Root recovered at 83b065d; both final review wakes complete, no repeat workers.
 - #33 8818b94: Security NEEDS-FIXES, Spec PARTIAL, Quality NEEDS-FIXES, no new High. N1 Medium + N2–N5 Low accepted; blocked for owner's bounded correction authority. Full ruling outputs/final-review-rulings-2026-10-25.md. Receipt 6401828138.
-- #34 72f3f76: seven findings PASS/APPROVED, 19/510 checks. Manager diff found draft repository/question isolation hypothesis; held integration for independent focused check ses_2fadeaf8ebd848b2df3e96cb engineer. No product edits/full-suite repetition. Receipt 6401830025.
+- #34 72f3f76: seven findings PASS/APPROVED, 19/510 checks, but focused independent check ses_2fadeaf8ebd848b2df3e96cb engineer FAILED at 7f7e8cc: draft cross-repo/cross-question leakage/deletion and orphaned/misattributed drafts. Integration HELD for owner-approved bounded correction; proposed exact repo-qualified source keys + clearly separate recoverable original-question draft, no changed-question reassignment. Report ruling updated; receipt 6401949985. Renderer direct-call side effect not proven normal-user failure, but collateral additions should be removed.
 - #37 archived/empty visibility question aborted by restart; unanswered; issue contains unapproved default and needs correction on answer. Bot identity/coverage already aligned, do not re-ask those.
 - Master/deployment/closure remain unapproved. No production secret handling. Known untracked private reports not staged.
 

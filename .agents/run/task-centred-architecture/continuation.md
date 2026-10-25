@@ -2,7 +2,7 @@
 
 ## Latest checkpoint — 2026-10-25 gate results
 - Restart recovered root at 83b065d. Both final wakes present, no polling/repeat. #33 final 8818b94 NEEDS-FIXES, no new High; N1 Medium/N2–N5 Low accepted, owner gate before further correction. #34 72f3f76 seven-finding PASS, but manager diff found draft isolation hypothesis. Focused independent check ses_2fadeaf8ebd848b2df3e96cb engineer in same #34 worktree, tasks/issue-34-draft-isolation-check.md; no product edit/full-suite repeat.
-- Rulings outputs/final-review-rulings-2026-10-25.md; receipts #33 6401828138, #34 6401830025. Do not integrate until draft isolation result.
+- Draft isolation wake received: 7f7e8cc, actual 9router/engineer, six probes FAIL product. Cross-repo/cross-question draft leak/delete confirmed; changed/deleted question draft misattributed/trapped. Proposed exact repo-qualified source keys, no fallback, separately recoverable draft with original question. Owner approval required for this bounded fix/UI; don't dispatch yet. Reviewer's single-question fallback recommendation rejected as insufficient identity. Direct renderer test does not prove normal-user layout regression; collateral assignments can be removed within fix. Rulings outputs/final-review-rulings-2026-10-25.md; receipts #33 6401828138, #34 6401949985. Do not integrate.
 - #37 filter question (show archived/empty vs hide) aborted by restart, unanswered. Issue currently embeds an unapproved default; correct with owner answer. Token-readable coverage + bot identity already decided, never re-ask.
 - #35 queued brief uncommitted at tasks/issue-35-refresh-write-coverage.md; fill authoritative base after #34 lands before dispatch. No master/deployment authority. Private/unrelated root files not staged.
 
