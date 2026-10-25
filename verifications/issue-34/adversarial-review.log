@@ -1,0 +1,73 @@
+TAP version 13
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/201
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/201 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/201
+# [TaskBoard] GitHub request failed: GitHub API error: 500
+# [TaskBoard] Failed to sync body for \#201: GitHub API error: 500
+# Finding 1 observed error toast: [ 'Failed to update \#201 on GitHub' ]
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/202
+# Subtest: Hostile Finding 1: HTTP 500/504 on PATCH treated as explicit rejection instead of unknown outcome
+ok 1 - Hostile Finding 1: HTTP 500/504 on PATCH treated as explicit rejection instead of unknown outcome
+  ---
+  duration_ms: 246.119402
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/202 -> 200
+# [TaskBoard] Question on \#202 was modified remotely; refusing write
+# Finding 2 observed toast message: Question changed on \#202. Current text: "Question 1: Database?"
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/203
+# Subtest: Hostile Finding 2: Decision D3 changed question toast reports Question 1 when Question 3 changed
+ok 2 - Hostile Finding 2: Decision D3 changed question toast reports Question 1 when Question 3 changed
+  ---
+  duration_ms: 119.038018
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] GitHub request failed: GitHub API error: 400
+# [TaskBoard] Failed to sync body for \#203: GitHub API error: 400
+# Finding 3 updateIssueBody returned false, toasts emitted: [ { kind: 'error', message: 'Failed to update \#203 on GitHub' } ]
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/204
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/204
+# Subtest: Hostile Finding 3: handleAddDependency shows false success toast when updateIssueBody fails
+ok 3 - Hostile Finding 3: handleAddDependency shows false success toast when updateIssueBody fails
+  ---
+  duration_ms: 88.281046
+  type: 'test'
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/204 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/204
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/204 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/204
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/204 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/204 -> 200
+# Finding 4 double-click toasts: [ 'Recorded answer to question', 'Recorded answer to question' ]
+# Subtest: Hostile Finding 4: Rapid double-click on Save in Questions View triggers duplicate PATCH mutations and duplicate toasts
+ok 4 - Hostile Finding 4: Rapid double-click on Save in Questions View triggers duplicate PATCH mutations and duplicate toasts
+  ---
+  duration_ms: 139.840163
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 848.642516

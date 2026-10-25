@@ -1,0 +1,244 @@
+TAP version 13
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1 -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100
+# [TaskBoard] API PATCH /repos/owner/repo-b/issues/1
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100 -> 200
+# [TaskBoard] API PATCH /repos/owner/repo-b/issues/1 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/2/comments
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-b/issues/2/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10
+# Subtest: H1: Cross-repo draft isolation with identical question text (Repo A \#1 vs Repo B \#1)
+ok 1 - H1: Cross-repo draft isolation with identical question text (Repo A \#1 vs Repo B \#1)
+  ---
+  duration_ms: 283.259459
+  type: 'test'
+  ...
+# Subtest: H2: Cross-repo draft isolation with different question text (Repo A \#2 vs Repo B \#2)
+ok 2 - H2: Cross-repo draft isolation with different question text (Repo A \#2 vs Repo B \#2)
+  ---
+  duration_ms: 101.449112
+  type: 'test'
+  ...
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/2/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/issues/2/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API PATCH /repos/owner/repo-main/issues/10
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API PATCH /repos/owner/repo-main/issues/10 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments
+# [TaskBoard] API GET /repos/owner/repo-main/issues/20
+# Subtest: H3: Intra-issue multiple questions isolation (Q1 and Q2 on same issue)
+ok 3 - H3: Intra-issue multiple questions isolation (Q1 and Q2 on same issue)
+  ---
+  duration_ms: 137.983005
+  type: 'test'
+  ...
+# Subtest: H4: Clearing input field deletes draft and does not resurrect on re-render or whitespace
+ok 4 - H4: Clearing input field deletes draft and does not resurrect on re-render or whitespace
+  ---
+  duration_ms: 55.968022
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/15/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/20 -> 200
+# [TaskBoard] Question on \#20 was modified remotely; refusing write
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/22/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/24/comments
+# [TaskBoard] API GET /repos/owner/repo-main/issues/25
+# Subtest: H5: Remotely changed question refuses answer, keeps input empty, and renders recoverable draft UI
+ok 5 - H5: Remotely changed question refuses answer, keeps input empty, and renders recoverable draft UI
+  ---
+  duration_ms: 175.67232
+  type: 'test'
+  ...
+# Subtest: H6: Remotely deleted question (0 open questions remaining) renders recoverable draft across all three entry points
+ok 6 - H6: Remotely deleted question (0 open questions remaining) renders recoverable draft across all three entry points
+  ---
+  duration_ms: 249.816841
+  type: 'test'
+  ...
+# Subtest: H7: Already-answered question renders typed draft in recoverable draft UI
+ok 7 - H7: Already-answered question renders typed draft in recoverable draft UI
+  ---
+  duration_ms: 68.47379
+  type: 'test'
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/22/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/24/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/25 -> 200
+# [TaskBoard] Question on \#25 has ambiguous duplicates; refusing to guess
+# [TaskBoard] API PATCH /repos/owner/repo-main/issues/100
+# Subtest: H8: Duplicate exact questions remain ambiguous and refuse write without guessing
+ok 8 - H8: Duplicate exact questions remain ambiguous and refuse write without guessing
+  ---
+  duration_ms: 93.621827
+  type: 'test'
+  ...
+# Subtest: H9: Unknown repository never saves drafts, never throws, and never collides across issues
+ok 9 - H9: Unknown repository never saves drafts, never throws, and never collides across issues
+  ---
+  duration_ms: 67.815411
+  type: 'test'
+  ...
+# Subtest: H10: View layout preference decoupled from direct renderer invocations
+ok 10 - H10: View layout preference decoupled from direct renderer invocations
+  ---
+  duration_ms: 95.184019
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] GitHub request failed: GitHub API error: 500
+# [TaskBoard] Ambiguous outcome syncing body for \#100: GitHub API error: 500
+# [TaskBoard] Cannot update issue \#100: state is unconfirmed; refresh required
+# [TaskBoard] API GET /repos/owner/repo-main/issues/100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/100 -> 200
+# [TaskBoard] Reconciled unconfirmed state for issue \#100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/300
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-main/issues/300 -> 200
+# [TaskBoard] API PATCH /repos/owner/repo-main/issues/300
+# [TaskBoard] API PATCH /repos/owner/repo-main/issues/300 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/400
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-main/issues/400 -> 200
+# [TaskBoard] API PATCH /repos/owner/repo-main/issues/400
+# [TaskBoard] API PATCH /repos/owner/repo-main/issues/400 -> 200
+# [TaskBoard] Post-mutation toast failed for \#400: Host toast RPC communication failure
+# Subtest: H11: Targeted smoke check of 7 prior Issue \#34 fixes
+ok 11 - H11: Targeted smoke check of 7 prior Issue \#34 fixes
+  ---
+  duration_ms: 476.723032
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2011.192142

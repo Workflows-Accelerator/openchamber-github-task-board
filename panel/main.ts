@@ -2213,6 +2213,255 @@ async function notifyAgentOnHumanTasksComplete(issue: Issue, repo: string): Prom
   return notified;
 }
 
+// Classification rule for HTTP write errors:
+// A mutation error is classified as a definitive pre-commit rejection ONLY when the server
+// explicitly returned an HTTP 4xx client status (400, 401, 403, 404, 409, 410, 412, 422, etc.)
+// that definitively rejected the request before committing changes, excluding 408 (Request Timeout).
+// Any failure that can occur post-send (HTTP 5xx server errors, 502/503/504 gateway/proxy errors,
+// HTTP 408 request timeout, response parse failures, transport/network errors, timeouts, aborts,
+// or readback failures) is classified as UNKNOWN (ambiguous outcome). On unknown outcome, no rollback
+// is presented as truth, no "failed" wording is displayed, the write is never automatically repeated,
+// and the issue is marked visibly unconfirmed with dependent writes blocked until refresh reconciles it.
+function isDefinitivePreCommitRejection(err: any): boolean {
+  if (err?.name === 'AbortError' || err?.name === 'TimeoutError') {
+    return false;
+  }
+  const msg = typeof err?.message === 'string' ? err.message.toLowerCase() : '';
+  if (
+    msg.includes('timeout') ||
+    msg.includes('abort') ||
+    msg.includes('fetch failed') ||
+    msg.includes('networkerror') ||
+    msg.includes('econnreset')
+  ) {
+    return false;
+  }
+
+  let statusCode: number | null = null;
+  if (typeof err?.status === 'number' && !isNaN(err.status)) {
+    statusCode = err.status;
+  } else if (typeof err?.statusCode === 'number' && !isNaN(err.statusCode)) {
+    statusCode = err.statusCode;
+  } else if (typeof err?.message === 'string') {
+    const match = /\b(?:API error:\s*|failed\s*\(?|HTTP\s*|status\s*:?\s*)(\d{3})\b/i.exec(err.message);
+    if (match) {
+      const code = parseInt(match[1], 10);
+      if (!isNaN(code)) statusCode = code;
+    }
+  }
+
+  if (statusCode === null) {
+    return false;
+  }
+  if (statusCode === 408) {
+    return false;
+  }
+  return statusCode >= 400 && statusCode < 500;
+}
+
+// Question answer draft preservation:
+// Drafts are keyed by repository, issue number, and exact source question text:
+// ${repo}#${issueNumber}::${cleanQuestionText}
+// No generic issue-number fallback. If repo is unknown, no draft is saved or retrieved.
+const questionAnswerDrafts = new Map<string, string>();
+
+interface RecoverableQuestionDraft {
+  questionText: string;
+  answerText: string;
+}
+
+function getDraftKey(
+  target: Issue | string | null | undefined,
+  second: number | string,
+  third?: string
+): string | null {
+  let repo = '';
+  let issueNumber = 0;
+  let questionText = '';
+
+  if (target && typeof target === 'object') {
+    repo = repoForIssue(target);
+    issueNumber = target.number;
+    questionText = typeof second === 'string' ? second : '';
+  } else if (typeof target === 'string') {
+    repo = target.trim();
+    issueNumber = typeof second === 'number' ? second : parseInt(String(second), 10);
+    questionText = third || '';
+  } else {
+    return null;
+  }
+
+  if (!repo || !issueNumber || !questionText) return null;
+  const cleanQ = questionText.trim();
+  if (!cleanQ) return null;
+  return `${repo}#${issueNumber}::${cleanQ}`;
+}
+
+function saveQuestionDraft(
+  target: Issue | string | null | undefined,
+  second: number | string,
+  third?: string,
+  fourth?: string
+): void {
+  let key: string | null = null;
+  let answerText = '';
+
+  if (target && typeof target === 'object') {
+    key = getDraftKey(target, second as string);
+    answerText = third || '';
+  } else {
+    key = getDraftKey(target, second as number, third as string);
+    answerText = fourth || '';
+  }
+
+  if (!key) return;
+  const cleanA = (answerText || '').trim();
+  if (!cleanA) {
+    questionAnswerDrafts.delete(key);
+    return;
+  }
+  questionAnswerDrafts.set(key, cleanA);
+}
+
+function getQuestionDraft(
+  target: Issue | string | null | undefined,
+  second: number | string,
+  third?: string
+): string | undefined {
+  let key: string | null = null;
+  if (target && typeof target === 'object') {
+    key = getDraftKey(target, second as string);
+  } else {
+    key = getDraftKey(target, second as number, third as string);
+  }
+  if (!key) return undefined;
+  return questionAnswerDrafts.get(key);
+}
+
+function clearQuestionDraft(
+  target: Issue | string | null | undefined,
+  second: number | string,
+  third?: string
+): void {
+  let key: string | null = null;
+  if (target && typeof target === 'object') {
+    key = getDraftKey(target, second as string);
+  } else {
+    key = getDraftKey(target, second as number, third as string);
+  }
+  if (!key) return;
+  questionAnswerDrafts.delete(key);
+}
+
+function getRecoverableQuestionDrafts(issue: Issue | null | undefined): RecoverableQuestionDraft[] {
+  if (!issue) return [];
+  const repo = repoForIssue(issue);
+  if (!repo) return [];
+  const prefix = `${repo}#${issue.number}::`;
+  const openQuestions = (issue.openQuestions || parseOpenQuestions(issue.body || ''))
+    .filter((q) => !q.completed)
+    .map((q) => q.text.trim());
+
+  const list: RecoverableQuestionDraft[] = [];
+  for (const [key, answerText] of questionAnswerDrafts.entries()) {
+    if (key.startsWith(prefix)) {
+      const qText = key.slice(prefix.length).trim();
+      if (!openQuestions.includes(qText)) {
+        list.push({ questionText: qText, answerText });
+      }
+    }
+  }
+  return list;
+}
+
+function renderRecoverableDraftsElement(
+  issue: Issue,
+  onDiscard?: () => void
+): HTMLElement | null {
+  const drafts = getRecoverableQuestionDrafts(issue);
+  if (drafts.length === 0) return null;
+
+  const container = document.createElement('div');
+  container.className = 'recoverable-drafts-list';
+  container.style.cssText = 'margin-top: 8px; display: flex; flex-direction: column; gap: 8px; width: 100%;';
+
+  drafts.forEach((draft) => {
+    const box = document.createElement('div');
+    box.className = 'recoverable-draft-box';
+    box.style.cssText = 'padding: 8px 10px; background: var(--surf-muted); border: 1px dashed var(--border); border-radius: 6px; font-size: 11.5px;';
+
+    const header = document.createElement('div');
+    header.className = 'recoverable-draft-header';
+    header.style.cssText = 'display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;';
+
+    const titleEl = document.createElement('span');
+    titleEl.className = 'recoverable-draft-badge';
+    titleEl.style.cssText = 'font-weight: 600; font-size: 10.5px; color: var(--warn); text-transform: uppercase; letter-spacing: 0.5px;';
+    titleEl.textContent = 'Recoverable Draft (Unsaved)';
+    header.appendChild(titleEl);
+
+    const actions = document.createElement('div');
+    actions.className = 'recoverable-draft-actions';
+    actions.style.cssText = 'display: flex; gap: 4px;';
+
+    const btnCopy = document.createElement('button');
+    btnCopy.className = 'btn btn-xs btn-copy-draft';
+    btnCopy.type = 'button';
+    btnCopy.textContent = 'Copy';
+    btnCopy.title = 'Copy draft answer to clipboard';
+    btnCopy.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        void navigator.clipboard.writeText(draft.answerText);
+      }
+      if (host?.toast) {
+        void host.toast({ kind: 'info', message: 'Draft copied to clipboard' });
+      }
+    });
+
+    const btnDiscard = document.createElement('button');
+    btnDiscard.className = 'btn btn-xs btn-discard-draft';
+    btnDiscard.type = 'button';
+    btnDiscard.textContent = 'Discard';
+    btnDiscard.title = 'Discard this draft';
+    btnDiscard.addEventListener('click', (e) => {
+      e.stopPropagation();
+      clearQuestionDraft(issue, draft.questionText);
+      if (onDiscard) {
+        onDiscard();
+      } else {
+        renderViews();
+        if (activeIssue && activeIssue.number === issue.number) {
+          renderDrawer(issue, true);
+        }
+      }
+    });
+
+    actions.appendChild(btnCopy);
+    actions.appendChild(btnDiscard);
+    header.appendChild(actions);
+    box.appendChild(header);
+
+    const questionRow = document.createElement('div');
+    questionRow.className = 'recoverable-draft-question';
+    questionRow.style.cssText = 'color: var(--fg-muted); font-size: 11px; margin-bottom: 4px; word-break: break-word;';
+    questionRow.innerHTML = `<span style="font-weight: 500;">Original question:</span> ${escapeHtml(draft.questionText)}`;
+    box.appendChild(questionRow);
+
+    const answerRow = document.createElement('div');
+    answerRow.className = 'recoverable-draft-text';
+    answerRow.style.cssText = 'background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; font-family: var(--font-mono); font-size: 11px; color: var(--fg); white-space: pre-wrap; word-break: break-word; user-select: text; -webkit-user-select: text;';
+    answerRow.textContent = draft.answerText;
+    box.appendChild(answerRow);
+
+    container.appendChild(box);
+  });
+
+  return container;
+}
+
+const inFlightQuestions = new Set<string>();
+
 async function reloadIssueBeforeMutation(issue: Issue): Promise<{ body: string; updated_at?: string } | null> {
   const repo = repoForIssue(issue);
   if (!repo) return null;
@@ -2230,26 +2479,50 @@ async function reloadIssueBeforeMutation(issue: Issue): Promise<{ body: string; 
       issue.humanTasks = parseHumanTasks(raw.body);
       issue.acceptanceCriteria = parseAcceptanceCriteria(raw.body);
       delete (issue as any).v2Metadata;
+      if ((issue as any).unconfirmed) {
+        delete (issue as any).unconfirmed;
+        addLog(`Reconciled unconfirmed state for issue #${issue.number}`, 'info');
+      }
       const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
       issue.v2Metadata = resolveV2Metadata(issue, session);
       return { body: raw.body, updated_at: remoteUpdatedAt };
     }
   } catch (err: any) {
-    addLog(`Could not reload issue #${issue.number} (${err.message}); proceeding with cached body`, 'warn');
+    addLog(`Could not reload issue #${issue.number} (${err.message})`, 'warn');
   }
   return null;
 }
 
-async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
+async function updateIssueBody(
+  issue: Issue,
+  newBody: string,
+  options?: { toastMessage?: string; suppressToast?: boolean }
+): Promise<boolean> {
   const repo = repoForIssue(issue);
   if (!repo) {
     addLog(`Cannot update issue #${issue.number}: repository unknown`, 'warn');
     if (host?.toast) {
       void host.toast({ kind: 'error', message: `Cannot update #${issue.number}: repository unknown` });
     }
-    return;
+    return false;
   }
+
+  if ((issue as any).unconfirmed) {
+    addLog(`Cannot update issue #${issue.number}: state is unconfirmed; refresh required`, 'warn');
+    if (host?.toast) {
+      await host.toast({
+        kind: 'error',
+        message: `Issue #${issue.number} state is unconfirmed; refresh to reconcile before modifying.`,
+      });
+    }
+    return false;
+  }
+
+  const prevBody = issue.body;
+  const prevSubtasks = issue.subtasks;
+  const prevOpenQuestions = issue.openQuestions;
   const prevHumanTasks = issue.humanTasks || parseHumanTasks(issue.body);
+  const prevAcceptanceCriteria = issue.acceptanceCriteria;
   const nextHumanTasks = parseHumanTasks(newBody);
   const shouldNotify = shouldNotifyAgentOnHumanTasksComplete(prevHumanTasks, nextHumanTasks);
 
@@ -2268,23 +2541,170 @@ async function updateIssueBody(issue: Issue, newBody: string): Promise<void> {
     renderDrawer(issue, true);
   }
 
+  let patchResponse: any = null;
   try {
-    const res = await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
+    patchResponse = await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, {
       body: newBody,
     });
     finishWrite(true);
-    if (res && res.updated_at) {
-      issue.updated_at = res.updated_at;
+    if (patchResponse && patchResponse.updated_at) {
+      issue.updated_at = patchResponse.updated_at;
     }
-    await host.toast({ kind: 'info', message: `Updated issue #${issue.number}` });
+    delete (issue as any).unconfirmed;
+  } catch (err: any) {
+    finishWrite(false);
+    issue.body = prevBody;
+    issue.subtasks = prevSubtasks || parseSubtasks(prevBody);
+    issue.openQuestions = prevOpenQuestions || parseOpenQuestions(prevBody);
+    issue.humanTasks = prevHumanTasks;
+    issue.acceptanceCriteria = prevAcceptanceCriteria || parseAcceptanceCriteria(prevBody);
+    delete (issue as any).v2Metadata;
+    const session = typeof getIssueSession === 'function' ? getIssueSession(issue) : undefined;
+    issue.v2Metadata = resolveV2Metadata(issue, session);
+    issueCache.delete(repo);
 
+    const isExplicitHttpRejection = isDefinitivePreCommitRejection(err);
+
+    if (isExplicitHttpRejection) {
+      delete (issue as any).unconfirmed;
+      renderViews();
+      if (activeIssue && activeIssue.number === issue.number) {
+        renderDrawer(issue, true);
+      }
+      addLog(`Failed to sync body for #${issue.number}: ${err.message}`, 'error');
+      if (host?.toast) {
+        await host.toast({ kind: 'error', message: `Failed to update #${issue.number} on GitHub` });
+      }
+    } else {
+      (issue as any).unconfirmed = true;
+      renderViews();
+      if (activeIssue && activeIssue.number === issue.number) {
+        renderDrawer(issue, true);
+      }
+      addLog(`Ambiguous outcome syncing body for #${issue.number}: ${err.message}`, 'warn');
+      if (host?.toast) {
+        await host.toast({ kind: 'error', message: 'outcome unknown — check the issue on GitHub' });
+      }
+    }
+    return false;
+  }
+
+  // Post-mutation notifications are placed outside the write error boundary
+  // so a toast or notification failure can never trigger write rollback.
+  try {
+    if (!options?.suppressToast && host?.toast) {
+      const msg = options?.toastMessage || `Updated issue #${issue.number}`;
+      await host.toast({ kind: 'info', message: msg });
+    }
+  } catch (toastErr: any) {
+    addLog(`Post-mutation toast failed for #${issue.number}: ${toastErr?.message || toastErr}`, 'warn');
+  }
+
+  try {
     if (shouldNotify) {
       await notifyAgentOnHumanTasksComplete(issue, repo);
     }
-  } catch (err: any) {
-    finishWrite(false);
-    addLog(`Failed to sync body: ${err.message}`, 'error');
-    await host.toast({ kind: 'error', message: `Failed to update #${issue.number} on GitHub` });
+  } catch (notifyErr: any) {
+    addLog(`Post-mutation agent notification failed for #${issue.number}: ${notifyErr?.message || notifyErr}`, 'warn');
+  }
+
+  return true;
+}
+
+async function answerQuestion(
+  issue: Issue,
+  questionText: string,
+  answerText: string
+): Promise<boolean> {
+  const cleanAnswer = (answerText || '').trim();
+  if (!cleanAnswer) {
+    return false;
+  }
+  const cleanQuestion = (questionText || '').trim();
+  if (!cleanQuestion) {
+    return false;
+  }
+
+  const inFlightKey = `${repoForIssue(issue) || ''}#${issue.number}::${cleanQuestion}`;
+  if (inFlightQuestions.has(inFlightKey)) {
+    addLog(`Answer submission already in flight for #${issue.number}; ignoring duplicate`, 'warn');
+    return false;
+  }
+  inFlightQuestions.add(inFlightKey);
+
+  try {
+    const prevOpen = (issue.openQuestions || parseOpenQuestions(issue.body || '')).filter((q) => !q.completed);
+    const fresh = await reloadIssueBeforeMutation(issue);
+    if (!fresh || typeof fresh.body !== 'string') {
+      addLog(`Cannot answer question on #${issue.number}: fresh reload failed`, 'error');
+      saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
+      if (host?.toast) {
+        await host.toast({
+          kind: 'error',
+          message: `Failed to refresh issue #${issue.number}; answer not saved`,
+        });
+      }
+      return false;
+    }
+
+    const freshBody = fresh.body;
+    const result = resolveOptimisticQuestionAnswer(freshBody, cleanQuestion, cleanAnswer);
+
+    if (!result.found) {
+      saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
+      renderViews();
+      if (activeIssue && activeIssue.number === issue.number) {
+        renderDrawer(issue, true);
+      }
+
+      if (result.reason === 'already-answered') {
+        addLog(`Question on #${issue.number} was already answered remotely; refusing to overwrite`, 'warn');
+        if (host?.toast) {
+          await host.toast({
+            kind: 'error',
+            message: `Question on #${issue.number} was already answered; refreshed.`,
+          });
+        }
+      } else if (result.reason === 'ambiguous') {
+        addLog(`Question on #${issue.number} has ambiguous duplicates; refusing to guess`, 'warn');
+        if (host?.toast) {
+          await host.toast({
+            kind: 'error',
+            message: `Multiple identical open questions on #${issue.number}; cannot answer ambiguously.`,
+          });
+        }
+      } else {
+        const currentOpen = parseOpenQuestions(freshBody).filter((q) => !q.completed);
+        let msg = '';
+        if (currentOpen.length === 0) {
+          msg = `Question on #${issue.number} is no longer open; refreshed.`;
+        } else if (prevOpen.length === 1 && currentOpen.length === 1) {
+          msg = `Question changed on #${issue.number}. Current text: "${currentOpen[0].text}"`;
+        } else {
+          msg = `Question changed on #${issue.number}; refreshed.`;
+        }
+        addLog(`Question on #${issue.number} was modified remotely; refusing write`, 'warn');
+        if (host?.toast) {
+          await host.toast({ kind: 'error', message: msg });
+        }
+      }
+      return false;
+    }
+
+    const ok = await updateIssueBody(issue, result.updatedBody, {
+      toastMessage: 'Recorded answer to question',
+    });
+    if (ok) {
+      clearQuestionDraft(issue, cleanQuestion);
+      if (activeIssue && activeIssue.number === issue.number) {
+        renderDrawer(issue, true);
+      }
+    } else {
+      saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
+    }
+    return ok;
+  } finally {
+    inFlightQuestions.delete(inFlightKey);
   }
 }
 
@@ -3310,6 +3730,7 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
       <div class="card-id-wrap">
         <input type="checkbox" class="card-checkbox" data-issue="${issue.number}" ${isSelected ? 'checked' : ''} title="Select issue for batch actions" />
         <span class="card-id">#${issue.number}</span>
+        ${(issue as any).unconfirmed ? '<span class="badge badge-unconfirmed" style="background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4); font-size: 10px; padding: 1px 4px; border-radius: 3px; font-weight: 500;" title="Write outcome unconfirmed — refresh required">unconfirmed</span>' : ''}
         ${priorityHtml}
         ${complexityHtml}
         ${vagueBadgeHtml}
@@ -3804,7 +4225,9 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
     const todos = collectHumanTodos(i, session);
     if (todos.length > 0) return true;
     const completed = getCompletedTasksForIssue(i);
-    return completed.length > 0;
+    if (completed.length > 0) return true;
+    if (getRecoverableQuestionDrafts(i).length > 0) return true;
+    return false;
   });
 
   if (humanIssues.length === 0) {
@@ -3834,7 +4257,8 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
   for (const issue of humanIssues) {
     const session = getIssueSession(issue);
     const activeTodos = collectHumanTodos(issue, session);
-    if (activeTodos.length > 0) {
+    const recoverable = getRecoverableQuestionDrafts(issue);
+    if (activeTodos.length > 0 || recoverable.length > 0) {
       pendingIssues.push(issue);
     } else {
       completedIssues.push(issue);
@@ -3979,7 +4403,7 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
 
           // Inline answer composer
           const answerRow = document.createElement('div');
-          answerRow.className = 'inline-answer-row';
+          answerRow.className = 'inline-answer-row human-todo-answer-box';
           answerRow.style.cssText = 'display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px; padding: 6px 8px; background: var(--surf-muted); border-radius: 6px; border: 1px solid var(--border);';
 
           const options = extractQuestionOptions(todo.text, issue.body);
@@ -4011,12 +4435,23 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
           const btnSubmit = answerRow.querySelector<HTMLButtonElement>('.btn-submit-human-answer');
           const btnCancel = answerRow.querySelector<HTMLButtonElement>('.btn-cancel-human-answer');
 
+          const existingDraft = getQuestionDraft(issue, todo.text);
+          if (existingDraft && answerInput) {
+            answerInput.value = existingDraft;
+            answerRow.style.display = 'flex';
+          }
+
+          answerInput?.addEventListener('input', () => {
+            saveQuestionDraft(issue, todo.text, answerInput.value);
+          });
+
           answerRow.querySelectorAll<HTMLButtonElement>('.question-option-btn').forEach((optBtn) => {
             optBtn.addEventListener('click', (e) => {
               e.stopPropagation();
               const optVal = optBtn.getAttribute('data-opt');
               if (optVal && answerInput) {
                 answerInput.value = optVal;
+                saveQuestionDraft(issue, todo.text, optVal);
                 answerInput.focus();
               }
             });
@@ -4031,19 +4466,30 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
 
           btnCancel?.addEventListener('click', (e) => {
             e.stopPropagation();
+            clearQuestionDraft(issue, todo.text);
+            if (answerInput) answerInput.value = '';
             answerRow.style.display = 'none';
           });
 
           const doSubmitAnswer = async () => {
+            if (btnSubmit?.disabled) return;
             const ans = answerInput?.value.trim();
             if (!ans) {
               answerInput?.focus();
               return;
             }
-            await reloadIssueBeforeMutation(issue);
-            const result = resolveOptimisticQuestionAnswer(issue.body, todo.text, ans);
-            await updateIssueBody(issue, result.updatedBody);
-            await host.toast({ kind: 'info', message: 'Recorded answer to question' });
+            if (btnSubmit) btnSubmit.disabled = true;
+            if (answerInput) answerInput.disabled = true;
+            try {
+              const ok = await answerQuestion(issue, todo.text, ans);
+              if (ok) {
+                clearQuestionDraft(issue, todo.text);
+                if (answerRow) answerRow.style.display = 'none';
+              }
+            } finally {
+              if (btnSubmit) btnSubmit.disabled = false;
+              if (answerInput) answerInput.disabled = false;
+            }
           };
 
           btnSubmit?.addEventListener('click', (e) => {
@@ -4173,6 +4619,14 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
     }
 
     card.appendChild(list);
+
+    const recoverableDraftsEl = renderRecoverableDraftsElement(issue, () => {
+      renderViews();
+    });
+    if (recoverableDraftsEl) {
+      card.appendChild(recoverableDraftsEl);
+    }
+
     return card;
   };
 
@@ -4401,7 +4855,8 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
   for (const issue of filteredIssues) {
     const questions = parseOpenQuestions(issue.body || '');
     const unanswered = questions.filter((q) => !q.completed);
-    if (unanswered.length > 0) {
+    const recoverable = getRecoverableQuestionDrafts(issue);
+    if (unanswered.length > 0 || recoverable.length > 0) {
       issuesWithQuestions.push({ issue, questions: unanswered });
     }
   }
@@ -4518,6 +4973,14 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
 
     card.appendChild(header);
 
+    if (questions.length === 0) {
+      const emptyNote = document.createElement('div');
+      emptyNote.className = 'no-questions-notice';
+      emptyNote.style.cssText = 'font-size: 11px; color: var(--fg-muted); padding: 6px 0; font-style: italic;';
+      emptyNote.textContent = 'No open questions remaining on this issue.';
+      card.appendChild(emptyNote);
+    }
+
     // Questions List
     const list = document.createElement('div');
     list.className = 'question-items-list';
@@ -4598,6 +5061,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
             btnAnswer.setAttribute('aria-expanded', 'true');
             if (input) {
               input.value = opt;
+              saveQuestionDraft(issue, question.text, opt);
               input.focus();
             }
           });
@@ -4608,6 +5072,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
 
       const answerRow = document.createElement('div');
       answerRow.className = 'inline-answer-row';
+      answerRow.style.display = 'none';
       answerRow.style.cssText = 'display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px;';
       answerRow.innerHTML = `
         <div class="inline-answer-input-bar">
@@ -4624,6 +5089,17 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
       const btnSave = answerRow.querySelector<HTMLButtonElement>('.btn-submit-inline-answer');
       const btnCancel = answerRow.querySelector<HTMLButtonElement>('.btn-cancel-inline-answer');
 
+      const existingDraft = getQuestionDraft(issue, question.text);
+      if (existingDraft && input) {
+        input.value = existingDraft;
+        answerRow.style.display = 'flex';
+        btnAnswer.setAttribute('aria-expanded', 'true');
+      }
+
+      input?.addEventListener('input', () => {
+        saveQuestionDraft(issue, question.text, input.value);
+      });
+
       btnAnswer.addEventListener('click', (e) => {
         e.stopPropagation();
         const isVisible = answerRow.style.display !== 'none';
@@ -4635,16 +5111,25 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
       });
 
       const submitAnswer = async () => {
+        if (btnSave?.disabled) return;
         const answerText = input?.value.trim();
         if (!answerText) {
           input?.focus();
           return;
         }
-        await reloadIssueBeforeMutation(issue);
-        const result = resolveOptimisticQuestionAnswer(issue.body, question.text, answerText);
-        await updateIssueBody(issue, result.updatedBody);
-        btnAnswer.setAttribute('aria-expanded', 'false');
-        await host.toast({ kind: 'info', message: 'Recorded answer to question' });
+        if (btnSave) btnSave.disabled = true;
+        if (input) input.disabled = true;
+        try {
+          const ok = await answerQuestion(issue, question.text, answerText);
+          if (ok) {
+            clearQuestionDraft(issue, question.text);
+            answerRow.style.display = 'none';
+            btnAnswer.setAttribute('aria-expanded', 'false');
+          }
+        } finally {
+          if (btnSave) btnSave.disabled = false;
+          if (input) input.disabled = false;
+        }
       };
 
       btnSave?.addEventListener('click', (ev) => {
@@ -4665,6 +5150,8 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
 
       btnCancel?.addEventListener('click', (ev) => {
         ev.stopPropagation();
+        clearQuestionDraft(issue, question.text);
+        if (input) input.value = '';
         answerRow.style.display = 'none';
         btnAnswer.setAttribute('aria-expanded', 'false');
       });
@@ -4673,6 +5160,14 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
     });
 
     card.appendChild(list);
+
+    const draftsEl = renderRecoverableDraftsElement(issue, () => {
+      renderViews();
+    });
+    if (draftsEl) {
+      card.appendChild(draftsEl);
+    }
+
     return card;
   };
 
@@ -5176,8 +5671,8 @@ async function handleAddDependency(targetNum: number, blockerNum: number): Promi
   if (!targetIssue) return;
   const newBody = addDependencyToMarkdown(targetIssue.body, blockerNum);
   if (newBody !== targetIssue.body) {
-    await updateIssueBody(targetIssue, newBody);
-    if (host?.toast) {
+    const ok = await updateIssueBody(targetIssue, newBody, { suppressToast: true });
+    if (ok && host?.toast) {
       await host.toast({ kind: 'info', message: `Linked #${targetNum} as blocked by #${blockerNum}` });
     }
   }
@@ -5188,8 +5683,8 @@ async function handleRemoveDependency(targetNum: number, blockerNum: number): Pr
   if (!targetIssue) return;
   const newBody = removeDependencyFromMarkdown(targetIssue.body, blockerNum);
   if (newBody !== targetIssue.body) {
-    await updateIssueBody(targetIssue, newBody);
-    if (host?.toast) {
+    const ok = await updateIssueBody(targetIssue, newBody, { suppressToast: true });
+    if (ok && host?.toast) {
       await host.toast({ kind: 'info', message: `Removed dependency: #${blockerNum} no longer blocks #${targetNum}` });
     }
   }
@@ -5976,6 +6471,21 @@ async function removeTagFromIssue(issue: Issue, tagName: string): Promise<void> 
 
 function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number = drawerGeneration, forceFreshComments: boolean = false): void {
   elDrawerIssueNumber.textContent = `#${issue.number}`;
+  let elUnconfirmedBadge = elDrawerIssueNumber?.parentElement?.querySelector<HTMLElement>('.badge-drawer-unconfirmed');
+  if ((issue as any).unconfirmed) {
+    if (!elUnconfirmedBadge && elDrawerIssueNumber?.parentElement) {
+      elUnconfirmedBadge = document.createElement('span');
+      elUnconfirmedBadge.className = 'badge badge-drawer-unconfirmed';
+      elUnconfirmedBadge.style.cssText = 'background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4); font-size: 11px; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-left: 6px; vertical-align: middle;';
+      elUnconfirmedBadge.textContent = 'unconfirmed';
+      elUnconfirmedBadge.title = 'Remote outcome unknown — refresh to reconcile';
+      elDrawerIssueNumber.parentElement.appendChild(elUnconfirmedBadge);
+    } else if (elUnconfirmedBadge) {
+      elUnconfirmedBadge.style.display = 'inline-block';
+    }
+  } else if (elUnconfirmedBadge) {
+    elUnconfirmedBadge.style.display = 'none';
+  }
   elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : '';
   elDrawerGithubLink.href = issue.html_url;
   elDrawerIssueTitle.textContent = issue.title;
@@ -6248,6 +6758,13 @@ function renderQuestions(issue: Issue): void {
         No open questions. Add one below to align on specifications.
       </div>
     `;
+    const draftsEl = renderRecoverableDraftsElement(issue, () => {
+      renderDrawer(issue, true);
+      renderViews();
+    });
+    if (draftsEl) {
+      elDrawerQuestionsContainer.appendChild(draftsEl);
+    }
     return;
   }
 
@@ -6300,78 +6817,107 @@ function renderQuestions(issue: Issue): void {
       btnAnswer.textContent = 'Answer';
       textRow.appendChild(btnAnswer);
 
+      const existingDraft = getQuestionDraft(issue, question.text);
+
+      const createOrGetAnswerRow = () => {
+        let answerRow = contentEl.querySelector<HTMLDivElement>('.inline-answer-row');
+        if (!answerRow) {
+          answerRow = document.createElement('div');
+          answerRow.className = 'inline-answer-row';
+          answerRow.style.display = 'flex';
+          answerRow.style.gap = '6px';
+          answerRow.style.marginTop = '4px';
+          answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>`;
+          contentEl.appendChild(answerRow);
+
+          const input = answerRow.querySelector<HTMLInputElement>('.input-inline-answer');
+          const btnSave = answerRow.querySelector<HTMLButtonElement>('.btn-submit-inline-answer');
+          const btnCancel = answerRow.querySelector<HTMLButtonElement>('.btn-cancel-inline-answer');
+
+          const draft = getQuestionDraft(issue, question.text);
+          if (draft && input) {
+            input.value = draft;
+          }
+
+          input?.addEventListener('input', () => {
+            saveQuestionDraft(issue, question.text, input.value);
+          });
+
+          const submitAnswer = async () => {
+            if (btnSave?.disabled) return;
+            const answerText = input?.value.trim();
+            if (!answerText) {
+              input?.focus();
+              return;
+            }
+            if (btnSave) btnSave.disabled = true;
+            if (input) input.disabled = true;
+            try {
+              const targetIssue = activeIssue || issue;
+              if (!targetIssue) return;
+              const ok = await answerQuestion(targetIssue, question.text, answerText);
+              if (ok) {
+                clearQuestionDraft(issue, question.text);
+                if (issue && issue !== targetIssue) {
+                  issue.body = targetIssue.body;
+                  issue.subtasks = targetIssue.subtasks;
+                  issue.openQuestions = targetIssue.openQuestions;
+                }
+                if (answerRow) answerRow.style.display = 'none';
+              }
+            } finally {
+              if (btnSave) btnSave.disabled = false;
+              if (input) input.disabled = false;
+            }
+          };
+
+          btnSave?.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            void submitAnswer();
+          });
+
+          btnCancel?.addEventListener('click', (ev) => {
+            ev.stopPropagation();
+            clearQuestionDraft(issue, question.text);
+            if (input) input.value = '';
+            if (answerRow) answerRow.style.display = 'none';
+            btnAnswer.focus();
+          });
+
+          input?.addEventListener('keydown', (ev) => {
+            if (ev.key === 'Enter') {
+              ev.preventDefault();
+              ev.stopPropagation();
+              void submitAnswer();
+            } else if (ev.key === 'Escape') {
+              ev.preventDefault();
+              ev.stopPropagation();
+              if (answerRow) answerRow.style.display = 'none';
+              btnAnswer.focus();
+            }
+          });
+        }
+        return answerRow;
+      };
+
+      if (existingDraft) {
+        createOrGetAnswerRow();
+      }
+
       btnAnswer.addEventListener('click', (e) => {
         e.stopPropagation();
-        let answerRow = contentEl.querySelector<HTMLDivElement>('.inline-answer-row');
-        if (answerRow) {
-          const isVisible = answerRow.style.display !== 'none';
-          answerRow.style.display = isVisible ? 'none' : 'flex';
+        let row = contentEl.querySelector<HTMLDivElement>('.inline-answer-row');
+        if (row) {
+          const isVisible = row.style.display !== 'none';
+          row.style.display = isVisible ? 'none' : 'flex';
           if (!isVisible) {
-            answerRow.querySelector<HTMLInputElement>('.input-inline-answer')?.focus();
+            row.querySelector<HTMLInputElement>('.input-inline-answer')?.focus();
           }
           return;
         }
-
-        answerRow = document.createElement('div');
-        answerRow.className = 'inline-answer-row';
-        answerRow.style.display = 'flex';
-        answerRow.style.gap = '6px';
-        answerRow.style.marginTop = '4px';
-        answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>`;
-        contentEl.appendChild(answerRow);
-
-        const input = answerRow.querySelector<HTMLInputElement>('.input-inline-answer');
-        const btnSave = answerRow.querySelector<HTMLButtonElement>('.btn-submit-inline-answer');
-        const btnCancel = answerRow.querySelector<HTMLButtonElement>('.btn-cancel-inline-answer');
-
-        const submitAnswer = async () => {
-          const answerText = input?.value.trim();
-          if (!answerText) {
-            input?.focus();
-            return;
-          }
-          const targetIssue = activeIssue || issue;
-          if (!targetIssue) return;
-          await reloadIssueBeforeMutation(targetIssue);
-          const result = resolveOptimisticQuestionAnswer(targetIssue.body, question.text, answerText);
-          const newBody = result.updatedBody;
-          if (issue && issue !== targetIssue) {
-            issue.body = newBody;
-            issue.subtasks = parseSubtasks(newBody);
-            issue.openQuestions = parseOpenQuestions(newBody);
-          }
-          await updateIssueBody(targetIssue, newBody);
-          await host.toast({ kind: 'info', message: 'Recorded answer to question' });
-          if (activeIssue && activeIssue.number === targetIssue.number) {
-            renderDrawer(targetIssue, true);
-          }
-        };
-
-        btnSave?.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          void submitAnswer();
-        });
-
-        btnCancel?.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          if (answerRow) answerRow.style.display = 'none';
-          btnAnswer.focus();
-        });
-
-        input?.addEventListener('keydown', (ev) => {
-          if (ev.key === 'Enter') {
-            ev.preventDefault();
-            ev.stopPropagation();
-            void submitAnswer();
-          } else if (ev.key === 'Escape') {
-            ev.preventDefault();
-            ev.stopPropagation();
-            if (answerRow) answerRow.style.display = 'none';
-            btnAnswer.focus();
-          }
-        });
-
-        input?.focus();
+        row = createOrGetAnswerRow();
+        row.style.display = 'flex';
+        row.querySelector<HTMLInputElement>('.input-inline-answer')?.focus();
       });
     }
 
@@ -6380,6 +6926,14 @@ function renderQuestions(issue: Issue): void {
     itemEl.appendChild(contentEl);
     elDrawerQuestionsContainer.appendChild(itemEl);
   });
+
+  const recoverableDraftsEl = renderRecoverableDraftsElement(issue, () => {
+    renderDrawer(issue, true);
+    renderViews();
+  });
+  if (recoverableDraftsEl) {
+    elDrawerQuestionsContainer.appendChild(recoverableDraftsEl);
+  }
 }
 
 function renderTestPlans(issue: Issue): void {
@@ -7974,9 +8528,11 @@ if (typeof window !== 'undefined') {
   (window as any).formatAlertBadges = formatAlertBadges;
   (window as any).renderDrawerAcceptanceCriteria = renderDrawerAcceptanceCriteria;
   (window as any).reloadIssueBeforeMutation = reloadIssueBeforeMutation;
+  (window as any).answerQuestion = answerQuestion;
+  (window as any).updateIssueBody = updateIssueBody;
 }
 
-export { setupCustomDropdown, initAllCustomDropdowns, formatAlertBadges, renderDrawerAcceptanceCriteria, reloadIssueBeforeMutation };
+export { setupCustomDropdown, initAllCustomDropdowns, formatAlertBadges, renderDrawerAcceptanceCriteria, reloadIssueBeforeMutation, answerQuestion, updateIssueBody };
 
 
 // ==========================================

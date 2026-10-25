@@ -1,0 +1,145 @@
+TAP version 13
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1/comments
+# [Hypothesis A1] Leaked to Repo B input: true value: Distinctive draft for Repo A
+# [Hypothesis A1] Answer row mounted open on Repo B: true
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments
+# [Hypothesis A1] Issue A input value after Repo B cancelled: undefined
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-a/issues/2/comments
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-b/issues/2/comments
+# [Hypothesis A2] Issue B different question prefilled value: Secret answer for Repo A
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [Hypothesis B1] Q2 input value: Postgres 16
+# [Hypothesis B1] Q2 row display style: flex
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments
+# [Hypothesis B1] Q1 modified input value after Q2 cancelled fallback: undefined
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/11/comments
+# [TaskBoard] API GET /repos/owner/repo-main/issues/11
+# Subtest: Hypothesis A1: Cross-repo draft leakage and deletion with identical question text
+ok 1 - Hypothesis A1: Cross-repo draft leakage and deletion with identical question text
+  ---
+  duration_ms: 184.732005
+  type: 'test'
+  ...
+# Subtest: Hypothesis A2: Cross-repo draft leakage with DIFFERENT question text via issue::number fallback
+ok 2 - Hypothesis A2: Cross-repo draft leakage with DIFFERENT question text via issue::number fallback
+  ---
+  duration_ms: 95.572935
+  type: 'test'
+  ...
+# Subtest: Hypothesis B1: Single issue with unrelated Q1 and Q2 (issue fallback leakage)
+ok 3 - Hypothesis B1: Single issue with unrelated Q1 and Q2 (issue fallback leakage)
+  ---
+  duration_ms: 69.222342
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/1/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-a/issues/2/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-b/issues/2/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/10/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/11/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/11 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API PATCH /repos/owner/repo-main/issues/11
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API PATCH /repos/owner/repo-main/issues/11 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100
+# [TaskBoard] API GET /repos/owner/repo-main/issues/11/comments
+# [Hypothesis B2] q1RevInput value after settled PATCH: undefined
+# [TaskBoard] API GET /repos/owner/repo-main/issues/20
+# Subtest: Hypothesis B2: Q2 success clearing Q1 fallback while retaining stale exact entry
+ok 4 - Hypothesis B2: Q2 success clearing Q1 fallback while retaining stale exact entry
+  ---
+  duration_ms: 252.215471
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-main/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/11/comments -> 200
+# [TaskBoard] API GET /repos/owner/repo-main/issues/20 -> 200
+# [TaskBoard] Question on \#20 was modified remotely; refusing write
+# [Hypothesis C] Question displayed innerHTML: What is the retry interval?
+# [Hypothesis C] Input value: 30 seconds
+# [Hypothesis C] Has orphan indicator: false
+# [TaskBoard] API GET /repos/owner/repo-main/issues/21
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/repo-main/issues/21 -> 200
+# [TaskBoard] Question on \#21 was modified remotely; refusing write
+# [Hypothesis C - zero questions] Container shows empty-box: true
+# [Hypothesis C - zero questions] Does draft appear anywhere in DOM: false
+# [Hypothesis D] Initial data-layout: null
+# [Hypothesis D] data-layout after renderQuestionsView: questions
+# [Hypothesis D] data-layout after subsequent renderViews(): questions
+# [Hypothesis D] data-layout after renderHumanTasksView: human
+# Subtest: Hypothesis C: Changed / disappeared original question & orphan draft behavior
+ok 5 - Hypothesis C: Changed / disappeared original question & orphan draft behavior
+  ---
+  duration_ms: 150.345115
+  type: 'test'
+  ...
+# Subtest: Hypothesis D: Side effects of userLayoutPreference assignments in renderHumanTasksView/renderQuestionsView
+ok 6 - Hypothesis D: Side effects of userLayoutPreference assignments in renderHumanTasksView/renderQuestionsView
+  ---
+  duration_ms: 92.808354
+  type: 'test'
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+1..6
+# tests 6
+# suites 0
+# pass 6
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1075.434489

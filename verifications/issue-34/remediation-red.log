@@ -1,0 +1,391 @@
+TAP version 13
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/101
+# Subtest: Path (a) reproduction: wrong-question fallback in resolveOptimisticQuestionAnswer
+ok 1 - Path (a) reproduction: wrong-question fallback in resolveOptimisticQuestionAnswer
+  ---
+  duration_ms: 3.03185
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/101 -> 200
+# [TaskBoard] Question on \#101 was modified remotely; refusing write
+# [TaskBoard] API GET /repos/test-owner/test-repo/labels?per_page=100
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/102/comments
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/102
+# Subtest: Path (b) reproduction: Questions view must not show success toast without result.found
+ok 2 - Path (b) reproduction: Questions view must not show success toast without result.found
+  ---
+  duration_ms: 776.611445
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/102/comments -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/102 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/labels?per_page=100
+# [TaskBoard] Question on \#102 was modified remotely; refusing write
+# [TaskBoard] API GET /repos/test-owner/test-repo/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/103
+# Subtest: Path (b) reproduction: Drawer must not show success toast without result.found
+ok 3 - Path (b) reproduction: Drawer must not show success toast without result.found
+  ---
+  duration_ms: 651.582198
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] GitHub request failed: GitHub API error: 500
+# [TaskBoard] Could not reload issue \#103 (GitHub API error: 500)
+# [TaskBoard] Cannot answer question on \#103: fresh reload failed
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/104
+# Subtest: Path (c) reproduction: failed fresh read continuing on cached body
+ok 4 - Path (c) reproduction: failed fresh read continuing on cached body
+  ---
+  duration_ms: 602.914251
+  type: 'test'
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/104 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/104
+# [TaskBoard] GitHub request failed: GitHub API error: 500
+# [TaskBoard] Failed to sync body for \#104: GitHub API error: 500
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/105
+# Subtest: Path (d) reproduction: failed PATCH keeping the new local body
+ok 5 - Path (d) reproduction: failed PATCH keeping the new local body
+  ---
+  duration_ms: 132.348031
+  type: 'test'
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/105 -> 200
+# [TaskBoard] Question on \#105 was modified remotely; refusing write
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/106
+# Subtest: Decision D3: changed question refuses answer and shows new text
+ok 6 - Decision D3: changed question refuses answer and shows new text
+  ---
+  duration_ms: 67.392334
+  type: 'test'
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/106 -> 200
+# [TaskBoard] Question on \#106 was already answered remotely; refusing to overwrite
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/107
+# Subtest: Already-answered question refuses write and does not overwrite
+ok 7 - Already-answered question refuses write and does not overwrite
+  ---
+  duration_ms: 111.27784
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/107 -> 200
+# [TaskBoard] Question on \#107 has ambiguous duplicates; refusing to guess
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/108
+# Subtest: Ambiguous duplicate unresolved questions refuse write rather than guess
+ok 8 - Ambiguous duplicate unresolved questions refuse write rather than guess
+  ---
+  duration_ms: 82.047347
+  type: 'test'
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/108 -> 200
+# [TaskBoard] Question on \#108 was modified remotely; refusing write
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/108
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/108 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/108
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/108 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/109
+# Subtest: Exact identity compares Markdown link destinations and case without stripping
+ok 9 - Exact identity compares Markdown link destinations and case without stripping
+  ---
+  duration_ms: 139.381424
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/109 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/109
+# [TaskBoard] GitHub request failed: TypeError: fetch failed
+# [TaskBoard] Ambiguous outcome syncing body for \#109: TypeError: fetch failed
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/110
+# Subtest: Ambiguous write outcome (network error after send) reports outcome unknown and never auto-repeats
+ok 10 - Ambiguous write outcome (network error after send) reports outcome unknown and never auto-repeats
+  ---
+  duration_ms: 107.855709
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/110 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/110
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/110 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/111
+# Subtest: Human Tasks entry point shares answer path and executes clean write-back
+ok 11 - Human Tasks entry point shares answer path and executes clean write-back
+  ---
+  duration_ms: 115.119051
+  type: 'test'
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/111 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/111
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/111 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/500
+# Subtest: Answering a question preserves workflow phase and does not close issue (\#36 guards intact)
+ok 12 - Answering a question preserves workflow phase and does not close issue (\#36 guards intact)
+  ---
+  duration_ms: 78.71778
+  type: 'test'
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] GitHub request failed: GitHub API error: 500
+# [TaskBoard] Failed to sync body for \#500: GitHub API error: 500
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/222
+# Subtest: Finding 1: Post-send 5xx/gateway/timeout/abort errors treated as UNKNOWN; 4xx pre-commit treated as definitive rejection
+not ok 13 - Finding 1: Post-send 5xx/gateway/timeout/abort errors treated as UNKNOWN; 4xx pre-commit treated as definitive rejection
+  ---
+  duration_ms: 125.529942
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:615:1'
+  failureType: 'testCodeFailure'
+  error: '500 must toast outcome unknown'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:636:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] GitHub request failed: GitHub API error: 500
+# [TaskBoard] Failed to sync body for \#222: GitHub API error: 500
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/301
+# Subtest: Finding 2: Ambiguous outcome marks issue unconfirmed, blocks dependent writes until refresh reconciles it
+not ok 14 - Finding 2: Ambiguous outcome marks issue unconfirmed, blocks dependent writes until refresh reconciles it
+  ---
+  duration_ms: 72.275053
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:711:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Issue must be marked unconfirmed after ambiguous outcome
+    + actual - expected
+    
+    + undefined
+    - true
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:745:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API auth error HTTP 403: OAuth access restricted or missing
+# [TaskBoard] GitHub request failed: GitHub auth failed (403)
+# [TaskBoard] Failed to sync body for \#301: GitHub auth failed (403)
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/404
+# Subtest: Finding 3: handleAddDependency and handleRemoveDependency honor updateIssueBody result without false success toast
+not ok 15 - Finding 3: handleAddDependency and handleRemoveDependency honor updateIssueBody result without false success toast
+  ---
+  duration_ms: 111.389629
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:762:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Must not show success toast when handleAddDependency fails
+    + actual - expected
+    
+    + {
+    +   channel: 'openchamber.sdk',
+    +   id: 'oc-16',
+    +   payload: {
+    +     kind: 'info',
+    +     message: 'Linked #301 as blocked by #302'
+    +   },
+    +   type: 'toast',
+    +   v: 1
+    + }
+    - undefined
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  actual:
+    channel: 'openchamber.sdk'
+    v: 1
+    type: 'toast'
+    id: 'oc-16'
+    payload:
+      kind: 'info'
+      message: 'Linked #301 as blocked by #302'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:802:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/404 -> 200
+# [TaskBoard] Question on \#404 was modified remotely; refusing write
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/505
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/505
+# Subtest: Finding 4: Question change toast in multi-question issue does not falsely attribute unrelated question text
+not ok 16 - Finding 4: Question change toast in multi-question issue does not falsely attribute unrelated question text
+  ---
+  duration_ms: 65.685568
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:821:1'
+  failureType: 'testCodeFailure'
+  error: 'Must NOT attribute Question 1 text'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:865:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/505 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/505
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/505 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/505
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/505 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/505 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/601
+# Subtest: Finding 5: In-flight disabling on Save prevents duplicate PATCH mutations and toasts on double-click
+not ok 17 - Finding 5: In-flight disabling on Save prevents duplicate PATCH mutations and toasts on double-click
+  ---
+  duration_ms: 126.955864
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:869:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Double-click must send exactly 1 PATCH request
+    
+    2 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:919:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/701
+# Subtest: Finding 6: Typed answer is preserved across refusal in Questions View, Drawer, and Human Tasks
+not ok 18 - Finding 6: Typed answer is preserved across refusal in Questions View, Drawer, and Human Tasks
+  ---
+  duration_ms: 68.500605
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:924:1'
+  failureType: 'testCodeFailure'
+  error: 'Answer row must remain mounted/open'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'none'
+  actual: 'none'
+  operator: 'notStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:969:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/601 -> 200
+# [TaskBoard] Question on \#601 was modified remotely; refusing write
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/701 -> 200
+# Subtest: Finding 7: Post-mutation notification/toast failure does not cause write rollback
+not ok 19 - Finding 7: Post-mutation notification/toast failure does not cause write rollback
+  ---
+  duration_ms: 79.701699
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:1069:1'
+  failureType: 'unhandledRejection'
+  error: 'Host toast RPC communication failure'
+  code: 'ERR_TEST_FAILURE'
+  stack: |-
+    Object.onPostMessage (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:1094:15)
+    Object.postMessage (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/test-app-harness.js:433:19)
+    post (eval at createTestApp (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/test-app-harness.js:611:14), <anonymous>:531:21)
+    eval (eval at createTestApp (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/test-app-harness.js:611:14), <anonymous>:741:9)
+    new Promise (<anonymous>)
+    send (eval at createTestApp (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/test-app-harness.js:611:14), <anonymous>:735:14)
+    request (eval at createTestApp (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/test-app-harness.js:611:14), <anonymous>:744:34)
+    Object.toast (eval at createTestApp (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/test-app-harness.js:611:14), <anonymous>:1080:16)
+    Object.updateIssueBody (eval at createTestApp (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/test-app-harness.js:611:14), <anonymous>:9028:20)
+    async TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:1100:14)
+  ...
+# [TaskBoard] Ambiguous outcome syncing body for \#701: Host did not answer in time.
+# Error: Test "Finding 7: Post-mutation notification/toast failure does not cause write rollback" at test/issue-34-answer-integrity.test.js:1069:1 generated asynchronous activity after the test ended. This activity created the error "Error: Host toast RPC communication failure" and would have caused the test to fail, but instead triggered an unhandledRejection event.
+1..19
+# tests 19
+# suites 0
+# pass 12
+# fail 7
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 43816.066898

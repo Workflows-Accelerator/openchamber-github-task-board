@@ -1,0 +1,176 @@
+TAP version 13
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/101
+# Subtest: Path (a) reproduction: wrong-question fallback in resolveOptimisticQuestionAnswer
+not ok 1 - Path (a) reproduction: wrong-question fallback in resolveOptimisticQuestionAnswer
+  ---
+  duration_ms: 3.757984
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:6:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Must not claim found for completed question fallback
+    
+    true !== false
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: false
+  actual: true
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:17:10)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/101 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/101
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/101 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/labels?per_page=100
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/102/comments
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/102
+# Subtest: Path (b) reproduction: Questions view must not show success toast without result.found
+not ok 2 - Path (b) reproduction: Questions view must not show success toast without result.found
+  ---
+  duration_ms: 245.716918
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:22:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Must not show success toast when question was not found in fresh body
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:86:10)
+    runNextTicks (node:internal/process/task_queues:64:5)
+    process.processTimers (node:internal/timers:518:9)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/labels?per_page=100 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/102/comments -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/102 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/labels?per_page=100
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/102
+# [TaskBoard] API GET /repos/test-owner/test-repo/labels?per_page=100 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/102 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/labels?per_page=100
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/103
+# Subtest: Path (b) reproduction: Drawer must not show success toast without result.found
+not ok 3 - Path (b) reproduction: Drawer must not show success toast without result.found
+  ---
+  duration_ms: 138.366151
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:89:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Must not show success toast when question was not found in fresh body
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:149:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] GitHub request failed: GitHub API error: 500
+# [TaskBoard] Could not reload issue \#103 (GitHub API error: 500); proceeding with cached body
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] API GET /repos/test-owner/test-repo/labels?per_page=100 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/103
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/103 -> 200
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/104
+# Subtest: Path (c) reproduction: failed fresh read continuing on cached body
+not ok 4 - Path (c) reproduction: failed fresh read continuing on cached body
+  ---
+  duration_ms: 80.691906
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:152:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Must abort write and never send PATCH if fresh read failed
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:205:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# [TaskBoard] Host ready. Surface: panel, Directory: /workspace
+# [TaskBoard] Scanning OpenChamber projects for Git repositories...
+# [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/test-owner/test-repo/issues/104 -> 200
+# [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/104
+# [TaskBoard] GitHub request failed: GitHub API error: 500
+# [TaskBoard] Failed to sync body: GitHub API error: 500
+# Subtest: Path (d) reproduction: failed PATCH keeping the new local body
+not ok 5 - Path (d) reproduction: failed PATCH keeping the new local body
+  ---
+  duration_ms: 112.01093
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:208:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Failed PATCH must restore previous issue body
+    + actual - expected
+    
+    + '### Open Questions:\n' +
+    +   '- [x] Question to fail PATCH? *(Answer: Failed answer)*\n' +
+    +   'Original cached body'
+    - '### Open Questions:\n- [ ] Question to fail PATCH?\nOriginal cached body'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: |-
+    ### Open Questions:
+    - [ ] Question to fail PATCH?
+    Original cached body
+  actual: |-
+    ### Open Questions:
+    - [x] Question to fail PATCH? *(Answer: Failed answer)*
+    Original cached body
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/test/issue-34-answer-integrity.test.js:264:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..5
+# tests 5
+# suites 0
+# pass 0
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 834.782992

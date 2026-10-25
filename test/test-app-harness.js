@@ -173,6 +173,22 @@ export function createTestApp(options = {}) {
       style: {
         setProperty: () => {},
         animation: '',
+        get cssText() {
+          return Object.entries(this)
+            .filter(([k]) => k !== 'setProperty' && k !== 'animation' && k !== 'cssText')
+            .map(([k, v]) => `${k.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase())}: ${v}`)
+            .join('; ');
+        },
+        set cssText(val) {
+          String(val).split(';').forEach((pair) => {
+            const idx = pair.indexOf(':');
+            if (idx > -1) {
+              const k = pair.slice(0, idx).trim().replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+              const v = pair.slice(idx + 1).trim();
+              if (k) this[k] = v;
+            }
+          });
+        },
       },
       dataset: {},
       children: [],
@@ -316,6 +332,8 @@ export function createTestApp(options = {}) {
       value: '',
       checked: false,
       disabled: false,
+      focus: () => {},
+      blur: () => {},
     };
     return el;
   };
@@ -426,7 +444,7 @@ export function createTestApp(options = {}) {
     removeEventListener: () => {},
     postMessage: () => {},
     parent: {
-      postMessage: async (data) => {
+      postMessage: (data) => {
         hostCalls.push(data);
         if (data && data.type === 'hello') {
           setTimeout(() => {
@@ -451,34 +469,49 @@ export function createTestApp(options = {}) {
             }
           }, 1);
         } else if (data && data.id) {
-          let resultPayload = null;
-          let ok = true;
-          let error = null;
+          setTimeout(async () => {
+            let resultPayload = null;
+            let ok = true;
+            let error = null;
 
-          if (data.type === 'storage') {
-            if (data.payload?.op === 'set') {
-              if (!isJsonValue(data.payload.value)) {
+            if (options.onPostMessage) {
+              try {
+                const res = await options.onPostMessage(data);
+                if (res && res.error) {
+                  ok = false;
+                  error = res.error;
+                }
+              } catch (e) {
                 ok = false;
-                error = { code: 'HOST_REJECTED', message: 'Storage values must be JSON.' };
-              } else {
-                mockStorage.set(data.payload.key, data.payload.value);
-                resultPayload = { storage: true, op: 'set', key: data.payload.key, value: data.payload.value };
+                error = e?.message || 'Host call failed';
               }
-            } else if (data.payload?.op === 'get') {
-              resultPayload = { storage: true, op: 'get', key: data.payload.key, value: mockStorage.get(data.payload.key) };
             }
-          } else if (options.onRequest) {
-            try {
-              resultPayload = await options.onRequest(data.payload);
-            } catch (e) {
-              ok = false;
-              error = { code: 'CALL_FAILED', message: e.message };
-            }
-          } else {
-            resultPayload = {};
-          }
 
-          setTimeout(() => {
+            if (ok) {
+              if (data.type === 'storage') {
+                if (data.payload?.op === 'set') {
+                  if (!isJsonValue(data.payload.value)) {
+                    ok = false;
+                    error = { code: 'HOST_REJECTED', message: 'Storage values must be JSON.' };
+                  } else {
+                    mockStorage.set(data.payload.key, data.payload.value);
+                    resultPayload = { storage: true, op: 'set', key: data.payload.key, value: data.payload.value };
+                  }
+                } else if (data.payload?.op === 'get') {
+                  resultPayload = { storage: true, op: 'get', key: data.payload.key, value: mockStorage.get(data.payload.key) };
+                }
+              } else if (options.onRequest) {
+                try {
+                  resultPayload = await options.onRequest(data.payload);
+                } catch (e) {
+                  ok = false;
+                  error = e?.message || 'Host call failed';
+                }
+              } else {
+                resultPayload = {};
+              }
+            }
+
             if (messageListener) {
               const evt = new MessageEvent('message', {
                 data: {
@@ -488,7 +521,8 @@ export function createTestApp(options = {}) {
                   id: data.id,
                   ok,
                   payload: resultPayload,
-                  error,
+                  code: ok ? undefined : 'HOST_REJECTED',
+                  error: ok ? undefined : error,
                 },
               });
               Object.defineProperty(evt, 'source', { value: mockWindow.parent });
@@ -538,6 +572,10 @@ export function createTestApp(options = {}) {
       updateIssueStatus,
       statusReconciler,
       updateIssueBody,
+      reloadIssueBeforeMutation,
+      answerQuestion,
+      handleAddDependency,
+      handleRemoveDependency,
       submitNewIssue,
       setRepository,
       renderEmptyState,
@@ -549,6 +587,11 @@ export function createTestApp(options = {}) {
       closeDrawer,
       renderDrawer,
       repoForIssue,
+      applyLayoutMode,
+      saveQuestionDraft,
+      getQuestionDraft,
+      clearQuestionDraft,
+      getRecoverableQuestionDrafts,
       addLog,
       getElements: () => elements,
       setWorkspaceGitToken: (t) => { workspaceGitToken = t; },
@@ -556,6 +599,7 @@ export function createTestApp(options = {}) {
         issues,
         currentRepo,
         isManualRepoOverride,
+        userLayoutPreference,
         activeSessionId,
         currentActiveSession,
         currentSessionRepo,
@@ -580,6 +624,7 @@ export function createTestApp(options = {}) {
         if (updates.issues !== undefined) issues = updates.issues;
         if (updates.currentRepo !== undefined) currentRepo = updates.currentRepo;
         if (updates.isManualRepoOverride !== undefined) isManualRepoOverride = updates.isManualRepoOverride;
+        if (updates.userLayoutPreference !== undefined) userLayoutPreference = updates.userLayoutPreference;
         if (updates.activeSessionId !== undefined) activeSessionId = updates.activeSessionId;
         if (updates.currentActiveSession !== undefined) currentActiveSession = updates.currentActiveSession;
         if (updates.currentSessionRepo !== undefined) currentSessionRepo = updates.currentSessionRepo;
