@@ -9,7 +9,7 @@ Timestamp: 2026-10-25
 |---|---|---|---|---|---|---|
 | #28 opening/current tasks | Prior green (see issue-28/proof.md) | Prior green | Synthetic host only | Installed-host NOT RUN | PASS, merged working branch | AWAITING HUMAN |
 | #36 human-only close | Prior green | Prior green, 491 full at integration | Synthetic host only | Installed-host NOT RUN | PASS 4f22605 | AWAITING HUMAN |
-| #34 safe answers | PASS on a8f55c2 | 19 targeted / 510 full, reviewer reproduced | Synthetic DOM/host (no real GitHub) | Installed-host NOT RUN | Seven named findings PASS 72f3f76; draft isolation FAIL 7f7e8cc; final correction RUNNING | AWAITING HUMAN, batch not ready |
+| #34 safe answers | Prior a8f55c2 PASS; eef57bd builder types/build green | Prior19/510 reproduced; eef57bd builder26/517, not independently accepted yet | Synthetic DOM/host (no real GitHub) | Installed-host NOT RUN | Seven named findings PASS 72f3f76; isolation FAIL 7f7e8cc; correction eef57bd in independent final review ses_691b16d7beb0bc7cdc2ac338 | AWAITING HUMAN, batch not ready |
 | #33 browser board | PASS f50519d types/bundle | 96 web / 466 root | Real localhost HTTP with synthetic GitHub upstream | Real Obscura browser 32 baseline + 33 hostile checks, screenshots/logs inspected (not production auth/GitHub/TLS) | NEEDS-FIXES 8818b94; N1–N5 unresolved; final correction queued | AWAITING HUMAN, batch not ready |
 | #35/#30/#31/#37 | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT RUN | NOT READY |
 
