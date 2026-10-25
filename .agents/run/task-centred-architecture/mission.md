@@ -2,7 +2,7 @@
 
 ## Latest checkpoint — 2026-10-25 owner-authorized final corrections
 State: building. Alignment: decisions14–15 CONFIRMED. Owner "Correct both and recheck" and "Show all".
-- #34 final draft correction RUNNING ses_de503a8db65a350c9dc23a1b engineer in existing worktree at 7f7e8cc; brief tasks/issue-34-final-draft-correction.md. One independent final check after wake; if fails stop/owner.
+- #34 final draft correction RETURNED eef57bd clean; builder ses_de503a8db65a350c9dc23a1b, 7/7 red->green, 26 targeted/517 full, types/build claimed. Independent final check RUNNING ses_691b16d7beb0bc7cdc2ac338 engineer, tasks/issue-34-final-draft-hostile.md; if fails STOP/owner, no further autonomous fixes. Actual reviewer model verified on wake; builder model verification not supplied in wake, do not invent it.
 - #33 final protocol correction QUEUED (not dispatched) tasks/issue-33-final-protocol-correction.md. Complete #34 correction/check first under one repository frontier; then confirm 8818b94 clean and fill draft preflight. One independent check, no further loop.
 - #37 issue body corrected to owner show-all archived/empty decision and honest token-visibility boundary. Initial gh TLS timeout read back old body, then explicit retry succeeded; no blind retry. Bot-token scope still unverified.
 - Receipts: #33 owner approval 6402026297; #34 approval 6402028397. No master/deployment/secrets/closure authority. No new feature expansion.

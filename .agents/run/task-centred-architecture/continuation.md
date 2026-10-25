@@ -1,6 +1,10 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — owner decision14–15 final corrections
+## Latest checkpoint — #34 final draft review running
+- #34 builder wake eef57bd clean; 7 red/green, targeted26/full517/types/build claimed, bundle 0ec437c5e6a5b2d4d63b53c3ced634a992357b4ac2e73ba9ca4f82fe40c3dc8a. Report outputs/issue-34-final-draft-correction.md in #34 worktree. Independent final check ses_691b16d7beb0bc7cdc2ac338 engineer, tasks/issue-34-final-draft-hostile.md. Wait wake; if failure STOP/owner; no repeat fix loop. Builder actual model absent wake, pending safe record verification; reviewer actual model on wake.
+- #33 approved correction still QUEUED under one repo frontier; start only after #34 final check, confirm 8818b94 clean/fill brief. No master/deployment/closure approval.
+
+## Previous checkpoint — owner decision14–15 final corrections
 - Owner approved "Correct both and recheck" and "Show all". Recorded decisions14–15. #34 correction RUNNING ses_de503a8db65a350c9dc23a1b engineer, tasks/issue-34-final-draft-correction.md; HEAD before dispatch 7f7e8cc clean. Wait wake, one independent final check, if fails STOP/owner. Do not repeat old checks or duplicate workers.
 - #33 queued approved brief tasks/issue-33-final-protocol-correction.md, NOT dispatched (one repo frontier); expected 8818b94 clean, fill/confirm at dispatch after #34 correction/check. N1–N5 only web, no shared parser/host/health/push/#37 expansion. One independent final check then stop on failure.
 - #37 issue body updated show archived/empty and honest token-visible scope. First gh edit TLS handshake failed, readback old body, one deliberate retry succeeded. No unapproved exclude default remains. Receipt #33 6402026297/#34 6402028397. No master/deployment approval.

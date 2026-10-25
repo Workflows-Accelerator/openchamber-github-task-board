@@ -1,8 +1,8 @@
 <env_preflight>
-DRAFT: manager must fill candidate HEAD and clean state at builder wake before dispatch. No other worker may own worktree.
+Candidate eef57bd, clean at dispatch; builder finished. No other worker owns worktree.
 Repo /workspace/extensions/github-task-board
 Worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity
-Branch fix/issue-34-answer-integrity; prior 7f7e8cc; correction FILL_AT_DISPATCH. Key paths panel/main.ts questionAnswerDrafts and all draft call sites/three renderers; panel/main.js; test/issue-34-answer-integrity.test.js; focused correction report/proof.
+Branch fix/issue-34-answer-integrity; prior 7f7e8cc; correction eef57bd. Key paths panel/main.ts questionAnswerDrafts and all draft call sites/three renderers; panel/main.js; test/issue-34-answer-integrity.test.js; focused correction report/proof.
 Commands node --test test/issue-34-answer-integrity.test.js; npm test; npm run typecheck; npm run build. Shared node_modules symlink. Disposable probes /tmp/opencode.
 Own only .agents/run/task-centred-architecture/outputs/issue-34-final-draft-hostile.md and verifications/issue-34-draft-final-review/**. Product/tests read-only. No web/service/core/parser edits, installed extension, real GitHub, credential/env files, other worktrees, master, push/merge/deploy/closure. No installs. Rebuild to disposable destination or verify build causes no product diff; do not commit bundle.
 Preflight authoritative, no startup git status/pwd/ls. Targeted commit/action failure verification allowed.

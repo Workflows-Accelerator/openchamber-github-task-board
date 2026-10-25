@@ -4,7 +4,7 @@
 
 | Outcome | State | Worker / next |
 |---|---|---|
-| #34 draft safety | FINAL CORRECTION RUNNING | ses_de503a8db65a350c9dc23a1b engineer; tasks/issue-34-final-draft-correction.md; one independent final check then stop on failure |
+| #34 draft safety | FINAL INDEPENDENT CHECK RUNNING | eef57bd candidate clean, 26/517 claimed; ses_691b16d7beb0bc7cdc2ac338 engineer, tasks/issue-34-final-draft-hostile.md; stop/owner if failed |
 | #33 browser protocol safety | FINAL CORRECTION QUEUED | tasks/issue-33-final-protocol-correction.md; owner approved, wait #34 correction/check; fill clean snapshot before dispatch |
 | #37 visible repositories | FULLY ALIGNED | decision15 show archived/empty; issue body corrected; blocked #33 |
 | Master/deployment | NOT APPROVED | no secret reuse; owner retains release |
