@@ -1,0 +1,170 @@
+{
+  "kind": "synthetic-fixture browser verification",
+  "startedAt": "2026-10-24T23:53:37.854Z",
+  "engine": "Obscura (CDP), no Chromium download",
+  "fixtures": "fake GitHub server with synthetic issues",
+  "checks": [
+    {
+      "name": "login page hides data",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pull requests are excluded from the board",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "board names the configured repository",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "session cookie is not readable from JavaScript",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "nothing is kept in local or session storage",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page source carries no token",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page source carries no password",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop board: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=1280 clientWidth=1280"
+    },
+    {
+      "name": "detail shows phase metadata",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail shows attention metadata",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail shows an open question input",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail has no agent or session controls",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail shows warning that simultaneous edit can be overwritten",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop task detail: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=1280 clientWidth=1280"
+    },
+    {
+      "name": "overview edit reached GitHub",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "other sections survived the edit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict is explained and offers a reload",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict did not overwrite the remote change",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "inline answer was written to the issue",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "status label changed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "non-status labels were preserved",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "browser transport failure on write classifies outcome as unknown and offers refresh (R1)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "browser transport failure makes zero write retries (R1)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "independent XSS text remains inert",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "screenshots": [
+    ".agents/run/task-centred-architecture/verifications/issue-33-final/screenshots/login-desktop-2026-10-24T23-53-37-854Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-33-final/screenshots/board-desktop-2026-10-24T23-53-37-854Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-33-final/screenshots/task-detail-desktop-2026-10-24T23-53-37-854Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-33-final/screenshots/conflict-desktop-2026-10-24T23-53-37-854Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-33-final/screenshots/task-detail-after-edits-desktop-2026-10-24T23-53-37-854Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-33-final/screenshots/hostile-malformed200-2026-10-24T23-53-37-854Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-33-final/screenshots/hostile-gateway502-2026-10-24T23-53-37-854Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-33-final/screenshots/hostile-empty200-2026-10-24T23-53-37-854Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-33-final/screenshots/hostile-generic500-2026-10-24T23-53-37-854Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-33-final/screenshots/hostile-text-inert-2026-10-24T23-53-37-854Z.png"
+  ],
+  "notes": [
+    "fake GitHub PATCH calls after conflict: 1"
+  ],
+  "hostileObservations": [
+    {
+      "name": "malformed200",
+      "text": "Cannot read properties of null (reading 'issue').",
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "gateway502",
+      "text": "request_failed.",
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "empty200",
+      "text": "Cannot read properties of null (reading 'issue').",
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "generic500",
+      "text": "The board could not complete that request.",
+      "patches": 1,
+      "committed": true
+    }
+  ],
+  "error": "timed out waiting for stale freshness marker\ndiagnostics={\"hash\":\"#/issue/1\",\"title\":\"Task Board · owner/repo\",\"notice\":\"GitHub could not be reached.\",\"boardHidden\":false,\"detailHidden\":true,\"body\":\"Skip to content\\nTask Board\\nowner/repo\\nLoaded just now\\nRefresh\\nSign out\\n\\nGitHub could not be reached.\\n\\nTasks\\n\\n3 tasks\\n\\n<img src=x onerror=\\\"window.__xss=1\\\">\\n#1\\nopen\\nin review\\nphase: execution\\nneeds decision\\n#1\\nupdated just now\\n2 open questions\\n1 human task\\nInvestigate https://example.test/a/very/long/path/that/should/wrap/without/horizontal/scroll/on/narrow/screens\\n#4\\nopen\\nbacklog\\nphase: planning\\n#4\\nupdated 3d ago\\nClosed example task\\n#2\\nclosed\\ndone\\nphase: done\\n#2\\nupdated 5d ago\"}\npageErrors="
+}

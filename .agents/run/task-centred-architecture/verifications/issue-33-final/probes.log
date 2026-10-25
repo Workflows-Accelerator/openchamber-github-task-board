@@ -1,0 +1,30 @@
+{"name":"R1 truncated","status":502,"error":"write_outcome_unknown","message":"Outcome unknown — check the issue on GitHub","patches":1,"committed":true}
+{"name":"R1 parse","status":502,"error":"write_outcome_unknown","message":"Outcome unknown — check the issue on GitHub","patches":1,"committed":true}
+{"name":"R1 gateway","status":502,"error":"write_outcome_unknown","message":"Outcome unknown — check the issue on GitHub","patches":1,"committed":true}
+{"name":"R1 timeout","status":502,"error":"write_outcome_unknown","message":"Outcome unknown — check the issue on GitHub","patches":1,"committed":true}
+{"name":"R1 postsend422","status":400,"error":"invalid_request","message":"The issue reference is not valid","patches":1,"committed":true}
+{"name":"stale question","status":409,"newText":"Changed question?","patches":0}
+{"name":"missing csrf","status":403}
+{"name":"wrong csrf","status":403}
+{"name":"evil origin","status":403}
+{"name":"evil referer","status":403}
+{"name":"cross session csrf","status":403}
+{"name":"forged cookie","status":401}
+{"name":"path boundary","path":"/api/board?repo=other/repo","status":400}
+{"name":"path boundary","path":"/repos/other/repo/issues","status":400}
+{"name":"path boundary","path":"/%2e%2e/server/config.ts","status":404}
+{"name":"path boundary","path":"/..%2fserver%2fconfig.ts","status":404}
+{"name":"path boundary","path":"/%00","status":404}
+{"name":"credential boundaries","noTokenOrPassword":true,"unknownRepoHits":[]}
+{"name":"logout replay","status":401}
+{"name":"R2 slow body","during":429,"authenticated":200,"after2250ms":200}
+{"name":"R2 abort","status":200}
+{"name":"R2 200 distinct socket peers","counts":{"401":10,"429":190},"authenticatedDuring":200,"retryGuidance":true}
+{"name":"R2 12 slow peers","earlyRejected":[429,429],"authenticated":200,"postDeadline":200}
+{"name":"R3 env true still ignores headers","statuses":[401,401,401,401,401,429]}
+{"name":"R4 marker grammar","suffixesRemainInFence":true}
+{"name":"R6 LRU","retainedUsedA":true,"evictedUnusedB":true,"size":2}
+{"name":"R2 bounded limiter","size":1000,"before":{"allowed":false,"retryAfterSeconds":60},"after":{"allowed":true,"retryAfterSeconds":0}}
+{"name":"R7 CRLF","status":200,"text":"Changed\nsecond line","patches":1,"preservedHumanTasks":true}
+{"name":"R8 Link path","paths":[{"path":"/repos/owner/repo/issues?state=all&per_page=100&page=1","hasToken":true}],"rejected":true}
+{"name":"R8 same origin redirect","paths":[{"path":"/repos/owner/repo/issues?state=all&per_page=100&page=1","hasToken":true},{"path":"/repos/other/repo/issues","hasToken":true}],"returned":[{"number":2,"title":"Other repository"}]}

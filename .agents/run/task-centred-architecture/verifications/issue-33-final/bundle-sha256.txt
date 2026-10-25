@@ -1,0 +1,2 @@
+c594f2c0b8cce90ca9f331ce63dfd3a1aaa73907b627e3b6dfccbbd9de22b1e6  /tmp/opencode/issue33-final/server.mjs
+c594f2c0b8cce90ca9f331ce63dfd3a1aaa73907b627e3b6dfccbbd9de22b1e6  web/dist/server.mjs
