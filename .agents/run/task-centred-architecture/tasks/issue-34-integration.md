@@ -1,7 +1,7 @@
 <env_preflight>
-DRAFT NOT DISPATCHABLE until final hostile check PASS/APPROVED and manager fills reviewed HEAD/root snapshot. No other implementation/release worker may run in repo.
-Repo/root /workspace/extensions/github-task-board; integration feat/v2-binding-and-ratelimit at FILL_ROOT_HEAD; tracked clean. Unrelated/private untracked .agents/idle-nontext-state.json, .agents/run/board-lifecycle/**, .agents/run/test-inspection.mjs, outputs/deployment-preflight-private.md, outputs/devops-board-deployment.md and tasks/issue-34-hostile-review.md are NOT owned, NEVER stage/read/delete/copy them. Never git add -A.
-Dispatch worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity; branch fix/issue-34-answer-integrity at FILL_REVIEWED_HEAD clean. Prior product eef57bd. Independent final report FILL_VERDICT. Manager diff review FILL_RECEIPT.
+Final hostile check PASS/APPROVED at 0e1a6be; manager gate accepted. No other implementation/release worker running in repo.
+Repo/root /workspace/extensions/github-task-board; integration feat/v2-binding-and-ratelimit at c99a167 or later manager-only run-state commit; tracked clean. Unrelated/private untracked .agents/idle-nontext-state.json, .agents/run/board-lifecycle/**, .agents/run/test-inspection.mjs, outputs/deployment-preflight-private.md, outputs/devops-board-deployment.md and tasks/issue-34-hostile-review.md are NOT owned, NEVER stage/read/delete/copy them. Never git add -A.
+Dispatch worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity; branch fix/issue-34-answer-integrity at 0e1a6be clean. Prior product eef57bd. Independent final report PASS/APPROVED. Manager diff review outputs/issue-34-review-gate.md.
 Tests root node --test test/issue-34-answer-integrity.test.js; npm test; npm run typecheck; npm run build. Existing root dependencies.
 No master, credentials, installed extension, real GitHub issue mutations, shared config/skills, unrelated worktrees, reset/rebase/force. No issue closure. No deployment. Feature/integration push manager only. Do not remove current worktree from inside itself; manager handles cleanup after wake.
 Preflight authoritative; no startup pwd/ls/status discovery. Targeted root checks before merge required to detect branch change/dirt after dispatch, then commit checks permitted.
@@ -10,6 +10,7 @@ Preflight authoritative; no startup pwd/ls/status discovery. Targeted root check
 Integrate the independently reviewed answer fix into the working review branch only and prove the merged tree stays green.
 </goal>
 <context_files>
+[@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/outputs/issue-34-review-gate.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/decisions-2026-10-24.md]
 [@/workspace/extensions/github-task-board/.worktrees/team-dev-issue-34-answer-integrity/.agents/run/task-centred-architecture/outputs/issue-34-final-draft-hostile.md]
 </context_files>
