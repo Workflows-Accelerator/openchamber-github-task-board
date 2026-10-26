@@ -1,0 +1,122 @@
+=== 1. node --test web/tests/hosting.test.mjs ===
+TAP version 13
+# Subtest: default bind host is loopback (127.0.0.1)
+ok 1 - default bind host is loopback (127.0.0.1)
+  ---
+  duration_ms: 138.396449
+  type: 'test'
+  ...
+# Subtest: a configured host is honoured (0.0.0.0)
+ok 2 - a configured host is honoured (0.0.0.0)
+  ---
+  duration_ms: 92.484787
+  type: 'test'
+  ...
+# Subtest: an invalid host fails startup with a non-zero exit and one actionable message
+ok 3 - an invalid host fails startup with a non-zero exit and one actionable message
+  ---
+  duration_ms: 2085.270003
+  type: 'test'
+  ...
+# Subtest: /health returns 200 with the expected keys (status, version, uptime)
+ok 4 - /health returns 200 with the expected keys (status, version, uptime)
+  ---
+  duration_ms: 118.299015
+  type: 'test'
+  ...
+# Subtest: /health requires no credentials and rejects non-GET methods with 405
+ok 5 - /health requires no credentials and rejects non-GET methods with 405
+  ---
+  duration_ms: 84.692962
+  type: 'test'
+  ...
+# Subtest: /health leaks no secret or repository value even when those variables are set
+ok 6 - /health leaks no secret or repository value even when those variables are set
+  ---
+  duration_ms: 93.499071
+  type: 'test'
+  ...
+# Subtest: existing authenticated routes still require the password
+ok 7 - existing authenticated routes still require the password
+  ---
+  duration_ms: 254.7302
+  type: 'test'
+  ...
+# Subtest: the start command serves /health
+ok 8 - the start command serves /health
+  ---
+  duration_ms: 1003.411081
+  type: 'test'
+  ...
+# Subtest: npm run start:web package script serves /health
+ok 9 - npm run start:web package script serves /health
+  ---
+  duration_ms: 559.175062
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 4861.930155
+=== 2. node --test web/tests/*.test.mjs ===
+ok 346 - R2: reads keep exact validation-message mapping without inferring a write outcome
+  ---
+  duration_ms: 3.437866
+  type: 'test'
+  ...
+# Subtest: R2: GitHubError retains parsed response provenance for UNKNOWN and validation
+ok 347 - R2: GitHubError retains parsed response provenance for UNKNOWN and validation
+  ---
+  duration_ms: 6.319709
+  type: 'test'
+  ...
+1..347
+# tests 347
+# suites 0
+# pass 347
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 16246.388546
+=== 3. npm test ===
+ok 516 - d) buildSessionIndex indexes multiple issues additively per session
+  ---
+  duration_ms: 1.04615
+  type: 'test'
+  ...
+# Subtest: e) adversarial hostile verification: project scoping, case sensitivity, long tokens, and directory worktrees
+ok 517 - e) adversarial hostile verification: project scoping, case sensitivity, long tokens, and directory worktrees
+  ---
+  duration_ms: 4.400567
+  type: 'test'
+  ...
+1..517
+# tests 517
+# suites 0
+# pass 516
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 21090.070948
+=== 4. npx tsc -p web/tsconfig.json ===
+PASS (0 errors)
+=== 5. npm run typecheck ===
+
+> openchamber-github-task-board@1.2.1 typecheck
+> tsc --noEmit
+
+PASS (0 errors)
+=== 6. Bundle build ===
+
+  web/dist/server.mjs  101.0kb
+
+⚡ Done in 44ms
+=== 7. Bundle hash ===
+a35cc7995721457cc2c841ec078dd363bf0fc6bcd6889e3c10c8826437d67c7e  web/dist/server.mjs

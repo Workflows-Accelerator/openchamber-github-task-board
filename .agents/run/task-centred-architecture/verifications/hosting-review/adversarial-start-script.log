@@ -1,0 +1,13 @@
+=== Proof: start:web Script Prerequisites & Test Isolation ===
+npm run start:web without build exit code: 1
+npm run start:web error snippet: node:internal/modules/cjs/loader:1433
+  throw err;
+  ^
+
+Error: Cannot find module '/workspace/extensions/github-task-board/.worktrees/team-dev-board-hosting/web/dist/server.mjs'
+    at Function._resolveFilename (node:internal/modules/cjs/loader:1430:15)
+    at defaultResolveImpl (node:internal/modul
+
+Isolated Test 9 exit code without prior build: 1
+
+Result: start:web strictly depends on unbuilt web/dist/server.mjs; Test 9 has inter-test dependency.

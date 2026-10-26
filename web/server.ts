@@ -30,10 +30,21 @@ async function main(): Promise<void> {
     return;
   }
 
-  const { port } = await app.listen(config.port);
+  let listenResult;
+  try {
+    listenResult = await app.listen(config.port, config.host);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'unknown startup failure';
+    console.error(`board: refusing to start: ${message}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const { port, host } = listenResult;
   const details = describeConfig(config);
+  const formattedHost = host.includes(':') ? `[${host}]` : host;
   console.log(
-    `board: listening on http://127.0.0.1:${port} for ${details.repo} as ${details.login} ` +
+    `board: listening on http://${formattedHost}:${port} for ${details.repo} as ${details.login} ` +
       `(password source: ${details.passwordSource})`,
   );
 

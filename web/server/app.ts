@@ -48,12 +48,13 @@ export interface BoardServerOptions {
   idleTtlMs?: number;
   loginTimeoutMs?: number;
   logger?: (line: string) => void;
+  packageJsonUrl?: URL | string;
 }
 
 export interface BoardServer {
   config: BoardConfig;
   logs: string[];
-  listen(port?: number): Promise<{ port: number }>;
+  listen(port?: number, host?: string): Promise<{ port: number; host: string }>;
   close(): Promise<void>;
 }
 
@@ -100,6 +101,21 @@ const FORBIDDEN_QUERY_KEYS = ['repo', 'repository', 'owner', 'name', 'org', 'org
 
 function loadStatic(name: string): string {
   return readFileSync(new URL(`../public/${name}`, import.meta.url), 'utf8');
+}
+
+let cachedVersion: string | null = null;
+export function getPackageVersion(packageJsonUrl: URL | string = new URL('../../package.json', import.meta.url)): string {
+  const isDefault = packageJsonUrl.toString() === new URL('../../package.json', import.meta.url).toString();
+  if (isDefault && cachedVersion !== null) return cachedVersion;
+  try {
+    const raw = readFileSync(packageJsonUrl, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (typeof parsed.version === 'string' && parsed.version) {
+      if (isDefault) cachedVersion = parsed.version;
+      return parsed.version;
+    }
+  } catch {}
+  return 'unknown';
 }
 
 function redactLine(line: string, secrets: string[]): string {
@@ -441,6 +457,20 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     const url = new URL(req.url ?? '/', 'http://board.local');
     const method = req.method ?? 'GET';
     assertRepoAllowed(url);
+
+    if (url.pathname === '/health') {
+      if (method !== 'GET') {
+        return methodNotAllowed('GET');
+      }
+      return {
+        status: 200,
+        body: {
+          status: 'ok',
+          version: getPackageVersion(options.packageJsonUrl),
+          uptime: Math.floor(process.uptime()),
+        },
+      };
+    }
 
     if (method === 'GET' && assets[url.pathname]) {
       const asset = assets[url.pathname];
@@ -863,13 +893,31 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   return {
     config,
     logs,
-    listen(port = config.port) {
+    listen(port = config.port, host = config.host) {
       return new Promise((resolve, reject) => {
-        server.once('error', reject);
-        server.listen(port, '127.0.0.1', () => {
+        const onError = (err: Error) => {
+          server.removeListener('listening', onListening);
+          const code = (err as any).code;
+          if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
+            reject(new Error(`BOARD_HOST "${host}" could not be resolved: ${err.message}`));
+          } else if (code === 'EADDRNOTAVAIL') {
+            reject(new Error(`BOARD_HOST "${host}" is not available to bind: ${err.message}`));
+          } else {
+            reject(err);
+          }
+        };
+        const onListening = () => {
+          server.removeListener('error', onError);
           const address = server.address();
-          resolve({ port: typeof address === 'object' && address ? address.port : port });
-        });
+          if (typeof address === 'object' && address) {
+            resolve({ port: address.port, host: address.address });
+          } else {
+            resolve({ port, host });
+          }
+        };
+        server.once('error', onError);
+        server.once('listening', onListening);
+        server.listen(port, host);
       });
     },
     close() {

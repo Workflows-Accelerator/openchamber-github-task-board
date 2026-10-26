@@ -1,0 +1,13 @@
+=== Proof 1: BOARD_GITHUB_API_BASE Exfiltrates Token on Startup ===
+Target endpoint reached: /user
+Captured Authorization header present: true
+Captured Authorization header scheme: Bearer
+Captured token matches secret bot token: true
+
+=== Proof 2: loadConfig does zero validation on BOARD_GITHUB_API_BASE ===
+Accepted without error: "http://169.254.169.254/latest/meta-data" -> cfg.githubApiBase: "http://169.254.169.254/latest/meta-data"
+Accepted without error: "ftp://evil.com/exfil" -> cfg.githubApiBase: "ftp://evil.com/exfil"
+Accepted without error: "not-even-a-url" -> cfg.githubApiBase: "not-even-a-url"
+Accepted without error: "http://attacker.com:8080/steal?token=param" -> cfg.githubApiBase: "http://attacker.com:8080/steal?token=param"
+
+Result: Unvalidated upstream URL accepts arbitrary targets and exfiltrates Bearer token.

@@ -1,0 +1,202 @@
+TAP version 13
+# Subtest: default bind host is loopback (127.0.0.1)
+not ok 1 - default bind host is loopback (127.0.0.1)
+  ---
+  duration_ms: 161.517436
+  type: 'test'
+  location: '/tmp/opencode/red-test/web/tests/hosting.test.mjs:28:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + undefined
+    - '127.0.0.1'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '127.0.0.1'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/red-test/web/tests/hosting.test.mjs:32:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: a configured host is honoured (0.0.0.0)
+not ok 2 - a configured host is honoured (0.0.0.0)
+  ---
+  duration_ms: 97.601669
+  type: 'test'
+  location: '/tmp/opencode/red-test/web/tests/hosting.test.mjs:42:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+    
+    + undefined
+    - '0.0.0.0'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '0.0.0.0'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/red-test/web/tests/hosting.test.mjs:48:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: an invalid host fails startup with a non-zero exit and one actionable message
+not ok 3 - an invalid host fails startup with a non-zero exit and one actionable message
+  ---
+  duration_ms: 754.885772
+  type: 'test'
+  location: '/tmp/opencode/red-test/web/tests/hosting.test.mjs:58:1'
+  failureType: 'testCodeFailure'
+  error: 'expected actionable message for host: invalid host with spaces'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected:
+  actual: |-
+    board: refusing to start: BOARD_GITHUB_TOKEN was rejected by GitHub
+    
+  operator: 'match'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/red-test/web/tests/hosting.test.mjs:76:12)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: /health returns 200 with the expected keys (status, version, uptime)
+not ok 4 - /health returns 200 with the expected keys (status, version, uptime)
+  ---
+  duration_ms: 89.10376
+  type: 'test'
+  location: '/tmp/opencode/red-test/web/tests/hosting.test.mjs:84:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    404 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 404
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/red-test/web/tests/hosting.test.mjs:89:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: /health requires no credentials and rejects non-GET methods with 405
+not ok 5 - /health requires no credentials and rejects non-GET methods with 405
+  ---
+  duration_ms: 75.59763
+  type: 'test'
+  location: '/tmp/opencode/red-test/web/tests/hosting.test.mjs:102:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    404 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 404
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/red-test/web/tests/hosting.test.mjs:108:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: /health leaks no secret or repository value even when those variables are set
+not ok 6 - /health leaks no secret or repository value even when those variables are set
+  ---
+  duration_ms: 98.389206
+  type: 'test'
+  location: '/tmp/opencode/red-test/web/tests/hosting.test.mjs:122:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    404 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 404
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/red-test/web/tests/hosting.test.mjs:131:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: existing authenticated routes still require the password
+ok 7 - existing authenticated routes still require the password
+  ---
+  duration_ms: 297.394141
+  type: 'test'
+  ...
+# Subtest: the start command serves /health
+not ok 8 - the start command serves /health
+  ---
+  duration_ms: 10705.962005
+  type: 'test'
+  location: '/tmp/opencode/red-test/web/tests/hosting.test.mjs:185:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    server did not become healthy in time. stdout: , stderr: board: refusing to start: BOARD_GITHUB_TOKEN was rejected by GitHub
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/red-test/web/tests/hosting.test.mjs:252:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: npm run start:web package script serves /health
+not ok 9 - npm run start:web package script serves /health
+  ---
+  duration_ms: 10085.462981
+  type: 'test'
+  location: '/tmp/opencode/red-test/web/tests/hosting.test.mjs:261:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    server did not become healthy via npm run start:web. stdout: , stderr: npm error Missing script: "start:web"
+    npm error
+    npm error To see a list of scripts, run:
+    npm error   npm run
+    npm error A complete log of this run can be found in: /root/.npm/_logs/2026-10-26T14_17_14_074Z-debug-0.log
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/red-test/web/tests/hosting.test.mjs:308:12)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 1
+# fail 8
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 22757.48321

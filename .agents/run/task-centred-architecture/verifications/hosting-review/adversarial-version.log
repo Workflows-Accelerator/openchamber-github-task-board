@@ -1,0 +1,7 @@
+=== Proof: Brittle Version Handling and Silent Fallback ===
+Normal /health response version: 1.2.1
+package.json actual version: 1.2.1
+web/server/app.ts contains hardcoded fallback literal: cachedVersion = '1.2.1'
+web/tests/hosting.test.mjs contains frozen version literal occurrences: 3
+
+Result: Health endpoint contains silent hardcoded fallback; tests assert duplicated literal.

@@ -118,6 +118,7 @@ If working on a project without a remote git repository, the extension prompts y
 | Command | Purpose |
 | :--- | :--- |
 | `npm run build` | Bundles `panel/main.ts` into `panel/main.js` targeting `chrome100` |
+| `npm run start:web` | Runs the production standalone web board server (`web/dist/server.mjs`). Requires building the bundle first via `npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=web/dist/server.mjs` (not built by `npm run build`). |
 | `npm run typecheck` | Validates TypeScript types across the codebase without emitting files |
 | `npm test` | Runs all 92 unit and integration tests using Node.js native test runner |
 

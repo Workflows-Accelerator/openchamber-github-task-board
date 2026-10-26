@@ -1,0 +1,11 @@
+=== Recheck 3 & 4: Start Script Independence & Build Prerequisite ===
+
+web/dist removed cleanly.
+Run without bundle exit code: 1
+Run without bundle fails with expected MODULE_NOT_FOUND.
+Documented build exit code: 0
+Documented build command succeeded and created web/dist/server.mjs.
+Test 9 isolated run exit code: 0
+Test 9 passed in complete isolation.
+
+Result: Findings 3 & 4 CONFIRMED CLOSED. Documented prerequisite is exact and test isolation is complete.

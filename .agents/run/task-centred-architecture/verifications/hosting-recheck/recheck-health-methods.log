@@ -1,0 +1,12 @@
+=== Recheck 5: /health Methods & Security Isolation ===
+
+GET /health status: 200
+GET /health body: { status: 'ok', version: '1.2.1', uptime: 0 }
+HEAD /health status: 405
+HEAD /health allow header: GET
+HEAD /health body length: 0
+POST, PUT, DELETE, PATCH all return 405 with Allow: GET
+Zero secrets, repos, or tokens present in /health response.
+GET /api/board without session status: 401
+
+Result: Finding 5 CONFIRMED CLOSED. /health method contract and security boundary verified.
