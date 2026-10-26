@@ -8,10 +8,19 @@ import {
   resolveIssueSkills,
   buildLaunchSessionPayload,
   buildConsolidatedIssuePrompt,
+  renderSingleIssueBrief,
+  renderBatchLaunchPrompt,
 } from '../panel/core.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
+
+// Comments are not coverage: wiring assertions must see executable source only.
+function stripComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
 
 test('resolveIssueSkills: maps standard labels to canonical skills and transclusions', () => {
   const bugIssue = { number: 1, title: 'Bug', labels: [{ name: 'bug' }] };
@@ -159,7 +168,16 @@ test('panel/main.ts: all session launch surfaces declare native skills and retai
   // AI drafting and alignment sessions declare issue-lifecycle
   assert.ok(MAIN_TS.includes("skills: ['issue-lifecycle']"));
 
-  // Preflight prompt retains transclusion fallback
-  assert.ok(MAIN_TS.includes('Transclusion references for worker sessions:'));
-  assert.ok(MAIN_TS.includes('Transclusion fallback:'));
+  // Preflight prompt retains transclusion fallback in the rendered brief, and the live path calls the renderer
+  const skillIssue = { number: 161, title: 'Skill transclusion', labels: [{ name: 'bug' }, { name: 'ui' }] };
+  assert.ok(renderSingleIssueBrief(skillIssue, { useWorktree: false }).includes('Transclusion references for worker sessions:'));
+  assert.ok(renderBatchLaunchPrompt(skillIssue).includes('Transclusion fallback:'));
+
+  const preflightMatch = MAIN_TS.match(/function updatePreflightBrief\(\): void \{([\s\S]*?)\n\}/);
+  assert.ok(preflightMatch, 'updatePreflightBrief must exist in panel/main.ts');
+  assert.match(stripComments(preflightMatch[1]), /renderSingleIssueBrief\s*\(\s*activeIssue\b/);
+
+  const batchMatch = MAIN_TS.match(/async function launchBatchSeparateSessions\(\): Promise<void> \{([\s\S]*?)\n\}/);
+  assert.ok(batchMatch, 'launchBatchSeparateSessions must exist in panel/main.ts');
+  assert.match(stripComments(batchMatch[1]), /renderBatchLaunchPrompt\s*\(\s*issue\s*\)/);
 });

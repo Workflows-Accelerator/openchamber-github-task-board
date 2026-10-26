@@ -12,10 +12,18 @@ import {
   DEFAULT_TEMPLATES,
   mergeTemplates,
   buildAgentIssuePrompt,
+  renderSingleIssueBrief,
 } from '../panel/core.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_TS = fs.readFileSync(path.join(__dirname, '../panel/main.ts'), 'utf8');
+
+// Comments are not coverage: assertions about the live wiring must see executable source only.
+function stripComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
 
 // Zero emoji helper
 function containsEmoji(text) {
@@ -122,15 +130,39 @@ test('DEFAULT_TEMPLATES, mergeTemplates, and buildAgentIssuePrompt are first-cla
 });
 
 test('panel/main.ts preflight brief includes extended skills (UI, API, Perf, Security, Refactor) and AFK protocol', () => {
-  assert.ok(MAIN_TS.includes('frontend-ui-engineering'));
-  assert.ok(MAIN_TS.includes('api-and-interface-design'));
-  assert.ok(MAIN_TS.includes('performance-optimization'));
-  assert.ok(MAIN_TS.includes('security-and-hardening'));
-  assert.ok(MAIN_TS.includes('code-simplification'));
-  assert.ok(MAIN_TS.includes('safe-refactor'));
-  assert.ok(MAIN_TS.includes('Autonomous & AFK Protocol'));
-  assert.ok(MAIN_TS.includes('Load relevant skills'));
-  assert.ok(MAIN_TS.includes('Transclusion references for worker sessions'));
+  const extendedIssue = {
+    number: 124,
+    title: 'Extended skill coverage',
+    body: '### Overview\nCover every extended skill mapping.',
+    labels: [
+      { name: 'bug' },
+      { name: 'enhancement' },
+      { name: 'documentation' },
+      { name: 'ui' },
+      { name: 'api' },
+      { name: 'perf' },
+      { name: 'security' },
+      { name: 'refactor' },
+    ],
+  };
+  const brief = renderSingleIssueBrief(extendedIssue, { useWorktree: false });
+
+  assert.ok(brief.includes('### Recommended Skills:'), 'Preflight brief must contain the recommended skills section');
+  assert.ok(brief.includes('frontend-ui-engineering'));
+  assert.ok(brief.includes('api-and-interface-design'));
+  assert.ok(brief.includes('performance-optimization'));
+  assert.ok(brief.includes('security-and-hardening'));
+  assert.ok(brief.includes('code-simplification'));
+  assert.ok(brief.includes('safe-refactor'));
+  assert.ok(brief.includes('Autonomous & AFK Protocol'));
+  assert.ok(brief.includes('Load relevant skills'));
+  assert.ok(brief.includes('Transclusion references for worker sessions'));
+
+  // The live preflight path must invoke that renderer; a comment or a missing call is not coverage.
+  const preflightMatch = MAIN_TS.match(/function updatePreflightBrief\(\): void \{([\s\S]*?)\n\}/);
+  assert.ok(preflightMatch, 'updatePreflightBrief must exist in panel/main.ts');
+  const preflightBody = stripComments(preflightMatch[1]);
+  assert.match(preflightBody, /renderSingleIssueBrief\s*\(\s*activeIssue\b/);
 });
 
 test('panel/main.ts handleFilePathClick checks currentDirectory and currentProject candidates', () => {

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { parseFriendlyTitle } from '../panel/core.ts';
+import { parseFriendlyTitle, renderSingleIssueBrief } from '../panel/core.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_HTML = fs.readFileSync(path.join(here, '..', 'panel', 'index.html'), 'utf8');
@@ -392,25 +392,26 @@ test('card title and subtitle logic generates correct HTML snippets', () => {
 });
 
 test('updatePreflightBrief in main.ts enriches brief with skill transclusions for bug, enhancement, documentation', () => {
+  const render = (labels) => renderSingleIssueBrief({ number: 90, title: 'Skill transclusions', labels }, { useWorktree: false });
   assert.ok(
-    MAIN_TS.includes('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]'),
-    'main.ts must include surgical-patch skill for bug'
+    render([{ name: 'bug' }]).includes('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]'),
+    'preflight brief must include surgical-patch skill for bug'
   );
   assert.ok(
-    MAIN_TS.includes('[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]'),
-    'main.ts must include debugging-and-error-recovery skill for bug'
+    render([{ name: 'bug' }]).includes('[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]'),
+    'preflight brief must include debugging-and-error-recovery skill for bug'
   );
   assert.ok(
-    MAIN_TS.includes('[@.agents/skills/build/methodology/test-driven-development/SKILL.md]'),
-    'main.ts must include test-driven-development skill for enhancement'
+    render([{ name: 'enhancement' }]).includes('[@.agents/skills/build/methodology/test-driven-development/SKILL.md]'),
+    'preflight brief must include test-driven-development skill for enhancement'
   );
   assert.ok(
-    MAIN_TS.includes('[@.agents/skills/build/methodology/lean-build/SKILL.md]'),
-    'main.ts must include lean-build skill for enhancement'
+    render([{ name: 'enhancement' }]).includes('[@.agents/skills/build/methodology/lean-build/SKILL.md]'),
+    'preflight brief must include lean-build skill for enhancement'
   );
   assert.ok(
-    MAIN_TS.includes('[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]'),
-    'main.ts must include documentation-and-adrs skill for documentation'
+    render([{ name: 'documentation' }]).includes('[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]'),
+    'preflight brief must include documentation-and-adrs skill for documentation'
   );
 });
 

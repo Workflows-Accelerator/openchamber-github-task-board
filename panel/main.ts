@@ -7147,10 +7147,6 @@ function renderRelatedIssues(issue: Issue): void {
 // [@.agents/skills/build/refactoring/safe-refactor/SKILL.md]
 
 // Preflight brief assembly delegated to renderSingleIssueBrief.
-// Extended skills: frontend-ui-engineering, api-and-interface-design, performance-optimization, security-and-hardening, code-simplification, safe-refactor
-// Recommended Skills: Load relevant skills with the skill tool before starting
-// Transclusion references for worker sessions:
-// Autonomous & AFK Protocol:
 function updatePreflightBrief(): void {
   if (!activeIssue) return;
   const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
@@ -7416,9 +7412,6 @@ async function launchBatchSeparateSessions(): Promise<void> {
     try {
       const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || undefined;
       // Batch separate session prompt assembly delegated to renderBatchLaunchPrompt.
-      // Recommended Skills: Load with skill tool:
-      // Transclusion fallback:
-      // Autonomous & AFK Protocol:
       const { skillNames } = resolveIssueSkills(issue);
       const prompt = renderBatchLaunchPrompt(issue);
 

@@ -64,11 +64,15 @@ const JS_FUNCS = [
   'resolveOptimisticSubtaskUpdate',
   'resolveOptimisticQuestionAnswer',
   'resolveIssueSkills',
+  'resolveIssueWorkType',
+  'buildWorkTypeInstructions',
 ];
 const JS_CONSTS = [
   'checklistRegex', 'questionsSectionRegex', 'humanTasksSectionRegex', 'headingRegex',
   'DEFAULT_AI_ISSUE_PROMPT', 'DEFAULT_AI_ALIGNMENT_PROMPT', 'DEPENDENCY_LINE_REGEX',
   'testPlanHeadingRegex', 'acceptanceCriteriaSectionRegex', 'subtasksSectionRegex',
+  'WORK_LOG_SENTENCE_RULE', 'BUG_PATH_RULE', 'FEATURE_PATH_RULE', 'EVIDENCE_AUTHORITY_RULE',
+  'DEFAULT_WORK_INSTRUCTIONS',
 ];
 
 function extract(marker) {
@@ -85,7 +89,7 @@ const shippedSrc = [
 const Shipped = new Function(shippedSrc + '\nreturn { ' + [...JS_FUNCS, ...JS_CONSTS].join(', ') + ' };')();
 
 test('shipped main.js is readable: every core-owned declaration is present', () => {
-  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 52);
+  assert.equal(JS_FUNCS.length + JS_CONSTS.length, 59);
   for (const n of JS_FUNCS) assert.equal(typeof Shipped[n], 'function', n + ' missing from bundle');
 });
 

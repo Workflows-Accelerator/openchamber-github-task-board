@@ -376,17 +376,34 @@ test('renderSingleIssueBrief and renderBatchLaunchPrompt enforce work-type resol
   assert.ok(!briefWs.includes('in this worktree'));
 });
 
-test('panel/main.ts source wiring connects live launch paths to pure renderers and rejects generic fallback', () => {
+// Comments are not coverage: wiring assertions must see executable source only.
+function stripComments(source) {
+  return source
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1');
+}
+
+test('panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block', () => {
   const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
 
   const updatePreflightMatch = MAIN_TS.match(/function updatePreflightBrief\(\): void \{([\s\S]*?)\n\}/);
   assert.ok(updatePreflightMatch, 'updatePreflightBrief function body must be present in panel/main.ts');
-  const updatePreflightBody = updatePreflightMatch[1];
+  const updatePreflightBody = stripComments(updatePreflightMatch[1]);
 
   assert.match(
     updatePreflightBody,
-    /\brenderSingleIssueBrief\s*\(/,
-    'updatePreflightBrief must invoke renderSingleIssueBrief'
+    /elPreflightPromptInput\.value\s*=\s*renderSingleIssueBrief\(\s*activeIssue\s*,\s*\{[^}]*\}\s*\)\s*;/,
+    'updatePreflightBrief must assign exactly the issue-specific renderer output'
+  );
+  assert.equal(
+    (updatePreflightBody.match(/\brenderSingleIssueBrief\b/g) || []).length,
+    1,
+    'updatePreflightBrief must invoke renderSingleIssueBrief exactly once'
+  );
+  assert.equal(
+    (updatePreflightBody.match(/elPreflightPromptInput\.value\b/g) || []).length,
+    1,
+    'updatePreflightBrief must not append a generic block to the rendered brief'
   );
   assert.ok(
     !updatePreflightBody.includes('DEFAULT_WORK_INSTRUCTIONS'),
@@ -395,12 +412,22 @@ test('panel/main.ts source wiring connects live launch paths to pure renderers a
 
   const launchBatchMatch = MAIN_TS.match(/async function launchBatchSeparateSessions\(\): Promise<void> \{([\s\S]*?)\n\}/);
   assert.ok(launchBatchMatch, 'launchBatchSeparateSessions function body must be present in panel/main.ts');
-  const launchBatchBody = launchBatchMatch[1];
+  const launchBatchBody = stripComments(launchBatchMatch[1]);
 
   assert.match(
     launchBatchBody,
-    /\brenderBatchLaunchPrompt\s*\(/,
-    'launchBatchSeparateSessions must invoke renderBatchLaunchPrompt'
+    /const\s+prompt\s*=\s*renderBatchLaunchPrompt\(\s*issue\s*\)\s*;/,
+    'launchBatchSeparateSessions must assign exactly the issue-specific renderer output'
+  );
+  assert.equal(
+    (launchBatchBody.match(/\brenderBatchLaunchPrompt\b/g) || []).length,
+    1,
+    'launchBatchSeparateSessions must invoke renderBatchLaunchPrompt exactly once'
+  );
+  assert.equal(
+    (launchBatchBody.match(/\bprompt\s*(?:\+=|=)/g) || []).length,
+    1,
+    'launchBatchSeparateSessions must not append a generic block to the rendered prompt'
   );
   assert.ok(
     !launchBatchBody.includes('DEFAULT_WORK_INSTRUCTIONS'),

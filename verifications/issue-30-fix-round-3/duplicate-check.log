@@ -1,0 +1,4 @@
+single-line full-duplicate hits in panel/**: 0 
+typeof DEFAULT_WORK_INSTRUCTIONS probes in panel/core.ts: 0
+DEFAULT_WORK_INSTRUCTIONS references in panel/core.ts: 2
+prompt wording in panel/main.ts (Work Type/Bug path/Feature path/Work Log): Work Type=false Bug path:=false Feature path:=false Work Log:=false

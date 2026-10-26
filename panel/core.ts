@@ -2376,10 +2376,7 @@ export function buildConsolidatedIssuePrompt(selectedIssues: Issue[]): string {
   prompt += `- Work through the packaged issues sequentially or in coordination, verifying each step with tests.\n`;
   prompt += `- If blocked on human decisions, permissions, or secrets while the human is away, record explicit items under "### Human Tasks:" in the issue body, mark "status:needs-human", and continue with any unblocked tasks.\n\n`;
 
-  const workInstructions = typeof DEFAULT_WORK_INSTRUCTIONS !== 'undefined'
-    ? DEFAULT_WORK_INSTRUCTIONS
-    : `### Work Type & Proportionate Paths:\n- Labels \`bug\` and \`enhancement\` are the only work-type source.\n- When both or neither are present, the work type is undecided and must be asked about, not guessed. Never infer a type from the title, the mood of the report, or the area of the code.\n- Explicit alignment question: Which label (\`bug\` or \`enhancement\`) applies to this issue and what is the concrete reason based strictly on the labels? Ask the user for alignment before proceeding with work that depends on the work type.\n- Undecided work type is an alignment question to the user, not a default. Undecided items must be asked about individually. Only block work that depends on the unanswered question; independent authorised work continues.\n- Work Log: The \`### Work Log:\` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.\n- Proportionate paths (once resolved):\n  - Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.\n  - Feature path: desired outcome, research and alternatives, user decisions, then implementation.\n  - Both paths keep existing evidence rules and existing human authority over release and closure.`;
-  prompt += `${workInstructions}\n\n`;
+  prompt += `${DEFAULT_WORK_INSTRUCTIONS}\n\n`;
 
   prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
   return prompt;
