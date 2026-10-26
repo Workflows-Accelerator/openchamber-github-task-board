@@ -5,7 +5,7 @@
 | Outcome | State | Evidence / next |
 |---|---|---|
 | #33 browser board | MERGED/PUSHED, awaiting batch human | L4e4b0091 PASS/APPROVED; merge6b1603f/proofbf745aa accepted web338/root517/browser201/HTTP165/types/build/parity. Feature push confirmed; clean source removed/pruned, branch retained. DB deregistration pending |
-| #35 refresh write coverage | READY final R1-R9 correction | Source220d1d5 clean, tasks/issue-35-last-correction.md filled, genius next; decision17 one final correction/check, failure PARKS |
+| #35 refresh write coverage | RUNNING final R1-R9 correction | ses_0c095fb063b12328c3b70274 genius source220d1d5 clean, tasks/issue-35-last-correction.md; actual model on wake; receipt6417278407/in-progress. Decision17 one final correction/check, failure PARKS |
 | #28/#34/#36 panel protections | MERGED/PUSHED, awaiting batch | Accepted unchanged, installed host/liveGitHub NOT VERIFIED |
 | Hosting/#37/#31 web and notifications | QUEUED | #33 unblocked; wait sole current #35 frontier before implementation |
 | #30 proportionate feature/bug path | BLOCKED #35 | Brief ready; expiration excluded/unanswered |
