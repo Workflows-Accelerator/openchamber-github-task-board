@@ -15,16 +15,10 @@ import {
   renderSingleIssueBrief,
   renderBatchLaunchPrompt,
 } from '../panel/core.ts';
+import { runPreflightBrief, runBatchLaunchSessions } from './test-issue-launch-harness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_TS = fs.readFileSync(path.join(__dirname, '../panel/main.ts'), 'utf8');
-
-// Comments are not coverage: assertions about the live wiring must see executable source only.
-function stripComments(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
 
 // Zero emoji helper
 function containsEmoji(text) {
@@ -130,7 +124,7 @@ test('DEFAULT_TEMPLATES, mergeTemplates, and buildAgentIssuePrompt are first-cla
   assert.ok(prompt.includes('Bug Report'));
 });
 
-test('panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol', () => {
+test('panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol', async () => {
   const extendedIssue = {
     number: 124,
     title: 'Extended skill coverage',
@@ -146,7 +140,8 @@ test('panel/main.ts preflight and batch briefs include extended skills (UI, API,
       { name: 'refactor' },
     ],
   };
-  const brief = renderSingleIssueBrief(extendedIssue, { useWorktree: false });
+  const brief = runPreflightBrief(extendedIssue);
+  assert.equal(brief, renderSingleIssueBrief(extendedIssue, { useWorktree: false }));
 
   assert.ok(brief.includes('### Recommended Skills:'), 'Preflight brief must contain the recommended skills section');
   assert.ok(brief.includes('frontend-ui-engineering'));
@@ -159,7 +154,11 @@ test('panel/main.ts preflight and batch briefs include extended skills (UI, API,
   assert.ok(brief.includes('Load relevant skills'));
   assert.ok(brief.includes('Transclusion references for worker sessions'));
 
-  const batchPrompt = renderBatchLaunchPrompt(extendedIssue);
+  const { payloads, errors } = await runBatchLaunchSessions([extendedIssue]);
+  assert.deepEqual(errors, []);
+  assert.equal(payloads.length, 1);
+  const batchPrompt = payloads[0].text;
+  assert.equal(batchPrompt, renderBatchLaunchPrompt(extendedIssue));
   assert.ok(batchPrompt.includes('### Recommended Skills:'), 'Batch prompt must contain the recommended skills section');
   assert.ok(batchPrompt.includes('frontend-ui-engineering'));
   assert.ok(batchPrompt.includes('api-and-interface-design'));
@@ -171,14 +170,6 @@ test('panel/main.ts preflight and batch briefs include extended skills (UI, API,
   assert.ok(batchPrompt.includes('Load with skill tool:'));
   assert.ok(batchPrompt.includes('Transclusion fallback:'));
 
-  // The live launch paths must invoke those renderers; a comment or a missing call is not coverage.
-  const preflightMatch = MAIN_TS.match(/function updatePreflightBrief\(\): void \{([\s\S]*?)\n\}/);
-  assert.ok(preflightMatch, 'updatePreflightBrief must exist in panel/main.ts');
-  assert.match(stripComments(preflightMatch[1]), /renderSingleIssueBrief\s*\(\s*activeIssue\b/);
-
-  const batchMatch = MAIN_TS.match(/async function launchBatchSeparateSessions\(\): Promise<void> \{([\s\S]*?)\n\}/);
-  assert.ok(batchMatch, 'launchBatchSeparateSessions must exist in panel/main.ts');
-  assert.match(stripComments(batchMatch[1]), /renderBatchLaunchPrompt\s*\(\s*issue\s*\)/);
 });
 
 test('panel/main.ts handleFilePathClick checks currentDirectory and currentProject candidates', () => {

@@ -1,0 +1,60 @@
+TAP version 13
+# (node:664105) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Work Log contract in docs/issue-body-contract.md specifies single justification sentence and rules
+ok 1 - Work Log contract in docs/issue-body-contract.md specifies single justification sentence and rules
+  ---
+  duration_ms: 1.40303
+  type: 'test'
+  ...
+# Subtest: DEFAULT_WORK_INSTRUCTIONS states unambiguous work-type rules and proportionate paths
+ok 2 - DEFAULT_WORK_INSTRUCTIONS states unambiguous work-type rules and proportionate paths
+  ---
+  duration_ms: 0.450435
+  type: 'test'
+  ...
+# Subtest: resolveIssueWorkType determines bug vs feature vs undecided strictly from labels
+ok 3 - resolveIssueWorkType determines bug vs feature vs undecided strictly from labels
+  ---
+  duration_ms: 0.406738
+  type: 'test'
+  ...
+# Subtest: DEFAULT_TEMPLATES bug and feature templates satisfy proportionate path contract without second source of truth
+ok 4 - DEFAULT_TEMPLATES bug and feature templates satisfy proportionate path contract without second source of truth
+  ---
+  duration_ms: 0.23065
+  type: 'test'
+  ...
+# Subtest: DEFAULT_AI_ISSUE_PROMPT enforces single work-type source, Work Log justification, and zero emojis
+ok 5 - DEFAULT_AI_ISSUE_PROMPT enforces single work-type source, Work Log justification, and zero emojis
+  ---
+  duration_ms: 0.231861
+  type: 'test'
+  ...
+# Subtest: buildConsolidatedIssuePrompt includes work instructions with proportionate paths
+ok 6 - buildConsolidatedIssuePrompt includes work instructions with proportionate paths
+  ---
+  duration_ms: 0.829195
+  type: 'test'
+  ...
+# Subtest: renderSingleIssueBrief and renderBatchLaunchPrompt enforce work-type resolution and path isolation across all 5 cases
+ok 7 - renderSingleIssueBrief and renderBatchLaunchPrompt enforce work-type resolution and path isolation across all 5 cases
+  ---
+  duration_ms: 1.505463
+  type: 'test'
+  ...
+# Subtest: panel/main.ts live launch paths deliver exactly the issue-specific renderer output
+ok 8 - panel/main.ts live launch paths deliver exactly the issue-specific renderer output
+  ---
+  duration_ms: 35.730464
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 364.5277

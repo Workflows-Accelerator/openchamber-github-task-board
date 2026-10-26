@@ -13,6 +13,7 @@ import {
   renderSingleIssueBrief,
   renderBatchLaunchPrompt,
 } from '../panel/core.ts';
+import { runPreflightBrief, runBatchLaunchSessions } from './test-issue-launch-harness.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const CONTRACT_MD = fs.readFileSync(path.join(here, '..', 'docs', 'issue-body-contract.md'), 'utf8');
@@ -376,61 +377,32 @@ test('renderSingleIssueBrief and renderBatchLaunchPrompt enforce work-type resol
   assert.ok(!briefWs.includes('in this worktree'));
 });
 
-// Comments are not coverage: wiring assertions must see executable source only.
-function stripComments(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
+test('panel/main.ts live launch paths deliver exactly the issue-specific renderer output', async () => {
+  const fixtures = [
+    { number: 101, title: 'Bug path', body: 'Reproduce crash', labels: [{ name: 'bug' }] },
+    { number: 102, title: 'Feature path', body: 'Add export', labels: [{ name: 'enhancement' }] },
+    { number: 103, title: 'Undecided path', body: 'Clarify work type', labels: [{ name: 'documentation' }] },
+    { number: 104, title: 'Both labels', labels: ['bug', 'enhancement'] },
+  ];
+  for (const issue of fixtures) {
+    for (const useWorktree of [false, true]) {
+      assert.equal(
+        runPreflightBrief(issue, { useWorktree }),
+        renderSingleIssueBrief(issue, { useWorktree }),
+        `Preflight must deliver only this issue's rendered brief (#${issue.number}, worktree=${useWorktree})`
+      );
+    }
+  }
 
-test('panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block', () => {
-  const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
-
-  const updatePreflightMatch = MAIN_TS.match(/function updatePreflightBrief\(\): void \{([\s\S]*?)\n\}/);
-  assert.ok(updatePreflightMatch, 'updatePreflightBrief function body must be present in panel/main.ts');
-  const updatePreflightBody = stripComments(updatePreflightMatch[1]);
-
-  assert.match(
-    updatePreflightBody,
-    /elPreflightPromptInput\.value\s*=\s*renderSingleIssueBrief\(\s*activeIssue\s*,\s*\{[^}]*\}\s*\)\s*;/,
-    'updatePreflightBrief must assign exactly the issue-specific renderer output'
-  );
-  assert.equal(
-    (updatePreflightBody.match(/\brenderSingleIssueBrief\b/g) || []).length,
-    1,
-    'updatePreflightBrief must invoke renderSingleIssueBrief exactly once'
-  );
-  assert.equal(
-    (updatePreflightBody.match(/elPreflightPromptInput\.value\b/g) || []).length,
-    1,
-    'updatePreflightBrief must not append a generic block to the rendered brief'
-  );
-  assert.ok(
-    !updatePreflightBody.includes('DEFAULT_WORK_INSTRUCTIONS'),
-    'updatePreflightBrief must not fall back to generic DEFAULT_WORK_INSTRUCTIONS'
-  );
-
-  const launchBatchMatch = MAIN_TS.match(/async function launchBatchSeparateSessions\(\): Promise<void> \{([\s\S]*?)\n\}/);
-  assert.ok(launchBatchMatch, 'launchBatchSeparateSessions function body must be present in panel/main.ts');
-  const launchBatchBody = stripComments(launchBatchMatch[1]);
-
-  assert.match(
-    launchBatchBody,
-    /const\s+prompt\s*=\s*renderBatchLaunchPrompt\(\s*issue\s*\)\s*;/,
-    'launchBatchSeparateSessions must assign exactly the issue-specific renderer output'
-  );
-  assert.equal(
-    (launchBatchBody.match(/\brenderBatchLaunchPrompt\b/g) || []).length,
-    1,
-    'launchBatchSeparateSessions must invoke renderBatchLaunchPrompt exactly once'
-  );
-  assert.equal(
-    (launchBatchBody.match(/\bprompt\s*(?:\+=|=)/g) || []).length,
-    1,
-    'launchBatchSeparateSessions must not append a generic block to the rendered prompt'
-  );
-  assert.ok(
-    !launchBatchBody.includes('DEFAULT_WORK_INSTRUCTIONS'),
-    'launchBatchSeparateSessions must not fall back to generic DEFAULT_WORK_INSTRUCTIONS'
-  );
+  const { payloads, errors } = await runBatchLaunchSessions(fixtures);
+  assert.deepEqual(errors, [], 'Every selected issue must launch without errors');
+  assert.equal(payloads.length, fixtures.length, 'Every selected issue must produce a session payload');
+  fixtures.forEach((issue, index) => {
+    assert.equal(payloads[index].data.issueNumber, issue.number);
+    assert.equal(
+      payloads[index].text,
+      renderBatchLaunchPrompt(issue),
+      `Batch must send only this issue's rendered prompt (#${issue.number})`
+    );
+  });
 });

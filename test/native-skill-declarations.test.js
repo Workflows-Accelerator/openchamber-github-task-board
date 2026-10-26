@@ -11,16 +11,10 @@ import {
   renderSingleIssueBrief,
   renderBatchLaunchPrompt,
 } from '../panel/core.ts';
+import { runPreflightBrief, runBatchLaunchSessions } from './test-issue-launch-harness.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
-
-// Comments are not coverage: wiring assertions must see executable source only.
-function stripComments(source) {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/(^|[^:])\/\/.*$/gm, '$1');
-}
 
 test('resolveIssueSkills: maps standard labels to canonical skills and transclusions', () => {
   const bugIssue = { number: 1, title: 'Bug', labels: [{ name: 'bug' }] };
@@ -157,7 +151,7 @@ test('buildConsolidatedIssuePrompt: includes recommended skills alongside transc
   assert.equal(barePrompt.includes('### Recommended Skills:'), false);
 });
 
-test('panel/main.ts: all session launch surfaces declare native skills and retain transclusions', () => {
+test('panel/main.ts: all session launch surfaces declare native skills and retain transclusions', async () => {
   // Packaged sessions declare native skills
   assert.ok(MAIN_TS.includes('const { skillNames: packageSkills } = resolveIssueSkills(selected);'));
   assert.ok(MAIN_TS.includes('...(packageSkills.length > 0 ? { skills: packageSkills } : {})'));
@@ -168,16 +162,18 @@ test('panel/main.ts: all session launch surfaces declare native skills and retai
   // AI drafting and alignment sessions declare issue-lifecycle
   assert.ok(MAIN_TS.includes("skills: ['issue-lifecycle']"));
 
-  // Preflight prompt retains transclusion fallback in the rendered brief, and the live path calls the renderer
   const skillIssue = { number: 161, title: 'Skill transclusion', labels: [{ name: 'bug' }, { name: 'ui' }] };
-  assert.ok(renderSingleIssueBrief(skillIssue, { useWorktree: false }).includes('Transclusion references for worker sessions:'));
-  assert.ok(renderBatchLaunchPrompt(skillIssue).includes('Transclusion fallback:'));
+  const brief = runPreflightBrief(skillIssue);
+  assert.equal(brief, renderSingleIssueBrief(skillIssue, { useWorktree: false }));
+  assert.ok(brief.includes('Transclusion references for worker sessions:'));
+  assert.ok(brief.includes('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]'));
 
-  const preflightMatch = MAIN_TS.match(/function updatePreflightBrief\(\): void \{([\s\S]*?)\n\}/);
-  assert.ok(preflightMatch, 'updatePreflightBrief must exist in panel/main.ts');
-  assert.match(stripComments(preflightMatch[1]), /renderSingleIssueBrief\s*\(\s*activeIssue\b/);
-
-  const batchMatch = MAIN_TS.match(/async function launchBatchSeparateSessions\(\): Promise<void> \{([\s\S]*?)\n\}/);
-  assert.ok(batchMatch, 'launchBatchSeparateSessions must exist in panel/main.ts');
-  assert.match(stripComments(batchMatch[1]), /renderBatchLaunchPrompt\s*\(\s*issue\s*\)/);
+  const { payloads, errors } = await runBatchLaunchSessions([skillIssue]);
+  assert.deepEqual(errors, []);
+  assert.equal(payloads.length, 1);
+  assert.equal(payloads[0].text, renderBatchLaunchPrompt(skillIssue));
+  assert.ok(payloads[0].text.includes('Transclusion fallback:'));
+  assert.ok(payloads[0].text.includes('[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]'));
+  assert.deepEqual(payloads[0].skills, ['surgical-patch', 'debugging-and-error-recovery', 'frontend-ui-engineering']);
+  assert.deepEqual(payloads[0].data.skills, payloads[0].skills);
 });

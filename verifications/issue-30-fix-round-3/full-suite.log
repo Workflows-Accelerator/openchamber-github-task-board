@@ -6,85 +6,85 @@ TAP version 13
 # Subtest: DEFAULT_AI_ISSUE_PROMPT contains zero emojis
 ok 1 - DEFAULT_AI_ISSUE_PROMPT contains zero emojis
   ---
-  duration_ms: 2.116956
+  duration_ms: 3.315402
   type: 'test'
   ...
 # Subtest: resolveAiIssuePrompt uses repository prompt when present
 ok 2 - resolveAiIssuePrompt uses repository prompt when present
   ---
-  duration_ms: 0.296777
+  duration_ms: 0.326319
   type: 'test'
   ...
 # Subtest: resolveAiIssuePrompt falls back to global prompt when repo prompt is absent
 ok 3 - resolveAiIssuePrompt falls back to global prompt when repo prompt is absent
   ---
-  duration_ms: 0.802909
+  duration_ms: 0.217323
   type: 'test'
   ...
 # Subtest: resolveAiIssuePrompt falls back to default prompt when neither is configured
 ok 4 - resolveAiIssuePrompt falls back to default prompt when neither is configured
   ---
-  duration_ms: 0.356453
+  duration_ms: 0.327928
   type: 'test'
   ...
 # Subtest: DEFAULT_AI_ISSUE_PROMPT requires friendly title before overview
 ok 5 - DEFAULT_AI_ISSUE_PROMPT requires friendly title before overview
   ---
-  duration_ms: 0.314563
+  duration_ms: 0.294848
   type: 'test'
   ...
 # Subtest: DEFAULT_AI_ISSUE_PROMPT requires exact section spellings in recommended order
 ok 6 - DEFAULT_AI_ISSUE_PROMPT requires exact section spellings in recommended order
   ---
-  duration_ms: 0.237523
+  duration_ms: 0.268727
   type: 'test'
   ...
 # Subtest: DEFAULT_AI_ISSUE_PROMPT instructs verb-first Human Tasks written when blocking or handing off
 ok 7 - DEFAULT_AI_ISSUE_PROMPT instructs verb-first Human Tasks written when blocking or handing off
   ---
-  duration_ms: 0.308073
+  duration_ms: 1.257344
   type: 'test'
   ...
 # Subtest: A) session from repo A never binds to the same-numbered issue in repo B
 ok 8 - A) session from repo A never binds to the same-numbered issue in repo B
   ---
-  duration_ms: 2.819626
+  duration_ms: 2.637647
   type: 'test'
   ...
 # Subtest: A) statusReconciler transitions only the repo that owns the session
 ok 9 - A) statusReconciler transitions only the repo that owns the session
   ---
-  duration_ms: 2.571949
+  duration_ms: 1.478601
   type: 'test'
   ...
 # Subtest: A) session keying uses explicit repo and ignores repo-less items
 ok 10 - A) session keying uses explicit repo and ignores repo-less items
   ---
-  duration_ms: 0.720973
+  duration_ms: 0.434667
   type: 'test'
   ...
 # Subtest: A) V2 session binding: item projection { id, data: { issueNumber, repo } } binds without top-level url/repo
 ok 11 - A) V2 session binding: item projection { id, data: { issueNumber, repo } } binds without top-level url/repo
   ---
-  duration_ms: 0.67469
+  duration_ms: 0.404593
   type: 'test'
   ...
 # Subtest: B) resolveWorkspaceRootProject pins exact /workspace and never fabricates a root
 ok 12 - B) resolveWorkspaceRootProject pins exact /workspace and never fabricates a root
   ---
-  duration_ms: 1.00116
+  duration_ms: 0.637304
   type: 'test'
   ...
 # Subtest: C) secondary-rate-limit 403 is detected and backs off without crashing
 ok 13 - C) secondary-rate-limit 403 is detected and backs off without crashing
   ---
-  duration_ms: 2.981977
+  duration_ms: 1.308274
   type: 'test'
   ...
 # Subtest: C) mapWithConcurrency caps in-flight work and isolates failures
 ok 14 - C) mapWithConcurrency caps in-flight work and isolates failures
   ---
-  duration_ms: 67.736009
+  duration_ms: 55.329681
   type: 'test'
   ...
 # [TaskBoard] Blocked automatic closure of \#201: closing requires human gesture
@@ -92,19 +92,19 @@ ok 14 - C) mapWithConcurrency caps in-flight work and isolates failures
 # Subtest: 1. Reproduction investigation: issue with phase:done or phase:archive in body does not close on pre-fix code (missing condition)
 ok 15 - 1. Reproduction investigation: issue with phase:done or phase:archive in body does not close on pre-fix code (missing condition)
   ---
-  duration_ms: 282.456719
+  duration_ms: 287.674964
   type: 'test'
   ...
 # Subtest: 2. Automatic closure path cut: un-signaled updateIssueStatus(issue, "done") is blocked
 ok 16 - 2. Automatic closure path cut: un-signaled updateIssueStatus(issue, "done") is blocked
   ---
-  duration_ms: 221.979418
+  duration_ms: 106.641133
   type: 'test'
   ...
 # Subtest: 3. Reconciler guard cut: StatusReconciler never requests done or closes an issue
 ok 17 - 3. Reconciler guard cut: StatusReconciler never requests done or closes an issue
   ---
-  duration_ms: 4.808934
+  duration_ms: 1.908893
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -124,109 +124,109 @@ ok 17 - 3. Reconciler guard cut: StatusReconciler never requests done or closes 
 # Subtest: 4. Human actions preserve legitimate closure: updateIssueStatus with isHumanGesture closes
 ok 18 - 4. Human actions preserve legitimate closure: updateIssueStatus with isHumanGesture closes
   ---
-  duration_ms: 338.238395
+  duration_ms: 167.822946
   type: 'test'
   ...
 # Subtest: 5. Agent instruction guard: DEFAULT_AI_ISSUE_PROMPT contains autonomous closure prohibition
 ok 19 - 5. Agent instruction guard: DEFAULT_AI_ISSUE_PROMPT contains autonomous closure prohibition
   ---
-  duration_ms: 0.799053
+  duration_ms: 0.852013
   type: 'test'
   ...
 # Subtest: 6. Preservation: non-terminal automatic status reconciliation remains active
 ok 20 - 6. Preservation: non-terminal automatic status reconciliation remains active
   ---
-  duration_ms: 7.103777
+  duration_ms: 1.686094
   type: 'test'
   ...
 # Subtest: parseSubtasks parses standard and mixed list formats
 ok 21 - parseSubtasks parses standard and mixed list formats
   ---
-  duration_ms: 4.670589
+  duration_ms: 6.776645
   type: 'test'
   ...
 # Subtest: updateSubtaskInMarkdown toggles specific line index without touching duplicate texts
 ok 22 - updateSubtaskInMarkdown toggles specific line index without touching duplicate texts
   ---
-  duration_ms: 0.407914
+  duration_ms: 0.398631
   type: 'test'
   ...
 # Subtest: serializeDraftSubtasks formats interactive draft items into markdown checklist
 ok 23 - serializeDraftSubtasks formats interactive draft items into markdown checklist
   ---
-  duration_ms: 0.508331
+  duration_ms: 0.39455
   type: 'test'
   ...
 # Subtest: isVagueIdea accurately identifies sparse issues and explicit alignment labels
 ok 24 - isVagueIdea accurately identifies sparse issues and explicit alignment labels
   ---
-  duration_ms: 0.574505
+  duration_ms: 0.457797
   type: 'test'
   ...
 # Subtest: appendSubtaskToMarkdown appends to existing body cleanly
 ok 25 - appendSubtaskToMarkdown appends to existing body cleanly
   ---
-  duration_ms: 0.491665
+  duration_ms: 0.2694
   type: 'test'
   ...
 # Subtest: parseOpenQuestions parses questions under Open Questions section and question prefixes
 ok 26 - parseOpenQuestions parses questions under Open Questions section and question prefixes
   ---
-  duration_ms: 1.437559
+  duration_ms: 4.691447
   type: 'test'
   ...
 # Subtest: updateOpenQuestionInMarkdown toggles question resolution mark cleanly
 ok 27 - updateOpenQuestionInMarkdown toggles question resolution mark cleanly
   ---
-  duration_ms: 0.328725
+  duration_ms: 0.572544
   type: 'test'
   ...
 # Subtest: appendOpenQuestionToMarkdown appends under existing section or creates new section
 ok 28 - appendOpenQuestionToMarkdown appends under existing section or creates new section
   ---
-  duration_ms: 0.648974
+  duration_ms: 2.002228
   type: 'test'
   ...
 # Subtest: serializeDraftQuestions formats draft questions into markdown section
 ok 29 - serializeDraftQuestions formats draft questions into markdown section
   ---
-  duration_ms: 0.68123
+  duration_ms: 0.973231
   type: 'test'
   ...
 # Subtest: isVagueIdea flags issues with unresolved open questions even if long description
 ok 30 - isVagueIdea flags issues with unresolved open questions even if long description
   ---
-  duration_ms: 0.767914
+  duration_ms: 3.110218
   type: 'test'
   ...
 # Subtest: formatQuestionBadge generates accurate badge states for open vs resolved questions
 ok 31 - formatQuestionBadge generates accurate badge states for open vs resolved questions
   ---
-  duration_ms: 0.433566
+  duration_ms: 0.702881
   type: 'test'
   ...
 # Subtest: drafting prompt asks for a parseable Open Questions section
 ok 32 - drafting prompt asks for a parseable Open Questions section
   ---
-  duration_ms: 1.26641
+  duration_ms: 0.666538
   type: 'test'
   ...
 # Subtest: serializeDraftQuestions output round-trips back through parseOpenQuestions
 ok 33 - serializeDraftQuestions output round-trips back through parseOpenQuestions
   ---
-  duration_ms: 4.317163
+  duration_ms: 9.89708
   type: 'test'
   ...
 # Subtest: answerOpenQuestionInMarkdown replaces target question with - [x] and *(Answer: ...)* note without corrupting other markdown
 ok 34 - answerOpenQuestionInMarkdown replaces target question with - [x] and *(Answer: ...)* note without corrupting other markdown
   ---
-  duration_ms: 1.370398
+  duration_ms: 3.090164
   type: 'test'
   ...
 # Subtest: parseOpenQuestions correctly parses answered questions and recognizes their completed state
 ok 35 - parseOpenQuestions correctly parses answered questions and recognizes their completed state
   ---
-  duration_ms: 0.579055
+  duration_ms: 0.388568
   type: 'test'
   ...
 # [TaskBoard] Active session: "Main Session" (ses_main)
@@ -234,19 +234,19 @@ ok 35 - parseOpenQuestions correctly parses answered questions and recognizes th
 # Subtest: Live issues \#23 and \#24 parse Friendly Titles and queues successfully
 ok 36 - Live issues \#23 and \#24 parse Friendly Titles and queues successfully
   ---
-  duration_ms: 16.461221
+  duration_ms: 5.613364
   type: 'test'
   ...
 # Subtest: D14: resolveSimplifiedViewTitle falls back to issue.title without subtitle duplication
 ok 37 - D14: resolveSimplifiedViewTitle falls back to issue.title without subtitle duplication
   ---
-  duration_ms: 0.334876
+  duration_ms: 0.319074
   type: 'test'
   ...
 # Subtest: D14: resolveSimplifiedViewTitle falls back to Issue \#N when title is empty
 ok 38 - D14: resolveSimplifiedViewTitle falls back to Issue \#N when title is empty
   ---
-  duration_ms: 3.335445
+  duration_ms: 0.307607
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -258,43 +258,43 @@ ok 38 - D14: resolveSimplifiedViewTitle falls back to Issue \#N when title is em
 # Subtest: D15: Popover shows session linked repo inline and highlights active session default
 ok 39 - D15: Popover shows session linked repo inline and highlights active session default
   ---
-  duration_ms: 605.617276
+  duration_ms: 209.787659
   type: 'test'
   ...
 # Subtest: D15: Popover shows "Session repo: none linked" when session has no linked repo
 ok 40 - D15: Popover shows "Session repo: none linked" when session has no linked repo
   ---
-  duration_ms: 258.361098
+  duration_ms: 141.288434
   type: 'test'
   ...
 # Subtest: D15: Actively picked repository is visibly distinct with [picked] badge and selected-repo class
 ok 41 - D15: Actively picked repository is visibly distinct with [picked] badge and selected-repo class
   ---
-  duration_ms: 137.271116
+  duration_ms: 99.522596
   type: 'test'
   ...
 # Subtest: D15: Popover renders honest rate-limit and offline status notices
 ok 42 - D15: Popover renders honest rate-limit and offline status notices
   ---
-  duration_ms: 176.383233
+  duration_ms: 54.795457
   type: 'test'
   ...
 # Subtest: D15: renderEmptyState renders rate-limited kind with actionable token guidance
 ok 43 - D15: renderEmptyState renders rate-limited kind with actionable token guidance
   ---
-  duration_ms: 289.280766
+  duration_ms: 94.69267
   type: 'test'
   ...
 # Subtest: D16: formatTaskTextWithLinks converts cross-repo shorthand and full URLs to plain full URLs, leaving same-repo prose
 ok 44 - D16: formatTaskTextWithLinks converts cross-repo shorthand and full URLs to plain full URLs, leaving same-repo prose
   ---
-  duration_ms: 2.001128
+  duration_ms: 2.865227
   type: 'test'
   ...
 # Subtest: D16: In All Projects mode, Human Tasks and Questions group by repository
 ok 45 - D16: In All Projects mode, Human Tasks and Questions group by repository
   ---
-  duration_ms: 362.809104
+  duration_ms: 95.341799
   type: 'test'
   ...
 # [TaskBoard] Project scan error: Host did not return workspace data.
@@ -320,25 +320,25 @@ ok 45 - D16: In All Projects mode, Human Tasks and Questions group by repository
 # Subtest: SV-01: Switching session while in All Projects mode exits to that session repo
 ok 46 - SV-01: Switching session while in All Projects mode exits to that session repo
   ---
-  duration_ms: 263.067944
+  duration_ms: 116.857378
   type: 'test'
   ...
 # Subtest: F-01: formatTaskTextWithLinks does not wrap markdown link labels with URLs or shorthand in nested <a> tags
 ok 47 - F-01: formatTaskTextWithLinks does not wrap markdown link labels with URLs or shorthand in nested <a> tags
   ---
-  duration_ms: 6.881606
+  duration_ms: 0.843947
   type: 'test'
   ...
 # Subtest: F-01: formatTaskTextWithLinks links multiple adjacent issue URLs separated by whitespace independently
 ok 48 - F-01: formatTaskTextWithLinks links multiple adjacent issue URLs separated by whitespace independently
   ---
-  duration_ms: 0.389697
+  duration_ms: 0.438307
   type: 'test'
   ...
 # Subtest: F-01: formatTaskTextWithLinks bare URL links correctly and preserves security invariants
 ok 49 - F-01: formatTaskTextWithLinks bare URL links correctly and preserves security invariants
   ---
-  duration_ms: 0.266054
+  duration_ms: 0.372777
   type: 'test'
   ...
 # [TaskBoard] Project scan error: Host did not return workspace data.
@@ -362,7 +362,7 @@ ok 49 - F-01: formatTaskTextWithLinks bare URL links correctly and preserves sec
 # Subtest: current board: successful empty refresh clears retained membership
 ok 50 - current board: successful empty refresh clears retained membership
   ---
-  duration_ms: 940.853837
+  duration_ms: 649.98035
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -377,7 +377,7 @@ ok 50 - current board: successful empty refresh clears retained membership
 # Subtest: current board: settings-ready same repository fetches and warm visibility revalidates once
 ok 51 - current board: settings-ready same repository fetches and warm visibility revalidates once
   ---
-  duration_ms: 419.095619
+  duration_ms: 271.026204
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -392,7 +392,7 @@ ok 51 - current board: settings-ready same repository fetches and warm visibilit
 # Subtest: current board: slow A response cannot publish into B or caches/watermarks
 ok 52 - current board: slow A response cannot publish into B or caches/watermarks
   ---
-  duration_ms: 214.846937
+  duration_ms: 238.091794
   type: 'test'
   ...
 # [TaskBoard] Project scan error: Host did not return workspace data.
@@ -406,7 +406,7 @@ ok 52 - current board: slow A response cannot publish into B or caches/watermark
 # Subtest: current board: overlapping refresh admits newest snapshot only
 ok 53 - current board: overlapping refresh admits newest snapshot only
   ---
-  duration_ms: 304.006882
+  duration_ms: 194.626231
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -427,7 +427,7 @@ ok 53 - current board: overlapping refresh admits newest snapshot only
 # Subtest: current board: streamed membership remains provisional until complete; page-two failure preserves last success
 ok 54 - current board: streamed membership remains provisional until complete; page-two failure preserves last success
   ---
-  duration_ms: 810.159467
+  duration_ms: 729.653941
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -441,7 +441,7 @@ ok 54 - current board: streamed membership remains provisional until complete; p
 # Subtest: current board: warm cache still requests current data; cached empty 304 is authoritative
 ok 55 - current board: warm cache still requests current data; cached empty 304 is authoritative
   ---
-  duration_ms: 141.771682
+  duration_ms: 173.765088
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -453,13 +453,13 @@ ok 55 - current board: warm cache still requests current data; cached empty 304 
 # Subtest: current board: superseded incremental response cannot advance watermarks
 ok 56 - current board: superseded incremental response cannot advance watermarks
   ---
-  duration_ms: 151.446124
+  duration_ms: 120.02733
   type: 'test'
   ...
-# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1 -> 200
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
@@ -468,28 +468,28 @@ ok 56 - current board: superseded incremental response cannot advance watermarks
 # Subtest: current board: failed first-page refresh preserves data and last full success
 ok 57 - current board: failed first-page refresh preserves data and last full success
   ---
-  duration_ms: 191.06538
+  duration_ms: 134.552513
   type: 'test'
   ...
-# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Session idle — incremental sync across 1 repo(s)...
-# [TaskBoard] API GET /repos/owner/a/issues?state=all&since=2026-10-26T21%3A11%3A49.928Z&per_page=100&page=1
+# [TaskBoard] API GET /repos/owner/a/issues?state=all&since=2026-10-26T21%3A24%3A29.358Z&per_page=100&page=1
 # [TaskBoard] GitHub request failed: GitHub API error: 500
 # [TaskBoard] Incremental sync failed for owner/a: GitHub API error: 500
 # Subtest: current board: failed idle sync cannot report a new full-refresh success
 ok 58 - current board: failed idle sync cannot report a new full-refresh success
   ---
-  duration_ms: 217.69124
+  duration_ms: 142.698217
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
-# [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1 -> 200
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] API PATCH /repos/owner/a/issues/1
@@ -498,14 +498,14 @@ ok 58 - current board: failed idle sync cannot report a new full-refresh success
 # Subtest: current board: successful body edit survives an older full response (R1 regression)
 ok 59 - current board: successful body edit survives an older full response (R1 regression)
   ---
-  duration_ms: 276.204101
+  duration_ms: 197.769605
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
-# [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1 -> 200
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] API PATCH /repos/owner/a/issues/1
@@ -515,14 +515,14 @@ ok 59 - current board: successful body edit survives an older full response (R1 
 # Subtest: current board: successful status edit survives an older full response (R1 regression)
 ok 60 - current board: successful status edit survives an older full response (R1 regression)
   ---
-  duration_ms: 322.277175
+  duration_ms: 209.644212
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
-# [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1 -> 200
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1 -> 200
@@ -534,7 +534,7 @@ ok 60 - current board: successful status edit survives an older full response (R
 # Subtest: current board: newer incremental fields survive an older full snapshot without regressing the watermark (R2 regression)
 ok 61 - current board: newer incremental fields survive an older full snapshot without regressing the watermark (R2 regression)
   ---
-  duration_ms: 862.254962
+  duration_ms: 538.301915
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -553,13 +553,13 @@ ok 61 - current board: newer incremental fields survive an older full snapshot w
 # Subtest: current board: completed full membership removes absent rows but keeps newer admitted items (R2 membership)
 ok 62 - current board: completed full membership removes absent rows but keeps newer admitted items (R2 membership)
   ---
-  duration_ms: 772.041035
+  duration_ms: 455.928224
   type: 'test'
   ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
-# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1 -> 200
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
@@ -569,13 +569,13 @@ ok 62 - current board: completed full membership removes absent rows but keeps n
 # Subtest: current board: in-flight edit whose write completes after an older full response still wins (R1 in-flight)
 ok 63 - current board: in-flight edit whose write completes after an older full response still wins (R1 in-flight)
   ---
-  duration_ms: 305.156277
+  duration_ms: 270.796178
   type: 'test'
   ...
-# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1 -> 200
 # [TaskBoard] API GET /repos/owner/a/issues?state=all&per_page=100&page=1
@@ -588,7 +588,7 @@ ok 63 - current board: in-flight edit whose write completes after an older full 
 # Subtest: current board: failed body edit is not permanently fresh; a later full response restores server truth (R1 failure)
 ok 64 - current board: failed body edit is not permanently fresh; a later full response restores server truth (R1 failure)
   ---
-  duration_ms: 424.294358
+  duration_ms: 331.264113
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -605,7 +605,7 @@ ok 64 - current board: failed body edit is not permanently fresh; a later full r
 # Subtest: current board: failed status edit reverts on the record published mid-write (R1 failure status)
 ok 65 - current board: failed status edit reverts on the record published mid-write (R1 failure status)
   ---
-  duration_ms: 339.428078
+  duration_ms: 354.21106
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -636,7 +636,7 @@ ok 65 - current board: failed status edit reverts on the record published mid-wr
 # Subtest: current board: a 500-issue incremental scan cannot evict an in-flight edit before an older full snapshot (F1)
 ok 66 - current board: a 500-issue incremental scan cannot evict an in-flight edit before an older full snapshot (F1)
   ---
-  duration_ms: 2330.580035
+  duration_ms: 1954.671815
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -698,7 +698,7 @@ ok 66 - current board: a 500-issue incremental scan cannot evict an in-flight ed
 # Subtest: current board: a pending write is never evicted under tracker cap pressure (F1)
 ok 67 - current board: a pending write is never evicted under tracker cap pressure (F1)
   ---
-  duration_ms: 7633.416009
+  duration_ms: 5638.4884
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -760,14 +760,14 @@ ok 67 - current board: a pending write is never evicted under tracker cap pressu
 # Subtest: current board: an overflow of protected tracker records does not clobber a successful edit (F1)
 ok 68 - current board: an overflow of protected tracker records does not clobber a successful edit (F1)
   ---
-  duration_ms: 10336.770766
+  duration_ms: 5701.319402
   type: 'test'
   ...
 # [TaskBoard] API GET /repos/owner/repo/issues
 # Subtest: D12 Manifest: package.json declares origins capability and api.github.com in contributes.origins
 ok 69 - D12 Manifest: package.json declares origins capability and api.github.com in contributes.origins
   ---
-  duration_ms: 9.564064
+  duration_ms: 3.468839
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -780,7 +780,7 @@ ok 69 - D12 Manifest: package.json declares origins capability and api.github.co
 # Subtest: D12 Fallback Integrity: missing workspace token falls back directly to host.request without invoking fetch
 ok 70 - D12 Fallback Integrity: missing workspace token falls back directly to host.request without invoking fetch
   ---
-  duration_ms: 519.816098
+  duration_ms: 226.598786
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -792,7 +792,7 @@ ok 70 - D12 Fallback Integrity: missing workspace token falls back directly to h
 # Subtest: D12 Fallback Integrity: direct fetch network/CSP failure falls back to host.request for GET
 ok 71 - D12 Fallback Integrity: direct fetch network/CSP failure falls back to host.request for GET
   ---
-  duration_ms: 409.865422
+  duration_ms: 120.000701
   type: 'test'
   ...
 # [TaskBoard] Project scan error: Host did not return workspace data.
@@ -807,13 +807,13 @@ ok 71 - D12 Fallback Integrity: direct fetch network/CSP failure falls back to h
 # Subtest: D12 Fallback Integrity: direct fetch 401 authentication failure falls back to host.request for GET
 ok 72 - D12 Fallback Integrity: direct fetch 401 authentication failure falls back to host.request for GET
   ---
-  duration_ms: 172.738414
+  duration_ms: 126.65965
   type: 'test'
   ...
 # Subtest: D12 Direct Activation: direct fetch sends ETag / If-None-Match and handles 304 without host.request
 ok 73 - D12 Direct Activation: direct fetch sends ETag / If-None-Match and handles 304 without host.request
   ---
-  duration_ms: 245.388992
+  duration_ms: 110.940381
   type: 'test'
   ...
 # [TaskBoard] Project scan error: Host did not return workspace data.
@@ -832,205 +832,207 @@ ok 73 - D12 Direct Activation: direct fetch sends ETag / If-None-Match and handl
 # Subtest: D12 Origin Guard: direct fetch confines token to https://api.github.com and falls back to host.request for non-approved origins
 ok 74 - D12 Origin Guard: direct fetch confines token to https://api.github.com and falls back to host.request for non-approved origins
   ---
-  duration_ms: 309.401399
+  duration_ms: 93.947684
   type: 'test'
   ...
 # Subtest: parseIssueDependencies extracts blocker numbers from various standard formats
 ok 75 - parseIssueDependencies extracts blocker numbers from various standard formats
   ---
-  duration_ms: 6.210747
+  duration_ms: 3.540858
   type: 'test'
   ...
 # Subtest: addDependencyToMarkdown adds blocker cleanly and idempotently
 ok 76 - addDependencyToMarkdown adds blocker cleanly and idempotently
   ---
-  duration_ms: 1.274996
+  duration_ms: 0.78176
   type: 'test'
   ...
 # Subtest: removeDependencyFromMarkdown removes blocker and cleans up empty line
 ok 77 - removeDependencyFromMarkdown removes blocker and cleans up empty line
   ---
-  duration_ms: 1.044741
+  duration_ms: 0.997213
   type: 'test'
   ...
 # Subtest: extractIssueReferences finds mentioned issue numbers excluding self
 ok 78 - extractIssueReferences finds mentioned issue numbers excluding self
   ---
-  duration_ms: 0.46843
+  duration_ms: 0.42583
   type: 'test'
   ...
 # Subtest: buildDependencyGraph constructs waterfall layers, detects frontier, and calculates downstream impact
 ok 79 - buildDependencyGraph constructs waterfall layers, detects frontier, and calculates downstream impact
   ---
-  duration_ms: 5.090434
+  duration_ms: 1.885652
   type: 'test'
   ...
 # Subtest: buildDependencyGraph handles circular dependencies safely without infinite loops
 ok 80 - buildDependencyGraph handles circular dependencies safely without infinite loops
   ---
-  duration_ms: 3.632039
+  duration_ms: 0.414095
   type: 'test'
   ...
 # Subtest: calculateEdgePath generates valid SVG cubic bezier path coordinates
 ok 81 - calculateEdgePath generates valid SVG cubic bezier path coordinates
   ---
-  duration_ms: 3.970869
+  duration_ms: 0.5347
   type: 'test'
   ...
 # Subtest: detectCycle detects when adding a dependency would introduce a cycle
 ok 82 - detectCycle detects when adding a dependency would introduce a cycle
   ---
-  duration_ms: 0.410023
+  duration_ms: 0.354334
   type: 'test'
   ...
 # Subtest: buildDependencyGraph clusters by theme and ranks themes by task count
 ok 83 - buildDependencyGraph clusters by theme and ranks themes by task count
   ---
-  duration_ms: 4.844869
+  duration_ms: 1.013995
   type: 'test'
   ...
 # Subtest: add and remove dependency round-trip preserves other markdown content
 ok 84 - add and remove dependency round-trip preserves other markdown content
   ---
-  duration_ms: 1.225632
+  duration_ms: 1.043011
   type: 'test'
   ...
 # Subtest: blocker chip rendering generates interactive remove button with data-target and data-blocker
 ok 85 - blocker chip rendering generates interactive remove button with data-target and data-blocker
   ---
-  duration_ms: 0.494007
+  duration_ms: 0.386298
   type: 'test'
   ...
 # Subtest: blocker remove interaction removes dependency cleanly and updates chips
 ok 86 - blocker remove interaction removes dependency cleanly and updates chips
   ---
-  duration_ms: 9.978715
+  duration_ms: 2.454869
   type: 'test'
   ...
 # Subtest: panel/main.ts handleFilePathClick invokes host.openFile and file.open surface alongside clipboard copy
 ok 87 - panel/main.ts handleFilePathClick invokes host.openFile and file.open surface alongside clipboard copy
   ---
-  duration_ms: 1.875842
+  duration_ms: 1.844543
   type: 'test'
   ...
+# (node:668749) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
 # Subtest: DEFAULT_AI_ISSUE_PROMPT adheres strictly to Issue Body Contract v1 and contains zero emojis
 ok 88 - DEFAULT_AI_ISSUE_PROMPT adheres strictly to Issue Body Contract v1 and contains zero emojis
   ---
-  duration_ms: 2.08077
+  duration_ms: 1.542623
   type: 'test'
   ...
 # Subtest: DEFAULT_AI_ALIGNMENT_PROMPT enforces Issue Body Contract v1 sections and contains zero emojis
 ok 89 - DEFAULT_AI_ALIGNMENT_PROMPT enforces Issue Body Contract v1 sections and contains zero emojis
   ---
-  duration_ms: 0.330786
+  duration_ms: 0.280616
   type: 'test'
   ...
 # Subtest: buildConsolidatedIssuePrompt avoids duplicate subtasks checklist and adds AFK protocol
 ok 90 - buildConsolidatedIssuePrompt avoids duplicate subtasks checklist and adds AFK protocol
   ---
-  duration_ms: 0.995536
+  duration_ms: 0.720601
   type: 'test'
   ...
 # Subtest: DEFAULT_TEMPLATES, mergeTemplates, and buildAgentIssuePrompt are first-class exports in core.ts
 ok 91 - DEFAULT_TEMPLATES, mergeTemplates, and buildAgentIssuePrompt are first-class exports in core.ts
   ---
-  duration_ms: 0.449444
+  duration_ms: 0.500354
   type: 'test'
   ...
 # Subtest: panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
 ok 92 - panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
   ---
-  duration_ms: 2.111878
+  duration_ms: 15.685064
   type: 'test'
   ...
 # Subtest: panel/main.ts handleFilePathClick checks currentDirectory and currentProject candidates
 ok 93 - panel/main.ts handleFilePathClick checks currentDirectory and currentProject candidates
   ---
-  duration_ms: 0.381148
+  duration_ms: 0.394864
   type: 'test'
   ...
 # Subtest: createDropdownState initializes with correct selected label
 ok 94 - createDropdownState initializes with correct selected label
   ---
-  duration_ms: 1.700857
+  duration_ms: 7.800228
   type: 'test'
   ...
 # Subtest: createDropdownState synchronizes when select value changes externally
 ok 95 - createDropdownState synchronizes when select value changes externally
   ---
-  duration_ms: 0.29254
+  duration_ms: 0.299261
   type: 'test'
   ...
 # Subtest: createGroupCollapseManager toggles and persists collapsed group keys
 ok 96 - createGroupCollapseManager toggles and persists collapsed group keys
   ---
-  duration_ms: 1.427054
+  duration_ms: 6.49833
   type: 'test'
   ...
 # Subtest: Issue \#14: buildHumanTaskResumePrompt formats prompt with issue number and exact contract
 ok 97 - Issue \#14: buildHumanTaskResumePrompt formats prompt with issue number and exact contract
   ---
-  duration_ms: 13.034829
+  duration_ms: 3.721338
   type: 'test'
   ...
 # Subtest: Issue \#14: shouldNotifyAgentOnHumanTasksComplete triggers only when transitioning to all complete
 ok 98 - Issue \#14: shouldNotifyAgentOnHumanTasksComplete triggers only when transitioning to all complete
   ---
-  duration_ms: 0.526499
+  duration_ms: 0.351676
   type: 'test'
   ...
 # Subtest: Issue \#14: markdown updates correctly reflect human task transitions
 ok 99 - Issue \#14: markdown updates correctly reflect human task transitions
   ---
-  duration_ms: 5.0213
+  duration_ms: 1.209695
   type: 'test'
   ...
 # Subtest: formatTaskTextWithLinks: detects file paths and converts to clickable links with data-path
 ok 100 - formatTaskTextWithLinks: detects file paths and converts to clickable links with data-path
   ---
-  duration_ms: 2.963679
+  duration_ms: 3.970165
   type: 'test'
   ...
 # Subtest: renderMarkdown: detects file paths in inline code and prose
 ok 101 - renderMarkdown: detects file paths in inline code and prose
   ---
-  duration_ms: 1.129568
+  duration_ms: 4.230532
   type: 'test'
   ...
 # Subtest: extractQuestionOptions: extracts options from issue markdown tables and inline phrasing
 ok 102 - extractQuestionOptions: extracts options from issue markdown tables and inline phrasing
   ---
-  duration_ms: 1.79355
+  duration_ms: 2.757626
   type: 'test'
   ...
 # Subtest: extractQuestionContext: extracts relevant snippet and section headings
 ok 103 - extractQuestionContext: extracts relevant snippet and section headings
   ---
-  duration_ms: 0.690343
+  duration_ms: 1.13976
   type: 'test'
   ...
 # Subtest: panel/index.html defines categorized view dropdown and file preview modal
 ok 104 - panel/index.html defines categorized view dropdown and file preview modal
   ---
-  duration_ms: 1.100375
+  duration_ms: 1.732789
   type: 'test'
   ...
 # Subtest: Toolbar: categorized dropdown provides Tasks and Issues navigation
 ok 105 - Toolbar: categorized dropdown provides Tasks and Issues navigation
   ---
-  duration_ms: 191.49298
+  duration_ms: 250.741363
   type: 'test'
   ...
 # Subtest: Human Tasks View: completed tasks remain visible for review and unchecking; all-done issues move to bottom
 ok 106 - Human Tasks View: completed tasks remain visible for review and unchecking; all-done issues move to bottom
   ---
-  duration_ms: 164.884305
+  duration_ms: 126.459614
   type: 'test'
   ...
 # Subtest: Questions View: renders question icon, context box, quick choices, and NO checkbox
 ok 107 - Questions View: renders question icon, context box, quick choices, and NO checkbox
   ---
-  duration_ms: 130.563147
+  duration_ms: 85.584352
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1048,158 +1050,160 @@ ok 107 - Questions View: renders question icon, context box, quick choices, and 
 # Subtest: (a) parseHumanTasks parses unchecked and checked checkboxes under \#\#\# Human Tasks:
 ok 108 - (a) parseHumanTasks parses unchecked and checked checkboxes under \#\#\# Human Tasks:
   ---
-  duration_ms: 3.226651
+  duration_ms: 2.595596
   type: 'test'
   ...
 # Subtest: (a) parseHumanTasks accepts heading spellings family (h1-h6, whitespace, tabs) and rejects others
 ok 109 - (a) parseHumanTasks accepts heading spellings family (h1-h6, whitespace, tabs) and rejects others
   ---
-  duration_ms: 0.617093
+  duration_ms: 0.442062
   type: 'test'
   ...
 # Subtest: (a) parseHumanTasks handles hostile edge cases: empty, null, undefined, CRLF, trailing header, checked-only
 ok 110 - (a) parseHumanTasks handles hostile edge cases: empty, null, undefined, CRLF, trailing header, checked-only
   ---
-  duration_ms: 1.531402
+  duration_ms: 1.116517
   type: 'test'
   ...
 # Subtest: (b) collectHumanTodos extracts explicit unchecked human tasks first in body order
 ok 111 - (b) collectHumanTodos extracts explicit unchecked human tasks first in body order
   ---
-  duration_ms: 0.988958
+  duration_ms: 1.01669
   type: 'test'
   ...
 # Subtest: (b) collectHumanTodos falls back to unanswered open questions when human tasks are empty or all checked
 ok 112 - (b) collectHumanTodos falls back to unanswered open questions when human tasks are empty or all checked
   ---
-  duration_ms: 1.083699
+  duration_ms: 0.886995
   type: 'test'
   ...
 # Subtest: (b) collectHumanTodos falls back to synthesized session-waiting item when human tasks and open questions yield nothing
 ok 113 - (b) collectHumanTodos falls back to synthesized session-waiting item when human tasks and open questions yield nothing
   ---
-  duration_ms: 0.820961
+  duration_ms: 0.769544
   type: 'test'
   ...
 # Subtest: (c) Issue type exposes parsed human tasks alongside subtasks/queries
 ok 114 - (c) Issue type exposes parsed human tasks alongside subtasks/queries
   ---
-  duration_ms: 1.737051
+  duration_ms: 1.421204
   type: 'test'
   ...
 # Subtest: hostile review edge cases: cross-section isolation, CRLF in subtasks/questions, null issue with waiting session
 ok 115 - hostile review edge cases: cross-section isolation, CRLF in subtasks/questions, null issue with waiting session
   ---
-  duration_ms: 1.006522
+  duration_ms: 0.819185
   type: 'test'
   ...
 # Subtest: duplicate Human Tasks sections are parsed and items collected
 ok 116 - duplicate Human Tasks sections are parsed and items collected
   ---
-  duration_ms: 0.795819
+  duration_ms: 0.539753
   type: 'test'
   ...
 # Subtest: parsers strip leading UTF-8 BOM (\\uFEFF)
 ok 117 - parsers strip leading UTF-8 BOM (\\uFEFF)
   ---
-  duration_ms: 4.883095
+  duration_ms: 1.574519
   type: 'test'
   ...
 # Subtest: parsers ignore empty and whitespace-only checklist items
 ok 118 - parsers ignore empty and whitespace-only checklist items
   ---
-  duration_ms: 0.58219
+  duration_ms: 0.476262
   type: 'test'
   ...
 # Subtest: parsers handle mixed CRLF and stray \\r cleanly
 ok 119 - parsers handle mixed CRLF and stray \\r cleanly
   ---
-  duration_ms: 0.366497
+  duration_ms: 0.293506
   type: 'test'
   ...
 # Subtest: parsers preserve HTML entities in checklist items
 ok 120 - parsers preserve HTML entities in checklist items
   ---
-  duration_ms: 0.169032
+  duration_ms: 0.163488
   type: 'test'
   ...
 # Subtest: collectHumanTodos multi-session fallback: matches bound issue and prevents cross-issue hijack
 ok 121 - collectHumanTodos multi-session fallback: matches bound issue and prevents cross-issue hijack
   ---
-  duration_ms: 0.955987
+  duration_ms: 0.82241
   type: 'test'
   ...
 # Subtest: parsers ignore checklist items and pseudo-headings inside fenced code blocks
 ok 122 - parsers ignore checklist items and pseudo-headings inside fenced code blocks
   ---
-  duration_ms: 0.704619
+  duration_ms: 0.390239
   type: 'test'
   ...
 # Subtest: parsers preserve items after indented comments or indented code blocks (CommonMark 4+ spaces)
 ok 123 - parsers preserve items after indented comments or indented code blocks (CommonMark 4+ spaces)
   ---
-  duration_ms: 0.232155
+  duration_ms: 0.249722
   type: 'test'
   ...
 # Subtest: parsers accept numeric string items like "- [ ] 0" without dropping them as empty
 ok 124 - parsers accept numeric string items like "- [ ] 0" without dropping them as empty
   ---
-  duration_ms: 0.289593
+  duration_ms: 0.240544
   type: 'test'
   ...
+# (node:668784) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
 # Subtest: Work Log contract in docs/issue-body-contract.md specifies single justification sentence and rules
 ok 125 - Work Log contract in docs/issue-body-contract.md specifies single justification sentence and rules
   ---
-  duration_ms: 7.683595
+  duration_ms: 1.493684
   type: 'test'
   ...
 # Subtest: DEFAULT_WORK_INSTRUCTIONS states unambiguous work-type rules and proportionate paths
 ok 126 - DEFAULT_WORK_INSTRUCTIONS states unambiguous work-type rules and proportionate paths
   ---
-  duration_ms: 0.509651
+  duration_ms: 0.436841
   type: 'test'
   ...
 # Subtest: resolveIssueWorkType determines bug vs feature vs undecided strictly from labels
 ok 127 - resolveIssueWorkType determines bug vs feature vs undecided strictly from labels
   ---
-  duration_ms: 0.458957
+  duration_ms: 0.400827
   type: 'test'
   ...
 # Subtest: DEFAULT_TEMPLATES bug and feature templates satisfy proportionate path contract without second source of truth
 ok 128 - DEFAULT_TEMPLATES bug and feature templates satisfy proportionate path contract without second source of truth
   ---
-  duration_ms: 0.24804
+  duration_ms: 0.281773
   type: 'test'
   ...
 # Subtest: DEFAULT_AI_ISSUE_PROMPT enforces single work-type source, Work Log justification, and zero emojis
 ok 129 - DEFAULT_AI_ISSUE_PROMPT enforces single work-type source, Work Log justification, and zero emojis
   ---
-  duration_ms: 0.217732
+  duration_ms: 0.931417
   type: 'test'
   ...
 # Subtest: buildConsolidatedIssuePrompt includes work instructions with proportionate paths
 ok 130 - buildConsolidatedIssuePrompt includes work instructions with proportionate paths
   ---
-  duration_ms: 1.1194
+  duration_ms: 2.832065
   type: 'test'
   ...
 # Subtest: renderSingleIssueBrief and renderBatchLaunchPrompt enforce work-type resolution and path isolation across all 5 cases
 ok 131 - renderSingleIssueBrief and renderBatchLaunchPrompt enforce work-type resolution and path isolation across all 5 cases
   ---
-  duration_ms: 6.345642
+  duration_ms: 1.666385
   type: 'test'
   ...
-# Subtest: panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
-ok 132 - panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
+# Subtest: panel/main.ts live launch paths deliver exactly the issue-specific renderer output
+ok 132 - panel/main.ts live launch paths deliver exactly the issue-specific renderer output
   ---
-  duration_ms: 10.88271
+  duration_ms: 49.147676
   type: 'test'
   ...
 # [TaskBoard] API GET /repos/test-owner/test-repo/issues/101
 # Subtest: Path (a) reproduction: wrong-question fallback in resolveOptimisticQuestionAnswer
 ok 133 - Path (a) reproduction: wrong-question fallback in resolveOptimisticQuestionAnswer
   ---
-  duration_ms: 5.148088
+  duration_ms: 24.264584
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1214,7 +1218,7 @@ ok 133 - Path (a) reproduction: wrong-question fallback in resolveOptimisticQues
 # Subtest: Path (b) reproduction: Questions view must not show success toast without result.found
 ok 134 - Path (b) reproduction: Questions view must not show success toast without result.found
   ---
-  duration_ms: 1247.432106
+  duration_ms: 837.413092
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1231,7 +1235,7 @@ ok 134 - Path (b) reproduction: Questions view must not show success toast witho
 # Subtest: Path (b) reproduction: Drawer must not show success toast without result.found
 ok 135 - Path (b) reproduction: Drawer must not show success toast without result.found
   ---
-  duration_ms: 796.664253
+  duration_ms: 735.559312
   type: 'test'
   ...
 # [TaskBoard] Project scan error: Host did not return workspace data.
@@ -1245,7 +1249,7 @@ ok 135 - Path (b) reproduction: Drawer must not show success toast without resul
 # Subtest: Path (c) reproduction: failed fresh read continuing on cached body
 ok 136 - Path (c) reproduction: failed fresh read continuing on cached body
   ---
-  duration_ms: 677.086125
+  duration_ms: 643.517944
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1260,7 +1264,7 @@ ok 136 - Path (c) reproduction: failed fresh read continuing on cached body
 # Subtest: Path (d) reproduction: failed PATCH keeping the new local body
 ok 137 - Path (d) reproduction: failed PATCH keeping the new local body
   ---
-  duration_ms: 285.411308
+  duration_ms: 188.231393
   type: 'test'
   ...
 # [TaskBoard] Project scan error: Host did not return workspace data.
@@ -1273,7 +1277,7 @@ ok 137 - Path (d) reproduction: failed PATCH keeping the new local body
 # Subtest: Decision D3: changed question refuses answer and shows new text
 ok 138 - Decision D3: changed question refuses answer and shows new text
   ---
-  duration_ms: 178.248946
+  duration_ms: 138.892739
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1286,26 +1290,26 @@ ok 138 - Decision D3: changed question refuses answer and shows new text
 # Subtest: Already-answered question refuses write and does not overwrite
 ok 139 - Already-answered question refuses write and does not overwrite
   ---
-  duration_ms: 215.909222
+  duration_ms: 157.322423
   type: 'test'
   ...
 # [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Question on \#107 has ambiguous duplicates; refusing to guess
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
 # [TaskBoard] API GET /repos/test-owner/test-repo/issues/107 -> 200
-# [TaskBoard] Question on \#107 has ambiguous duplicates; refusing to guess
 # [TaskBoard] API GET /repos/test-owner/test-repo/issues/108
 # Subtest: Ambiguous duplicate unresolved questions refuse write rather than guess
 ok 140 - Ambiguous duplicate unresolved questions refuse write rather than guess
   ---
-  duration_ms: 224.78287
+  duration_ms: 147.488274
   type: 'test'
   ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
-# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] API GET /repos/test-owner/test-repo/issues/108 -> 200
 # [TaskBoard] Question on \#108 was modified remotely; refusing write
 # [TaskBoard] API GET /repos/test-owner/test-repo/issues/108
@@ -1316,7 +1320,7 @@ ok 140 - Ambiguous duplicate unresolved questions refuse write rather than guess
 # Subtest: Exact identity compares Markdown link destinations and case without stripping
 ok 141 - Exact identity compares Markdown link destinations and case without stripping
   ---
-  duration_ms: 222.841218
+  duration_ms: 132.866191
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1331,7 +1335,7 @@ ok 141 - Exact identity compares Markdown link destinations and case without str
 # Subtest: Ambiguous write outcome (network error after send) reports outcome unknown and never auto-repeats
 ok 142 - Ambiguous write outcome (network error after send) reports outcome unknown and never auto-repeats
   ---
-  duration_ms: 243.076754
+  duration_ms: 149.347843
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1345,13 +1349,13 @@ ok 142 - Ambiguous write outcome (network error after send) reports outcome unkn
 # Subtest: Human Tasks entry point shares answer path and executes clean write-back
 ok 143 - Human Tasks entry point shares answer path and executes clean write-back
   ---
-  duration_ms: 294.769171
+  duration_ms: 212.742836
   type: 'test'
   ...
-# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] API GET /repos/test-owner/test-repo/issues/111 -> 200
 # [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/111
 # [TaskBoard] API PATCH /repos/test-owner/test-repo/issues/111 -> 200
@@ -1359,7 +1363,7 @@ ok 143 - Human Tasks entry point shares answer path and executes clean write-bac
 # Subtest: Answering a question preserves workflow phase and does not close issue (\#36 guards intact)
 ok 144 - Answering a question preserves workflow phase and does not close issue (\#36 guards intact)
   ---
-  duration_ms: 192.187957
+  duration_ms: 99.322364
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1393,7 +1397,7 @@ ok 144 - Answering a question preserves workflow phase and does not close issue 
 # Subtest: Finding 1: Post-send 5xx/gateway/timeout/abort errors treated as UNKNOWN; 4xx pre-commit treated as definitive rejection
 ok 145 - Finding 1: Post-send 5xx/gateway/timeout/abort errors treated as UNKNOWN; 4xx pre-commit treated as definitive rejection
   ---
-  duration_ms: 726.410989
+  duration_ms: 408.175511
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1410,7 +1414,7 @@ ok 145 - Finding 1: Post-send 5xx/gateway/timeout/abort errors treated as UNKNOW
 # Subtest: Finding 2: Ambiguous outcome marks issue unconfirmed, blocks dependent writes until refresh reconciles it
 ok 146 - Finding 2: Ambiguous outcome marks issue unconfirmed, blocks dependent writes until refresh reconciles it
   ---
-  duration_ms: 191.669423
+  duration_ms: 160.680214
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1430,7 +1434,7 @@ ok 146 - Finding 2: Ambiguous outcome marks issue unconfirmed, blocks dependent 
 # Subtest: Finding 3: handleAddDependency and handleRemoveDependency honor updateIssueBody result without false success toast
 ok 147 - Finding 3: handleAddDependency and handleRemoveDependency honor updateIssueBody result without false success toast
   ---
-  duration_ms: 239.234887
+  duration_ms: 140.166934
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1443,7 +1447,7 @@ ok 147 - Finding 3: handleAddDependency and handleRemoveDependency honor updateI
 # Subtest: Finding 4: Question change toast in multi-question issue does not falsely attribute unrelated question text
 ok 148 - Finding 4: Question change toast in multi-question issue does not falsely attribute unrelated question text
   ---
-  duration_ms: 171.615342
+  duration_ms: 75.994244
   type: 'test'
   ...
 # [TaskBoard] Project scan error: Host did not return workspace data.
@@ -1457,7 +1461,7 @@ ok 148 - Finding 4: Question change toast in multi-question issue does not false
 # Subtest: Finding 5: In-flight disabling on Save prevents duplicate PATCH mutations and toasts on double-click
 ok 149 - Finding 5: In-flight disabling on Save prevents duplicate PATCH mutations and toasts on double-click
   ---
-  duration_ms: 212.594206
+  duration_ms: 126.219102
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1492,7 +1496,7 @@ ok 149 - Finding 5: In-flight disabling on Save prevents duplicate PATCH mutatio
 # Subtest: Finding 6: Typed answer is preserved across refusal in Questions View, Drawer, and Human Tasks as recoverable draft (Decision 14)
 ok 150 - Finding 6: Typed answer is preserved across refusal in Questions View, Drawer, and Human Tasks as recoverable draft (Decision 14)
   ---
-  duration_ms: 487.642181
+  duration_ms: 536.080112
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1525,31 +1529,31 @@ ok 150 - Finding 6: Typed answer is preserved across refusal in Questions View, 
 # Subtest: Finding 7: Post-mutation notification/toast failure does not cause write rollback
 ok 151 - Finding 7: Post-mutation notification/toast failure does not cause write rollback
   ---
-  duration_ms: 94.125175
+  duration_ms: 101.878749
   type: 'test'
   ...
 # Subtest: Decision 14 Isolation A1: Cross-repo draft isolation with identical question text
 ok 152 - Decision 14 Isolation A1: Cross-repo draft isolation with identical question text
   ---
-  duration_ms: 115.289093
+  duration_ms: 73.38976
   type: 'test'
   ...
 # Subtest: Decision 14 Isolation A2: Cross-repo draft isolation with different question text
 ok 153 - Decision 14 Isolation A2: Cross-repo draft isolation with different question text
   ---
-  duration_ms: 248.067221
+  duration_ms: 73.615246
   type: 'test'
   ...
 # Subtest: Decision 14 Isolation B1: Single issue with multiple questions isolation (Q1 and Q2)
 ok 154 - Decision 14 Isolation B1: Single issue with multiple questions isolation (Q1 and Q2)
   ---
-  duration_ms: 166.797469
+  duration_ms: 49.933593
   type: 'test'
   ...
 # Subtest: Decision 14 Isolation C1: Emptying an input field deletes the draft and does not resurrect it on re-render
 ok 155 - Decision 14 Isolation C1: Emptying an input field deletes the draft and does not resurrect it on re-render
   ---
-  duration_ms: 128.830082
+  duration_ms: 76.292659
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1598,71 +1602,71 @@ ok 155 - Decision 14 Isolation C1: Emptying an input field deletes the draft and
 # Subtest: Decision 14 Isolation C2: Remotely changed question leaves current input empty and renders recoverable draft labelled with original question
 ok 156 - Decision 14 Isolation C2: Remotely changed question leaves current input empty and renders recoverable draft labelled with original question
   ---
-  duration_ms: 267.280632
+  duration_ms: 128.489476
   type: 'test'
   ...
-# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] API GET /repos/owner/repo-main/issues/21 -> 200
 # [TaskBoard] Question on \#21 was modified remotely; refusing write
 # Subtest: Decision 14 Isolation C3: Remotely deleted questions renders issue with recoverable draft rather than empty-box
 ok 157 - Decision 14 Isolation C3: Remotely deleted questions renders issue with recoverable draft rather than empty-box
   ---
-  duration_ms: 197.770709
+  duration_ms: 85.468488
   type: 'test'
   ...
 # Subtest: Decision 14 Layout D1: Direct renderers do not mutate userLayoutPreference or data-layout
 ok 158 - Decision 14 Layout D1: Direct renderers do not mutate userLayoutPreference or data-layout
   ---
-  duration_ms: 99.589112
+  duration_ms: 70.067772
   type: 'test'
   ...
+# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
-# [TaskBoard] Project scan error: Host did not return workspace data.
 # Subtest: reads the full page size when the host carries it
 ok 159 - reads the full page size when the host carries it
   ---
-  duration_ms: 20.611103
+  duration_ms: 3.056826
   type: 'test'
   ...
 # Subtest: a cut-off first page switches that repo to small pages and keeps them
 ok 160 - a cut-off first page switches that repo to small pages and keeps them
   ---
-  duration_ms: 5.409921
+  duration_ms: 6.622598
   type: 'test'
   ...
 # Subtest: a host that refuses an oversized answer by code is handled the same way
 ok 161 - a host that refuses an oversized answer by code is handled the same way
   ---
-  duration_ms: 3.694659
+  duration_ms: 4.095614
   type: 'test'
   ...
 # Subtest: other failures, and oversized later pages, are not retried
 ok 162 - other failures, and oversized later pages, are not retried
   ---
-  duration_ms: 3.852201
+  duration_ms: 0.962343
   type: 'test'
   ...
 # Subtest: isOversizedAnswer correctly classifies SyntaxError and RESPONSE_TOO_LARGE
 ok 163 - isOversizedAnswer correctly classifies SyntaxError and RESPONSE_TOO_LARGE
   ---
-  duration_ms: 1.000316
+  duration_ms: 3.086996
   type: 'test'
   ...
 # Subtest: Path 5: syncIncrementalRepoIssues falls back to pages of 20 when page 1 is oversized
 ok 164 - Path 5: syncIncrementalRepoIssues falls back to pages of 20 when page 1 is oversized
   ---
-  duration_ms: 17.654191
+  duration_ms: 16.737899
   type: 'test'
   ...
 # Subtest: Path 5: syncIncrementalRepoIssues caps at 50 pages (1,000 issues) when page size is 20
 ok 165 - Path 5: syncIncrementalRepoIssues caps at 50 pages (1,000 issues) when page size is 20
   ---
-  duration_ms: 69.994984
+  duration_ms: 35.643634
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1681,7 +1685,7 @@ ok 165 - Path 5: syncIncrementalRepoIssues caps at 50 pages (1,000 issues) when 
 # Subtest: Path 1 & Path 2: fetchIssues falls back to per_page=20 on oversized page 1 and streams subsequent pages at 20
 ok 166 - Path 1 & Path 2: fetchIssues falls back to per_page=20 on oversized page 1 and streams subsequent pages at 20
   ---
-  duration_ms: 848.29297
+  duration_ms: 502.372518
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1699,7 +1703,7 @@ ok 166 - Path 1 & Path 2: fetchIssues falls back to per_page=20 on oversized pag
 # Subtest: Path 3 & Path 4: fetchAllRepoIssuePages falls back to per_page=20 on oversized page 1 and streams remaining pages at 20
 ok 167 - Path 3 & Path 4: fetchAllRepoIssuePages falls back to per_page=20 on oversized page 1 and streams remaining pages at 20
   ---
-  duration_ms: 287.127342
+  duration_ms: 172.551131
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -1711,596 +1715,598 @@ ok 167 - Path 3 & Path 4: fetchAllRepoIssuePages falls back to per_page=20 on ov
 # Subtest: Path 2: streamRemainingPages does not retry when a later page (page 2) fails or is oversized
 ok 168 - Path 2: streamRemainingPages does not retry when a later page (page 2) fails or is oversized
   ---
-  duration_ms: 154.842336
+  duration_ms: 144.751842
   type: 'test'
   ...
 # Subtest: multi-repo isolation: repo A oversized shrinking to 20 leaves repo B at 100
 ok 169 - multi-repo isolation: repo A oversized shrinking to 20 leaves repo B at 100
   ---
-  duration_ms: 1.003054
+  duration_ms: 0.890301
   type: 'test'
   ...
 # Subtest: boundary conditions: 0 issues, exactly 20 issues, and 21 issues with SMALL_ISSUE_PAGE_SIZE
 ok 170 - boundary conditions: 0 issues, exactly 20 issues, and 21 issues with SMALL_ISSUE_PAGE_SIZE
   ---
-  duration_ms: 9.755489
+  duration_ms: 0.354267
   type: 'test'
   ...
 # Subtest: F-01: HTML error body or non-truncation SyntaxError on page 1 does not retry and leaves page size at 100
 ok 171 - F-01: HTML error body or non-truncation SyntaxError on page 1 does not retry and leaves page size at 100
   ---
-  duration_ms: 0.500555
+  duration_ms: 0.28592
   type: 'test'
   ...
 # Subtest: F-02: fetchIssuePage strips If-None-Match header when falling back to SMALL_ISSUE_PAGE_SIZE
 ok 172 - F-02: fetchIssuePage strips If-None-Match header when falling back to SMALL_ISSUE_PAGE_SIZE
   ---
-  duration_ms: 0.59646
+  duration_ms: 3.632289
   type: 'test'
   ...
 # Subtest: F-02: syncIncrementalRepoIssues strips If-None-Match header when retrying page 1 at SMALL_ISSUE_PAGE_SIZE
 ok 173 - F-02: syncIncrementalRepoIssues strips If-None-Match header when retrying page 1 at SMALL_ISSUE_PAGE_SIZE
   ---
-  duration_ms: 1.241823
+  duration_ms: 0.768735
   type: 'test'
   ...
 # Subtest: addLabelToIssue adds unique label preserving existing
 ok 174 - addLabelToIssue adds unique label preserving existing
   ---
-  duration_ms: 7.441451
+  duration_ms: 2.452218
   type: 'test'
   ...
 # Subtest: addLabelToIssue prevents duplicate labels case-insensitively
 ok 175 - addLabelToIssue prevents duplicate labels case-insensitively
   ---
-  duration_ms: 3.142992
+  duration_ms: 0.296666
   type: 'test'
   ...
 # Subtest: removeLabelFromIssue removes target label while keeping status
 ok 176 - removeLabelFromIssue removes target label while keeping status
   ---
-  duration_ms: 0.478271
+  duration_ms: 0.305529
   type: 'test'
   ...
 # Subtest: updateComplexityLabel safely replaces or clears complexity label
 ok 177 - updateComplexityLabel safely replaces or clears complexity label
   ---
-  duration_ms: 5.731493
+  duration_ms: 1.932596
   type: 'test'
   ...
 # Subtest: findRelatedIssues ranks issues by shared tags, mentions, and keyword overlap
 ok 178 - findRelatedIssues ranks issues by shared tags, mentions, and keyword overlap
   ---
-  duration_ms: 1.290295
+  duration_ms: 0.830632
   type: 'test'
   ...
 # Subtest: updatePriorityLabels replaces or removes priority labels
 ok 179 - updatePriorityLabels replaces or removes priority labels
   ---
-  duration_ms: 0.583866
+  duration_ms: 0.363402
   type: 'test'
   ...
 # Subtest: groupIssuesBy groups issues correctly by priority
 ok 180 - groupIssuesBy groups issues correctly by priority
   ---
-  duration_ms: 0.895335
+  duration_ms: 0.662429
   type: 'test'
   ...
 # Subtest: getIssueTheme and groupIssuesBy group by theme with tag fallback
 ok 181 - getIssueTheme and groupIssuesBy group by theme with tag fallback
   ---
-  duration_ms: 1.293318
+  duration_ms: 0.348786
   type: 'test'
   ...
 # Subtest: filterDisplayLabels excludes extension system tags (status, priority, complexity, theme, archived)
 ok 182 - filterDisplayLabels excludes extension system tags (status, priority, complexity, theme, archived)
   ---
-  duration_ms: 0.887294
+  duration_ms: 0.539324
   type: 'test'
   ...
 # Subtest: getNextLayoutMode cycles list -> kanban -> graph -> list correctly
 ok 183 - getNextLayoutMode cycles list -> kanban -> graph -> list correctly
   ---
-  duration_ms: 1.685731
+  duration_ms: 1.684687
   type: 'test'
   ...
 # Subtest: getActiveLayoutMode determines current active view accurately
 ok 184 - getActiveLayoutMode determines current active view accurately
   ---
-  duration_ms: 0.299979
+  duration_ms: 0.299962
   type: 'test'
   ...
 # Subtest: panel/index.html drawer has zero dark blur and supports split push & full page
 ok 185 - panel/index.html drawer has zero dark blur and supports split push & full page
   ---
-  duration_ms: 0.513519
+  duration_ms: 0.507567
   type: 'test'
   ...
 # Subtest: panel/index.html modal and popover feature smooth open animations
 ok 186 - panel/index.html modal and popover feature smooth open animations
   ---
-  duration_ms: 0.331801
+  duration_ms: 0.320933
   type: 'test'
   ...
 # Subtest: panel/index.html scratchpad modal has increased height and flex textarea
 ok 187 - panel/index.html scratchpad modal has increased height and flex textarea
   ---
-  duration_ms: 0.604928
+  duration_ms: 0.578927
   type: 'test'
   ...
 # Subtest: panel/index.html repo dropdown and button have expanded width
 ok 188 - panel/index.html repo dropdown and button have expanded width
   ---
-  duration_ms: 0.276034
+  duration_ms: 0.263494
   type: 'test'
   ...
 # Subtest: panel/index.html has sidebar view cycle button for compact screens
 ok 189 - panel/index.html has sidebar view cycle button for compact screens
   ---
-  duration_ms: 0.362851
+  duration_ms: 0.343955
   type: 'test'
   ...
 # Subtest: panel/index.html chkGraphShowDone is unchecked by default
 ok 190 - panel/index.html chkGraphShowDone is unchecked by default
   ---
-  duration_ms: 0.423412
+  duration_ms: 0.353046
   type: 'test'
   ...
 # Subtest: panel/main.ts initializes graphShowDone to false
 ok 191 - panel/main.ts initializes graphShowDone to false
   ---
-  duration_ms: 0.707639
+  duration_ms: 0.676895
   type: 'test'
   ...
 # Subtest: Escape closes active modals before drawer
 ok 192 - Escape closes active modals before drawer
   ---
-  duration_ms: 1.284533
+  duration_ms: 1.200318
   type: 'test'
   ...
 # Subtest: parseFriendlyTitle extracts friendly human title from markdown headers and bold markers
 ok 193 - parseFriendlyTitle extracts friendly human title from markdown headers and bold markers
   ---
-  duration_ms: 4.66173
+  duration_ms: 3.892023
   type: 'test'
   ...
 # Subtest: parseFriendlyTitle handles missing or malformed markdown gracefully
 ok 194 - parseFriendlyTitle handles missing or malformed markdown gracefully
   ---
-  duration_ms: 0.504196
+  duration_ms: 0.330616
   type: 'test'
   ...
 # Subtest: renderIssueCard in main.ts renders friendly title and conditional card-subtitle-tech
 ok 195 - renderIssueCard in main.ts renders friendly title and conditional card-subtitle-tech
   ---
-  duration_ms: 0.465807
+  duration_ms: 0.423628
   type: 'test'
   ...
 # Subtest: card title and subtitle logic generates correct HTML snippets
 ok 196 - card title and subtitle logic generates correct HTML snippets
   ---
-  duration_ms: 0.406244
+  duration_ms: 0.337778
   type: 'test'
   ...
 # Subtest: updatePreflightBrief in main.ts enriches brief with skill transclusions for bug, enhancement, documentation
 ok 197 - updatePreflightBrief in main.ts enriches brief with skill transclusions for bug, enhancement, documentation
   ---
-  duration_ms: 1.00549
+  duration_ms: 0.918324
   type: 'test'
   ...
 # Subtest: hostile edge cases: angle brackets, quotes, placeholder ignoring, bold variations, and next-line guards
 ok 198 - hostile edge cases: angle brackets, quotes, placeholder ignoring, bold variations, and next-line guards
   ---
-  duration_ms: 0.449881
+  duration_ms: 0.424724
   type: 'test'
   ...
 # Subtest: card-subtitle-tech styling supports narrow-screen word wrapping and XSS escaping
 ok 199 - card-subtitle-tech styling supports narrow-screen word wrapping and XSS escaping
   ---
-  duration_ms: 0.944487
+  duration_ms: 0.923771
   type: 'test'
   ...
 # Subtest: Stream 2: parseDraftIssueFromMarkdown extracts H1 title, subtasks, questions, and body
 ok 200 - Stream 2: parseDraftIssueFromMarkdown extracts H1 title, subtasks, questions, and body
   ---
-  duration_ms: 4.606977
+  duration_ms: 7.930883
   type: 'test'
   ...
 # Subtest: Stream 2: parseDraftIssueFromMarkdown extracts Title: and Labels: prefixes
 ok 201 - Stream 2: parseDraftIssueFromMarkdown extracts Title: and Labels: prefixes
   ---
-  duration_ms: 0.615415
+  duration_ms: 0.984893
   type: 'test'
   ...
 # Subtest: Stream 2: parseDraftIssueFromMarkdown handles unstructured plain text fallback
 ok 202 - Stream 2: parseDraftIssueFromMarkdown handles unstructured plain text fallback
   ---
-  duration_ms: 0.356394
+  duration_ms: 0.323422
   type: 'test'
   ...
 # Subtest: Stream 2: parseDraftIssueFromMarkdown handles empty, malformed, and adversarial inputs safely
 ok 203 - Stream 2: parseDraftIssueFromMarkdown handles empty, malformed, and adversarial inputs safely
   ---
-  duration_ms: 0.465081
+  duration_ms: 0.717821
   type: 'test'
   ...
 # Subtest: Stream 2: formatDraftReviewMeta formats singular and plural counts correctly
 ok 204 - Stream 2: formatDraftReviewMeta formats singular and plural counts correctly
   ---
-  duration_ms: 0.929565
+  duration_ms: 0.531972
   type: 'test'
   ...
 # Subtest: Stream 2: createDraftIssuePayload enforces title presence and valid payload defaults
 ok 205 - Stream 2: createDraftIssuePayload enforces title presence and valid payload defaults
   ---
-  duration_ms: 0.74225
+  duration_ms: 1.495878
   type: 'test'
   ...
 # Subtest: Stream 2: panel/index.html defines required live draft review card elements and contains zero emojis
 ok 206 - Stream 2: panel/index.html defines required live draft review card elements and contains zero emojis
   ---
-  duration_ms: 1.015253
+  duration_ms: 1.576491
   type: 'test'
   ...
 # Subtest: renderMarkdown converts headings, bold, code, and links properly
 ok 207 - renderMarkdown converts headings, bold, code, and links properly
   ---
-  duration_ms: 4.486294
+  duration_ms: 3.514445
   type: 'test'
   ...
 # Subtest: renderMarkdown escapes raw script tags to prevent XSS
 ok 208 - renderMarkdown escapes raw script tags to prevent XSS
   ---
-  duration_ms: 0.662746
+  duration_ms: 0.430876
   type: 'test'
   ...
 # Subtest: renderMarkdown asserts <img src=x onerror=alert(1)> in comment body renders inert
 ok 209 - renderMarkdown asserts <img src=x onerror=alert(1)> in comment body renders inert
   ---
-  duration_ms: 1.711072
+  duration_ms: 1.239498
   type: 'test'
   ...
 # Subtest: renderMarkdown parses GFM tables with header, separator, body rows, and alignments
 ok 210 - renderMarkdown parses GFM tables with header, separator, body rows, and alignments
   ---
-  duration_ms: 0.800275
+  duration_ms: 0.550457
   type: 'test'
   ...
 # Subtest: renderMarkdown handles ragged table rows gracefully without breaking
 ok 211 - renderMarkdown handles ragged table rows gracefully without breaking
   ---
-  duration_ms: 0.511536
+  duration_ms: 0.333668
   type: 'test'
   ...
 # Subtest: renderMarkdown handles header-only tables
 ok 212 - renderMarkdown handles header-only tables
   ---
-  duration_ms: 0.444754
+  duration_ms: 0.281052
   type: 'test'
   ...
 # Subtest: renderMarkdown parses unordered lists with - and * into ul/li
 ok 213 - renderMarkdown parses unordered lists with - and * into ul/li
   ---
-  duration_ms: 0.454853
+  duration_ms: 0.398374
   type: 'test'
   ...
 # Subtest: renderMarkdown parses ordered lists with numbers into ol/li
 ok 214 - renderMarkdown parses ordered lists with numbers into ol/li
   ---
-  duration_ms: 0.477963
+  duration_ms: 0.435007
   type: 'test'
   ...
 # Subtest: renderMarkdown parses task checkboxes in lists
 ok 215 - renderMarkdown parses task checkboxes in lists
   ---
-  duration_ms: 0.660934
+  duration_ms: 0.515981
   type: 'test'
   ...
 # Subtest: renderMarkdown parses nested lists properly
 ok 216 - renderMarkdown parses nested lists properly
   ---
-  duration_ms: 2.991092
+  duration_ms: 2.402378
   type: 'test'
   ...
 # Subtest: renderMarkdown does NOT parse tables or lists inside fenced code blocks
 ok 217 - renderMarkdown does NOT parse tables or lists inside fenced code blocks
   ---
-  duration_ms: 0.391505
+  duration_ms: 0.448689
   type: 'test'
   ...
 # Subtest: renderMarkdown does NOT parse normal prose containing pipes as tables
 ok 218 - renderMarkdown does NOT parse normal prose containing pipes as tables
   ---
-  duration_ms: 0.284331
+  duration_ms: 0.276216
   type: 'test'
   ...
 # Subtest: renderMarkdown handles escaped pipes inside table cells
 ok 219 - renderMarkdown handles escaped pipes inside table cells
   ---
-  duration_ms: 0.230064
+  duration_ms: 0.218265
   type: 'test'
   ...
 # Subtest: renderMarkdown parses tables without outer pipes
 ok 220 - renderMarkdown parses tables without outer pipes
   ---
-  duration_ms: 0.198939
+  duration_ms: 0.233875
   type: 'test'
   ...
 # Subtest: renderMarkdown separates table from list containing pipe immediately following it
 ok 221 - renderMarkdown separates table from list containing pipe immediately following it
   ---
-  duration_ms: 0.193655
+  duration_ms: 0.188741
   type: 'test'
   ...
 # Subtest: renderMarkdown preserves escaping against aggressive XSS injection vectors
 ok 222 - renderMarkdown preserves escaping against aggressive XSS injection vectors
   ---
-  duration_ms: 0.319913
+  duration_ms: 0.304365
   type: 'test'
   ...
 # Subtest: renderMarkdown parses multiple independent tables in one document
 ok 223 - renderMarkdown parses multiple independent tables in one document
   ---
-  duration_ms: 0.316457
+  duration_ms: 0.290531
   type: 'test'
   ...
 # Subtest: getIssueDescriptionPreview extracts clean 1-line summary skipping generic headers
 ok 224 - getIssueDescriptionPreview extracts clean 1-line summary skipping generic headers
   ---
-  duration_ms: 0.961301
+  duration_ms: 0.858098
   type: 'test'
   ...
+# (node:668864) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
 # Subtest: resolveIssueSkills: maps standard labels to canonical skills and transclusions
 ok 225 - resolveIssueSkills: maps standard labels to canonical skills and transclusions
   ---
-  duration_ms: 2.675143
+  duration_ms: 2.784116
   type: 'test'
   ...
 # Subtest: resolveIssueSkills: handles theme prefix variants and explicit issue skills
 ok 226 - resolveIssueSkills: handles theme prefix variants and explicit issue skills
   ---
-  duration_ms: 1.42785
+  duration_ms: 0.437433
   type: 'test'
   ...
 # Subtest: resolveIssueSkills: deduplicates across multiple issues and handles edge cases safely
 ok 227 - resolveIssueSkills: deduplicates across multiple issues and handles edge cases safely
   ---
-  duration_ms: 0.386062
+  duration_ms: 0.321119
   type: 'test'
   ...
 # Subtest: buildLaunchSessionPayload: natively declares skill IDs at payload top-level and in metadata
 ok 228 - buildLaunchSessionPayload: natively declares skill IDs at payload top-level and in metadata
   ---
-  duration_ms: 0.504093
+  duration_ms: 3.63286
   type: 'test'
   ...
 # Subtest: buildConsolidatedIssuePrompt: includes recommended skills alongside transclusion fallback
 ok 229 - buildConsolidatedIssuePrompt: includes recommended skills alongside transclusion fallback
   ---
-  duration_ms: 0.621826
+  duration_ms: 0.687136
   type: 'test'
   ...
 # Subtest: panel/main.ts: all session launch surfaces declare native skills and retain transclusions
 ok 230 - panel/main.ts: all session launch surfaces declare native skills and retain transclusions
   ---
-  duration_ms: 4.232416
+  duration_ms: 12.120922
   type: 'test'
   ...
 # Subtest: normalizeGithubIssues preserves updated_at and never emits undefined
 ok 231 - normalizeGithubIssues preserves updated_at and never emits undefined
   ---
-  duration_ms: 15.840466
+  duration_ms: 4.733983
   type: 'test'
   ...
 # Subtest: resolveOptimisticSubtaskUpdate re-indexes tasks on fresh body and toggles state safely
 ok 232 - resolveOptimisticSubtaskUpdate re-indexes tasks on fresh body and toggles state safely
   ---
-  duration_ms: 4.662761
+  duration_ms: 1.077399
   type: 'test'
   ...
 # Subtest: resolveOptimisticQuestionAnswer re-indexes questions on fresh body and inserts answer safely
 ok 233 - resolveOptimisticQuestionAnswer re-indexes questions on fresh body and inserts answer safely
   ---
-  duration_ms: 5.042066
+  duration_ms: 1.401373
   type: 'test'
   ...
 # Subtest: panel/main.ts implements optimistic locking check on updated_at and reloads issue body
 ok 234 - panel/main.ts implements optimistic locking check on updated_at and reloads issue body
   ---
-  duration_ms: 0.449672
+  duration_ms: 0.277327
   type: 'test'
   ...
 # Subtest: longest-prefix match prioritizes child project over root /workspace
 ok 235 - longest-prefix match prioritizes child project over root /workspace
   ---
-  duration_ms: 2.122534
+  duration_ms: 1.975284
   type: 'test'
   ...
 # Subtest: issue cache returns cached issues within TTL and expires after TTL
 ok 236 - issue cache returns cached issues within TTL and expires after TTL
   ---
-  duration_ms: 3.097759
+  duration_ms: 1.089194
   type: 'test'
   ...
 # Subtest: extractWorktreeName safely handles string, object, null, and undefined worktrees
 ok 237 - extractWorktreeName safely handles string, object, null, and undefined worktrees
   ---
-  duration_ms: 0.300386
+  duration_ms: 0.261093
   type: 'test'
   ...
 # Subtest: session worktree matching handles object worktree without throwing s.worktree.includes error
 ok 238 - session worktree matching handles object worktree without throwing s.worktree.includes error
   ---
-  duration_ms: 0.3201
+  duration_ms: 0.349056
   type: 'test'
   ...
 # Subtest: buildSessionIndex maps sessions to issue numbers with O(1) lookups and priority handling
 ok 239 - buildSessionIndex maps sessions to issue numbers with O(1) lookups and priority handling
   ---
-  duration_ms: 1.324431
+  duration_ms: 1.283225
   type: 'test'
   ...
 # Subtest: scopeDoneIssues caps initial completed issues when large and reveals all on opt-in
 ok 240 - scopeDoneIssues caps initial completed issues when large and reveals all on opt-in
   ---
-  duration_ms: 1.382351
+  duration_ms: 2.610269
   type: 'test'
   ...
 # Subtest: normalizeGithubIssues filters out pull requests and extracts subtasks and questions
 ok 241 - normalizeGithubIssues filters out pull requests and extracts subtasks and questions
   ---
-  duration_ms: 2.29841
+  duration_ms: 3.157474
   type: 'test'
   ...
 # Subtest: mergeIssuePages merges multi-page issue batches replacing stale duplicates
 ok 242 - mergeIssuePages merges multi-page issue batches replacing stale duplicates
   ---
-  duration_ms: 2.67399
+  duration_ms: 0.601005
   type: 'test'
   ...
 # Subtest: buildIssueAttachPayload constructs valid OpenChamber attach payload
 ok 243 - buildIssueAttachPayload constructs valid OpenChamber attach payload
   ---
-  duration_ms: 1.253371
+  duration_ms: 1.34373
   type: 'test'
   ...
 # Subtest: buildMultiIssueAttachPayload consolidates multiple issues into a single rich chip payload
 ok 244 - buildMultiIssueAttachPayload consolidates multiple issues into a single rich chip payload
   ---
-  duration_ms: 2.093408
+  duration_ms: 1.594797
   type: 'test'
   ...
 # Subtest: isIssueClosed identifies closed issues via state, state_reason, and labels
 ok 245 - isIssueClosed identifies closed issues via state, state_reason, and labels
   ---
-  duration_ms: 1.071739
+  duration_ms: 0.541695
   type: 'test'
   ...
 # Subtest: resolveIssueColumn correctly resolves status and transitions idle sessions to needs-human
 ok 246 - resolveIssueColumn correctly resolves status and transitions idle sessions to needs-human
   ---
-  duration_ms: 1.098003
+  duration_ms: 0.463524
   type: 'test'
   ...
 # Subtest: resolveDefaultTab prioritizes needs-human > in-review > in-progress > todo > backlog > all
 ok 247 - resolveDefaultTab prioritizes needs-human > in-review > in-progress > todo > backlog > all
   ---
-  duration_ms: 0.482916
+  duration_ms: 0.57604
   type: 'test'
   ...
 # Subtest: getNextColumn advances columns in proper pipeline sequence
 ok 248 - getNextColumn advances columns in proper pipeline sequence
   ---
-  duration_ms: 0.455737
+  duration_ms: 0.189844
   type: 'test'
   ...
 # Subtest: getNextColumnAction provides correct labels, icons, and targets
 ok 249 - getNextColumnAction provides correct labels, icons, and targets
   ---
-  duration_ms: 0.375473
+  duration_ms: 0.377409
   type: 'test'
   ...
 # Subtest: isIssueArchived accurately detects archived labels
 ok 250 - isIssueArchived accurately detects archived labels
   ---
-  duration_ms: 0.200301
+  duration_ms: 0.272061
   type: 'test'
   ...
 # Subtest: archive and unarchive preserves and restores the original category
 ok 251 - archive and unarchive preserves and restores the original category
   ---
-  duration_ms: 0.419365
+  duration_ms: 0.412405
   type: 'test'
   ...
 # Subtest: sorting issues by newest, oldest, priority, and complexity
 ok 252 - sorting issues by newest, oldest, priority, and complexity
   ---
-  duration_ms: 16.886126
+  duration_ms: 13.741177
   type: 'test'
   ...
 # Subtest: filtering issues by priority, tag, and query
 ok 253 - filtering issues by priority, tag, and query
   ---
-  duration_ms: 0.552782
+  duration_ms: 0.540508
   type: 'test'
   ...
 # Subtest: buildWorktreeBranchName generates tag-based and issue-based branch slugs
 ok 254 - buildWorktreeBranchName generates tag-based and issue-based branch slugs
   ---
-  duration_ms: 0.643025
+  duration_ms: 0.596394
   type: 'test'
   ...
 # Subtest: buildLaunchSessionPayload defaults to worktree: false (workspace-first)
 ok 255 - buildLaunchSessionPayload defaults to worktree: false (workspace-first)
   ---
-  duration_ms: 0.538793
+  duration_ms: 0.529035
   type: 'test'
   ...
 # Subtest: buildConsolidatedIssuePrompt consolidates multiple issues into structured brief
 ok 256 - buildConsolidatedIssuePrompt consolidates multiple issues into structured brief
   ---
-  duration_ms: 0.737434
+  duration_ms: 0.657272
   type: 'test'
   ...
 # Subtest: verify Task Board live sync flow: detection, checklist update, and session attachment
 ok 257 - verify Task Board live sync flow: detection, checklist update, and session attachment
   ---
-  duration_ms: 0.439492
+  duration_ms: 0.416055
   type: 'test'
   ...
 # Subtest: validateBranchSlug and validateSessionTitle enforce standardized triage conventions
 ok 258 - validateBranchSlug and validateSessionTitle enforce standardized triage conventions
   ---
-  duration_ms: 0.773525
+  duration_ms: 0.412117
   type: 'test'
   ...
 # Subtest: resolves git repo automatically for git-backed project
 ok 259 - resolves git repo automatically for git-backed project
   ---
-  duration_ms: 1.546736
+  duration_ms: 1.390749
   type: 'test'
   ...
 # Subtest: resolves stored linked repo for project without native git repo (e.g. opencode-config)
 ok 260 - resolves stored linked repo for project without native git repo (e.g. opencode-config)
   ---
-  duration_ms: 0.299148
+  duration_ms: 0.273229
   type: 'test'
   ...
 # Subtest: deduplicates project list by id and normalizes directory
 ok 261 - deduplicates project list by id and normalizes directory
   ---
-  duration_ms: 0.253822
+  duration_ms: 0.242083
   type: 'test'
   ...
 # [TaskBoard] Directory changed: /workspace/fallback-dir
 # Subtest: parseGitHubRemoteUrl parses various GitHub remote patterns
 ok 262 - parseGitHubRemoteUrl parses various GitHub remote patterns
   ---
-  duration_ms: 4.20296
+  duration_ms: 3.92112
   type: 'test'
   ...
 # Subtest: parseGitRemoteFromConfig extracts remote url from git config
 ok 263 - parseGitRemoteFromConfig extracts remote url from git config
   ---
-  duration_ms: 0.460385
+  duration_ms: 0.649485
   type: 'test'
   ...
 # Subtest: sanitizeHexColor enforces valid hex colors and strips injection
 ok 264 - sanitizeHexColor enforces valid hex colors and strips injection
   ---
-  duration_ms: 0.584722
+  duration_ms: 0.563229
   type: 'test'
   ...
 # Subtest: verifying gitdir parsing with /.git/worktrees/ resolves parent remote
 ok 265 - verifying gitdir parsing with /.git/worktrees/ resolves parent remote
   ---
-  duration_ms: 1.646344
+  duration_ms: 1.040941
   type: 'test'
   ...
 # Subtest: manifest validates declared capabilities under openchamber.contributes
 ok 266 - manifest validates declared capabilities under openchamber.contributes
   ---
-  duration_ms: 247.114865
+  duration_ms: 308.213847
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -2314,7 +2320,7 @@ ok 266 - manifest validates declared capabilities under openchamber.contributes
 # Subtest: fallback repository resolution discovers repo from currentDirectory when workspace projects list fails or is empty
 ok 267 - fallback repository resolution discovers repo from currentDirectory when workspace projects list fails or is empty
   ---
-  duration_ms: 455.589505
+  duration_ms: 427.142139
   type: 'test'
   ...
 # [TaskBoard] Cannot update issue \#99: repository unknown
@@ -2325,13 +2331,13 @@ ok 267 - fallback repository resolution discovers repo from currentDirectory whe
 # Subtest: D-01 (REGRESSION): normalizeGithubIssues must never emit undefined property values and must pass SDK storage validation
 ok 268 - D-01 (REGRESSION): normalizeGithubIssues must never emit undefined property values and must pass SDK storage validation
   ---
-  duration_ms: 15.85448
+  duration_ms: 5.315097
   type: 'test'
   ...
 # Subtest: D-02 (REGRESSION): repoForIssue in All Projects mode returns empty string for unknown repos and blocks PATCH
 ok 269 - D-02 (REGRESSION): repoForIssue in All Projects mode returns empty string for unknown repos and blocks PATCH
   ---
-  duration_ms: 378.943381
+  duration_ms: 201.536002
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -2369,67 +2375,67 @@ ok 269 - D-02 (REGRESSION): repoForIssue in All Projects mode returns empty stri
 # Subtest: D-03 (REGRESSION): fetchIssues validates and streams page 2 when page 1 returns 304 and in-memory issues exist
 ok 270 - D-03 (REGRESSION): fetchIssues validates and streams page 2 when page 1 returns 304 and in-memory issues exist
   ---
-  duration_ms: 724.287262
+  duration_ms: 764.492423
   type: 'test'
   ...
 # Subtest: D-04 (REGRESSION): syncIncrementalRepoIssues flags truncated=true when hitting 10-page cap and preserves watermark
 ok 271 - D-04 (REGRESSION): syncIncrementalRepoIssues flags truncated=true when hitting 10-page cap and preserves watermark
   ---
-  duration_ms: 223.366204
+  duration_ms: 129.274728
   type: 'test'
   ...
-# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
+# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Active session: "Session 1" (ses_1)
 # [TaskBoard] Switched repository to org/default-repo [active session item: Session 1]
 # Subtest: Icons: All Tasks view-mode button has distinct checklist SVG icon compared to List
 ok 272 - Icons: All Tasks view-mode button has distinct checklist SVG icon compared to List
   ---
-  duration_ms: 316.643359
+  duration_ms: 229.30419
   type: 'test'
   ...
 # Subtest: Icons: sidebar layout toggle icon updates with distinct checklist SVG in all-tasks mode
 ok 273 - Icons: sidebar layout toggle icon updates with distinct checklist SVG in all-tasks mode
   ---
-  duration_ms: 230.260731
+  duration_ms: 129.119406
   type: 'test'
   ...
 # Subtest: Friendly Titles: resolveSimplifiedViewTitle correctly resolves friendly title and suppresses tech title to subtitle
 ok 274 - Friendly Titles: resolveSimplifiedViewTitle correctly resolves friendly title and suppresses tech title to subtitle
   ---
-  duration_ms: 0.985296
+  duration_ms: 0.893041
   type: 'test'
   ...
 # Subtest: Friendly Titles: resolveSimplifiedViewTitle falls back to issue title when body lacks Friendly Title (D14)
 ok 275 - Friendly Titles: resolveSimplifiedViewTitle falls back to issue title when body lacks Friendly Title (D14)
   ---
-  duration_ms: 0.401111
+  duration_ms: 0.374741
   type: 'test'
   ...
 # Subtest: Friendly Titles: resolveSimplifiedViewTitle handles empty titles and missing bodies safely (D14)
 ok 276 - Friendly Titles: resolveSimplifiedViewTitle handles empty titles and missing bodies safely (D14)
   ---
-  duration_ms: 0.235227
+  duration_ms: 0.224922
   type: 'test'
   ...
 # Subtest: Queues: Human Tasks and Questions parse real populated issue bodies
 ok 277 - Queues: Human Tasks and Questions parse real populated issue bodies
   ---
-  duration_ms: 7.877589
+  duration_ms: 5.036603
   type: 'test'
   ...
 # Subtest: Cross-Repo Isolation: same issue number in two repositories never binds cross-repo sessions
 ok 278 - Cross-Repo Isolation: same issue number in two repositories never binds cross-repo sessions
   ---
-  duration_ms: 9.041434
+  duration_ms: 1.303152
   type: 'test'
   ...
 # Subtest: Cross-Repo Isolation: sessionRepoKeys handles V2 data.repo projection cleanly
 ok 279 - Cross-Repo Isolation: sessionRepoKeys handles V2 data.repo projection cleanly
   ---
-  duration_ms: 1.313667
+  duration_ms: 1.072192
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -2452,54 +2458,55 @@ ok 279 - Cross-Repo Isolation: sessionRepoKeys handles V2 data.repo projection c
 # [TaskBoard] Active conversation project: "Test Proj" (/workspace)
 # [TaskBoard] API GET /repos/custom/manual-repo/issues?state=all&per_page=100&page=1
 # [TaskBoard] Switched repository to org/default-repo [project-git: Test Proj]
+# [TaskBoard] API GET /repos/org/default-repo/issues?state=all&per_page=100&page=1
+# [TaskBoard] GitHub request failed: Host request result was empty.
 # [TaskBoard] Active session: "Session 1" (ses_1)
 # [TaskBoard] Switched repository to org/ses1-repo [active session item: Session 1]
 # Subtest: Decision D13: popover provides Current session anchor back to default
 ok 280 - Decision D13: popover provides Current session anchor back to default
   ---
-  duration_ms: 413.444274
+  duration_ms: 237.754361
   type: 'test'
   ...
-# [TaskBoard] API GET /repos/org/default-repo/issues?state=all&per_page=100&page=1
+# [TaskBoard] GitHub request failed: Host request result was empty.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
 # [TaskBoard] API GET /repos/org/ses1-repo/issues?state=all&per_page=100&page=1
-# [TaskBoard] GitHub request failed: Host request result was empty.
 # [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] GitHub request failed: Host request result was empty.
+# [TaskBoard] Full refresh incomplete for org/default-repo: Host request result was empty.
 # [TaskBoard] Switched repository to custom/override-repo [custom-input]
 # [TaskBoard] Active session: "Session 1 Renamed" (ses_1)
 # [TaskBoard] GitHub request failed: Host request result was empty.
 # [TaskBoard] API GET /repos/custom/override-repo/issues?state=all&per_page=100&page=1
 # [TaskBoard] GitHub request failed: Host request result was empty.
-# [TaskBoard] Full refresh incomplete for org/default-repo: Host request result was empty.
+# [TaskBoard] Full refresh incomplete for custom/override-repo: Host request result was empty.
 # [TaskBoard] Active session: "Session 2" (ses_2)
 # [TaskBoard] Switched repository to org/ses2-repo [active session item: Session 2]
-# [TaskBoard] GitHub request failed: Host request result was empty.
 # [TaskBoard] API GET /repos/org/ses2-repo/issues?state=all&per_page=100&page=1
 # [TaskBoard] GitHub request failed: Host request result was empty.
+# [TaskBoard] Full refresh incomplete for org/ses2-repo: Host request result was empty.
 # [TaskBoard] Active session: "Session 1" (ses_1)
 # [TaskBoard] Switched repository to org/default-repo [active session item: Session 1]
 # Subtest: Decision D13: active session change resets manual repository override automatically
 ok 281 - Decision D13: active session change resets manual repository override automatically
   ---
-  duration_ms: 364.07182
+  duration_ms: 177.460444
   type: 'test'
   ...
 # Subtest: Empty States: Empty, Inaccessible, and Failed repository states are visually distinguishable
 ok 282 - Empty States: Empty, Inaccessible, and Failed repository states are visually distinguishable
   ---
-  duration_ms: 236.176139
+  duration_ms: 73.902742
   type: 'test'
   ...
 # Subtest: Refresh Trigger: No setInterval / timer polling exists in panel codebase (D11 enforced)
 ok 283 - Refresh Trigger: No setInterval / timer polling exists in panel codebase (D11 enforced)
   ---
-  duration_ms: 133.323503
+  duration_ms: 64.441234
   type: 'test'
   ...
-# [TaskBoard] GitHub request failed: Host request result was empty.
-# [TaskBoard] Full refresh incomplete for org/ses2-repo: Host request result was empty.
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
@@ -2510,14 +2517,14 @@ ok 283 - Refresh Trigger: No setInterval / timer polling exists in panel codebas
 # [TaskBoard] Scanning OpenChamber projects for Git repositories...
 # [TaskBoard] Directory changed: /workspace
 # [TaskBoard] API GET /repos/org/default-repo/issues?state=all&per_page=100&page=1
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
+# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] Switched repository to custom-user/custom-repo [custom-input]
 # [TaskBoard] Active session: "Session 1 (renamed)" (ses_1)
-# [TaskBoard] Project scan error: Host did not return workspace data.
-# [TaskBoard] Project scan error: Host did not return workspace data.
-# [TaskBoard] Project scan error: Host did not return workspace data.
 # [TaskBoard] API GET /repos/custom-user/custom-repo/issues?state=all&per_page=100&page=1
-# [TaskBoard] GitHub request failed: Host request result was empty.
 # [TaskBoard] Directory changed: /workspace/other-dir
+# [TaskBoard] GitHub request failed: Host request result was empty.
 # [TaskBoard] GitHub request failed: Host request result was empty.
 # [TaskBoard] Full refresh incomplete for custom-user/custom-repo: Host request result was empty.
 # [TaskBoard] Switched repository to another-user/another-custom-repo [custom-input]
@@ -2531,7 +2538,7 @@ ok 283 - Refresh Trigger: No setInterval / timer polling exists in panel codebas
 # Subtest: F-01: Custom repo input marks manual override, survives background events, and resets on active session change
 ok 284 - F-01: Custom repo input marks manual override, survives background events, and resets on active session change
   ---
-  duration_ms: 182.728801
+  duration_ms: 169.222381
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -2543,754 +2550,738 @@ ok 284 - F-01: Custom repo input marks manual override, survives background even
 # [TaskBoard] Switched repository to org/session-2-repo [active session item: Session 2]
 # [TaskBoard] API GET /repos/org/session-2-repo/issues?state=all&per_page=100&page=1
 # [TaskBoard] GitHub request failed: Host request result was empty.
+# [TaskBoard] GitHub request failed: Host request result was empty.
+# [TaskBoard] Full refresh incomplete for org/session-2-repo: Host request result was empty.
 # Subtest: F-02: Switching sessions while in All Projects mode resolves the new session own repo from sess.items
 ok 285 - F-02: Switching sessions while in All Projects mode resolves the new session own repo from sess.items
   ---
-  duration_ms: 278.869949
+  duration_ms: 105.705258
   type: 'test'
   ...
-# [TaskBoard] GitHub request failed: Host request result was empty.
-# [TaskBoard] Full refresh incomplete for org/session-2-repo: Host request result was empty.
 # Subtest: F-01: mergeIssuePages preserves issues with the same issue number in different repos
 ok 286 - F-01: mergeIssuePages preserves issues with the same issue number in different repos
   ---
-  duration_ms: 2.567681
+  duration_ms: 3.432603
   type: 'test'
   ...
 # Subtest: F-04: syncIncrementalRepoIssues fetches all pages when changes exceed 100 items
 ok 287 - F-04: syncIncrementalRepoIssues fetches all pages when changes exceed 100 items
   ---
-  duration_ms: 9.197561
+  duration_ms: 7.342636
   type: 'test'
   ...
 # Subtest: F-12: normalizeGithubIssues preserves repo property
 ok 288 - F-12: normalizeGithubIssues preserves repo property
   ---
-  duration_ms: 1.531295
+  duration_ms: 2.059452
   type: 'test'
   ...
 # Subtest: F-13: buildMultiIssueAttachPayload preserves per-issue repos for cross-repo bundles
 ok 289 - F-13: buildMultiIssueAttachPayload preserves per-issue repos for cross-repo bundles
   ---
-  duration_ms: 0.90405
+  duration_ms: 2.283202
   type: 'test'
   ...
 # Subtest: F-14: updatePriorityLabels clears existing priority when given "none"
 ok 290 - F-14: updatePriorityLabels clears existing priority when given "none"
   ---
-  duration_ms: 0.471992
+  duration_ms: 0.633823
   type: 'test'
   ...
 # Subtest: F-02 & F-03: Page body cache returns cached items on 304 and avoids dropping later pages
 ok 291 - F-02 & F-03: Page body cache returns cached items on 304 and avoids dropping later pages
   ---
-  duration_ms: 0.648728
+  duration_ms: 0.764111
   type: 'test'
   ...
 # Subtest: F-05: Idle refresh in All Projects mode refreshes all configured repos in scope (D11 B1)
 ok 292 - F-05: Idle refresh in All Projects mode refreshes all configured repos in scope (D11 B1)
   ---
-  duration_ms: 7.95093
+  duration_ms: 1.438123
   type: 'test'
   ...
 # Subtest: F-06: Incremental sync in All Projects mode does not contaminate single-repo cache with other repos
 ok 293 - F-06: Incremental sync in All Projects mode does not contaminate single-repo cache with other repos
   ---
-  duration_ms: 0.360447
+  duration_ms: 0.307195
   type: 'test'
   ...
 # Subtest: F-07 & F-09: repoIncrementalEtagCache is keyed strictly by clean repo name without timestamps
 ok 294 - F-07 & F-09: repoIncrementalEtagCache is keyed strictly by clean repo name without timestamps
   ---
-  duration_ms: 6.835263
+  duration_ms: 0.532031
   type: 'test'
   ...
 # Subtest: F-08: Stale comment response from previous issue is discarded when active issue changes
 ok 295 - F-08: Stale comment response from previous issue is discarded when active issue changes
   ---
-  duration_ms: 41.153231
+  duration_ms: 42.468552
   type: 'test'
   ...
 # Subtest: F-10: commentsCache is cleared when refreshTasks or setRepository is triggered
 ok 296 - F-10: commentsCache is cleared when refreshTasks or setRepository is triggered
   ---
-  duration_ms: 0.595891
+  duration_ms: 1.096781
   type: 'test'
   ...
 # Subtest: F-11: githubRequest does not fallback to proxy for non-GET mutations on error
 ok 297 - F-11: githubRequest does not fallback to proxy for non-GET mutations on error
   ---
-  duration_ms: 1.045123
+  duration_ms: 2.411368
   type: 'test'
   ...
 # Subtest: longest-prefix match prioritizes child project over root /workspace
 ok 298 - longest-prefix match prioritizes child project over root /workspace
   ---
-  duration_ms: 8.603454
+  duration_ms: 2.168182
   type: 'test'
   ...
 # Subtest: issue cache returns cached issues within TTL and expires after TTL
 ok 299 - issue cache returns cached issues within TTL and expires after TTL
   ---
-  duration_ms: 12.197147
+  duration_ms: 1.110654
   type: 'test'
   ...
 # Subtest: extractWorktreeName safely handles string, object, null, and undefined worktrees
 ok 300 - extractWorktreeName safely handles string, object, null, and undefined worktrees
   ---
-  duration_ms: 0.359927
+  duration_ms: 0.266303
   type: 'test'
   ...
 # Subtest: session worktree matching handles object worktree without throwing s.worktree.includes error
 ok 301 - session worktree matching handles object worktree without throwing s.worktree.includes error
   ---
-  duration_ms: 0.333256
+  duration_ms: 2.479251
   type: 'test'
   ...
 # Subtest: buildSessionIndex maps sessions to issue numbers with O(1) lookups and priority handling
 ok 302 - buildSessionIndex maps sessions to issue numbers with O(1) lookups and priority handling
   ---
-  duration_ms: 7.012543
+  duration_ms: 1.357772
   type: 'test'
   ...
 # Subtest: scopeDoneIssues caps initial completed issues when large and reveals all on opt-in
 ok 303 - scopeDoneIssues caps initial completed issues when large and reveals all on opt-in
   ---
-  duration_ms: 0.476551
+  duration_ms: 0.444743
   type: 'test'
   ...
 # Subtest: normalizeGithubIssues filters out pull requests and extracts subtasks and questions
 ok 304 - normalizeGithubIssues filters out pull requests and extracts subtasks and questions
   ---
-  duration_ms: 8.566199
+  duration_ms: 2.3138
   type: 'test'
   ...
 # Subtest: mergeIssuePages merges multi-page issue batches replacing stale duplicates
 ok 305 - mergeIssuePages merges multi-page issue batches replacing stale duplicates
   ---
-  duration_ms: 0.72429
+  duration_ms: 0.553566
   type: 'test'
   ...
 # Subtest: buildIssueAttachPayload constructs valid OpenChamber attach payload
 ok 306 - buildIssueAttachPayload constructs valid OpenChamber attach payload
   ---
-  duration_ms: 1.078399
+  duration_ms: 1.017817
   type: 'test'
   ...
 # Subtest: buildMultiIssueAttachPayload consolidates multiple issues into a single rich chip payload
 ok 307 - buildMultiIssueAttachPayload consolidates multiple issues into a single rich chip payload
   ---
-  duration_ms: 16.208426
+  duration_ms: 4.019114
   type: 'test'
   ...
 # Subtest: isIssueClosed identifies closed issues via state, state_reason, and labels
 ok 308 - isIssueClosed identifies closed issues via state, state_reason, and labels
   ---
-  duration_ms: 0.724736
+  duration_ms: 0.406172
   type: 'test'
   ...
 # Subtest: resolveIssueColumn correctly resolves status and transitions idle sessions to needs-human
 ok 309 - resolveIssueColumn correctly resolves status and transitions idle sessions to needs-human
   ---
-  duration_ms: 0.634984
+  duration_ms: 0.392676
   type: 'test'
   ...
 # Subtest: resolveDefaultTab prioritizes needs-human > in-review > in-progress > todo > backlog > all
 ok 310 - resolveDefaultTab prioritizes needs-human > in-review > in-progress > todo > backlog > all
   ---
-  duration_ms: 5.413076
+  duration_ms: 0.550504
   type: 'test'
   ...
 # Subtest: getNextColumn advances columns in proper pipeline sequence
 ok 311 - getNextColumn advances columns in proper pipeline sequence
   ---
-  duration_ms: 0.34977
+  duration_ms: 0.150333
   type: 'test'
   ...
 # Subtest: getNextColumnAction provides correct labels, icons, and targets
 ok 312 - getNextColumnAction provides correct labels, icons, and targets
   ---
-  duration_ms: 0.543021
+  duration_ms: 0.543923
   type: 'test'
   ...
 # Subtest: isIssueArchived accurately detects archived labels
 ok 313 - isIssueArchived accurately detects archived labels
   ---
-  duration_ms: 0.32629
+  duration_ms: 0.221914
   type: 'test'
   ...
 # Subtest: archive and unarchive preserves and restores the original category
 ok 314 - archive and unarchive preserves and restores the original category
   ---
-  duration_ms: 0.617309
+  duration_ms: 0.53791
   type: 'test'
   ...
 # Subtest: sorting issues by newest, oldest, priority, and complexity
 ok 315 - sorting issues by newest, oldest, priority, and complexity
   ---
-  duration_ms: 34.759584
+  duration_ms: 13.403087
   type: 'test'
   ...
 # Subtest: filtering issues by priority, tag, and query
 ok 316 - filtering issues by priority, tag, and query
   ---
-  duration_ms: 0.547469
+  duration_ms: 0.517362
   type: 'test'
   ...
 # Subtest: buildWorktreeBranchName generates tag-based and issue-based branch slugs
 ok 317 - buildWorktreeBranchName generates tag-based and issue-based branch slugs
   ---
-  duration_ms: 0.678004
+  duration_ms: 0.683971
   type: 'test'
   ...
 # Subtest: buildLaunchSessionPayload defaults to worktree: false (workspace-first)
 ok 318 - buildLaunchSessionPayload defaults to worktree: false (workspace-first)
   ---
-  duration_ms: 3.28666
+  duration_ms: 0.459465
   type: 'test'
   ...
 # Subtest: buildConsolidatedIssuePrompt consolidates multiple issues into structured brief
 ok 319 - buildConsolidatedIssuePrompt consolidates multiple issues into structured brief
   ---
-  duration_ms: 0.854371
+  duration_ms: 0.658419
   type: 'test'
   ...
 # Subtest: verify Task Board live sync flow: detection, checklist update, and session attachment
 ok 320 - verify Task Board live sync flow: detection, checklist update, and session attachment
   ---
-  duration_ms: 0.473469
+  duration_ms: 0.412334
   type: 'test'
   ...
 # Subtest: validateBranchSlug and validateSessionTitle enforce standardized triage conventions
 ok 321 - validateBranchSlug and validateSessionTitle enforce standardized triage conventions
   ---
-  duration_ms: 4.162413
+  duration_ms: 0.445056
   type: 'test'
   ...
 # Subtest: adversarial stress test: buildSessionIndex handles 1,000 sessions with O(1) performance
 ok 322 - adversarial stress test: buildSessionIndex handles 1,000 sessions with O(1) performance
   ---
-  duration_ms: 23.344863
+  duration_ms: 21.194328
   type: 'test'
   ...
 # Subtest: adversarial stress test: buildDependencyGraph scales to 500 interconnected issues
 ok 323 - adversarial stress test: buildDependencyGraph scales to 500 interconnected issues
   ---
-  duration_ms: 39.292938
+  duration_ms: 31.722375
   type: 'test'
   ...
 # Subtest: adversarial stress test: detectCycle handles deep chains without call stack overflow
 ok 324 - adversarial stress test: detectCycle handles deep chains without call stack overflow
   ---
-  duration_ms: 6.383712
+  duration_ms: 1.385469
   type: 'test'
   ...
 # Subtest: adversarial stress test: sorting and filtering 1,000 issues runs in <15ms
 ok 325 - adversarial stress test: sorting and filtering 1,000 issues runs in <15ms
   ---
-  duration_ms: 31.054996
+  duration_ms: 18.188949
   type: 'test'
   ...
 # Subtest: adversarial stress test: normalizeGithubIssues and mergeIssuePages handle 1,000 items safely
 ok 326 - adversarial stress test: normalizeGithubIssues and mergeIssuePages handle 1,000 items safely
   ---
-  duration_ms: 48.673155
+  duration_ms: 25.117126
   type: 'test'
   ...
 # Subtest: adversarial defense: null, undefined, malformed, and huge markdown data never crash parser
 ok 327 - adversarial defense: null, undefined, malformed, and huge markdown data never crash parser
   ---
-  duration_ms: 20.657102
+  duration_ms: 13.118253
   type: 'test'
   ...
 # Subtest: groupIssuesByProject: a) clusters issues by tagged project and by repository
 ok 328 - groupIssuesByProject: a) clusters issues by tagged project and by repository
   ---
-  duration_ms: 1.35039
+  duration_ms: 1.282458
   type: 'test'
   ...
 # Subtest: groupIssuesByProject: defends against empty, null, and malformed input
 ok 329 - groupIssuesByProject: defends against empty, null, and malformed input
   ---
-  duration_ms: 4.270408
+  duration_ms: 0.598369
   type: 'test'
   ...
 # Subtest: adversarial stress test: multi-repo aggregation and caching handles 1,000+ issues
 ok 330 - adversarial stress test: multi-repo aggregation and caching handles 1,000+ issues
   ---
-  duration_ms: 10.798154
+  duration_ms: 8.33096
   type: 'test'
   ...
 # Subtest: parseScratchPadThemes parses markdown headers into categorized themes and counts items
 ok 331 - parseScratchPadThemes parses markdown headers into categorized themes and counts items
   ---
-  duration_ms: 9.656784
+  duration_ms: 8.103002
   type: 'test'
   ...
 # Subtest: parseScratchPadThemes handles unstructured raw mind-dump into General Ideas
 ok 332 - parseScratchPadThemes handles unstructured raw mind-dump into General Ideas
   ---
-  duration_ms: 0.434045
+  duration_ms: 0.498988
   type: 'test'
   ...
 # Subtest: resolveAiAlignmentPrompt incorporates repo and scratchpad text with zero emojis
 ok 333 - resolveAiAlignmentPrompt incorporates repo and scratchpad text with zero emojis
   ---
-  duration_ms: 0.506813
+  duration_ms: 0.658753
   type: 'test'
   ...
 # Subtest: extractTaskThemes extracts and ranks existing themes with task frequencies
 ok 334 - extractTaskThemes extracts and ranks existing themes with task frequencies
   ---
-  duration_ms: 0.572409
+  duration_ms: 0.7897
   type: 'test'
   ...
 # Subtest: scratchpad debounce delay is 1000ms in panel/main.ts
 ok 335 - scratchpad debounce delay is 1000ms in panel/main.ts
   ---
-  duration_ms: 2.525988
+  duration_ms: 1.394598
   type: 'test'
   ...
 # Subtest: scratchpad debounce delays save by exactly 1000ms and collapses rapid keystrokes
 ok 336 - scratchpad debounce delays save by exactly 1000ms and collapses rapid keystrokes
   ---
-  duration_ms: 0.648562
+  duration_ms: 0.637341
   type: 'test'
   ...
 # Subtest: blur and modal close trigger flushScratchpadSave in panel/main.ts
 ok 337 - blur and modal close trigger flushScratchpadSave in panel/main.ts
   ---
-  duration_ms: 9.808693
+  duration_ms: 2.894805
   type: 'test'
   ...
 # Subtest: blur, visibilitychange, and modal close trigger immediate flush and clear pending timer
 ok 338 - blur, visibilitychange, and modal close trigger immediate flush and clear pending timer
   ---
-  duration_ms: 3.449251
+  duration_ms: 0.518742
   type: 'test'
   ...
 # Subtest: regression test: cross-repository typing race condition preserves old repo content and never overwrites new repo
 ok 339 - regression test: cross-repository typing race condition preserves old repo content and never overwrites new repo
   ---
-  duration_ms: 0.932717
+  duration_ms: 0.997363
   type: 'test'
   ...
 # Subtest: regression test: backup snapshot is created before overwriting non-empty scratchpad content
 ok 340 - regression test: backup snapshot is created before overwriting non-empty scratchpad content
   ---
-  duration_ms: 4.989091
+  duration_ms: 1.152093
   type: 'test'
   ...
 # Subtest: panel/main.ts tracks activeScratchpadRepo, flushes prior repo before setRepository and selectAllProjects, and writes backups
 ok 341 - panel/main.ts tracks activeScratchpadRepo, flushes prior repo before setRepository and selectAllProjects, and writes backups
   ---
-  duration_ms: 1.384542
+  duration_ms: 1.562002
   type: 'test'
   ...
 # Subtest: shipped main.js is readable: every core-owned declaration is present
 ok 342 - shipped main.js is readable: every core-owned declaration is present
   ---
-  duration_ms: 2.829014
+  duration_ms: 1.653683
   type: 'test'
   ...
 # Subtest: parseFriendlyTitle: shipped == core
 ok 343 - parseFriendlyTitle: shipped == core
   ---
-  duration_ms: 8.717729
+  duration_ms: 2.998987
   type: 'test'
   ...
 # Subtest: parseSubtasks / parseOpenQuestions: shipped == core
 ok 344 - parseSubtasks / parseOpenQuestions: shipped == core
   ---
-  duration_ms: 9.440861
+  duration_ms: 2.887087
   type: 'test'
   ...
 # Subtest: parseAcceptanceCriteria: shipped == core
 ok 345 - parseAcceptanceCriteria: shipped == core
   ---
-  duration_ms: 0.924646
+  duration_ms: 0.736242
   type: 'test'
   ...
 # Subtest: parseHumanTasks / collectHumanTodos: shipped == core
 ok 346 - parseHumanTasks / collectHumanTodos: shipped == core
   ---
-  duration_ms: 4.860117
+  duration_ms: 2.667352
   type: 'test'
   ...
 # Subtest: markdown mutators: shipped == core
 ok 347 - markdown mutators: shipped == core
   ---
-  duration_ms: 3.321874
+  duration_ms: 2.082275
   type: 'test'
   ...
 # Subtest: isVagueIdea and formatQuestionBadge: shipped == core
 ok 348 - isVagueIdea and formatQuestionBadge: shipped == core
   ---
-  duration_ms: 0.988909
+  duration_ms: 1.274
   type: 'test'
   ...
 # Subtest: theme helpers: shipped == core
 ok 349 - theme helpers: shipped == core
   ---
-  duration_ms: 6.355755
+  duration_ms: 1.934323
   type: 'test'
   ...
 # Subtest: prompt builders: shipped == core
 ok 350 - prompt builders: shipped == core
   ---
-  duration_ms: 0.682138
+  duration_ms: 0.68516
   type: 'test'
   ...
 # Subtest: attach payloads: shipped == core
 ok 351 - attach payloads: shipped == core
   ---
-  duration_ms: 9.987698
+  duration_ms: 5.746853
   type: 'test'
   ...
 # Subtest: dependency helpers: shipped == core
 ok 352 - dependency helpers: shipped == core
   ---
-  duration_ms: 10.39174
+  duration_ms: 5.504797
   type: 'test'
   ...
 # Subtest: session index: shipped == core
 ok 353 - session index: shipped == core
   ---
-  duration_ms: 1.127803
+  duration_ms: 2.056179
   type: 'test'
   ...
 # Subtest: scopeDoneIssues: shipped == core
 ok 354 - scopeDoneIssues: shipped == core
   ---
-  duration_ms: 0.29237
+  duration_ms: 0.412741
   type: 'test'
   ...
 # Subtest: normalizeGithubIssues and mergeIssuePages: shipped == core
 ok 355 - normalizeGithubIssues and mergeIssuePages: shipped == core
   ---
-  duration_ms: 2.470245
+  duration_ms: 1.275563
   type: 'test'
   ...
 # Subtest: extractQuestionOptions / extractQuestionContext: shipped == core
 ok 356 - extractQuestionOptions / extractQuestionContext: shipped == core
   ---
-  duration_ms: 1.344993
+  duration_ms: 1.329191
   type: 'test'
   ...
 # Subtest: draft review helpers: shipped == core
 ok 357 - draft review helpers: shipped == core
   ---
-  duration_ms: 3.738323
+  duration_ms: 1.426136
   type: 'test'
   ...
 # Subtest: optimistic mutators: shipped == core
 ok 358 - optimistic mutators: shipped == core
   ---
-  duration_ms: 0.740145
+  duration_ms: 0.819557
   type: 'test'
   ...
 # Subtest: resolveIssueSkills: shipped == core
 ok 359 - resolveIssueSkills: shipped == core
   ---
-  duration_ms: 3.999294
+  duration_ms: 1.367633
   type: 'test'
   ...
 # Subtest: Human Tasks: filterNeedsHumanIssues filters strictly needs-human status
 ok 360 - Human Tasks: filterNeedsHumanIssues filters strictly needs-human status
   ---
-  duration_ms: 5.230768
+  duration_ms: 6.796699
   type: 'test'
   ...
 # Subtest: Human Tasks: groupNeedsHumanIssuesByRepo clusters issues by repository
 ok 361 - Human Tasks: groupNeedsHumanIssuesByRepo clusters issues by repository
   ---
-  duration_ms: 0.440905
+  duration_ms: 0.379425
   type: 'test'
   ...
 # Subtest: Human Tasks: collectHumanTodos integrates properly with source badges
 ok 362 - Human Tasks: collectHumanTodos integrates properly with source badges
   ---
-  duration_ms: 4.762847
+  duration_ms: 3.328208
   type: 'test'
   ...
 # Subtest: Human Tasks: Checkbox write-back toggles markdown via updateSubtaskInMarkdown
 ok 363 - Human Tasks: Checkbox write-back toggles markdown via updateSubtaskInMarkdown
   ---
-  duration_ms: 3.233766
+  duration_ms: 0.629025
   type: 'test'
   ...
 # Subtest: Human Tasks: Checkbox write-back resolves duplicate text task by toggled state
 ok 364 - Human Tasks: Checkbox write-back resolves duplicate text task by toggled state
   ---
-  duration_ms: 0.516307
+  duration_ms: 0.373439
   type: 'test'
   ...
 # Subtest: All Tasks: groupAllTasksByStatus organizes all 8 columns in order
 ok 365 - All Tasks: groupAllTasksByStatus organizes all 8 columns in order
   ---
-  duration_ms: 1.588939
+  duration_ms: 0.278992
   type: 'test'
   ...
 # Subtest: All Tasks: shows friendly title and suppresses technical title to quiet subtitle
 ok 366 - All Tasks: shows friendly title and suppresses technical title to quiet subtitle
   ---
-  duration_ms: 3.710506
+  duration_ms: 3.402258
   type: 'test'
   ...
 # Subtest: Questions View: collectUnansweredQuestionsAcrossIssues extracts questions across statuses
 ok 367 - Questions View: collectUnansweredQuestionsAcrossIssues extracts questions across statuses
   ---
-  duration_ms: 1.54766
+  duration_ms: 0.618917
   type: 'test'
   ...
 # Subtest: Questions View: answering question inline marks box and preserves other content
 ok 368 - Questions View: answering question inline marks box and preserves other content
   ---
-  duration_ms: 1.456993
+  duration_ms: 1.180247
   type: 'test'
   ...
 # Subtest: Zero Emoji: Empty states and labels for new views contain zero emojis
 ok 369 - Zero Emoji: Empty states and labels for new views contain zero emojis
   ---
-  duration_ms: 4.079294
+  duration_ms: 2.567983
   type: 'test'
   ...
 # Subtest: panel/index.html defines containers for the three simplified views
 ok 370 - panel/index.html defines containers for the three simplified views
   ---
-  duration_ms: 0.644803
+  duration_ms: 0.509027
   type: 'test'
   ...
 # Subtest: panel/index.html defines view mode buttons in viewModeGroup
 ok 371 - panel/index.html defines view mode buttons in viewModeGroup
   ---
-  duration_ms: 0.526589
+  duration_ms: 0.40666
   type: 'test'
   ...
 # Subtest: panel/index.html defines layout display styles for the three new views
 ok 372 - panel/index.html defines layout display styles for the three new views
   ---
-  duration_ms: 0.234395
+  duration_ms: 0.124741
   type: 'test'
   ...
 # Subtest: panel/main.ts defines render functions for all three simplified views
 ok 373 - panel/main.ts defines render functions for all three simplified views
   ---
-  duration_ms: 5.970123
+  duration_ms: 0.886438
   type: 'test'
   ...
 # Subtest: panel/main.ts dispatches active layout to renderHumanTasksView, renderAllTasksView, renderQuestionsView
 ok 374 - panel/main.ts dispatches active layout to renderHumanTasksView, renderAllTasksView, renderQuestionsView
   ---
-  duration_ms: 0.537611
+  duration_ms: 0.42531
   type: 'test'
   ...
 # Subtest: All Tasks: groupAllTasksByStatus preserves all 8 column buckets and matches Kanban count parity
 ok 375 - All Tasks: groupAllTasksByStatus preserves all 8 column buckets and matches Kanban count parity
   ---
-  duration_ms: 0.413382
+  duration_ms: 0.223289
   type: 'test'
   ...
 # Subtest: Loading vs Empty State: Simplified views distinguish loading state from zero items
 ok 376 - Loading vs Empty State: Simplified views distinguish loading state from zero items
   ---
-  duration_ms: 2.741542
+  duration_ms: 0.591273
   type: 'test'
   ...
 # Subtest: View Switching: Inactive view containers are cleared on layout change to prevent stale DOM
 ok 377 - View Switching: Inactive view containers are cleared on layout change to prevent stale DOM
   ---
-  duration_ms: 0.470708
+  duration_ms: 0.327286
   type: 'test'
   ...
 # Subtest: Friendly Title: Fallback safety when title or friendly title is missing or empty
 ok 378 - Friendly Title: Fallback safety when title or friendly title is missing or empty
   ---
-  duration_ms: 0.270442
+  duration_ms: 0.153014
   type: 'test'
   ...
 # Subtest: Drawer reveal: Questions view targets existing drawerQuestionsContainer, not non-existent element
 ok 379 - Drawer reveal: Questions view targets existing drawerQuestionsContainer, not non-existent element
   ---
-  duration_ms: 0.491673
+  duration_ms: 0.405946
   type: 'test'
   ...
 # Subtest: Accessibility: ARIA landmarks and labels configured on simplified views and controls
 ok 380 - Accessibility: ARIA landmarks and labels configured on simplified views and controls
   ---
-  duration_ms: 0.68466
+  duration_ms: 0.523658
   type: 'test'
   ...
 # Subtest: parseAcceptanceCriteria extracts checkboxes under \#\#\# Acceptance Criteria: and stops at next heading
 ok 381 - parseAcceptanceCriteria extracts checkboxes under \#\#\# Acceptance Criteria: and stops at next heading
   ---
-  duration_ms: 5.752786
+  duration_ms: 2.184465
   type: 'test'
   ...
 # Subtest: parseAcceptanceCriteria handles aliases, whitespace, CRLF, BOM, and code fences
 ok 382 - parseAcceptanceCriteria handles aliases, whitespace, CRLF, BOM, and code fences
   ---
-  duration_ms: 3.464678
+  duration_ms: 1.301164
   type: 'test'
   ...
 # Subtest: parseSubtasks strictly scopes to \#\#\# Actionable Subtasks Checklist: and legacy aliases
 ok 383 - parseSubtasks strictly scopes to \#\#\# Actionable Subtasks Checklist: and legacy aliases
   ---
-  duration_ms: 5.588067
+  duration_ms: 1.144369
   type: 'test'
   ...
 # Subtest: zero cross-counting across all standard markdown checklist sections
 ok 384 - zero cross-counting across all standard markdown checklist sections
   ---
-  duration_ms: 5.237531
+  duration_ms: 2.062328
   type: 'test'
   ...
 # Subtest: legacy fallback: unsectioned raw markdown retains subtask checklist parsing
 ok 385 - legacy fallback: unsectioned raw markdown retains subtask checklist parsing
   ---
-  duration_ms: 0.39489
+  duration_ms: 0.295858
   type: 'test'
   ...
 # Subtest: fallback exclusion: body with Acceptance Criteria or Test Plan but NO subtasks section produces 0 subtasks
 ok 386 - fallback exclusion: body with Acceptance Criteria or Test Plan but NO subtasks section produces 0 subtasks
   ---
-  duration_ms: 0.351783
+  duration_ms: 1.998111
   type: 'test'
   ...
 # Subtest: lineIndex accuracy allows updateSubtaskInMarkdown to toggle target checkbox cleanly
 ok 387 - lineIndex accuracy allows updateSubtaskInMarkdown to toggle target checkbox cleanly
   ---
-  duration_ms: 5.728174
+  duration_ms: 0.613807
   type: 'test'
   ...
 # Subtest: normalizeGithubIssues attaches acceptanceCriteria and isolates subtasks
 ok 388 - normalizeGithubIssues attaches acceptanceCriteria and isolates subtasks
   ---
-  duration_ms: 4.597787
+  duration_ms: 1.710088
   type: 'test'
   ...
 # Subtest: resolveV2Metadata correctly parses explicit v2 labels for all 4 axes
 ok 389 - resolveV2Metadata correctly parses explicit v2 labels for all 4 axes
   ---
-  duration_ms: 2.720915
+  duration_ms: 1.129712
   type: 'test'
   ...
 # Subtest: resolveV2Metadata preserves orthogonality: phase is unaffected by attention state
 ok 390 - resolveV2Metadata preserves orthogonality: phase is unaffected by attention state
   ---
-  duration_ms: 1.664273
+  duration_ms: 1.476499
   type: 'test'
   ...
 # Subtest: resolveV2Metadata correctly projects v1 status labels when v2 metadata is absent
 ok 391 - resolveV2Metadata correctly projects v1 status labels when v2 metadata is absent
   ---
-  duration_ms: 3.916809
+  duration_ms: 0.44029
   type: 'test'
   ...
 # Subtest: resolveV2Metadata derives liveness and dependencyState from linked session and body dependencies
 ok 392 - resolveV2Metadata derives liveness and dependencyState from linked session and body dependencies
   ---
-  duration_ms: 0.682858
+  duration_ms: 0.584599
   type: 'test'
   ...
 # Subtest: resolveIssueColumn preserves exact v1 behavior and projects v2 issues into Kanban columns
 ok 393 - resolveIssueColumn preserves exact v1 behavior and projects v2 issues into Kanban columns
   ---
-  duration_ms: 0.592868
+  duration_ms: 0.63317
   type: 'test'
   ...
 # Subtest: normalizeGithubIssues attaches v2Metadata with zero undefined fields
 ok 394 - normalizeGithubIssues attaches v2Metadata with zero undefined fields
   ---
-  duration_ms: 0.400669
+  duration_ms: 0.396763
   type: 'test'
   ...
 # Subtest: groupIssuesByAttention partitions issues into needs-decision, needs-permission, needs-review, and none
 ok 395 - groupIssuesByAttention partitions issues into needs-decision, needs-permission, needs-review, and none
   ---
-  duration_ms: 3.621068
+  duration_ms: 0.344817
   type: 'test'
   ...
 # Subtest: groupIssuesByAttention preserves orthogonality across diverse workflow phases
 ok 396 - groupIssuesByAttention preserves orthogonality across diverse workflow phases
   ---
-  duration_ms: 1.776035
+  duration_ms: 0.708329
   type: 'test'
   ...
 # Subtest: groupIssuesByAttention derives attention from linked sessions via sessionIndex
 ok 397 - groupIssuesByAttention derives attention from linked sessions via sessionIndex
   ---
-  duration_ms: 0.583605
+  duration_ms: 0.522407
   type: 'test'
   ...
 # Subtest: filterIssuesByAttention filters issues by specified attention state
 ok 398 - filterIssuesByAttention filters issues by specified attention state
   ---
-  duration_ms: 1.172462
+  duration_ms: 0.30644
   type: 'test'
   ...
 # Subtest: groupIssuesByAttention and filterIssuesByAttention defend against empty, null, undefined, and malformed inputs
 ok 399 - groupIssuesByAttention and filterIssuesByAttention defend against empty, null, undefined, and malformed inputs
   ---
-  duration_ms: 0.989577
+  duration_ms: 0.319595
   type: 'test'
   ...
 # Subtest: L3 integration: parse real Issue \#26 body with zero cross-counting and accurate 4-axis projection
 ok 400 - L3 integration: parse real Issue \#26 body with zero cross-counting and accurate 4-axis projection
   ---
-  duration_ms: 21.155719
+  duration_ms: 5.896587
   type: 'test'
   ...
 # Subtest: hostile fuzz: checkboxes inside fenced code blocks are strictly excluded across all checklist parsers
 ok 401 - hostile fuzz: checkboxes inside fenced code blocks are strictly excluded across all checklist parsers
   ---
-  duration_ms: 0.752704
+  duration_ms: 0.739146
   type: 'test'
   ...
 # Subtest: hostile fuzz: heading variations (missing colons, extra whitespace, case-insensitivity, levels) parse robustly
 ok 402 - hostile fuzz: heading variations (missing colons, extra whitespace, case-insensitivity, levels) parse robustly
   ---
-  duration_ms: 5.450399
+  duration_ms: 0.357676
   type: 'test'
   ...
 # Subtest: hostile fuzz: malformed, empty, and adversarial inputs never crash parser functions
 ok 403 - hostile fuzz: malformed, empty, and adversarial inputs never crash parser functions
   ---
-  duration_ms: 1.461273
+  duration_ms: 1.26874
   type: 'test'
   ...
 # Subtest: hostile fuzz: large payload performance parses 5,000 checkboxes across sections in <50ms without catastrophic backtracking
-not ok 404 - hostile fuzz: large payload performance parses 5,000 checkboxes across sections in <50ms without catastrophic backtracking
+ok 404 - hostile fuzz: large payload performance parses 5,000 checkboxes across sections in <50ms without catastrophic backtracking
   ---
-  duration_ms: 112.060966
+  duration_ms: 86.683466
   type: 'test'
-  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-30-work-type/test/stage1-dual-mode-and-scoping.test.js:1219:1'
-  failureType: 'testCodeFailure'
-  error: '5,000 checkbox payload parsing must execute in <50ms (actual: 52.15ms)'
-  code: 'ERR_ASSERTION'
-  name: 'AssertionError'
-  expected: true
-  actual: false
-  operator: '=='
-  stack: |-
-    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-30-work-type/test/stage1-dual-mode-and-scoping.test.js:1265:10)
-    Test.runInAsyncScope (node:async_hooks:214:14)
-    Test.run (node:internal/test_runner/test:1047:25)
-    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
-    Test.postRun (node:internal/test_runner/test:1173:19)
-    Test.run (node:internal/test_runner/test:1101:12)
-    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
   ...
 # Subtest: hostile fuzz: deterministic precedence for mixed and conflicting v2/v1 labels
 ok 405 - hostile fuzz: deterministic precedence for mixed and conflicting v2/v1 labels
   ---
-  duration_ms: 0.72077
+  duration_ms: 0.591491
   type: 'test'
   ...
 # Subtest: hostile fuzz: CRLF and mixed line endings preserve lineIndex and updateSubtaskInMarkdown cleanly
 ok 406 - hostile fuzz: CRLF and mixed line endings preserve lineIndex and updateSubtaskInMarkdown cleanly
   ---
-  duration_ms: 1.028077
+  duration_ms: 0.584635
   type: 'test'
   ...
 # [TaskBoard] Cannot update issue \#88: repository unknown
@@ -3299,151 +3290,151 @@ ok 406 - hostile fuzz: CRLF and mixed line endings preserve lineIndex and update
 # Subtest: DOM: panel/index.html defines Attention View toolbar button and badge
 ok 407 - DOM: panel/index.html defines Attention View toolbar button and badge
   ---
-  duration_ms: 3.605686
+  duration_ms: 5.351304
   type: 'test'
   ...
 # Subtest: DOM: panel/index.html defines layout menu items for Attention mode
 ok 408 - DOM: panel/index.html defines layout menu items for Attention mode
   ---
-  duration_ms: 0.456062
+  duration_ms: 2.716805
   type: 'test'
   ...
 # Subtest: DOM: panel/index.html defines Attention View main container
 ok 409 - DOM: panel/index.html defines Attention View main container
   ---
-  duration_ms: 0.5566
+  duration_ms: 0.379827
   type: 'test'
   ...
 # Subtest: CSS: panel/index.html defines required Attention View styles and tokens
 ok 410 - CSS: panel/index.html defines required Attention View styles and tokens
   ---
-  duration_ms: 0.455516
+  duration_ms: 0.446157
   type: 'test'
   ...
 # Subtest: Main.ts: activeLayout and userLayoutPreference include "attention"
 ok 411 - Main.ts: activeLayout and userLayoutPreference include "attention"
   ---
-  duration_ms: 0.796017
+  duration_ms: 0.815455
   type: 'test'
   ...
 # Subtest: Main.ts: defines renderAttentionView and wires it to layout switching
 ok 412 - Main.ts: defines renderAttentionView and wires it to layout switching
   ---
-  duration_ms: 0.708083
+  duration_ms: 3.880059
   type: 'test'
   ...
 # Subtest: groupIssuesByAttention correctly categorizes mock issues for Attention View
 ok 413 - groupIssuesByAttention correctly categorizes mock issues for Attention View
   ---
-  duration_ms: 3.250021
+  duration_ms: 6.094396
   type: 'test'
   ...
 # Subtest: Runtime: clicking btnViewAttention activates Attention layout
 ok 414 - Runtime: clicking btnViewAttention activates Attention layout
   ---
-  duration_ms: 303.983255
+  duration_ms: 174.30378
   type: 'test'
   ...
 # Subtest: Runtime: layout toggle cycle includes Attention mode (Graph -> Attention -> Human)
 ok 415 - Runtime: layout toggle cycle includes Attention mode (Graph -> Attention -> Human)
   ---
-  duration_ms: 293.602911
+  duration_ms: 200.584704
   type: 'test'
   ...
 # Subtest: Runtime: renderViews in Attention mode populates action queues and badge
 ok 416 - Runtime: renderViews in Attention mode populates action queues and badge
   ---
-  duration_ms: 149.446476
+  duration_ms: 82.079926
   type: 'test'
   ...
 # Subtest: Runtime: sub-filter pills filter queue visibility
 ok 417 - Runtime: sub-filter pills filter queue visibility
   ---
-  duration_ms: 189.212624
+  duration_ms: 113.320067
   type: 'test'
   ...
 # Subtest: Runtime: empty state banner renders when zero attention items exist
 ok 418 - Runtime: empty state banner renders when zero attention items exist
   ---
-  duration_ms: 202.942925
+  duration_ms: 112.550037
   type: 'test'
   ...
 # Subtest: Runtime: clicking attention card opens drawer for that issue
 ok 419 - Runtime: clicking attention card opens drawer for that issue
   ---
-  duration_ms: 207.518018
+  duration_ms: 88.104727
   type: 'test'
   ...
 # Subtest: DOM: panel/index.html defines Acceptance Criteria section and elements in drawer
 ok 420 - DOM: panel/index.html defines Acceptance Criteria section and elements in drawer
   ---
-  duration_ms: 1.922101
+  duration_ms: 0.657862
   type: 'test'
   ...
 # Subtest: CSS: panel/index.html defines alert-only badge styles and AC section styles
 ok 421 - CSS: panel/index.html defines alert-only badge styles and AC section styles
   ---
-  duration_ms: 0.573524
+  duration_ms: 0.478664
   type: 'test'
   ...
 # Subtest: Main.ts: declares formatAlertBadges and renderDrawerAcceptanceCriteria
 ok 422 - Main.ts: declares formatAlertBadges and renderDrawerAcceptanceCriteria
   ---
-  duration_ms: 1.282802
+  duration_ms: 0.922596
   type: 'test'
   ...
 # Subtest: Runtime: formatAlertBadges returns empty string for neutral states (alert-only minimalism)
 ok 423 - Runtime: formatAlertBadges returns empty string for neutral states (alert-only minimalism)
   ---
-  duration_ms: 114.654597
+  duration_ms: 93.066932
   type: 'test'
   ...
 # Subtest: Runtime: formatAlertBadges returns exact badge HTML chips for alert states
 ok 424 - Runtime: formatAlertBadges returns exact badge HTML chips for alert states
   ---
-  duration_ms: 117.578888
+  duration_ms: 74.955497
   type: 'test'
   ...
 # Subtest: Runtime: Card rendering injects alert badges and excludes them on neutral tasks
 ok 425 - Runtime: Card rendering injects alert badges and excludes them on neutral tasks
   ---
-  duration_ms: 74.562577
+  duration_ms: 112.198424
   type: 'test'
   ...
 # Subtest: Runtime: Drawer Acceptance Criteria hides section on issue without AC
 ok 426 - Runtime: Drawer Acceptance Criteria hides section on issue without AC
   ---
-  duration_ms: 78.526611
+  duration_ms: 91.702118
   type: 'test'
   ...
 # Subtest: Runtime: Drawer Acceptance Criteria renders checklist and count badge for issue with AC
 ok 427 - Runtime: Drawer Acceptance Criteria renders checklist and count badge for issue with AC
   ---
-  duration_ms: 61.118495
+  duration_ms: 92.483409
   type: 'test'
   ...
 # Subtest: Runtime: Toggling Acceptance Criteria checkbox updates markdown body with lineIndex precision
 ok 428 - Runtime: Toggling Acceptance Criteria checkbox updates markdown body with lineIndex precision
   ---
-  duration_ms: 96.956849
+  duration_ms: 154.023541
   type: 'test'
   ...
 # Subtest: CSS: panel/index.html attention repo badge defines ellipsis truncation styles (ADV-06)
 ok 429 - CSS: panel/index.html attention repo badge defines ellipsis truncation styles (ADV-06)
   ---
-  duration_ms: 0.500993
+  duration_ms: 0.615318
   type: 'test'
   ...
 # Subtest: Runtime: renderDrawerAcceptanceCriteria handles null and undefined safely without throwing (ADV-03)
 ok 430 - Runtime: renderDrawerAcceptanceCriteria handles null and undefined safely without throwing (ADV-03)
   ---
-  duration_ms: 179.887321
+  duration_ms: 126.365763
   type: 'test'
   ...
 # Subtest: Runtime: renderDrawerAcceptanceCriteria sets aria-label on checkbox inputs (ADV-05)
 ok 431 - Runtime: renderDrawerAcceptanceCriteria sets aria-label on checkbox inputs (ADV-05)
   ---
-  duration_ms: 173.281204
+  duration_ms: 51.098719
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -3513,7 +3504,7 @@ ok 431 - Runtime: renderDrawerAcceptanceCriteria sets aria-label on checkbox inp
 # Subtest: Runtime: AC toggle re-locates target item lineIndex when body lines shifted remotely (ADV-01)
 ok 432 - Runtime: AC toggle re-locates target item lineIndex when body lines shifted remotely (ADV-01)
   ---
-  duration_ms: 744.40636
+  duration_ms: 417.246795
   type: 'test'
   ...
 # [TaskBoard] Host ready. Surface: panel, Directory: /workspace
@@ -3529,133 +3520,133 @@ ok 432 - Runtime: AC toggle re-locates target item lineIndex when body lines shi
 # Subtest: Runtime: issue.v2Metadata is refreshed on updateIssueBody, reloadIssueBeforeMutation, and updateIssueStatus (ADV-02)
 ok 433 - Runtime: issue.v2Metadata is refreshed on updateIssueBody, reloadIssueBeforeMutation, and updateIssueStatus (ADV-02)
   ---
-  duration_ms: 189.756422
+  duration_ms: 162.551346
   type: 'test'
   ...
 # Subtest: Part 1: Manifest declares openchamber.contributes.service host service
 ok 434 - Part 1: Manifest declares openchamber.contributes.service host service
   ---
-  duration_ms: 2.666298
+  duration_ms: 2.14475
   type: 'test'
   ...
 # Subtest: Part 1: loadCoordinatorConfig respects defaults and overrides
 ok 435 - Part 1: loadCoordinatorConfig respects defaults and overrides
   ---
-  duration_ms: 0.521344
+  duration_ms: 0.47651
   type: 'test'
   ...
 # Subtest: Part 2: computeIssueSha computes deterministic SHA-256 digests
 ok 436 - Part 2: computeIssueSha computes deterministic SHA-256 digests
   ---
-  duration_ms: 4.092067
+  duration_ms: 0.898047
   type: 'test'
   ...
 # Subtest: Part 2: computeIssueSha handles empty, null, and undefined values deterministically
 ok 437 - Part 2: computeIssueSha handles empty, null, and undefined values deterministically
   ---
-  duration_ms: 0.255931
+  duration_ms: 0.219894
   type: 'test'
   ...
 # Subtest: Part 2: computeIssueSha normalizes CRLF and LF newlines to identical digests (ADV-2B-02)
 ok 438 - Part 2: computeIssueSha normalizes CRLF and LF newlines to identical digests (ADV-2B-02)
   ---
-  duration_ms: 4.03378
+  duration_ms: 0.707724
   type: 'test'
   ...
 # Subtest: Part 2: computeIssueSha normalizes bare CR and mixed line endings to LF digests (ADV-2C-04)
 ok 439 - Part 2: computeIssueSha normalizes bare CR and mixed line endings to LF digests (ADV-2C-04)
   ---
-  duration_ms: 0.267289
+  duration_ms: 0.247841
   type: 'test'
   ...
 # Subtest: Part 2: verifyIssueCas verifies baseline hash match and detects divergence
 ok 440 - Part 2: verifyIssueCas verifies baseline hash match and detects divergence
   ---
-  duration_ms: 2.284683
+  duration_ms: 0.362556
   type: 'test'
   ...
 # Subtest: Part 2: CasManager utility class matches functional exports
 ok 441 - Part 2: CasManager utility class matches functional exports
   ---
-  duration_ms: 0.326919
+  duration_ms: 0.264778
   type: 'test'
   ...
 # Subtest: Part 3: acquireLease claims available task and records metadata
 ok 442 - Part 3: acquireLease claims available task and records metadata
   ---
-  duration_ms: 58.052152
+  duration_ms: 55.666539
   type: 'test'
   ...
 # Subtest: Part 3: Mutual Exclusion: second worker fails to acquire leased task
 ok 443 - Part 3: Mutual Exclusion: second worker fails to acquire leased task
   ---
-  duration_ms: 22.404844
+  duration_ms: 19.816746
   type: 'test'
   ...
 # Subtest: Part 3: Same owner can re-acquire and update active lease
 ok 444 - Part 3: Same owner can re-acquire and update active lease
   ---
-  duration_ms: 29.484425
+  duration_ms: 39.776505
   type: 'test'
   ...
 # Subtest: Part 4: renewHeartbeat extends lease expiration for owner
 ok 445 - Part 4: renewHeartbeat extends lease expiration for owner
   ---
-  duration_ms: 50.699509
+  duration_ms: 34.701793
   type: 'test'
   ...
 # Subtest: Part 4: TTL expiration allows reclamation by a new worker
 ok 446 - Part 4: TTL expiration allows reclamation by a new worker
   ---
-  duration_ms: 134.401333
+  duration_ms: 126.030186
   type: 'test'
   ...
 # Subtest: Part 5: releaseLease allows immediate takeover by another worker
 ok 447 - Part 5: releaseLease allows immediate takeover by another worker
   ---
-  duration_ms: 48.662904
+  duration_ms: 14.009093
   type: 'test'
   ...
 # Subtest: Part 5: pruneExpired removes only expired leases and leaves active ones
 ok 448 - Part 5: pruneExpired removes only expired leases and leaves active ones
   ---
-  duration_ms: 100.074559
+  duration_ms: 90.279061
   type: 'test'
   ...
 # Subtest: Part 6: Leases are atomically serialized to disk with version: 1 schema
 ok 449 - Part 6: Leases are atomically serialized to disk with version: 1 schema
   ---
-  duration_ms: 33.94683
+  duration_ms: 6.786588
   type: 'test'
   ...
 # Subtest: Part 6: Independent LeaseStore instances synchronize through disk file
 ok 450 - Part 6: Independent LeaseStore instances synchronize through disk file
   ---
-  duration_ms: 50.842411
+  duration_ms: 32.854188
   type: 'test'
   ...
 # Subtest: Part 6: Store recovers gracefully from corrupted disk file
 ok 451 - Part 6: Store recovers gracefully from corrupted disk file
   ---
-  duration_ms: 15.868862
+  duration_ms: 6.848955
   type: 'test'
   ...
 # Subtest: Part 6: Store backs up corrupted disk file to .corrupted.<timestamp>.bak on init (ADV-2B-06)
 ok 452 - Part 6: Store backs up corrupted disk file to .corrupted.<timestamp>.bak on init (ADV-2B-06)
   ---
-  duration_ms: 18.165277
+  duration_ms: 4.676971
   type: 'test'
   ...
 # Subtest: Part 6: Store backs up valid-JSON-but-wrong-shape files before reset (ADV-2C-03)
 ok 453 - Part 6: Store backs up valid-JSON-but-wrong-shape files before reset (ADV-2C-03)
   ---
-  duration_ms: 50.706701
+  duration_ms: 15.980541
   type: 'test'
   ...
 # Subtest: Part 6: Store backs up prior file on read errors before resetting state (ADV-2C-03)
 ok 454 - Part 6: Store backs up prior file on read errors before resetting state (ADV-2C-03)
   ---
-  duration_ms: 9.836294
+  duration_ms: 6.647274
   type: 'test'
   ...
 # [Coordinator Service] ========================================
@@ -3663,13 +3654,13 @@ ok 454 - Part 6: Store backs up prior file on read errors before resetting state
 # [Coordinator Service] Host origin: http://127.0.0.1:3000
 # [Coordinator Service] Poll interval: 600000ms
 # [Coordinator Service] Lease TTL: 60000ms
-# [Coordinator Service] Storage dir: /tmp/antigravity/service-init-88E4zG
+# [Coordinator Service] Storage dir: /tmp/antigravity/service-init-cL7Ndy
 # [Coordinator Service] Dry run: true
 # [Coordinator Service] ========================================
 # Subtest: Part 6: Store never destroys prior state when the backup itself fails (ADV-2C-07)
 ok 455 - Part 6: Store never destroys prior state when the backup itself fails (ADV-2C-07)
   ---
-  duration_ms: 16.555848
+  duration_ms: 12.112453
   type: 'test'
   ...
 # [Coordinator Service] Stopping coordinator service...
@@ -3677,13 +3668,13 @@ ok 455 - Part 6: Store never destroys prior state when the backup itself fails (
 # Subtest: Part 6: CoordinatorService.start() initializes lease store and preserves corrupted state forensically (ADV-2C-03)
 ok 456 - Part 6: CoordinatorService.start() initializes lease store and preserves corrupted state forensically (ADV-2C-03)
   ---
-  duration_ms: 23.236023
+  duration_ms: 13.872701
   type: 'test'
   ...
 # Subtest: Part 6: Store treats array-valued leases as wrong shape and backs up before reset (ADV-2E-01)
 ok 457 - Part 6: Store treats array-valued leases as wrong shape and backs up before reset (ADV-2E-01)
   ---
-  duration_ms: 48.103788
+  duration_ms: 10.967155
   type: 'test'
   ...
 # [Coordinator Service] ========================================
@@ -3691,13 +3682,13 @@ ok 457 - Part 6: Store treats array-valued leases as wrong shape and backs up be
 # [Coordinator Service] Host origin: http://127.0.0.1:3000
 # [Coordinator Service] Poll interval: 600000ms
 # [Coordinator Service] Lease TTL: 600000ms
-# [Coordinator Service] Storage dir: /tmp/antigravity/service-release-taeQ8e
+# [Coordinator Service] Storage dir: /tmp/antigravity/service-release-xvIrhv
 # [Coordinator Service] Dry run: true
 # [Coordinator Service] ========================================
 # Subtest: Part 6: loadFromDisk rejects array-valued leases and never re-keys entries to "0" (ADV-2E-01)
 ok 458 - Part 6: loadFromDisk rejects array-valued leases and never re-keys entries to "0" (ADV-2E-01)
   ---
-  duration_ms: 43.553449
+  duration_ms: 25.544397
   type: 'test'
   ...
 # [Coordinator Service] Stopping coordinator service...
@@ -3708,13 +3699,13 @@ ok 458 - Part 6: loadFromDisk rejects array-valued leases and never re-keys entr
 # [Coordinator Service] Host origin: http://127.0.0.1:3000
 # [Coordinator Service] Poll interval: 600000ms
 # [Coordinator Service] Lease TTL: 600000ms
-# [Coordinator Service] Storage dir: /tmp/antigravity/service-release-owners-YwwXJf
+# [Coordinator Service] Storage dir: /tmp/antigravity/service-release-owners-kT5O42
 # [Coordinator Service] Dry run: true
 # [Coordinator Service] ========================================
 # Subtest: Part 6: CoordinatorService releases held leases on shutdown instead of waiting for TTL (PLAN-STAGE2B invariant 4)
 ok 459 - Part 6: CoordinatorService releases held leases on shutdown instead of waiting for TTL (PLAN-STAGE2B invariant 4)
   ---
-  duration_ms: 44.547248
+  duration_ms: 6.431889
   type: 'test'
   ...
 # [Coordinator Service] Stopping coordinator service...
@@ -3723,405 +3714,405 @@ ok 459 - Part 6: CoordinatorService releases held leases on shutdown instead of 
 # Subtest: Part 6: shutdown releases same-owner store leases but never another owner’s lease
 ok 460 - Part 6: shutdown releases same-owner store leases but never another owner’s lease
   ---
-  duration_ms: 29.709251
+  duration_ms: 6.700578
   type: 'test'
   ...
 # Subtest: Part 6: Rapid concurrent writes do not race or corrupt lease file
 ok 461 - Part 6: Rapid concurrent writes do not race or corrupt lease file
   ---
-  duration_ms: 187.778771
+  duration_ms: 55.695648
   type: 'test'
   ...
 # Subtest: Part 7: isTaskEligibleForPilot correctly identifies eligible tasks with explicit opt-in (ADV-2B-04)
 ok 462 - Part 7: isTaskEligibleForPilot correctly identifies eligible tasks with explicit opt-in (ADV-2B-04)
   ---
-  duration_ms: 0.487141
+  duration_ms: 1.680296
   type: 'test'
   ...
 # Subtest: Part 7: isTaskEligibleForPilot strictly rejects legacy and un-migrated tasks (ADV-2B-04)
 ok 463 - Part 7: isTaskEligibleForPilot strictly rejects legacy and un-migrated tasks (ADV-2B-04)
   ---
-  duration_ms: 0.153312
+  duration_ms: 0.650675
   type: 'test'
   ...
 # Subtest: Part 7: isTaskEligibleForPilot strictly rejects closed, terminal, non-pilot, or attention-demanding tasks
 ok 464 - Part 7: isTaskEligibleForPilot strictly rejects closed, terminal, non-pilot, or attention-demanding tasks
   ---
-  duration_ms: 0.32234
+  duration_ms: 1.003886
   type: 'test'
   ...
 # Subtest: Part 7: claimPilotTask verifies eligibility, computes baseline SHA, and acquires lease
 ok 465 - Part 7: claimPilotTask verifies eligibility, computes baseline SHA, and acquires lease
   ---
-  duration_ms: 18.778876
+  duration_ms: 11.487698
   type: 'test'
   ...
 # Subtest: Part 7: claimPilotTask rejects ineligible tasks and handles invalid input
 ok 466 - Part 7: claimPilotTask rejects ineligible tasks and handles invalid input
   ---
-  duration_ms: 21.974017
+  duration_ms: 2.469899
   type: 'test'
   ...
 # Subtest: Part 8: inspectSessionLiveness accurately classifies running sessions
 ok 467 - Part 8: inspectSessionLiveness accurately classifies running sessions
   ---
-  duration_ms: 0.692519
+  duration_ms: 0.669181
   type: 'test'
   ...
 # Subtest: Part 8: inspectSessionLiveness accurately classifies blocked-permission sessions
 ok 468 - Part 8: inspectSessionLiveness accurately classifies blocked-permission sessions
   ---
-  duration_ms: 0.232665
+  duration_ms: 0.208129
   type: 'test'
   ...
 # Subtest: Part 8: inspectSessionLiveness accurately classifies blocked-question sessions
 ok 469 - Part 8: inspectSessionLiveness accurately classifies blocked-question sessions
   ---
-  duration_ms: 0.146828
+  duration_ms: 0.130022
   type: 'test'
   ...
 # Subtest: Part 8: inspectSessionLiveness accurately classifies completed sessions
 ok 470 - Part 8: inspectSessionLiveness accurately classifies completed sessions
   ---
-  duration_ms: 0.403873
+  duration_ms: 0.359543
   type: 'test'
   ...
 # Subtest: Part 8: inspectSessionLiveness accurately classifies failed sessions
 ok 471 - Part 8: inspectSessionLiveness accurately classifies failed sessions
   ---
-  duration_ms: 0.285355
+  duration_ms: 0.28473
   type: 'test'
   ...
 # Subtest: Part 8: inspectSessionLiveness handles idle, empty, and null sessions gracefully
 ok 472 - Part 8: inspectSessionLiveness handles idle, empty, and null sessions gracefully
   ---
-  duration_ms: 0.283121
+  duration_ms: 0.247966
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState escalates blocked-permission session to needs-permission
 ok 473 - Part 9: reconcileTaskState escalates blocked-permission session to needs-permission
   ---
-  duration_ms: 12.892964
+  duration_ms: 0.351315
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState escalates blocked-question session to needs-decision
 ok 474 - Part 9: reconcileTaskState escalates blocked-question session to needs-decision
   ---
-  duration_ms: 0.193996
+  duration_ms: 2.266383
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState advances completed exploration session to planning with needs-review
 ok 475 - Part 9: reconcileTaskState advances completed exploration session to planning with needs-review
   ---
-  duration_ms: 0.119234
+  duration_ms: 0.183091
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState advances completed execution session to verification with needs-review
 ok 476 - Part 9: reconcileTaskState advances completed execution session to verification with needs-review
   ---
-  duration_ms: 0.098194
+  duration_ms: 0.127858
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState falls back to TaskLease phase when the issue carries no phase (ADV-2C-02 fallback)
 ok 477 - Part 9: reconcileTaskState falls back to TaskLease phase when the issue carries no phase (ADV-2C-02 fallback)
   ---
-  duration_ms: 0.149785
+  duration_ms: 0.118308
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState escalates failed session to needs-decision with failure details
 ok 478 - Part 9: reconcileTaskState escalates failed session to needs-decision with failure details
   ---
-  duration_ms: 0.111511
+  duration_ms: 0.107016
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState polls actively running or idle sessions
 ok 479 - Part 9: reconcileTaskState polls actively running or idle sessions
   ---
-  duration_ms: 0.101261
+  duration_ms: 0.101452
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState is idempotent: tick 1 advances execution to verification, tick 2 polls (ADV-2B-01)
 ok 480 - Part 9: reconcileTaskState is idempotent: tick 1 advances execution to verification, tick 2 polls (ADV-2B-01)
   ---
-  duration_ms: 4.414899
+  duration_ms: 0.180243
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState polls without overwriting attention for non-completed sessions on verification tasks (ADV-2C-01)
 ok 481 - Part 9: reconcileTaskState polls without overwriting attention for non-completed sessions on verification tasks (ADV-2C-01)
   ---
-  duration_ms: 0.291281
+  duration_ms: 0.173908
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState releases done/archive and closed tasks for every liveness state (ADV-2C-01, ADV-2C-08)
 ok 482 - Part 9: reconcileTaskState releases done/archive and closed tasks for every liveness state (ADV-2C-01, ADV-2C-08)
   ---
-  duration_ms: 0.25253
+  duration_ms: 0.273171
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState prefers live issue phase over stale lease phase (ADV-2C-02)
 ok 483 - Part 9: reconcileTaskState prefers live issue phase over stale lease phase (ADV-2C-02)
   ---
-  duration_ms: 4.353332
+  duration_ms: 0.175171
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState does not discard open human decisions (ADV-2C-05)
 ok 484 - Part 9: reconcileTaskState does not discard open human decisions (ADV-2C-05)
   ---
-  duration_ms: 0.329696
+  duration_ms: 0.311739
   type: 'test'
   ...
 # Subtest: Part 9: reconcileTaskState polls on missing or empty issue data instead of advancing (ADV-2C-08)
 ok 485 - Part 9: reconcileTaskState polls on missing or empty issue data instead of advancing (ADV-2C-08)
   ---
-  duration_ms: 0.4217
+  duration_ms: 0.254012
   type: 'test'
   ...
 # Subtest: Part 9: CoordinatorReconciler class wrapper delegates cleanly
 ok 486 - Part 9: CoordinatorReconciler class wrapper delegates cleanly
   ---
-  duration_ms: 0.354844
+  duration_ms: 0.29866
   type: 'test'
   ...
 # Subtest: 8-stage status label constants and metadata exist
 ok 487 - 8-stage status label constants and metadata exist
   ---
-  duration_ms: 7.144731
+  duration_ms: 2.486232
   type: 'test'
   ...
 # Subtest: STATUS_METADATA descriptions align with issue-body-contract v1
 ok 488 - STATUS_METADATA descriptions align with issue-body-contract v1
   ---
-  duration_ms: 0.417065
+  duration_ms: 0.333225
   type: 'test'
   ...
 # Subtest: a) All 8 columns resolve correctly according to labels and session states
 ok 489 - a) All 8 columns resolve correctly according to labels and session states
   ---
-  duration_ms: 4.165442
+  duration_ms: 0.8938
   type: 'test'
   ...
 # Subtest: b) isVagueIdea issues automatically route to draft
 ok 490 - b) isVagueIdea issues automatically route to draft
   ---
-  duration_ms: 0.581462
+  duration_ms: 0.370525
   type: 'test'
   ...
 # Subtest: c) waiting-permission and waiting-question map to needs-human
 ok 491 - c) waiting-permission and waiting-question map to needs-human
   ---
-  duration_ms: 1.894169
+  duration_ms: 5.22464
   type: 'test'
   ...
 # Subtest: d) reconciler updates status labels without loops or race conditions
 ok 492 - d) reconciler updates status labels without loops or race conditions
   ---
-  duration_ms: 54.538837
+  duration_ms: 61.776801
   type: 'test'
   ...
 # Subtest: resolveDefaultTab prioritizes needs-human > in-review > in-progress > todo > planned > backlog > draft > all
 ok 493 - resolveDefaultTab prioritizes needs-human > in-review > in-progress > todo > planned > backlog > draft > all
   ---
-  duration_ms: 1.33593
+  duration_ms: 0.7069
   type: 'test'
   ...
 # Subtest: groupIssuesBy organizes issues into all 8 columns in order
 ok 494 - groupIssuesBy organizes issues into all 8 columns in order
   ---
-  duration_ms: 2.741135
+  duration_ms: 0.486089
   type: 'test'
   ...
 # Subtest: index.html and main.ts adhere strictly to 8-stage layout and reconciler contract
 ok 495 - index.html and main.ts adhere strictly to 8-stage layout and reconciler contract
   ---
-  duration_ms: 25.158591
+  duration_ms: 17.027906
   type: 'test'
   ...
 # Subtest: mergeTemplates preserves defaults when no custom templates exist
 ok 496 - mergeTemplates preserves defaults when no custom templates exist
   ---
-  duration_ms: 1.455315
+  duration_ms: 1.741267
   type: 'test'
   ...
 # Subtest: mergeTemplates allows user customizations to override template instructions
 ok 497 - mergeTemplates allows user customizations to override template instructions
   ---
-  duration_ms: 1.707725
+  duration_ms: 0.257657
   type: 'test'
   ...
 # Subtest: mergeTemplates allows defining new custom template types
 ok 498 - mergeTemplates allows defining new custom template types
   ---
-  duration_ms: 0.410953
+  duration_ms: 0.292306
   type: 'test'
   ...
 # Subtest: buildAgentIssuePrompt incorporates repo, goal, and template instructions
 ok 499 - buildAgentIssuePrompt incorporates repo, goal, and template instructions
   ---
-  duration_ms: 0.275847
+  duration_ms: 0.370296
   type: 'test'
   ...
 # Subtest: a) parseTestPlan parses both (Issue) and (Batch) sections cleanly
 ok 500 - a) parseTestPlan parses both (Issue) and (Batch) sections cleanly
   ---
-  duration_ms: 10.289693
+  duration_ms: 6.137122
   type: 'test'
   ...
 # Subtest: b) updateTestItemInMarkdown toggles completion cleanly
 ok 501 - b) updateTestItemInMarkdown toggles completion cleanly
   ---
-  duration_ms: 1.748118
+  duration_ms: 0.745596
   type: 'test'
   ...
 # Subtest: c) appendTestItemToMarkdown appends under correct section
 ok 502 - c) appendTestItemToMarkdown appends under correct section
   ---
-  duration_ms: 0.702761
+  duration_ms: 1.062334
   type: 'test'
   ...
 # Subtest: serializeTestPlan formats items into markdown test plan section
 ok 503 - serializeTestPlan formats items into markdown test plan section
   ---
-  duration_ms: 0.366939
+  duration_ms: 0.560259
   type: 'test'
   ...
 # Subtest: d) getIssueBatch extracts batch name
 ok 504 - d) getIssueBatch extracts batch name
   ---
-  duration_ms: 1.663889
+  duration_ms: 0.664889
   type: 'test'
   ...
 # Subtest: e) isBatchReadyForReview accurately computes readiness and reports outstanding issue numbers
 ok 505 - e) isBatchReadyForReview accurately computes readiness and reports outstanding issue numbers
   ---
-  duration_ms: 0.789342
+  duration_ms: 1.080979
   type: 'test'
   ...
 # Subtest: f) panel/index.html defines .badge-awaiting-batch, .test-plan-section, and drawer elements
 ok 506 - f) panel/index.html defines .badge-awaiting-batch, .test-plan-section, and drawer elements
   ---
-  duration_ms: 10.115065
+  duration_ms: 4.0099
   type: 'test'
   ...
 # Subtest: g) card badge rendering produces awaiting-batch badge when issue is in-review but batch has outstanding items
 ok 507 - g) card badge rendering produces awaiting-batch badge when issue is in-review but batch has outstanding items
   ---
-  duration_ms: 0.693865
+  duration_ms: 0.559925
   type: 'test'
   ...
 # Subtest: h) batch readiness handles cancelled issues, case-insensitivity, multiple batch labels, and duplicate issue IDs
 ok 508 - h) batch readiness handles cancelled issues, case-insensitivity, multiple batch labels, and duplicate issue IDs
   ---
-  duration_ms: 0.826802
+  duration_ms: 2.975186
   type: 'test'
   ...
 # Subtest: i) appendTestItemToMarkdown inserts before trailing notes or paragraphs
 ok 509 - i) appendTestItemToMarkdown inserts before trailing notes or paragraphs
   ---
-  duration_ms: 0.784924
+  duration_ms: 0.912582
   type: 'test'
   ...
 # Subtest: j) adversarial stress test: parsing 5,000 test plan items completes in <100ms
 ok 510 - j) adversarial stress test: parsing 5,000 test plan items completes in <100ms
   ---
-  duration_ms: 17.975222
+  duration_ms: 8.364269
   type: 'test'
   ...
 # Subtest: extracts personal access token from .git-credentials content
 ok 511 - extracts personal access token from .git-credentials content
   ---
-  duration_ms: 6.294501
+  duration_ms: 1.990449
   type: 'test'
   ...
 # Subtest: extracts personal access token from gitconfig url
 ok 512 - extracts personal access token from gitconfig url
   ---
-  duration_ms: 0.820346
+  duration_ms: 0.470581
   type: 'test'
   ...
 # Subtest: Part 1: buildIssueAttachPayload injects repo into data for V2 session persistence
 ok 513 - Part 1: buildIssueAttachPayload injects repo into data for V2 session persistence
   ---
-  duration_ms: 12.836446
+  duration_ms: 7.045334
   type: 'test'
   ...
 # Subtest: Part 1: buildMultiIssueAttachPayload injects repo into data for V2 session persistence
 ok 514 - Part 1: buildMultiIssueAttachPayload injects repo into data for V2 session persistence
   ---
-  duration_ms: 0.873734
+  duration_ms: 1.191731
   type: 'test'
   ...
 # Subtest: Part 1: getSessionIssueRepo parses repo across V2 projection and legacy formats
 ok 515 - Part 1: getSessionIssueRepo parses repo across V2 projection and legacy formats
   ---
-  duration_ms: 0.625091
+  duration_ms: 0.885325
   type: 'test'
   ...
 # Subtest: Part 2.1 & 2.2: buildIncrementalIssuesPath formats ISO timestamp and repo cleanly
 ok 516 - Part 2.1 & 2.2: buildIncrementalIssuesPath formats ISO timestamp and repo cleanly
   ---
-  duration_ms: 4.113882
+  duration_ms: 0.903543
   type: 'test'
   ...
 # Subtest: Part 2.2: syncIncrementalRepoIssues handles 304 Not Modified without modifying issue list
 ok 517 - Part 2.2: syncIncrementalRepoIssues handles 304 Not Modified without modifying issue list
   ---
-  duration_ms: 4.56139
+  duration_ms: 1.107811
   type: 'test'
   ...
 # Subtest: Part 2.2: syncIncrementalRepoIssues incrementally updates changed issues without full refetch
 ok 518 - Part 2.2: syncIncrementalRepoIssues incrementally updates changed issues without full refetch
   ---
-  duration_ms: 29.801268
+  duration_ms: 5.92009
   type: 'test'
   ...
 # Subtest: Part 2.2 Revert-failure check: idle synchronization must enforce since= and forbid full paginated refetch
 ok 519 - Part 2.2 Revert-failure check: idle synchronization must enforce since= and forbid full paginated refetch
   ---
-  duration_ms: 10.934233
+  duration_ms: 3.582097
   type: 'test'
   ...
 # Subtest: Part 2.4: Priority drag-and-drop coalesces status and priority into a single label set
 ok 520 - Part 2.4: Priority drag-and-drop coalesces status and priority into a single label set
   ---
-  duration_ms: 0.408801
+  duration_ms: 0.58262
   type: 'test'
   ...
 # Subtest: a) buildWorktreeBranchName generates <theme>-<batch> and <theme>-issue-<n>-<slug>
 ok 521 - a) buildWorktreeBranchName generates <theme>-<batch> and <theme>-issue-<n>-<slug>
   ---
-  duration_ms: 2.29463
+  duration_ms: 2.08927
   type: 'test'
   ...
 # Subtest: b) issue-<n> token is preserved in single-issue theme branch names for auto-attribution
 ok 522 - b) issue-<n> token is preserved in single-issue theme branch names for auto-attribution
   ---
-  duration_ms: 1.374165
+  duration_ms: 1.165857
   type: 'test'
   ...
 # Subtest: c) theme worktree reuse detection matches existing worktrees by theme name and batch
 ok 523 - c) theme worktree reuse detection matches existing worktrees by theme name and batch
   ---
-  duration_ms: 9.68155
+  duration_ms: 12.614539
   type: 'test'
   ...
 # Subtest: d) buildSessionIndex indexes multiple issues additively per session
 ok 524 - d) buildSessionIndex indexes multiple issues additively per session
   ---
-  duration_ms: 1.073634
+  duration_ms: 2.752652
   type: 'test'
   ...
 # Subtest: e) adversarial hostile verification: project scoping, case sensitivity, long tokens, and directory worktrees
 ok 525 - e) adversarial hostile verification: project scoping, case sensitivity, long tokens, and directory worktrees
   ---
-  duration_ms: 0.774812
+  duration_ms: 0.960661
   type: 'test'
   ...
 1..525
 # tests 525
 # suites 0
-# pass 524
-# fail 1
+# pass 525
+# fail 0
 # cancelled 0
 # skipped 0
 # todo 0
-# duration_ms 28575.850925
+# duration_ms 19477.155516
