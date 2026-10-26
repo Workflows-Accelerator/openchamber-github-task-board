@@ -1,6 +1,13 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-26 #33 final independent gate PASSED, integration ready
+## Latest checkpoint — 2026-10-26 #33 MERGED/PUSHED, #35 final pass ready
+State: building next issue. Alignment decisions1–17 CONFIRMED.
+- #33 source e4b0091 independent PASS/APPROVED, merge6b1603f/proofbf745aa actual release9router/engineer ACCEPTED (report+audit inspected): web338/root517/focused230/protocol12/both-types/build/parity bee9a616, browser201/HTTP165/gateway19/baseline32/probes28 all pass. See outputs/issue-33-integration-acceptance.md.
+- Normal release-boundary fetch/status resolved previous UNKNOWN push: remote behind41, deliberate feature push exit0 confirmed aea7031→bf745aa. Source clean worktree removed/pruned, branch retained; DB deregistration pending small delegated housekeeping. No master/deploy/closure. #33 awaiting batch human validation.
+- #35 source220d1d5 clean confirmed; tasks/issue-35-last-correction.md READY sole frontier, all R1-R9 decision17; genius escalation due wrong-repository and lost-write risks. One correction+one independent recheck, further failure PARKS. #30 behind #35; hosting/#37/#31 queued after current frontier.
+- Installed panel, real GitHub, production TLS/proxy/restart/deployment, real keyboard/freshXSS-DoS remain NOT VERIFIED. No human review batch request until all members passed and usable runtime(s) ready.
+
+## Previous checkpoint — 2026-10-26 #33 final independent gate PASSED, integration ready
 State: proving integration. Alignment decisions1–17 CONFIRMED.
 - #33 final review e4b0091 Security APPROVED/Spec PASS/Quality APPROVED/PROCEED, actual9router/genius; tracked clean. R1-R3 CLOSED:201browser(177 malformed+24 valid),97R2/68R3 HTTP,30 code refusals0PATCH. Full338web/466root/focused230/protocol12/types/build/parity bee9a616, saved36HTTP+19gateway+32baseline+28probes/additional129HTTP. No standing required failure; true old-vs-new discriminators. Manager read137line report and inspected aggregate web-only product scope; gate outputs/issue-33-review-gate.md ACCEPTED for review-branch integration only.
 - Integration brief tasks/issue-33-integration.md filled: sourcee4b0091 clean, root6564246+manager-only gate checkpoint. Fresh release worker next, one root owner. Merged full+runtime saved and additional matrices mandatory because root panel/core.ts newer. No product fixes allowed in release worker.

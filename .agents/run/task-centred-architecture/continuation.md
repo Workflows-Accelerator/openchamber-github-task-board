@@ -1,6 +1,12 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — 2026-10-26 #33 final PASS accepted, integration next
+## Latest checkpoint — 2026-10-26 #33 merged proof accepted/PUSHED, #35 next
+- #33 merged6b1603f/evidencebf745aa, release actual9router/engineer ses_6224b676f8691117302b7661. Report53lines+audit read, ACCEPT outputs/issue-33-integration-acceptance.md: web338/root517/focused230/protocol12/bothtypes/build/parity bee9a616; merged browser201/HTTP165/gateway19/baseline32/probes28 all green, historical assertions retained.
+- Allowed fetch/status at release boundary proved earlier350f629 push did not advance remote; deliberate feature push exit0 aea7031→bf745aa. No master. #33 clean worktree removed/pruned, branch retained, DB deregistration PENDING delegated housekeeping. Evidence preserved in root merge. Own integration-dispatch journal was untracked during release and now must be checkpointed.
+- #35 sole frontier source220d1d5 clean confirmed; tasks/issue-35-last-correction.md READY allR1-R9, one final correction+independent recheck, further failed review PARKS. Dispatch genius justified by wrong-repo PATCH/lost edits after engineer attempts. Both last review briefs on disk; fill actual final candidate before recheck. No worker duplicated.
+- #33 awaiting batch human; real GitHub/installed-host/productionTLS/proxy/restart/keyboard/freshXSSDoS NOT VERIFIED. No master/deploy/closure. Hosting/#37/#31 queued; #30 blocked #35.
+
+## Previous checkpoint — 2026-10-26 #33 final PASS accepted, integration next
 - Final reviewer ses_1947278fe946a17036be3442 actual9router/genius returnede4b0091 clean, product unchanged5c562e8. Security APPROVED/Spec PASS/Quality APPROVED/PROCEED. R1-R3 closed:201browser,97R2/68R3HTTP,30code refusals0PATCH,338web/466root/focused230/types/build/parity bee9a616. Saved36HTTP/gateway19/baseline32/probes28 and additional129HTTP pass; no standing residual.
 - Manager read complete137line report, inspected aggregate web-only scope and accepted outputs/issue-33-review-gate.md. tasks/issue-33-integration.md READY sourcee4b0091/root6564246+manager checkpoint; fresh release worker in source tree, root merge/proof only. Need merged338web/517root actual, full browser201/HTTP165(saved36+extra129)/gateway19/baseline32/probes28, new panel/core.ts imports. No product patch on merge/test failure.
 - #35 final R1-R9 correction queued220d1d5. After accepted #33 merged proof/push/cleanup, fill tasks/issue-35-last-correction.md source snapshot and dispatch fresh genius, then final independent review. Never run second root release/implementation frontier concurrently.

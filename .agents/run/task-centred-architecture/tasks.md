@@ -1,6 +1,16 @@
 # Task-centred delivery
 
-## CURRENT — decision17 final corrections approved 2026-10-26
+## CURRENT — #33 MERGED/PUSHED, #35 final correction ready 2026-10-26
+
+| Outcome | State | Evidence / next |
+|---|---|---|
+| #33 browser board | MERGED/PUSHED, awaiting batch human | L4e4b0091 PASS/APPROVED; merge6b1603f/proofbf745aa accepted web338/root517/browser201/HTTP165/types/build/parity. Feature push confirmed; clean source removed/pruned, branch retained. DB deregistration pending |
+| #35 refresh write coverage | READY final R1-R9 correction | Source220d1d5 clean, tasks/issue-35-last-correction.md filled, genius next; decision17 one final correction/check, failure PARKS |
+| #28/#34/#36 panel protections | MERGED/PUSHED, awaiting batch | Accepted unchanged, installed host/liveGitHub NOT VERIFIED |
+| Hosting/#37/#31 web and notifications | QUEUED | #33 unblocked; wait sole current #35 frontier before implementation |
+| #30 proportionate feature/bug path | BLOCKED #35 | Brief ready; expiration excluded/unanswered |
+
+## Prior — decision17 final corrections approved 2026-10-26
 
 Owner selected "One final pass on both (Recommended)". #33 builder returned5c562e8 clean actual9router/genius; claims focused230/web338/root466/types/build/browser84/HTTP36/gateway19/baseline32/probes28 all green, hashbee9a616 ignored. Manager scoped product diff inspected; not independently accepted. FINAL recheck RUNNING ses_1947278fe946a17036be3442 genius tasks/issue-33-last-hostile.md, fail parks issue. #35 all R1-R9 queued behind #33; shared refresh simplification permitted if minimal. No master/deploy/secret/closure authority.
 

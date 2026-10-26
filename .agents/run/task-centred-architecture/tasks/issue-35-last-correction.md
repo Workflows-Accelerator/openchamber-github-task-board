@@ -1,8 +1,8 @@
 <env_preflight>
-BLOCKED DRAFT — no dispatch before #33 correction/recheck/frontier completes or parks. Refresh exact source clean state and active-worker facts at dispatch.
+READY — #33 passed final independent review e4b0091, integrated6b1603f/proofbf745aa, merged tests and all runtime matrices passed; feature branch PUSHED throughbf745aa. Source #33 worktree removed/pruned, branch retained. No other active worker; #35 is now sole repository frontier.
 Repo /workspace/extensions/github-task-board
 Worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-35-write-refresh
-Branch fix/issue-35-write-refresh, expected HEAD220d1d51ff75ae30cc933aca29b57957479c3617 clean (last review, product0af35ae). Fill confirmed snapshot before dispatch. Dependencies symlink already present, no installs/env/DB setup. Root source baseline integrated #28/#34/#36 before #33; do not merge web or manager integration branch.
+Branch fix/issue-35-write-refresh, confirmed HEAD220d1d51ff75ae30cc933aca29b57957479c3617 clean (last review, product0af35ae). Dependencies symlink already present, no installs/env/DB setup. Source baseline integrated #28/#34/#36 before #33; root nowbf745aa includes web, but do not merge web or manager integration branch. Product scope remains panel only.
 Owned product panel/main.ts, generated panel/main.js, test/issue-35-write-refresh.test.js; new focused test if necessary. Commands node --test test/issue-35-write-refresh.test.js; node --test test/current-board.test.js test/issue-34-answer-integrity.test.js; npm test; npm run typecheck; npm run build. Shipped bundle test harness in test/helpers. Last independent count25 targeted/45preserved/542full, not universal expected future count.
 No panel/core.ts, service/**, web/**, metadata/dependencies, shared config/skills, credentials, installed host, real GitHub, other worktrees, old report/proof modifications, push/merge/close/master/deploy/reset/rebase/force. Synthetic SDK boundary only; temporary probes /tmp/opencode.
 Preflight authoritative when filled; skip initial git status/pwd/ls. Targeted checks after mutations/failure and precommit permitted.
