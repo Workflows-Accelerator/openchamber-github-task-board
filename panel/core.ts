@@ -1843,25 +1843,6 @@ export function buildLaunchSessionPayload(options: {
   };
 }
 
-const WORK_LOG_SENTENCE_RULE = `The \`### Work Log:\` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason for it`;
-const BUG_PATH_RULE = `Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.`;
-const FEATURE_PATH_RULE = `Feature path: desired outcome, research and alternatives, user decisions, then implementation.`;
-const EVIDENCE_AUTHORITY_RULE = `Both paths keep existing evidence rules and existing human authority over release and closure.`;
-
-export const DEFAULT_WORK_INSTRUCTIONS = `### Work Type & Proportionate Paths:
-- Labels \`bug\` and \`enhancement\` are the only work-type source.
-- When both or neither are present, the work type is undecided and must be asked about, not guessed. Never infer a type from the title, the mood of the report, or the area of the code.
-- Undecided work type is an alignment question to the user, not a default. Undecided items must be asked about individually. Only block work that depends on the unanswered question; independent authorised work continues.
-- Work Log: ${WORK_LOG_SENTENCE_RULE} (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
-- Proportionate paths:
-  - ${BUG_PATH_RULE}
-  - ${FEATURE_PATH_RULE}
-  - ${EVIDENCE_AUTHORITY_RULE}`;
-
-if (typeof globalThis !== 'undefined') {
-  (globalThis as any).DEFAULT_WORK_INSTRUCTIONS = DEFAULT_WORK_INSTRUCTIONS;
-}
-
 export type WorkType = 'bug' | 'feature' | 'undecided';
 
 export function resolveIssueWorkType(issue: Issue | null | undefined): WorkType {
@@ -1876,7 +1857,12 @@ export function resolveIssueWorkType(issue: Issue | null | undefined): WorkType 
   return 'undecided';
 }
 
-export function buildWorkTypeInstructions(target: Issue | WorkType | null | undefined): string {
+const WORK_LOG_SENTENCE_RULE = `The \`### Work Log:\` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason for it`;
+const BUG_PATH_RULE = `Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.`;
+const FEATURE_PATH_RULE = `Feature path: desired outcome, research and alternatives, user decisions, then implementation.`;
+const EVIDENCE_AUTHORITY_RULE = `Both paths keep existing evidence rules and existing human authority over release and closure.`;
+
+function buildWorkTypeInstructions(target: Issue | WorkType | null | undefined): string {
   const workType: WorkType = typeof target === 'string'
     ? target
     : resolveIssueWorkType(target);
@@ -1899,59 +1885,61 @@ export function buildWorkTypeInstructions(target: Issue | WorkType | null | unde
 - Work Log: ${WORK_LOG_SENTENCE_RULE} (for example the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.`;
   }
 
-  return `### Work Type & Alignment Question:
+  return `### Work Type & Proportionate Paths:
 - Labels \`bug\` and \`enhancement\` are the only work-type source.
 - When both or neither are present, the work type is undecided and must be asked about, not guessed. Never infer a type from the title, the mood of the report, or the area of the code.
 - Explicit alignment question: Which label (\`bug\` or \`enhancement\`) applies to this issue and what is the concrete reason based strictly on the labels? Ask the user for alignment before proceeding with work that depends on the work type.
-- Undecided work type is an alignment question to the user, not a default. Only block work that depends on the unanswered question; independent authorised work continues.
-- Work Log: ${WORK_LOG_SENTENCE_RULE}. Keep it one line; do not add fields, counters or machine state to the issue body.
+- Undecided work type is an alignment question to the user, not a default. Undecided items must be asked about individually. Only block work that depends on the unanswered question; independent authorised work continues.
+- Work Log: ${WORK_LOG_SENTENCE_RULE} (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
 - Proportionate paths (once resolved):
   - ${BUG_PATH_RULE}
   - ${FEATURE_PATH_RULE}
   - ${EVIDENCE_AUTHORITY_RULE}`;
 }
 
-export function buildSingleIssuePrompt(
-  issue: Issue,
+export const DEFAULT_WORK_INSTRUCTIONS = buildWorkTypeInstructions('undecided');
+
+export function renderSingleIssueBrief(
+  issue: Issue | null | undefined,
   options?: { useWorktree?: boolean }
 ): string {
-  let prompt = `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title || ''}\n\n`;
-  if (issue.body) {
-    prompt += `### Description:\n${issue.body}\n\n`;
+  let brief = `You are assigned to work on GitHub Issue #${issue?.number ?? ''}: ${issue?.title || ''}\n\n`;
+  if (issue?.body) {
+    brief += `### Description:\n${issue.body}\n\n`;
   }
-  if (issue.subtasks && issue.subtasks.length > 0) {
-    prompt += `### Subtasks Checklist:\n`;
+  if (issue?.subtasks && issue.subtasks.length > 0) {
+    brief += `### Subtasks Checklist:\n`;
     issue.subtasks.forEach((s) => {
-      prompt += `- [${s.completed ? 'x' : ' '}] ${s.text}\n`;
+      brief += `- [${s.completed ? 'x' : ' '}] ${s.text}\n`;
     });
-    prompt += '\n';
+    brief += '\n';
   }
 
   const { skillNames, transclusions } = resolveIssueSkills(issue);
   if (skillNames.length > 0) {
-    prompt += `### Recommended Skills:\n`;
-    prompt += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(', ')}).\n`;
-    prompt += `Transclusion references for worker sessions:\n${transclusions.join('\n')}\n\n`;
+    brief += `### Recommended Skills:\n`;
+    brief += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(', ')}).\n`;
+    brief += `Transclusion references for worker sessions:\n${transclusions.join('\n')}\n\n`;
   }
 
-  prompt += `### Autonomous & AFK Protocol:\n`;
-  prompt += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.\n`;
-  prompt += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.\n`;
-  prompt += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.\n\n`;
-  prompt += `${buildWorkTypeInstructions(issue)}\n\n`;
+  brief += `### Autonomous & AFK Protocol:\n`;
+  brief += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.\n`;
+  brief += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.\n`;
+  brief += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.\n\n`;
+  brief += `${buildWorkTypeInstructions(issue)}\n\n`;
 
   if (options?.useWorktree) {
-    prompt += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
+    brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
   } else {
-    prompt += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
+    brief += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
   }
-  return prompt;
+  return brief;
 }
 
-export function buildBatchLaunchPrompt(issue: Issue): string {
+export function renderBatchLaunchPrompt(issue: Issue | null | undefined): string {
   const { skillNames, transclusions } = resolveIssueSkills(issue);
-  let prompt = `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title || ''}\n\n`;
-  if (issue.body) {
+  let prompt = `You are assigned to work on GitHub Issue #${issue?.number ?? ''}: ${issue?.title || ''}\n\n`;
+  if (issue?.body) {
     prompt += `### Description:\n${issue.body}\n\n`;
   }
   if (skillNames.length > 0) {
@@ -2388,7 +2376,10 @@ export function buildConsolidatedIssuePrompt(selectedIssues: Issue[]): string {
   prompt += `- Work through the packaged issues sequentially or in coordination, verifying each step with tests.\n`;
   prompt += `- If blocked on human decisions, permissions, or secrets while the human is away, record explicit items under "### Human Tasks:" in the issue body, mark "status:needs-human", and continue with any unblocked tasks.\n\n`;
 
-  prompt += `${DEFAULT_WORK_INSTRUCTIONS}\n\n`;
+  const workInstructions = typeof DEFAULT_WORK_INSTRUCTIONS !== 'undefined'
+    ? DEFAULT_WORK_INSTRUCTIONS
+    : `### Work Type & Proportionate Paths:\n- Labels \`bug\` and \`enhancement\` are the only work-type source.\n- When both or neither are present, the work type is undecided and must be asked about, not guessed. Never infer a type from the title, the mood of the report, or the area of the code.\n- Explicit alignment question: Which label (\`bug\` or \`enhancement\`) applies to this issue and what is the concrete reason based strictly on the labels? Ask the user for alignment before proceeding with work that depends on the work type.\n- Undecided work type is an alignment question to the user, not a default. Undecided items must be asked about individually. Only block work that depends on the unanswered question; independent authorised work continues.\n- Work Log: The \`### Work Log:\` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.\n- Proportionate paths (once resolved):\n  - Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.\n  - Feature path: desired outcome, research and alternatives, user decisions, then implementation.\n  - Both paths keep existing evidence rules and existing human authority over release and closure.`;
+  prompt += `${workInstructions}\n\n`;
 
   prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
   return prompt;

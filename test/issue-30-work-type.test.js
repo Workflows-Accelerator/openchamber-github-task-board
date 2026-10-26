@@ -10,9 +10,8 @@ import {
   buildConsolidatedIssuePrompt,
   DEFAULT_WORK_INSTRUCTIONS,
   resolveIssueWorkType,
-  buildWorkTypeInstructions,
-  buildSingleIssuePrompt,
-  buildBatchLaunchPrompt,
+  renderSingleIssueBrief,
+  renderBatchLaunchPrompt,
 } from '../panel/core.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -218,26 +217,13 @@ test('buildConsolidatedIssuePrompt includes work instructions with proportionate
   assert.equal(containsEmoji(prompt), false);
 });
 
-test('single-issue prompt and brief builders enforce work-type resolution and path isolation at runtime', () => {
+test('renderSingleIssueBrief and renderBatchLaunchPrompt enforce work-type resolution and path isolation across all 5 cases', () => {
   const bugIssue = {
     number: 101,
     title: 'Fix edge crash',
     labels: [{ name: 'bug' }],
     body: 'App crashes on launch',
   };
-  const bugPrompt = buildSingleIssuePrompt(bugIssue);
-  assert.ok(bugPrompt.includes('resolved as `bug`'), 'Must resolve issue as bug');
-  assert.ok(bugPrompt.includes('Bug path: observed versus expected behaviour'), 'Must include bug path');
-  assert.ok(!bugPrompt.includes('Feature path:'), 'Bug prompt must isolate path and exclude feature path');
-  assert.ok(!bugPrompt.includes('Explicit alignment question:'), 'Bug prompt must not include alignment question');
-  assert.ok(
-    bugPrompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
-    'Must include Work Log sentence requirement'
-  );
-  assert.ok(
-    bugPrompt.includes('Retain existing evidence rules and existing human authority over release and closure.'),
-    'Must retain human authority'
-  );
 
   const featIssue = {
     number: 102,
@@ -245,19 +231,6 @@ test('single-issue prompt and brief builders enforce work-type resolution and pa
     labels: [{ name: 'enhancement' }],
     body: 'Allow exporting issues as CSV',
   };
-  const featPrompt = buildSingleIssuePrompt(featIssue);
-  assert.ok(featPrompt.includes('resolved as `feature`'), 'Must resolve issue as feature');
-  assert.ok(featPrompt.includes('Feature path: desired outcome'), 'Must include feature path');
-  assert.ok(!featPrompt.includes('Bug path:'), 'Feature prompt must isolate path and exclude bug path');
-  assert.ok(!featPrompt.includes('Explicit alignment question:'), 'Feature prompt must not include alignment question');
-  assert.ok(
-    featPrompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
-    'Must include Work Log sentence requirement'
-  );
-  assert.ok(
-    featPrompt.includes('Retain existing evidence rules and existing human authority over release and closure.'),
-    'Must retain human authority'
-  );
 
   const bothIssue = {
     number: 103,
@@ -265,21 +238,6 @@ test('single-issue prompt and brief builders enforce work-type resolution and pa
     labels: [{ name: 'bug' }, { name: 'enhancement' }],
     body: 'Has both labels',
   };
-  const bothPrompt = buildSingleIssuePrompt(bothIssue);
-  assert.ok(
-    bothPrompt.includes('Explicit alignment question: Which label (`bug` or `enhancement`) applies to this issue'),
-    'Must emit explicit alignment question when both labels are present'
-  );
-  assert.ok(
-    bothPrompt.includes('Undecided work type is an alignment question to the user, not a default. Only block work that depends on the unanswered question; independent authorised work continues.'),
-    'Must state independent work continues while alignment question is open'
-  );
-  assert.ok(!bothPrompt.includes('resolved as `bug`'), 'Must not claim resolved as bug');
-  assert.ok(!bothPrompt.includes('resolved as `feature`'), 'Must not claim resolved as feature');
-  assert.ok(
-    bothPrompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
-    'Must include Work Log sentence requirement'
-  );
 
   const neitherIssue = {
     number: 104,
@@ -287,40 +245,165 @@ test('single-issue prompt and brief builders enforce work-type resolution and pa
     labels: [{ name: 'documentation' }],
     body: 'Update documentation',
   };
-  const neitherPrompt = buildSingleIssuePrompt(neitherIssue);
-  assert.ok(
-    neitherPrompt.includes('Explicit alignment question: Which label (`bug` or `enhancement`) applies to this issue'),
-    'Must emit explicit alignment question when neither label is present'
+
+  const nullIssue = null;
+
+  // Case 1: Bug issue
+  for (const render of [
+    (issue) => renderSingleIssueBrief(issue, { useWorktree: false }),
+    (issue) => renderBatchLaunchPrompt(issue),
+  ]) {
+    const prompt = render(bugIssue);
+    assert.ok(prompt.includes('resolved as `bug`'), 'Bug issue must resolve as bug');
+    assert.ok(prompt.includes('Bug path: observed versus expected behaviour'), 'Must include bug path');
+    assert.ok(!prompt.includes('Feature path:'), 'Bug prompt must isolate path and exclude feature path');
+    assert.ok(!prompt.includes('Explicit alignment question:'), 'Bug prompt must not include alignment question');
+    assert.ok(
+      prompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
+      'Must include single Work Log sentence requirement'
+    );
+    assert.ok(
+      prompt.includes('human authority over release and closure'),
+      'Must retain human authority over release and closure'
+    );
+  }
+
+  // Case 2: Feature issue (enhancement label)
+  for (const render of [
+    (issue) => renderSingleIssueBrief(issue, { useWorktree: false }),
+    (issue) => renderBatchLaunchPrompt(issue),
+  ]) {
+    const prompt = render(featIssue);
+    assert.ok(prompt.includes('resolved as `feature`'), 'Feature issue must resolve as feature');
+    assert.ok(prompt.includes('Feature path: desired outcome'), 'Must include feature path');
+    assert.ok(!prompt.includes('Bug path:'), 'Feature prompt must isolate path and exclude bug path');
+    assert.ok(!prompt.includes('Explicit alignment question:'), 'Feature prompt must not include alignment question');
+    assert.ok(
+      prompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
+      'Must include single Work Log sentence requirement'
+    );
+    assert.ok(
+      prompt.includes('human authority over release and closure'),
+      'Must retain human authority over release and closure'
+    );
+  }
+
+  // Case 3: Both labels -> undecided
+  for (const render of [
+    (issue) => renderSingleIssueBrief(issue, { useWorktree: false }),
+    (issue) => renderBatchLaunchPrompt(issue),
+  ]) {
+    const prompt = render(bothIssue);
+    assert.ok(
+      prompt.includes('Explicit alignment question: Which label (`bug` or `enhancement`) applies to this issue'),
+      'Must emit explicit alignment question when both labels are present'
+    );
+    assert.ok(
+      prompt.includes('Only block work that depends on the unanswered question; independent authorised work continues.'),
+      'Must state independent work continues while alignment question is open'
+    );
+    assert.ok(!prompt.includes('resolved as `bug`'), 'Must not claim resolved as bug');
+    assert.ok(!prompt.includes('resolved as `feature`'), 'Must not claim resolved as feature');
+    assert.ok(
+      prompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
+      'Must include single Work Log sentence requirement'
+    );
+    assert.ok(
+      prompt.includes('human authority over release and closure'),
+      'Must retain human authority over release and closure'
+    );
+  }
+
+  // Case 4: Neither label -> undecided
+  for (const render of [
+    (issue) => renderSingleIssueBrief(issue, { useWorktree: false }),
+    (issue) => renderBatchLaunchPrompt(issue),
+  ]) {
+    const prompt = render(neitherIssue);
+    assert.ok(
+      prompt.includes('Explicit alignment question: Which label (`bug` or `enhancement`) applies to this issue'),
+      'Must emit explicit alignment question when neither label is present'
+    );
+    assert.ok(
+      prompt.includes('Only block work that depends on the unanswered question; independent authorised work continues.'),
+      'Must state independent work continues while alignment question is open'
+    );
+    assert.ok(!prompt.includes('resolved as `bug`'), 'Must not claim resolved as bug');
+    assert.ok(!prompt.includes('resolved as `feature`'), 'Must not claim resolved as feature');
+    assert.ok(
+      prompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
+      'Must include single Work Log sentence requirement'
+    );
+    assert.ok(
+      prompt.includes('human authority over release and closure'),
+      'Must retain human authority over release and closure'
+    );
+  }
+
+  // Case 5: Null issue -> undecided
+  for (const render of [
+    (issue) => renderSingleIssueBrief(issue, { useWorktree: false }),
+    (issue) => renderBatchLaunchPrompt(issue),
+  ]) {
+    const prompt = render(nullIssue);
+    assert.ok(
+      prompt.includes('Explicit alignment question: Which label (`bug` or `enhancement`) applies to this issue'),
+      'Must emit explicit alignment question when issue is null'
+    );
+    assert.ok(
+      prompt.includes('Only block work that depends on the unanswered question; independent authorised work continues.'),
+      'Must state independent work continues while alignment question is open'
+    );
+    assert.ok(!prompt.includes('resolved as `bug`'), 'Must not claim resolved as bug');
+    assert.ok(!prompt.includes('resolved as `feature`'), 'Must not claim resolved as feature');
+    assert.ok(
+      prompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
+      'Must include single Work Log sentence requirement'
+    );
+    assert.ok(
+      prompt.includes('human authority over release and closure'),
+      'Must retain human authority over release and closure'
+    );
+  }
+
+  // Worktree option differentiation for single-issue brief
+  const briefWt = renderSingleIssueBrief(bugIssue, { useWorktree: true });
+  assert.ok(briefWt.includes('Please inspect the codebase in this worktree'));
+  assert.ok(!briefWt.includes('in this workspace'));
+
+  const briefWs = renderSingleIssueBrief(bugIssue, { useWorktree: false });
+  assert.ok(briefWs.includes('Please inspect the codebase in this workspace'));
+  assert.ok(!briefWs.includes('in this worktree'));
+});
+
+test('panel/main.ts source wiring connects live launch paths to pure renderers and rejects generic fallback', () => {
+  const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
+
+  const updatePreflightMatch = MAIN_TS.match(/function updatePreflightBrief\(\): void \{([\s\S]*?)\n\}/);
+  assert.ok(updatePreflightMatch, 'updatePreflightBrief function body must be present in panel/main.ts');
+  const updatePreflightBody = updatePreflightMatch[1];
+
+  assert.match(
+    updatePreflightBody,
+    /\brenderSingleIssueBrief\s*\(/,
+    'updatePreflightBrief must invoke renderSingleIssueBrief'
   );
   assert.ok(
-    neitherPrompt.includes('Undecided work type is an alignment question to the user, not a default. Only block work that depends on the unanswered question; independent authorised work continues.'),
-    'Must state independent work continues while alignment question is open'
+    !updatePreflightBody.includes('DEFAULT_WORK_INSTRUCTIONS'),
+    'updatePreflightBrief must not fall back to generic DEFAULT_WORK_INSTRUCTIONS'
   );
-  assert.ok(!neitherPrompt.includes('resolved as `bug`'), 'Must not claim resolved as bug');
-  assert.ok(!neitherPrompt.includes('resolved as `feature`'), 'Must not claim resolved as feature');
+
+  const launchBatchMatch = MAIN_TS.match(/async function launchBatchSeparateSessions\(\): Promise<void> \{([\s\S]*?)\n\}/);
+  assert.ok(launchBatchMatch, 'launchBatchSeparateSessions function body must be present in panel/main.ts');
+  const launchBatchBody = launchBatchMatch[1];
+
+  assert.match(
+    launchBatchBody,
+    /\brenderBatchLaunchPrompt\s*\(/,
+    'launchBatchSeparateSessions must invoke renderBatchLaunchPrompt'
+  );
   assert.ok(
-    neitherPrompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
-    'Must include Work Log sentence requirement'
+    !launchBatchBody.includes('DEFAULT_WORK_INSTRUCTIONS'),
+    'launchBatchSeparateSessions must not fall back to generic DEFAULT_WORK_INSTRUCTIONS'
   );
-
-  // Batch launch prompt builder parity
-  const batchBug = buildBatchLaunchPrompt(bugIssue);
-  assert.ok(batchBug.includes('resolved as `bug`'));
-  assert.ok(batchBug.includes('Bug path:'));
-  assert.ok(!batchBug.includes('Feature path:'));
-
-  const batchFeat = buildBatchLaunchPrompt(featIssue);
-  assert.ok(batchFeat.includes('resolved as `feature`'));
-  assert.ok(batchFeat.includes('Feature path:'));
-  assert.ok(!batchFeat.includes('Bug path:'));
-
-  const batchNeither = buildBatchLaunchPrompt(neitherIssue);
-  assert.ok(batchNeither.includes('Explicit alignment question:'));
-
-  // Direct buildWorkTypeInstructions unit checks
-  assert.ok(buildWorkTypeInstructions('bug').includes('Bug path:'));
-  assert.ok(!buildWorkTypeInstructions('bug').includes('Feature path:'));
-  assert.ok(buildWorkTypeInstructions('feature').includes('Feature path:'));
-  assert.ok(!buildWorkTypeInstructions('feature').includes('Bug path:'));
-  assert.ok(buildWorkTypeInstructions('undecided').includes('Explicit alignment question:'));
 });
