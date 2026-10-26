@@ -1,5 +1,9 @@
 # Owner decision needed — both bounded rechecks failed (2026-10-25)
 
+## Owner answer — 2026-10-26
+Owner chose "One final pass on both (Recommended)". Recorded as decision17. Exactly one full correction and one independent recheck per issue; any further failed recheck parks that issue for the mission. Shared refresh simplification allowed if minimal. Sequential frontier #33 then #35. Approval receipts: #33 https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/33#issuecomment-6415482065; #35 https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/35#issuecomment-6415513444. Earlier failure receipts6405152187/6405158466 preserved. No production/master/deploy/secrets/closure authority.
+
+## Evidence presented before answer
 Both independent rechecks returned HALT. Neither candidate is merged. Both findings sets are narrow,
 anchored and independently reproduced with saved probe matrices; only new authority is needed to
 continue, because decision 16 bound #33 to one correction plus one recheck, and #35 has already had

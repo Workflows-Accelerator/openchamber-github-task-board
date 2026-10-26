@@ -1,4 +1,6 @@
-# Human review batch — NOT READY (2026-10-24)
+# Human review batch — NOT READY (2026-10-26)
+
+Owner decision17 permits one final R1-R3 correction/recheck for #33 and R1-R9 for #35. #33 correction running; #35 queued. Another failed recheck parks affected issue; no human validation request before new accepted proof.
 
 One request only when every included member passes independent hostile review. No master push, issue closure or deployment approval implied by branch integration. This is preparation, not a request to the owner yet.
 

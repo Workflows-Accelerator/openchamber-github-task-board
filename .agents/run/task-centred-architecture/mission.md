@@ -3,8 +3,8 @@
 ## Latest checkpoint — 2026-10-26 decision17: one final pass on both approved
 State: building. Alignment: decisions1–17 CONFIRMED.
 - Owner selected "One final pass on both (Recommended)". #33 exactly R1-R3, #35 all R1-R9 including permission to simplify shared refresh path instead of extra per-path guards. One correction+one independent recheck each; another failed recheck parks that issue for this mission with NO additional attempt. No master/deploy/secret/closure authority.
-- Sequential repository frontier: #33 first from a4191a4 clean, tasks/issue-33-last-correction.md, escalation genius for repeated silent draft-loss/write-truth boundary failure. #35 remains queued at220d1d5 clean, no active worker. No duplicate/resumed finished sessions.
-- Failure receipts: #33 https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/33#issuecomment-6405152187; #35 https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/35#issuecomment-6405158466. Approved follow-up receipts/session ID recorded after dispatch.
+- Sequential repository frontier: #33 RUNNING ses_340658305fef29f8c3d79185 from a4191a4 clean, tasks/issue-33-last-correction.md, escalation genius for repeated silent draft-loss/write-truth boundary failure. Actual provider/model verify on wake. #35 remains queued at220d1d5 clean, no active worker. No duplicate/resumed finished sessions.
+- Failure receipts #33 6405152187/#35 6405158466. Approval receipts #33 https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/33#issuecomment-6415482065 status:in-progress; #35 https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/35#issuecomment-6415513444 status:planned. Both bodies reconciled with decision17; old question Human Tasks removed without falsely checking them. #35 tasks/issue-35-last-correction.md BLOCKED draft ready for source/preflight refresh only after #33 frontier clears.
 
 ## Previous checkpoint — 2026-10-25 both bounded rechecks failed, owner decision requested
 State: two issues blocked-on-owner; three accepted fixes awaiting batch. Alignment: decisions1–16 CONFIRMED.

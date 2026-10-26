@@ -1,6 +1,10 @@
 # Task-centred delivery
 
-## CURRENT — both bounded rechecks failed, owner decision pending 2026-10-25
+## CURRENT — decision17 final corrections approved 2026-10-26
+
+Owner selected "One final pass on both (Recommended)". #33 running ses_340658305fef29f8c3d79185 genius from a4191a4, tasks/issue-33-last-correction.md. #35 all R1-R9 queued behind #33; shared refresh simplification permitted if minimal. One independent recheck each; further failure parks affected issue. No master/deploy/secret/closure authority.
+
+## Prior — both bounded rechecks failed, owner decision pending 2026-10-25
 
 | Outcome | State | Worker / next |
 |---|---|---|
@@ -12,7 +16,7 @@
 | Board hosting slice | BRIEF READY, BLOCKED on #33 | tasks/board-hosting-slice.md; BOARD_HOST, /health, start command, honest ops limits; no deployment authority |
 | Master/deployment | NOT APPROVED | no secret reuse; owner retains release |
 
-Owner decision recorded in outputs/owner-decision-bounded-checks-2026-10-25.md: (1) one full narrow pass each, (2) narrow #35 to R1/R3/R8/R9 plus follow-up, (3) park both and validate #28/#34/#36 only. No third autonomous pass before an answer.
+Historical question answered: owner chose full narrow pass each, decision17. Receipts #33 6415482065 (in-progress), #35 6415513444 (planned). #35 last-correction brief prepared but BLOCKED until #33 frontier completes/parks; must refresh source preflight. No scope narrowing or further permission needed within exact final-pass scope.
 
 ## Prior — decision16 residual passes 2026-10-25
 
