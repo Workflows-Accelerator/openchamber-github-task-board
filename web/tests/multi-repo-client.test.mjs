@@ -120,3 +120,14 @@ test('answer confirms only the qualified combined row question count', async () 
   assert.equal(app.state.board.issues[0].counts.openQuestions.open, 0);
   assert.equal(app.state.board.issues[1].counts.openQuestions.open, 1);
 });
+
+test('clearing a qualified draft does not resurrect an older typed value on return', async () => {
+  const { app, get } = browser(path => ({ issue: detail(path.includes('/beta/') ? beta : alpha), statusOptions: options }));
+  await app.openIssue({ number: 1, repository: beta, key: 'owner/beta#1' });
+  await app.openIssue({ number: 1, repository: alpha, key: 'owner/alpha#1' });
+  get('overview-text').value = 'Original'; get('answer-0').value = '';
+  await app.openIssue({ number: 1, repository: beta, key: 'owner/beta#1' });
+  await app.openIssue({ number: 1, repository: alpha, key: 'owner/alpha#1' });
+  assert.equal(get('overview-text').value, 'Original');
+  assert.equal(get('answer-0').value, '');
+});

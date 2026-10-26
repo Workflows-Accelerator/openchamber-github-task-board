@@ -52,6 +52,8 @@
       });
       // Bounded memory only, never browser storage.
       if (state.drafts.size > 100) state.drafts.delete(state.drafts.keys().next().value);
+    } else {
+      state.drafts.delete(identity(issue) + ':' + issue.fingerprint);
     }
   }
   function restoreDraft() {

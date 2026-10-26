@@ -554,3 +554,42 @@ test('unknown repository after an expired failed discovery still causes zero ups
     assert.equal(fake.requests.length, before);
   } finally { await board.app.close(); await fake.close(); }
 });
+
+test('no-issue capability, unavailable aggregate members and concurrent aggregate coalescing are disclosed', async () => {
+  let now = 1_700_000_000_000;
+  const { fake, board, close } = await multiFixture({
+    repositories: [repoFixture('owner/alpha', [makeIssue()]), repoFixture('owner/no-issues', [], { hasIssues: false })],
+    board: { now: () => now }, fake: { listDelayMs: 50 },
+  });
+  try {
+    const client = await signedIn(board.url);
+    const empty = await client.request('/api/repos/owner/no-issues/board');
+    assert.equal(empty.json.repository.hasIssues, false);
+    assert.equal(empty.json.complete, true);
+    assert.equal(empty.json.issues.length, 0);
+    assert.equal(fake.requests.some(r => r.path === '/repos/owner/no-issues/issues'), false);
+    const before = fake.requests.filter(r => r.path === '/repos/owner/alpha/issues').length;
+    const combined = await Promise.all([client.request('/api/combined/board'), client.request('/api/combined/board')]);
+    assert.equal(combined.every(r => r.json.complete), true);
+    assert.equal(fake.requests.filter(r => r.path === '/repos/owner/alpha/issues').length, before + 1);
+    fake.setRepoAccessible('owner/alpha', false); now += 61_000;
+    const lost = await client.request('/api/combined/board');
+    assert.equal(lost.json.partial, true); assert.equal(lost.json.complete, false);
+    assert.equal(lost.json.failures[0].repository.full, 'owner/alpha');
+    assert.equal(lost.json.failures[0].message, 'Unavailable');
+  } finally { await close(); }
+});
+
+test('a malformed later discovery never publishes its first page as a complete allowlist', async () => {
+  let calls = 0;
+  const client = new GitHubClient({ apiBase: 'https://api.github.com', token: SYNTHETIC_TOKEN,
+    fetchImpl: async () => {
+      calls++;
+      if (calls === 1) return new Response(JSON.stringify([{ id: 1, full_name: 'owner/alpha', owner: { login: 'owner' }, name: 'alpha', archived: false, has_issues: true }]),
+        { headers: { link: '<https://api.github.com/user/repos?page=2>; rel="next"' } });
+      return new Response(JSON.stringify({ message: 'malformed later page' }));
+    },
+  });
+  await assert.rejects(() => client.listRepositories(), GitHubError);
+  assert.equal(calls, 2);
+});
