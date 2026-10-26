@@ -1,8 +1,9 @@
 <env_preflight>
-BLOCKED DRAFT — do not dispatch until hosting slice (feat/board-hosting) is accepted and integrated and no worker owns web/**. Create the worktree at dispatch from the then-current review branch HEAD; fill the three FILL_AT_DISPATCH values.
+READY — hosting slice is accepted and merged; web/** is free. A separate #35 reviewer runs read-only in .worktrees/team-dev-issue-35-write-refresh; do not read or touch it.
 Repo /workspace/extensions/github-task-board
-Worktree FILL_AT_DISPATCH (suggested .worktrees/team-dev-issue-37-multi-repo, branch feat/issue-37-multi-repo)
-Base FILL_AT_DISPATCH clean tracked; dependencies link to root node_modules; no installs/env copy/DB registration. Key paths web/server/{config,github,board,app}.ts, web/public/app.js, web/tests/**, web/README.md.
+Worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo
+Branch feat/issue-37-multi-repo; base commit752407a, tracked clean. Create the shared dependency link once: ln -s ../../node_modules node_modules (root node_modules already installed). No npm install, no env copy, no DB registration.
+Key paths (ground them yourself in this tree): web/server/{config,github,board,app}.ts, web/public/app.js, web/tests/**, web/README.md.
 Tests: node --test web/tests/*.test.mjs; npm test; npx tsc -p web/tsconfig.json; bundle npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=web/dist/server.mjs (web/dist gitignored; npm run build:web does not exist).
 Do not touch panel/**, service/**, test/**, shared skills/config, credentials, real GitHub beyond the configured token in existing fixtures, installed extension, other worktrees, master, proxy/TLS/container/deployment configs. No push/merge/close/deploy. Synthetic fixtures and localhost only.
 Preflight authoritative at dispatch; no initial git status/pwd/ls. Targeted checks before commits and after failures expected.
