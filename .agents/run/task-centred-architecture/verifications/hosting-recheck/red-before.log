@@ -1,0 +1,50 @@
+================================================================
+RED-BEFORE VERIFICATION EVIDENCE: BASELINE COMMIT b8e517c
+================================================================
+
+--- CHECK 1: BOARD_GITHUB_API_BASE token exfiltration vector ---
+Target commit: b8e517c
+Exit code: 1
+Result: FAIL (Expected red-before)
+Stderr snippet: node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
++ actual - expected
+
++ 'http://attacker-controlled.invalid:8888'
+
+--- CHECK 2: False health signal version fallback ---
+Target commit: b8e517c
+app.ts contains hardcoded cachedVersion = '1.2.1': true
+app.ts contains honest return 'unknown' in getPackageVersion: false
+Exit code: 1
+Result: FAIL (Expected red-before)
+Stderr snippet: node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: must not have hardcoded 1.2.1 fallback
+    at file:///tmp/opencode/b8e517c/[eval1]:5:14
+    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:282:26)
+
+--- CHECK 3: Test 9 isolation failure on b8e517c without web/dist ---
+Target commit: b8e517c
+Exit code: 1
+Result: FAIL (Expected red-before)
+Failure snippet:     Error: Cannot find module '/tmp/opencode/b8e517c/web/dist/server.mjs'
+
+--- CHECK 4: Root README start:web prerequisite gap ---
+Target commit: b8e517c
+b8e517c README.md start:web line: | `npm run start:web` | Runs the production standalone web board server (`web/dist/server.mjs`) |
+Mentions required esbuild prerequisite: false (Expected false on b8e517c)
+
+--- CHECK 5: HEAD /health testing in hosting.test.mjs ---
+Target commit: b8e517c
+b8e517c test 5 tested HEAD method: false (Expected false on b8e517c)
+
+================================================================
+ALL 5 REGRESSIONS PROVEN RED ON COMMIT b8e517c
+================================================================

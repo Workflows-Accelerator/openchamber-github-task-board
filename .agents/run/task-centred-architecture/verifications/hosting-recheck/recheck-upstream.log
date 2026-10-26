@@ -1,0 +1,16 @@
+=== Recheck 1: BOARD_GITHUB_API_BASE Token Protection ===
+
+config.githubApiBase: https://api.github.com
+describeConfig has githubApiBase: false
+Attacker server hit on 9999: false
+Outbound URLs called count: 2
+  -> Outbound URL: https://api.github.com/user
+  -> Outbound URL: https://api.github.com/repos/test-owner/test-repo
+
+=== Recheck 1C: Upstream Redirect Rejection ===
+Redirect status 301 successfully blocked before following.
+Redirect status 302 successfully blocked before following.
+Redirect status 307 successfully blocked before following.
+Redirect status 308 successfully blocked before following.
+
+Result: Finding 1 CONFIRMED CLOSED. Token cannot be redirected.

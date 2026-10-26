@@ -1,0 +1,9 @@
+=== Recheck 2: Version Fallback & Dynamic Package Read ===
+
+Default getPackageVersion(): 1.2.1
+Non-existent package file version: unknown
+Corrupt JSON file version: unknown
+Empty string version returns: unknown
+/health with missing package.json response body: { status: 'ok', version: 'unknown', uptime: 0 }
+
+Result: Finding 2 CONFIRMED CLOSED. Version is dynamic and fallback is honest.
