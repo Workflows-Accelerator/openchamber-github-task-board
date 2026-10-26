@@ -1,0 +1,32 @@
+TAP version 13
+# Subtest: answer confirms only the qualified combined row question count
+not ok 1 - answer confirms only the qualified combined row question count
+  ---
+  duration_ms: 24.023976
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo-client.test.mjs:115:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    1 !== 0
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 0
+  actual: 1
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo-client.test.mjs:120:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 399.317458

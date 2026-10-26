@@ -1,0 +1,294 @@
+TAP version 13
+# Subtest: repository discovery lists every token-visible repository with immutable identity, archived and issue capability
+not ok 1 - repository discovery lists every token-visible repository with immutable identity, archived and issue capability
+  ---
+  duration_ms: 239.186901
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:69:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    404 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 404
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:74:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: the token covering two repositories shows both and the combined view labels every row
+not ok 2 - the token covering two repositories shows both and the combined view labels every row
+  ---
+  duration_ms: 217.110856
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:99:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    404 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 404
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:104:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: cross-repository same-number rows stay separate and reads resolve the shown repository
+not ok 3 - cross-repository same-number rows stay separate and reads resolve the shown repository
+  ---
+  duration_ms: 183.954551
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:129:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'filter')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:134:39)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a write in the combined view lands only in the shown issue repository and same-number writes stay independent
+not ok 4 - a write in the combined view lands only in the shown issue repository and same-number writes stay independent
+  ---
+  duration_ms: 153.696442
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:153:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'fingerprint')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:160:53)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+not ok 5 - fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+  ---
+  duration_ms: 169.598498
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:202:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    /api/repos/evil/repo/board
+    
+    404 !== 400
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 400
+  actual: 404
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:217:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: discovery failure keeps the last known picker and marks it stale instead of presenting an empty list
+not ok 6 - discovery failure keeps the last known picker and marks it stale instead of presenting an empty list
+  ---
+  duration_ms: 155.552335
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:230:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    404 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 404
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:235:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: zero visible repositories is distinct from failed discovery
+not ok 7 - zero visible repositories is distinct from failed discovery
+  ---
+  duration_ms: 179.986178
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:255:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    undefined !== 4
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 4
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:259:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: archived and empty repositories stay selectable with correct board states
+not ok 8 - archived and empty repositories stay selectable with correct board states
+  ---
+  duration_ms: 137.002675
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:276:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'find')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:281:46)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: a known repository losing access is shown unavailable with its last identity and refuses reads and writes
+not ok 9 - a known repository losing access is shown unavailable with its last identity and refuses reads and writes
+  ---
+  duration_ms: 142.596376
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:303:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'find')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:308:43)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: aggregate refresh is bounded, one failure stays local and partial results are never marked complete
+not ok 10 - aggregate refresh is bounded, one failure stays local and partial results are never marked complete
+  ---
+  duration_ms: 158.570501
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:332:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    404 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 404
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:349:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: repository discovery fails loudly on a malformed page and respects the page bound
+ok 11 - repository discovery fails loudly on a malformed page and respects the page bound
+  ---
+  duration_ms: 5.333407
+  type: 'test'
+  ...
+# Subtest: repository discovery follows bounded pagination and preserves identity fields
+ok 12 - repository discovery follows bounded pagination and preserves identity fields
+  ---
+  duration_ms: 2.480699
+  type: 'test'
+  ...
+# Subtest: discovery failure before any success is not an empty picker and does not prevent sign-in
+not ok 13 - discovery failure before any success is not an empty picker and does not prevent sign-in
+  ---
+  duration_ms: 274.122651
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:456:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    404 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 404
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:466:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: expired failed discovery retains display identities but cannot authorize a write
+not ok 14 - expired failed discovery retains display identities but cannot authorize a write
+  ---
+  duration_ms: 141.835677
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:475:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'fingerprint')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:483:85)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: identical contents in same-number issues do not permit a cross-repository fingerprint replay on any write path
+not ok 15 - identical contents in same-number issues do not permit a cross-repository fingerprint replay on any write path
+  ---
+  duration_ms: 201.252111
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:492:1'
+  failureType: 'testCodeFailure'
+  error: "Cannot read properties of undefined (reading 'fingerprint')"
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:500:38)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: discovery rejects malformed entries and conflicting duplicate immutable identities
+not ok 16 - discovery rejects malformed entries and conflicting duplicate immutable identities
+  ---
+  duration_ms: 1.867062
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:526:1'
+  failureType: 'testCodeFailure'
+  error: 'Missing expected rejection (GitHubError).'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  stack: |-
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo.test.mjs:536:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 2
+# fail 14
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2785.056166

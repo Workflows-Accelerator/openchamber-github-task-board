@@ -1,0 +1,74 @@
+TAP version 13
+# Subtest: qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+ok 1 - qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 17.372675
+  type: 'test'
+  ...
+# Subtest: qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+ok 2 - qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 3.820445
+  type: 'test'
+  ...
+# Subtest: qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+ok 3 - qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 2.76065
+  type: 'test'
+  ...
+# Subtest: qualified overview drafts survive navigation without crossing same-number repositories
+ok 4 - qualified overview drafts survive navigation without crossing same-number repositories
+  ---
+  duration_ms: 6.366359
+  type: 'test'
+  ...
+# Subtest: observed revision change never rebinds an old answer; original question draft is recoverable
+ok 5 - observed revision change never rebinds an old answer; original question draft is recoverable
+  ---
+  duration_ms: 3.39826
+  type: 'test'
+  ...
+# Subtest: same-number combined row update replaces only the written repository
+ok 6 - same-number combined row update replaces only the written repository
+  ---
+  duration_ms: 3.227348
+  type: 'test'
+  ...
+# Subtest: older detail read cannot replace a newer confirmed mutation
+ok 7 - older detail read cannot replace a newer confirmed mutation
+  ---
+  duration_ms: 4.363504
+  type: 'test'
+  ...
+# Subtest: a detail refresh started during a write cannot clear the later UNKNOWN outcome
+not ok 8 - a detail refresh started during a write cannot clear the later UNKNOWN outcome
+  ---
+  duration_ms: 4.586336
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo-client.test.mjs:93:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    no repeat after UNKNOWN without a newer explicit refresh
+    
+    3 !== 2
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 2
+  actual: 3
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo-client.test.mjs:103:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 7
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 405.078116

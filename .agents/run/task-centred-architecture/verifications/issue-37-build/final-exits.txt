@@ -1,0 +1,17 @@
+final-web-tests exit=0
+final-root-tests exit=0
+final-web-types exit=0
+final-root-types exit=0
+final-build exit=0
+final-rebuild exit=0
+final-hash-parity exit=0
+final-bundle-ignored exit=0
+final-mutants exit=0
+source-bundle-parity exit=0
+final-browser-baseline exit=0
+final-browser-matrix exit=0
+final-additional-browser exit=0
+final-residual-http exit=0
+final-additional-http exit=0
+final-browser-gateway exit=0
+final-multi-browser exit=0

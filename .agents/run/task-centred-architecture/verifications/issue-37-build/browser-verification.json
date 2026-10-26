@@ -1,0 +1,223 @@
+{
+  "kind": "synthetic-fixture browser verification",
+  "startedAt": "2026-10-26T18:44:42.356Z",
+  "engine": "Obscura (CDP), no Chromium download",
+  "fixtures": "fake GitHub server with synthetic issues",
+  "checks": [
+    {
+      "name": "login page hides data",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pull requests are excluded from the board",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "board names the configured repository",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "session cookie is not readable from JavaScript",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "nothing is kept in local or session storage",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page source carries no token",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page source carries no password",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop board: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=1280 clientWidth=1280"
+    },
+    {
+      "name": "detail shows phase metadata",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail shows attention metadata",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail shows an open question input",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail has no agent or session controls",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail shows warning that simultaneous edit can be overwritten",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop task detail: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=1280 clientWidth=1280"
+    },
+    {
+      "name": "overview edit reached GitHub",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "other sections survived the edit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict is explained and offers a reload",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict did not overwrite the remote change",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "inline answer was written to the issue",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "status label changed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "non-status labels were preserved",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "browser transport failure on write classifies outcome as unknown and offers refresh (R1)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "browser transport failure makes zero write retries (R1)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a failed refresh keeps the last board and says it is stale",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the empty repository state is plainly explained",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360px board: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=360 clientWidth=360"
+    },
+    {
+      "name": "360px task detail: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=360 clientWidth=360"
+    },
+    {
+      "name": "every control is a native element in the tab order",
+      "pass": true,
+      "detail": "[{\"tag\":\"A\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"refresh-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"signout-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"password\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"login-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"SELECT\",\"id\":\"repo-select\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"back-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"conflict-reload\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"TEXTAREA\",\"id\":\"overview-text\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"save-overview\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"answer-0\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"SELECT\",\"id\":\"status-select\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"apply-status\",\"tabIndex\":0,\"disabled\":false}]"
+    },
+    {
+      "name": "focus can be moved to a real control",
+      "pass": true,
+      "detail": "{\"active\":true,\"outlineStyle\":\"none\",\"outlineWidth\":\"0px\",\"matchesFocusVisible\":false}"
+    },
+    {
+      "name": "the stylesheet defines a visible :focus-visible ring",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "signing out clears the board from the page",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360px sign-in: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=360 clientWidth=360"
+    }
+  ],
+  "screenshots": [
+    ".agents/run/task-centred-architecture/verifications/issue-37-build/screenshots/login-desktop-2026-10-26T18-44-42-356Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-37-build/screenshots/board-desktop-2026-10-26T18-44-42-356Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-37-build/screenshots/task-detail-desktop-2026-10-26T18-44-42-356Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-37-build/screenshots/conflict-desktop-2026-10-26T18-44-42-356Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-37-build/screenshots/task-detail-after-edits-desktop-2026-10-26T18-44-42-356Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-37-build/screenshots/stale-board-desktop-2026-10-26T18-44-42-356Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-37-build/screenshots/empty-board-desktop-2026-10-26T18-44-42-356Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-37-build/screenshots/board-360-2026-10-26T18-44-42-356Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-37-build/screenshots/task-detail-360-2026-10-26T18-44-42-356Z.png",
+    ".agents/run/task-centred-architecture/verifications/issue-37-build/screenshots/signed-out-360-2026-10-26T18-44-42-356Z.png"
+  ],
+  "notes": [
+    "fake GitHub PATCH calls after conflict: 1",
+    "NOT RUN: real Tab-key traversal and computed :focus-visible ring; Obscura does not deliver synthetic key presses and script focus does not engage the focus-visible heuristic. The :focus-visible rule is present in the served stylesheet and every control is in the tab order."
+  ],
+  "finishedAt": "2026-10-26T18:44:45.789Z",
+  "runtimeEvents": [],
+  "boardLogs": [
+    "GET / 200 2ms",
+    "GET /theme.css 200 3ms",
+    "GET /app.js 200 1ms",
+    "GET /api/session 200 1ms",
+    "POST /api/session 200 73ms",
+    "GET /api/repos 200 0ms",
+    "GET /api/repos/:owner/:name/board 200 15ms",
+    "GET /api/repos/:owner/:name/issues/1 200 8ms",
+    "write issue=1 fields=body",
+    "PUT /api/repos/:owner/:name/issues/1/section 200 30ms",
+    "PUT /api/repos/:owner/:name/issues/1/section 409 11ms",
+    "GET /api/repos/:owner/:name/issues/1 200 5ms",
+    "write issue=1 fields=body",
+    "POST /api/repos/:owner/:name/issues/1/questions/0/answer 200 19ms",
+    "write issue=1 fields=labels",
+    "POST /api/repos/:owner/:name/issues/1/status 200 10ms",
+    "write issue=1 fields=body",
+    "PUT /api/repos/:owner/:name/issues/1/section 200 18ms",
+    "GET /api/repos 200 1ms",
+    "GET /api/repos/:owner/:name/board 502 5ms",
+    "GET /api/repos 200 0ms",
+    "GET /api/repos/:owner/:name/board 200 5ms",
+    "GET /api/repos 200 1ms",
+    "GET /api/repos/:owner/:name/board 200 3ms",
+    "GET /api/repos 200 1ms",
+    "GET /api/repos/:owner/:name/board 200 5ms",
+    "GET /api/repos/:owner/:name/issues/1 200 11ms",
+    "GET /theme.css 200 1ms",
+    "DELETE /api/session 204 1ms"
+  ],
+  "summary": {
+    "checks": 32,
+    "passed": 32,
+    "failed": 0,
+    "screenshots": 10
+  }
+}

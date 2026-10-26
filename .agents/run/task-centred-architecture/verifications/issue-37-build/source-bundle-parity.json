@@ -1,0 +1,1329 @@
+{
+  "sourceEntry": "web/server.ts",
+  "bundleEntry": "web/dist/server.mjs",
+  "bundleSha256": "b1d2b27232b38303761d6c90c8c406190953b6c0f53a7ed8484eec217c1061f6",
+  "normalizedVolatileFields": [
+    "fetchedAt",
+    "lastSeenAt",
+    "savedAt",
+    "updatedAt",
+    "csrfToken",
+    "expiresAt",
+    "uptime"
+  ],
+  "comparedCheckpoints": 26,
+  "upstreamCallsPerEntry": 25,
+  "qualifiedPatchesPerEntry": 3,
+  "equal": true,
+  "transcript": [
+    {
+      "route": "/health",
+      "method": "GET",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "status": "ok",
+        "version": "1.2.1"
+      }
+    },
+    {
+      "route": "/",
+      "method": "GET",
+      "status": 200,
+      "type": "text/html; charset=utf-8",
+      "body": {
+        "sha256": "c15ad103067249c2f1d95dd4e5b1faed2057814a7126dde11afb6c4c61950a2d"
+      }
+    },
+    {
+      "route": "/app.js",
+      "method": "GET",
+      "status": 200,
+      "type": "text/javascript; charset=utf-8",
+      "body": {
+        "sha256": "cf2f1215442d9e6f9401ac1cc3de2dcb58f80ceba1f3e8e04d46c5d4570ef4b8"
+      }
+    },
+    {
+      "route": "/theme.css",
+      "method": "GET",
+      "status": 200,
+      "type": "text/css; charset=utf-8",
+      "body": {
+        "sha256": "03064b94495535195545b590ae599c0e8d424623dad9f0f5edabc4c673d85c9b"
+      }
+    },
+    {
+      "route": "/api/repos",
+      "method": "GET",
+      "status": 401,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "error": "unauthenticated",
+        "message": "Sign in to use this board"
+      }
+    },
+    {
+      "route": "/api/combined/board",
+      "method": "GET",
+      "status": 401,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "error": "unauthenticated",
+        "message": "Sign in to use this board"
+      }
+    },
+    {
+      "route": "/api/session",
+      "method": "POST",
+      "status": 200,
+      "body": {
+        "authenticated": true
+      }
+    },
+    {
+      "route": "/api/session",
+      "method": "GET",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "authenticated": true
+      }
+    },
+    {
+      "route": "/api/repos",
+      "method": "GET",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "discoveryFailed": false,
+        "error": null,
+        "freshnessMs": 60000,
+        "repositories": [
+          {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/alpha",
+            "hasIssues": true,
+            "id": 101,
+            "name": "alpha",
+            "owner": "owner",
+            "private": false
+          },
+          {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/beta",
+            "hasIssues": true,
+            "id": 102,
+            "name": "beta",
+            "owner": "owner",
+            "private": false
+          },
+          {
+            "archived": true,
+            "available": true,
+            "disabled": false,
+            "full": "owner/archived",
+            "hasIssues": true,
+            "id": 103,
+            "name": "archived",
+            "owner": "owner",
+            "private": false
+          },
+          {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/empty",
+            "hasIssues": true,
+            "id": 104,
+            "name": "empty",
+            "owner": "owner",
+            "private": false
+          }
+        ],
+        "stale": false,
+        "visibleCount": 4
+      }
+    },
+    {
+      "route": "/api/combined/board",
+      "method": "GET",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "complete": true,
+        "concurrency": 3,
+        "discoveryFailed": false,
+        "error": null,
+        "excludedPullRequests": 0,
+        "failures": [],
+        "freshnessMs": 60000,
+        "issues": [
+          {
+            "attention": "needs-decision",
+            "column": "todo",
+            "counts": {
+              "humanTasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              },
+              "openQuestions": {
+                "done": 0,
+                "open": 1,
+                "total": 1
+              },
+              "subtasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              }
+            },
+            "htmlUrl": "https://github.com/owner/alpha/issues/1",
+            "key": "owner/alpha#1",
+            "labels": [
+              "status:todo"
+            ],
+            "number": 1,
+            "phase": "planning",
+            "repository": {
+              "archived": false,
+              "available": true,
+              "disabled": false,
+              "full": "owner/alpha",
+              "hasIssues": true,
+              "id": 101,
+              "name": "alpha",
+              "owner": "owner",
+              "private": false
+            },
+            "state": "open",
+            "statusLabel": "status:todo",
+            "title": "alpha task"
+          },
+          {
+            "attention": "needs-decision",
+            "column": "todo",
+            "counts": {
+              "humanTasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              },
+              "openQuestions": {
+                "done": 0,
+                "open": 1,
+                "total": 1
+              },
+              "subtasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              }
+            },
+            "htmlUrl": "https://github.com/owner/archived/issues/1",
+            "key": "owner/archived#1",
+            "labels": [
+              "status:todo"
+            ],
+            "number": 1,
+            "phase": "planning",
+            "repository": {
+              "archived": true,
+              "available": true,
+              "disabled": false,
+              "full": "owner/archived",
+              "hasIssues": true,
+              "id": 103,
+              "name": "archived",
+              "owner": "owner",
+              "private": false
+            },
+            "state": "open",
+            "statusLabel": "status:todo",
+            "title": "archived task"
+          },
+          {
+            "attention": "needs-decision",
+            "column": "todo",
+            "counts": {
+              "humanTasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              },
+              "openQuestions": {
+                "done": 0,
+                "open": 1,
+                "total": 1
+              },
+              "subtasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              }
+            },
+            "htmlUrl": "https://github.com/owner/beta/issues/1",
+            "key": "owner/beta#1",
+            "labels": [
+              "status:todo"
+            ],
+            "number": 1,
+            "phase": "planning",
+            "repository": {
+              "archived": false,
+              "available": true,
+              "disabled": false,
+              "full": "owner/beta",
+              "hasIssues": true,
+              "id": 102,
+              "name": "beta",
+              "owner": "owner",
+              "private": false
+            },
+            "state": "open",
+            "statusLabel": "status:todo",
+            "title": "beta task"
+          }
+        ],
+        "maxPagesPerRepository": 10,
+        "partial": false,
+        "repo": "All repositories",
+        "repositories": [
+          {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/alpha",
+            "hasIssues": true,
+            "id": 101,
+            "name": "alpha",
+            "owner": "owner",
+            "private": false
+          },
+          {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/beta",
+            "hasIssues": true,
+            "id": 102,
+            "name": "beta",
+            "owner": "owner",
+            "private": false
+          },
+          {
+            "archived": true,
+            "available": true,
+            "disabled": false,
+            "full": "owner/archived",
+            "hasIssues": true,
+            "id": 103,
+            "name": "archived",
+            "owner": "owner",
+            "private": false
+          },
+          {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/empty",
+            "hasIssues": true,
+            "id": 104,
+            "name": "empty",
+            "owner": "owner",
+            "private": false
+          }
+        ],
+        "repositoriesLoaded": 4,
+        "repositoriesRequested": 4,
+        "scope": "all",
+        "stale": false,
+        "truncated": false,
+        "visibleCount": 4
+      }
+    },
+    {
+      "route": "/api/repos/owner/archived/board",
+      "method": "GET",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "complete": true,
+        "excludedPullRequests": 0,
+        "issues": [
+          {
+            "attention": "needs-decision",
+            "column": "todo",
+            "counts": {
+              "humanTasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              },
+              "openQuestions": {
+                "done": 0,
+                "open": 1,
+                "total": 1
+              },
+              "subtasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              }
+            },
+            "htmlUrl": "https://github.com/owner/archived/issues/1",
+            "key": "owner/archived#1",
+            "labels": [
+              "status:todo"
+            ],
+            "number": 1,
+            "phase": "planning",
+            "repository": {
+              "archived": true,
+              "available": true,
+              "disabled": false,
+              "full": "owner/archived",
+              "hasIssues": true,
+              "id": 103,
+              "name": "archived",
+              "owner": "owner",
+              "private": false
+            },
+            "state": "open",
+            "statusLabel": "status:todo",
+            "title": "archived task"
+          }
+        ],
+        "login": "board-owner",
+        "partial": false,
+        "repo": "owner/archived",
+        "repository": {
+          "archived": true,
+          "available": true,
+          "disabled": false,
+          "full": "owner/archived",
+          "hasIssues": true,
+          "id": 103,
+          "name": "archived",
+          "owner": "owner",
+          "private": false
+        },
+        "scope": "repo",
+        "truncated": false
+      }
+    },
+    {
+      "route": "/api/repos/owner/empty/board",
+      "method": "GET",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "complete": true,
+        "excludedPullRequests": 0,
+        "issues": [],
+        "login": "board-owner",
+        "partial": false,
+        "repo": "owner/empty",
+        "repository": {
+          "archived": false,
+          "available": true,
+          "disabled": false,
+          "full": "owner/empty",
+          "hasIssues": true,
+          "id": 104,
+          "name": "empty",
+          "owner": "owner",
+          "private": false
+        },
+        "scope": "repo",
+        "truncated": false
+      }
+    },
+    {
+      "route": "/api/board",
+      "method": "GET",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "complete": true,
+        "excludedPullRequests": 0,
+        "issues": [
+          {
+            "attention": "needs-decision",
+            "column": "todo",
+            "counts": {
+              "humanTasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              },
+              "openQuestions": {
+                "done": 0,
+                "open": 1,
+                "total": 1
+              },
+              "subtasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              }
+            },
+            "htmlUrl": "https://github.com/owner/alpha/issues/1",
+            "key": "owner/alpha#1",
+            "labels": [
+              "status:todo"
+            ],
+            "number": 1,
+            "phase": "planning",
+            "repository": {
+              "archived": false,
+              "available": true,
+              "disabled": false,
+              "full": "owner/alpha",
+              "hasIssues": true,
+              "id": 101,
+              "name": "alpha",
+              "owner": "owner",
+              "private": false
+            },
+            "state": "open",
+            "statusLabel": "status:todo",
+            "title": "alpha task"
+          }
+        ],
+        "login": "board-owner",
+        "partial": false,
+        "repo": "owner/alpha",
+        "repository": {
+          "archived": false,
+          "available": true,
+          "disabled": false,
+          "full": "owner/alpha",
+          "hasIssues": true,
+          "id": 101,
+          "name": "alpha",
+          "owner": "owner",
+          "private": false
+        },
+        "scope": "repo",
+        "truncated": false
+      }
+    },
+    {
+      "route": "/api/repos/owner/alpha/issues/1",
+      "method": "GET",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "issue": {
+          "acceptanceCriteria": [],
+          "attention": "needs-decision",
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [ ] Decide?\n",
+          "column": "todo",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "text": "Original",
+              "title": "Overview"
+            }
+          ],
+          "fingerprint": "8b6bf5a1176a48eba300ee2b4339028f19cc5be3983da19e227c94207ba4929b",
+          "htmlUrl": "https://github.com/owner/alpha/issues/1",
+          "humanTasks": [],
+          "key": "owner/alpha#1",
+          "labels": [
+            "status:todo"
+          ],
+          "number": 1,
+          "openQuestions": [
+            {
+              "answerIndex": 0,
+              "completed": false,
+              "index": 0,
+              "text": "Decide?"
+            }
+          ],
+          "phase": "planning",
+          "repository": {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/alpha",
+            "hasIssues": true,
+            "id": 101,
+            "name": "alpha",
+            "owner": "owner",
+            "private": false
+          },
+          "state": "open",
+          "statusLabel": "status:todo",
+          "subtasks": [],
+          "testPlan": {
+            "batch": [],
+            "issue": []
+          },
+          "title": "alpha task"
+        },
+        "statusOptions": [
+          {
+            "label": "Draft",
+            "value": "status:draft"
+          },
+          {
+            "label": "Backlog",
+            "value": "status:backlog"
+          },
+          {
+            "label": "To Do",
+            "value": "status:todo"
+          },
+          {
+            "label": "Planned",
+            "value": "status:planned"
+          },
+          {
+            "label": "In Progress",
+            "value": "status:in-progress"
+          },
+          {
+            "label": "Needs Human",
+            "value": "status:needs-human"
+          },
+          {
+            "label": "In Review",
+            "value": "status:in-review"
+          },
+          {
+            "label": "Done",
+            "value": "status:done"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/repos/owner/beta/issues/1",
+      "method": "GET",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "issue": {
+          "acceptanceCriteria": [],
+          "attention": "needs-decision",
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [ ] Decide?\n",
+          "column": "todo",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "text": "Original",
+              "title": "Overview"
+            }
+          ],
+          "fingerprint": "209996efe8dcc6bc8084d1452e39c9cecbb176133f2c50dfb3aae09c1a6b696f",
+          "htmlUrl": "https://github.com/owner/beta/issues/1",
+          "humanTasks": [],
+          "key": "owner/beta#1",
+          "labels": [
+            "status:todo"
+          ],
+          "number": 1,
+          "openQuestions": [
+            {
+              "answerIndex": 0,
+              "completed": false,
+              "index": 0,
+              "text": "Decide?"
+            }
+          ],
+          "phase": "planning",
+          "repository": {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/beta",
+            "hasIssues": true,
+            "id": 102,
+            "name": "beta",
+            "owner": "owner",
+            "private": false
+          },
+          "state": "open",
+          "statusLabel": "status:todo",
+          "subtasks": [],
+          "testPlan": {
+            "batch": [],
+            "issue": []
+          },
+          "title": "beta task"
+        },
+        "statusOptions": [
+          {
+            "label": "Draft",
+            "value": "status:draft"
+          },
+          {
+            "label": "Backlog",
+            "value": "status:backlog"
+          },
+          {
+            "label": "To Do",
+            "value": "status:todo"
+          },
+          {
+            "label": "Planned",
+            "value": "status:planned"
+          },
+          {
+            "label": "In Progress",
+            "value": "status:in-progress"
+          },
+          {
+            "label": "Needs Human",
+            "value": "status:needs-human"
+          },
+          {
+            "label": "In Review",
+            "value": "status:in-review"
+          },
+          {
+            "label": "Done",
+            "value": "status:done"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/repos/owner/fabricated/issues/1/status",
+      "method": "POST",
+      "status": 400,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "error": "repository_not_allowed",
+        "message": "That repository is not available to this board token"
+      }
+    },
+    {
+      "route": "/api/repos/owner/Alpha/issues/1/status",
+      "method": "POST",
+      "status": 400,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "error": "repository_not_allowed",
+        "message": "That repository is not available to this board token"
+      }
+    },
+    {
+      "route": "/api/repos/owner/unavailable/issues/1/status",
+      "method": "POST",
+      "status": 400,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "error": "repository_not_allowed",
+        "message": "That repository is not available to this board token"
+      }
+    },
+    {
+      "route": "/api/repos/owner/beta/issues/1/status",
+      "method": "POST",
+      "status": 403,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "error": "csrf_rejected",
+        "message": "That request is missing a valid CSRF token"
+      }
+    },
+    {
+      "route": "/api/repos/owner/beta/issues/1/status",
+      "method": "POST",
+      "status": 409,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "error": "conflict",
+        "issue": {
+          "acceptanceCriteria": [],
+          "attention": "needs-decision",
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [ ] Decide?\n",
+          "column": "todo",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "text": "Original",
+              "title": "Overview"
+            }
+          ],
+          "fingerprint": "209996efe8dcc6bc8084d1452e39c9cecbb176133f2c50dfb3aae09c1a6b696f",
+          "htmlUrl": "https://github.com/owner/beta/issues/1",
+          "humanTasks": [],
+          "key": "owner/beta#1",
+          "labels": [
+            "status:todo"
+          ],
+          "number": 1,
+          "openQuestions": [
+            {
+              "answerIndex": 0,
+              "completed": false,
+              "index": 0,
+              "text": "Decide?"
+            }
+          ],
+          "phase": "planning",
+          "repository": {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/beta",
+            "hasIssues": true,
+            "id": 102,
+            "name": "beta",
+            "owner": "owner",
+            "private": false
+          },
+          "state": "open",
+          "statusLabel": "status:todo",
+          "subtasks": [],
+          "testPlan": {
+            "batch": [],
+            "issue": []
+          },
+          "title": "beta task"
+        },
+        "message": "This task changed on GitHub after you opened it; nothing was written",
+        "statusOptions": [
+          {
+            "label": "Draft",
+            "value": "status:draft"
+          },
+          {
+            "label": "Backlog",
+            "value": "status:backlog"
+          },
+          {
+            "label": "To Do",
+            "value": "status:todo"
+          },
+          {
+            "label": "Planned",
+            "value": "status:planned"
+          },
+          {
+            "label": "In Progress",
+            "value": "status:in-progress"
+          },
+          {
+            "label": "Needs Human",
+            "value": "status:needs-human"
+          },
+          {
+            "label": "In Review",
+            "value": "status:in-review"
+          },
+          {
+            "label": "Done",
+            "value": "status:done"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/repos/owner/beta/issues/1/section",
+      "method": "PUT",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "issue": {
+          "acceptanceCriteria": [],
+          "attention": "needs-decision",
+          "body": "## Overview\nBeta confirmed\n\n## Open Questions\n- [ ] Decide?\n",
+          "column": "todo",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "text": "Beta confirmed",
+              "title": "Overview"
+            }
+          ],
+          "fingerprint": "b96c5c0bc4a51bc3d5e2c309c2cfe02f9fffd403647fb08ffabbabc1779cb57d",
+          "htmlUrl": "https://github.com/owner/beta/issues/1",
+          "humanTasks": [],
+          "key": "owner/beta#1",
+          "labels": [
+            "status:todo"
+          ],
+          "number": 1,
+          "openQuestions": [
+            {
+              "answerIndex": 0,
+              "completed": false,
+              "index": 0,
+              "text": "Decide?"
+            }
+          ],
+          "phase": "planning",
+          "repository": {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/beta",
+            "hasIssues": true,
+            "id": 102,
+            "name": "beta",
+            "owner": "owner",
+            "private": false
+          },
+          "state": "open",
+          "statusLabel": "status:todo",
+          "subtasks": [],
+          "testPlan": {
+            "batch": [],
+            "issue": []
+          },
+          "title": "beta task"
+        },
+        "statusOptions": [
+          {
+            "label": "Draft",
+            "value": "status:draft"
+          },
+          {
+            "label": "Backlog",
+            "value": "status:backlog"
+          },
+          {
+            "label": "To Do",
+            "value": "status:todo"
+          },
+          {
+            "label": "Planned",
+            "value": "status:planned"
+          },
+          {
+            "label": "In Progress",
+            "value": "status:in-progress"
+          },
+          {
+            "label": "Needs Human",
+            "value": "status:needs-human"
+          },
+          {
+            "label": "In Review",
+            "value": "status:in-review"
+          },
+          {
+            "label": "Done",
+            "value": "status:done"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/repos/owner/beta/issues/1/status",
+      "method": "POST",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "issue": {
+          "acceptanceCriteria": [],
+          "attention": "none",
+          "body": "## Overview\nBeta confirmed\n\n## Open Questions\n- [ ] Decide?\n",
+          "column": "done",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "text": "Beta confirmed",
+              "title": "Overview"
+            }
+          ],
+          "fingerprint": "750fbba94ccf1b8089273cd704267ef463d3cab61c2462151aa89f20f1d8b45e",
+          "htmlUrl": "https://github.com/owner/beta/issues/1",
+          "humanTasks": [],
+          "key": "owner/beta#1",
+          "labels": [
+            "status:done"
+          ],
+          "number": 1,
+          "openQuestions": [
+            {
+              "answerIndex": 0,
+              "completed": false,
+              "index": 0,
+              "text": "Decide?"
+            }
+          ],
+          "phase": "done",
+          "repository": {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/beta",
+            "hasIssues": true,
+            "id": 102,
+            "name": "beta",
+            "owner": "owner",
+            "private": false
+          },
+          "state": "open",
+          "statusLabel": "status:done",
+          "subtasks": [],
+          "testPlan": {
+            "batch": [],
+            "issue": []
+          },
+          "title": "beta task"
+        },
+        "statusOptions": [
+          {
+            "label": "Draft",
+            "value": "status:draft"
+          },
+          {
+            "label": "Backlog",
+            "value": "status:backlog"
+          },
+          {
+            "label": "To Do",
+            "value": "status:todo"
+          },
+          {
+            "label": "Planned",
+            "value": "status:planned"
+          },
+          {
+            "label": "In Progress",
+            "value": "status:in-progress"
+          },
+          {
+            "label": "Needs Human",
+            "value": "status:needs-human"
+          },
+          {
+            "label": "In Review",
+            "value": "status:in-review"
+          },
+          {
+            "label": "Done",
+            "value": "status:done"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/repos/owner/beta/issues/1/questions/0/answer",
+      "method": "POST",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "issue": {
+          "acceptanceCriteria": [],
+          "attention": "none",
+          "body": "## Overview\nBeta confirmed\n\n## Open Questions\n- [x] Decide? *(Answer: Beta answer)*\n",
+          "column": "done",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "text": "Beta confirmed",
+              "title": "Overview"
+            }
+          ],
+          "fingerprint": "cecb4d86b63dbc691c8043cd1d102b72031c8cc01580d270783e95ad7e799ab9",
+          "htmlUrl": "https://github.com/owner/beta/issues/1",
+          "humanTasks": [],
+          "key": "owner/beta#1",
+          "labels": [
+            "status:done"
+          ],
+          "number": 1,
+          "openQuestions": [
+            {
+              "answerIndex": null,
+              "completed": true,
+              "index": 0,
+              "text": "Decide? *(Answer: Beta answer)*"
+            }
+          ],
+          "phase": "done",
+          "repository": {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/beta",
+            "hasIssues": true,
+            "id": 102,
+            "name": "beta",
+            "owner": "owner",
+            "private": false
+          },
+          "state": "open",
+          "statusLabel": "status:done",
+          "subtasks": [],
+          "testPlan": {
+            "batch": [],
+            "issue": []
+          },
+          "title": "beta task"
+        },
+        "statusOptions": [
+          {
+            "label": "Draft",
+            "value": "status:draft"
+          },
+          {
+            "label": "Backlog",
+            "value": "status:backlog"
+          },
+          {
+            "label": "To Do",
+            "value": "status:todo"
+          },
+          {
+            "label": "Planned",
+            "value": "status:planned"
+          },
+          {
+            "label": "In Progress",
+            "value": "status:in-progress"
+          },
+          {
+            "label": "Needs Human",
+            "value": "status:needs-human"
+          },
+          {
+            "label": "In Review",
+            "value": "status:in-review"
+          },
+          {
+            "label": "Done",
+            "value": "status:done"
+          }
+        ]
+      }
+    },
+    {
+      "route": "/api/combined/board",
+      "method": "GET",
+      "status": 200,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "complete": true,
+        "concurrency": 3,
+        "discoveryFailed": false,
+        "error": null,
+        "excludedPullRequests": 0,
+        "failures": [],
+        "freshnessMs": 60000,
+        "issues": [
+          {
+            "attention": "needs-decision",
+            "column": "todo",
+            "counts": {
+              "humanTasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              },
+              "openQuestions": {
+                "done": 0,
+                "open": 1,
+                "total": 1
+              },
+              "subtasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              }
+            },
+            "htmlUrl": "https://github.com/owner/alpha/issues/1",
+            "key": "owner/alpha#1",
+            "labels": [
+              "status:todo"
+            ],
+            "number": 1,
+            "phase": "planning",
+            "repository": {
+              "archived": false,
+              "available": true,
+              "disabled": false,
+              "full": "owner/alpha",
+              "hasIssues": true,
+              "id": 101,
+              "name": "alpha",
+              "owner": "owner",
+              "private": false
+            },
+            "state": "open",
+            "statusLabel": "status:todo",
+            "title": "alpha task"
+          },
+          {
+            "attention": "needs-decision",
+            "column": "todo",
+            "counts": {
+              "humanTasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              },
+              "openQuestions": {
+                "done": 0,
+                "open": 1,
+                "total": 1
+              },
+              "subtasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              }
+            },
+            "htmlUrl": "https://github.com/owner/archived/issues/1",
+            "key": "owner/archived#1",
+            "labels": [
+              "status:todo"
+            ],
+            "number": 1,
+            "phase": "planning",
+            "repository": {
+              "archived": true,
+              "available": true,
+              "disabled": false,
+              "full": "owner/archived",
+              "hasIssues": true,
+              "id": 103,
+              "name": "archived",
+              "owner": "owner",
+              "private": false
+            },
+            "state": "open",
+            "statusLabel": "status:todo",
+            "title": "archived task"
+          },
+          {
+            "attention": "none",
+            "column": "done",
+            "counts": {
+              "humanTasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              },
+              "openQuestions": {
+                "done": 1,
+                "open": 0,
+                "total": 1
+              },
+              "subtasks": {
+                "done": 0,
+                "open": 0,
+                "total": 0
+              }
+            },
+            "htmlUrl": "https://github.com/owner/beta/issues/1",
+            "key": "owner/beta#1",
+            "labels": [
+              "status:done"
+            ],
+            "number": 1,
+            "phase": "done",
+            "repository": {
+              "archived": false,
+              "available": true,
+              "disabled": false,
+              "full": "owner/beta",
+              "hasIssues": true,
+              "id": 102,
+              "name": "beta",
+              "owner": "owner",
+              "private": false
+            },
+            "state": "open",
+            "statusLabel": "status:done",
+            "title": "beta task"
+          }
+        ],
+        "maxPagesPerRepository": 10,
+        "partial": false,
+        "repo": "All repositories",
+        "repositories": [
+          {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/alpha",
+            "hasIssues": true,
+            "id": 101,
+            "name": "alpha",
+            "owner": "owner",
+            "private": false
+          },
+          {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/beta",
+            "hasIssues": true,
+            "id": 102,
+            "name": "beta",
+            "owner": "owner",
+            "private": false
+          },
+          {
+            "archived": true,
+            "available": true,
+            "disabled": false,
+            "full": "owner/archived",
+            "hasIssues": true,
+            "id": 103,
+            "name": "archived",
+            "owner": "owner",
+            "private": false
+          },
+          {
+            "archived": false,
+            "available": true,
+            "disabled": false,
+            "full": "owner/empty",
+            "hasIssues": true,
+            "id": 104,
+            "name": "empty",
+            "owner": "owner",
+            "private": false
+          }
+        ],
+        "repositoriesLoaded": 4,
+        "repositoriesRequested": 4,
+        "scope": "all",
+        "stale": false,
+        "truncated": false,
+        "visibleCount": 4
+      }
+    },
+    {
+      "route": "/api/session",
+      "method": "DELETE",
+      "status": 204,
+      "type": null,
+      "body": {
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    {
+      "route": "/api/repos",
+      "method": "GET",
+      "status": 401,
+      "type": "application/json; charset=utf-8",
+      "body": {
+        "error": "unauthenticated",
+        "message": "Sign in to use this board"
+      }
+    }
+  ]
+}

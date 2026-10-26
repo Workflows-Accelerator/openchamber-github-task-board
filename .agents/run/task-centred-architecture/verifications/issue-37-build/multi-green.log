@@ -1,0 +1,160 @@
+TAP version 13
+# Subtest: qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+ok 1 - qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 13.006083
+  type: 'test'
+  ...
+# Subtest: qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+ok 2 - qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 3.833779
+  type: 'test'
+  ...
+# Subtest: qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+ok 3 - qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 2.825575
+  type: 'test'
+  ...
+# Subtest: qualified overview drafts survive navigation without crossing same-number repositories
+ok 4 - qualified overview drafts survive navigation without crossing same-number repositories
+  ---
+  duration_ms: 8.142342
+  type: 'test'
+  ...
+# Subtest: observed revision change never rebinds an old answer; original question draft is recoverable
+ok 5 - observed revision change never rebinds an old answer; original question draft is recoverable
+  ---
+  duration_ms: 3.034038
+  type: 'test'
+  ...
+# Subtest: same-number combined row update replaces only the written repository
+ok 6 - same-number combined row update replaces only the written repository
+  ---
+  duration_ms: 3.734791
+  type: 'test'
+  ...
+# Subtest: older detail read cannot replace a newer confirmed mutation
+ok 7 - older detail read cannot replace a newer confirmed mutation
+  ---
+  duration_ms: 6.160648
+  type: 'test'
+  ...
+# Subtest: a detail refresh started during a write cannot clear the later UNKNOWN outcome
+ok 8 - a detail refresh started during a write cannot clear the later UNKNOWN outcome
+  ---
+  duration_ms: 2.415217
+  type: 'test'
+  ...
+# Subtest: repository discovery lists every token-visible repository with immutable identity, archived and issue capability
+ok 9 - repository discovery lists every token-visible repository with immutable identity, archived and issue capability
+  ---
+  duration_ms: 233.852746
+  type: 'test'
+  ...
+# Subtest: the token covering two repositories shows both and the combined view labels every row
+ok 10 - the token covering two repositories shows both and the combined view labels every row
+  ---
+  duration_ms: 269.872173
+  type: 'test'
+  ...
+# Subtest: cross-repository same-number rows stay separate and reads resolve the shown repository
+ok 11 - cross-repository same-number rows stay separate and reads resolve the shown repository
+  ---
+  duration_ms: 199.353446
+  type: 'test'
+  ...
+# Subtest: a write in the combined view lands only in the shown issue repository and same-number writes stay independent
+ok 12 - a write in the combined view lands only in the shown issue repository and same-number writes stay independent
+  ---
+  duration_ms: 231.280404
+  type: 'test'
+  ...
+# Subtest: fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+ok 13 - fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+  ---
+  duration_ms: 158.723246
+  type: 'test'
+  ...
+# Subtest: discovery failure keeps the last known picker and marks it stale instead of presenting an empty list
+ok 14 - discovery failure keeps the last known picker and marks it stale instead of presenting an empty list
+  ---
+  duration_ms: 144.19676
+  type: 'test'
+  ...
+# Subtest: zero visible repositories is distinct from failed discovery
+ok 15 - zero visible repositories is distinct from failed discovery
+  ---
+  duration_ms: 154.755535
+  type: 'test'
+  ...
+# Subtest: archived and empty repositories stay selectable with correct board states
+ok 16 - archived and empty repositories stay selectable with correct board states
+  ---
+  duration_ms: 177.556985
+  type: 'test'
+  ...
+# Subtest: a known repository losing access is shown unavailable with its last identity and refuses reads and writes
+ok 17 - a known repository losing access is shown unavailable with its last identity and refuses reads and writes
+  ---
+  duration_ms: 158.176561
+  type: 'test'
+  ...
+# Subtest: aggregate refresh is bounded, one failure stays local and partial results are never marked complete
+ok 18 - aggregate refresh is bounded, one failure stays local and partial results are never marked complete
+  ---
+  duration_ms: 249.210303
+  type: 'test'
+  ...
+# Subtest: repository discovery fails loudly on a malformed page and respects the page bound
+ok 19 - repository discovery fails loudly on a malformed page and respects the page bound
+  ---
+  duration_ms: 5.47746
+  type: 'test'
+  ...
+# Subtest: repository discovery follows bounded pagination and preserves identity fields
+ok 20 - repository discovery follows bounded pagination and preserves identity fields
+  ---
+  duration_ms: 2.046955
+  type: 'test'
+  ...
+# Subtest: discovery failure before any success is not an empty picker and does not prevent sign-in
+ok 21 - discovery failure before any success is not an empty picker and does not prevent sign-in
+  ---
+  duration_ms: 297.290596
+  type: 'test'
+  ...
+# Subtest: expired failed discovery retains display identities but cannot authorize a write
+ok 22 - expired failed discovery retains display identities but cannot authorize a write
+  ---
+  duration_ms: 164.369935
+  type: 'test'
+  ...
+# Subtest: identical contents in same-number issues do not permit a cross-repository fingerprint replay on any write path
+ok 23 - identical contents in same-number issues do not permit a cross-repository fingerprint replay on any write path
+  ---
+  duration_ms: 193.702455
+  type: 'test'
+  ...
+# Subtest: discovery rejects malformed entries and conflicting duplicate immutable identities
+ok 24 - discovery rejects malformed entries and conflicting duplicate immutable identities
+  ---
+  duration_ms: 1.937922
+  type: 'test'
+  ...
+# Subtest: unknown repository after an expired failed discovery still causes zero upstream calls
+ok 25 - unknown repository after an expired failed discovery still causes zero upstream calls
+  ---
+  duration_ms: 149.343661
+  type: 'test'
+  ...
+1..25
+# tests 25
+# suites 0
+# pass 25
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3250.775359
