@@ -1,6 +1,12 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-26 decision17: one final pass on both approved
+## Latest checkpoint — 2026-10-26 #33 final independent gate PASSED, integration ready
+State: proving integration. Alignment decisions1–17 CONFIRMED.
+- #33 final review e4b0091 Security APPROVED/Spec PASS/Quality APPROVED/PROCEED, actual9router/genius; tracked clean. R1-R3 CLOSED:201browser(177 malformed+24 valid),97R2/68R3 HTTP,30 code refusals0PATCH. Full338web/466root/focused230/protocol12/types/build/parity bee9a616, saved36HTTP+19gateway+32baseline+28probes/additional129HTTP. No standing required failure; true old-vs-new discriminators. Manager read137line report and inspected aggregate web-only product scope; gate outputs/issue-33-review-gate.md ACCEPTED for review-branch integration only.
+- Integration brief tasks/issue-33-integration.md filled: sourcee4b0091 clean, root6564246+manager-only gate checkpoint. Fresh release worker next, one root owner. Merged full+runtime saved and additional matrices mandatory because root panel/core.ts newer. No product fixes allowed in release worker.
+- #35 last correction remains queued220d1d5 until #33 integration proof accepted/frontier released. No duplicate workers. Hosting/#30/#37/#31 queued; human validation/master/deploy/closure not approved. Production GitHub/host/TLS/restart/keyboard/freshXSS-DoS NOT RUN.
+
+## Previous checkpoint — 2026-10-26 decision17: one final pass on both approved
 State: building. Alignment: decisions1–17 CONFIRMED.
 - Owner selected "One final pass on both (Recommended)". #33 exactly R1-R3, #35 all R1-R9 including permission to simplify shared refresh path instead of extra per-path guards. One correction+one independent recheck each; another failed recheck parks that issue for this mission with NO additional attempt. No master/deploy/secret/closure authority.
 - #33 builder ses_340658305fef29f8c3d79185 actual9router/genius returned5c562e8 clean (product5298f02/bb29b3c/0bca8fb, evidence5c562e8). Manager read report+full product/README diff, narrow entry-contract validation, method-aware recognisable GitHub validation, tab-stop-equivalent code predicate; 3 focused new tests. Claims338web/466root/230focused/types0/browser84/HTTP36/gateway19/baseline32/preserved28/hashbee9a616c4f0ccd1df7cff7f9f4aebc110110deb43b1c30b2e84f6a1b0e8e858 ignored; NOT independently accepted.

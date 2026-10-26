@@ -1,6 +1,12 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — 2026-10-26 owner decision17 approved one final pass on both
+## Latest checkpoint — 2026-10-26 #33 final PASS accepted, integration next
+- Final reviewer ses_1947278fe946a17036be3442 actual9router/genius returnede4b0091 clean, product unchanged5c562e8. Security APPROVED/Spec PASS/Quality APPROVED/PROCEED. R1-R3 closed:201browser,97R2/68R3HTTP,30code refusals0PATCH,338web/466root/focused230/types/build/parity bee9a616. Saved36HTTP/gateway19/baseline32/probes28 and additional129HTTP pass; no standing residual.
+- Manager read complete137line report, inspected aggregate web-only scope and accepted outputs/issue-33-review-gate.md. tasks/issue-33-integration.md READY sourcee4b0091/root6564246+manager checkpoint; fresh release worker in source tree, root merge/proof only. Need merged338web/517root actual, full browser201/HTTP165(saved36+extra129)/gateway19/baseline32/probes28, new panel/core.ts imports. No product patch on merge/test failure.
+- #35 final R1-R9 correction queued220d1d5. After accepted #33 merged proof/push/cleanup, fill tasks/issue-35-last-correction.md source snapshot and dispatch fresh genius, then final independent review. Never run second root release/implementation frontier concurrently.
+- No production/master/deploy/secrets/closure. Installed panel vs standalone web must both be in eventual L5 request. Review branch earlier push350f629 UNKNOWN; at release boundary allowed fetch/status before deliberate push.
+
+## Previous checkpoint — 2026-10-26 owner decision17 approved one final pass on both
 - Owner answered "One final pass on both (Recommended)": #33 R1–R3, #35 R1–R9 including shared-refresh simplification if minimal. ONE correction+ONE independent recheck each. Any further failed recheck parks that issue for this mission, no further fix. No master/deploy/secrets/closure authority.
 - #33 builder ses_340658305fef29f8c3d79185 actual9router/genius returned5c562e8 clean; product5298f02/bb29b3c/0bca8fb, evidence5c562e8. Manager report+product/README diff inspected. Claims focused230/web338/root466/types0/browser84/HTTP36/gateway19/baseline32/probes28, hashbee9a616c4f0ccd1df7cff7f9f4aebc110110deb43b1c30b2e84f6a1b0e8e858 ignored. Closure not accepted.
 - #33 FINAL independent recheck RUNNING ses_1947278fe946a17036be3442 genius tasks/issue-33-last-hostile.md; reviewer actual model at wake. If FAIL/PARTIAL/NEEDS-FIXES => PARK issue for mission, NO further correction. If PASS/APPROVED security approved, manager review gate+fresh release worker using updated integration brief then merged proof. #35 queued220d1d5; don't dispatch until #33 clears/parks.
