@@ -1,0 +1,1023 @@
+TAP version 13
+# Subtest: R2 section: empty gateway errors is UNKNOWN after commit
+not ok 1 - R2 section: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 264.346008
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: R2 section: gateway string errors is UNKNOWN after commit
+not ok 2 - R2 section: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 215.231213
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: gateway validation substring is UNKNOWN after commit
+not ok 3 - R2 section: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 180.256166
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: gateway with shaped errors is UNKNOWN after commit
+not ok 4 - R2 section: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 229.200995
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: exact message alone is UNKNOWN after commit
+not ok 5 - R2 section: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 164.175439
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: exact message empty errors is UNKNOWN after commit
+not ok 6 - R2 section: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 186.364916
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: exact message scalar errors is UNKNOWN after commit
+not ok 7 - R2 section: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 176.039498
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: exact message null entry is UNKNOWN after commit
+not ok 8 - R2 section: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 142.354665
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: exact message partial entry is UNKNOWN after commit
+not ok 9 - R2 section: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 189.730148
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: exact message missing resource is UNKNOWN after commit
+not ok 10 - R2 section: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 142.113719
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: exact message wrong field is UNKNOWN after commit
+not ok 11 - R2 section: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 171.005363
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: exact message empty resource is UNKNOWN after commit
+not ok 12 - R2 section: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 158.091799
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: exact message transport code is UNKNOWN after commit
+not ok 13 - R2 section: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 141.334754
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: exact message mixed errors is UNKNOWN after commit
+not ok 14 - R2 section: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 144.492724
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 section: recognisable validation is definitive rejection
+ok 15 - R2 section: recognisable validation is definitive rejection
+  ---
+  duration_ms: 174.772148
+  type: 'test'
+  ...
+# Subtest: R2 question: empty gateway errors is UNKNOWN after commit
+not ok 16 - R2 question: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 134.593836
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: gateway string errors is UNKNOWN after commit
+not ok 17 - R2 question: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 138.096006
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: gateway validation substring is UNKNOWN after commit
+not ok 18 - R2 question: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 135.67835
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: gateway with shaped errors is UNKNOWN after commit
+not ok 19 - R2 question: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 152.154669
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: exact message alone is UNKNOWN after commit
+not ok 20 - R2 question: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 173.762354
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: exact message empty errors is UNKNOWN after commit
+not ok 21 - R2 question: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 168.824617
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: exact message scalar errors is UNKNOWN after commit
+not ok 22 - R2 question: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 159.348136
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: exact message null entry is UNKNOWN after commit
+not ok 23 - R2 question: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 145.63189
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: exact message partial entry is UNKNOWN after commit
+not ok 24 - R2 question: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 209.421444
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: exact message missing resource is UNKNOWN after commit
+not ok 25 - R2 question: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 128.402809
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: exact message wrong field is UNKNOWN after commit
+not ok 26 - R2 question: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 174.486733
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: exact message empty resource is UNKNOWN after commit
+not ok 27 - R2 question: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 162.200025
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: exact message transport code is UNKNOWN after commit
+not ok 28 - R2 question: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 132.540926
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: exact message mixed errors is UNKNOWN after commit
+not ok 29 - R2 question: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 211.503048
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 question: recognisable validation is definitive rejection
+ok 30 - R2 question: recognisable validation is definitive rejection
+  ---
+  duration_ms: 155.615977
+  type: 'test'
+  ...
+# Subtest: R2 status: empty gateway errors is UNKNOWN after commit
+not ok 31 - R2 status: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 134.81581
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: gateway string errors is UNKNOWN after commit
+not ok 32 - R2 status: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 143.130006
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: gateway validation substring is UNKNOWN after commit
+not ok 33 - R2 status: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 153.9115
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: gateway with shaped errors is UNKNOWN after commit
+not ok 34 - R2 status: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 167.449262
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: exact message alone is UNKNOWN after commit
+not ok 35 - R2 status: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 178.338752
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: exact message empty errors is UNKNOWN after commit
+not ok 36 - R2 status: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 152.023736
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: exact message scalar errors is UNKNOWN after commit
+not ok 37 - R2 status: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 132.102188
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: exact message null entry is UNKNOWN after commit
+not ok 38 - R2 status: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 147.625132
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: exact message partial entry is UNKNOWN after commit
+not ok 39 - R2 status: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 179.836021
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: exact message missing resource is UNKNOWN after commit
+not ok 40 - R2 status: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 169.684885
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: exact message wrong field is UNKNOWN after commit
+not ok 41 - R2 status: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 160.263091
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: exact message empty resource is UNKNOWN after commit
+not ok 42 - R2 status: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 169.990139
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: exact message transport code is UNKNOWN after commit
+not ok 43 - R2 status: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 169.763965
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: exact message mixed errors is UNKNOWN after commit
+not ok 44 - R2 status: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 178.964386
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:28:5'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 502
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 502
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:49:16)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: R2 status: recognisable validation is definitive rejection
+ok 45 - R2 status: recognisable validation is definitive rejection
+  ---
+  duration_ms: 141.204257
+  type: 'test'
+  ...
+# Subtest: R2: GitHubError retains parsed response provenance for UNKNOWN and validation
+not ok 46 - R2: GitHubError retains parsed response provenance for UNKNOWN and validation
+  ---
+  duration_ms: 3.40876
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:64:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    empty gateway errors
+    + actual - expected
+    
+    + 'invalid'
+    - 'server'
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'server'
+  actual: 'invalid'
+  operator: 'strictEqual'
+  stack: |-
+    Object.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:75:14)
+    expectedException (node:assert:576:17)
+    expectsError (node:assert:701:21)
+    Function.rejects (node:assert:767:3)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/web/tests/validation-provenance.test.mjs:70:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..46
+# tests 46
+# suites 0
+# pass 3
+# fail 43
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7846.659559

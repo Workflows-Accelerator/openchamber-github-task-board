@@ -133,7 +133,7 @@ accept on `https` origins (and on `http://localhost` for local testing).
   and refuses detected pre-save conflicts, GitHub's API does not support transactional or conditional issue PATCH.
   A simultaneous edit on GitHub or by an agent can still be overwritten.
 - Ambiguous write outcomes require human refresh and inspection; the board will not guess or retry.
-- Residual defect remediations (F1–F5) and protocol corrections are documented in `.agents/run/task-centred-architecture/outputs/issue-33-residual-correction.md`, which supersedes previous closure claims. Prior reports are immutable.
+- Residual defect remediations (F1–F5) and protocol corrections are documented in `.agents/run/task-centred-architecture/outputs/issue-33-last-correction.md`, which supersedes previous closure claims. Prior reports are immutable.
 - There is no notification/question loop and no agent integration. Those are
   separate, parked workstreams.
 

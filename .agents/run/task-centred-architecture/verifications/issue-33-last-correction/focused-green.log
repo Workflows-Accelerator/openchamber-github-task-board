@@ -1,0 +1,1390 @@
+TAP version 13
+# Subtest: R1 section: null option is UNKNOWN before assignment and preserves both drafts
+ok 1 - R1 section: null option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 24.635794
+  type: 'test'
+  ...
+# Subtest: R1 section: partial option is UNKNOWN before assignment and preserves both drafts
+ok 2 - R1 section: partial option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.940914
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string option value is UNKNOWN before assignment and preserves both drafts
+ok 3 - R1 section: non-string option value is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.552888
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string option label is UNKNOWN before assignment and preserves both drafts
+ok 4 - R1 section: non-string option label is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 7.056677
+  type: 'test'
+  ...
+# Subtest: R1 section: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+ok 5 - R1 section: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.035546
+  type: 'test'
+  ...
+# Subtest: R1 section: null section is UNKNOWN before assignment and preserves both drafts
+ok 6 - R1 section: null section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.038739
+  type: 'test'
+  ...
+# Subtest: R1 section: partial section is UNKNOWN before assignment and preserves both drafts
+ok 7 - R1 section: partial section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.111071
+  type: 'test'
+  ...
+# Subtest: R1 section: missing section id is UNKNOWN before assignment and preserves both drafts
+ok 8 - R1 section: missing section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.837873
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string section id is UNKNOWN before assignment and preserves both drafts
+ok 9 - R1 section: non-string section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.308073
+  type: 'test'
+  ...
+# Subtest: R1 section: missing section title is UNKNOWN before assignment and preserves both drafts
+ok 10 - R1 section: missing section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.707691
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string section title is UNKNOWN before assignment and preserves both drafts
+ok 11 - R1 section: non-string section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.89788
+  type: 'test'
+  ...
+# Subtest: R1 section: missing section text is UNKNOWN before assignment and preserves both drafts
+ok 12 - R1 section: missing section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.567401
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string section text is UNKNOWN before assignment and preserves both drafts
+ok 13 - R1 section: non-string section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.843676
+  type: 'test'
+  ...
+# Subtest: R1 section: null question is UNKNOWN before assignment and preserves both drafts
+ok 14 - R1 section: null question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.708724
+  type: 'test'
+  ...
+# Subtest: R1 section: scalar question is UNKNOWN before assignment and preserves both drafts
+ok 15 - R1 section: scalar question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.18865
+  type: 'test'
+  ...
+# Subtest: R1 section: partial question is UNKNOWN before assignment and preserves both drafts
+ok 16 - R1 section: partial question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.080122
+  type: 'test'
+  ...
+# Subtest: R1 section: missing question index is UNKNOWN before assignment and preserves both drafts
+ok 17 - R1 section: missing question index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 8.613993
+  type: 'test'
+  ...
+# Subtest: R1 section: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+ok 18 - R1 section: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 13.021973
+  type: 'test'
+  ...
+# Subtest: R1 section: missing question text is UNKNOWN before assignment and preserves both drafts
+ok 19 - R1 section: missing question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.007983
+  type: 'test'
+  ...
+# Subtest: R1 section: missing question completed is UNKNOWN before assignment and preserves both drafts
+ok 20 - R1 section: missing question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.451383
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string question text is UNKNOWN before assignment and preserves both drafts
+ok 21 - R1 section: non-string question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.558861
+  type: 'test'
+  ...
+# Subtest: R1 section: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+ok 22 - R1 section: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.908755
+  type: 'test'
+  ...
+# Subtest: R1 section: fractional answer index is UNKNOWN before assignment and preserves both drafts
+ok 23 - R1 section: fractional answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.458405
+  type: 'test'
+  ...
+# Subtest: R1 section: negative answer index is UNKNOWN before assignment and preserves both drafts
+ok 24 - R1 section: negative answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.439183
+  type: 'test'
+  ...
+# Subtest: R1 section: string answer index is UNKNOWN before assignment and preserves both drafts
+ok 25 - R1 section: string answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.453044
+  type: 'test'
+  ...
+# Subtest: R1 section: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+ok 26 - R1 section: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.877734
+  type: 'test'
+  ...
+# Subtest: R1 section: completed answer index is UNKNOWN before assignment and preserves both drafts
+ok 27 - R1 section: completed answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.551095
+  type: 'test'
+  ...
+# Subtest: R1 section: unresolved null index is UNKNOWN before assignment and preserves both drafts
+ok 28 - R1 section: unresolved null index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.534686
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong source index is UNKNOWN before assignment and preserves both drafts
+ok 29 - R1 section: wrong source index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.562799
+  type: 'test'
+  ...
+# Subtest: R1 section: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 30 - R1 section: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.38893
+  type: 'test'
+  ...
+# Subtest: R1 section: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 31 - R1 section: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.053942
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+ok 32 - R1 section: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.952819
+  type: 'test'
+  ...
+# Subtest: R1 section: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+ok 33 - R1 section: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.029269
+  type: 'test'
+  ...
+# Subtest: R1 section: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 34 - R1 section: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.741543
+  type: 'test'
+  ...
+# Subtest: R1 section: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 35 - R1 section: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.01897
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+ok 36 - R1 section: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.784549
+  type: 'test'
+  ...
+# Subtest: R1 section: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+ok 37 - R1 section: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.890485
+  type: 'test'
+  ...
+# Subtest: R1 section: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 38 - R1 section: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.604415
+  type: 'test'
+  ...
+# Subtest: R1 section: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 39 - R1 section: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.74402
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+ok 40 - R1 section: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.980378
+  type: 'test'
+  ...
+# Subtest: R1 section: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+ok 41 - R1 section: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.550809
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong identity is UNKNOWN before assignment and preserves both drafts
+ok 42 - R1 section: wrong identity is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.190412
+  type: 'test'
+  ...
+# Subtest: R1 section: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 43 - R1 section: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 7.348407
+  type: 'test'
+  ...
+# Subtest: R1 section: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 44 - R1 section: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.047079
+  type: 'test'
+  ...
+# Subtest: R1 section: missing title is UNKNOWN before assignment and preserves both drafts
+ok 45 - R1 section: missing title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.087803
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string title is UNKNOWN before assignment and preserves both drafts
+ok 46 - R1 section: non-string title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.989121
+  type: 'test'
+  ...
+# Subtest: R1 section: missing state is UNKNOWN before assignment and preserves both drafts
+ok 47 - R1 section: missing state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.032372
+  type: 'test'
+  ...
+# Subtest: R1 section: invalid state is UNKNOWN before assignment and preserves both drafts
+ok 48 - R1 section: invalid state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.916424
+  type: 'test'
+  ...
+# Subtest: R1 section: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 49 - R1 section: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.032954
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 50 - R1 section: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.048456
+  type: 'test'
+  ...
+# Subtest: R1 section: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 51 - R1 section: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 7.702285
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 52 - R1 section: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.123027
+  type: 'test'
+  ...
+# Subtest: R1 section: missing phase is UNKNOWN before assignment and preserves both drafts
+ok 53 - R1 section: missing phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.024657
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong phase is UNKNOWN before assignment and preserves both drafts
+ok 54 - R1 section: wrong phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.042419
+  type: 'test'
+  ...
+# Subtest: R1 section: missing attention is UNKNOWN before assignment and preserves both drafts
+ok 55 - R1 section: missing attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.851144
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong attention is UNKNOWN before assignment and preserves both drafts
+ok 56 - R1 section: wrong attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.01041
+  type: 'test'
+  ...
+# Subtest: R1 section: valid populated detail succeeds
+ok 57 - R1 section: valid populated detail succeeds
+  ---
+  duration_ms: 12.093373
+  type: 'test'
+  ...
+# Subtest: R1 section: valid null/empty detail succeeds
+ok 58 - R1 section: valid null/empty detail succeeds
+  ---
+  duration_ms: 3.003326
+  type: 'test'
+  ...
+# Subtest: R1 question: null option is UNKNOWN before assignment and preserves both drafts
+ok 59 - R1 question: null option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.273695
+  type: 'test'
+  ...
+# Subtest: R1 question: partial option is UNKNOWN before assignment and preserves both drafts
+ok 60 - R1 question: partial option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.39006
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string option value is UNKNOWN before assignment and preserves both drafts
+ok 61 - R1 question: non-string option value is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.922103
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string option label is UNKNOWN before assignment and preserves both drafts
+ok 62 - R1 question: non-string option label is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.824665
+  type: 'test'
+  ...
+# Subtest: R1 question: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+ok 63 - R1 question: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.753419
+  type: 'test'
+  ...
+# Subtest: R1 question: null section is UNKNOWN before assignment and preserves both drafts
+ok 64 - R1 question: null section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.920478
+  type: 'test'
+  ...
+# Subtest: R1 question: partial section is UNKNOWN before assignment and preserves both drafts
+ok 65 - R1 question: partial section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 8.083388
+  type: 'test'
+  ...
+# Subtest: R1 question: missing section id is UNKNOWN before assignment and preserves both drafts
+ok 66 - R1 question: missing section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.979081
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string section id is UNKNOWN before assignment and preserves both drafts
+ok 67 - R1 question: non-string section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.292983
+  type: 'test'
+  ...
+# Subtest: R1 question: missing section title is UNKNOWN before assignment and preserves both drafts
+ok 68 - R1 question: missing section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.867915
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string section title is UNKNOWN before assignment and preserves both drafts
+ok 69 - R1 question: non-string section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.537228
+  type: 'test'
+  ...
+# Subtest: R1 question: missing section text is UNKNOWN before assignment and preserves both drafts
+ok 70 - R1 question: missing section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.59904
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string section text is UNKNOWN before assignment and preserves both drafts
+ok 71 - R1 question: non-string section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.724063
+  type: 'test'
+  ...
+# Subtest: R1 question: null question is UNKNOWN before assignment and preserves both drafts
+ok 72 - R1 question: null question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.529795
+  type: 'test'
+  ...
+# Subtest: R1 question: scalar question is UNKNOWN before assignment and preserves both drafts
+ok 73 - R1 question: scalar question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.475808
+  type: 'test'
+  ...
+# Subtest: R1 question: partial question is UNKNOWN before assignment and preserves both drafts
+ok 74 - R1 question: partial question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.502563
+  type: 'test'
+  ...
+# Subtest: R1 question: missing question index is UNKNOWN before assignment and preserves both drafts
+ok 75 - R1 question: missing question index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 10.491388
+  type: 'test'
+  ...
+# Subtest: R1 question: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+ok 76 - R1 question: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 12.124169
+  type: 'test'
+  ...
+# Subtest: R1 question: missing question text is UNKNOWN before assignment and preserves both drafts
+ok 77 - R1 question: missing question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 7.551337
+  type: 'test'
+  ...
+# Subtest: R1 question: missing question completed is UNKNOWN before assignment and preserves both drafts
+ok 78 - R1 question: missing question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.965114
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string question text is UNKNOWN before assignment and preserves both drafts
+ok 79 - R1 question: non-string question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 8.336255
+  type: 'test'
+  ...
+# Subtest: R1 question: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+ok 80 - R1 question: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 26.957982
+  type: 'test'
+  ...
+# Subtest: R1 question: fractional answer index is UNKNOWN before assignment and preserves both drafts
+ok 81 - R1 question: fractional answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.534332
+  type: 'test'
+  ...
+# Subtest: R1 question: negative answer index is UNKNOWN before assignment and preserves both drafts
+ok 82 - R1 question: negative answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.993184
+  type: 'test'
+  ...
+# Subtest: R1 question: string answer index is UNKNOWN before assignment and preserves both drafts
+ok 83 - R1 question: string answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.708559
+  type: 'test'
+  ...
+# Subtest: R1 question: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+ok 84 - R1 question: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.649558
+  type: 'test'
+  ...
+# Subtest: R1 question: completed answer index is UNKNOWN before assignment and preserves both drafts
+ok 85 - R1 question: completed answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.635986
+  type: 'test'
+  ...
+# Subtest: R1 question: unresolved null index is UNKNOWN before assignment and preserves both drafts
+ok 86 - R1 question: unresolved null index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 11.244568
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong source index is UNKNOWN before assignment and preserves both drafts
+ok 87 - R1 question: wrong source index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.202197
+  type: 'test'
+  ...
+# Subtest: R1 question: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 88 - R1 question: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.895533
+  type: 'test'
+  ...
+# Subtest: R1 question: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 89 - R1 question: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.636727
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+ok 90 - R1 question: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.906245
+  type: 'test'
+  ...
+# Subtest: R1 question: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+ok 91 - R1 question: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.681533
+  type: 'test'
+  ...
+# Subtest: R1 question: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 92 - R1 question: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.828592
+  type: 'test'
+  ...
+# Subtest: R1 question: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 93 - R1 question: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.870277
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+ok 94 - R1 question: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.687088
+  type: 'test'
+  ...
+# Subtest: R1 question: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+ok 95 - R1 question: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 10.282094
+  type: 'test'
+  ...
+# Subtest: R1 question: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 96 - R1 question: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 9.459364
+  type: 'test'
+  ...
+# Subtest: R1 question: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 97 - R1 question: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.442843
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+ok 98 - R1 question: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 9.37661
+  type: 'test'
+  ...
+# Subtest: R1 question: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+ok 99 - R1 question: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 21.988603
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong identity is UNKNOWN before assignment and preserves both drafts
+ok 100 - R1 question: wrong identity is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 13.815539
+  type: 'test'
+  ...
+# Subtest: R1 question: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 101 - R1 question: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.072493
+  type: 'test'
+  ...
+# Subtest: R1 question: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 102 - R1 question: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 15.217252
+  type: 'test'
+  ...
+# Subtest: R1 question: missing title is UNKNOWN before assignment and preserves both drafts
+ok 103 - R1 question: missing title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 13.511537
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string title is UNKNOWN before assignment and preserves both drafts
+ok 104 - R1 question: non-string title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 12.930124
+  type: 'test'
+  ...
+# Subtest: R1 question: missing state is UNKNOWN before assignment and preserves both drafts
+ok 105 - R1 question: missing state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.011609
+  type: 'test'
+  ...
+# Subtest: R1 question: invalid state is UNKNOWN before assignment and preserves both drafts
+ok 106 - R1 question: invalid state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 13.362974
+  type: 'test'
+  ...
+# Subtest: R1 question: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 107 - R1 question: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 14.163025
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 108 - R1 question: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.841229
+  type: 'test'
+  ...
+# Subtest: R1 question: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 109 - R1 question: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 12.637216
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 110 - R1 question: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.678316
+  type: 'test'
+  ...
+# Subtest: R1 question: missing phase is UNKNOWN before assignment and preserves both drafts
+ok 111 - R1 question: missing phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 11.815855
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong phase is UNKNOWN before assignment and preserves both drafts
+ok 112 - R1 question: wrong phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 7.996446
+  type: 'test'
+  ...
+# Subtest: R1 question: missing attention is UNKNOWN before assignment and preserves both drafts
+ok 113 - R1 question: missing attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 11.381078
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong attention is UNKNOWN before assignment and preserves both drafts
+ok 114 - R1 question: wrong attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 11.144146
+  type: 'test'
+  ...
+# Subtest: R1 question: valid populated detail succeeds
+ok 115 - R1 question: valid populated detail succeeds
+  ---
+  duration_ms: 16.898223
+  type: 'test'
+  ...
+# Subtest: R1 question: valid null/empty detail succeeds
+ok 116 - R1 question: valid null/empty detail succeeds
+  ---
+  duration_ms: 8.700731
+  type: 'test'
+  ...
+# Subtest: R1 status: null option is UNKNOWN before assignment and preserves both drafts
+ok 117 - R1 status: null option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.239552
+  type: 'test'
+  ...
+# Subtest: R1 status: partial option is UNKNOWN before assignment and preserves both drafts
+ok 118 - R1 status: partial option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 22.805031
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string option value is UNKNOWN before assignment and preserves both drafts
+ok 119 - R1 status: non-string option value is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.258219
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string option label is UNKNOWN before assignment and preserves both drafts
+ok 120 - R1 status: non-string option label is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.344643
+  type: 'test'
+  ...
+# Subtest: R1 status: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+ok 121 - R1 status: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.374749
+  type: 'test'
+  ...
+# Subtest: R1 status: null section is UNKNOWN before assignment and preserves both drafts
+ok 122 - R1 status: null section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.788268
+  type: 'test'
+  ...
+# Subtest: R1 status: partial section is UNKNOWN before assignment and preserves both drafts
+ok 123 - R1 status: partial section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.507426
+  type: 'test'
+  ...
+# Subtest: R1 status: missing section id is UNKNOWN before assignment and preserves both drafts
+ok 124 - R1 status: missing section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.627312
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string section id is UNKNOWN before assignment and preserves both drafts
+ok 125 - R1 status: non-string section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.681051
+  type: 'test'
+  ...
+# Subtest: R1 status: missing section title is UNKNOWN before assignment and preserves both drafts
+ok 126 - R1 status: missing section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.611277
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string section title is UNKNOWN before assignment and preserves both drafts
+ok 127 - R1 status: non-string section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.734823
+  type: 'test'
+  ...
+# Subtest: R1 status: missing section text is UNKNOWN before assignment and preserves both drafts
+ok 128 - R1 status: missing section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.544066
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string section text is UNKNOWN before assignment and preserves both drafts
+ok 129 - R1 status: non-string section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.67234
+  type: 'test'
+  ...
+# Subtest: R1 status: null question is UNKNOWN before assignment and preserves both drafts
+ok 130 - R1 status: null question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.684672
+  type: 'test'
+  ...
+# Subtest: R1 status: scalar question is UNKNOWN before assignment and preserves both drafts
+ok 131 - R1 status: scalar question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.615955
+  type: 'test'
+  ...
+# Subtest: R1 status: partial question is UNKNOWN before assignment and preserves both drafts
+ok 132 - R1 status: partial question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.635238
+  type: 'test'
+  ...
+# Subtest: R1 status: missing question index is UNKNOWN before assignment and preserves both drafts
+ok 133 - R1 status: missing question index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.541573
+  type: 'test'
+  ...
+# Subtest: R1 status: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+ok 134 - R1 status: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.68982
+  type: 'test'
+  ...
+# Subtest: R1 status: missing question text is UNKNOWN before assignment and preserves both drafts
+ok 135 - R1 status: missing question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.589548
+  type: 'test'
+  ...
+# Subtest: R1 status: missing question completed is UNKNOWN before assignment and preserves both drafts
+ok 136 - R1 status: missing question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.52066
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string question text is UNKNOWN before assignment and preserves both drafts
+ok 137 - R1 status: non-string question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.599333
+  type: 'test'
+  ...
+# Subtest: R1 status: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+ok 138 - R1 status: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.567768
+  type: 'test'
+  ...
+# Subtest: R1 status: fractional answer index is UNKNOWN before assignment and preserves both drafts
+ok 139 - R1 status: fractional answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.531278
+  type: 'test'
+  ...
+# Subtest: R1 status: negative answer index is UNKNOWN before assignment and preserves both drafts
+ok 140 - R1 status: negative answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 7.972901
+  type: 'test'
+  ...
+# Subtest: R1 status: string answer index is UNKNOWN before assignment and preserves both drafts
+ok 141 - R1 status: string answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.827569
+  type: 'test'
+  ...
+# Subtest: R1 status: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+ok 142 - R1 status: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.058707
+  type: 'test'
+  ...
+# Subtest: R1 status: completed answer index is UNKNOWN before assignment and preserves both drafts
+ok 143 - R1 status: completed answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.784367
+  type: 'test'
+  ...
+# Subtest: R1 status: unresolved null index is UNKNOWN before assignment and preserves both drafts
+ok 144 - R1 status: unresolved null index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.56348
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong source index is UNKNOWN before assignment and preserves both drafts
+ok 145 - R1 status: wrong source index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.63961
+  type: 'test'
+  ...
+# Subtest: R1 status: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 146 - R1 status: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.669001
+  type: 'test'
+  ...
+# Subtest: R1 status: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 147 - R1 status: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.609221
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+ok 148 - R1 status: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.74679
+  type: 'test'
+  ...
+# Subtest: R1 status: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+ok 149 - R1 status: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.334049
+  type: 'test'
+  ...
+# Subtest: R1 status: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 150 - R1 status: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 17.004466
+  type: 'test'
+  ...
+# Subtest: R1 status: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 151 - R1 status: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.931154
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+ok 152 - R1 status: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.726642
+  type: 'test'
+  ...
+# Subtest: R1 status: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+ok 153 - R1 status: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.542818
+  type: 'test'
+  ...
+# Subtest: R1 status: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 154 - R1 status: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.788663
+  type: 'test'
+  ...
+# Subtest: R1 status: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 155 - R1 status: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.785429
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+ok 156 - R1 status: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.580725
+  type: 'test'
+  ...
+# Subtest: R1 status: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+ok 157 - R1 status: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.460081
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong identity is UNKNOWN before assignment and preserves both drafts
+ok 158 - R1 status: wrong identity is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.310398
+  type: 'test'
+  ...
+# Subtest: R1 status: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 159 - R1 status: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.749795
+  type: 'test'
+  ...
+# Subtest: R1 status: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 160 - R1 status: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.485423
+  type: 'test'
+  ...
+# Subtest: R1 status: missing title is UNKNOWN before assignment and preserves both drafts
+ok 161 - R1 status: missing title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.52463
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string title is UNKNOWN before assignment and preserves both drafts
+ok 162 - R1 status: non-string title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.40162
+  type: 'test'
+  ...
+# Subtest: R1 status: missing state is UNKNOWN before assignment and preserves both drafts
+ok 163 - R1 status: missing state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.466703
+  type: 'test'
+  ...
+# Subtest: R1 status: invalid state is UNKNOWN before assignment and preserves both drafts
+ok 164 - R1 status: invalid state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.424384
+  type: 'test'
+  ...
+# Subtest: R1 status: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 165 - R1 status: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.378756
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 166 - R1 status: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.497347
+  type: 'test'
+  ...
+# Subtest: R1 status: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 167 - R1 status: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.475712
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 168 - R1 status: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.554974
+  type: 'test'
+  ...
+# Subtest: R1 status: missing phase is UNKNOWN before assignment and preserves both drafts
+ok 169 - R1 status: missing phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.438594
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong phase is UNKNOWN before assignment and preserves both drafts
+ok 170 - R1 status: wrong phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.637854
+  type: 'test'
+  ...
+# Subtest: R1 status: missing attention is UNKNOWN before assignment and preserves both drafts
+ok 171 - R1 status: missing attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.590633
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong attention is UNKNOWN before assignment and preserves both drafts
+ok 172 - R1 status: wrong attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 1.656341
+  type: 'test'
+  ...
+# Subtest: R1 status: valid populated detail succeeds
+ok 173 - R1 status: valid populated detail succeeds
+  ---
+  duration_ms: 4.835013
+  type: 'test'
+  ...
+# Subtest: R1 status: valid null/empty detail succeeds
+ok 174 - R1 status: valid null/empty detail succeeds
+  ---
+  duration_ms: 2.210064
+  type: 'test'
+  ...
+# Subtest: R3: 1 spaces plus tab is code in scanner, list and detail
+ok 175 - R3: 1 spaces plus tab is code in scanner, list and detail
+  ---
+  duration_ms: 18.098751
+  type: 'test'
+  ...
+# Subtest: R3: 1 spaces plus tab direct code target refuses before PATCH
+ok 176 - R3: 1 spaces plus tab direct code target refuses before PATCH
+  ---
+  duration_ms: 675.464402
+  type: 'test'
+  ...
+# Subtest: R3: 1 spaces plus tab stays byte-exact around real nested questions and CRLF
+ok 177 - R3: 1 spaces plus tab stays byte-exact around real nested questions and CRLF
+  ---
+  duration_ms: 290.274797
+  type: 'test'
+  ...
+# Subtest: R3: 2 spaces plus tab is code in scanner, list and detail
+ok 178 - R3: 2 spaces plus tab is code in scanner, list and detail
+  ---
+  duration_ms: 1.287674
+  type: 'test'
+  ...
+# Subtest: R3: 2 spaces plus tab direct code target refuses before PATCH
+ok 179 - R3: 2 spaces plus tab direct code target refuses before PATCH
+  ---
+  duration_ms: 303.349602
+  type: 'test'
+  ...
+# Subtest: R3: 2 spaces plus tab stays byte-exact around real nested questions and CRLF
+ok 180 - R3: 2 spaces plus tab stays byte-exact around real nested questions and CRLF
+  ---
+  duration_ms: 208.744777
+  type: 'test'
+  ...
+# Subtest: R3: 3 spaces plus tab is code in scanner, list and detail
+ok 181 - R3: 3 spaces plus tab is code in scanner, list and detail
+  ---
+  duration_ms: 1.148805
+  type: 'test'
+  ...
+# Subtest: R3: 3 spaces plus tab direct code target refuses before PATCH
+ok 182 - R3: 3 spaces plus tab direct code target refuses before PATCH
+  ---
+  duration_ms: 181.353954
+  type: 'test'
+  ...
+# Subtest: R3: 3 spaces plus tab stays byte-exact around real nested questions and CRLF
+ok 183 - R3: 3 spaces plus tab stays byte-exact around real nested questions and CRLF
+  ---
+  duration_ms: 164.735368
+  type: 'test'
+  ...
+# Subtest: R2 section: empty gateway errors is UNKNOWN after commit
+ok 184 - R2 section: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 293.128521
+  type: 'test'
+  ...
+# Subtest: R2 section: gateway string errors is UNKNOWN after commit
+ok 185 - R2 section: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 421.699142
+  type: 'test'
+  ...
+# Subtest: R2 section: gateway validation substring is UNKNOWN after commit
+ok 186 - R2 section: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 270.179132
+  type: 'test'
+  ...
+# Subtest: R2 section: gateway with shaped errors is UNKNOWN after commit
+ok 187 - R2 section: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 232.114495
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message alone is UNKNOWN after commit
+ok 188 - R2 section: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 181.77179
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message empty errors is UNKNOWN after commit
+ok 189 - R2 section: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 187.376569
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message scalar errors is UNKNOWN after commit
+ok 190 - R2 section: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 180.880027
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message null entry is UNKNOWN after commit
+ok 191 - R2 section: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 133.590281
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message partial entry is UNKNOWN after commit
+ok 192 - R2 section: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 190.688165
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message missing resource is UNKNOWN after commit
+ok 193 - R2 section: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 176.367839
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message wrong field is UNKNOWN after commit
+ok 194 - R2 section: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 242.747838
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message empty resource is UNKNOWN after commit
+ok 195 - R2 section: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 178.12139
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message transport code is UNKNOWN after commit
+ok 196 - R2 section: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 147.678242
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message mixed errors is UNKNOWN after commit
+ok 197 - R2 section: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 153.565239
+  type: 'test'
+  ...
+# Subtest: R2 section: recognisable validation is definitive rejection
+ok 198 - R2 section: recognisable validation is definitive rejection
+  ---
+  duration_ms: 145.663042
+  type: 'test'
+  ...
+# Subtest: R2 question: empty gateway errors is UNKNOWN after commit
+ok 199 - R2 question: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 144.31518
+  type: 'test'
+  ...
+# Subtest: R2 question: gateway string errors is UNKNOWN after commit
+ok 200 - R2 question: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 144.624694
+  type: 'test'
+  ...
+# Subtest: R2 question: gateway validation substring is UNKNOWN after commit
+ok 201 - R2 question: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 142.849699
+  type: 'test'
+  ...
+# Subtest: R2 question: gateway with shaped errors is UNKNOWN after commit
+ok 202 - R2 question: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 148.017817
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message alone is UNKNOWN after commit
+ok 203 - R2 question: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 160.484518
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message empty errors is UNKNOWN after commit
+ok 204 - R2 question: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 225.976144
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message scalar errors is UNKNOWN after commit
+ok 205 - R2 question: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 154.820265
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message null entry is UNKNOWN after commit
+ok 206 - R2 question: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 168.335753
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message partial entry is UNKNOWN after commit
+ok 207 - R2 question: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 147.027929
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message missing resource is UNKNOWN after commit
+ok 208 - R2 question: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 249.417571
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message wrong field is UNKNOWN after commit
+ok 209 - R2 question: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 137.857312
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message empty resource is UNKNOWN after commit
+ok 210 - R2 question: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 167.816173
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message transport code is UNKNOWN after commit
+ok 211 - R2 question: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 175.634812
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message mixed errors is UNKNOWN after commit
+ok 212 - R2 question: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 165.992306
+  type: 'test'
+  ...
+# Subtest: R2 question: recognisable validation is definitive rejection
+ok 213 - R2 question: recognisable validation is definitive rejection
+  ---
+  duration_ms: 132.539633
+  type: 'test'
+  ...
+# Subtest: R2 status: empty gateway errors is UNKNOWN after commit
+ok 214 - R2 status: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 152.302398
+  type: 'test'
+  ...
+# Subtest: R2 status: gateway string errors is UNKNOWN after commit
+ok 215 - R2 status: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 145.94858
+  type: 'test'
+  ...
+# Subtest: R2 status: gateway validation substring is UNKNOWN after commit
+ok 216 - R2 status: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 218.754126
+  type: 'test'
+  ...
+# Subtest: R2 status: gateway with shaped errors is UNKNOWN after commit
+ok 217 - R2 status: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 138.117636
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message alone is UNKNOWN after commit
+ok 218 - R2 status: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 192.696342
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message empty errors is UNKNOWN after commit
+ok 219 - R2 status: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 166.671628
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message scalar errors is UNKNOWN after commit
+ok 220 - R2 status: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 126.129777
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message null entry is UNKNOWN after commit
+ok 221 - R2 status: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 139.56106
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message partial entry is UNKNOWN after commit
+ok 222 - R2 status: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 138.637273
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message missing resource is UNKNOWN after commit
+ok 223 - R2 status: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 166.524828
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message wrong field is UNKNOWN after commit
+ok 224 - R2 status: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 149.291377
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message empty resource is UNKNOWN after commit
+ok 225 - R2 status: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 160.773415
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message transport code is UNKNOWN after commit
+ok 226 - R2 status: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 160.077295
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message mixed errors is UNKNOWN after commit
+ok 227 - R2 status: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 149.94038
+  type: 'test'
+  ...
+# Subtest: R2 status: recognisable validation is definitive rejection
+ok 228 - R2 status: recognisable validation is definitive rejection
+  ---
+  duration_ms: 200.389899
+  type: 'test'
+  ...
+# Subtest: R2: reads keep exact validation-message mapping without inferring a write outcome
+ok 229 - R2: reads keep exact validation-message mapping without inferring a write outcome
+  ---
+  duration_ms: 1.916526
+  type: 'test'
+  ...
+# Subtest: R2: GitHubError retains parsed response provenance for UNKNOWN and validation
+ok 230 - R2: GitHubError retains parsed response provenance for UNKNOWN and validation
+  ---
+  duration_ms: 6.108605
+  type: 'test'
+  ...
+1..230
+# tests 230
+# suites 0
+# pass 230
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 8730.096124

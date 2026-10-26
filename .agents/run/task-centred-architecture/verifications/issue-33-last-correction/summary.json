@@ -1,0 +1,139 @@
+{
+  "proofAdaptation": {
+    "browser-matrix.mjs": {
+      "sourceSha256": "dae6f3012ebc3be053b91f3cc3ce3b4172fb2415e2e2c9d84f90e415faa1445f",
+      "adaptedSha256": "bd512444b16c219a14b6cc2ce14f60e42a5a6a80dd8a34dcd069bf44b9640008",
+      "onlyChange": "owned artifact path relocation (or byte-identical)"
+    },
+    "residual-http.mjs": {
+      "sourceSha256": "64f093132b201fba20d4483cdefc72eb060bd9eb91c38a0a27081f9ffc561a43",
+      "adaptedSha256": "e4f1e9736adbf2cba108ac42edd48e2310d8a262a8efd632cc9568b07bfd7bbf",
+      "onlyChange": "owned artifact path relocation (or byte-identical)"
+    },
+    "browser-baseline.mjs": {
+      "sourceSha256": "5379b65544c093130a82a6579f8079b05cd33fe4332acf928094191f24ed1498",
+      "adaptedSha256": "5379b65544c093130a82a6579f8079b05cd33fe4332acf928094191f24ed1498",
+      "onlyChange": "owned artifact path relocation (or byte-identical)"
+    },
+    "browser-gateway.mjs": {
+      "sourceSha256": "bd8799f47d718dc2b3d5e0aa52e81fe49c6805a03a5213a060895f8facad7ba2",
+      "adaptedSha256": "7a00d1c5f7795be19c1afa48c56f5e570a93477a41c232f918f33fed16c61618",
+      "onlyChange": "owned artifact path relocation (or byte-identical)"
+    },
+    "probes.mjs": {
+      "sourceSha256": "48e5ce9f8bb6ce61820c2d77ec6a95d15ce791dd9ece0e1313a04dc4795fe8ba",
+      "adaptedSha256": "8ee8dee2151606fa4ebea54cff87ed493cd5d9c2c0de78e538927235a716e272",
+      "onlyChange": "owned artifact path relocation (or byte-identical)"
+    }
+  },
+  "final-browser-matrix": {
+    "total": 84,
+    "passed": 84,
+    "failed": 0,
+    "runtimeEvents": 0,
+    "logLines": 678,
+    "committedSinglePatchCases": 84,
+    "invalidPreservedCases": 81
+  },
+  "final-residual-http": {
+    "total": 36,
+    "passed": 36,
+    "failed": 0,
+    "runtimeEvents": 0,
+    "logLines": 73,
+    "zeroPatchRefusals": 10
+  },
+  "builder-browser-matrix": {
+    "total": 84,
+    "passed": 84,
+    "failed": 0,
+    "runtimeEvents": 0,
+    "logLines": 678,
+    "committedSinglePatchCases": 84,
+    "invalidPreservedCases": 81
+  },
+  "builder-residual-http": {
+    "total": 36,
+    "passed": 36,
+    "failed": 0,
+    "runtimeEvents": 0,
+    "logLines": 73
+  },
+  "browser-gateway": {
+    "total": 19,
+    "passed": 19,
+    "failed": 0,
+    "runtimeEvents": 0,
+    "logLines": 153
+  },
+  "browser-verification": {
+    "total": 32,
+    "passed": 32,
+    "failed": 0,
+    "runtimeEvents": 0,
+    "logLines": 24
+  },
+  "final-probes": {
+    "total": 28,
+    "passed": 28,
+    "failed": 0,
+    "runtimeEvents": 0,
+    "logLines": 0
+  },
+  "commandExitResults": {
+    "r1-red": 1,
+    "r1-green": 0,
+    "r2-red": 1,
+    "r2-green": 0,
+    "r2-read-red": 1,
+    "r3-red": 1,
+    "r3-green": 0,
+    "protocol-tests": 0,
+    "web-tests": 1,
+    "web-tests-green": 0,
+    "root-tests": 0,
+    "types": 0,
+    "final-types": 0,
+    "build": 0,
+    "parity-build": 0,
+    "bundle-syntax": 0,
+    "bundle-parity": 0,
+    "git-check-ignore-bundle": 0,
+    "browser-matrix": 0,
+    "residual-http": 0,
+    "final-browser-matrix": 0,
+    "final-residual-http": 0,
+    "browser-gateway": 0,
+    "browser-baseline": 0,
+    "probes": 0,
+    "focused-green": 0,
+    "final-tests-on-before": 1,
+    "final-root-tests": 0,
+    "proof-copy-and-result-audit": 0
+  },
+  "finalFocused": {
+    "total": 230,
+    "passed": 230,
+    "failed": 0,
+    "exit": 0
+  },
+  "finalTestsOnBefore": {
+    "total": 230,
+    "passed": 28,
+    "failed": 202,
+    "exit": 1,
+    "base": "a4191a450d2967bd7e04f26bab5f28912b836718"
+  },
+  "finalWeb": {
+    "total": 338,
+    "passed": 338,
+    "failed": 0,
+    "exit": 0
+  },
+  "finalRoot": {
+    "total": 466,
+    "passed": 466,
+    "failed": 0,
+    "exit": 0
+  }
+}
