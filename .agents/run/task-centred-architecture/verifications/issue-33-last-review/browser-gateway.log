@@ -1,0 +1,230 @@
+[
+  {
+    "kind": "section",
+    "name": "section.gateway502",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "visible": {
+      "text": "Outcome unknown — refresh to check GitHub state.",
+      "visible": true
+    },
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 1
+  },
+  {
+    "kind": "section",
+    "name": "section.malformed200",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "visible": {
+      "text": "Outcome unknown — refresh to check GitHub state.",
+      "visible": true
+    },
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 2
+  },
+  {
+    "kind": "section",
+    "name": "section.empty200",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "visible": {
+      "text": "Outcome unknown — refresh to check GitHub state.",
+      "visible": true
+    },
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 3
+  },
+  {
+    "kind": "section",
+    "name": "section.generic500",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "visible": {
+      "text": "Outcome unknown — refresh to check GitHub state.",
+      "visible": true
+    },
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 4
+  },
+  {
+    "kind": "section",
+    "name": "section.truncated200",
+    "text": "Browser network error: outcome unknown — refresh to check GitHub state.",
+    "visible": {
+      "text": "Browser network error: outcome unknown — refresh to check GitHub state.",
+      "visible": true
+    },
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 5
+  },
+  {
+    "kind": "section",
+    "name": "section.missingIssue",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "visible": {
+      "text": "Outcome unknown — refresh to check GitHub state.",
+      "visible": true
+    },
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 6
+  },
+  {
+    "kind": "section",
+    "name": "section.invalidShape",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "visible": {
+      "text": "Outcome unknown — refresh to check GitHub state.",
+      "visible": true
+    },
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 7
+  },
+  {
+    "kind": "question",
+    "name": "question.gateway502",
+    "text": "Outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 8
+  },
+  {
+    "kind": "question",
+    "name": "question.malformed200",
+    "text": "Outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 9
+  },
+  {
+    "kind": "question",
+    "name": "question.empty200",
+    "text": "Outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 10
+  },
+  {
+    "kind": "question",
+    "name": "question.generic500",
+    "text": "Outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 11
+  },
+  {
+    "kind": "question",
+    "name": "question.invalidShape",
+    "text": "Outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 12
+  },
+  {
+    "kind": "question",
+    "name": "question.truncated200",
+    "text": "Browser network error: outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "gatewayWrites": 13
+  },
+  {
+    "kind": "status",
+    "name": "status.gateway502",
+    "text": "Outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "labels": [
+      "bug",
+      "attention:needs-decision",
+      "phase:execution",
+      "status:in-review"
+    ],
+    "gatewayWrites": 14
+  },
+  {
+    "kind": "status",
+    "name": "status.malformed200",
+    "text": "Outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "labels": [
+      "bug",
+      "attention:needs-decision",
+      "phase:execution",
+      "status:in-review"
+    ],
+    "gatewayWrites": 15
+  },
+  {
+    "kind": "status",
+    "name": "status.empty200",
+    "text": "Outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "labels": [
+      "bug",
+      "attention:needs-decision",
+      "phase:execution",
+      "status:in-review"
+    ],
+    "gatewayWrites": 16
+  },
+  {
+    "kind": "status",
+    "name": "status.generic500",
+    "text": "Outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "labels": [
+      "bug",
+      "attention:needs-decision",
+      "phase:execution",
+      "status:in-review"
+    ],
+    "gatewayWrites": 17
+  },
+  {
+    "kind": "status",
+    "name": "status.invalidShape",
+    "text": "Outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "labels": [
+      "bug",
+      "attention:needs-decision",
+      "phase:execution",
+      "status:in-review"
+    ],
+    "gatewayWrites": 18
+  },
+  {
+    "kind": "status",
+    "name": "status.truncated200",
+    "text": "Browser network error: outcome unknown — refresh to check GitHub state",
+    "visible": true,
+    "patches": 1,
+    "committed": true,
+    "labels": [
+      "bug",
+      "attention:needs-decision",
+      "phase:execution",
+      "status:in-review"
+    ],
+    "gatewayWrites": 19
+  }
+]

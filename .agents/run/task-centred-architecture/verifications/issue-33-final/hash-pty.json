@@ -1,0 +1,10 @@
+{
+  "node": "v22.23.3",
+  "ptyExit": 0,
+  "passwordEchoed": false,
+  "hashVerified": true,
+  "documentedShellExit": 0,
+  "environmentFileMode": "0o600",
+  "passwordInCommand": false,
+  "passwordInOutput": false
+}

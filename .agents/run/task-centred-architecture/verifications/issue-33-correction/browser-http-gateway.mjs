@@ -1,0 +1,136 @@
+import http from 'node:http';
+import { readFile, writeFile } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+import path from 'node:path';
+const root = process.cwd();
+const { startFakeGitHub, makeIssue } = await import(path.resolve(root, 'web/tests/fake-github.mjs'));
+const { startBoard, BOARD_PASSWORD } = await import(path.resolve(root, 'web/tests/helpers.mjs'));
+const proofDir = `${root}/.agents/run/task-centred-architecture/verifications/issue-33-correction`;
+const baseline = await readFile(`${root}/.agents/run/task-centred-architecture/verifications/issue-33-final/browser-baseline.mjs`, 'utf8');
+
+const helper = baseline.slice(baseline.indexOf('class CDP {'), baseline.indexOf('function fixtures()'));
+const CDP_PORT = 9360;
+const { CDP, ensureObscura } = new Function(
+  'WebSocket',
+  'fetch',
+  'spawn',
+  'CDP_PORT',
+  'sleep',
+  helper + ';return {CDP,ensureObscura};',
+)(WebSocket, fetch, spawn, CDP_PORT, (ms) => new Promise((r) => setTimeout(r, ms)));
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+const fake = await startFakeGitHub({
+  issues: [makeIssue({ number: 1, title: 'Actual gateway probe', body: '## Overview\nBefore\n', labels: ['status:todo'] })],
+});
+const board = await startBoard(fake);
+
+let mode = 'gateway502';
+let writes = 0;
+const gateway = http.createServer(async (req, res) => {
+  const chunks = [];
+  for await (const c of req) chunks.push(c);
+  const target = await fetch(board.url + req.url, {
+    method: req.method,
+    headers: { ...req.headers, host: new URL(board.url).host },
+    body: !['GET', 'HEAD'].includes(req.method) ? Buffer.concat(chunks) : undefined,
+  });
+  const text = await target.text();
+  if (req.url.endsWith('/section') && req.method === 'PUT') {
+    writes++;
+    if (mode === 'gateway502') {
+      res.writeHead(502, { 'content-type': 'text/html' });
+      res.end('<h1>Bad Gateway</h1>');
+    } else if (mode === 'malformed200') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end('{bad');
+    } else {
+      res.writeHead(200, { 'content-type': 'application/json', 'content-length': '9999' });
+      res.write('{');
+      setTimeout(() => res.destroy(), 20);
+    }
+    return;
+  }
+  res.writeHead(target.status, Object.fromEntries(target.headers));
+  res.end(text);
+});
+await new Promise((r) => gateway.listen(0, '127.0.0.1', r));
+const url = `http://127.0.0.1:${gateway.address().port}`;
+
+const browser = await ensureObscura();
+const cdp = new CDP(`ws://127.0.0.1:${CDP_PORT}/devtools/browser`);
+await cdp.open();
+const target = await cdp.send('Target.createTarget', { url: 'about:blank' });
+const { sessionId } = await cdp.send('Target.attachToTarget', { targetId: target.targetId, flatten: true });
+const send = (m, p) => cdp.send(m, p, sessionId);
+await send('Page.enable');
+await send('Runtime.enable');
+
+async function ev(expression) {
+  const r = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
+  if (r.exceptionDetails) throw new Error(JSON.stringify(r.exceptionDetails));
+  return r.result.value;
+}
+
+async function wait(expression) {
+  for (let n = 0; n < 100; n++) {
+    if (await ev(expression)) return;
+    await sleep(50);
+  }
+  throw new Error('wait timeout ' + expression);
+}
+
+const results = [];
+try {
+  await send('Page.navigate', { url });
+  await wait('document.getElementById("login-form")!==null');
+  await ev(`document.getElementById('password').value=${JSON.stringify(BOARD_PASSWORD)};document.getElementById('login-form').requestSubmit()`);
+  await wait('document.querySelector(".task-row")!==null');
+  await ev('document.querySelector(".task-row").click()');
+  await wait('!document.getElementById("detail-view").hidden');
+
+  for (mode of ['gateway502', 'malformed200', 'truncated200']) {
+    if (results.length) {
+      await send('Page.navigate', { url: url + '/#/issue/1' });
+      await wait('!document.getElementById("detail-view").hidden && document.getElementById("overview-text").value.includes("Actual wire")');
+    }
+    const before = fake.patchCalls.length;
+    await ev(`document.getElementById('overview-text').value=${JSON.stringify('Actual wire committed ' + mode)};document.getElementById('save-overview').click()`);
+    await wait('document.getElementById("save-status").textContent!=="Saving…"');
+    const text = await ev('document.getElementById("save-status").textContent');
+    const file = `${proofDir}/screenshots/actual-http-${mode}.png`;
+    const shot = await send('Page.captureScreenshot', { format: 'png' });
+    await writeFile(file, Buffer.from(shot.data, 'base64'));
+    results.push({
+      mode,
+      text,
+      patches: fake.patchCalls.length - before,
+      committed: fake.findIssue(1).body.includes('Actual wire committed ' + mode),
+    });
+  }
+
+  console.log(JSON.stringify(results, null, 2));
+  await writeFile(
+    `${proofDir}/browser-http-gateway.json`,
+    JSON.stringify(
+      {
+        results,
+        writes,
+        logs: board.logs,
+        runtimeEvents: cdp.events.filter(
+          (e) => e.method === 'Runtime.exceptionThrown' || e.method === 'Runtime.consoleAPICalled',
+        ),
+      },
+      null,
+      2,
+    ) + '\n',
+  );
+} finally {
+  await send('Target.closeTarget', { targetId: target.targetId });
+  cdp.close();
+  gateway.closeAllConnections();
+  await new Promise((r) => gateway.close(r));
+  await board.app.close();
+  await fake.close();
+  if (browser.started) process.kill(-browser.child.pid);
+}

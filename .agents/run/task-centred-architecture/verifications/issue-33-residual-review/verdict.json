@@ -1,0 +1,26 @@
+{
+  "candidate": "d41ff3419b66a4076a2199038260820ff1341cc9",
+  "base": "f6ee7da8e859991e6ce9f58fe80683b863e8743e",
+  "reviewer": "9router/genius",
+  "security": "APPROVED",
+  "specCompliance": "PARTIAL",
+  "quality": "NEEDS-FIXES",
+  "verdict": "HALT",
+  "findings": {
+    "F1": "OPEN",
+    "F2": "OPEN",
+    "F3": "OPEN",
+    "F4": "CLOSED: reporting structure; product closure claims superseded",
+    "F5": "CLOSED"
+  },
+  "rankedResiduals": [
+    {"finding":"F1","severity":"medium","source":"web/public/app.js:70-86","result":"Invalid array entries and unchecked rendering fields still produce raw exceptions, draft loss or false success after one committed PATCH."},
+    {"finding":"F2","severity":"low","source":"web/server/github.ts:87-92","result":"Generic gateway errors arrays or validation-failed substrings still produce definitive 400 after one committed PATCH."},
+    {"finding":"F3","severity":"low","source":"web/server/board.ts:40,92-94,383-385","result":"One/two/three spaces followed by a tab still expose and mutate indented code; direct code-only target returns 200 and one PATCH."}
+  ],
+  "bundleSha256": "97ad16115fd88c7956a786100730ad2e31741efb6c6a5af816857ecb03c190cd",
+  "bundleIgnored": true,
+  "productionVerified": false,
+  "humanValidation": "pending",
+  "nextAction": "Return to owner; no autonomous correction loop."
+}

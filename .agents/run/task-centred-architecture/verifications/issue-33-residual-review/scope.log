@@ -1,0 +1,7 @@
+panel/service/root metadata unchanged
+web/README.md
+web/public/app.js
+web/server/board.ts
+web/server/github.ts
+web/server/sections.ts
+web/tests/protocol-corrections.test.mjs

@@ -1,0 +1,9 @@
+file:///tmp/opencode/issue33-final/browser-http-gateway.mjs:17
+async function wait(expression){for(let n=0;n<100;n++){if(await ev(expression))return;await sleep(50);}throw new Error('wait timeout '+expression);}
+                                                                                                             ^
+
+Error: wait timeout document.getElementById("save-status").textContent === ""
+    at wait (file:///tmp/opencode/issue33-final/browser-http-gateway.mjs:17:110)
+    at async file:///tmp/opencode/issue33-final/browser-http-gateway.mjs:19:550
+
+Node.js v22.23.3

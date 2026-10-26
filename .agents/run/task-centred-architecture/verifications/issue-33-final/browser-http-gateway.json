@@ -1,0 +1,51 @@
+{
+  "results": [
+    {
+      "mode": "gateway502",
+      "text": "request_failed.",
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "mode": "malformed200",
+      "text": "Cannot read properties of null (reading 'issue').",
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "mode": "truncated200",
+      "text": "Browser network error: outcome unknown — refresh to check GitHub state.",
+      "patches": 1,
+      "committed": true
+    }
+  ],
+  "writes": 3,
+  "logs": [
+    "GET / 200 1ms",
+    "GET /theme.css 200 1ms",
+    "GET /app.js 200 1ms",
+    "GET /api/session 200 1ms",
+    "POST /api/session 200 82ms",
+    "GET /api/board 200 7ms",
+    "GET /api/issues/1 200 10ms",
+    "write issue=1 fields=body",
+    "PUT /api/issues/1/section 200 20ms",
+    "GET / 200 1ms",
+    "GET /theme.css 200 0ms",
+    "GET /app.js 200 1ms",
+    "GET /api/session 200 0ms",
+    "GET /api/board 200 3ms",
+    "GET /api/issues/1 200 5ms",
+    "write issue=1 fields=body",
+    "PUT /api/issues/1/section 200 7ms",
+    "GET / 200 1ms",
+    "GET /theme.css 200 1ms",
+    "GET /app.js 200 1ms",
+    "GET /api/session 200 1ms",
+    "GET /api/board 200 3ms",
+    "GET /api/issues/1 200 4ms",
+    "write issue=1 fields=body",
+    "PUT /api/issues/1/section 200 8ms"
+  ],
+  "runtimeEvents": []
+}

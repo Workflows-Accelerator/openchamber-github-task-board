@@ -1,0 +1,573 @@
+{
+  "ranAt": "2026-10-25T20:58:17.558Z",
+  "results": [
+    {
+      "name": "N1.srv.html422",
+      "pass": true,
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "N1.srv.json422",
+      "pass": false,
+      "status": 400,
+      "body": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "N1.srv.real422",
+      "pass": true,
+      "status": 400,
+      "body": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "committed": false
+    },
+    {
+      "name": "N2.sameOriginGet302",
+      "pass": true,
+      "status": 502,
+      "body": {
+        "error": "github_unavailable",
+        "message": "GitHub could not be reached"
+      },
+      "destinationHits": 0,
+      "originHits": [
+        {
+          "path": "/user",
+          "method": "GET"
+        },
+        {
+          "path": "/repos/owner/repo",
+          "method": "GET"
+        },
+        {
+          "path": "/repos/owner/repo/issues?state=all&per_page=100&page=1",
+          "method": "GET"
+        },
+        {
+          "path": "/repos/owner/repo/issues/1",
+          "method": "GET"
+        },
+        {
+          "path": "/repos/owner/repo/issues/1",
+          "method": "GET"
+        },
+        {
+          "path": "/repos/owner/repo/issues/1",
+          "method": "PATCH"
+        },
+        {
+          "path": "/repos/owner/repo/issues/2",
+          "method": "PATCH"
+        }
+      ]
+    },
+    {
+      "name": "N2.sameOriginPatch307",
+      "pass": true,
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "destinationHits": 0,
+      "originPATCHes": 1,
+      "originHits": [
+        {
+          "path": "/user",
+          "method": "GET"
+        },
+        {
+          "path": "/repos/owner/repo",
+          "method": "GET"
+        },
+        {
+          "path": "/repos/owner/repo/issues?state=all&per_page=100&page=1",
+          "method": "GET"
+        },
+        {
+          "path": "/repos/owner/repo/issues/1",
+          "method": "GET"
+        },
+        {
+          "path": "/repos/owner/repo/issues/1",
+          "method": "GET"
+        },
+        {
+          "path": "/repos/owner/repo/issues/1",
+          "method": "PATCH"
+        },
+        {
+          "path": "/repos/owner/repo/issues/2",
+          "method": "PATCH"
+        }
+      ]
+    },
+    {
+      "name": "N2.crossOriginPatch307",
+      "pass": true,
+      "error": {
+        "name": "GitHubError",
+        "kind": "server",
+        "status": 307,
+        "message": "GitHub redirected with status 307; redirects are not permitted"
+      },
+      "destinationHits": []
+    },
+    {
+      "name": "N3.indentationMismatch",
+      "pass": true,
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub",
+        "issue": {
+          "number": 1,
+          "title": "Synthetic issue 1",
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/repo/issues/1",
+          "body": "## Overview\nindented code\n\n## Human Tasks\n- [ ] Keep suffix\n\nTrailing byte block\n",
+          "fingerprint": "10df23c67c908c016fa2669ef3814c9d4fe50097958eb4ae288484f590b6ea1b",
+          "labels": [],
+          "statusLabel": null,
+          "phase": "draft",
+          "attention": "needs-review",
+          "column": "draft",
+          "updatedAt": "2026-10-25T20:58:15.346Z",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "indented code"
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "text": "Keep suffix",
+              "completed": false
+            }
+          ],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      },
+      "patches": 1
+    },
+    {
+      "name": "N3.trailingContentWhitespaceMismatch",
+      "pass": true,
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub",
+        "issue": {
+          "number": 1,
+          "title": "Synthetic issue 1",
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/repo/issues/1",
+          "body": "## Overview\nvalue\n\n## Human Tasks\n- [ ] Keep suffix\n\nTrailing byte block\n",
+          "fingerprint": "2264c33870ed8047b5e8f8bb09319f7a215105d7dcd3310b4a46cab7bd95b22f",
+          "labels": [],
+          "statusLabel": null,
+          "phase": "draft",
+          "attention": "needs-review",
+          "column": "draft",
+          "updatedAt": "2026-10-25T20:58:15.360Z",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "value"
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "text": "Keep suffix",
+              "completed": false
+            }
+          ],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      },
+      "patches": 2
+    },
+    {
+      "name": "N3.indentationPreservedSuccess",
+      "pass": true,
+      "status": 200,
+      "patches": 3,
+      "suffixEqual": true
+    },
+    {
+      "name": "N3.trailingWhitespacePreservedSuccess",
+      "pass": true,
+      "status": 200,
+      "body": "## Overview\ntrailing kept   \n\n## Human Tasks\n- [ ] Keep suffix\n\nTrailing byte block\n"
+    },
+    {
+      "name": "N3.crlfSuccessAndSuffix",
+      "pass": true,
+      "status": 200,
+      "patches": 1,
+      "body": "## Overview\r\nChanged\r\nsecond line\r\n\r\n## Human Tasks\r\n- [ ] Keep\r\n"
+    },
+    {
+      "name": "N4.projection.hostile",
+      "pass": true,
+      "listCount": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      },
+      "openQuestions": [],
+      "expected": {
+        "total": 0,
+        "texts": []
+      }
+    },
+    {
+      "name": "N4.projection.longerBacktick",
+      "pass": true,
+      "listCount": {
+        "total": 1,
+        "done": 0,
+        "open": 1
+      },
+      "openQuestions": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Real after four backticks?",
+          "completed": false
+        }
+      ],
+      "expected": {
+        "total": 1,
+        "texts": [
+          "Real after four backticks?"
+        ]
+      }
+    },
+    {
+      "name": "N4.projection.tilde",
+      "pass": true,
+      "listCount": {
+        "total": 1,
+        "done": 0,
+        "open": 1
+      },
+      "openQuestions": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Real after four tildes?",
+          "completed": false
+        }
+      ],
+      "expected": {
+        "total": 1,
+        "texts": [
+          "Real after four tildes?"
+        ]
+      }
+    },
+    {
+      "name": "N4.projection.indentedCode",
+      "pass": true,
+      "listCount": {
+        "total": 2,
+        "done": 0,
+        "open": 2
+      },
+      "openQuestions": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Four-space indented code question?",
+          "completed": false
+        },
+        {
+          "index": 1,
+          "answerIndex": 1,
+          "text": "Indentation real question?",
+          "completed": false
+        }
+      ],
+      "expected": {
+        "total": 2,
+        "texts": [
+          "Four-space indented code question?",
+          "Indentation real question?"
+        ]
+      }
+    },
+    {
+      "name": "N4.hostileRefusal",
+      "pass": true,
+      "detail": [],
+      "answer": {
+        "status": 400,
+        "body": {
+          "error": "invalid_edit",
+          "message": "That open question is no longer answerable"
+        }
+      },
+      "patches": 0
+    },
+    {
+      "name": "N4.realBeforeAfterFence",
+      "pass": true,
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "First real question?",
+          "completed": false
+        },
+        {
+          "index": 1,
+          "answerIndex": 1,
+          "text": "Second real question?",
+          "completed": false
+        }
+      ],
+      "patches": 2,
+      "body": "## Open Questions\n- [x] First real question? *(Answer: first answer)*\n```text\n- [ ] Fenced code question?\n```not-a-closing-fence\n- [ ] Still fenced code question?\n```\n- [x] Second real question? *(Answer: second answer)*"
+    },
+    {
+      "name": "N4.duplicateTargeting",
+      "pass": true,
+      "status": 200,
+      "lines": [
+        "## Open Questions",
+        "- [ ] Duplicate question?",
+        "- [x] Duplicate question? *(Answer: second only)*"
+      ],
+      "patches": 1
+    },
+    {
+      "name": "N4.staleQuestionRefusal",
+      "pass": true,
+      "status": 409,
+      "body": "conflict",
+      "shownQuestion": "Changed question?",
+      "patches": 0
+    },
+    {
+      "name": "N4.adjacentIndentedCode",
+      "pass": true,
+      "observed": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Four-space indented code question?",
+          "completed": false
+        },
+        {
+          "index": 1,
+          "answerIndex": 1,
+          "text": "Indentation real question?",
+          "completed": false
+        }
+      ],
+      "answerStatus": 200,
+      "body": "## Open Questions\n    - [x] Four-space indented code question? *(Answer: mutated code)*\n- [ ] Indentation real question?",
+      "patches": 1
+    },
+    {
+      "name": "N4.directTargeting.longerBacktick",
+      "pass": true,
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Real after four backticks?",
+          "completed": false
+        }
+      ],
+      "outOfRange": {
+        "status": 400,
+        "body": {
+          "error": "invalid_edit",
+          "message": "That open question is no longer answerable"
+        }
+      },
+      "realStatus": 200,
+      "patches": 1,
+      "updated": "## Open Questions\n````\n```\n- [ ] Inside four backticks?\n```\n````\n- [x] Real after four backticks? *(Answer: real answer)*"
+    },
+    {
+      "name": "N4.directTargeting.tilde",
+      "pass": true,
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Real after four tildes?",
+          "completed": false
+        }
+      ],
+      "outOfRange": {
+        "status": 400,
+        "body": {
+          "error": "invalid_edit",
+          "message": "That open question is no longer answerable"
+        }
+      },
+      "realStatus": 200,
+      "patches": 1,
+      "updated": "## Open Questions\n~~~~\n~~~\n- [ ] Inside four tildes?\n~~~\n~~~~\n- [x] Real after four tildes? *(Answer: real answer)*"
+    },
+    {
+      "name": "N4.completedIndexShift",
+      "pass": true,
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": null,
+          "text": "Completed question? *(Answer: done)*",
+          "completed": true
+        },
+        {
+          "index": 1,
+          "answerIndex": 0,
+          "text": "Still open question?",
+          "completed": false
+        }
+      ],
+      "status": 200,
+      "patches": 1
+    },
+    {
+      "name": "smoke.unauth",
+      "pass": true,
+      "status": 401
+    },
+    {
+      "name": "smoke.csrfAndForgedCookie",
+      "pass": true,
+      "login": 200,
+      "csrfMissing": 403,
+      "forged": 401
+    },
+    {
+      "name": "smoke.tokenAndWarning",
+      "pass": true,
+      "tokenLeak": false,
+      "warning": true
+    },
+    {
+      "name": "smoke.humanDoneOnly",
+      "pass": true,
+      "status": 200,
+      "state": "open",
+      "labels": [
+        "phase:execution",
+        "attention:needs-decision",
+        "bug",
+        "status:done"
+      ],
+      "beforeState": "open"
+    },
+    {
+      "name": "smoke.loginLogout",
+      "pass": true,
+      "wrong": 401,
+      "logout": 204,
+      "afterLogout": 401,
+      "cookieFlags": "board_session=<redacted>; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=43200"
+    }
+  ]
+}

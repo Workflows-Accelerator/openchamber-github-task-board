@@ -1,0 +1,61 @@
+{
+  "total": 28,
+  "passed": 28,
+  "failed": [],
+  "observations": [
+    {
+      "name": "N1.srv.json422",
+      "pass": true,
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "N4.adjacentIndentedCode",
+      "pass": true,
+      "observed": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Indentation real question?",
+          "completed": false
+        }
+      ],
+      "answerStatus": 200,
+      "body": "## Open Questions\n    - [ ] Four-space indented code question?\n- [x] Indentation real question? *(Answer: mutated code)*",
+      "patches": 1
+    }
+  ]
+}
+PASS N1.srv.html422
+PASS N1.srv.json422
+PASS N1.srv.real422
+PASS N2.sameOriginGet302
+PASS N2.sameOriginPatch307
+PASS N2.crossOriginPatch307
+PASS N3.indentationMismatch
+PASS N3.trailingContentWhitespaceMismatch
+PASS N3.indentationPreservedSuccess
+PASS N3.trailingWhitespacePreservedSuccess
+PASS N3.crlfSuccessAndSuffix
+PASS N4.projection.hostile
+PASS N4.projection.longerBacktick
+PASS N4.projection.tilde
+PASS N4.projection.indentedCode
+PASS N4.hostileRefusal
+PASS N4.realBeforeAfterFence
+PASS N4.duplicateTargeting
+PASS N4.staleQuestionRefusal
+PASS N4.adjacentIndentedCode
+PASS N4.directTargeting.longerBacktick
+PASS N4.directTargeting.tilde
+PASS N4.completedIndexShift
+PASS smoke.unauth
+PASS smoke.csrfAndForgedCookie
+PASS smoke.tokenAndWarning
+PASS smoke.humanDoneOnly
+PASS smoke.loginLogout

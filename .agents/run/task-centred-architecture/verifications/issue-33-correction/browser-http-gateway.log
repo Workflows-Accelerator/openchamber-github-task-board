@@ -1,0 +1,20 @@
+[
+  {
+    "mode": "gateway502",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "patches": 1,
+    "committed": true
+  },
+  {
+    "mode": "malformed200",
+    "text": "Outcome unknown — refresh to check GitHub state.",
+    "patches": 1,
+    "committed": true
+  },
+  {
+    "mode": "truncated200",
+    "text": "Browser network error: outcome unknown — refresh to check GitHub state.",
+    "patches": 1,
+    "committed": true
+  }
+]

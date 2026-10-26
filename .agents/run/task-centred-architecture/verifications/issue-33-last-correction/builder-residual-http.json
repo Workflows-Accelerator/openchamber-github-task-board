@@ -1,0 +1,647 @@
+{
+  "results": [
+    {
+      "name": "F2.genericObject",
+      "pass": true,
+      "payload": {
+        "message": "Gateway lost upstream"
+      },
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.html",
+      "pass": true,
+      "payload": "<h1>Gateway lost upstream</h1>",
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.malformed",
+      "pass": true,
+      "payload": "{\"message\":",
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.null",
+      "pass": true,
+      "payload": null,
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.string",
+      "pass": true,
+      "payload": "Gateway lost upstream",
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.number",
+      "pass": true,
+      "payload": 42,
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.array",
+      "pass": true,
+      "payload": [],
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.arrayObjects",
+      "pass": true,
+      "payload": [
+        {
+          "message": "Gateway lost upstream"
+        }
+      ],
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.genericErrorsEmpty",
+      "pass": true,
+      "payload": {
+        "message": "Gateway lost upstream",
+        "errors": []
+      },
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.genericErrorsStrings",
+      "pass": true,
+      "payload": {
+        "message": "Gateway lost upstream",
+        "errors": [
+          "connection reset"
+        ]
+      },
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.gatewayValidationWords",
+      "pass": true,
+      "payload": {
+        "message": "Gateway validation failed while relaying committed response"
+      },
+      "expected": {
+        "status": 502,
+        "error": "write_outcome_unknown"
+      },
+      "status": 502,
+      "body": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true
+    },
+    {
+      "name": "F2.githubValidation",
+      "pass": true,
+      "payload": {
+        "message": "Validation Failed",
+        "errors": [
+          {
+            "resource": "Issue",
+            "field": "body",
+            "code": "invalid"
+          }
+        ]
+      },
+      "expected": {
+        "status": 400,
+        "error": "invalid_request"
+      },
+      "status": 400,
+      "body": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false
+    },
+    {
+      "name": "F3.projection.fourSpacesOnly",
+      "pass": true,
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      },
+      "views": [],
+      "expectedTexts": [],
+      "body": "## Open Questions\n\n    - [ ] Code?\n"
+    },
+    {
+      "name": "F3.refusal.fourSpacesOnly",
+      "pass": true,
+      "index": 0,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n\n    - [ ] Code?\n"
+    },
+    {
+      "name": "F3.projection.tabOnly",
+      "pass": true,
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      },
+      "views": [],
+      "expectedTexts": [],
+      "body": "## Open Questions\n\n\t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.refusal.tabOnly",
+      "pass": true,
+      "index": 0,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n\n\t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.projection.spaceTabOnly",
+      "pass": true,
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      },
+      "views": [],
+      "expectedTexts": [],
+      "body": "## Open Questions\n\n \t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.refusal.spaceTabOnly",
+      "pass": true,
+      "index": 0,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n\n \t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.projection.twoSpacesTabOnly",
+      "pass": true,
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      },
+      "views": [],
+      "expectedTexts": [],
+      "body": "## Open Questions\n\n  \t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.refusal.twoSpacesTabOnly",
+      "pass": true,
+      "index": 0,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n\n  \t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.projection.threeSpacesTabOnly",
+      "pass": true,
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      },
+      "views": [],
+      "expectedTexts": [],
+      "body": "## Open Questions\n\n   \t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.refusal.threeSpacesTabOnly",
+      "pass": true,
+      "index": 0,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n\n   \t- [ ] Code?\n"
+    },
+    {
+      "name": "F3.projection.nestedCode",
+      "pass": true,
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      },
+      "views": [],
+      "expectedTexts": [],
+      "body": "## Open Questions\n- Parent list\n\n      - [ ] Nested code?\n"
+    },
+    {
+      "name": "F3.refusal.nestedCode",
+      "pass": true,
+      "index": 0,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n- Parent list\n\n      - [ ] Nested code?\n"
+    },
+    {
+      "name": "F3.projection.realBeforeAfter",
+      "pass": true,
+      "count": {
+        "total": 2,
+        "done": 0,
+        "open": 2
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Before?",
+          "completed": false
+        },
+        {
+          "index": 1,
+          "answerIndex": 1,
+          "text": "After?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [
+        "Before?",
+        "After?"
+      ],
+      "body": "## Open Questions\n- [ ] Before?\n\n    - [ ] Four-space code?\n\n\t- [ ] Tab code?\n\n- [ ] After?\n"
+    },
+    {
+      "name": "F3.refusal.realBeforeAfter",
+      "pass": true,
+      "index": 2,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n- [ ] Before?\n\n    - [ ] Four-space code?\n\n\t- [ ] Tab code?\n\n- [ ] After?\n"
+    },
+    {
+      "name": "F3.realTarget.realBeforeAfter",
+      "pass": true,
+      "status": 200,
+      "patches": 1,
+      "body": "## Open Questions\n- [ ] Before?\n\n    - [ ] Four-space code?\n\n\t- [ ] Tab code?\n\n- [x] After? *(Answer: exact nested answer)*\n",
+      "expected": "## Open Questions\n- [ ] Before?\n\n    - [ ] Four-space code?\n\n\t- [ ] Tab code?\n\n- [x] After? *(Answer: exact nested answer)*\n"
+    },
+    {
+      "name": "F3.projection.realNestedContinuation",
+      "pass": true,
+      "count": {
+        "total": 3,
+        "done": 0,
+        "open": 3
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "First?",
+          "completed": false
+        },
+        {
+          "index": 1,
+          "answerIndex": 1,
+          "text": "Nested real?",
+          "completed": false
+        },
+        {
+          "index": 2,
+          "answerIndex": 2,
+          "text": "Last?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [
+        "First?",
+        "Nested real?",
+        "Last?"
+      ],
+      "body": "## Open Questions\n- [ ] First?\n  continuation without a checkbox\n  - [ ] Nested real?\n    continuation four spaces\n- [ ] Last?\n"
+    },
+    {
+      "name": "F3.refusal.realNestedContinuation",
+      "pass": true,
+      "index": 3,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n- [ ] First?\n  continuation without a checkbox\n  - [ ] Nested real?\n    continuation four spaces\n- [ ] Last?\n"
+    },
+    {
+      "name": "F3.realTarget.realNestedContinuation",
+      "pass": true,
+      "status": 200,
+      "patches": 1,
+      "body": "## Open Questions\n- [ ] First?\n  continuation without a checkbox\n  - [x] Nested real? *(Answer: exact nested answer)*\n    continuation four spaces\n- [ ] Last?\n",
+      "expected": "## Open Questions\n- [ ] First?\n  continuation without a checkbox\n  - [x] Nested real? *(Answer: exact nested answer)*\n    continuation four spaces\n- [ ] Last?\n"
+    },
+    {
+      "name": "F3.projection.nestedCodeAndReal",
+      "pass": true,
+      "count": {
+        "total": 1,
+        "done": 0,
+        "open": 1
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": 0,
+          "text": "Last?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [
+        "Last?"
+      ],
+      "body": "## Open Questions\n- Parent list\n\n      - [ ] Nested code?\n\n- [ ] Last?\n"
+    },
+    {
+      "name": "F3.refusal.nestedCodeAndReal",
+      "pass": true,
+      "index": 1,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\n- Parent list\n\n      - [ ] Nested code?\n\n- [ ] Last?\n"
+    },
+    {
+      "name": "F3.realTarget.nestedCodeAndReal",
+      "pass": true,
+      "status": 200,
+      "patches": 1,
+      "body": "## Open Questions\n- Parent list\n\n      - [ ] Nested code?\n\n- [x] Last? *(Answer: exact nested answer)*\n",
+      "expected": "## Open Questions\n- Parent list\n\n      - [ ] Nested code?\n\n- [x] Last? *(Answer: exact nested answer)*\n"
+    },
+    {
+      "name": "F3.projection.crlf",
+      "pass": true,
+      "count": {
+        "total": 2,
+        "done": 1,
+        "open": 1
+      },
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": null,
+          "text": "Completed? *(Answer: yes)*",
+          "completed": true
+        },
+        {
+          "index": 1,
+          "answerIndex": 0,
+          "text": "Nested real?",
+          "completed": false
+        }
+      ],
+      "expectedTexts": [
+        "Completed? *(Answer: yes)*",
+        "Nested real?"
+      ],
+      "body": "## Open Questions\r\n- [x] Completed? *(Answer: yes)*\r\n\r\n    - [ ] Code?\r\n\r\n  - [ ] Nested real?\r\n"
+    },
+    {
+      "name": "F3.refusal.crlf",
+      "pass": true,
+      "index": 2,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true,
+      "body": "## Open Questions\r\n- [x] Completed? *(Answer: yes)*\r\n\r\n    - [ ] Code?\r\n\r\n  - [ ] Nested real?\r\n"
+    },
+    {
+      "name": "F3.realTarget.crlf",
+      "pass": true,
+      "status": 200,
+      "patches": 1,
+      "body": "## Open Questions\r\n- [x] Completed? *(Answer: yes)*\r\n\r\n    - [ ] Code?\r\n\r\n  - [x] Nested real? *(Answer: exact nested answer)*\r\n",
+      "expected": "## Open Questions\r\n- [x] Completed? *(Answer: yes)*\r\n\r\n    - [ ] Code?\r\n\r\n  - [x] Nested real? *(Answer: exact nested answer)*\r\n"
+    }
+  ],
+  "logs": [
+    "POST /api/session 200 99ms",
+    "GET /api/issues/1 200 23ms",
+    "PUT /api/issues/1/section 502 15ms",
+    "GET /api/issues/1 200 6ms",
+    "PUT /api/issues/1/section 502 11ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 6ms",
+    "GET /api/issues/1 200 5ms",
+    "PUT /api/issues/1/section 502 8ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 33ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 502 5ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 6ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 502 4ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 6ms",
+    "GET /api/issues/1 200 6ms",
+    "PUT /api/issues/1/section 502 10ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 502 5ms",
+    "GET /api/issues/1 200 5ms",
+    "PUT /api/issues/1/section 400 4ms",
+    "POST /api/session 200 74ms",
+    "GET /api/board 200 4ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 82ms",
+    "GET /api/board 200 6ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 4ms",
+    "POST /api/session 200 84ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 71ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 56ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 71ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 62ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/2/answer 400 2ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/1/answer 200 16ms",
+    "POST /api/session 200 61ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/3/answer 400 1ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/1/answer 200 5ms",
+    "POST /api/session 200 65ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 8ms",
+    "POST /api/issues/1/questions/1/answer 400 2ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/0/answer 200 25ms",
+    "POST /api/session 200 62ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/2/answer 400 2ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/0/answer 200 5ms"
+  ],
+  "summary": {
+    "total": 36,
+    "passed": 36,
+    "failed": 0
+  }
+}

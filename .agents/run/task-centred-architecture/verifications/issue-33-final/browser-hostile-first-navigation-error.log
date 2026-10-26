@@ -1,0 +1,3 @@
+browser verification failed: timed out waiting for stale freshness marker
+diagnostics={"hash":"#/issue/1","title":"Task Board · owner/repo","notice":"GitHub could not be reached.","boardHidden":false,"detailHidden":true,"body":"Skip to content\nTask Board\nowner/repo\nLoaded just now\nRefresh\nSign out\n\nGitHub could not be reached.\n\nTasks\n\n3 tasks\n\n<img src=x onerror=\"window.__xss=1\">\n#1\nopen\nin review\nphase: execution\nneeds decision\n#1\nupdated just now\n2 open questions\n1 human task\nInvestigate https://example.test/a/very/long/path/that/should/wrap/without/horizontal/scroll/on/narrow/screens\n#4\nopen\nbacklog\nphase: planning\n#4\nupdated 3d ago\nClosed example task\n#2\nclosed\ndone\nphase: done\n#2\nupdated 5d ago"}
+pageErrors=

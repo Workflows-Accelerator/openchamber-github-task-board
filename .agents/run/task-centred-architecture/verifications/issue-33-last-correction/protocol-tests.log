@@ -1,0 +1,82 @@
+TAP version 13
+# Subtest: N2: GitHubClient rejects 302 and 307 redirects before following (zero requests sent to destination)
+ok 1 - N2: GitHubClient rejects 302 and 307 redirects before following (zero requests sent to destination)
+  ---
+  duration_ms: 85.448159
+  type: 'test'
+  ...
+# Subtest: N1 (client): api() treats malformed success, 5xx, and untrusted responses on mutations as write_outcome_unknown
+ok 2 - N1 (client): api() treats malformed success, 5xx, and untrusted responses on mutations as write_outcome_unknown
+  ---
+  duration_ms: 16.161288
+  type: 'test'
+  ...
+# Subtest: N1: upstream malformed/HTML 422 after PATCH maps to 502 write_outcome_unknown
+ok 3 - N1: upstream malformed/HTML 422 after PATCH maps to 502 write_outcome_unknown
+  ---
+  duration_ms: 254.001458
+  type: 'test'
+  ...
+# Subtest: N3: indentation-only mismatch on readback maps to 502 write_outcome_unknown
+ok 4 - N3: indentation-only mismatch on readback maps to 502 write_outcome_unknown
+  ---
+  duration_ms: 236.228584
+  type: 'test'
+  ...
+# Subtest: N4: malformed fence does not expose code checkbox as open question in list or detail
+ok 5 - N4: malformed fence does not expose code checkbox as open question in list or detail
+  ---
+  duration_ms: 4.03504
+  type: 'test'
+  ...
+# Subtest: N4: fence variants (longer backticks, tildes) preserve fences and exclude code checkboxes
+ok 6 - N4: fence variants (longer backticks, tildes) preserve fences and exclude code checkboxes
+  ---
+  duration_ms: 0.842793
+  type: 'test'
+  ...
+# Subtest: N4: exact hostile review fixture (no questions outside fence) exposes 0 questions and refuses answer mutation via HTTP
+ok 7 - N4: exact hostile review fixture (no questions outside fence) exposes 0 questions and refuses answer mutation via HTTP
+  ---
+  duration_ms: 191.053971
+  type: 'test'
+  ...
+# Subtest: N4: real question after fenced code block can be answered via HTTP without touching code block
+ok 8 - N4: real question after fenced code block can be answered via HTTP without touching code block
+  ---
+  duration_ms: 185.594121
+  type: 'test'
+  ...
+# Subtest: F1 (client): nominal 200 with invalid detail shape throws write_outcome_unknown and does not corrupt detail
+ok 9 - F1 (client): nominal 200 with invalid detail shape throws write_outcome_unknown and does not corrupt detail
+  ---
+  duration_ms: 19.495893
+  type: 'test'
+  ...
+# Subtest: F2: upstream generic JSON 422 after PATCH maps to 502 write_outcome_unknown, while recognisable GitHub validation 422 maps to 400 invalid_request
+ok 10 - F2: upstream generic JSON 422 after PATCH maps to 502 write_outcome_unknown, while recognisable GitHub validation 422 maps to 400 invalid_request
+  ---
+  duration_ms: 193.764128
+  type: 'test'
+  ...
+# Subtest: F3: four-space/tab indented code checkbox is excluded from list, detail, and mutation targeting
+ok 11 - F3: four-space/tab indented code checkbox is excluded from list, detail, and mutation targeting
+  ---
+  duration_ms: 192.587923
+  type: 'test'
+  ...
+# Subtest: F3: issue with only indented code exposes 0 questions and refuses answer index 0
+ok 12 - F3: issue with only indented code exposes 0 questions and refuses answer index 0
+  ---
+  duration_ms: 173.14153
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1939.094167

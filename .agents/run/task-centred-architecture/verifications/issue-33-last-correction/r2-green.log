@@ -1,0 +1,358 @@
+TAP version 13
+# Subtest: N2: GitHubClient rejects 302 and 307 redirects before following (zero requests sent to destination)
+ok 1 - N2: GitHubClient rejects 302 and 307 redirects before following (zero requests sent to destination)
+  ---
+  duration_ms: 87.989225
+  type: 'test'
+  ...
+# Subtest: N1 (client): api() treats malformed success, 5xx, and untrusted responses on mutations as write_outcome_unknown
+ok 2 - N1 (client): api() treats malformed success, 5xx, and untrusted responses on mutations as write_outcome_unknown
+  ---
+  duration_ms: 19.589033
+  type: 'test'
+  ...
+# Subtest: N1: upstream malformed/HTML 422 after PATCH maps to 502 write_outcome_unknown
+ok 3 - N1: upstream malformed/HTML 422 after PATCH maps to 502 write_outcome_unknown
+  ---
+  duration_ms: 292.67802
+  type: 'test'
+  ...
+# Subtest: N3: indentation-only mismatch on readback maps to 502 write_outcome_unknown
+ok 4 - N3: indentation-only mismatch on readback maps to 502 write_outcome_unknown
+  ---
+  duration_ms: 263.458355
+  type: 'test'
+  ...
+# Subtest: N4: malformed fence does not expose code checkbox as open question in list or detail
+ok 5 - N4: malformed fence does not expose code checkbox as open question in list or detail
+  ---
+  duration_ms: 5.870325
+  type: 'test'
+  ...
+# Subtest: N4: fence variants (longer backticks, tildes) preserve fences and exclude code checkboxes
+ok 6 - N4: fence variants (longer backticks, tildes) preserve fences and exclude code checkboxes
+  ---
+  duration_ms: 0.812204
+  type: 'test'
+  ...
+# Subtest: N4: exact hostile review fixture (no questions outside fence) exposes 0 questions and refuses answer mutation via HTTP
+ok 7 - N4: exact hostile review fixture (no questions outside fence) exposes 0 questions and refuses answer mutation via HTTP
+  ---
+  duration_ms: 220.560012
+  type: 'test'
+  ...
+# Subtest: N4: real question after fenced code block can be answered via HTTP without touching code block
+ok 8 - N4: real question after fenced code block can be answered via HTTP without touching code block
+  ---
+  duration_ms: 216.401866
+  type: 'test'
+  ...
+# Subtest: F1 (client): nominal 200 with invalid detail shape throws write_outcome_unknown and does not corrupt detail
+ok 9 - F1 (client): nominal 200 with invalid detail shape throws write_outcome_unknown and does not corrupt detail
+  ---
+  duration_ms: 18.954356
+  type: 'test'
+  ...
+# Subtest: F2: upstream generic JSON 422 after PATCH maps to 502 write_outcome_unknown, while recognisable GitHub validation 422 maps to 400 invalid_request
+ok 10 - F2: upstream generic JSON 422 after PATCH maps to 502 write_outcome_unknown, while recognisable GitHub validation 422 maps to 400 invalid_request
+  ---
+  duration_ms: 173.721671
+  type: 'test'
+  ...
+# Subtest: F3: four-space/tab indented code checkbox is excluded from list, detail, and mutation targeting
+ok 11 - F3: four-space/tab indented code checkbox is excluded from list, detail, and mutation targeting
+  ---
+  duration_ms: 201.814096
+  type: 'test'
+  ...
+# Subtest: F3: issue with only indented code exposes 0 questions and refuses answer index 0
+ok 12 - F3: issue with only indented code exposes 0 questions and refuses answer index 0
+  ---
+  duration_ms: 149.223993
+  type: 'test'
+  ...
+# Subtest: R2 section: empty gateway errors is UNKNOWN after commit
+ok 13 - R2 section: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 312.739255
+  type: 'test'
+  ...
+# Subtest: R2 section: gateway string errors is UNKNOWN after commit
+ok 14 - R2 section: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 304.533436
+  type: 'test'
+  ...
+# Subtest: R2 section: gateway validation substring is UNKNOWN after commit
+ok 15 - R2 section: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 192.943682
+  type: 'test'
+  ...
+# Subtest: R2 section: gateway with shaped errors is UNKNOWN after commit
+ok 16 - R2 section: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 209.807013
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message alone is UNKNOWN after commit
+ok 17 - R2 section: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 154.308126
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message empty errors is UNKNOWN after commit
+ok 18 - R2 section: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 159.959151
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message scalar errors is UNKNOWN after commit
+ok 19 - R2 section: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 160.907718
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message null entry is UNKNOWN after commit
+ok 20 - R2 section: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 141.7289
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message partial entry is UNKNOWN after commit
+ok 21 - R2 section: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 160.803105
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message missing resource is UNKNOWN after commit
+ok 22 - R2 section: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 160.471587
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message wrong field is UNKNOWN after commit
+ok 23 - R2 section: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 127.191237
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message empty resource is UNKNOWN after commit
+ok 24 - R2 section: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 148.170686
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message transport code is UNKNOWN after commit
+ok 25 - R2 section: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 143.969609
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message mixed errors is UNKNOWN after commit
+ok 26 - R2 section: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 149.561594
+  type: 'test'
+  ...
+# Subtest: R2 section: recognisable validation is definitive rejection
+ok 27 - R2 section: recognisable validation is definitive rejection
+  ---
+  duration_ms: 171.802025
+  type: 'test'
+  ...
+# Subtest: R2 question: empty gateway errors is UNKNOWN after commit
+ok 28 - R2 question: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 158.579026
+  type: 'test'
+  ...
+# Subtest: R2 question: gateway string errors is UNKNOWN after commit
+ok 29 - R2 question: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 129.031584
+  type: 'test'
+  ...
+# Subtest: R2 question: gateway validation substring is UNKNOWN after commit
+ok 30 - R2 question: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 133.851854
+  type: 'test'
+  ...
+# Subtest: R2 question: gateway with shaped errors is UNKNOWN after commit
+ok 31 - R2 question: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 129.225771
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message alone is UNKNOWN after commit
+ok 32 - R2 question: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 164.209499
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message empty errors is UNKNOWN after commit
+ok 33 - R2 question: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 142.576112
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message scalar errors is UNKNOWN after commit
+ok 34 - R2 question: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 156.306086
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message null entry is UNKNOWN after commit
+ok 35 - R2 question: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 172.682201
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message partial entry is UNKNOWN after commit
+ok 36 - R2 question: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 225.956209
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message missing resource is UNKNOWN after commit
+ok 37 - R2 question: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 155.101079
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message wrong field is UNKNOWN after commit
+ok 38 - R2 question: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 164.272938
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message empty resource is UNKNOWN after commit
+ok 39 - R2 question: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 147.908998
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message transport code is UNKNOWN after commit
+ok 40 - R2 question: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 137.111432
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message mixed errors is UNKNOWN after commit
+ok 41 - R2 question: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 169.726275
+  type: 'test'
+  ...
+# Subtest: R2 question: recognisable validation is definitive rejection
+ok 42 - R2 question: recognisable validation is definitive rejection
+  ---
+  duration_ms: 169.317058
+  type: 'test'
+  ...
+# Subtest: R2 status: empty gateway errors is UNKNOWN after commit
+ok 43 - R2 status: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 148.914871
+  type: 'test'
+  ...
+# Subtest: R2 status: gateway string errors is UNKNOWN after commit
+ok 44 - R2 status: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 130.602498
+  type: 'test'
+  ...
+# Subtest: R2 status: gateway validation substring is UNKNOWN after commit
+ok 45 - R2 status: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 144.274032
+  type: 'test'
+  ...
+# Subtest: R2 status: gateway with shaped errors is UNKNOWN after commit
+ok 46 - R2 status: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 139.245373
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message alone is UNKNOWN after commit
+ok 47 - R2 status: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 160.566037
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message empty errors is UNKNOWN after commit
+ok 48 - R2 status: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 152.250462
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message scalar errors is UNKNOWN after commit
+ok 49 - R2 status: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 177.590887
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message null entry is UNKNOWN after commit
+ok 50 - R2 status: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 151.493781
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message partial entry is UNKNOWN after commit
+ok 51 - R2 status: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 161.245179
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message missing resource is UNKNOWN after commit
+ok 52 - R2 status: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 180.624109
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message wrong field is UNKNOWN after commit
+ok 53 - R2 status: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 171.486828
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message empty resource is UNKNOWN after commit
+ok 54 - R2 status: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 150.943379
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message transport code is UNKNOWN after commit
+ok 55 - R2 status: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 151.967732
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message mixed errors is UNKNOWN after commit
+ok 56 - R2 status: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 179.378356
+  type: 'test'
+  ...
+# Subtest: R2 status: recognisable validation is definitive rejection
+ok 57 - R2 status: recognisable validation is definitive rejection
+  ---
+  duration_ms: 175.130822
+  type: 'test'
+  ...
+# Subtest: R2: GitHubError retains parsed response provenance for UNKNOWN and validation
+ok 58 - R2: GitHubError retains parsed response provenance for UNKNOWN and validation
+  ---
+  duration_ms: 5.913153
+  type: 'test'
+  ...
+1..58
+# tests 58
+# suites 0
+# pass 58
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 7981.619958

@@ -1,0 +1,5 @@
+npm error Missing script: "build:web"
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: /workspace/.npm/_logs/2026-10-24T23_50_27_890Z-debug-0.log

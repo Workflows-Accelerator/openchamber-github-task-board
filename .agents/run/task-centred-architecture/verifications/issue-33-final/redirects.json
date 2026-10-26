@@ -1,0 +1,41 @@
+[
+  {
+    "mode": "same",
+    "calls": [
+      {
+        "server": "configured-origin",
+        "path": "/repos/owner/repo/issues/1",
+        "method": "PATCH",
+        "hasToken": true,
+        "body": "{\"body\":\"synthetic edit\"}"
+      },
+      {
+        "server": "configured-origin",
+        "path": "/repos/other/repo/issues/9",
+        "method": "PATCH",
+        "hasToken": true,
+        "body": "{\"body\":\"synthetic edit\"}"
+      }
+    ],
+    "resultNumber": 9
+  },
+  {
+    "mode": "foreign",
+    "calls": [
+      {
+        "server": "configured-origin",
+        "path": "/repos/owner/repo/issues/1",
+        "method": "PATCH",
+        "hasToken": true,
+        "body": "{\"body\":\"synthetic edit\"}"
+      },
+      {
+        "server": "foreign-origin",
+        "path": "/untrusted",
+        "method": "PATCH",
+        "hasToken": false
+      }
+    ],
+    "resultNumber": 9
+  }
+]
