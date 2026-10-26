@@ -1,38 +1,39 @@
 <env_preflight>
-BLOCKED DRAFT — fill builder commit/report after ses_c43bb6ac007df0382aa0f811 finishes; review only when the builder has stopped.
+Builder ses_c43bb6ac007df0382aa0f811 finished at 4a3ecee; tracked-clean, no untracked artifacts, no active builder. This reviewer is independent and must not trust the builder's summary.
 Repo /workspace/config/opencode (Workflows-Accelerator/opencode-config)
 Worktree /workspace/config/opencode/.worktrees/team-ops-board-entrypoint
-Branch ops/board-entrypoint-hook; fill exact HEAD and tracked state. Base master37f5b67.
-Own only .agents/run/board-entrypoint-hostile/** (create if the repository permits, otherwise a distinct report path agreed at dispatch) and verifications under it; preserve builder artifacts.
-Read-only implementation. Fixtures may run in /tmp/opencode. No live checkout edits, no container/proxy/deploy mutation, no push, no master merge, no secrets or .env reads.
-Preflight authoritative at dispatch; targeted checks before reporting.
+Branch ops/board-entrypoint-hook; HEAD 4a3ecee9d03f9b9891b4de63f1f7e18217061455, tracked-clean. Base master 37f5b67a088107fa4cc5887b444a0f7cf64238de.
+Files under review: entrypoint.sh (+9), tools/board/start.sh (new, 117), tools/board/supervisor.sh (new, 241), tests/board-supervisor.test.mjs (new, 469). Node 20 available; repository has no node_modules requirement for these tests (node:test only).
+Own only .agents/run/board-entrypoint-hostile/** in this worktree; write it, never git add or commit it, and never commit anything at all. Preserve builder files byte-identical. Scratch /tmp/opencode.
+Read-only implementation. No live checkout edits (/workspace/config/opencode), no container/proxy/deploy mutation, no push, no master merge, no secrets, no .env reads, no board server start, no network.
+Preflight authoritative at dispatch; targeted checks before reporting and after any fixture run.
 </env_preflight>
 <goal>
-Independently decide whether the startup supervisor is safe to enable and actually provides bounded crash recovery without endangering OpenChamber startup.
+Independently decide whether this board supervisor is safe to enable in the live container and actually delivers bounded crash recovery without endangering OpenChamber startup.
 </goal>
 <context_files>
-Board deployment corrected plan in /workspace/extensions/github-task-board/.worktrees/team-ops-board-deployment/.agents/run/task-centred-architecture/outputs/board-deployment-plan-corrected-private.md (private, do not publish).
-Builder report FILL_AT_DISPATCH.
+Builder claims, not evidence: commit 4a3ecee; npm test 644/644 exit 0; node --test tests/board-supervisor.test.mjs 12/12 exit 0; sh -n tools/board/*.sh and bash -n entrypoint.sh pass; shellcheck NOT RUN; manual fixture disabled no-op, background start, duplicate refusal, 3 crash restarts with backoff all exit 0. Claims non-blocking entrypoint, atomic lock, stale PID cleanup without signalling, bounded backoff/jitter, capped log rotation, clean signal reap. Claims it does NOT build/fetch artifacts, verify token against GitHub, manage proxy/TLS, or supervise external daemons. Enable: BOARD_ENABLED=true plus env vars, release at BOARD_RELEASE_DIR (/workspace/releases/board/current), run start.sh. Disable: BOARD_ENABLED=false and SIGTERM to the recorded supervisor PID in /tmp/opencode/board-supervisor/supervisor.pid. Rollback: stop supervisor, remove state dir, git restore entrypoint.sh, delete tools/board and the test file. Builder's stated blind spots: PID recycling if host PID namespace is shared, disk exhaustion during copytruncate, clock steps affecting jitter.
+Deployment contract the hook must satisfy: /workspace/extensions/github-task-board/.agents/run/task-centred-architecture/outputs/deployment-plan-review-gate.md (read it; it is public run state, no secrets).
 </context_files>
 <skills>
 [@/workspace/config/opencode/.agents/skills/review/adversarial/doubt-driven-development/SKILL.md]
 [@/workspace/config/opencode/.agents/skills/communication/terse/caveman-lite/SKILL.md]
 </skills>
 <scope>
-Conduct a hostile review of any edits or changes that you made to figure out what you might have missed or what might be broken. Don't assume that what you did is right. FIX NOTHING.
-Read the full diff and both scripts before tests. Run the builder's fixture suite yourself; then probe beyond it:
-1. Fail-open for OpenChamber, fail-closed for the board: disabled/absent/missing artifact/bad checksum/missing env must not block PID 1 or leave a crash loop; verify actual entrypoint exit path and ordering around the existing daemon start and exec tini.
-2. Single ownership: concurrent invocations, stale PID, PID reuse, foreign process must never be killed; prove by fixture. Check the lock is atomic and released on abnormal supervisor death.
-3. Restart bounds: exponential growth, cap/jitter, sustained-uptime reset, no hot loop, no unbounded process or log growth; log rotation actually caps, does not truncate another process's file, and keeps permissions safe.
-4. Secret hygiene: required names may be checked; values must never appear in argv, pid/state files, logs, error output or test artifacts. Check what child inherits.
-5. Artifact integrity: configurable release dir with a stable pointer or explicit path, not a per-commit hardcode; checksum manifest optional-but-verified, symlink/absolute-path escape considered, and no build/install at boot.
-6. Signals: SIGTERM/SIGINT to supervisor forwards, waits, escalates, reaps, and exits without orphaning the child; child exit status handling is correct under the shell's error mode.
-7. Test discrimination: break the lock, the disable gate, the backoff and the checksum check in a scratch copy and show which tests fail; a green suite that passes with broken guards is a finding. Verify no test depends on a developer's real workspace or installed board.
-8. Blast radius: diff limited to the board tool, entrypoint guard and tests; no other service, daemon or permission changed. Documentation gives exact enable, disable and rollback steps.
+Conduct a hostile review of the change to find what the builder missed. FIX NOTHING. Read the whole diff and both scripts before running anything. Run the builder's suite yourself, then probe beyond it and judge against behaviour, not intent.
+1. Fail-open for OpenChamber, fail-closed for the board. Trace the real entrypoint path: the hook runs before the ripgrep block and before exec tini. Prove that disabled, absent, missing artifact, bad checksum, missing env, unreadable release, and a supervisor that dies immediately all leave container startup unaffected and do not leave a crash loop. Test the worst case explicitly: the "brief poll" loop in start.sh uses `sleep 0.02` with a `sleep 1` fallback and 25 tries. Determine the real elapsed time when sleep does not accept fractions, and whether that delay blocks PID 1/entrypoint. Report the measured seconds.
+2. Single ownership. Concurrent start.sh invocations, stale PID file, PID reuse by a foreign process, and a lock owned by a dead supervisor. Verify nothing foreign is ever killed and no two supervisors can run. Examine the stale-path `rmdir || rm -rf` sequence for a race where a live lock is deleted while another starter is acquiring it, and prove or disprove exploitable behaviour with a fixture.
+3. Restart bounds and logging. Exponential growth, cap, jitter, sustained-uptime reset, no hot loop. Log rotation: note that only board.log is rotated while start.sh appends supervisor stdout to supervisor.log with `>>` forever — check whether supervisor.log is capped by anything and what that means over weeks of restarts. Verify rotation cannot truncate another process's file, that permissions on the state dir and logs are not world-readable, and that repeated rotation cannot fill the disk.
+4. Secret hygiene. Required names only; values must never appear in argv, pid/state files, supervisor.log, board.log, error output or test artifacts. Check what the child inherits, what `sh -c "exec $CHILD_CMD"` exposes in the process list, and whether any diagnostic path echoes a value.
+5. Artifact integrity and working directory. The supervisor `cd`s to the release dir and runs `node web/dist/server.mjs`; the board reads web/public assets relative to the bundle. Confirm the layout assumption matches the board's actual runtime contract, that a checksum manifest is actually required in the deployment stage (not merely optional), and that a missing or mismatched manifest cannot silently start unverified code. Check symlink/relative-path escape from BOARD_RELEASE_DIR.
+6. Signals and reaping. SIGTERM/SIGINT/SIGHUP during startup, during backoff, during health sleep. Verify forwarding, escalation to SIGKILL, wait/reap, lock and pid cleanup, and that the `sleep ... & wait $!` idiom cannot confuse `$!`/CHILD_PID. Confirm the supervisor exits and leaves no orphan when the child ignores TERM.
+7. Test discrimination. In a scratch copy under /tmp/opencode, break each guard independently — the enable gate, the lock, stale-PID handling, the checksum check, the backoff cap, the signal handler — and show which tests fail. A green suite that still passes with a broken guard is a finding. Also verify the suite does not touch the real workspace, real release dir, real env secrets, or a real port.
+8. Blast radius. Diff must be limited to the entrypoint guard, tools/board and the test file; no other daemon, permission or service touched; ordering of the existing keepalive-proxy start and exec tini preserved. The documented enable/disable/rollback must actually work as written and not depend on this session.
+9. Deployment reality check. Judge whether the default state directory /tmp/opencode/board-supervisor is a sound place for a supervisor lock, PID and logs in a container that will be recreated, and whether the documented reload-after-release story (new release at /workspace/releases/board/current) actually causes the supervisor to run the new artifact or keeps running the old one forever. Name the exact operator step if a restart is needed.
 </scope>
 <criteria>
-Security APPROVED/NEEDS-FIXES, Spec PASS/PARTIAL/FAIL, Quality APPROVED/NEEDS-FIXES, machine PROCEED/HALT with path:line evidence and observed outcomes. Any foreign-process kill risk, container-start block, secret leak, unbounded crash loop or non-discriminating core test is blocking. No product edit. No master merge.
+Security APPROVED/NEEDS-FIXES, Spec PASS/PARTIAL/FAIL, Quality APPROVED/NEEDS-FIXES, machine PROCEED/HALT with file:line evidence and observed outcomes. Any of these is blocking: entrypoint delay that stalls container start, foreign-process kill risk, secret leak, unbounded log or restart growth, silent start of unverified artifacts, stale artifact after release switch, or a core test that passes with its guard broken. No product edit, no commit, no master merge.
 </criteria>
 <output>
-At most 12 lines: verdicts, ranked findings, independent test/mutation results, exact enable/disable/rollback wording confirmed, residual risks, report path, actual provider/model. No merge or deployment claim.
+At most 12 lines: verdicts, ranked blocking findings with file:line and minimal fix, independent test/mutation results including the measured entrypoint delay, whether documented enable/disable/rollback/reload steps are correct, residual risks, report path, actual provider/model. No merge, deployment or approval claim.
 </output>
