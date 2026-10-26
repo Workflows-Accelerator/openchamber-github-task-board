@@ -1,0 +1,32 @@
+<env_preflight>
+Fix round after independent hostile review ses_e5b58fbb6787fb31c25d8b79 (9router/genius, HALT). Builder commit4a3ecee tracked-clean; reviewer added untracked .agents/run/board-entrypoint-hostile/** — preserve it byte-identical, never commit it.
+Repo /workspace/config/opencode (Workflows-Accelerator/opencode-config)
+Worktree /workspace/config/opencode/.worktrees/team-ops-board-entrypoint
+Branch ops/board-entrypoint-hook; HEAD4a3ecee. No node_modules needed. Scope: entrypoint.sh, tools/board/start.sh, tools/board/supervisor.sh, tests/board-supervisor.test.mjs, and a short operator note if the repository has a conventional place for it.
+No live checkout edits (/workspace/config/opencode), no container/proxy/deploy mutation, no push, no master merge, no secrets, no .env reads, no real board server against production, no network.
+Tests: npm test; node --test tests/board-supervisor.test.mjs; sh -n tools/board/*.sh; bash -n entrypoint.sh. Scratch /tmp/opencode.
+Preflight authoritative at dispatch; targeted checks before commits.
+</env_preflight>
+<goal>
+Close B1-B7 from the independent review so the supervisor cannot start unverified code, cannot run two owners, cannot restart forever, cannot stall container boot, and cannot pass tests with its guards removed.
+</goal>
+<context_files>
+[@/workspace/config/opencode/.worktrees/team-ops-board-entrypoint/.agents/run/board-entrypoint-hostile/report.md]
+Deployment contract: /workspace/extensions/github-task-board/.agents/run/task-centred-architecture/outputs/deployment-plan-review-gate.md
+</context_files>
+<scope>
+1. B1 — artifact verification must be mandatory. A missing `BOARD_CHECKSUM_MANIFEST`, a missing default manifest file, or a manifest that does not list `web/dist/server.mjs`, every file under `web/public/`, and `package.json` must stop the board with a clear logged reason and no child process. Do not silently accept a package-only manifest. If files exist in the release that the manifest does not cover, either refuse to start or state and test exactly which paths are exempt; do not leave unlisted runtime files unverified. Keep the fail-open rule for the container: log the reason and exit 0 from start.sh, never block PID 1.
+2. B2 — single ownership must be real under concurrency. Replace the mkdir-then-PID-write sequence with an ownership scheme that cannot delete a live owner's lock: write the owner identity inside the lock directory before publishing it atomically (mkdir a prepared dir then rename, or an equivalent), read the owner PID from inside the lock, and only clear a lock when that owner is provably dead (and, if useful, older than a small grace period). Never `rm -rf` a lock whose owner may be alive. `start.sh` must also respect the lock so a direct invocation cannot create a second owner. Required regressions: 8 concurrent starts produce exactly one supervisor; removing the pid file while the supervisor is alive still cannot create a second; a stale lock from a dead PID is recovered; a lock owned by a live foreign PID is never killed and never deleted.
+3. B3 — bounded restarts. Give MAX_RESTARTS a finite default (a small number such as 10), keep 0 as the explicit unlimited opt-in, and reset the consecutive-crash counter after sustained healthy uptime. Validate obviously bad configuration (non-numeric, negative) by logging and exiting without starting. Regression: a child that exits immediately stops after the cap; a child healthy past the sustained threshold gets a fresh allowance.
+4. B4 — container boot must never wait on the board. Cap the start.sh PID wait so the worst case is small and measurable (target: a couple of seconds, never tens), and remove dependence on fractional `sleep` in the supervisor's pause loop so a shell without sub-second sleep cannot turn backoff into a hot loop. Required measurement: run the suite under a shim where `sleep 0.02`/`sleep 0.2` fail and prove (a) start.sh returns within the documented bound, (b) restarts still respect backoff, and (c) the hook never delays the entrypoint beyond that bound. Report the measured milliseconds for both the normal and shimmed cases.
+5. B5 — tests must discriminate. Replace tests that only check that a line exists with tests that execute behaviour: exact-output check of the enable gate, a genuine concurrent-owner test, measured backoff delay and cap, real entrypoint execution with the hook placed before `exec tini` (assert the hook is actually reached and that it is not reached after the exec), and assertions that removing the checksum requirement fails. Add mutations for each of B1-B4 in a scratch copy and report which test fails. A test that still passes with its guard deleted is a defect.
+6. B6 — log and directory hygiene. Set a restrictive umask and explicit permissions so the state directory is 0700 and logs 0600. Bound supervisor.log as well as board.log (same rotation helper or a size-capped append with rotation), and prove total log growth stays bounded under a hot crash loop.
+7. B7 — release switching must be honest. The documented operator procedure must restart the supervisor (not only the child) for a new release, with the exact commands: signal the supervisor PID, wait for the PID file to disappear, then start again or restart the container. Also stop printing "started" when the supervisor died before writing its PID: report that it exited and the log path instead.
+8. Keep the diff surgical, POSIX-sh compatible, and preserve all existing entrypoint behaviour and ordering. No new runtime dependency; if `flock` is used it must be available in the image or guarded with a tested fallback. No unrelated daemons touched.
+</scope>
+<criteria>
+B1-B7 closed with evidence, each guard backed by a test that fails when the guard is removed. No path can start a child without a valid manifest; no path can produce two supervisors under 8-way concurrency; no path blocks the entrypoint beyond the documented bound; restart and log growth are bounded; permissions are restrictive; release-switch documentation matches observed behaviour. Existing suite green; sh -n clean. No commit to master, no push, no production change.
+</criteria>
+<output>
+At most 12 lines: fix per finding, mutation evidence with commands/exits, measured start.sh delay normal versus fractional-sleep shim, concurrent-owner result, log-growth bound, files changed, residual risks, actual provider/model. Independent recheck follows; no merge or deployment.
+</output>
