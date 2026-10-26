@@ -4,7 +4,7 @@ Task: task-centred board delivery (#28, #36, #34, #33; queued #35/#30/#31/#37)
 Status: INCOMPLETE — NOT RELEASE READY
 Timestamp: 2026-10-26
 
-Decision17 owner-authorized final corrections: #33 R1-R3 RUNNING ses_340658305fef29f8c3d79185 genius; #35 R1-R9 QUEUED behind it (planned). No new evidence accepted yet; latest failed proof remains below. One independent recheck each; further failure parks the issue. No master/deploy/closure.
+Decision17 owner-authorized final corrections: #33 builder5c562e8 actual9router/genius returned claims focused230/web338/root466/browser84/HTTP36/gateway19/baseline32/probes28/types/build/hashbee9a616 all green. Not accepted; FINAL independent recheck RUNNING ses_1947278fe946a17036be3442 genius, receipt6416011760 status:in-review. #35 R1-R9 QUEUED behind it (planned). Latest failed independent proof remains below until new verdict. One independent recheck each; further failure parks issue. No master/deploy/closure.
 
 ## Executed levels by member
 | Member | L0 static | L1 regression | L2 integration | L3 user's way | L4 independent hostile | L5 human |

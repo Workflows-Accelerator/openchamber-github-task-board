@@ -2,7 +2,7 @@
 
 ## CURRENT — decision17 final corrections approved 2026-10-26
 
-Owner selected "One final pass on both (Recommended)". #33 running ses_340658305fef29f8c3d79185 genius from a4191a4, tasks/issue-33-last-correction.md. #35 all R1-R9 queued behind #33; shared refresh simplification permitted if minimal. One independent recheck each; further failure parks affected issue. No master/deploy/secret/closure authority.
+Owner selected "One final pass on both (Recommended)". #33 builder returned5c562e8 clean actual9router/genius; claims focused230/web338/root466/types/build/browser84/HTTP36/gateway19/baseline32/probes28 all green, hashbee9a616 ignored. Manager scoped product diff inspected; not independently accepted. FINAL recheck RUNNING ses_1947278fe946a17036be3442 genius tasks/issue-33-last-hostile.md, fail parks issue. #35 all R1-R9 queued behind #33; shared refresh simplification permitted if minimal. No master/deploy/secret/closure authority.
 
 ## Prior — both bounded rechecks failed, owner decision pending 2026-10-25
 

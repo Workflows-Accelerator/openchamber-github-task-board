@@ -1,8 +1,8 @@
 <env_preflight>
-BLOCKED DRAFT — fill candidate HEAD, source/clean state, file list and builder report after ses_340658305fef29f8c3d79185 finishes. Never dispatch concurrent writer/reviewer in tree.
+READY — builder ses_340658305fef29f8c3d79185 finished actual9router/genius. Candidate5c562e8 clean; no active builder. Product commits5298f02/bb29b3c/0bca8fb; evidence5c562e8. Manager inspected full product/README diff: web/public/app.js38 lines, github.ts20, board.ts4, 3 new focused tests297lines plus current report/proofs only. Builder claims338web/466root/230focused/types0/browser84/HTTP36/gateway19/baseline32/preserved28; NOT independently accepted. Hashbee9a616c4f0ccd1df7cff7f9f4aebc110110deb43b1c30b2e84f6a1b0e8e858 ignored.
 Repo /workspace/extensions/github-task-board
 Worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board
-Branch feat/issue-33-standalone-board; start a4191a4; final candidate FILL_AT_DISPATCH, clean state FILL_AT_DISPATCH. Existing dependencies symlink, no installs/env/DB or integration merge. Root466 baseline.
+Branch feat/issue-33-standalone-board; start a4191a4; final candidate5c562e8, tracked clean. Existing dependencies symlink, no installs/env/DB or integration merge. Root466 baseline.
 Own new outputs/issue-33-last-hostile.md and verifications/issue-33-last-review/** only; product/tests/docs/prior proof read-only. Scratch /tmp/opencode.
 Tests node --test web/tests/*.test.mjs; npm test; npx tsc -p web/tsconfig.json; esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external to scratch server.mjs. web/dist gitignored; parity/hash only, build:web absent.
 No panel/service/config/credentials/production GitHub/installed host/other worktrees/product fixes/push/merge/close/master/deploy. Synthetic localhost HTTP/browser only. Preflight authoritative; skip startup status/pwd/ls; precommit and post-failure targeted checks allowed.
@@ -14,7 +14,8 @@ Give the final independent empirical verdict on all three consumed-detail, write
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/decisions-2026-10-24.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/tasks/issue-33-last-correction.md]
 [@/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/.agents/run/task-centred-architecture/outputs/issue-33-residual-hostile.md]
-Builder new report outputs/issue-33-last-correction.md in tree, FILL_AT_DISPATCH. Earlier independent 84-browser/36-HTTP/28-preserved/32baseline matrices in issue-33-residual-review, immutable. Read all source/test delta a4191a4..candidate, not just builder summary/counts.
+[@/workspace/extensions/github-task-board/.worktrees/team-dev-issue-33-standalone-board/.agents/run/task-centred-architecture/outputs/issue-33-last-correction.md]
+Earlier independent84-browser/36-HTTP/28-preserved/32baseline matrices in issue-33-residual-review, immutable. Read all source/test delta a4191a4..5c562e8, not just builder summary/counts. New focused tests last-correction.test.mjs, validation-provenance.test.mjs, mixed-indent.test.mjs; report includes consumed contract checklist and method-aware GET compatibility repair. Independently challenge restrictive validator against true valid producer outputs as well as malformed entries.
 </context_files>
 <skills>
 [@/workspace/config/opencode/.agents/skills/review/adversarial/doubt-driven-development/SKILL.md]
