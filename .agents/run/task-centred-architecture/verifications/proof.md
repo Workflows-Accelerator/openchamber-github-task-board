@@ -6,6 +6,7 @@ Timestamp: 2026-10-26
 
 Decision17 final corrections: #33 CLEARED and integrated. Independent e4b0091 actual9router/genius Security APPROVED/Spec PASS/Quality APPROVED; merge6b1603f/proofbf745aa accepted, feature branch pushed throughbf745aa. Merged web338/root517/focused230/protocol12/bothtypes/build+parity bee9a616; browser201(177malformed+24valid,1PATCH each)/HTTP165/gateway19/baseline32/probes28 all pass; 84screenshots+2134log audit. #33 awaiting batch human.
 #35 final R1-R9 correction RUNNING ses_0c095fb063b12328c3b70274 genius from220d1d5 clean, receipt6417278407/in-progress. Latest failed #35 proof (220d1d5 HALT) remains authoritative until new independent verdict. Further failed recheck parks issue. No master/deploy/closure.
+Hosting prep builder b8e517c actual9router/engineer claims web347/root517/types/bundle a35cc799; NOT accepted. Hostile review ses_aecd198e391c9ad1ae1f78f4 running; manager flagged hardcoded '1.2.1' fallback+literal assertion and new BOARD_GITHUB_API_BASE config. No deployment, proxy/TLS/restart proof.
 
 ## Executed levels by member
 | Member | L0 static | L1 regression | L2 integration | L3 user's way | L4 independent hostile | L5 human |
