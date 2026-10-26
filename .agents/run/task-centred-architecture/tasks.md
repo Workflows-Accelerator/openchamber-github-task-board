@@ -5,10 +5,10 @@
 | Outcome | State | Evidence / next |
 |---|---|---|
 | #33 browser board | MERGED/PUSHED, awaiting batch human | L4e4b0091 PASS/APPROVED; merge6b1603f/proofbf745aa accepted web338/root517/browser201/HTTP165/types/build/parity. Feature push confirmed; clean source removed/pruned, branch retained. DB deregistration pending |
-| #35 refresh write coverage | BUILDER DONE, final recheck next | Builder3b4eced actual9router/genius clean claims all R1-R9 closed: targeted36/preserved45/full553/types/build/parity, independent165/165, saved30/0defects, mutants exit1. NOT accepted; tasks/issue-35-last-hostile.md READY. Any required failure PARKS |
+| #35 refresh write coverage | FINAL RECHECK RUNNING | Builder3b4eced claims all R1-R9 (targeted36/preserved45/full553, independent165/165, saved30/0defects, mutants exit1). Recheck ses_7eb4eb7c0413e2b80ef3b063 genius tasks/issue-35-last-hostile.md; any required defect PARKS |
 | #28/#34/#36 panel protections | MERGED/PUSHED, awaiting batch | Accepted unchanged, installed host/liveGitHub NOT VERIFIED |
-| Hosting prep (bind/health/start) | ACCEPTED, release integration next | Recheck ses_1199b4d0ff9aa1f8fc699b2d actual9router/engineer PROCEED799eda2; gate outputs/hosting-review-gate.md; brief tasks/hosting-integration.md; no push/deploy authority |
-| #37 visible repositories | ALIGNED, QUEUED | decision15 show archived/empty; starts only after hosting merge frees web/** |
+| Hosting prep (bind/health/start) | MERGED/PUSHED, awaiting batch | Gate799eda2 PROCEED; merge4f39e26/evidence54816f6 accepted; manager re-ran hosting11/11; live loopback+/health proven, no deploy/proxy/TLS/restart. Worktree removed, branch retained |
+| #37 visible repositories | ALIGNED, READY next | decision15 show archived/empty; web/** now free after hosting merge |
 | #31 questions/alerts loop | ALIGNED, QUEUED | PWA push + 60s polling after hosting/#37 |
 | #30 proportionate feature/bug path | BLOCKED #35 | Brief ready; expiration excluded/unanswered |
 

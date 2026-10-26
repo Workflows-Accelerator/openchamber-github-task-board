@@ -1,6 +1,6 @@
 # Human review batch — NOT READY (2026-10-26)
 
-Owner decision17 final corrections: #33 CLEARED all three residual mechanisms, integrated6b1603f/proofbf745aa accepted, merged web338/root517/browser201/HTTP165/types/build/parity pass, feature branch pushed, status:needs-human; #35 final R1-R9 correction running ses_0c095fb063b12328c3b70274 receipt6417278407, further failure parks issue. Batch still NOT READY pending #35 result and a usable combined preview.
+Owner decision17 final corrections: #33 CLEARED and merged/pushed (6b1603f/bf745aa), status:needs-human; hosting preparation slice merged/pushed (4f39e26/54816f6, gate799eda2 PROCEED) and included in the #33 preview member; #35 final R1–R9 correction built at3b4eced and its single authorized independent recheck is running (ses_7eb4eb7c0413e2b80ef3b063), further failure parks the issue. Batch still NOT READY pending #35 and a usable combined preview.
 
 One request only when every included member passes independent hostile review. No master push, issue closure or deployment approval implied by branch integration. This is preparation, not a request to the owner yet.
 
@@ -24,7 +24,7 @@ Preview prerequisites, deployment blockers and the eventual single-request shape
 - #36: original body-phase automatic closure could not be reproduced. Defensive guards tested; review notes some gesture plumbing evidence is harness-based.
 - #34: independent final review and merged tree passed targeted26/full517/types/build/parity; former draft-isolation defects closed. Real browser rendering, installed authenticated host, clipboard usability and production GitHub writes NOT RUN. Synthetic-host proof is not L3; L5 remains pending, no waiver.
 - #33: final independent and merged-tree synthetic proof passed, including 201 browser and 165 HTTP cases; does not prove live repository writes. No route, TLS or board sign-in deployed. Best-effort writes retain the owner-accepted simultaneous-overwrite window. Real keyboard/focus-visible and fresh XSS/DoS remain untested.
-- Hosting: selected same-container topology exposes board secrets to local agents. Read-only preflight found bridged container publishes only existing app ports; publishing board port requires container recreation, brief downtime and a start hook. Secrets are not provisioned in SOPS. No /health or configurable bind yet. Actual change needs explicit owner go.
+- Hosting: selected same-container topology exposes board secrets to local agents. Read-only preflight found bridged container publishes only existing app ports; publishing board port requires container recreation, brief downtime and a start hook. Merged slice now offers loopback-default bind, GET /health and a documented start command with honest limits; secrets are still not provisioned, no port is published, and no proxy/TLS/restart supervision is proven. Actual deployment needs explicit owner go.
 - #37: owner confirmed picker includes all token-visible repositories, archived marked and empty selectable. GitHub cannot enumerate hidden private repositories. Known lost-access repositories must be unavailable, not empty. Multi-repository implementation not started.
 - Push: OS permission, iOS Home Screen installation/background power behavior and real device delivery require human checks. No push slice has been built.
 

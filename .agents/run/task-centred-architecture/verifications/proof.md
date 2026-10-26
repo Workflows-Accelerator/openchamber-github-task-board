@@ -5,8 +5,8 @@ Status: INCOMPLETE — NOT RELEASE READY
 Timestamp: 2026-10-26
 
 Decision17 final corrections: #33 CLEARED and integrated. Independent e4b0091 actual9router/genius Security APPROVED/Spec PASS/Quality APPROVED; merge6b1603f/proofbf745aa accepted, feature branch pushed throughbf745aa. Merged web338/root517/focused230/protocol12/bothtypes/build+parity bee9a616; browser201(177malformed+24valid,1PATCH each)/HTTP165/gateway19/baseline32/probes28 all pass; 84screenshots+2134log audit. #33 awaiting batch human.
-#35 final builder3b4eced actual9router/genius finished: claims allR1-R9 closed (targeted36/preserved45/full553, types/build/parity, independent165/165, saved30/0defects, number-only mutants exit1), bundle563ff9b2 ignored; NOT accepted. Final independent recheck tasks/issue-35-last-hostile.md READY, one bounded check, failure PARKS.
-Hosting slice ACCEPTED at source gate (799eda2, actual9router/engineer PROCEED): hosting11/web349/root517/both types/bundle c385ced6, red-before on b8e517c, token-origin escape gone with no residual override. Release integration brief tasks/hosting-integration.md next; no push/deploy/proxy/TLS/restart proof.
+#35 final builder3b4eced actual9router/genius finished: claims allR1-R9 closed (targeted36/preserved45/full553, types/build/parity, independent165/165, saved30/0defects, number-only mutants exit1), bundle563ff9b2 ignored; NOT accepted. Final independent recheck ses_7eb4eb7c0413e2b80ef3b063 genius tasks/issue-35-last-hostile.md; any required defect PARKS.
+Hosting slice MERGED/PUSHED: gate799eda2 PROCEED actual9router/engineer, release merge4f39e26/evidence54816f6 zero conflicts; worker web349/root517/both types/build+parity/bundle c385ced6, live TCP loopback default + 0.0.0.0, GET /health200 no secrets, HEAD405, data401. Manager re-ran hosting11/11 on merged tree and accepted outputs/hosting-integration-acceptance.md; push bf745aa→54816f6, worktree removed, branch retained. No deploy/proxy/TLS/restart/live-GitHub proof.
 
 ## Executed levels by member
 | Member | L0 static | L1 regression | L2 integration | L3 user's way | L4 independent hostile | L5 human |
