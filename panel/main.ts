@@ -101,6 +101,7 @@ import {
   DEFAULT_AI_ISSUE_PROMPT,
   DEFAULT_WORK_INSTRUCTIONS,
   resolveIssueWorkType,
+  buildWorkTypeInstructions,
   resolveAiIssuePrompt,
   DEFAULT_AI_ALIGNMENT_PROMPT,
   resolveAiAlignmentPrompt,
@@ -7175,7 +7176,8 @@ function updatePreflightBrief(): void {
   brief += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.\n`;
   brief += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.\n`;
   brief += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.\n\n`;
-  brief += `${DEFAULT_WORK_INSTRUCTIONS}\n\n`;
+  const workType = resolveIssueWorkType(activeIssue);
+  brief += `${buildWorkTypeInstructions(workType)}\n\n`;
 
   if (useWt || existingThemeWorktree) {
     brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
@@ -7454,7 +7456,8 @@ async function launchBatchSeparateSessions(): Promise<void> {
       prompt += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.\n`;
       prompt += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.\n`;
       prompt += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.\n\n`;
-      prompt += `${DEFAULT_WORK_INSTRUCTIONS}\n\n`;
+      const workType = resolveIssueWorkType(issue);
+      prompt += `${buildWorkTypeInstructions(workType)}\n\n`;
       prompt += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
 
       const payload = {

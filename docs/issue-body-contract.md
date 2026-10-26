@@ -14,7 +14,7 @@ An issue body is a database record. Four consumers read it:
 
 ## 2. Sections (in recommended order)
 
-Every section is optional except Friendly Title and Overview. Parsers accept the exact spellings below (see `panel/core.ts` for current regexes).
+Every section is optional at issue creation except Friendly Title and Overview (the `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason). Parsers accept the exact spellings below (see `panel/core.ts` for current regexes).
 
 ### 2.1 `### Friendly Title:`
 One line, 3-6 words, plain English, no jargon, no technical prefixes. It is the ONLY title shown in the simplified views (Human Tasks, All Tasks, Questions). The GitHub issue title may carry the technical slug (e.g. `feat(board): ...`) and is rendered as a mono subtitle. Parser: `parseFriendlyTitle` (`panel/core.ts`).
@@ -44,7 +44,7 @@ Existing conventions (test plans: `panel/main.ts` and `panel/core.ts`; dependenc
 - **Cross-repo dependencies**: Cross-repo dependencies must use **full URLs** (e.g. `Blocked by https://github.com/owner/repo/issues/123`), never `#N` shorthand which causes wrong-repo links.
 
 ### 2.8 `### Work Log:` (NEW in v1.1 — decision D1 / issue #30)
-Freeform execution log and evidence record. The Work Log contract requires exactly one required sentence: which work type applies and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+Freeform execution log and evidence record. The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
 
 Rules:
 - Existing `bug` and `enhancement` labels are the only work-type source.

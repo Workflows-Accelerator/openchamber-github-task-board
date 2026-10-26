@@ -10,10 +10,12 @@ import {
   buildConsolidatedIssuePrompt,
   DEFAULT_WORK_INSTRUCTIONS,
   resolveIssueWorkType,
+  buildWorkTypeInstructions,
+  buildSingleIssuePrompt,
+  buildBatchLaunchPrompt,
 } from '../panel/core.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
 const CONTRACT_MD = fs.readFileSync(path.join(here, '..', 'docs', 'issue-body-contract.md'), 'utf8');
 
 function containsEmoji(text) {
@@ -25,9 +27,13 @@ function containsEmoji(text) {
 test('Work Log contract in docs/issue-body-contract.md specifies single justification sentence and rules', () => {
   assert.ok(CONTRACT_MD.includes('### 2.8 `### Work Log:`'), 'Must include Section 2.8 Work Log');
   assert.ok(
-    CONTRACT_MD.includes('exactly one justification sentence') ||
-    CONTRACT_MD.includes('exactly one required sentence'),
-    'Must specify exactly one required/justification sentence'
+    CONTRACT_MD.includes('optional at issue creation') &&
+    CONTRACT_MD.includes('once work starts'),
+    'Must specify Work Log is optional at issue creation and required once work starts'
+  );
+  assert.ok(
+    CONTRACT_MD.includes('exactly one sentence stating the work type and the concrete reason'),
+    'Must specify exactly one sentence stating work type and concrete reason'
   );
   assert.ok(
     CONTRACT_MD.includes('observed behaviour that contradicts a stated expectation') &&
@@ -68,35 +74,33 @@ test('DEFAULT_WORK_INSTRUCTIONS states unambiguous work-type rules and proportio
     'Must state bug and enhancement are only work-type source'
   );
   assert.ok(
-    DEFAULT_WORK_INSTRUCTIONS.includes('when both or neither are present the work type is undecided and must be asked about, not guessed') ||
-    DEFAULT_WORK_INSTRUCTIONS.includes('when both or neither are present, the work type is undecided and must be asked about, not guessed') ||
     DEFAULT_WORK_INSTRUCTIONS.includes('When both or neither are present, the work type is undecided and must be asked about, not guessed'),
     'Must state undecided rule when both or neither are present'
   );
   assert.ok(
-    DEFAULT_WORK_INSTRUCTIONS.includes('never infer a type from the title, the mood of the report, or the area of the code') ||
     DEFAULT_WORK_INSTRUCTIONS.includes('Never infer a type from the title, the mood of the report, or the area of the code'),
     'Must forbid guessing type from title, mood, or area'
   );
 
   // Question protocol
   assert.ok(
-    DEFAULT_WORK_INSTRUCTIONS.includes('Only block work that depends on the unanswered question; independent authorised work continues') ||
-    DEFAULT_WORK_INSTRUCTIONS.includes('only block work that depends on the unanswered question; independent authorised work continues'),
+    DEFAULT_WORK_INSTRUCTIONS.includes('Only block work that depends on the unanswered question; independent authorised work continues'),
     'Must state only block dependent work while independent work continues'
   );
   assert.ok(
-    DEFAULT_WORK_INSTRUCTIONS.includes('Undecided work type is an alignment question to the user, not a default') ||
-    DEFAULT_WORK_INSTRUCTIONS.includes('undecided work type is an alignment question to the user, not a default'),
+    DEFAULT_WORK_INSTRUCTIONS.includes('Undecided work type is an alignment question to the user, not a default'),
     'Must state undecided is alignment question not default'
+  );
+  assert.ok(
+    DEFAULT_WORK_INSTRUCTIONS.includes('Undecided items must be asked about individually'),
+    'Must state undecided items in batches must be asked about individually'
   );
 
   // Work Log justification sentence
   assert.ok(
-    DEFAULT_WORK_INSTRUCTIONS.includes('exactly one required sentence') ||
-    DEFAULT_WORK_INSTRUCTIONS.includes('Exactly one required sentence') ||
-    DEFAULT_WORK_INSTRUCTIONS.includes('exactly one required justification sentence'),
-    'Must require exactly one Work Log sentence'
+    DEFAULT_WORK_INSTRUCTIONS.includes('optional at issue creation') &&
+    DEFAULT_WORK_INSTRUCTIONS.includes('once work starts, the Work Log must contain exactly one sentence'),
+    'Must require exactly one Work Log sentence once work starts'
   );
 
   // Proportionate paths
@@ -152,12 +156,11 @@ test('resolveIssueWorkType determines bug vs feature vs undecided strictly from 
 test('DEFAULT_TEMPLATES bug and feature templates satisfy proportionate path contract without second source of truth', () => {
   const bugTmpl = DEFAULT_TEMPLATES.bug.promptInstructions;
   assert.ok(
-    bugTmpl.includes('observed versus expected behaviour') ||
-    bugTmpl.includes('Observed versus expected behaviour'),
+    bugTmpl.includes('observed versus expected behaviour'),
     'Bug template must ask for observed versus expected behaviour'
   );
   assert.ok(
-    bugTmpl.includes('Steps to Reproduce') || bugTmpl.includes('Reproduction'),
+    bugTmpl.includes('Steps to Reproduce'),
     'Bug template must ask for reproduction'
   );
   assert.ok(!bugTmpl.includes('Work Type:'), 'Bug template must not add a work type field');
@@ -166,34 +169,38 @@ test('DEFAULT_TEMPLATES bug and feature templates satisfy proportionate path con
 
   const featTmpl = DEFAULT_TEMPLATES.feature.promptInstructions;
   assert.ok(
-    featTmpl.includes('Desired outcome') || featTmpl.includes('desired outcome'),
+    featTmpl.includes('Desired outcome:'),
     'Feature template must ask for desired outcome'
   );
   assert.ok(
-    featTmpl.includes('Research') || featTmpl.includes('Alternatives') || featTmpl.includes('research'),
-    'Feature template must cover research and alternatives'
+    !featTmpl.includes('### Research & Alternatives'),
+    'Feature template must not introduce uncontracted Research & Alternatives section'
+  );
+  assert.ok(
+    !featTmpl.includes('Align on user decisions'),
+    'Feature template must not add uncontracted Align on user decisions checklist item'
   );
   assert.ok(!featTmpl.includes('Work Type:'), 'Feature template must not add a work type field');
+  assert.ok(!featTmpl.includes('type:'), 'Feature template must not add type:* labels');
 });
 
 test('DEFAULT_AI_ISSUE_PROMPT enforces single work-type source, Work Log justification, and zero emojis', () => {
   assert.equal(containsEmoji(DEFAULT_AI_ISSUE_PROMPT), false);
   assert.ok(
-    DEFAULT_AI_ISSUE_PROMPT.includes('`bug` and `enhancement`') ||
-    DEFAULT_AI_ISSUE_PROMPT.includes('"bug" and "enhancement"'),
-    'Must name bug and enhancement as work type source'
+    DEFAULT_AI_ISSUE_PROMPT.includes('"bug" and "enhancement"') &&
+    DEFAULT_AI_ISSUE_PROMPT.includes('single source of work type'),
+    'Must name bug and enhancement as single source of work type'
   );
   assert.ok(
-    DEFAULT_AI_ISSUE_PROMPT.includes('undecided and must be asked about, not guessed') ||
-    DEFAULT_AI_ISSUE_PROMPT.includes('undecided and must be asked about'),
+    DEFAULT_AI_ISSUE_PROMPT.includes('undecided and must be asked about, not guessed'),
     'Must state undecided rule'
   );
   assert.ok(
-    DEFAULT_AI_ISSUE_PROMPT.includes('Work Log') &&
-    (DEFAULT_AI_ISSUE_PROMPT.includes('one justification sentence') || DEFAULT_AI_ISSUE_PROMPT.includes('one required sentence')),
-    'Must describe Work Log single sentence requirement'
+    DEFAULT_AI_ISSUE_PROMPT.includes('Work Log: The "### Work Log:" section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
+    'Must describe Work Log optionality at creation and single required sentence once work starts'
   );
   assert.ok(!DEFAULT_AI_ISSUE_PROMPT.includes('### Work Type:'), 'Must not add ### Work Type: field');
+  assert.ok(!DEFAULT_AI_ISSUE_PROMPT.includes('type:* label'), 'Must forbid type:* labels');
 });
 
 test('buildConsolidatedIssuePrompt includes work instructions with proportionate paths', () => {
@@ -202,17 +209,118 @@ test('buildConsolidatedIssuePrompt includes work instructions with proportionate
     { number: 2, title: 'Feat task', labels: [{ name: 'enhancement' }] },
   ];
   const prompt = buildConsolidatedIssuePrompt(mockIssues);
-  assert.ok(prompt.includes('Work Type & Proportionate Paths') || prompt.includes('Work Type'));
-  assert.ok(prompt.includes('Bug path:'));
-  assert.ok(prompt.includes('Feature path:'));
+  assert.ok(prompt.includes('Work Type & Proportionate Paths'));
+  assert.ok(prompt.includes('Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review'));
+  assert.ok(prompt.includes('Feature path: desired outcome, research and alternatives, user decisions, then implementation'));
   assert.ok(prompt.includes('only work-type source'));
+  assert.ok(prompt.includes('Undecided items must be asked about individually'));
+  assert.ok(prompt.includes('Work Log: The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'));
   assert.equal(containsEmoji(prompt), false);
 });
 
-test('panel/main.ts incorporates work instructions in single-issue preflight and launch prompts', () => {
+test('single-issue prompt and brief builders enforce work-type resolution and path isolation at runtime', () => {
+  const bugIssue = {
+    number: 101,
+    title: 'Fix edge crash',
+    labels: [{ name: 'bug' }],
+    body: 'App crashes on launch',
+  };
+  const bugPrompt = buildSingleIssuePrompt(bugIssue);
+  assert.ok(bugPrompt.includes('resolved as `bug`'), 'Must resolve issue as bug');
+  assert.ok(bugPrompt.includes('Bug path: observed versus expected behaviour'), 'Must include bug path');
+  assert.ok(!bugPrompt.includes('Feature path:'), 'Bug prompt must isolate path and exclude feature path');
+  assert.ok(!bugPrompt.includes('Explicit alignment question:'), 'Bug prompt must not include alignment question');
   assert.ok(
-    MAIN_TS.includes('DEFAULT_WORK_INSTRUCTIONS') ||
-    (MAIN_TS.includes('Bug path:') && MAIN_TS.includes('Feature path:')),
-    'panel/main.ts must incorporate work type instructions / proportionate paths'
+    bugPrompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
+    'Must include Work Log sentence requirement'
   );
+  assert.ok(
+    bugPrompt.includes('Retain existing evidence rules and existing human authority over release and closure.'),
+    'Must retain human authority'
+  );
+
+  const featIssue = {
+    number: 102,
+    title: 'Add CSV export',
+    labels: [{ name: 'enhancement' }],
+    body: 'Allow exporting issues as CSV',
+  };
+  const featPrompt = buildSingleIssuePrompt(featIssue);
+  assert.ok(featPrompt.includes('resolved as `feature`'), 'Must resolve issue as feature');
+  assert.ok(featPrompt.includes('Feature path: desired outcome'), 'Must include feature path');
+  assert.ok(!featPrompt.includes('Bug path:'), 'Feature prompt must isolate path and exclude bug path');
+  assert.ok(!featPrompt.includes('Explicit alignment question:'), 'Feature prompt must not include alignment question');
+  assert.ok(
+    featPrompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
+    'Must include Work Log sentence requirement'
+  );
+  assert.ok(
+    featPrompt.includes('Retain existing evidence rules and existing human authority over release and closure.'),
+    'Must retain human authority'
+  );
+
+  const bothIssue = {
+    number: 103,
+    title: 'Conflicting labels task',
+    labels: [{ name: 'bug' }, { name: 'enhancement' }],
+    body: 'Has both labels',
+  };
+  const bothPrompt = buildSingleIssuePrompt(bothIssue);
+  assert.ok(
+    bothPrompt.includes('Explicit alignment question: Which label (`bug` or `enhancement`) applies to this issue'),
+    'Must emit explicit alignment question when both labels are present'
+  );
+  assert.ok(
+    bothPrompt.includes('Undecided work type is an alignment question to the user, not a default. Only block work that depends on the unanswered question; independent authorised work continues.'),
+    'Must state independent work continues while alignment question is open'
+  );
+  assert.ok(!bothPrompt.includes('resolved as `bug`'), 'Must not claim resolved as bug');
+  assert.ok(!bothPrompt.includes('resolved as `feature`'), 'Must not claim resolved as feature');
+  assert.ok(
+    bothPrompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
+    'Must include Work Log sentence requirement'
+  );
+
+  const neitherIssue = {
+    number: 104,
+    title: 'Docs only task',
+    labels: [{ name: 'documentation' }],
+    body: 'Update documentation',
+  };
+  const neitherPrompt = buildSingleIssuePrompt(neitherIssue);
+  assert.ok(
+    neitherPrompt.includes('Explicit alignment question: Which label (`bug` or `enhancement`) applies to this issue'),
+    'Must emit explicit alignment question when neither label is present'
+  );
+  assert.ok(
+    neitherPrompt.includes('Undecided work type is an alignment question to the user, not a default. Only block work that depends on the unanswered question; independent authorised work continues.'),
+    'Must state independent work continues while alignment question is open'
+  );
+  assert.ok(!neitherPrompt.includes('resolved as `bug`'), 'Must not claim resolved as bug');
+  assert.ok(!neitherPrompt.includes('resolved as `feature`'), 'Must not claim resolved as feature');
+  assert.ok(
+    neitherPrompt.includes('The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence'),
+    'Must include Work Log sentence requirement'
+  );
+
+  // Batch launch prompt builder parity
+  const batchBug = buildBatchLaunchPrompt(bugIssue);
+  assert.ok(batchBug.includes('resolved as `bug`'));
+  assert.ok(batchBug.includes('Bug path:'));
+  assert.ok(!batchBug.includes('Feature path:'));
+
+  const batchFeat = buildBatchLaunchPrompt(featIssue);
+  assert.ok(batchFeat.includes('resolved as `feature`'));
+  assert.ok(batchFeat.includes('Feature path:'));
+  assert.ok(!batchFeat.includes('Bug path:'));
+
+  const batchNeither = buildBatchLaunchPrompt(neitherIssue);
+  assert.ok(batchNeither.includes('Explicit alignment question:'));
+
+  // Direct buildWorkTypeInstructions unit checks
+  assert.ok(buildWorkTypeInstructions('bug').includes('Bug path:'));
+  assert.ok(!buildWorkTypeInstructions('bug').includes('Feature path:'));
+  assert.ok(buildWorkTypeInstructions('feature').includes('Feature path:'));
+  assert.ok(!buildWorkTypeInstructions('feature').includes('Bug path:'));
+  assert.ok(buildWorkTypeInstructions('undecided').includes('Explicit alignment question:'));
 });
