@@ -43,8 +43,9 @@ async function main(): Promise<void> {
   const { port, host } = listenResult;
   const details = describeConfig(config);
   const formattedHost = host.includes(':') ? `[${host}]` : host;
+  const scope = details.repo ? ` for ${details.repo}` : ' for all token-visible repositories';
   console.log(
-    `board: listening on http://${formattedHost}:${port} for ${details.repo} as ${details.login} ` +
+    `board: listening on http://${formattedHost}:${port}${scope} as ${details.login} ` +
       `(password source: ${details.passwordSource})`,
   );
 

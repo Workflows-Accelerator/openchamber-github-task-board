@@ -1,0 +1,64 @@
+TAP version 13
+# Subtest: qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+ok 1 - qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 18.521915
+  type: 'test'
+  ...
+# Subtest: qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+ok 2 - qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 5.623523
+  type: 'test'
+  ...
+# Subtest: qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+ok 3 - qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 4.505695
+  type: 'test'
+  ...
+# Subtest: qualified overview drafts survive navigation without crossing same-number repositories
+ok 4 - qualified overview drafts survive navigation without crossing same-number repositories
+  ---
+  duration_ms: 8.202424
+  type: 'test'
+  ...
+# Subtest: observed revision change never rebinds an old answer; original question draft is recoverable
+ok 5 - observed revision change never rebinds an old answer; original question draft is recoverable
+  ---
+  duration_ms: 3.990232
+  type: 'test'
+  ...
+# Subtest: same-number combined row update replaces only the written repository
+ok 6 - same-number combined row update replaces only the written repository
+  ---
+  duration_ms: 5.131737
+  type: 'test'
+  ...
+# Subtest: older detail read cannot replace a newer confirmed mutation
+ok 7 - older detail read cannot replace a newer confirmed mutation
+  ---
+  duration_ms: 5.823831
+  type: 'test'
+  ...
+# Subtest: a detail refresh started during a write cannot clear the later UNKNOWN outcome
+ok 8 - a detail refresh started during a write cannot clear the later UNKNOWN outcome
+  ---
+  duration_ms: 3.080362
+  type: 'test'
+  ...
+# Subtest: detached question input stays bound to its exact source repository and observed revision
+ok 9 - detached question input stays bound to its exact source repository and observed revision
+  ---
+  duration_ms: 4.175448
+  type: 'test'
+  ...
+1..9
+# tests 9
+# suites 0
+# pass 9
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 355.250752

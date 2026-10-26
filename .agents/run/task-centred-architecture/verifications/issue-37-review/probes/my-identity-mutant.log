@@ -1,0 +1,35 @@
+TAP version 13
+# Subtest: qualified overview drafts survive navigation without crossing same-number repositories
+not ok 1 - qualified overview drafts survive navigation without crossing same-number repositories
+  ---
+  duration_ms: 18.762694
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/mutant/web/tests/multi-repo-client.test.mjs:52:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    + actual - expected
+
+    + 'Alpha draft'
+    - 'Original'
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 'Original'
+  actual: 'Alpha draft'
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/mutant/web/tests/multi-repo-client.test.mjs:55:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 388.25236
+EXIT:1

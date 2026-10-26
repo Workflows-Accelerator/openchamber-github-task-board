@@ -1,0 +1,17 @@
+TAP version 13
+# Subtest: qualified overview drafts survive navigation without crossing same-number repositories
+ok 1 - qualified overview drafts survive navigation without crossing same-number repositories
+  ---
+  duration_ms: 15.875289
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 336.755293
+EXIT:0

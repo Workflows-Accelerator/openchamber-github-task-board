@@ -54,7 +54,6 @@ test('loadConfig reports each missing core variable by name', () => {
   const cases = [
     ['BOARD_GITHUB_TOKEN', 'BOARD_GITHUB_TOKEN'],
     ['BOARD_GITHUB_LOGIN', 'BOARD_GITHUB_LOGIN'],
-    ['BOARD_REPO', 'BOARD_REPO'],
     ['BOARD_SESSION_SECRET', 'BOARD_SESSION_SECRET'],
   ];
   for (const [variable] of cases) {
@@ -199,4 +198,9 @@ test('verifyPasswordAsync matches valid password and rejects invalid', async () 
   assert.equal(await verifyPasswordAsync('wrong-pass', hash), false);
   assert.equal(await verifyPasswordAsync('', hash), false);
   assert.equal(await verifyPasswordAsync('async-secret-pass', 'invalid-hash'), false);
+});
+
+test('BOARD_REPO is optional for token-wide discovery; supplied invalid values still refuse', () => {
+  const config = loadConfig(validEnv({ BOARD_REPO: undefined }));
+  assert.equal(config.repo, null);
 });

@@ -1,0 +1,70 @@
+TAP version 13
+# Subtest: qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+ok 1 - qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 15.523395
+  type: 'test'
+  ...
+# Subtest: qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+ok 2 - qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 4.052778
+  type: 'test'
+  ...
+# Subtest: qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+ok 3 - qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 8.294064
+  type: 'test'
+  ...
+# Subtest: qualified overview drafts survive navigation without crossing same-number repositories
+ok 4 - qualified overview drafts survive navigation without crossing same-number repositories
+  ---
+  duration_ms: 9.263476
+  type: 'test'
+  ...
+# Subtest: observed revision change never rebinds an old answer; original question draft is recoverable
+ok 5 - observed revision change never rebinds an old answer; original question draft is recoverable
+  ---
+  duration_ms: 4.077738
+  type: 'test'
+  ...
+# Subtest: same-number combined row update replaces only the written repository
+ok 6 - same-number combined row update replaces only the written repository
+  ---
+  duration_ms: 4.476058
+  type: 'test'
+  ...
+# Subtest: older detail read cannot replace a newer confirmed mutation
+ok 7 - older detail read cannot replace a newer confirmed mutation
+  ---
+  duration_ms: 5.43218
+  type: 'test'
+  ...
+# Subtest: a detail refresh started during a write cannot clear the later UNKNOWN outcome
+ok 8 - a detail refresh started during a write cannot clear the later UNKNOWN outcome
+  ---
+  duration_ms: 3.150686
+  type: 'test'
+  ...
+# Subtest: detached question input stays bound to its exact source repository and observed revision
+ok 9 - detached question input stays bound to its exact source repository and observed revision
+  ---
+  duration_ms: 2.982079
+  type: 'test'
+  ...
+# Subtest: answer confirms only the qualified combined row question count
+ok 10 - answer confirms only the qualified combined row question count
+  ---
+  duration_ms: 4.873203
+  type: 'test'
+  ...
+1..10
+# tests 10
+# suites 0
+# pass 10
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 406.901322

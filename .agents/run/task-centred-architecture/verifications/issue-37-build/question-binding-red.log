@@ -1,0 +1,32 @@
+TAP version 13
+# Subtest: detached question input stays bound to its exact source repository and observed revision
+not ok 1 - detached question input stays bound to its exact source repository and observed revision
+  ---
+  duration_ms: 18.308812
+  type: 'test'
+  location: '/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo-client.test.mjs:106:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    no answer request from detached alpha input to beta
+    
+    2 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 2
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/web/tests/multi-repo-client.test.mjs:112:10)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 386.338941

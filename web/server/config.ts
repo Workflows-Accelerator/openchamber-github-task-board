@@ -2,7 +2,7 @@
 // Environment-only configuration for the standalone board server.
 //
 // Every failure names the offending variable and never echoes its value.
-// There is no config file, no CLI flag and no client-supplied repository.
+// There is no config file or CLI flag. Repository routes use token discovery.
 // ==========================================
 
 import { randomBytes, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
@@ -24,7 +24,7 @@ export interface RepoRef {
 export interface BoardConfig {
   githubToken: string;
   githubLogin: string;
-  repo: RepoRef;
+  repo: RepoRef | null;
   passwordHash: string;
   passwordWasGenerated: boolean;
   sessionSecret: string;
@@ -222,12 +222,7 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
     (value) => loginPattern.test(value.trim()),
   );
 
-  const repoRaw = requireValue(
-    env,
-    'BOARD_REPO',
-    'BOARD_REPO must look like owner/name',
-    (value) => repoPattern.test(value.trim()),
-  );
+  const repoRaw = read(env, 'BOARD_REPO');
 
   const sessionSecret = requireValue(
     env,
@@ -272,7 +267,7 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
   return {
     githubToken: githubToken.trim(),
     githubLogin: githubLogin.trim(),
-    repo: parseRepo(repoRaw.trim()),
+    repo: repoRaw === undefined || repoRaw.trim() === '' ? null : parseRepo(repoRaw.trim()),
     passwordHash,
     passwordWasGenerated,
     sessionSecret,
@@ -285,7 +280,7 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
 
 export function describeConfig(config: BoardConfig): Record<string, unknown> {
   return {
-    repo: config.repo.full,
+    repo: config.repo?.full ?? null,
     login: config.githubLogin,
     host: config.host,
     port: config.port,

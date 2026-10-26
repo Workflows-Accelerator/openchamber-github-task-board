@@ -1,0 +1,30 @@
+TAP version 13
+# Subtest: cross-repository same-number rows stay separate and reads resolve the shown repository
+not ok 1 - cross-repository same-number rows stay separate and reads resolve the shown repository
+  ---
+  duration_ms: 309.825391
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/mutant/web/tests/multi-repo.test.mjs:129:1'
+  failureType: 'testCodeFailure'
+  error: `Expected "actual" to be strictly unequal to: '#1'`
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: '#1'
+  actual: '#1'
+  operator: 'notStrictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/mutant/web/tests/multi-repo.test.mjs:136:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 731.540049
+EXIT:1

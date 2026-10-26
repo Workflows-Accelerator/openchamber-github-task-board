@@ -549,3 +549,8 @@ pre {
     width: 100%;
   }
 }
+
+.repository-picker { display: grid; gap: 6px; margin-bottom: 16px; }
+.repository-picker select { min-width: 0; max-width: 100%; }
+#recoverable-drafts { white-space: pre-wrap; overflow-wrap: anywhere; }
+.badge { white-space: normal; overflow-wrap: anywhere; }

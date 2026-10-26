@@ -105,21 +105,20 @@ test('startup is refused when the token belongs to another account', async () =>
   }
 });
 
-test('startup is refused when the repository is not accessible', async () => {
+test('inaccessible BOARD_REPO does not gate startup and is not authorized', async () => {
   const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN, repoAccessible: false });
+  const board = await startBoard(fake);
   try {
-    await assert.rejects(
-      () => startBoard(fake),
-      (err) => {
-        assert.ok(err instanceof ConfigError);
-        assert.equal(err.variable, 'BOARD_REPO');
-        assert.match(err.message, /BOARD_REPO/);
-        return true;
-      },
-    );
-  } finally {
-    await fake.close();
-  }
+    const client = new HttpSession(board.url);
+    assert.equal((await client.login()).status, 200);
+    const repositories = await client.request('/api/repos');
+    assert.equal(repositories.json.visibleCount, 0);
+    assert.equal(repositories.json.discoveryFailed, false);
+    const denied = await client.request('/api/board');
+    assert.equal(denied.status, 400);
+    assert.equal(denied.json.error, 'repository_not_allowed');
+    assert.equal(fake.requests.some(request => request.path.startsWith('/repos/')), false);
+  } finally { await board.app.close(); await fake.close(); }
 });
 
 test('every API route denies data without a session', async () => {

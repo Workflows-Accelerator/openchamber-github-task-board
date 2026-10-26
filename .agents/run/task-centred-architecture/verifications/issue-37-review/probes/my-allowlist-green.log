@@ -1,0 +1,17 @@
+TAP version 13
+# Subtest: fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+ok 1 - fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+  ---
+  duration_ms: 274.01942
+  type: 'test'
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 1
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 670.93339
+EXIT:0

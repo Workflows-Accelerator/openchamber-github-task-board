@@ -1,0 +1,106 @@
+TAP version 13
+# Subtest: repository discovery lists every token-visible repository with immutable identity, archived and issue capability
+ok 1 - repository discovery lists every token-visible repository with immutable identity, archived and issue capability
+  ---
+  duration_ms: 242.847216
+  type: 'test'
+  ...
+# Subtest: the token covering two repositories shows both and the combined view labels every row
+ok 2 - the token covering two repositories shows both and the combined view labels every row
+  ---
+  duration_ms: 219.72609
+  type: 'test'
+  ...
+# Subtest: cross-repository same-number rows stay separate and reads resolve the shown repository
+ok 3 - cross-repository same-number rows stay separate and reads resolve the shown repository
+  ---
+  duration_ms: 190.442619
+  type: 'test'
+  ...
+# Subtest: a write in the combined view lands only in the shown issue repository and same-number writes stay independent
+ok 4 - a write in the combined view lands only in the shown issue repository and same-number writes stay independent
+  ---
+  duration_ms: 223.054099
+  type: 'test'
+  ...
+# Subtest: fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+ok 5 - fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+  ---
+  duration_ms: 147.180184
+  type: 'test'
+  ...
+# Subtest: discovery failure keeps the last known picker and marks it stale instead of presenting an empty list
+ok 6 - discovery failure keeps the last known picker and marks it stale instead of presenting an empty list
+  ---
+  duration_ms: 170.669343
+  type: 'test'
+  ...
+# Subtest: zero visible repositories is distinct from failed discovery
+ok 7 - zero visible repositories is distinct from failed discovery
+  ---
+  duration_ms: 158.075155
+  type: 'test'
+  ...
+# Subtest: archived and empty repositories stay selectable with correct board states
+ok 8 - archived and empty repositories stay selectable with correct board states
+  ---
+  duration_ms: 149.329904
+  type: 'test'
+  ...
+# Subtest: a known repository losing access is shown unavailable with its last identity and refuses reads and writes
+ok 9 - a known repository losing access is shown unavailable with its last identity and refuses reads and writes
+  ---
+  duration_ms: 145.703077
+  type: 'test'
+  ...
+# Subtest: aggregate refresh is bounded, one failure stays local and partial results are never marked complete
+ok 10 - aggregate refresh is bounded, one failure stays local and partial results are never marked complete
+  ---
+  duration_ms: 229.919298
+  type: 'test'
+  ...
+# Subtest: repository discovery fails loudly on a malformed page and respects the page bound
+ok 11 - repository discovery fails loudly on a malformed page and respects the page bound
+  ---
+  duration_ms: 3.394653
+  type: 'test'
+  ...
+# Subtest: repository discovery follows bounded pagination and preserves identity fields
+ok 12 - repository discovery follows bounded pagination and preserves identity fields
+  ---
+  duration_ms: 1.395273
+  type: 'test'
+  ...
+# Subtest: discovery failure before any success is not an empty picker and does not prevent sign-in
+ok 13 - discovery failure before any success is not an empty picker and does not prevent sign-in
+  ---
+  duration_ms: 272.216028
+  type: 'test'
+  ...
+# Subtest: expired failed discovery retains display identities but cannot authorize a write
+ok 14 - expired failed discovery retains display identities but cannot authorize a write
+  ---
+  duration_ms: 155.158429
+  type: 'test'
+  ...
+# Subtest: identical contents in same-number issues do not permit a cross-repository fingerprint replay on any write path
+ok 15 - identical contents in same-number issues do not permit a cross-repository fingerprint replay on any write path
+  ---
+  duration_ms: 175.144176
+  type: 'test'
+  ...
+# Subtest: discovery rejects malformed entries and conflicting duplicate immutable identities
+ok 16 - discovery rejects malformed entries and conflicting duplicate immutable identities
+  ---
+  duration_ms: 1.413982
+  type: 'test'
+  ...
+1..16
+# tests 16
+# suites 0
+# pass 16
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2867.400161

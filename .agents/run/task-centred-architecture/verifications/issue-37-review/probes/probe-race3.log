@@ -1,0 +1,7 @@
+BEFORE board owner/alpha
+AFTER detail null
+SEL {"owner":"owner","name":"beta","full":"owner/beta","id":102,"archived":false,"hasIssues":true,"available":true,"lastSeenAt":""}
+REPOS {"fetchedAt":"2026-10-26T19:34:40.291Z","freshnessMs":60000,"stale":false,"discoveryFailed":false,"error":null,"visibleCount":2,"repositories":[{"owner":"owner","name":"alpha","full":"owner/alpha","id":101,"archived":false,"hasIssues":true,"available":true,"lastSeenAt":""},{"owner":"owner","name":"beta","full":"owner/beta","id":102,"archived":false,"hasIssues":true,"available":true,"lastSeenAt":""}]}
+NOTICE  EMPTY
+{"boardRepo":"owner/alpha","selected":"owner/beta","repoLabel":"","refreshDisabled":true,"calls":["PUT /api/repos/owner/alpha/issues/1/section","GET /api/repos","GET /api/repos/owner/beta/board"]}
+EXIT:0
