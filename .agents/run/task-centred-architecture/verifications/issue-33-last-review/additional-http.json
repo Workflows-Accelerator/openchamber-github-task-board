@@ -1,0 +1,3064 @@
+{
+  "results": [
+    {
+      "name": "R2.section/lowerCase",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "validation failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/lowerCase\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/upperCase",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "VALIDATION FAILED",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/upperCase\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/prefix",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Gateway Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/prefix\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/suffix",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed while relaying committed response",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/suffix\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/trailingSpace",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed ",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/trailingSpace\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/messageObject",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": {},
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/messageObject\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/errorsObject",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": {
+            "resource": "Issue",
+            "field": "body",
+            "code": "invalid"
+          }
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/errorsObject\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/transportErrorObjects",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Gateway lost upstream",
+          "errors": [
+            {
+              "code": "ECONNRESET",
+              "message": "connection reset"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/transportErrorObjects\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/genericWithShapedErrors",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Gateway lost upstream",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/genericWithShapedErrors\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/partialShaped",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/partialShaped\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/unrecognizedCode",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "timeout"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/unrecognizedCode\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/mixedShapedAndNull",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            },
+            null
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/mixedShapedAndNull\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/emptyErrors",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": []
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/emptyErrors\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/stringErrors",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            "connection reset"
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/stringErrors\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/html422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": "<h1>Validation failed while relaying</h1>",
+        "patch": {
+          "body": "## Overview\nCommitted section/html422\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/malformed422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": "{\"message\":\"Validation Failed\",",
+        "patch": {
+          "body": "## Overview\nCommitted section/malformed422\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/scalar422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": 42,
+        "patch": {
+          "body": "## Overview\nCommitted section/scalar422\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/null422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": null,
+        "patch": {
+          "body": "## Overview\nCommitted section/null422\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/array422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": [
+          {
+            "resource": "Issue",
+            "field": "body",
+            "code": "invalid"
+          }
+        ],
+        "patch": {
+          "body": "## Overview\nCommitted section/array422\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/github.missing",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "missing"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/github.missing\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/github.missing_field",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "missing_field"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/github.missing_field\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/github.invalid",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/github.invalid\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/github.already_exists",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "already_exists"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/github.already_exists\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/github.unprocessable",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "unprocessable"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/github.unprocessable\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.section/github.custom",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "custom"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nCommitted section/github.custom\n\n## Open Questions\n- [ ] Real?\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/lowerCase",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "validation failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/lowerCase)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/upperCase",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "VALIDATION FAILED",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/upperCase)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/prefix",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Gateway Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/prefix)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/suffix",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed while relaying committed response",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/suffix)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/trailingSpace",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed ",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/trailingSpace)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/messageObject",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": {},
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/messageObject)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/errorsObject",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": {
+            "resource": "Issue",
+            "field": "body",
+            "code": "invalid"
+          }
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/errorsObject)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/transportErrorObjects",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Gateway lost upstream",
+          "errors": [
+            {
+              "code": "ECONNRESET",
+              "message": "connection reset"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/transportErrorObjects)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/genericWithShapedErrors",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Gateway lost upstream",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/genericWithShapedErrors)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/partialShaped",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/partialShaped)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/unrecognizedCode",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "timeout"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/unrecognizedCode)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/mixedShapedAndNull",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            },
+            null
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/mixedShapedAndNull)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/emptyErrors",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": []
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/emptyErrors)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/stringErrors",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            "connection reset"
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/stringErrors)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/html422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": "<h1>Validation failed while relaying</h1>",
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/html422)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/malformed422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": "{\"message\":\"Validation Failed\",",
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/malformed422)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/scalar422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": 42,
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/scalar422)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/null422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": null,
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/null422)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/array422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": [
+          {
+            "resource": "Issue",
+            "field": "body",
+            "code": "invalid"
+          }
+        ],
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/array422)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/github.missing",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "missing"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/github.missing)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/github.missing_field",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "missing_field"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/github.missing_field)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/github.invalid",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/github.invalid)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/github.already_exists",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "already_exists"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/github.already_exists)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/github.unprocessable",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "unprocessable"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/github.unprocessable)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.question/github.custom",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "custom"
+            }
+          ]
+        },
+        "patch": {
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [x] Real? *(Answer: Committed question/github.custom)*\n"
+        }
+      }
+    },
+    {
+      "name": "R2.status/lowerCase",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "validation failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/upperCase",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "VALIDATION FAILED",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/prefix",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Gateway Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/suffix",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed while relaying committed response",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/trailingSpace",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed ",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/messageObject",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": {},
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/errorsObject",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": {
+            "resource": "Issue",
+            "field": "body",
+            "code": "invalid"
+          }
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/transportErrorObjects",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Gateway lost upstream",
+          "errors": [
+            {
+              "code": "ECONNRESET",
+              "message": "connection reset"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/genericWithShapedErrors",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Gateway lost upstream",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/partialShaped",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/unrecognizedCode",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "timeout"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/mixedShapedAndNull",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            },
+            null
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/emptyErrors",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": []
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/stringErrors",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            "connection reset"
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/html422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": "<h1>Validation failed while relaying</h1>",
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/malformed422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": "{\"message\":\"Validation Failed\",",
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/scalar422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": 42,
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/null422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": null,
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/array422",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "write_outcome_unknown",
+        "message": "Outcome unknown — check the issue on GitHub"
+      },
+      "patches": 1,
+      "committed": true,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": true,
+        "payload": [
+          {
+            "resource": "Issue",
+            "field": "body",
+            "code": "invalid"
+          }
+        ],
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/github.missing",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "missing"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/github.missing_field",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "missing_field"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/github.invalid",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "invalid"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/github.already_exists",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "already_exists"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/github.unprocessable",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "unprocessable"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.status/github.custom",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_request",
+        "message": "The issue reference is not valid"
+      },
+      "patches": 1,
+      "committed": false,
+      "hookEvent": {
+        "method": "PATCH",
+        "committed": false,
+        "payload": {
+          "message": "Validation Failed",
+          "errors": [
+            {
+              "resource": "Issue",
+              "field": "body",
+              "code": "custom"
+            }
+          ]
+        },
+        "patch": {
+          "labels": [
+            "status:in-review"
+          ]
+        }
+      }
+    },
+    {
+      "name": "R2.preserved.401",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "github_unauthorized",
+        "message": "GitHub rejected credentials or token expired"
+      },
+      "patches": 1,
+      "unchanged": true
+    },
+    {
+      "name": "R2.preserved.403",
+      "pass": true,
+      "status": 502,
+      "response": {
+        "error": "github_forbidden",
+        "message": "GitHub refused access to the repository"
+      },
+      "patches": 1,
+      "unchanged": true
+    },
+    {
+      "name": "R2.preserved.404",
+      "pass": true,
+      "status": 404,
+      "response": {
+        "error": "not_found",
+        "message": "That issue was not found in the configured repository"
+      },
+      "patches": 1,
+      "unchanged": true
+    },
+    {
+      "name": "R2.preserved.403rate",
+      "pass": true,
+      "status": 503,
+      "response": {
+        "error": "github_rate_limited",
+        "message": "GitHub is rate limiting the board; try again later"
+      },
+      "patches": 1,
+      "unchanged": true
+    },
+    {
+      "name": "R2.preserved.429",
+      "pass": true,
+      "status": 503,
+      "response": {
+        "error": "github_rate_limited",
+        "message": "GitHub is rate limiting the board; try again later"
+      },
+      "patches": 1,
+      "unchanged": true
+    },
+    {
+      "name": "R2.preserved.412",
+      "pass": true,
+      "status": 409,
+      "response": {
+        "error": "conflict",
+        "message": "This task changed on GitHub while saving; nothing was written",
+        "issue": {
+          "number": 1,
+          "title": "Synthetic issue 1",
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/repo/issues/1",
+          "body": "## Overview\nOriginal\n\n## Open Questions\n- [ ] Real?\n",
+          "fingerprint": "90dd60ba2d45669eec9b454a05276825f7931be0d77ff9f82cb05575f17bb5bc",
+          "labels": [
+            "status:todo"
+          ],
+          "statusLabel": "status:todo",
+          "phase": "planning",
+          "attention": "needs-decision",
+          "column": "todo",
+          "updatedAt": "2026-10-26T12:34:11.829Z",
+          "createdAt": "2026-10-01T09:00:00Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "Original"
+            }
+          ],
+          "openQuestions": [
+            {
+              "index": 0,
+              "answerIndex": 0,
+              "text": "Real?",
+              "completed": false
+            }
+          ],
+          "humanTasks": [],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      },
+      "patches": 1,
+      "unchanged": true
+    },
+    {
+      "name": "R2.precommit.invalidSection",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That section cannot be edited from the board"
+      },
+      "patches": 0
+    },
+    {
+      "name": "R2.precommit.emptyAnswer",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "An answer is required"
+      },
+      "patches": 0
+    },
+    {
+      "name": "R2.precommit.badStatus",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That status is not part of the agreed label set"
+      },
+      "patches": 0
+    },
+    {
+      "name": "R2.precommit.noChange",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That change would leave the issue unchanged"
+      },
+      "patches": 0
+    },
+    {
+      "name": "R3.projection.0/false",
+      "pass": true,
+      "indent": "\t\t",
+      "nested": false,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.0/false",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.0/true",
+      "pass": true,
+      "indent": "\t\t",
+      "nested": true,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.0/true",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.1/false",
+      "pass": true,
+      "indent": " \t\t",
+      "nested": false,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.1/false",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.1/true",
+      "pass": true,
+      "indent": " \t\t",
+      "nested": true,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.1/true",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.2/false",
+      "pass": true,
+      "indent": "  \t \t",
+      "nested": false,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.2/false",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.2/true",
+      "pass": true,
+      "indent": "  \t \t",
+      "nested": true,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.2/true",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.3/false",
+      "pass": true,
+      "indent": "   \t\t",
+      "nested": false,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.3/false",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.3/true",
+      "pass": true,
+      "indent": "   \t\t",
+      "nested": true,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.3/true",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.4/false",
+      "pass": true,
+      "indent": "\t  \t",
+      "nested": false,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.4/false",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.4/true",
+      "pass": true,
+      "indent": "\t  \t",
+      "nested": true,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.4/true",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.5/false",
+      "pass": true,
+      "indent": "    \t",
+      "nested": false,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.5/false",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.5/true",
+      "pass": true,
+      "indent": "    \t",
+      "nested": true,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.5/true",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.6/false",
+      "pass": true,
+      "indent": "     \t  ",
+      "nested": false,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.6/false",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.6/true",
+      "pass": true,
+      "indent": "     \t  ",
+      "nested": true,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.6/true",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.7/false",
+      "pass": true,
+      "indent": "      \t",
+      "nested": false,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.7/false",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.7/true",
+      "pass": true,
+      "indent": "      \t",
+      "nested": true,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.7/true",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.8/false",
+      "pass": true,
+      "indent": "  \t  ",
+      "nested": false,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.8/false",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.8/true",
+      "pass": true,
+      "indent": "  \t  ",
+      "nested": true,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.8/true",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.9/false",
+      "pass": true,
+      "indent": "   \t \t ",
+      "nested": false,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.9/false",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.projection.9/true",
+      "pass": true,
+      "indent": "   \t \t ",
+      "nested": true,
+      "scanner": [],
+      "detail": [],
+      "count": {
+        "total": 0,
+        "done": 0,
+        "open": 0
+      }
+    },
+    {
+      "name": "R3.refusal.9/true",
+      "pass": true,
+      "status": 400,
+      "response": {
+        "error": "invalid_edit",
+        "message": "That open question is no longer answerable"
+      },
+      "patches": 0,
+      "unchanged": true
+    },
+    {
+      "name": "R3.realNested.-",
+      "pass": true,
+      "status": 200,
+      "patches": 1,
+      "body": "﻿## Open Questions\r\n- [x] Done? *(Answer: yes)*\r\n- [ ] Same?\r\n\r\n  \t\t- [ ] Code?\r\n\r\n  - [x] Same? *(Answer: Nested exact)*\r\n    continuation\r\n- [ ] Last?\r\n",
+      "expected": "﻿## Open Questions\r\n- [x] Done? *(Answer: yes)*\r\n- [ ] Same?\r\n\r\n  \t\t- [ ] Code?\r\n\r\n  - [x] Same? *(Answer: Nested exact)*\r\n    continuation\r\n- [ ] Last?\r\n",
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": null,
+          "text": "Done? *(Answer: yes)*",
+          "completed": true
+        },
+        {
+          "index": 1,
+          "answerIndex": 0,
+          "text": "Same?",
+          "completed": false
+        },
+        {
+          "index": 2,
+          "answerIndex": 1,
+          "text": "Same?",
+          "completed": false
+        },
+        {
+          "index": 3,
+          "answerIndex": 2,
+          "text": "Last?",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "name": "R3.realNested.*",
+      "pass": true,
+      "status": 200,
+      "patches": 1,
+      "body": "﻿## Open Questions\r\n- [x] Done? *(Answer: yes)*\r\n- [ ] Same?\r\n\r\n  \t\t- [ ] Code?\r\n\r\n  * [x] Same? *(Answer: Nested exact)*\r\n    continuation\r\n- [ ] Last?\r\n",
+      "expected": "﻿## Open Questions\r\n- [x] Done? *(Answer: yes)*\r\n- [ ] Same?\r\n\r\n  \t\t- [ ] Code?\r\n\r\n  * [x] Same? *(Answer: Nested exact)*\r\n    continuation\r\n- [ ] Last?\r\n",
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": null,
+          "text": "Done? *(Answer: yes)*",
+          "completed": true
+        },
+        {
+          "index": 1,
+          "answerIndex": 0,
+          "text": "Same?",
+          "completed": false
+        },
+        {
+          "index": 2,
+          "answerIndex": 1,
+          "text": "Same?",
+          "completed": false
+        },
+        {
+          "index": 3,
+          "answerIndex": 2,
+          "text": "Last?",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "name": "R3.realNested.+",
+      "pass": true,
+      "status": 200,
+      "patches": 1,
+      "body": "﻿## Open Questions\r\n- [x] Done? *(Answer: yes)*\r\n- [ ] Same?\r\n\r\n  \t\t- [ ] Code?\r\n\r\n  + [x] Same? *(Answer: Nested exact)*\r\n    continuation\r\n- [ ] Last?\r\n",
+      "expected": "﻿## Open Questions\r\n- [x] Done? *(Answer: yes)*\r\n- [ ] Same?\r\n\r\n  \t\t- [ ] Code?\r\n\r\n  + [x] Same? *(Answer: Nested exact)*\r\n    continuation\r\n- [ ] Last?\r\n",
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": null,
+          "text": "Done? *(Answer: yes)*",
+          "completed": true
+        },
+        {
+          "index": 1,
+          "answerIndex": 0,
+          "text": "Same?",
+          "completed": false
+        },
+        {
+          "index": 2,
+          "answerIndex": 1,
+          "text": "Same?",
+          "completed": false
+        },
+        {
+          "index": 3,
+          "answerIndex": 2,
+          "text": "Last?",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "name": "R3.realNested.1.",
+      "pass": true,
+      "status": 200,
+      "patches": 1,
+      "body": "﻿## Open Questions\r\n- [x] Done? *(Answer: yes)*\r\n- [ ] Same?\r\n\r\n  \t\t- [ ] Code?\r\n\r\n  1. [x] Same? *(Answer: Nested exact)*\r\n    continuation\r\n- [ ] Last?\r\n",
+      "expected": "﻿## Open Questions\r\n- [x] Done? *(Answer: yes)*\r\n- [ ] Same?\r\n\r\n  \t\t- [ ] Code?\r\n\r\n  1. [x] Same? *(Answer: Nested exact)*\r\n    continuation\r\n- [ ] Last?\r\n",
+      "views": [
+        {
+          "index": 0,
+          "answerIndex": null,
+          "text": "Done? *(Answer: yes)*",
+          "completed": true
+        },
+        {
+          "index": 1,
+          "answerIndex": 0,
+          "text": "Same?",
+          "completed": false
+        },
+        {
+          "index": 2,
+          "answerIndex": 1,
+          "text": "Same?",
+          "completed": false
+        },
+        {
+          "index": 3,
+          "answerIndex": 2,
+          "text": "Last?",
+          "completed": false
+        }
+      ]
+    }
+  ],
+  "logs": [
+    "POST /api/session 200 97ms",
+    "GET /api/issues/1 200 28ms",
+    "PUT /api/issues/1/section 502 24ms",
+    "GET /api/issues/1 200 17ms",
+    "PUT /api/issues/1/section 502 19ms",
+    "GET /api/issues/1 200 8ms",
+    "PUT /api/issues/1/section 502 14ms",
+    "GET /api/issues/1 200 5ms",
+    "PUT /api/issues/1/section 502 7ms",
+    "GET /api/issues/1 200 10ms",
+    "PUT /api/issues/1/section 502 14ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 502 6ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 5ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 4ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 7ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 502 6ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 7ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 502 5ms",
+    "GET /api/issues/1 200 4ms",
+    "PUT /api/issues/1/section 502 10ms",
+    "GET /api/issues/1 200 4ms",
+    "PUT /api/issues/1/section 502 5ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 502 4ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 502 4ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 502 3ms",
+    "GET /api/issues/1 200 1ms",
+    "PUT /api/issues/1/section 502 3ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 502 5ms",
+    "GET /api/issues/1 200 1ms",
+    "PUT /api/issues/1/section 400 4ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 400 5ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 400 11ms",
+    "GET /api/issues/1 200 3ms",
+    "PUT /api/issues/1/section 400 11ms",
+    "GET /api/issues/1 200 5ms",
+    "PUT /api/issues/1/section 400 3ms",
+    "GET /api/issues/1 200 2ms",
+    "PUT /api/issues/1/section 400 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 502 6ms",
+    "GET /api/issues/1 200 6ms",
+    "POST /api/issues/1/questions/0/answer 502 15ms",
+    "GET /api/issues/1 200 4ms",
+    "POST /api/issues/1/questions/0/answer 502 17ms",
+    "GET /api/issues/1 200 7ms",
+    "POST /api/issues/1/questions/0/answer 502 10ms",
+    "GET /api/issues/1 200 4ms",
+    "POST /api/issues/1/questions/0/answer 502 6ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 502 7ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 502 3ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 502 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 502 14ms",
+    "GET /api/issues/1 200 4ms",
+    "POST /api/issues/1/questions/0/answer 502 4ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 502 3ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 502 4ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 502 4ms",
+    "GET /api/issues/1 200 3ms",
+    "POST /api/issues/1/questions/0/answer 502 4ms",
+    "GET /api/issues/1 200 8ms",
+    "POST /api/issues/1/questions/0/answer 502 9ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 502 8ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 502 6ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 502 5ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 502 5ms",
+    "GET /api/issues/1 200 6ms",
+    "POST /api/issues/1/questions/0/answer 400 3ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 4ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 8ms",
+    "GET /api/issues/1 200 3ms",
+    "POST /api/issues/1/questions/0/answer 400 4ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 3ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 4ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 4ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/status 502 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/status 502 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/status 502 2ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 2ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 5ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 502 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/status 400 2ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 400 3ms",
+    "GET /api/issues/1 200 4ms",
+    "POST /api/issues/1/status 400 12ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 400 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 400 3ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/status 400 2ms",
+    "GET /api/issues/1 200 1ms",
+    "PUT /api/issues/1/section 502 3ms",
+    "GET /api/issues/1 200 1ms",
+    "PUT /api/issues/1/section 502 6ms",
+    "GET /api/issues/1 200 4ms",
+    "PUT /api/issues/1/section 404 4ms",
+    "GET /api/issues/1 200 1ms",
+    "PUT /api/issues/1/section 503 3ms",
+    "GET /api/issues/1 200 1ms",
+    "PUT /api/issues/1/section 503 2ms",
+    "GET /api/issues/1 200 1ms",
+    "PUT /api/issues/1/section 409 3ms",
+    "GET /api/issues/1 200 1ms",
+    "PUT /api/issues/1/section 400 1ms",
+    "POST /api/issues/1/questions/0/answer 400 1ms",
+    "POST /api/issues/1/status 400 2ms",
+    "PUT /api/issues/1/section 400 1ms",
+    "POST /api/session 200 68ms",
+    "GET /api/board 200 8ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 68ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 4ms",
+    "POST /api/session 200 65ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 68ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 3ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 56ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 64ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 79ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 1ms",
+    "POST /api/session 200 74ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 1ms",
+    "POST /api/session 200 68ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 73ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 58ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 3ms",
+    "POST /api/session 200 68ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 3ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 54ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 1ms",
+    "POST /api/session 200 72ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 3ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 61ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 3ms",
+    "POST /api/session 200 54ms",
+    "GET /api/board 200 1ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 67ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 1ms",
+    "POST /api/session 200 74ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 2ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 56ms",
+    "GET /api/board 200 2ms",
+    "GET /api/issues/1 200 1ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 78ms",
+    "GET /api/board 200 3ms",
+    "GET /api/issues/1 200 3ms",
+    "POST /api/issues/1/questions/0/answer 400 2ms",
+    "POST /api/session 200 176ms",
+    "GET /api/issues/1 200 11ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/1/answer 200 16ms",
+    "POST /api/session 200 62ms",
+    "GET /api/issues/1 200 1ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/1/answer 200 6ms",
+    "POST /api/session 200 89ms",
+    "GET /api/issues/1 200 3ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/1/answer 200 9ms",
+    "POST /api/session 200 55ms",
+    "GET /api/issues/1 200 2ms",
+    "write issue=1 fields=body",
+    "POST /api/issues/1/questions/1/answer 200 5ms"
+  ],
+  "summary": {
+    "total": 129,
+    "passed": 129,
+    "failed": 0
+  }
+}

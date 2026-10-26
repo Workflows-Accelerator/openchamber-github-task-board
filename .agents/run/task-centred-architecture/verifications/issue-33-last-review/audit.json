@@ -1,0 +1,177 @@
+{
+  "programEquality": [
+    {
+      "name": "browser-matrix.mjs",
+      "original": "dae6f3012ebc3be053b91f3cc3ce3b4172fb2415e2e2c9d84f90e415faa1445f",
+      "current": "d0c7ee2c6b2a10690621751295b04796b5e55292d6e297b993ada27171fcf923",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "residual-http.mjs",
+      "original": "64f093132b201fba20d4483cdefc72eb060bd9eb91c38a0a27081f9ffc561a43",
+      "current": "7a48c48793e5298561a62e8f5c4636a96f3ae38350277d72b05e9362587a8238",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "browser-gateway.mjs",
+      "original": "bd8799f47d718dc2b3d5e0aa52e81fe49c6805a03a5213a060895f8facad7ba2",
+      "current": "60d4d9afe41755068c1657d6b6cf505c0f63ae3ba342f7d65d612f90a1405bde",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "browser-baseline.mjs",
+      "original": "5379b65544c093130a82a6579f8079b05cd33fe4332acf928094191f24ed1498",
+      "current": "5379b65544c093130a82a6579f8079b05cd33fe4332acf928094191f24ed1498",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "probes.mjs",
+      "original": "48e5ce9f8bb6ce61820c2d77ec6a95d15ce791dd9ece0e1313a04dc4795fe8ba",
+      "current": "88d5a1040c4c55ebdd9d9b6db6525b5484fffb0e5dfe9f3f555fb596e2aebfeb",
+      "onlyArtifactRelocation": true
+    }
+  ],
+  "matrices": [
+    {
+      "name": "candidate-browser-matrix",
+      "total": 84,
+      "passed": 84,
+      "failed": 0
+    },
+    {
+      "name": "old-browser-matrix",
+      "total": 84,
+      "passed": 51,
+      "failed": 33
+    },
+    {
+      "name": "additional-browser-matrix",
+      "total": 117,
+      "passed": 117,
+      "failed": 0
+    },
+    {
+      "name": "old-additional-browser-matrix",
+      "total": 117,
+      "passed": 39,
+      "failed": 78
+    },
+    {
+      "name": "candidate-residual-http",
+      "total": 36,
+      "passed": 36,
+      "failed": 0
+    },
+    {
+      "name": "old-residual-http",
+      "total": 36,
+      "passed": 27,
+      "failed": 9
+    },
+    {
+      "name": "additional-http",
+      "total": 129,
+      "passed": 129,
+      "failed": 0
+    },
+    {
+      "name": "old-additional-http",
+      "total": 129,
+      "passed": 63,
+      "failed": 66
+    }
+  ],
+  "browser": [
+    {
+      "name": "candidate-browser-matrix",
+      "invalid": 81,
+      "valid": 3,
+      "screenshots": 27,
+      "runtimeEvents": 0,
+      "oneCommittedPatchEveryCase": true
+    },
+    {
+      "name": "additional-browser-matrix",
+      "invalid": 96,
+      "valid": 21,
+      "screenshots": 27,
+      "runtimeEvents": 0,
+      "oneCommittedPatchEveryCase": true
+    }
+  ],
+  "logs": [
+    {
+      "name": "candidate-browser-matrix",
+      "lines": 678,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    },
+    {
+      "name": "additional-browser-matrix",
+      "lines": 942,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    },
+    {
+      "name": "browser-gateway",
+      "lines": 153,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    },
+    {
+      "name": "browser-verification",
+      "lines": 24,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    },
+    {
+      "name": "candidate-residual-http",
+      "lines": 73,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    },
+    {
+      "name": "additional-http",
+      "lines": 264,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    }
+  ],
+  "gates": {
+    "gates-exits.log": "web:0\nroot:0\ntypes:0\nbuild:0\nsyntax:0\nparity:0\nignored:0\nforbidden-diff:0\n",
+    "matrix-exits.log": "browser84:0\ngateway19:0\nbaseline32:0\nhttp36:0\npreserved28:0\n",
+    "old-exits.log": "old-browser84:1\nold-http36:1\nold-focused230:1\ncandidate-focused230:0\n",
+    "additional-exits.log": "additional-browser:0\nold-additional-browser:1\n",
+    "additional-http-exits.log": "additional-http:0\nold-additional-http:1\n"
+  },
+  "focused": {
+    "web-tests.log": {
+      "total": 338,
+      "passed": 338,
+      "failed": 0
+    },
+    "root-tests.log": {
+      "total": 466,
+      "passed": 466,
+      "failed": 0
+    },
+    "focused.log": {
+      "total": 230,
+      "passed": 230,
+      "failed": 0
+    },
+    "old-focused.log": {
+      "total": 230,
+      "passed": 28,
+      "failed": 202
+    }
+  },
+  "legacy": {
+    "gateway": 19,
+    "baseline": 32,
+    "preserved": 28,
+    "gatewayScreenshots": 20,
+    "baselineScreenshots": 10
+  },
+  "bundleHashes": "bee9a616c4f0ccd1df7cff7f9f4aebc110110deb43b1c30b2e84f6a1b0e8e858  /tmp/opencode/issue33-last-review/server.mjs\nbee9a616c4f0ccd1df7cff7f9f4aebc110110deb43b1c30b2e84f6a1b0e8e858  web/dist/server.mjs\n"
+}
