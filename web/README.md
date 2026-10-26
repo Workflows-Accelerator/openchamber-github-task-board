@@ -33,7 +33,6 @@ printing its value.
 | `BOARD_PORT` | no | Listen port, default `8787`. |
 | `BOARD_HOST` | no | Listen address/host, default `127.0.0.1`. Must be a valid IP or hostname; fails startup on invalid input. |
 | `BOARD_BASE_URL` | no | Public origin, e.g. `https://board.example.test` (used for HSTS and Origin/Referer write validation). |
-| `BOARD_GITHUB_API_BASE` | no | Upstream GitHub API base URL, default `https://api.github.com`. |
 
 If both password variables are set, `BOARD_PASSWORD_HASH` wins.
 
@@ -156,7 +155,6 @@ Optional configuration variables:
 - `BOARD_HOST` (defaults to `127.0.0.1`)
 - `BOARD_PORT` (defaults to `8787`)
 - `BOARD_BASE_URL` (optional public origin for CSRF origin/referer validation)
-- `BOARD_GITHUB_API_BASE` (defaults to `https://api.github.com`)
 
 ### Supervisor and restart persistence
 The board process has no supervisor today and does not survive a container restart or process crash on its own. If the process exits or the container restarts, an external process supervisor, orchestrator, or container entrypoint startup hook is required to restart it.
@@ -179,7 +177,7 @@ An unauthenticated liveness endpoint is provided at `GET /health`, returning HTT
   "uptime": 123
 }
 ```
-Non-GET requests return HTTP 405 with `Allow: GET`.
+Only `GET` is supported; `HEAD` and all other non-GET methods return HTTP 405 with `Allow: GET`. Automated monitoring and health probes must use `GET`.
 
 Liveness is not readiness:
 - `GET /health` proves only that the Node process is running and its HTTP listener can accept connections.

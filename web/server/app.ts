@@ -48,6 +48,7 @@ export interface BoardServerOptions {
   idleTtlMs?: number;
   loginTimeoutMs?: number;
   logger?: (line: string) => void;
+  packageJsonUrl?: URL | string;
 }
 
 export interface BoardServer {
@@ -103,19 +104,18 @@ function loadStatic(name: string): string {
 }
 
 let cachedVersion: string | null = null;
-function getPackageVersion(): string {
-  if (cachedVersion !== null) return cachedVersion;
+export function getPackageVersion(packageJsonUrl: URL | string = new URL('../../package.json', import.meta.url)): string {
+  const isDefault = packageJsonUrl.toString() === new URL('../../package.json', import.meta.url).toString();
+  if (isDefault && cachedVersion !== null) return cachedVersion;
   try {
-    const raw = readFileSync(new URL('../../package.json', import.meta.url), 'utf8');
+    const raw = readFileSync(packageJsonUrl, 'utf8');
     const parsed = JSON.parse(raw);
     if (typeof parsed.version === 'string' && parsed.version) {
-      const v: string = parsed.version;
-      cachedVersion = v;
-      return v;
+      if (isDefault) cachedVersion = parsed.version;
+      return parsed.version;
     }
   } catch {}
-  cachedVersion = '1.2.1';
-  return cachedVersion;
+  return 'unknown';
 }
 
 function redactLine(line: string, secrets: string[]): string {
@@ -466,7 +466,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         status: 200,
         body: {
           status: 'ok',
-          version: getPackageVersion(),
+          version: getPackageVersion(options.packageJsonUrl),
           uptime: Math.floor(process.uptime()),
         },
       };

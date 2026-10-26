@@ -268,7 +268,6 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
   const port = parsePort(read(env, 'BOARD_PORT'));
   const host = parseHost(read(env, 'BOARD_HOST'));
   const baseUrl = parseBaseUrl(read(env, 'BOARD_BASE_URL'));
-  const githubApiBase = read(env, 'BOARD_GITHUB_API_BASE') ?? DEFAULT_GITHUB_API_BASE;
 
   return {
     githubToken: githubToken.trim(),
@@ -280,7 +279,7 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
     port,
     host,
     baseUrl,
-    githubApiBase,
+    githubApiBase: DEFAULT_GITHUB_API_BASE,
   };
 }
 
@@ -291,7 +290,6 @@ export function describeConfig(config: BoardConfig): Record<string, unknown> {
     host: config.host,
     port: config.port,
     baseUrl: config.baseUrl,
-    githubApiBase: config.githubApiBase,
     passwordSource: config.passwordWasGenerated ? 'BOARD_PASSWORD (hashed at startup)' : 'BOARD_PASSWORD_HASH',
   };
 }
