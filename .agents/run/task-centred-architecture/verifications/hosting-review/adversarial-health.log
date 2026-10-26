@@ -1,0 +1,11 @@
+=== Proof: Health Endpoint Methods, Headers, and Boundary Behavior ===
+GET /health status: 200
+GET /health body: {"status":"ok","version":"1.2.1","uptime":0}
+GET /health cache-control header: no-store
+HEAD /health status: 405
+HEAD /health allow header: GET
+All non-GET methods returned 405 with Allow: GET
+GET /health?repo=evil/repo status: 400
+GET /health?repo=evil/repo error code: repository_not_allowed
+
+Result: /health properly guarded; HEAD returns 405; cache-control is no-store; query params enforced.

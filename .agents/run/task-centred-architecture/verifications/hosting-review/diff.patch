@@ -1,0 +1,693 @@
+diff --git a/README.md b/README.md
+index f441892..31987f5 100644
+--- a/README.md
++++ b/README.md
+@@ -118,6 +118,7 @@ If working on a project without a remote git repository, the extension prompts y
+ | Command | Purpose |
+ | :--- | :--- |
+ | `npm run build` | Bundles `panel/main.ts` into `panel/main.js` targeting `chrome100` |
++| `npm run start:web` | Runs the production standalone web board server (`web/dist/server.mjs`) |
+ | `npm run typecheck` | Validates TypeScript types across the codebase without emitting files |
+ | `npm test` | Runs all 92 unit and integration tests using Node.js native test runner |
+ 
+diff --git a/package.json b/package.json
+index 58aa787..8f52de8 100644
+--- a/package.json
++++ b/package.json
+@@ -16,6 +16,7 @@
+     "build:panel": "esbuild panel/main.ts --bundle --format=iife --target=chrome100 --tree-shaking=false --outfile=panel/main.js",
+     "build:service": "esbuild service/main.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=service/main.js",
+     "build": "npm run build:panel && npm run build:service",
++    "start:web": "node web/dist/server.mjs",
+     "typecheck": "tsc --noEmit",
+     "test": "node --test test/*.test.js"
+   },
+diff --git a/web/README.md b/web/README.md
+index d5acfbe..8b1500d 100644
+--- a/web/README.md
++++ b/web/README.md
+@@ -31,7 +31,9 @@ printing its value.
+ | `BOARD_PASSWORD` | one of these | Plain password, hashed in memory at startup (minimum 8 characters). |
+ | `BOARD_SESSION_SECRET` | yes | At least 32 characters. Signs session cookies; changing it ends every session. |
+ | `BOARD_PORT` | no | Listen port, default `8787`. |
++| `BOARD_HOST` | no | Listen address/host, default `127.0.0.1`. Must be a valid IP or hostname; fails startup on invalid input. |
+ | `BOARD_BASE_URL` | no | Public origin, e.g. `https://board.example.test` (used for HSTS and Origin/Referer write validation). |
++| `BOARD_GITHUB_API_BASE` | no | Upstream GitHub API base URL, default `https://api.github.com`. |
+ 
+ If both password variables are set, `BOARD_PASSWORD_HASH` wins.
+ 
+@@ -58,15 +60,18 @@ deployable bundle:
+ npx esbuild web/server.ts --bundle --platform=node --format=esm \
+   --target=node20 --packages=external --outfile=web/dist/server.mjs
+ 
+-# run from source using an env file or secret manager (avoid inline secrets in shell history)
+-node --env-file=.env.board web/server.ts
++# run the built bundle via production npm script
++npm run start:web
+ 
+-# run the built bundle
++# run the built bundle directly
+ node --env-file=.env.board web/dist/server.mjs
++
++# or run from source (development)
++node --env-file=.env.board web/server.ts
+ ```
+ 
+-The server listens on `127.0.0.1` only. Put a TLS-terminating reverse proxy in
+-front of it for a domain; the session cookie is always `Secure`, which browsers
++The server listens on `127.0.0.1` by default, or on the explicitly configured `BOARD_HOST`.
++Put a TLS-terminating reverse proxy in front of it for a domain; the session cookie is always `Secure`, which browsers
+ accept on `https` origins (and on `http://localhost` for local testing).
+ 
+ ## Security model
+@@ -137,6 +142,52 @@ accept on `https` origins (and on `http://localhost` for local testing).
+ - There is no notification/question loop and no agent integration. Those are
+   separate, parked workstreams.
+ 
++## Operations
++
++### Required environment variables
++Only variable names are documented here; never record secret values in repository files or command logs:
++- `BOARD_GITHUB_TOKEN`
++- `BOARD_GITHUB_LOGIN`
++- `BOARD_REPO`
++- `BOARD_SESSION_SECRET`
++- One of `BOARD_PASSWORD_HASH` (recommended) or `BOARD_PASSWORD`
++
++Optional configuration variables:
++- `BOARD_HOST` (defaults to `127.0.0.1`)
++- `BOARD_PORT` (defaults to `8787`)
++- `BOARD_BASE_URL` (optional public origin for CSRF origin/referer validation)
++- `BOARD_GITHUB_API_BASE` (defaults to `https://api.github.com`)
++
++### Supervisor and restart persistence
++The board process has no supervisor today and does not survive a container restart or process crash on its own. If the process exits or the container restarts, an external process supervisor, orchestrator, or container entrypoint startup hook is required to restart it.
++
++### Container recreation and downtime
++Publishing the board port requires container recreation, which briefly interrupts other running container services.
++
++### Access model
++Anyone with the board password has full board access. The GitHub identity of the visitor is not checked or authenticated against GitHub; all GitHub actions and queries are performed using the single server-configured token.
++
++### Best-effort writes and concurrency
++Issue updates use a best-effort concurrency model. While the board checks fingerprints before saving and serializes edits per issue in-process, GitHub does not support transactional or conditional issue writes. A simultaneous external edit on GitHub or by an autonomous agent can still be overwritten by the board's save. Ambiguous write outcomes require human refresh and inspection; the board will not guess or automatically retry.
++
++### Liveness endpoint (`GET /health`)
++An unauthenticated liveness endpoint is provided at `GET /health`, returning HTTP 200 with process liveness and version identity:
++```json
++{
++  "status": "ok",
++  "version": "1.2.1",
++  "uptime": 123
++}
++```
++Non-GET requests return HTTP 405 with `Allow: GET`.
++
++Liveness is not readiness:
++- `GET /health` proves only that the Node process is running and its HTTP listener can accept connections.
++- It does not prove upstream GitHub reachability or token validity.
++- It does not prove that TLS is terminated or valid.
++- It does not prove that a reverse proxy routes to the board process.
++- It offers no guarantee or promise of uptime.
++
+ ## Tests
+ 
+ ```sh
+diff --git a/web/server.ts b/web/server.ts
+index 1362842..820c3ee 100644
+--- a/web/server.ts
++++ b/web/server.ts
+@@ -30,10 +30,21 @@ async function main(): Promise<void> {
+     return;
+   }
+ 
+-  const { port } = await app.listen(config.port);
++  let listenResult;
++  try {
++    listenResult = await app.listen(config.port, config.host);
++  } catch (error) {
++    const message = error instanceof Error ? error.message : 'unknown startup failure';
++    console.error(`board: refusing to start: ${message}`);
++    process.exitCode = 1;
++    return;
++  }
++
++  const { port, host } = listenResult;
+   const details = describeConfig(config);
++  const formattedHost = host.includes(':') ? `[${host}]` : host;
+   console.log(
+-    `board: listening on http://127.0.0.1:${port} for ${details.repo} as ${details.login} ` +
++    `board: listening on http://${formattedHost}:${port} for ${details.repo} as ${details.login} ` +
+       `(password source: ${details.passwordSource})`,
+   );
+ 
+diff --git a/web/server/app.ts b/web/server/app.ts
+index 4ca1be2..1a59d9b 100644
+--- a/web/server/app.ts
++++ b/web/server/app.ts
+@@ -53,7 +53,7 @@ export interface BoardServerOptions {
+ export interface BoardServer {
+   config: BoardConfig;
+   logs: string[];
+-  listen(port?: number): Promise<{ port: number }>;
++  listen(port?: number, host?: string): Promise<{ port: number; host: string }>;
+   close(): Promise<void>;
+ }
+ 
+@@ -102,6 +102,22 @@ function loadStatic(name: string): string {
+   return readFileSync(new URL(`../public/${name}`, import.meta.url), 'utf8');
+ }
+ 
++let cachedVersion: string | null = null;
++function getPackageVersion(): string {
++  if (cachedVersion !== null) return cachedVersion;
++  try {
++    const raw = readFileSync(new URL('../../package.json', import.meta.url), 'utf8');
++    const parsed = JSON.parse(raw);
++    if (typeof parsed.version === 'string' && parsed.version) {
++      const v: string = parsed.version;
++      cachedVersion = v;
++      return v;
++    }
++  } catch {}
++  cachedVersion = '1.2.1';
++  return cachedVersion;
++}
++
+ function redactLine(line: string, secrets: string[]): string {
+   let output = line;
+   for (const secret of secrets) {
+@@ -442,6 +458,20 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
+     const method = req.method ?? 'GET';
+     assertRepoAllowed(url);
+ 
++    if (url.pathname === '/health') {
++      if (method !== 'GET') {
++        return methodNotAllowed('GET');
++      }
++      return {
++        status: 200,
++        body: {
++          status: 'ok',
++          version: getPackageVersion(),
++          uptime: Math.floor(process.uptime()),
++        },
++      };
++    }
++
+     if (method === 'GET' && assets[url.pathname]) {
+       const asset = assets[url.pathname];
+       return { status: 200, text: asset.body, type: asset.type };
+@@ -863,13 +893,31 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
+   return {
+     config,
+     logs,
+-    listen(port = config.port) {
++    listen(port = config.port, host = config.host) {
+       return new Promise((resolve, reject) => {
+-        server.once('error', reject);
+-        server.listen(port, '127.0.0.1', () => {
++        const onError = (err: Error) => {
++          server.removeListener('listening', onListening);
++          const code = (err as any).code;
++          if (code === 'ENOTFOUND' || code === 'EAI_AGAIN') {
++            reject(new Error(`BOARD_HOST "${host}" could not be resolved: ${err.message}`));
++          } else if (code === 'EADDRNOTAVAIL') {
++            reject(new Error(`BOARD_HOST "${host}" is not available to bind: ${err.message}`));
++          } else {
++            reject(err);
++          }
++        };
++        const onListening = () => {
++          server.removeListener('error', onError);
+           const address = server.address();
+-          resolve({ port: typeof address === 'object' && address ? address.port : port });
+-        });
++          if (typeof address === 'object' && address) {
++            resolve({ port: address.port, host: address.address });
++          } else {
++            resolve({ port, host });
++          }
++        };
++        server.once('error', onError);
++        server.once('listening', onListening);
++        server.listen(port, host);
+       });
+     },
+     close() {
+diff --git a/web/server/config.ts b/web/server/config.ts
+index b1420aa..24cfdab 100644
+--- a/web/server/config.ts
++++ b/web/server/config.ts
+@@ -6,11 +6,13 @@
+ // ==========================================
+ 
+ import { randomBytes, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
++import { isIP } from 'node:net';
+ 
+ export const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1, keylen: 32 } as const;
+ export const MIN_PASSWORD_LENGTH = 8;
+ export const MIN_SESSION_SECRET_LENGTH = 32;
+ export const DEFAULT_PORT = 8787;
++export const DEFAULT_HOST = '127.0.0.1';
+ export const DEFAULT_GITHUB_API_BASE = 'https://api.github.com';
+ 
+ export interface RepoRef {
+@@ -27,6 +29,7 @@ export interface BoardConfig {
+   passwordWasGenerated: boolean;
+   sessionSecret: string;
+   port: number;
++  host: string;
+   baseUrl: string | null;
+   githubApiBase: string;
+ }
+@@ -91,6 +94,22 @@ function parsePort(value: string | undefined): number {
+   return port;
+ }
+ 
++function parseHost(value: string | undefined): string {
++  if (value === undefined || value.trim() === '') return DEFAULT_HOST;
++  const host = value.trim();
++  if (isIP(host)) {
++    return host;
++  }
++  if (/^[\d.]+$/.test(host) || host.includes(':')) {
++    throw new ConfigError('BOARD_HOST', 'BOARD_HOST must be a valid host or IP address');
++  }
++  const hostnamePattern = /^(?=.{1,253}$)(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)*(?!-)[A-Za-z0-9-]{1,63}(?<!-)$/;
++  if (!hostnamePattern.test(host)) {
++    throw new ConfigError('BOARD_HOST', 'BOARD_HOST must be a valid host or IP address');
++  }
++  return host;
++}
++
+ function parseBaseUrl(value: string | undefined): string | null {
+   if (value === undefined || value.trim() === '') return null;
+   let url: URL;
+@@ -247,7 +266,9 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
+   }
+ 
+   const port = parsePort(read(env, 'BOARD_PORT'));
++  const host = parseHost(read(env, 'BOARD_HOST'));
+   const baseUrl = parseBaseUrl(read(env, 'BOARD_BASE_URL'));
++  const githubApiBase = read(env, 'BOARD_GITHUB_API_BASE') ?? DEFAULT_GITHUB_API_BASE;
+ 
+   return {
+     githubToken: githubToken.trim(),
+@@ -257,8 +278,9 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
+     passwordWasGenerated,
+     sessionSecret,
+     port,
++    host,
+     baseUrl,
+-    githubApiBase: DEFAULT_GITHUB_API_BASE,
++    githubApiBase,
+   };
+ }
+ 
+@@ -266,6 +288,7 @@ export function describeConfig(config: BoardConfig): Record<string, unknown> {
+   return {
+     repo: config.repo.full,
+     login: config.githubLogin,
++    host: config.host,
+     port: config.port,
+     baseUrl: config.baseUrl,
+     githubApiBase: config.githubApiBase,
+diff --git a/web/tests/config.test.mjs b/web/tests/config.test.mjs
+index 9850586..3ccb3b2 100644
+--- a/web/tests/config.test.mjs
++++ b/web/tests/config.test.mjs
+@@ -32,6 +32,7 @@ test('loadConfig accepts a complete environment', () => {
+   assert.equal(cfg.repo.owner, 'owner');
+   assert.equal(cfg.repo.name, 'repo');
+   assert.equal(cfg.port, 8787);
++  assert.equal(cfg.host, '127.0.0.1');
+   assert.equal(cfg.sessionSecret, SECRET);
+   assert.equal(cfg.baseUrl, null);
+   assert.equal(cfg.passwordWasGenerated, true);
+@@ -90,6 +91,11 @@ test('loadConfig rejects invalid values and names the variable', () => {
+     ['BOARD_PASSWORD_HASH', 'scrypt$nope'],
+     ['BOARD_BASE_URL', 'ftp://example.test'],
+     ['BOARD_GITHUB_TOKEN', '   '],
++    ['BOARD_HOST', 'invalid host with spaces'],
++    ['BOARD_HOST', '999.999.999.999'],
++    ['BOARD_HOST', '127.0.0.256'],
++    ['BOARD_HOST', '-leading-dash'],
++    ['BOARD_HOST', 'http://localhost'],
+   ];
+   for (const [variable, value] of cases) {
+     assert.throws(
+@@ -105,10 +111,12 @@ test('loadConfig accepts a valid base URL and port', () => {
+     validEnv({
+       BOARD_BASE_URL: 'https://board.example.test',
+       BOARD_PORT: '9443',
++      BOARD_HOST: '0.0.0.0',
+     }),
+   );
+   assert.equal(cfg.baseUrl, 'https://board.example.test');
+   assert.equal(cfg.port, 9443);
++  assert.equal(cfg.host, '0.0.0.0');
+ });
+ 
+ test('config errors never contain secret values', () => {
+diff --git a/web/tests/helpers.mjs b/web/tests/helpers.mjs
+index 091b0ea..6e58c3c 100644
+--- a/web/tests/helpers.mjs
++++ b/web/tests/helpers.mjs
+@@ -25,9 +25,10 @@ export async function startBoard(fake, options = {}) {
+     logger: (line) => logs.push(line),
+     ...options,
+   });
+-  const { port } = await app.listen(0);
+-  const base = `http://127.0.0.1:${port}`;
+-  return { app, config, logs, url: base, port };
++  const { port, host } = await app.listen(options.port ?? 0, options.host ?? config.host);
++  const baseHost = host === '0.0.0.0' ? '127.0.0.1' : (host ?? '127.0.0.1');
++  const base = `http://${baseHost}:${port}`;
++  return { app, config, logs, url: base, port, host };
+ }
+ 
+ export class HttpSession {
+diff --git a/web/tests/hosting.test.mjs b/web/tests/hosting.test.mjs
+new file mode 100644
+index 0000000..daf30af
+--- /dev/null
++++ b/web/tests/hosting.test.mjs
+@@ -0,0 +1,317 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import { spawn, spawnSync } from 'node:child_process';
++import { fileURLToPath } from 'node:url';
++import path from 'node:path';
++import { startFakeGitHub, makeIssue } from './fake-github.mjs';
++import {
++  startBoard,
++  browserConfig,
++  HttpSession,
++  BOARD_PASSWORD,
++  SESSION_SECRET,
++  SYNTHETIC_TOKEN,
++} from './helpers.mjs';
++
++const HERE = path.dirname(fileURLToPath(import.meta.url));
++const ROOT = path.resolve(HERE, '../..');
++
++function runServerEntry(env) {
++  return spawnSync(process.execPath, ['web/server.ts'], {
++    cwd: ROOT,
++    env: { PATH: process.env.PATH, ...env },
++    encoding: 'utf8',
++    timeout: 10_000,
++  });
++}
++
++test('default bind host is loopback (127.0.0.1)', async () => {
++  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
++  const board = await startBoard(fake);
++  try {
++    assert.equal(board.config.host, '127.0.0.1');
++    assert.equal(board.host, '127.0.0.1');
++    const res = await fetch(`http://127.0.0.1:${board.port}/health`);
++    assert.equal(res.status, 200);
++  } finally {
++    await board.app.close();
++    await fake.close();
++  }
++});
++
++test('a configured host is honoured (0.0.0.0)', async () => {
++  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
++  const board = await startBoard(fake, {
++    env: { BOARD_HOST: '0.0.0.0' },
++  });
++  try {
++    assert.equal(board.config.host, '0.0.0.0');
++    assert.equal(board.host, '0.0.0.0');
++    const res = await fetch(`http://127.0.0.1:${board.port}/health`);
++    assert.equal(res.status, 200);
++  } finally {
++    await board.app.close();
++    await fake.close();
++  }
++});
++
++test('an invalid host fails startup with a non-zero exit and one actionable message', () => {
++  const cases = [
++    'invalid host with spaces',
++    '999.999.999.999',
++    '127.0.0.256',
++    '-invalid-leading-dash',
++    'http://localhost',
++  ];
++  for (const invalidHost of cases) {
++    const result = runServerEntry({
++      BOARD_GITHUB_TOKEN: SYNTHETIC_TOKEN,
++      BOARD_GITHUB_LOGIN: 'board-owner',
++      BOARD_REPO: 'owner/repo',
++      BOARD_PASSWORD: BOARD_PASSWORD,
++      BOARD_SESSION_SECRET: SESSION_SECRET,
++      BOARD_HOST: invalidHost,
++    });
++    assert.equal(result.status, 1, `expected status 1 for host: ${invalidHost}`);
++    assert.match(
++      result.stderr,
++      /board: refusing to start: BOARD_HOST must be a valid host or IP address/,
++      `expected actionable message for host: ${invalidHost}`,
++    );
++  }
++});
++
++test('/health returns 200 with the expected keys (status, version, uptime)', async () => {
++  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
++  const board = await startBoard(fake);
++  try {
++    const res = await fetch(`${board.url}/health`);
++    assert.equal(res.status, 200);
++    assert.match(res.headers.get('content-type') ?? '', /^application\/json/);
++    const body = await res.json();
++    assert.equal(body.status, 'ok');
++    assert.equal(body.version, '1.2.1');
++    assert.equal(typeof body.uptime, 'number');
++    assert.ok(body.uptime >= 0);
++  } finally {
++    await board.app.close();
++    await fake.close();
++  }
++});
++
++test('/health requires no credentials and rejects non-GET methods with 405', async () => {
++  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
++  const board = await startBoard(fake);
++  try {
++    // No cookie, no headers -> 200
++    const getRes = await fetch(`${board.url}/health`, { method: 'GET' });
++    assert.equal(getRes.status, 200);
++
++    // Non-GET methods -> 405
++    for (const method of ['POST', 'PUT', 'DELETE', 'PATCH']) {
++      const res = await fetch(`${board.url}/health`, { method });
++      assert.equal(res.status, 405, `expected 405 for ${method}`);
++      assert.equal(res.headers.get('allow'), 'GET');
++    }
++  } finally {
++    await board.app.close();
++    await fake.close();
++  }
++});
++
++test('/health leaks no secret or repository value even when those variables are set', async () => {
++  const fake = await startFakeGitHub({
++    token: SYNTHETIC_TOKEN,
++    login: 'secret-owner-name',
++    repo: 'secret-org/secret-repo',
++  });
++  const board = await startBoard(fake);
++  try {
++    const res = await fetch(`${board.url}/health`);
++    assert.equal(res.status, 200);
++    const text = await res.text();
++    const headersText = JSON.stringify(Object.fromEntries(res.headers.entries()));
++
++    const forbidden = [
++      SYNTHETIC_TOKEN,
++      BOARD_PASSWORD,
++      SESSION_SECRET,
++      'secret-owner-name',
++      'secret-org/secret-repo',
++      'secret-repo',
++    ];
++
++    for (const secret of forbidden) {
++      assert.equal(text.includes(secret), false, `response body leaked: ${secret}`);
++      assert.equal(headersText.includes(secret), false, `response headers leaked: ${secret}`);
++    }
++  } finally {
++    await board.app.close();
++    await fake.close();
++  }
++});
++
++test('existing authenticated routes still require the password', async () => {
++  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
++  const board = await startBoard(fake);
++  try {
++    const session = new HttpSession(board.url);
++
++    // Unauthenticated GET /api/board -> 401
++    const boardRes = await session.request('/api/board');
++    assert.equal(boardRes.status, 401);
++
++    // Unauthenticated GET /api/issues/1 -> 401
++    const issueRes = await session.request('/api/issues/1');
++    assert.equal(issueRes.status, 401);
++
++    // Wrong password -> 401
++    const wrongLogin = await session.login('wrong password here');
++    assert.equal(wrongLogin.status, 401);
++
++    // Correct password -> 200
++    const correctLogin = await session.login(BOARD_PASSWORD);
++    assert.equal(correctLogin.status, 200);
++
++    // Now authenticated -> 200
++    const authedBoard = await session.request('/api/board');
++    assert.equal(authedBoard.status, 200);
++  } finally {
++    await board.app.close();
++    await fake.close();
++  }
++});
++
++test('the start command serves /health', async () => {
++  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
++  let child = null;
++  try {
++    // Bundle the server first
++    const buildResult = spawnSync(
++      'npx',
++      [
++        'esbuild',
++        'web/server.ts',
++        '--bundle',
++        '--platform=node',
++        '--format=esm',
++        '--target=node20',
++        '--packages=external',
++        '--outfile=web/dist/server.mjs',
++      ],
++      { cwd: ROOT, encoding: 'utf8' },
++    );
++    assert.equal(buildResult.status, 0, `esbuild failed: ${buildResult.stderr}`);
++
++    // Choose an available port
++    const testPort = 18788;
++    const env = {
++      PATH: process.env.PATH,
++      BOARD_GITHUB_TOKEN: SYNTHETIC_TOKEN,
++      BOARD_GITHUB_LOGIN: fake.login,
++      BOARD_REPO: fake.repo,
++      BOARD_PASSWORD: BOARD_PASSWORD,
++      BOARD_SESSION_SECRET: SESSION_SECRET,
++      BOARD_PORT: String(testPort),
++      BOARD_HOST: '127.0.0.1',
++      // Point GitHub client to synthetic server
++      BOARD_GITHUB_API_BASE: fake.url,
++    };
++
++    // Run using the built bundle command: node web/dist/server.mjs
++    child = spawn(process.execPath, ['web/dist/server.mjs'], {
++      cwd: ROOT,
++      env,
++      stdio: ['ignore', 'pipe', 'pipe'],
++    });
++
++    let stdout = '';
++    let stderr = '';
++    child.stdout.on('data', (d) => (stdout += d));
++    child.stderr.on('data', (d) => (stderr += d));
++
++    // Wait for the server to be listening and answer /health
++    let healthy = false;
++    const deadline = Date.now() + 10_000;
++    while (Date.now() < deadline) {
++      try {
++        const res = await fetch(`http://127.0.0.1:${testPort}/health`);
++        if (res.status === 200) {
++          const body = await res.json();
++          if (body.status === 'ok' && body.version === '1.2.1') {
++            healthy = true;
++            break;
++          }
++        }
++      } catch {
++        // Wait and retry
++      }
++      await new Promise((r) => setTimeout(r, 100));
++    }
++
++    assert.ok(healthy, `server did not become healthy in time. stdout: ${stdout}, stderr: ${stderr}`);
++  } finally {
++    if (child && child.pid) {
++      child.kill('SIGTERM');
++    }
++    await fake.close();
++  }
++});
++
++test('npm run start:web package script serves /health', async () => {
++  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
++  let child = null;
++  try {
++    const testPort = 18789;
++    const env = {
++      PATH: process.env.PATH,
++      BOARD_GITHUB_TOKEN: SYNTHETIC_TOKEN,
++      BOARD_GITHUB_LOGIN: fake.login,
++      BOARD_REPO: fake.repo,
++      BOARD_PASSWORD: BOARD_PASSWORD,
++      BOARD_SESSION_SECRET: SESSION_SECRET,
++      BOARD_PORT: String(testPort),
++      BOARD_HOST: '127.0.0.1',
++      BOARD_GITHUB_API_BASE: fake.url,
++    };
++
++    child = spawn('npm', ['run', 'start:web'], {
++      cwd: ROOT,
++      env,
++      stdio: ['ignore', 'pipe', 'pipe'],
++      detached: true,
++    });
++
++    let stdout = '';
++    let stderr = '';
++    child.stdout.on('data', (d) => (stdout += d));
++    child.stderr.on('data', (d) => (stderr += d));
++
++    let healthy = false;
++    const deadline = Date.now() + 10_000;
++    while (Date.now() < deadline) {
++      try {
++        const res = await fetch(`http://127.0.0.1:${testPort}/health`);
++        if (res.status === 200) {
++          const body = await res.json();
++          if (body.status === 'ok' && body.version === '1.2.1') {
++            healthy = true;
++            break;
++          }
++        }
++      } catch {
++        // Wait and retry
++      }
++      await new Promise((r) => setTimeout(r, 100));
++    }
++
++    assert.ok(healthy, `server did not become healthy via npm run start:web. stdout: ${stdout}, stderr: ${stderr}`);
++  } finally {
++    if (child && child.pid) {
++      try {
++        process.kill(-child.pid, 'SIGTERM');
++      } catch {}
++    }
++    await fake.close();
++  }
++});

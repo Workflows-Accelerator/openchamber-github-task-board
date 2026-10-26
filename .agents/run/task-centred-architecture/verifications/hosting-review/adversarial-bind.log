@@ -1,0 +1,17 @@
+=== Proof: Bind Host Correctness & Edge Cases ===
+Case 1: Unresolvable hostname
+Unresolvable exit code: 1
+Unresolvable stderr: board: refusing to start: BOARD_HOST "unresolvable-domain-name-404.test" could not be resolved: getaddrinfo ENOTFOUND unresolvable-domain-name-404.test
+
+Case 2: Unavailable IP address (EADDRNOTAVAIL)
+Unavailable exit code: 1
+Unavailable stderr: board: refusing to start: BOARD_HOST "192.0.2.1" is not available to bind: listen EADDRNOTAVAIL: address not available 192.0.2.1:18992
+
+Case 3: Invalid host syntax
+Invalid syntax exit code: 1
+Invalid syntax stderr: board: refusing to start: BOARD_HOST must be a valid host or IP address
+
+Case 4: Successful bind log format
+Bind stdout line: board: listening on http://127.0.0.1:18993 for owner/repo as board-owner (password source: BOARD_PASSWORD (hashed at startup))
+
+Result: Bind failures fail startup with exit 1 and actionable messages; no hanging.
