@@ -1,0 +1,8 @@
+# Deployment plan review dispatched — 2026-10-26
+
+- Preflight ses_db928fa295bd459e709a528c completed BLOCKED, actual9router/engineer. Its report remains private and untracked in the deployment worktree. No live changes occurred.
+- Missing dedicated board bot token/password cannot be solved by reusing existing service credentials. Never place secrets in chat/public issues. A fresh board-only session secret can be generated; the non-secret bot username is a required identity pin, not another secret the owner must create (config.ts218/app.ts345 source-search anchors; reviewer to confirm safe derivation).
+- Independent plan reviewer ses_936460fe0bd87f959b191af0 requested engineer, dynamic-agent, auto_accept=true, same ops worktree, no production or source edits. Brief tasks/board-deployment-plan-hostile.md is authoritative. Verify actual model on wake, no polling.
+- Review specifically challenges startup-only nohup vs crash supervision, old worktree vs accepted artifact, private-only network path, incomplete environment/startup rollback, adjacent-service assumptions, runner termination and operator-recoverable checkpoint. No production run until prerequisites and independent review pass. Decision18 authorizes the accepted deployment and interruption, not an unreviewed master merge or L5 acceptance.
+- #33 body reconciled with deployment permission and a verb-first secure-provisioning task; credential blocker receipt: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/33#issuecomment-6424281066 . Human acceptance left unchecked. Public update contains no private hosting findings.
+- #35 recovered final recheck and #37 recovered build remain assigned to existing workers; no duplicate and no progress polling.

@@ -5,7 +5,7 @@
 - Owner deployment go recorded decision18; not L5 pass/credential reuse/issue closure.
 - #35 final recheck RECOVERING ses_d215a602a6fdeaebe1c9ce1b genius (same check after interrupted error), tasks/issue-35-review-recovery.md, candidate3b4eced. Provisional failing logs preserved; any reproduced required failure PARKS, no fix loop.
 - #37 build RECOVERING ses_f456ddf0ac270174a79ccf0a genius, tasks/issue-37-build-recovery.md, dirty partial source preserved; original worker idle/no final result.
-- Deployment current preflight RUNNING ses_db928fa295bd459e709a528c engineer team-ops-board-deployment, presence-only dedicated-secret audit + plan; read-only, private report untracked. Actual models on wake.
+- Deployment preflight COMPLETED BLOCKED ses_db928fa295bd459e709a528c actual9router/engineer: dedicated token/password absent; startup/network/recovery unready. Private report untracked, no production change. Independent plan hostile RUNNING ses_936460fe0bd87f959b191af0 engineer in same ops worktree, read-only; tasks/board-deployment-plan-hostile.md. Model on wake. No secrets in chat; BOARD_GITHUB_LOGIN required non-secret identity pin, can derive from dedicated token /user subject to review.
 - #33+hosting already merged/pushed through54816f6; not deployed. #31 pending resume fork; #30 still behind #35 panel frontier.
 
 ## Previous — #33 MERGED/PUSHED, #35 final correction ready 2026-10-26

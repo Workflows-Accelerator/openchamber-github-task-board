@@ -20,7 +20,5 @@ Mentioned in the original vision but never defined. Excluded from design and cod
 question is what expires: an unanswered question, a stale notification, or a stuck task. Each has different
 consequences and none is implemented.
 
-## 3. Deployment go
-Hosting preparation can land in code without deployment. Actual deployment still needs the owner's explicit go,
-named secrets, a port publication that recreates the container, and a restart hook. See
-outputs/hosting-owner-prerequisites.md.
+## 3. Deployment go — RESOLVED; prerequisites still blocked
+Decision18 records the owner's go for the aligned same-container deployment and brief interruption. Do not ask for that same permission again. Dedicated token and separate board password/hash are absent from inspected deployment stores and must be securely provisioned, never in chat. A fresh board session secret can be generated; the required bot username is a non-secret identity pin. Persistent startup/crash recovery, exact accepted artifact, private network path and operator recovery must pass independent plan review before production change. No master-merge approval, credential-reuse permission, human acceptance or issue closure is implied. See outputs/deployment-plan-review-dispatch.md.
