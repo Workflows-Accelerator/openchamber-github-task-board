@@ -18,9 +18,8 @@ Builder report FILL_AT_DISPATCH. Do not trust summary counts or unused names as 
 </context_files>
 <skills>
 [@/workspace/config/opencode/.agents/skills/review/adversarial/doubt-driven-development/SKILL.md]
-[@/workspace/config/opencode/.agents/skills/review/security/security-and-hardening/SKILL.md]
-[@/workspace/config/opencode/.agents/skills/review/quality/code-review-and-quality/SKILL.md]
 [@/workspace/config/opencode/.agents/skills/verify/browser/browser-testing-with-devtools/SKILL.md]
+[@/workspace/config/opencode/.agents/skills/communication/terse/caveman-lite/SKILL.md]
 </skills>
 <scope>
 Conduct a hostile review of any edits or changes that you made to figure out what you might have missed or what might be broken. Don't assume that what you did is right.
