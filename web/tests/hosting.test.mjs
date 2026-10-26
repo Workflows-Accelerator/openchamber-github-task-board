@@ -2,8 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
 import path from 'node:path';
 import { startFakeGitHub, makeIssue } from './fake-github.mjs';
+import { loadConfig, describeConfig } from '../server/config.ts';
+import { createBoardServer, getPackageVersion } from '../server/app.ts';
 import {
   startBoard,
   browserConfig,
@@ -15,6 +18,40 @@ import {
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
+const pkg = JSON.parse(fs.readFileSync(path.resolve(ROOT, 'package.json'), 'utf8'));
+const EXPECTED_VERSION = pkg.version;
+
+function ensureBundleBuilt() {
+  const distServer = path.resolve(ROOT, 'web/dist/server.mjs');
+  if (fs.existsSync(distServer)) return;
+  const buildResult = spawnSync(
+    'npx',
+    [
+      'esbuild',
+      'web/server.ts',
+      '--bundle',
+      '--platform=node',
+      '--format=esm',
+      '--target=node20',
+      '--packages=external',
+      '--outfile=web/dist/server.mjs',
+    ],
+    { cwd: ROOT, encoding: 'utf8' },
+  );
+  assert.equal(buildResult.status, 0, `esbuild failed: ${buildResult.stderr}`);
+}
+
+const PRELOAD_FETCH = `
+const origFetch = globalThis.fetch;
+globalThis.fetch = (url, opts) => {
+  if (typeof url === 'string' && url.startsWith('https://api.github.com')) {
+    const target = url.replace('https://api.github.com', process.env.__TEST_FAKE_GITHUB_URL);
+    return origFetch(target, opts);
+  }
+  return origFetch(url, opts);
+};
+`;
+const PRELOAD_FETCH_DATA_URI = `data:text/javascript;base64,${Buffer.from(PRELOAD_FETCH).toString('base64')}`;
 
 function runServerEntry(env) {
   return spawnSync(process.execPath, ['web/server.ts'], {
@@ -90,7 +127,7 @@ test('/health returns 200 with the expected keys (status, version, uptime)', asy
     assert.match(res.headers.get('content-type') ?? '', /^application\/json/);
     const body = await res.json();
     assert.equal(body.status, 'ok');
-    assert.equal(body.version, '1.2.1');
+    assert.equal(body.version, EXPECTED_VERSION);
     assert.equal(typeof body.uptime, 'number');
     assert.ok(body.uptime >= 0);
   } finally {
@@ -108,7 +145,7 @@ test('/health requires no credentials and rejects non-GET methods with 405', asy
     assert.equal(getRes.status, 200);
 
     // Non-GET methods -> 405
-    for (const method of ['POST', 'PUT', 'DELETE', 'PATCH']) {
+    for (const method of ['POST', 'PUT', 'DELETE', 'PATCH', 'HEAD']) {
       const res = await fetch(`${board.url}/health`, { method });
       assert.equal(res.status, 405, `expected 405 for ${method}`);
       assert.equal(res.headers.get('allow'), 'GET');
@@ -116,6 +153,75 @@ test('/health requires no credentials and rejects non-GET methods with 405', asy
   } finally {
     await board.app.close();
     await fake.close();
+  }
+});
+
+test('/health returns version "unknown" when package.json cannot be read', async () => {
+  assert.equal(getPackageVersion(new URL('./nonexistent-package.json', import.meta.url)), 'unknown');
+  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
+  const board = await startBoard(fake, {
+    packageJsonUrl: new URL('./nonexistent-package.json', import.meta.url),
+  });
+  try {
+    const res = await fetch(`${board.url}/health`);
+    assert.equal(res.status, 200);
+    const body = await res.json();
+    assert.equal(body.status, 'ok');
+    assert.equal(body.version, 'unknown');
+  } finally {
+    await board.app.close();
+    await fake.close();
+  }
+});
+
+test('BOARD_GITHUB_API_BASE in environment is ignored and upstream defaults to api.github.com', async () => {
+  const env = {
+    BOARD_GITHUB_TOKEN: SYNTHETIC_TOKEN,
+    BOARD_GITHUB_LOGIN: 'board-owner',
+    BOARD_REPO: 'owner/repo',
+    BOARD_PASSWORD: BOARD_PASSWORD,
+    BOARD_SESSION_SECRET: SESSION_SECRET,
+    BOARD_GITHUB_API_BASE: 'http://attacker-controlled.invalid:8888',
+  };
+  const config = loadConfig(env);
+  assert.equal(config.githubApiBase, 'https://api.github.com');
+  const details = describeConfig(config);
+  assert.equal('githubApiBase' in details, false);
+
+  const requestedUrls = [];
+  const spyFetch = async (input, init) => {
+    const url = typeof input === 'string' ? input : input.url;
+    requestedUrls.push(url);
+    if (url.endsWith('/user')) {
+      return new Response(JSON.stringify({ login: 'board-owner' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (url.includes('/repos/')) {
+      return new Response(JSON.stringify({ full_name: 'owner/repo' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+
+  const app = await createBoardServer({
+    config,
+    fetchImpl: spyFetch,
+  });
+  try {
+    assert.ok(requestedUrls.length >= 2, 'expected GitHubClient to make startup verification requests');
+    for (const requestedUrl of requestedUrls) {
+      assert.ok(
+        requestedUrl.startsWith('https://api.github.com/'),
+        `expected request to target https://api.github.com/, got: ${requestedUrl}`,
+      );
+      assert.equal(requestedUrl.includes('attacker-controlled.invalid'), false);
+    }
+  } finally {
+    await app.close();
   }
 });
 
@@ -183,30 +289,16 @@ test('existing authenticated routes still require the password', async () => {
 });
 
 test('the start command serves /health', async () => {
+  ensureBundleBuilt();
   const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
   let child = null;
   try {
-    // Bundle the server first
-    const buildResult = spawnSync(
-      'npx',
-      [
-        'esbuild',
-        'web/server.ts',
-        '--bundle',
-        '--platform=node',
-        '--format=esm',
-        '--target=node20',
-        '--packages=external',
-        '--outfile=web/dist/server.mjs',
-      ],
-      { cwd: ROOT, encoding: 'utf8' },
-    );
-    assert.equal(buildResult.status, 0, `esbuild failed: ${buildResult.stderr}`);
-
     // Choose an available port
     const testPort = 18788;
     const env = {
       PATH: process.env.PATH,
+      NODE_OPTIONS: `--import ${PRELOAD_FETCH_DATA_URI}`,
+      __TEST_FAKE_GITHUB_URL: fake.url,
       BOARD_GITHUB_TOKEN: SYNTHETIC_TOKEN,
       BOARD_GITHUB_LOGIN: fake.login,
       BOARD_REPO: fake.repo,
@@ -214,8 +306,6 @@ test('the start command serves /health', async () => {
       BOARD_SESSION_SECRET: SESSION_SECRET,
       BOARD_PORT: String(testPort),
       BOARD_HOST: '127.0.0.1',
-      // Point GitHub client to synthetic server
-      BOARD_GITHUB_API_BASE: fake.url,
     };
 
     // Run using the built bundle command: node web/dist/server.mjs
@@ -238,7 +328,7 @@ test('the start command serves /health', async () => {
         const res = await fetch(`http://127.0.0.1:${testPort}/health`);
         if (res.status === 200) {
           const body = await res.json();
-          if (body.status === 'ok' && body.version === '1.2.1') {
+          if (body.status === 'ok' && body.version === EXPECTED_VERSION) {
             healthy = true;
             break;
           }
@@ -259,12 +349,15 @@ test('the start command serves /health', async () => {
 });
 
 test('npm run start:web package script serves /health', async () => {
+  ensureBundleBuilt();
   const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
   let child = null;
   try {
     const testPort = 18789;
     const env = {
       PATH: process.env.PATH,
+      NODE_OPTIONS: `--import ${PRELOAD_FETCH_DATA_URI}`,
+      __TEST_FAKE_GITHUB_URL: fake.url,
       BOARD_GITHUB_TOKEN: SYNTHETIC_TOKEN,
       BOARD_GITHUB_LOGIN: fake.login,
       BOARD_REPO: fake.repo,
@@ -272,7 +365,6 @@ test('npm run start:web package script serves /health', async () => {
       BOARD_SESSION_SECRET: SESSION_SECRET,
       BOARD_PORT: String(testPort),
       BOARD_HOST: '127.0.0.1',
-      BOARD_GITHUB_API_BASE: fake.url,
     };
 
     child = spawn('npm', ['run', 'start:web'], {
@@ -294,7 +386,7 @@ test('npm run start:web package script serves /health', async () => {
         const res = await fetch(`http://127.0.0.1:${testPort}/health`);
         if (res.status === 200) {
           const body = await res.json();
-          if (body.status === 'ok' && body.version === '1.2.1') {
+          if (body.status === 'ok' && body.version === EXPECTED_VERSION) {
             healthy = true;
             break;
           }
