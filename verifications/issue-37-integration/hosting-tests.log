@@ -1,0 +1,76 @@
+TAP version 13
+# Subtest: default bind host is loopback (127.0.0.1)
+ok 1 - default bind host is loopback (127.0.0.1)
+  ---
+  duration_ms: 164.368064
+  type: 'test'
+  ...
+# Subtest: a configured host is honoured (0.0.0.0)
+ok 2 - a configured host is honoured (0.0.0.0)
+  ---
+  duration_ms: 94.080229
+  type: 'test'
+  ...
+# Subtest: an invalid host fails startup with a non-zero exit and one actionable message
+ok 3 - an invalid host fails startup with a non-zero exit and one actionable message
+  ---
+  duration_ms: 2525.343813
+  type: 'test'
+  ...
+# Subtest: /health returns 200 with the expected keys (status, version, uptime)
+ok 4 - /health returns 200 with the expected keys (status, version, uptime)
+  ---
+  duration_ms: 104.426114
+  type: 'test'
+  ...
+# Subtest: /health requires no credentials and rejects non-GET methods with 405
+ok 5 - /health requires no credentials and rejects non-GET methods with 405
+  ---
+  duration_ms: 115.098555
+  type: 'test'
+  ...
+# Subtest: /health returns version "unknown" when package.json cannot be read
+ok 6 - /health returns version "unknown" when package.json cannot be read
+  ---
+  duration_ms: 110.359766
+  type: 'test'
+  ...
+# Subtest: BOARD_GITHUB_API_BASE in environment is ignored and upstream defaults to api.github.com
+ok 7 - BOARD_GITHUB_API_BASE in environment is ignored and upstream defaults to api.github.com
+  ---
+  duration_ms: 76.675568
+  type: 'test'
+  ...
+# Subtest: /health leaks no secret or repository value even when those variables are set
+ok 8 - /health leaks no secret or repository value even when those variables are set
+  ---
+  duration_ms: 98.711882
+  type: 'test'
+  ...
+# Subtest: existing authenticated routes still require the password
+ok 9 - existing authenticated routes still require the password
+  ---
+  duration_ms: 322.243048
+  type: 'test'
+  ...
+# Subtest: the start command serves /health
+ok 10 - the start command serves /health
+  ---
+  duration_ms: 477.744145
+  type: 'test'
+  ...
+# Subtest: npm run start:web package script serves /health
+ok 11 - npm run start:web package script serves /health
+  ---
+  duration_ms: 780.020155
+  type: 'test'
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 11
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 5359.680174

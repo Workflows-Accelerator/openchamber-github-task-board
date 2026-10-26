@@ -1,11 +1,11 @@
 "use strict";
 (() => {
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
   var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
   var OPENCHAMBER_SDK_API_VERSION = 1;
   var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
   var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
   var GUEST_SCROLLBAR_CSS = `
 :root {
@@ -65,20 +65,20 @@
   }
   var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
   var GUEST_STORAGE_KEY_MAX = 128;
   var GUEST_STORAGE_VALUE_BYTES = 65536;
   var GUEST_STORAGE_TOTAL_BYTES = 2097152;
   var GUEST_DEVICE_STORAGE_TOTAL_BYTES = 16777216;
   var GUEST_STORAGE_KEYS_MAX = 2e3;
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
   var GUEST_SHELL_ID_MAX = 128;
   var GUEST_SHELLS_MAX = 200;
   var GUEST_SHELL_OUTPUT_TAIL_MAX = 65536;
   var GUEST_SHELL_END_STATUSES = ["exited", "timeout", "killed", "stopped", "unknown"];
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
   var GUEST_STATUS_CONTROLS_MAX = 4;
   var GUEST_STATUS_CONTROL_ID = /^[a-z][a-z0-9-]{0,39}$/;
   var GUEST_STATUS_CONTROL_LABEL_MAX = 60;
@@ -121,7 +121,246 @@
     return true;
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-view.js
+  var GUEST_STATUS_SOURCE_INTERVAL_MIN = 1e3;
+  var GUEST_STATUS_SOURCE_INTERVAL_MAX = 6e4;
+  var GUEST_STATUS_SOURCE_INTERVAL_DEFAULT = 2e3;
+  var GUEST_STATUS_VIEW_ROWS_MAX = 16;
+  var GUEST_STATUS_VIEW_ACTIONS_MAX = 2;
+  var GUEST_STATUS_VIEW_CHIPS_MAX = 6;
+  var GUEST_STATUS_VIEW_CHART_POINTS_MAX = 120;
+  var GUEST_STATUS_VIEW_SEGMENTS_MIN = 2;
+  var GUEST_STATUS_VIEW_SEGMENTS_MAX = 4;
+  var GUEST_STATUS_VIEW_TEXT_MAX = 200;
+  var GUEST_STATUS_VIEW_NOTE_MAX = 300;
+  var GUEST_STATUS_VIEW_ICON = /^[a-z0-9][a-z0-9-]{0,39}$/;
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/manifest.js
+  var PANEL_ID = /^[a-z][a-z0-9-]*$/;
+  var GUEST_SURFACE_DOCKS = ["top", "bottom", "left", "right"];
+  var GUEST_SURFACE_DOCK_DEFAULT = "top";
+  var GUEST_SURFACE_DOCK_SIZE_DEFAULT = 40;
+  var GUEST_SURFACE_DOCK_SIZE_MIN = 24;
+  var GUEST_SURFACE_DOCK_SIZE_MAX = 480;
+  var GUEST_STATUS_SECTION_TITLE_MAX = 60;
+  var GUEST_STATUS_SECTION_HEIGHT_MIN = 24;
+  var GUEST_STATUS_SECTION_HEIGHT_MAX = 320;
+  var GUEST_STATUS_SECTION_HEIGHT_DEFAULT = 120;
+  var GUEST_ACTIONS_MAX = 8;
+  var GUEST_ACTION_LABEL_MAX = 40;
+  var GUEST_COMMANDS_MAX = 8;
+  var GUEST_COMMAND_DESCRIPTION_MAX = 80;
+  var GUEST_COMMAND_NAME = /^[a-z][a-z0-9-]{0,23}$/;
+  var GUEST_TOOLS_MAX = 16;
+  var GUEST_TOOL_MATCH_MAX = 128;
+  var GUEST_TOOL_MATCH = /^[A-Za-z0-9_.:-]+\*?$/;
+  var GUEST_TOOL_NAME_MAX = 40;
+  var GUEST_TOOL_TEMPLATE_MAX = 200;
+  var GUEST_TOOL_TEMPLATE_VALUE_MAX = 200;
+  var GUEST_TOOL_LANGUAGE_MAX = 32;
+  var GUEST_TOOL_COLUMNS_MAX = 16;
+  var GUEST_TOOL_COLUMN_MAX = 64;
+  var GUEST_TOOL_OUTPUTS = ["auto", "text", "json", "markdown", "code", "table"];
+  var HOST_LINEAR_API_ORIGIN = "https://api.linear.app";
+  var resolveIntegrationAuth = (integration) => {
+    const kinds = [Boolean(integration.oauth), Boolean(integration.token), Boolean(integration.host)].filter(Boolean).length;
+    if (kinds !== 1) {
+      return null;
+    }
+    if (integration.host)
+      return "host";
+    return integration.oauth ? "oauth" : "token";
+  };
+  var resolveTokenAuthorization = (scheme) => {
+    if (scheme === "bearer" || scheme === "basic") {
+      return scheme;
+    }
+    return "header";
+  };
+  var resolveIntegrationApi = (integration) => {
+    if (integration.oauth) {
+      return {
+        apiOrigin: integration.oauth.apiOrigin,
+        account: integration.oauth.account,
+        authorization: "bearer"
+      };
+    }
+    if (integration.token) {
+      return {
+        apiOrigin: integration.token.apiOrigin,
+        account: integration.token.account,
+        authorization: resolveTokenAuthorization(integration.token.scheme)
+      };
+    }
+    if (integration.host?.provider === "linear") {
+      return {
+        apiOrigin: HOST_LINEAR_API_ORIGIN,
+        authorization: "bearer"
+      };
+    }
+    return null;
+  };
+  var GUEST_SERVICE_PROVIDES = ["browser", "source-control"];
+  var SOURCE_CONTROL_GUEST_ID_MAX = 28;
+  var sourceControlProviderIdOf = (guestId) => `ext-${guestId}`;
+  var SOURCE_CONTROL_DEFAULT_INSTANCES_MAX = 4;
+  var SOURCE_CONTROL_URL_TEMPLATES_MAX = 8;
+  var SOURCE_CONTROL_URL_TEMPLATE_MAX = 256;
+  var SOURCE_CONTROL_URL_TOKENS = ["{owner}", "{namespace+}", "{repo}", "{number}"];
+  var toPublicSourceControl = (contribution) => ({
+    label: contribution.label,
+    defaultInstances: [...contribution.instances.defaultInstances],
+    custom: contribution.instances.custom
+  });
+  var serviceProvides = (service, role) => Boolean(service?.provides?.includes(role));
+  var GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells", "conversation", "service", "network", "filesystem", "origins"];
+  var DECLARED_GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells"];
+  var GUEST_ORIGINS_MAX = 8;
+  var GUEST_FILESYSTEM_PATTERNS_MAX = 16;
+  var GUEST_FILESYSTEM_PATTERN_MAX = 256;
+  var isGuestFilesystemPattern = (value) => {
+    if (value.length === 0 || value.length > GUEST_FILESYSTEM_PATTERN_MAX) {
+      return false;
+    }
+    if (value.includes("\0") || value.includes("\\")) {
+      return false;
+    }
+    if (!value.startsWith("/") && !value.startsWith("~/")) {
+      return false;
+    }
+    const segments = value.split("/").slice(1);
+    return !segments.some((segment) => segment === "" || segment === "..");
+  };
+  var guestActionsNeedConversation = (actions2) => Boolean(actions2?.some((action) => action.payload?.includes("messages")));
+  var requestedGuestCapabilities = (contributes) => {
+    const declared = new Set(contributes.capabilities ?? []);
+    if (guestActionsNeedConversation(contributes.actions))
+      declared.add("conversation");
+    if (contributes.service)
+      declared.add("service");
+    if (contributes.integration)
+      declared.add("network");
+    if (contributes.filesystem && contributes.filesystem.length > 0)
+      declared.add("filesystem");
+    if (contributes.origins && contributes.origins.length > 0)
+      declared.add("origins");
+    return GUEST_CAPABILITIES.filter((capability) => declared.has(capability));
+  };
+  var hasGuestPage = (contributes) => Boolean(contributes.panel.entry);
+  var isGuestApproved = (capabilities) => capabilities.requested.every((capability) => capabilities.granted.includes(capability));
+  var hasGuestCapability = (capabilities, capability) => capabilities.granted.includes(capability);
+  var isAttachObject = (attach) => attach !== void 0 && attach !== true && attach !== false && attach !== "panel" && attach !== "dialog";
+  var resolveAttachMode = (attach) => {
+    if (attach === true || attach === "panel")
+      return "panel";
+    if (attach === "dialog")
+      return "dialog";
+    if (isAttachObject(attach))
+      return attach.mode;
+    return null;
+  };
+  var resolveAttachEntry = (contributes) => {
+    const attach = contributes.attach;
+    if (!isAttachObject(attach) || attach.mode !== "dialog")
+      return null;
+    return attach.entry ?? null;
+  };
+  var resolvePageEntry = (contributes) => {
+    if (!contributes.page || !contributes.panel.entry)
+      return null;
+    return contributes.page === true ? contributes.panel.entry : contributes.page.entry;
+  };
+  var resolveStatusSectionEntry = (contributes) => {
+    const section = contributes.statusSection;
+    if (!section)
+      return null;
+    return section === true ? contributes.panel.entry ?? null : section.entry ?? null;
+  };
+  var resolveStatusSectionSource = (contributes) => {
+    const section = contributes.statusSection;
+    if (!section || section === true || !section.source)
+      return null;
+    return { path: section.source.path, interval: section.source.interval ?? GUEST_STATUS_SOURCE_INTERVAL_DEFAULT };
+  };
+  var clampStatusSectionHeight = (height) => {
+    if (!Number.isFinite(height))
+      return GUEST_STATUS_SECTION_HEIGHT_DEFAULT;
+    return Math.min(GUEST_STATUS_SECTION_HEIGHT_MAX, Math.max(GUEST_STATUS_SECTION_HEIGHT_MIN, Math.round(height)));
+  };
+  var isSafeAssetPath = (value) => {
+    if (value.includes("\0") || value.includes("\\") || value.startsWith("/") || value.includes("://")) {
+      return false;
+    }
+    const segments = value.split("/");
+    if (segments.some((segment) => segment === "" || segment === "." || segment === "..")) {
+      return false;
+    }
+    return /^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(value);
+  };
+  var isGuestPackageSvgIcon = (value) => isSafeAssetPath(value) && value.toLowerCase().endsWith(".svg");
+  var toPublicIntegration = (integration) => {
+    const auth = resolveIntegrationAuth(integration) ?? "oauth";
+    const next = {
+      name: integration.name,
+      description: integration.description,
+      auth
+    };
+    const api = resolveIntegrationApi(integration);
+    if (api?.apiOrigin) {
+      next.apiOrigin = api.apiOrigin;
+    }
+    if (auth === "token" && integration.token) {
+      next.token = { scheme: integration.token.scheme ?? "raw" };
+      if (integration.token.usernameLabel) {
+        next.token.usernameLabel = integration.token.usernameLabel;
+      }
+    }
+    if (integration.settings && integration.settings.length > 0) {
+      next.settings = integration.settings.map((field2) => ({
+        id: field2.id,
+        label: field2.label
+      }));
+    }
+    return next;
+  };
+  var toPublicService = (service, granted, socketBindings) => {
+    if (!service) {
+      return void 0;
+    }
+    const next = {
+      runtime: service.runtime,
+      granted
+    };
+    if (service.permissions) {
+      const permissions = {};
+      if (service.permissions.sockets && service.permissions.sockets.length > 0) {
+        permissions.sockets = service.permissions.sockets.map((binding) => binding.id);
+      }
+      if (service.permissions.exec && service.permissions.exec.length > 0) {
+        permissions.exec = [...service.permissions.exec];
+      }
+      if (permissions.sockets || permissions.exec) {
+        next.permissions = permissions;
+      }
+    }
+    if (socketBindings && socketBindings.length > 0) {
+      next.socketBindings = socketBindings.map((binding) => ({
+        id: binding.id,
+        candidates: [...binding.candidates],
+        resolved: binding.resolved,
+        override: binding.override
+      }));
+    }
+    if (service.provides && service.provides.length > 0) {
+      next.provides = [...service.provides];
+    }
+    if (service.surface) {
+      next.surface = true;
+    }
+    return next;
+  };
+
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
   var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
@@ -179,7 +418,7 @@
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
   var GUEST_POPOVER_ID = /^[A-Za-z0-9_-]{1,80}$/;
   var GUEST_POPOVER_COORDINATE_MAX = 1e5;
   var GUEST_POPOVER_WIDTH_MIN = 160;
@@ -223,7 +462,7 @@
     }
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
   var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
   var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
   var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
@@ -462,7 +701,7 @@
     return wire;
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
   var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
   var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
   var HostRequestError = class extends Error {
@@ -1423,7 +1662,7 @@
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
   var BROWSER_PROVIDER_PATH = "/browser-control";
   var BROWSER_CONTROL_ACTIONS = [
     "browser.open",
@@ -1627,7 +1866,7 @@
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
   var SURFACE_FRAME_PATH = "/surface/frame";
   var SURFACE_INPUT_PATH = "/surface/input";
   var SURFACE_CONTROL_PATH = "/surface/control";
@@ -1748,7 +1987,7 @@
     return { width: Math.round(width), height: Math.round(height) };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
   var TOKEN_VARS = [
     ["--oc-bg", "background"],
     ["--oc-elevated", "elevated"],
@@ -1838,7 +2077,7 @@
     }
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
   var OC_ALIAS = {
     "surface-background": "bg",
     "surface-elevated": "elevated",
@@ -2131,7 +2370,7 @@ ${GUEST_SCROLLBAR_CSS}
 ${UI_SIZE_CSS}
 ${GUEST_UI_LOOK_CSS}`;
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
   var STYLE_ID = "oc-sdk-ui-style";
   var clearNode = (node) => {
     while (node.firstChild) {
@@ -2190,7 +2429,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
   var ring = () => {
     const spinner = document.createElement("span");
     spinner.className = "oc-sdk-spinner-ring";
@@ -2238,7 +2477,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
   var mountTextField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2286,7 +2525,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
   var SVG_NS = "http://www.w3.org/2000/svg";
   var ICON_PATH = {
     search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
@@ -2310,7 +2549,7 @@ ${GUEST_UI_LOOK_CSS}`;
     return node;
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
   var mountSearchField = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2371,7 +2610,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
   var navigationKey = (event, axis = "vertical") => {
     const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
     if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
@@ -2405,7 +2644,7 @@ ${GUEST_UI_LOOK_CSS}`;
     return target?.id ?? null;
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
   var optionId = (uid, id) => `${uid}-${id ?? ""}`;
   var createOption = (uid, role, spec, on) => {
     const node = button("oc-sdk-option");
@@ -2446,7 +2685,7 @@ ${GUEST_UI_LOOK_CSS}`;
     container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
   var placePopup = (popup, trigger) => {
     const rect = trigger.getBoundingClientRect();
     popup.style.minWidth = `${Math.round(rect.width)}px`;
@@ -2485,7 +2724,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
   var filterSelectOptions = (options, query) => {
     const needle = query.trim().toLowerCase();
     if (!needle) {
@@ -2642,7 +2881,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
   var mountToggle = (root, initial, role) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2686,7 +2925,7 @@ ${GUEST_UI_LOOK_CSS}`;
   var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
   var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
   var mountTabs = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2746,7 +2985,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
   var applyTone = (node, tone2) => {
     setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
   };
@@ -2771,7 +3010,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
   var listCount = 0;
   var mountList = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -2859,7 +3098,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
   var mountEmpty = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2901,7 +3140,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
   var mountSpinner = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2930,7 +3169,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
   var mountBanner = (root, initial) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -2976,7 +3215,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
   var mountSeparator = (root, initial = {}) => {
     ensureStyle(UI_CSS);
     let props = initial;
@@ -3002,7 +3241,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
   var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
   var mountProgress = (root, initial) => {
     ensureStyle(UI_CSS);
@@ -3045,7 +3284,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
   var actions = (items) => items.filter((item) => !("separator" in item));
   var menuCount = 0;
   var mountMenu = (root, initial) => {
@@ -3151,7 +3390,7 @@ ${GUEST_UI_LOOK_CSS}`;
     };
   };
 
-  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  // ../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
   var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
   var isHttpUrl = (value) => {
     try {

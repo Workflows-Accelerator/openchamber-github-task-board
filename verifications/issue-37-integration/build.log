@@ -1,0 +1,20 @@
+
+> openchamber-github-task-board@1.2.1 build
+> npm run build:panel && npm run build:service
+
+
+> openchamber-github-task-board@1.2.1 build:panel
+> esbuild panel/main.ts --bundle --format=iife --target=chrome100 --tree-shaking=false --outfile=panel/main.js
+
+
+  panel/main.js  654.4kb
+
+⚡ Done in 172ms
+
+> openchamber-github-task-board@1.2.1 build:service
+> esbuild service/main.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=service/main.js
+
+
+  service/main.js  31.3kb
+
+⚡ Done in 14ms
