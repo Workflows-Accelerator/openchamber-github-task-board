@@ -1,0 +1,26 @@
+First 40-character pattern: ### Work Type & Proportionate Paths:(?:\\n|\n)- L
+panel/core.ts:1:### Work Type & Proportionate Paths:
+- L
+panel/core.ts:1:### Work Type & Proportionate Paths:
+- L
+panel/core.ts:1:### Work Type & Proportionate Paths:
+- L
+panel/main.js:1:### Work Type & Proportionate Paths:
+- L
+panel/main.js:1:### Work Type & Proportionate Paths:
+- L
+panel/main.js:1:### Work Type & Proportionate Paths:
+- L
+Last 40-character pattern: uman authority over release and closure\.
+panel/core.ts:1863:uman authority over release and closure.
+panel/core.ts:1875:uman authority over release and closure.
+panel/core.ts:1884:uman authority over release and closure.
+panel/main.js:5967:uman authority over release and closure.
+panel/main.js:5975:uman authority over release and closure.
+panel/main.js:5983:uman authority over release and closure.
+Full paragraph grep: /bin/grep -RPozl \(\?s\)###\ Work\ Type\ \&\ Proportionate\ Paths:\(\?:\\\\n\|\\n\)-\ Labels.\{0\,80\}\?are\ the\ only\ work-type\ source\\.\(\?:\\\\n\|\\n\)-\ When\ both\ or\ neither.\{0\,1800\}\?Both\ paths\ keep\ existing\ evidence\ rules\ and\ existing\ human\ authority\ over\ release\ and\ closure\\. panel/
+Current duplicate paragraph exit=1 (1 = absent)
+/tmp/opencode/issue30-r3-duplicate-baseline/core.ts
+/tmp/opencode/issue30-r3-duplicate-baseline/main.js
+cf7dd92 duplicate paragraph exit=0 (0 = reproduced in source and bundle)
+Dead probe grep exit=1 (1 = absent)

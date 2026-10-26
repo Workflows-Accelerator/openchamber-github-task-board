@@ -5950,6 +5950,136 @@ ${lines.join("\n")}`;
       }
     };
   }
+  function resolveIssueWorkType(issue) {
+    if (!issue || !Array.isArray(issue.labels)) return "undecided";
+    const labelNames = issue.labels.map(
+      (l) => (typeof l === "string" ? l : l?.name || "").toLowerCase().trim()
+    );
+    const hasBug = labelNames.includes("bug");
+    const hasEnhancement = labelNames.includes("enhancement");
+    if (hasBug && !hasEnhancement) return "bug";
+    if (hasEnhancement && !hasBug) return "feature";
+    return "undecided";
+  }
+  var WORK_LOG_SENTENCE_RULE = `The \`### Work Log:\` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason for it`;
+  var BUG_PATH_RULE = `Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.`;
+  var FEATURE_PATH_RULE = `Feature path: desired outcome, research and alternatives, user decisions, then implementation.`;
+  var EVIDENCE_AUTHORITY_RULE = `Both paths keep existing evidence rules and existing human authority over release and closure.`;
+  function buildWorkTypeInstructions(target) {
+    const workType = typeof target === "string" ? target : resolveIssueWorkType(target);
+    if (workType === "bug") {
+      return `### Work Type & Proportionate Paths:
+- Labels \`bug\` and \`enhancement\` are the only work-type source. This issue is resolved as \`bug\`.
+- Proportionate path:
+  - ${BUG_PATH_RULE}
+  - Retain existing evidence rules and existing human authority over release and closure.
+- Work Log: ${WORK_LOG_SENTENCE_RULE} (for example the observed behaviour that contradicts a stated expectation). Keep it one line; do not add fields, counters or machine state to the issue body.`;
+    }
+    if (workType === "feature") {
+      return `### Work Type & Proportionate Paths:
+- Labels \`bug\` and \`enhancement\` are the only work-type source. This issue is resolved as \`feature\`.
+- Proportionate path:
+  - ${FEATURE_PATH_RULE}
+  - Retain existing evidence rules and existing human authority over release and closure.
+- Work Log: ${WORK_LOG_SENTENCE_RULE} (for example the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.`;
+    }
+    return `### Work Type & Proportionate Paths:
+- Labels \`bug\` and \`enhancement\` are the only work-type source.
+- When both or neither are present, the work type is undecided and must be asked about, not guessed. Never infer a type from the title, the mood of the report, or the area of the code.
+- Explicit alignment question: Which label (\`bug\` or \`enhancement\`) applies to this issue and what is the concrete reason based strictly on the labels? Ask the user for alignment before proceeding with work that depends on the work type.
+- Undecided work type is an alignment question to the user, not a default. Undecided items must be asked about individually. Only block work that depends on the unanswered question; independent authorised work continues.
+- Work Log: ${WORK_LOG_SENTENCE_RULE} (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+- Proportionate paths (once resolved):
+  - ${BUG_PATH_RULE}
+  - ${FEATURE_PATH_RULE}
+  - ${EVIDENCE_AUTHORITY_RULE}`;
+  }
+  var DEFAULT_WORK_INSTRUCTIONS = buildWorkTypeInstructions("undecided");
+  function renderSingleIssueBrief(issue, options) {
+    let brief = `You are assigned to work on GitHub Issue #${issue?.number ?? ""}: ${issue?.title || ""}
+
+`;
+    if (issue?.body) {
+      brief += `### Description:
+${issue.body}
+
+`;
+    }
+    if (issue?.subtasks && issue.subtasks.length > 0) {
+      brief += `### Subtasks Checklist:
+`;
+      issue.subtasks.forEach((s) => {
+        brief += `- [${s.completed ? "x" : " "}] ${s.text}
+`;
+      });
+      brief += "\n";
+    }
+    const { skillNames, transclusions } = resolveIssueSkills(issue);
+    if (skillNames.length > 0) {
+      brief += `### Recommended Skills:
+`;
+      brief += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(", ")}).
+`;
+      brief += `Transclusion references for worker sessions:
+${transclusions.join("\n")}
+
+`;
+    }
+    brief += `### Autonomous & AFK Protocol:
+`;
+    brief += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.
+`;
+    brief += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.
+`;
+    brief += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.
+
+`;
+    brief += `${buildWorkTypeInstructions(issue)}
+
+`;
+    if (options?.useWorktree) {
+      brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
+    } else {
+      brief += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
+    }
+    return brief;
+  }
+  function renderBatchLaunchPrompt(issue) {
+    const { skillNames, transclusions } = resolveIssueSkills(issue);
+    let prompt = `You are assigned to work on GitHub Issue #${issue?.number ?? ""}: ${issue?.title || ""}
+
+`;
+    if (issue?.body) {
+      prompt += `### Description:
+${issue.body}
+
+`;
+    }
+    if (skillNames.length > 0) {
+      prompt += `### Recommended Skills:
+`;
+      prompt += `Load with skill tool: ${skillNames.map((s) => `\`${s}\``).join(", ")}
+`;
+      prompt += `Transclusion fallback:
+${transclusions.join("\n")}
+
+`;
+    }
+    prompt += `### Autonomous & AFK Protocol:
+`;
+    prompt += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.
+`;
+    prompt += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.
+`;
+    prompt += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.
+
+`;
+    prompt += `${buildWorkTypeInstructions(issue)}
+
+`;
+    prompt += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
+    return prompt;
+  }
   var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
 
 Input Objective / User Mind-Dump:
@@ -5972,8 +6102,9 @@ Instructions for the Agent:
    - Human Tasks: Add a "### Human Tasks:" section with interactive Markdown checkboxes (- [ ]) with verb-first items (e.g. "Approve ...", "Review PR #N", "Grant access to ...", "Deploy ...") written at the moment the agent blocks on a human or hands off for validation.
    - Test Plan: Add a "## Test Plan (Issue):" section with interactive Markdown checkboxes (- [ ]) listing exact automated verification commands.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
-   - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
-4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo". An agent never sets phase:done, phase:archive or status:done and never closes an issue.
+   - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation"). Existing labels "bug" and "enhancement" are the single source of work type. When both or neither are present, the work type is undecided and must be asked about, not guessed; never infer a type from the title, the mood of the report, or the area of the code. Never introduce a "type:*" label or body work-type field.
+   - Work Log: The "### Work Log:" section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo". An agent never sets phase:done, phase:archive or status:done and never closes an issue. Undecided work type is an alignment question to the user, not a default; only block work that depends on the unanswered question while independent authorised work continues.
 5. Creation: If a GitHub token is configured or available in ~/.git-credentials, create issues directly via curl:
    curl -s -X POST -H "Authorization: Bearer <token>" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/{repo}/issues -d '{"title":"...","body":"...","labels":["status:todo",...]}'
    Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
@@ -6314,6 +6445,9 @@ ${transclusions.join("\n")}
     prompt += `- If blocked on human decisions, permissions, or secrets while the human is away, record explicit items under "### Human Tasks:" in the issue body, mark "status:needs-human", and continue with any unblocked tasks.
 
 `;
+    prompt += `${DEFAULT_WORK_INSTRUCTIONS}
+
+`;
     prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
     return prompt;
   }
@@ -6323,7 +6457,7 @@ ${transclusions.join("\n")}
       name: "Bug Report",
       description: "Investigate unexpected behavior, identify root cause, and draft fix subtasks",
       promptInstructions: `### Problem Description
-[Detailed explanation of what went wrong, including error messages or unexpected behavior]
+[Detailed explanation of observed versus expected behaviour, including error messages]
 
 ### Steps to Reproduce
 1. [First step]
@@ -6343,7 +6477,7 @@ ${transclusions.join("\n")}
       name: "Feature / Enhancement",
       description: "Design and specify new functionality with architectural plan and subtasks",
       promptInstructions: `### Goal & User Value
-[Why this feature is needed and what problem it solves]
+[Desired outcome: why this feature is needed and what problem it solves]
 
 ### Architectural & UI Design
 [Proposed technical architecture, component structure, or API changes]
@@ -13381,50 +13515,9 @@ Blocked by ${blockerRef}`;
     const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
     const theme = getIssueTheme(activeIssue);
     const existingThemeWorktree = theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue) : null;
-    let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}
-
-`;
-    if (activeIssue.body) {
-      brief += `### Description:
-${activeIssue.body}
-
-`;
-    }
-    if (activeIssue.subtasks.length > 0) {
-      brief += `### Subtasks Checklist:
-`;
-      activeIssue.subtasks.forEach((s) => {
-        brief += `- [${s.completed ? "x" : " "}] ${s.text}
-`;
-      });
-      brief += "\n";
-    }
-    const { skillNames, transclusions } = resolveIssueSkills(activeIssue);
-    if (skillNames.length > 0) {
-      brief += `### Recommended Skills:
-`;
-      brief += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(", ")}).
-`;
-      brief += `Transclusion references for worker sessions:
-${transclusions.join("\n")}
-
-`;
-    }
-    brief += `### Autonomous & AFK Protocol:
-`;
-    brief += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.
-`;
-    brief += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.
-`;
-    brief += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.
-
-`;
-    if (useWt || existingThemeWorktree) {
-      brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
-    } else {
-      brief += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
-    }
-    elPreflightPromptInput.value = brief;
+    elPreflightPromptInput.value = renderSingleIssueBrief(activeIssue, {
+      useWorktree: Boolean(useWt || existingThemeWorktree)
+    });
   }
   function syncPreflightBranchInput() {
     if (!activeIssue) return;
@@ -13621,36 +13714,8 @@ ${transclusions.join("\n")}
     for (const issue of selected) {
       try {
         const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
-        const { skillNames, transclusions } = resolveIssueSkills(issue);
-        let prompt = `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}
-
-`;
-        if (issue.body) {
-          prompt += `### Description:
-${issue.body}
-
-`;
-        }
-        if (skillNames.length > 0) {
-          prompt += `### Recommended Skills:
-`;
-          prompt += `Load with skill tool: ${skillNames.map((s) => `\`${s}\``).join(", ")}
-`;
-          prompt += `Transclusion fallback:
-${transclusions.join("\n")}
-
-`;
-        }
-        prompt += `### Autonomous & AFK Protocol:
-`;
-        prompt += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.
-`;
-        prompt += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.
-`;
-        prompt += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.
-
-`;
-        prompt += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
+        const { skillNames } = resolveIssueSkills(issue);
+        const prompt = renderBatchLaunchPrompt(issue);
         const payload = {
           projectId: currentProject.id,
           worktree: false,

@@ -99,6 +99,8 @@ import {
   extractTaskThemes,
   parseScratchPadThemes,
   DEFAULT_AI_ISSUE_PROMPT,
+  renderSingleIssueBrief,
+  renderBatchLaunchPrompt,
   resolveAiIssuePrompt,
   DEFAULT_AI_ALIGNMENT_PROMPT,
   resolveAiAlignmentPrompt,
@@ -7144,42 +7146,15 @@ function renderRelatedIssues(issue: Issue): void {
 // [@.agents/skills/build/refactoring/code-simplification/SKILL.md]
 // [@.agents/skills/build/refactoring/safe-refactor/SKILL.md]
 
+// Preflight brief assembly delegated to renderSingleIssueBrief.
 function updatePreflightBrief(): void {
   if (!activeIssue) return;
   const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
   const theme = getIssueTheme(activeIssue);
   const existingThemeWorktree = (theme && theme !== 'No Theme') ? findThemeWorktree(worktrees, activeIssue) : null;
-  let brief = `You are assigned to work on GitHub Issue #${activeIssue.number}: ${activeIssue.title}\n\n`;
-  if (activeIssue.body) {
-    brief += `### Description:\n${activeIssue.body}\n\n`;
-  }
-  if (activeIssue.subtasks.length > 0) {
-    brief += `### Subtasks Checklist:\n`;
-    activeIssue.subtasks.forEach((s) => {
-      brief += `- [${s.completed ? 'x' : ' '}] ${s.text}\n`;
-    });
-    brief += '\n';
-  }
-
-  const { skillNames, transclusions } = resolveIssueSkills(activeIssue);
-  // Extended skills: frontend-ui-engineering, api-and-interface-design, performance-optimization, security-and-hardening, code-simplification, safe-refactor
-  if (skillNames.length > 0) {
-    brief += `### Recommended Skills:\n`;
-    brief += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(', ')}).\n`;
-    brief += `Transclusion references for worker sessions:\n${transclusions.join('\n')}\n\n`;
-  }
-
-  brief += `### Autonomous & AFK Protocol:\n`;
-  brief += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.\n`;
-  brief += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.\n`;
-  brief += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.\n\n`;
-
-  if (useWt || existingThemeWorktree) {
-    brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
-  } else {
-    brief += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
-  }
-  elPreflightPromptInput.value = brief;
+  elPreflightPromptInput.value = renderSingleIssueBrief(activeIssue, {
+    useWorktree: Boolean(useWt || existingThemeWorktree),
+  });
 }
 
 function syncPreflightBranchInput(): void {
@@ -7436,22 +7411,9 @@ async function launchBatchSeparateSessions(): Promise<void> {
   for (const issue of selected) {
     try {
       const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || undefined;
-      const { skillNames, transclusions } = resolveIssueSkills(issue);
-
-      let prompt = `You are assigned to work on GitHub Issue #${issue.number}: ${issue.title}\n\n`;
-      if (issue.body) {
-        prompt += `### Description:\n${issue.body}\n\n`;
-      }
-      if (skillNames.length > 0) {
-        prompt += `### Recommended Skills:\n`;
-        prompt += `Load with skill tool: ${skillNames.map((s) => `\`${s}\``).join(', ')}\n`;
-        prompt += `Transclusion fallback:\n${transclusions.join('\n')}\n\n`;
-      }
-      prompt += `### Autonomous & AFK Protocol:\n`;
-      prompt += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.\n`;
-      prompt += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.\n`;
-      prompt += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.\n\n`;
-      prompt += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
+      // Batch separate session prompt assembly delegated to renderBatchLaunchPrompt.
+      const { skillNames } = resolveIssueSkills(issue);
+      const prompt = renderBatchLaunchPrompt(issue);
 
       const payload = {
         projectId: currentProject.id,

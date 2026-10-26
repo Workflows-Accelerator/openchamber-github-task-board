@@ -12,7 +12,10 @@ import {
   DEFAULT_TEMPLATES,
   mergeTemplates,
   buildAgentIssuePrompt,
+  renderSingleIssueBrief,
+  renderBatchLaunchPrompt,
 } from '../panel/core.ts';
+import { runPreflightBrief, runBatchLaunchSessions } from './test-issue-launch-harness.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_TS = fs.readFileSync(path.join(__dirname, '../panel/main.ts'), 'utf8');
@@ -121,16 +124,52 @@ test('DEFAULT_TEMPLATES, mergeTemplates, and buildAgentIssuePrompt are first-cla
   assert.ok(prompt.includes('Bug Report'));
 });
 
-test('panel/main.ts preflight brief includes extended skills (UI, API, Perf, Security, Refactor) and AFK protocol', () => {
-  assert.ok(MAIN_TS.includes('frontend-ui-engineering'));
-  assert.ok(MAIN_TS.includes('api-and-interface-design'));
-  assert.ok(MAIN_TS.includes('performance-optimization'));
-  assert.ok(MAIN_TS.includes('security-and-hardening'));
-  assert.ok(MAIN_TS.includes('code-simplification'));
-  assert.ok(MAIN_TS.includes('safe-refactor'));
-  assert.ok(MAIN_TS.includes('Autonomous & AFK Protocol'));
-  assert.ok(MAIN_TS.includes('Load relevant skills'));
-  assert.ok(MAIN_TS.includes('Transclusion references for worker sessions'));
+test('panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol', async () => {
+  const extendedIssue = {
+    number: 124,
+    title: 'Extended skill coverage',
+    body: '### Overview\nCover every extended skill mapping.',
+    labels: [
+      { name: 'bug' },
+      { name: 'enhancement' },
+      { name: 'documentation' },
+      { name: 'ui' },
+      { name: 'api' },
+      { name: 'perf' },
+      { name: 'security' },
+      { name: 'refactor' },
+    ],
+  };
+  const brief = runPreflightBrief(extendedIssue);
+  assert.equal(brief, renderSingleIssueBrief(extendedIssue, { useWorktree: false }));
+
+  assert.ok(brief.includes('### Recommended Skills:'), 'Preflight brief must contain the recommended skills section');
+  assert.ok(brief.includes('frontend-ui-engineering'));
+  assert.ok(brief.includes('api-and-interface-design'));
+  assert.ok(brief.includes('performance-optimization'));
+  assert.ok(brief.includes('security-and-hardening'));
+  assert.ok(brief.includes('code-simplification'));
+  assert.ok(brief.includes('safe-refactor'));
+  assert.ok(brief.includes('Autonomous & AFK Protocol'));
+  assert.ok(brief.includes('Load relevant skills'));
+  assert.ok(brief.includes('Transclusion references for worker sessions'));
+
+  const { payloads, errors } = await runBatchLaunchSessions([extendedIssue]);
+  assert.deepEqual(errors, []);
+  assert.equal(payloads.length, 1);
+  const batchPrompt = payloads[0].text;
+  assert.equal(batchPrompt, renderBatchLaunchPrompt(extendedIssue));
+  assert.ok(batchPrompt.includes('### Recommended Skills:'), 'Batch prompt must contain the recommended skills section');
+  assert.ok(batchPrompt.includes('frontend-ui-engineering'));
+  assert.ok(batchPrompt.includes('api-and-interface-design'));
+  assert.ok(batchPrompt.includes('performance-optimization'));
+  assert.ok(batchPrompt.includes('security-and-hardening'));
+  assert.ok(batchPrompt.includes('code-simplification'));
+  assert.ok(batchPrompt.includes('safe-refactor'));
+  assert.ok(batchPrompt.includes('Autonomous & AFK Protocol'));
+  assert.ok(batchPrompt.includes('Load with skill tool:'));
+  assert.ok(batchPrompt.includes('Transclusion fallback:'));
+
 });
 
 test('panel/main.ts handleFilePathClick checks currentDirectory and currentProject candidates', () => {

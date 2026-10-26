@@ -1,0 +1,86 @@
+TAP version 13
+# (node:664149) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: DEFAULT_AI_ISSUE_PROMPT adheres strictly to Issue Body Contract v1 and contains zero emojis
+ok 1 - DEFAULT_AI_ISSUE_PROMPT adheres strictly to Issue Body Contract v1 and contains zero emojis
+  ---
+  duration_ms: 1.492528
+  type: 'test'
+  ...
+# Subtest: DEFAULT_AI_ALIGNMENT_PROMPT enforces Issue Body Contract v1 sections and contains zero emojis
+ok 2 - DEFAULT_AI_ALIGNMENT_PROMPT enforces Issue Body Contract v1 sections and contains zero emojis
+  ---
+  duration_ms: 0.264164
+  type: 'test'
+  ...
+# Subtest: buildConsolidatedIssuePrompt avoids duplicate subtasks checklist and adds AFK protocol
+ok 3 - buildConsolidatedIssuePrompt avoids duplicate subtasks checklist and adds AFK protocol
+  ---
+  duration_ms: 0.759499
+  type: 'test'
+  ...
+# Subtest: DEFAULT_TEMPLATES, mergeTemplates, and buildAgentIssuePrompt are first-class exports in core.ts
+ok 4 - DEFAULT_TEMPLATES, mergeTemplates, and buildAgentIssuePrompt are first-class exports in core.ts
+  ---
+  duration_ms: 0.358599
+  type: 'test'
+  ...
+# Subtest: panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
+ok 5 - panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
+  ---
+  duration_ms: 12.062609
+  type: 'test'
+  ...
+# Subtest: panel/main.ts handleFilePathClick checks currentDirectory and currentProject candidates
+ok 6 - panel/main.ts handleFilePathClick checks currentDirectory and currentProject candidates
+  ---
+  duration_ms: 0.423074
+  type: 'test'
+  ...
+# (node:664152) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: resolveIssueSkills: maps standard labels to canonical skills and transclusions
+ok 7 - resolveIssueSkills: maps standard labels to canonical skills and transclusions
+  ---
+  duration_ms: 7.365589
+  type: 'test'
+  ...
+# Subtest: resolveIssueSkills: handles theme prefix variants and explicit issue skills
+ok 8 - resolveIssueSkills: handles theme prefix variants and explicit issue skills
+  ---
+  duration_ms: 0.526708
+  type: 'test'
+  ...
+# Subtest: resolveIssueSkills: deduplicates across multiple issues and handles edge cases safely
+ok 9 - resolveIssueSkills: deduplicates across multiple issues and handles edge cases safely
+  ---
+  duration_ms: 0.340916
+  type: 'test'
+  ...
+# Subtest: buildLaunchSessionPayload: natively declares skill IDs at payload top-level and in metadata
+ok 10 - buildLaunchSessionPayload: natively declares skill IDs at payload top-level and in metadata
+  ---
+  duration_ms: 0.570133
+  type: 'test'
+  ...
+# Subtest: buildConsolidatedIssuePrompt: includes recommended skills alongside transclusion fallback
+ok 11 - buildConsolidatedIssuePrompt: includes recommended skills alongside transclusion fallback
+  ---
+  duration_ms: 0.732515
+  type: 'test'
+  ...
+# Subtest: panel/main.ts: all session launch surfaces declare native skills and retain transclusions
+ok 12 - panel/main.ts: all session launch surfaces declare native skills and retain transclusions
+  ---
+  duration_ms: 16.148065
+  type: 'test'
+  ...
+1..12
+# tests 12
+# suites 0
+# pass 12
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 354.143352

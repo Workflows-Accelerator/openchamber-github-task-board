@@ -8,7 +8,10 @@ import {
   resolveIssueSkills,
   buildLaunchSessionPayload,
   buildConsolidatedIssuePrompt,
+  renderSingleIssueBrief,
+  renderBatchLaunchPrompt,
 } from '../panel/core.ts';
+import { runPreflightBrief, runBatchLaunchSessions } from './test-issue-launch-harness.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
@@ -148,7 +151,7 @@ test('buildConsolidatedIssuePrompt: includes recommended skills alongside transc
   assert.equal(barePrompt.includes('### Recommended Skills:'), false);
 });
 
-test('panel/main.ts: all session launch surfaces declare native skills and retain transclusions', () => {
+test('panel/main.ts: all session launch surfaces declare native skills and retain transclusions', async () => {
   // Packaged sessions declare native skills
   assert.ok(MAIN_TS.includes('const { skillNames: packageSkills } = resolveIssueSkills(selected);'));
   assert.ok(MAIN_TS.includes('...(packageSkills.length > 0 ? { skills: packageSkills } : {})'));
@@ -159,7 +162,18 @@ test('panel/main.ts: all session launch surfaces declare native skills and retai
   // AI drafting and alignment sessions declare issue-lifecycle
   assert.ok(MAIN_TS.includes("skills: ['issue-lifecycle']"));
 
-  // Preflight prompt retains transclusion fallback
-  assert.ok(MAIN_TS.includes('Transclusion references for worker sessions:'));
-  assert.ok(MAIN_TS.includes('Transclusion fallback:'));
+  const skillIssue = { number: 161, title: 'Skill transclusion', labels: [{ name: 'bug' }, { name: 'ui' }] };
+  const brief = runPreflightBrief(skillIssue);
+  assert.equal(brief, renderSingleIssueBrief(skillIssue, { useWorktree: false }));
+  assert.ok(brief.includes('Transclusion references for worker sessions:'));
+  assert.ok(brief.includes('[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]'));
+
+  const { payloads, errors } = await runBatchLaunchSessions([skillIssue]);
+  assert.deepEqual(errors, []);
+  assert.equal(payloads.length, 1);
+  assert.equal(payloads[0].text, renderBatchLaunchPrompt(skillIssue));
+  assert.ok(payloads[0].text.includes('Transclusion fallback:'));
+  assert.ok(payloads[0].text.includes('[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]'));
+  assert.deepEqual(payloads[0].skills, ['surgical-patch', 'debugging-and-error-recovery', 'frontend-ui-engineering']);
+  assert.deepEqual(payloads[0].data.skills, payloads[0].skills);
 });

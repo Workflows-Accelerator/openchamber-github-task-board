@@ -14,7 +14,7 @@ An issue body is a database record. Four consumers read it:
 
 ## 2. Sections (in recommended order)
 
-Every section is optional except Friendly Title and Overview. Parsers accept the exact spellings below (see `panel/core.ts` for current regexes).
+Every section is optional at issue creation except Friendly Title and Overview (the `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason). Parsers accept the exact spellings below (see `panel/core.ts` for current regexes).
 
 ### 2.1 `### Friendly Title:`
 One line, 3-6 words, plain English, no jargon, no technical prefixes. It is the ONLY title shown in the simplified views (Human Tasks, All Tasks, Questions). The GitHub issue title may carry the technical slug (e.g. `feat(board): ...`) and is rendered as a mono subtitle. Parser: `parseFriendlyTitle` (`panel/core.ts`).
@@ -42,6 +42,19 @@ Parser: `parseHumanTasks` (`panel/core.ts`). Extraction: `collectHumanTodos` (`p
 ### 2.7 `## Test Plan (Issue)` / `## Test Plan (Batch)` and `Blocked by #N`
 Existing conventions (test plans: `panel/main.ts` and `panel/core.ts`; dependency edges: `panel/core.ts` dependency parsing). Unchanged in v1.
 - **Cross-repo dependencies**: Cross-repo dependencies must use **full URLs** (e.g. `Blocked by https://github.com/owner/repo/issues/123`), never `#N` shorthand which causes wrong-repo links.
+
+### 2.8 `### Work Log:` (NEW in v1.1 — decision D1 / issue #30)
+Freeform execution log and evidence record. The `### Work Log:` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+
+Rules:
+- Existing `bug` and `enhancement` labels are the only work-type source.
+- When both or neither are present, the work type is undecided and must be asked about, not guessed; never infer a type from the title, the mood of the report, or the area of the code.
+- Never introduce a `type:*` label or a body work-type field.
+- Proportionate paths:
+  - Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.
+  - Feature path: desired outcome, research and alternatives, user decisions, then implementation.
+  - Both paths retain existing empirical proof and human authority over release and closure; never close an issue or claim human release approval.
+- Questions: Only block work that depends on the unanswered question; independent authorised work continues. Undecided work type is an alignment question to the user, not a default.
 
 ## 3. Human to-do extraction — `collectHumanTodos(issue, session?)`
 
@@ -125,3 +138,4 @@ Auto-transitions (`panel/labels.ts`, reconciler `StatusReconciler`):
 ## 6. Versioning
 
 v1 = this file. Additions bump minor (v1.1), renames/removals bump major and must update parsers, prompt template, skill, and tests together.
+v1.1 = adds Section 2.8 Work Log contract with single-line work-type justification and proportionate paths (decision D1 / issue #30).
