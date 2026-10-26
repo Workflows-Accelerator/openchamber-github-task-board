@@ -7,7 +7,7 @@ One request only when every included member passes independent hostile review an
 | #28 — Current tasks on opening | Hostile review PASS; merged/pushed to working branch | Open board, switch repository, refresh. Tasks belong to the chosen repository; a saved edit stays saved. |
 | #36 — Only a person closes a task | Hostile review PASS; merged/pushed to working branch | Verify an agent/session change does not close a test task. Explicitly move it to Done, reopen, and archive: human controls still work. Use a disposable owner-approved task. |
 | #34 — Answering saves the answer you saw | L4 PASS 0e1a6be; merged c44ed58/proof a2d3fe1, pushed aea7031; awaiting batch | Answer from Questions, Human Tasks and drawer; check exact line on GitHub. Change/delete question before submitting: save refuses and keeps the original answer as a separately labelled recoverable draft. Two repositories sharing issue numbers do not share answers/drafts. Failed reads/writes must not report success. |
-| #35 — Other board writes survive refresh | Final independent recheck running; no verdict yet | After the panel is available: create an issue, then archive, tag, set priority, clear status, change complexity and switch All Projects while a refresh runs. The write you saw confirmed must not revert, and a failure must not silently roll back another write. |
+| #35 — Other board writes survive refresh | PARKED — final recheck HALT; excluded from the batch | Not part of the batch. Four reproduced ordering defects remain (uncertain state cleared by older reads, older rollback restoring stale labels, malformed aggregate dropping tasks, false uncertain after a successful archive). Owner decision needed before any further work. |
 | #33 — Board in your browser | Accepted single-repository web base merged/pushed through54816f6; deployment authorized in shape, plan currently HALT | Sign in at the approved preview; view/edit tasks on desktop/phone; malformed/uncertain save replies give refresh guidance, preserve the last valid view and typed drafts, never retry. Confirm the overwrite warning, mixed-indent code excluded, meaningful whitespace preserved, no agent controls. |
 
 ## Preview: NOT AVAILABLE YET
@@ -17,11 +17,12 @@ One combined request must identify the accepted working branch on both runtimes:
 The web base is still single-repository and is NOT the completed all-repository goal. #37 must pass review and integration before that is claimed.
 
 ## Active frontier
-- #35 — final independent recheck on candidate3b4eced; one authorized check, any required failure parks the issue without another autonomous fix.
-- #37 — multi-repository build recovering in its own web-only worktree; independent hostile review follows.
-- Deployment — independent plan review returned HALT on supervision, artifact layout, private exposure, transport and rollback. A report-only correction is running; readiness stays HALT until dedicated credentials, a tested transport and a reviewed startup hook exist.
-- #30/#31 — queued behind #35/#37 and their file frontier. #31's resume boundary still needs the owner's choice.
+- #30 — work type from the existing label plus one Work Log sentence; building now on the panel frontier freed by the #35 park.
+- #37 — multi-repository build at 5b231ff under independent hostile review; no acceptance yet.
+- Deployment — plan recheck returned HALT with seven open plan defects; a corrected runbook follows the startup supervisor build. Readiness stays HALT until dedicated credentials, a tested transport and a reviewed, human-merged startup hook exist.
+- #31 — queued behind #37; its resume boundary still needs the owner's choice.
 - Sign-in throttling behind the proxy shares one bucket; this needs an owner decision before public exposure.
+- #35 — parked under the decision17 ceiling; excluded from this batch.
 
 ## Known blind spots
 - #28/#36: installed authenticated OpenChamber end-to-end testing not performed; bundle/harness tests are not installed-host proof.

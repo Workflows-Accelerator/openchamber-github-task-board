@@ -1,11 +1,11 @@
 <env_preflight>
-BLOCKED — DO NOT DISPATCH YET. #35 owns panel/** until its hostile review passes and it is integrated into feat/v2-binding-and-ratelimit. One frontier item per repository: dispatch this only after #35 is merged and pushed, and fill the snapshot then.
+Panel frontier is free: #35 is PARKED (recheck HALT, candidate 3b4eced unaccepted and unmerged), so panel/** and the issue templates are at the review-branch state. #37 owns web/** in its own worktree and the supervisor build is in another repository: no file overlap with this slice.
 Repo /workspace/extensions/github-task-board
-Worktree FILL_AT_DISPATCH (suggested .worktrees/team-dev-issue-30-work-type, branch feat/issue-30-work-type from the integrated review branch)
-Base FILL_AT_DISPATCH; clean state FILL_AT_DISPATCH. No other worker may own panel/** or the issue templates at dispatch.
+Worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-30-work-type
+Branch feat/issue-30-work-type; base c337901a81d5eca08ea39372ed49a3e55be0b79e on feat/v2-binding-and-ratelimit, tracked-clean, node_modules symlink already created to the installed root dependencies. No other worker owns panel/**, .github/ISSUE_TEMPLATE/** or docs/issue-body-contract.md at dispatch.
 Key paths: panel/core.ts (resolveIssueSkills label routing, issue prompt text, issue template constants), panel/main.ts only where it composes those prompts (no admission or refresh logic), .github/ISSUE_TEMPLATE/** if present, docs/issue-body-contract.md, test/** for prompt/template contract tests, generated panel/main.js.
-Tests FILL_AT_DISPATCH (expected: node --test test/*.test.js targeted file; npm test; npm run typecheck; npm run build).
-Root dependencies via node_modules symlink; no installs, no env copy, no DB registration.
+Tests: node --test test/issue-30-work-type.test.js (create it); npm test; npm run typecheck; npm run build (regenerates panel/main.js — commit it). Verify the new contract tests fail on base c337901 before your change (run them in a scratch copy or with the change reverted), then pass after.
+Root dependencies via the existing node_modules symlink; no installs, no env copy, no DB registration.
 Do not touch web/**, service/**, the #35 admission/tracker helpers, shared skills/config, private reports, credentials, real GitHub, installed extension, other worktrees, master, deployment. No push/merge/close/deploy. Synthetic fixtures only.
 </env_preflight>
 <goal>
