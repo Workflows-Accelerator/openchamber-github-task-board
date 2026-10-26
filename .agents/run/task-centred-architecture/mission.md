@@ -1,6 +1,14 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-26 #33 MERGED/PUSHED, #35 final pass ready
+## Latest checkpoint — 2026-10-26 owner deployment go; interrupted work recovered
+State: building and reviewing; alignment decisions1–18 CONFIRMED.
+- Owner: "You're stopped. Proceed and deploy and hostile review etc." Deployment authorized for aligned same-container board shape, with dedicated secret and review boundaries intact; no inferred L5 pass/issue closure/master merge. Recorded decision18.
+- #35 reviewer ses_7eb4eb7c0413e2b80ef3b063 ended error "Step interrupted", NOT a completed verdict. Source3b4eced tracked clean with untracked verifications/issue-35-last-review/** preserved. Logs contain provisional overlap/malformed-entry failures; cannot ignore on basis of original165 green. Replacement final reviewer RUNNING ses_d215a602a6fdeaebe1c9ce1b genius tasks/issue-35-review-recovery.md, finishing SAME authorized check. Any required standing defect PARKS; no new correction authority.
+- #37 original builder ses_9802e90bb3cb4ea6e5184c30 confirmed idle, actual9router/genius, no final report (last:12red tests, implementing). Dirty partial web/server/{board,github}.ts, fake-github.mjs + new repositories.ts/multi-repo.test.mjs preserved. Fresh build-recovery worker RUNNING ses_f456ddf0ac270174a79ccf0a genius tasks/issue-37-build-recovery.md in same worktree. No duplicate active session, actual model on wake. Web-only.
+- Deployment current preflight RUNNING ses_db928fa295bd459e709a528c engineer tasks/board-deployment-preflight-current.md in new .worktrees/team-ops-board-deployment ops/board-deployment base40952c6. Read-only infra/secret presence audit, private outputs untracked. No secret reuse, broad credential search, production mutation or auto-deploy. Fresh hostile plan review then deployment worker if prerequisites empirical. Current accepted web is #33+hosting, NOT incomplete #37 or unaccepted #35; no silent all-repo claim.
+- Root latest commit5082991; published review branch54816f6. Hosting4f39e26 and base board6b1603f already merged/pushed with accepted local proof. Production/installed host/real GitHub NOT VERIFIED. Pending #31 resume fork, #30 after panel frontier.
+
+## Previous checkpoint — 2026-10-26 #33 MERGED/PUSHED, #35 final pass ready
 State: building next issue. Alignment decisions1–17 CONFIRMED.
 - #33 source e4b0091 independent PASS/APPROVED, merge6b1603f/proofbf745aa actual release9router/engineer ACCEPTED (report+audit inspected): web338/root517/focused230/protocol12/both-types/build/parity bee9a616, browser201/HTTP165/gateway19/baseline32/probes28 all pass. See outputs/issue-33-integration-acceptance.md.
 - Normal release-boundary fetch/status resolved previous UNKNOWN push: remote behind41, deliberate feature push exit0 confirmed aea7031→bf745aa. Source clean worktree removed/pruned, branch retained; DB deregistration pending small delegated housekeeping. No master/deploy/closure. #33 awaiting batch human validation.

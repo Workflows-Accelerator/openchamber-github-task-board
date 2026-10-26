@@ -1,6 +1,13 @@
 # Current continuation — 2026-10-23 (late)
 
-## Latest checkpoint — 2026-10-26 #33 merged proof accepted/PUSHED, #35 next
+## Latest checkpoint — 2026-10-26 deployment authorized, interrupted workers recovered
+- Decision18: user said "You're stopped. Proceed and deploy and hostile review etc." Accepted deployment go, not dedicated-secret reuse, L5 pass, issue closure or unreviewed master merge. Dedicated bot token/password availability remains empirical, check names only.
+- #35 final reviewer error Step interrupted. Source3b4eced unchanged, untracked verifications/issue-35-last-review/** preserved (contains preliminary R3/R7 failed probes). Recovery reviewer ses_d215a602a6fdeaebe1c9ce1b genius RUNNING tasks/issue-35-review-recovery.md in original worktree, SAME final check; required failure parks, no fix loop.
+- #37 original worker verified idle actual9router/genius with partial dirty web changes, no final report; replacement builder ses_f456ddf0ac270174a79ccf0a genius RUNNING tasks/issue-37-build-recovery.md, preserve dirty work and original scope, no duplicate active worker.
+- Deployment preflight ses_db928fa295bd459e709a528c engineer RUNNING in new team-ops-board-deployment ops/board-deployment base40952c6; tasks/board-deployment-preflight-current.md. READ-ONLY, private report stays untracked, no production changes before plan hostile gate. Accepted board+hosting may be staged only as honest single-repo base until #37 passes.
+- Root through5082991, review remote54816f6, known private files untouched. Actual new worker models verify on wakes. No production deployed, no L5 recorded, master unchanged.
+
+## Previous checkpoint — 2026-10-26 #33 merged proof accepted/PUSHED, #35 next
 - #33 merged6b1603f/evidencebf745aa, release actual9router/engineer ses_6224b676f8691117302b7661. Report53lines+audit read, ACCEPT outputs/issue-33-integration-acceptance.md: web338/root517/focused230/protocol12/bothtypes/build/parity bee9a616; merged browser201/HTTP165/gateway19/baseline32/probes28 all green, historical assertions retained.
 - Allowed fetch/status at release boundary proved earlier350f629 push did not advance remote; deliberate feature push exit0 aea7031→bf745aa. No master. #33 clean worktree removed/pruned, branch retained, DB deregistration PENDING delegated housekeeping. Evidence preserved in root merge. Own integration-dispatch journal was untracked during release and now must be checkpointed.
 - #35 final builder RUNNING ses_0c095fb063b12328c3b70274 genius tasks/issue-35-last-correction.md from220d1d5 clean allR1-R9, sole panel frontier. Verify actual model on wake. One final correction+independent recheck; further failed review PARKS. Receipt6417278407/status:in-progress. Both last review briefs on disk; fill actual final candidate before recheck. No worker duplicated.

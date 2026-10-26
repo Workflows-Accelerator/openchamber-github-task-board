@@ -1,6 +1,14 @@
 # Task-centred delivery
 
-## CURRENT — #33 MERGED/PUSHED, #35 final correction ready 2026-10-26
+## CURRENT — recovery and deployment go 2026-10-26
+
+- Owner deployment go recorded decision18; not L5 pass/credential reuse/issue closure.
+- #35 final recheck RECOVERING ses_d215a602a6fdeaebe1c9ce1b genius (same check after interrupted error), tasks/issue-35-review-recovery.md, candidate3b4eced. Provisional failing logs preserved; any reproduced required failure PARKS, no fix loop.
+- #37 build RECOVERING ses_f456ddf0ac270174a79ccf0a genius, tasks/issue-37-build-recovery.md, dirty partial source preserved; original worker idle/no final result.
+- Deployment current preflight RUNNING ses_db928fa295bd459e709a528c engineer team-ops-board-deployment, presence-only dedicated-secret audit + plan; read-only, private report untracked. Actual models on wake.
+- #33+hosting already merged/pushed through54816f6; not deployed. #31 pending resume fork; #30 still behind #35 panel frontier.
+
+## Previous — #33 MERGED/PUSHED, #35 final correction ready 2026-10-26
 
 | Outcome | State | Evidence / next |
 |---|---|---|
