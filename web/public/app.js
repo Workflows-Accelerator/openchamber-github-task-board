@@ -86,7 +86,13 @@
       if (draft.overview === null && !draft.answers.length) state.drafts.delete(draftKey);
     }
     if (state.board) state.board.issues = state.board.issues.map(function (row) {
-      return sameIdentity(row, issue) ? Object.assign({}, row, response.issue) : row;
+      if (!sameIdentity(row, issue)) return row;
+      var current = response.issue;
+      return Object.assign({}, row, current, { counts: {
+        subtasks: { total: current.subtasks.length, done: current.subtasks.filter(function (item) { return item.completed; }).length },
+        openQuestions: { total: current.openQuestions.length, open: current.openQuestions.filter(function (item) { return !item.completed; }).length },
+        humanTasks: { total: current.humanTasks.length, open: current.humanTasks.filter(function (item) { return !item.completed; }).length },
+      } });
     });
     if (generation !== state.readGeneration || !state.detail || !sameIdentity(state.detail, issue)) return false;
     state.detail = response.issue;
@@ -622,7 +628,7 @@
         type: 'button',
         text: 'Answer',
         onclick: function () {
-          saveAnswer(question.answerIndex, input);
+          saveAnswer(question.answerIndex, input, issue);
         },
       });
       list.appendChild(
@@ -818,7 +824,8 @@
     }
   }
 
-  async function saveAnswer(answerIndex, input) {
+  async function saveAnswer(answerIndex, input, source) {
+    if (source && (!state.detail || !sameIdentity(source, state.detail) || source.fingerprint !== state.detail.fingerprint)) return;
     if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) return;
     var value = input.value.trim();
     if (!value) {

@@ -102,3 +102,21 @@ test('a detail refresh started during a write cannot clear the later UNKNOWN out
   await app.saveOverview();
   assert.equal(calls.length, 2, 'no repeat after UNKNOWN without a newer explicit refresh');
 });
+
+test('detached question input stays bound to its exact source repository and observed revision', async () => {
+  const { app, get, calls } = browser(() => ({ issue: detail(beta), statusOptions: options }));
+  const source = app.state.detail;
+  const oldInput = get('answer-0');
+  await app.openIssue({ number: 1, repository: beta, key: 'owner/beta#1' });
+  await app.saveAnswer(0, oldInput, source);
+  assert.equal(calls.length, 1, 'no answer request from detached alpha input to beta');
+});
+
+test('answer confirms only the qualified combined row question count', async () => {
+  const updated = buildIssueDetail({ ...raw('Alpha answered'), body: '## Overview\nOriginal\n\n## Open Questions\n- [x] Decide? *(Answer: yes)*\n' }, alpha);
+  const { app, get } = browser(() => ({ issue: updated, statusOptions: options }));
+  app.state.board = { repo: 'All repositories', issues: [...buildBoardList([raw('Alpha')], alpha).issues, ...buildBoardList([raw('Beta')], beta).issues] };
+  await app.saveAnswer(0, get('answer-0'));
+  assert.equal(app.state.board.issues[0].counts.openQuestions.open, 0);
+  assert.equal(app.state.board.issues[1].counts.openQuestions.open, 1);
+});
