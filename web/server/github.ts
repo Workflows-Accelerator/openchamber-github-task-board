@@ -70,6 +70,7 @@ function kindForStatus(
   headers?: Headers,
   data?: any,
   jsonParsed = false,
+  method = 'GET',
 ): GitHubErrorKind {
   if (!jsonParsed || !data || typeof data !== 'object') {
     return 'server';
@@ -85,8 +86,21 @@ function kindForStatus(
   }
   if (status === 404) return 'not_found';
   if (status === 422) {
-    const msg = typeof data?.message === 'string' ? data.message.toLowerCase() : '';
-    if (msg.includes('validation failed') || Array.isArray(data?.errors)) {
+    if (method === 'GET' && typeof data.message === 'string' && data.message.toLowerCase() === 'validation failed') {
+      return 'invalid';
+    }
+    // A gateway can return JSON, errors[] or validation words after committing
+    // a write. Only the recognisable GitHub validation contract is definitive.
+    if (
+      data.message === 'Validation Failed' &&
+      Array.isArray(data.errors) && data.errors.length > 0 &&
+      data.errors.every((error: any) =>
+        error && typeof error === 'object' && !Array.isArray(error) &&
+        typeof error.resource === 'string' && error.resource.length > 0 &&
+        typeof error.field === 'string' && error.field.length > 0 &&
+        ['missing', 'missing_field', 'invalid', 'already_exists', 'unprocessable', 'custom'].includes(error.code),
+      )
+    ) {
       return 'invalid';
     }
     return 'server';
@@ -176,7 +190,7 @@ export class GitHubClient {
     }
 
     if (!response.ok) {
-      const kind = kindForStatus(response.status, response.headers, data, jsonParsed);
+      const kind = kindForStatus(response.status, response.headers, data, jsonParsed, options.method);
       const message =
         kind === 'unauthorized'
           ? 'GitHub rejected the stored token'
