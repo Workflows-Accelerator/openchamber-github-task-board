@@ -6,7 +6,7 @@ Timestamp: 2026-10-26
 
 Decision17 final corrections: #33 CLEARED and integrated. Independent e4b0091 actual9router/genius Security APPROVED/Spec PASS/Quality APPROVED; merge6b1603f/proofbf745aa accepted, feature branch pushed throughbf745aa. Merged web338/root517/focused230/protocol12/bothtypes/build+parity bee9a616; browser201(177malformed+24valid,1PATCH each)/HTTP165/gateway19/baseline32/probes28 all pass; 84screenshots+2134log audit. #33 awaiting batch human.
 #35 final R1-R9 correction RUNNING ses_0c095fb063b12328c3b70274 genius from220d1d5 clean, receipt6417278407/in-progress. Latest failed #35 proof (220d1d5 HALT) remains authoritative until new independent verdict. Further failed recheck parks issue. No master/deploy/closure.
-Hosting prep builder b8e517c actual9router/engineer claims web347/root517/types/bundle a35cc799; NOT accepted. Hostile review6efb78e HALT: H1 unapproved BOARD_GITHUB_API_BASE could send the token to an operator origin; M2 hardcoded version; L3 order-dependent start test; I4 HEAD405; doc gaps. Correction ses_3a11948265f629d27952c7ee engineer running; one independent recheck follows. No deployment, proxy/TLS/restart proof.
+Hosting prep correction c828bf3/848c9f8/cd0734b actual9router/engineer claims all five findings closed (token-origin escape removed, honest version, isolated start test, GET-only docs, build prerequisite) with hosting11/web349/root517/types/bundle c385ced6; NOT accepted. Independent recheck ses_1199b4d0ff9aa1f8fc699b2d running. No deployment, proxy/TLS/restart proof.
 
 ## Executed levels by member
 | Member | L0 static | L1 regression | L2 integration | L3 user's way | L4 independent hostile | L5 human |

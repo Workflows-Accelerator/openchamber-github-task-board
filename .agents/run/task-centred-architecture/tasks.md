@@ -7,7 +7,7 @@
 | #33 browser board | MERGED/PUSHED, awaiting batch human | L4e4b0091 PASS/APPROVED; merge6b1603f/proofbf745aa accepted web338/root517/browser201/HTTP165/types/build/parity. Feature push confirmed; clean source removed/pruned, branch retained. DB deregistration pending |
 | #35 refresh write coverage | RUNNING final R1-R9 correction | ses_0c095fb063b12328c3b70274 genius source220d1d5 clean, tasks/issue-35-last-correction.md; actual model on wake; receipt6417278407/in-progress. Decision17 one final correction/check, failure PARKS |
 | #28/#34/#36 panel protections | MERGED/PUSHED, awaiting batch | Accepted unchanged, installed host/liveGitHub NOT VERIFIED |
-| Hosting prep (bind/health/start) | CORRECTION AFTER HALT | Review6efb78e: H1 token could be sent to operator-supplied BOARD_GITHUB_API_BASE; M2 hardcoded version; L3 order-dependent test; I4 HEAD405. Correction ses_3a11948265f629d27952c7ee engineer running, one recheck after; no deploy authority |
+| Hosting prep (bind/health/start) | RECHECK RUNNING | Correction c828bf3/848c9f8/cd0734b addresses H1 token-origin escape, M2 honest version, L3 isolation, I4 docs; claims hosting11/web349/root517/types/bundle c385ced6. Recheck ses_1199b4d0ff9aa1f8fc699b2d engineer; no deploy authority |
 | #37 visible repositories | ALIGNED, QUEUED | decision15 show archived/empty; next web frontier after hosting |
 | #31 questions/alerts loop | ALIGNED, QUEUED | PWA push + 60s polling after hosting/#37 |
 | #30 proportionate feature/bug path | BLOCKED #35 | Brief ready; expiration excluded/unanswered |
