@@ -1,0 +1,10 @@
+# Issue 37 — accepted integration audit
+
+Manager decision 2026-10-26: ACCEPT local review-branch integration merge8660d21 + proof095768f after independent audit ses_6acf71974c8f2712d09b5332 actual9router/engineer Spec PASS / Quality APPROVED / PROCEED. This is NOT L5, production deployment, or master approval.
+
+- L4 source cdc48b1 accepted after actual9router/genius Security APPROVED/Spec PASS/Quality APPROVED/PROCEED: F1–F4 independently reproduced closed; deliberate mutants each failed. Report retained private untracked in source worktree.
+- Integration actual9router/engineer: conflicts0; web384/root517 (initial scale<60ms load flake, targeted+full rerun pass); both types0; build0; hosting11/11; F1–F4 root probes0; bundle006ebe36925f4c13a5f8743257e1acedf848e608d2a60abc3aedf47b9f0fc797. Reports/raw logs at outputs/issue-37-integration.md and verifications/issue-37-integration/**.
+- Audit explains305 panel/main.js diff lines: unchanged panel TS; generated path depth plus installed @openchamber/sdk status-view/manifest exports under tree-shaking=false. Fresh scratch root build byte-identical cmp0, SHA25686109df8bba22462bde7a6041eeb7167f1ad87842fc659949bca389df60c39a3; shipped parity18/18. No private reports, secrets or manager edits staged by worker. F1–F4 scripts target root and assert genuine outcomes.
+- Audit report outputs/issue-37-integration-audit.md untracked in source worktree; preserve before cleanup. No cleanup until private reports/evidence transferred privately; never stage private hosting findings. Local feature branch retained under portfolio policy.
+- Correction to integration report authority wording: deployment WAS authorised decision18, but NOT executed and still blocked by secure credentials, safe staged handover, private networking/transport and approved merged supervisor. No further permission needed for already-aligned deployment scope; no implied L5.
+- NOT VERIFIED: real token repository coverage/permission revocation, installed panel, headless-browser rendering of final merged tree, physical touch/keyboard, proxy/TLS/container restart/persistence/production writes. Awaiting batch human validation.
