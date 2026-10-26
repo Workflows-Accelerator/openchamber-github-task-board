@@ -4,7 +4,11 @@
 State: releasing/proving; alignment decisions1–24 CONFIRMED.
 - Review branch PUBLISHED fresh from54816f6 to73ad23f (includes accepted #37 integration8660d21/proof095768f and deterministic panel bundle audit; feature-branch push only, no master). Manager acceptance outputs/issue-37-integration-acceptance.md.
 - Owner decisions21–24 recorded: supervisor conditional merge (passed independent fb3e175 recheck then release dispatch), final#30 correction, standalone question loop stops at saved answers+notifications (no resumption), one staged deployment-package replacement. #31 body reconciled (no resumption, no #35 dependency) with receipt6427913024 and moved planned; #30 receipt6427564861 moved in-progress.
-- Active workers: #30 final recheck ses_c654ade2635dfdb492ae158d genius; supervisor config release/merge+push ses_aef9d14a405a1668c3ab164e engineer tasks/board-entrypoint-release.md; staged deployment package ses_43aa2971b4c1879bb721558c genius; #31 minimal plan ses_b8338d5d9814e6d1697aab0c engineer. Owner runbook v4 HALT details recorded; no runbook execution.
+- Supervisor RELEASED: independent fb3e175 recheck ses_7896cfe1285972c43f256c49 actual9router/engineer Security APPROVED/Spec PASS/Quality APPROVED/PROCEED; owner-authorised release ses_aef9d14a405a1668c3ab164e merged9a23609 into opencode-config master and pushed, remote tip abd6d6b verified by ls-remote, 23/23+655+19, nine syntax checks, default-off no-PID. Receipt outputs/board-supervisor-release-receipt.md pins abd6d6b for deployment; live deployment untouched. L5 waived for this internal default-off merge only by decisions20/21.
+- #30 FINAL recheck ses_c654ade2635dfdb492ae158d actual9router/genius PROCEED, zero required findings (614/614 prompt bytes identical, four+eight mutants fail, full525/525 after unchanged timing flake, panel7cb9aaa). ACCEPTED; integration dispatched.
+- #31 plan 2f6d0dd (80 lines) proposes three slices, preserves #33/#34 answer path, strict push-endpoint SSRF filtering, generic lockscreen text, in-memory baseline, bounded observer. Three genuine forks remain for the owner (relay filtering scope, restart baseline persistence, VAPID key origin); no implementation approval yet.
+- Deployment staged package ses_43aa2971b4c1879bb721558c genius RUNNING; must pin abd6d6b and all-repo095768f; v4 HALT findings must be closed or explicitly blocked. No runbook execution.
+
 - Config root fetch timed out manager-side120s; release worker bounded to ONE fetch and must stop rather than push blind.
 
 State: proving/integration; alignment decisions1–20 CONFIRMED.
