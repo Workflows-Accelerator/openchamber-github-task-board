@@ -1,54 +1,49 @@
-=== mutation A (exit shown in log header) ===
-not ok 5 - panel/main.ts preflight brief includes extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
+=== mutation A exit=1 ===
+not ok 5 - panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
 not ok 14 - panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
 not ok 20 - panel/main.ts: all session launch surfaces declare native skills and retain transclusions
 # tests 20
 # pass 17
 # fail 3
-=== mutation B (exit shown in log header) ===
-not ok 5 - panel/main.ts preflight brief includes extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
+=== mutation B exit=1 ===
+not ok 5 - panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
 not ok 14 - panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
 not ok 20 - panel/main.ts: all session launch surfaces declare native skills and retain transclusions
 # tests 20
 # pass 17
 # fail 3
-=== mutation C (exit shown in log header) ===
-not ok 14 - panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
-not ok 20 - panel/main.ts: all session launch surfaces declare native skills and retain transclusions
-# tests 20
-# pass 18
-# fail 2
-=== mutation D (exit shown in log header) ===
-not ok 14 - panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
-not ok 20 - panel/main.ts: all session launch surfaces declare native skills and retain transclusions
-# tests 20
-# pass 18
-# fail 2
-=== mutation E (exit shown in log header) ===
-not ok 5 - panel/main.ts preflight brief includes extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
+=== mutation C exit=1 ===
+not ok 5 - panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
 not ok 14 - panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
 not ok 20 - panel/main.ts: all session launch surfaces declare native skills and retain transclusions
 # tests 20
 # pass 17
 # fail 3
-=== mutation F (exit shown in log header) ===
+=== mutation D exit=1 ===
+not ok 5 - panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
+not ok 14 - panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
+not ok 20 - panel/main.ts: all session launch surfaces declare native skills and retain transclusions
+# tests 20
+# pass 17
+# fail 3
+=== mutation E exit=1 ===
+not ok 5 - panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
+not ok 14 - panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
+not ok 20 - panel/main.ts: all session launch surfaces declare native skills and retain transclusions
+# tests 20
+# pass 17
+# fail 3
+=== mutation F exit=1 ===
 not ok 14 - panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
 # tests 20
 # pass 19
 # fail 1
-=== mutation G (exit shown in log header) ===
+=== mutation G exit=1 ===
 not ok 14 - panel/main.ts live launch paths call the issue-specific renderers exactly once and add no generic block
 # tests 20
 # pass 19
 # fail 1
-scratch baseline:
+baseline exit=0
 # tests 20
 # pass 20
 # fail 0
-mutation A exit=1
-mutation B exit=1
-mutation C exit=1
-mutation D exit=1
-mutation E exit=1
-mutation F exit=1
-mutation G exit=1

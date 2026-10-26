@@ -33,13 +33,13 @@ Baseline: 20/20 pass, exit 0.
 | --- | --- | --- |
 | A preflight call -> `DEFAULT_WORK_INSTRUCTIONS` | 1 | drafting retarget, slice test 8, native retarget |
 | B preflight call deleted | 1 | drafting retarget, slice test 8, native retarget |
-| C batch call -> `DEFAULT_WORK_INSTRUCTIONS` | 1 | slice test 8, native retarget |
-| D batch call deleted | 1 | slice test 8, native retarget |
+| C batch call -> `DEFAULT_WORK_INSTRUCTIONS` | 1 | drafting retarget, slice test 8, native retarget |
+| D batch call deleted | 1 | drafting retarget, slice test 8, native retarget |
 | E preflight call commented out | 1 | drafting retarget, slice test 8, native retarget |
 | F `+ DEFAULT_WORK_INSTRUCTIONS` appended to preflight | 1 | slice test 8 |
 | G same appended to batch | 1 | slice test 8 |
 
-Under every one of the four required mutations at least one retargeted test and test 8 fail. Mutation C/D do not fail the preflight-only drafting test by design; the native test covers both surfaces. Logs: `verifications/issue-30-fix-round-3/mutations.log`.
+Under every one of the four required mutations both retargeted tests and test 8 fail. Logs: `verifications/issue-30-fix-round-3/mutations.log`.
 
 ## Byte-identical prompts
 

@@ -13,6 +13,7 @@ import {
   mergeTemplates,
   buildAgentIssuePrompt,
   renderSingleIssueBrief,
+  renderBatchLaunchPrompt,
 } from '../panel/core.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -129,7 +130,7 @@ test('DEFAULT_TEMPLATES, mergeTemplates, and buildAgentIssuePrompt are first-cla
   assert.ok(prompt.includes('Bug Report'));
 });
 
-test('panel/main.ts preflight brief includes extended skills (UI, API, Perf, Security, Refactor) and AFK protocol', () => {
+test('panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol', () => {
   const extendedIssue = {
     number: 124,
     title: 'Extended skill coverage',
@@ -158,11 +159,26 @@ test('panel/main.ts preflight brief includes extended skills (UI, API, Perf, Sec
   assert.ok(brief.includes('Load relevant skills'));
   assert.ok(brief.includes('Transclusion references for worker sessions'));
 
-  // The live preflight path must invoke that renderer; a comment or a missing call is not coverage.
+  const batchPrompt = renderBatchLaunchPrompt(extendedIssue);
+  assert.ok(batchPrompt.includes('### Recommended Skills:'), 'Batch prompt must contain the recommended skills section');
+  assert.ok(batchPrompt.includes('frontend-ui-engineering'));
+  assert.ok(batchPrompt.includes('api-and-interface-design'));
+  assert.ok(batchPrompt.includes('performance-optimization'));
+  assert.ok(batchPrompt.includes('security-and-hardening'));
+  assert.ok(batchPrompt.includes('code-simplification'));
+  assert.ok(batchPrompt.includes('safe-refactor'));
+  assert.ok(batchPrompt.includes('Autonomous & AFK Protocol'));
+  assert.ok(batchPrompt.includes('Load with skill tool:'));
+  assert.ok(batchPrompt.includes('Transclusion fallback:'));
+
+  // The live launch paths must invoke those renderers; a comment or a missing call is not coverage.
   const preflightMatch = MAIN_TS.match(/function updatePreflightBrief\(\): void \{([\s\S]*?)\n\}/);
   assert.ok(preflightMatch, 'updatePreflightBrief must exist in panel/main.ts');
-  const preflightBody = stripComments(preflightMatch[1]);
-  assert.match(preflightBody, /renderSingleIssueBrief\s*\(\s*activeIssue\b/);
+  assert.match(stripComments(preflightMatch[1]), /renderSingleIssueBrief\s*\(\s*activeIssue\b/);
+
+  const batchMatch = MAIN_TS.match(/async function launchBatchSeparateSessions\(\): Promise<void> \{([\s\S]*?)\n\}/);
+  assert.ok(batchMatch, 'launchBatchSeparateSessions must exist in panel/main.ts');
+  assert.match(stripComments(batchMatch[1]), /renderBatchLaunchPrompt\s*\(\s*issue\s*\)/);
 });
 
 test('panel/main.ts handleFilePathClick checks currentDirectory and currentProject candidates', () => {
