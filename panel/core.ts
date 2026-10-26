@@ -1843,6 +1843,30 @@ export function buildLaunchSessionPayload(options: {
   };
 }
 
+export const DEFAULT_WORK_INSTRUCTIONS = `### Work Type & Proportionate Paths:
+- Labels \`bug\` and \`enhancement\` are the only work-type source.
+- When both or neither are present, the work type is undecided and must be asked about, not guessed. Never infer a type from the title, the mood of the report, or the area of the code.
+- Undecided work type is an alignment question to the user, not a default. Only block work that depends on the unanswered question; independent authorised work continues.
+- Work Log: Exactly one required sentence in the Work Log stating which work type applies and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+- Proportionate paths:
+  - Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.
+  - Feature path: desired outcome, research and alternatives, user decisions, then implementation.
+  - Both paths keep existing evidence rules and existing human authority over release and closure.`;
+
+export type WorkType = 'bug' | 'feature' | 'undecided';
+
+export function resolveIssueWorkType(issue: Issue | null | undefined): WorkType {
+  if (!issue || !Array.isArray(issue.labels)) return 'undecided';
+  const labelNames = issue.labels.map((l: any) =>
+    (typeof l === 'string' ? l : l?.name || '').toLowerCase().trim()
+  );
+  const hasBug = labelNames.includes('bug');
+  const hasEnhancement = labelNames.includes('enhancement');
+  if (hasBug && !hasEnhancement) return 'bug';
+  if (hasEnhancement && !hasBug) return 'feature';
+  return 'undecided';
+}
+
 export const DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
 
 Input Objective / User Mind-Dump:
@@ -1865,8 +1889,9 @@ Instructions for the Agent:
    - Human Tasks: Add a "### Human Tasks:" section with interactive Markdown checkboxes (- [ ]) with verb-first items (e.g. "Approve ...", "Review PR #N", "Grant access to ...", "Deploy ...") written at the moment the agent blocks on a human or hands off for validation.
    - Test Plan: Add a "## Test Plan (Issue):" section with interactive Markdown checkboxes (- [ ]) listing exact automated verification commands.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
-   - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
-4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo". An agent never sets phase:done, phase:archive or status:done and never closes an issue.
+   - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation"). Existing labels "bug" and "enhancement" are the single source of work type. When both or neither are present, the work type is undecided and must be asked about, not guessed; never infer a type from the title, the mood of the report, or the area of the code. Never introduce a "type:*" label or body work-type field.
+   - Work Log: Optional "### Work Log:" section for execution notes and evidence. The Work Log contract requires exactly one required sentence: which work type applies and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo". An agent never sets phase:done, phase:archive or status:done and never closes an issue. Undecided work type is an alignment question to the user, not a default; only block work that depends on the unanswered question while independent authorised work continues.
 5. Creation: If a GitHub token is configured or available in ~/.git-credentials, create issues directly via curl:
    curl -s -X POST -H "Authorization: Bearer <token>" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/{repo}/issues -d '{"title":"...","body":"...","labels":["status:todo",...]}'
    Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
@@ -2262,6 +2287,16 @@ export function buildConsolidatedIssuePrompt(selectedIssues: Issue[]): string {
   prompt += `- Work through the packaged issues sequentially or in coordination, verifying each step with tests.\n`;
   prompt += `- If blocked on human decisions, permissions, or secrets while the human is away, record explicit items under "### Human Tasks:" in the issue body, mark "status:needs-human", and continue with any unblocked tasks.\n\n`;
 
+  prompt += `### Work Type & Proportionate Paths:\n`;
+  prompt += `- Labels \`bug\` and \`enhancement\` are the only work-type source.\n`;
+  prompt += `- When both or neither are present, the work type is undecided and must be asked about, not guessed. Never infer a type from the title, the mood of the report, or the area of the code.\n`;
+  prompt += `- Undecided work type is an alignment question to the user, not a default. Only block work that depends on the unanswered question; independent authorised work continues.\n`;
+  prompt += `- Work Log: Exactly one required sentence in the Work Log stating which work type applies and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.\n`;
+  prompt += `- Proportionate paths:\n`;
+  prompt += `  - Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.\n`;
+  prompt += `  - Feature path: desired outcome, research and alternatives, user decisions, then implementation.\n`;
+  prompt += `  - Both paths keep existing evidence rules and existing human authority over release and closure.\n\n`;
+
   prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
   return prompt;
 }
@@ -2272,7 +2307,7 @@ export const DEFAULT_TEMPLATES: Record<string, { id: string; name: string; descr
     name: 'Bug Report',
     description: 'Investigate unexpected behavior, identify root cause, and draft fix subtasks',
     promptInstructions: `### Problem Description
-[Detailed explanation of what went wrong, including error messages or unexpected behavior]
+[Detailed explanation of observed versus expected behaviour, including error messages]
 
 ### Steps to Reproduce
 1. [First step]
@@ -2292,13 +2327,17 @@ export const DEFAULT_TEMPLATES: Record<string, { id: string; name: string; descr
     name: 'Feature / Enhancement',
     description: 'Design and specify new functionality with architectural plan and subtasks',
     promptInstructions: `### Goal & User Value
-[Why this feature is needed and what problem it solves]
+[Desired outcome: why this feature is needed and what problem it solves]
+
+### Research & Alternatives
+[Explore alternatives, trade-offs, and design choices]
 
 ### Architectural & UI Design
 [Proposed technical architecture, component structure, or API changes]
 
 ### Actionable Implementation Subtasks
 - [ ] Define interfaces and types
+- [ ] Align on user decisions
 - [ ] Implement core logic / components
 - [ ] Add unit and integration tests
 - [ ] Verify end-to-end user flow`,

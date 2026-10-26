@@ -121,6 +121,245 @@
     return true;
   };
 
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-view.js
+  var GUEST_STATUS_SOURCE_INTERVAL_MIN = 1e3;
+  var GUEST_STATUS_SOURCE_INTERVAL_MAX = 6e4;
+  var GUEST_STATUS_SOURCE_INTERVAL_DEFAULT = 2e3;
+  var GUEST_STATUS_VIEW_ROWS_MAX = 16;
+  var GUEST_STATUS_VIEW_ACTIONS_MAX = 2;
+  var GUEST_STATUS_VIEW_CHIPS_MAX = 6;
+  var GUEST_STATUS_VIEW_CHART_POINTS_MAX = 120;
+  var GUEST_STATUS_VIEW_SEGMENTS_MIN = 2;
+  var GUEST_STATUS_VIEW_SEGMENTS_MAX = 4;
+  var GUEST_STATUS_VIEW_TEXT_MAX = 200;
+  var GUEST_STATUS_VIEW_NOTE_MAX = 300;
+  var GUEST_STATUS_VIEW_ICON = /^[a-z0-9][a-z0-9-]{0,39}$/;
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/manifest.js
+  var PANEL_ID = /^[a-z][a-z0-9-]*$/;
+  var GUEST_SURFACE_DOCKS = ["top", "bottom", "left", "right"];
+  var GUEST_SURFACE_DOCK_DEFAULT = "top";
+  var GUEST_SURFACE_DOCK_SIZE_DEFAULT = 40;
+  var GUEST_SURFACE_DOCK_SIZE_MIN = 24;
+  var GUEST_SURFACE_DOCK_SIZE_MAX = 480;
+  var GUEST_STATUS_SECTION_TITLE_MAX = 60;
+  var GUEST_STATUS_SECTION_HEIGHT_MIN = 24;
+  var GUEST_STATUS_SECTION_HEIGHT_MAX = 320;
+  var GUEST_STATUS_SECTION_HEIGHT_DEFAULT = 120;
+  var GUEST_ACTIONS_MAX = 8;
+  var GUEST_ACTION_LABEL_MAX = 40;
+  var GUEST_COMMANDS_MAX = 8;
+  var GUEST_COMMAND_DESCRIPTION_MAX = 80;
+  var GUEST_COMMAND_NAME = /^[a-z][a-z0-9-]{0,23}$/;
+  var GUEST_TOOLS_MAX = 16;
+  var GUEST_TOOL_MATCH_MAX = 128;
+  var GUEST_TOOL_MATCH = /^[A-Za-z0-9_.:-]+\*?$/;
+  var GUEST_TOOL_NAME_MAX = 40;
+  var GUEST_TOOL_TEMPLATE_MAX = 200;
+  var GUEST_TOOL_TEMPLATE_VALUE_MAX = 200;
+  var GUEST_TOOL_LANGUAGE_MAX = 32;
+  var GUEST_TOOL_COLUMNS_MAX = 16;
+  var GUEST_TOOL_COLUMN_MAX = 64;
+  var GUEST_TOOL_OUTPUTS = ["auto", "text", "json", "markdown", "code", "table"];
+  var HOST_LINEAR_API_ORIGIN = "https://api.linear.app";
+  var resolveIntegrationAuth = (integration) => {
+    const kinds = [Boolean(integration.oauth), Boolean(integration.token), Boolean(integration.host)].filter(Boolean).length;
+    if (kinds !== 1) {
+      return null;
+    }
+    if (integration.host)
+      return "host";
+    return integration.oauth ? "oauth" : "token";
+  };
+  var resolveTokenAuthorization = (scheme) => {
+    if (scheme === "bearer" || scheme === "basic") {
+      return scheme;
+    }
+    return "header";
+  };
+  var resolveIntegrationApi = (integration) => {
+    if (integration.oauth) {
+      return {
+        apiOrigin: integration.oauth.apiOrigin,
+        account: integration.oauth.account,
+        authorization: "bearer"
+      };
+    }
+    if (integration.token) {
+      return {
+        apiOrigin: integration.token.apiOrigin,
+        account: integration.token.account,
+        authorization: resolveTokenAuthorization(integration.token.scheme)
+      };
+    }
+    if (integration.host?.provider === "linear") {
+      return {
+        apiOrigin: HOST_LINEAR_API_ORIGIN,
+        authorization: "bearer"
+      };
+    }
+    return null;
+  };
+  var GUEST_SERVICE_PROVIDES = ["browser", "source-control"];
+  var SOURCE_CONTROL_GUEST_ID_MAX = 28;
+  var sourceControlProviderIdOf = (guestId) => `ext-${guestId}`;
+  var SOURCE_CONTROL_DEFAULT_INSTANCES_MAX = 4;
+  var SOURCE_CONTROL_URL_TEMPLATES_MAX = 8;
+  var SOURCE_CONTROL_URL_TEMPLATE_MAX = 256;
+  var SOURCE_CONTROL_URL_TOKENS = ["{owner}", "{namespace+}", "{repo}", "{number}"];
+  var toPublicSourceControl = (contribution) => ({
+    label: contribution.label,
+    defaultInstances: [...contribution.instances.defaultInstances],
+    custom: contribution.instances.custom
+  });
+  var serviceProvides = (service, role) => Boolean(service?.provides?.includes(role));
+  var GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells", "conversation", "service", "network", "filesystem", "origins"];
+  var DECLARED_GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells"];
+  var GUEST_ORIGINS_MAX = 8;
+  var GUEST_FILESYSTEM_PATTERNS_MAX = 16;
+  var GUEST_FILESYSTEM_PATTERN_MAX = 256;
+  var isGuestFilesystemPattern = (value) => {
+    if (value.length === 0 || value.length > GUEST_FILESYSTEM_PATTERN_MAX) {
+      return false;
+    }
+    if (value.includes("\0") || value.includes("\\")) {
+      return false;
+    }
+    if (!value.startsWith("/") && !value.startsWith("~/")) {
+      return false;
+    }
+    const segments = value.split("/").slice(1);
+    return !segments.some((segment) => segment === "" || segment === "..");
+  };
+  var guestActionsNeedConversation = (actions2) => Boolean(actions2?.some((action) => action.payload?.includes("messages")));
+  var requestedGuestCapabilities = (contributes) => {
+    const declared = new Set(contributes.capabilities ?? []);
+    if (guestActionsNeedConversation(contributes.actions))
+      declared.add("conversation");
+    if (contributes.service)
+      declared.add("service");
+    if (contributes.integration)
+      declared.add("network");
+    if (contributes.filesystem && contributes.filesystem.length > 0)
+      declared.add("filesystem");
+    if (contributes.origins && contributes.origins.length > 0)
+      declared.add("origins");
+    return GUEST_CAPABILITIES.filter((capability) => declared.has(capability));
+  };
+  var hasGuestPage = (contributes) => Boolean(contributes.panel.entry);
+  var isGuestApproved = (capabilities) => capabilities.requested.every((capability) => capabilities.granted.includes(capability));
+  var hasGuestCapability = (capabilities, capability) => capabilities.granted.includes(capability);
+  var isAttachObject = (attach) => attach !== void 0 && attach !== true && attach !== false && attach !== "panel" && attach !== "dialog";
+  var resolveAttachMode = (attach) => {
+    if (attach === true || attach === "panel")
+      return "panel";
+    if (attach === "dialog")
+      return "dialog";
+    if (isAttachObject(attach))
+      return attach.mode;
+    return null;
+  };
+  var resolveAttachEntry = (contributes) => {
+    const attach = contributes.attach;
+    if (!isAttachObject(attach) || attach.mode !== "dialog")
+      return null;
+    return attach.entry ?? null;
+  };
+  var resolvePageEntry = (contributes) => {
+    if (!contributes.page || !contributes.panel.entry)
+      return null;
+    return contributes.page === true ? contributes.panel.entry : contributes.page.entry;
+  };
+  var resolveStatusSectionEntry = (contributes) => {
+    const section = contributes.statusSection;
+    if (!section)
+      return null;
+    return section === true ? contributes.panel.entry ?? null : section.entry ?? null;
+  };
+  var resolveStatusSectionSource = (contributes) => {
+    const section = contributes.statusSection;
+    if (!section || section === true || !section.source)
+      return null;
+    return { path: section.source.path, interval: section.source.interval ?? GUEST_STATUS_SOURCE_INTERVAL_DEFAULT };
+  };
+  var clampStatusSectionHeight = (height) => {
+    if (!Number.isFinite(height))
+      return GUEST_STATUS_SECTION_HEIGHT_DEFAULT;
+    return Math.min(GUEST_STATUS_SECTION_HEIGHT_MAX, Math.max(GUEST_STATUS_SECTION_HEIGHT_MIN, Math.round(height)));
+  };
+  var isSafeAssetPath = (value) => {
+    if (value.includes("\0") || value.includes("\\") || value.startsWith("/") || value.includes("://")) {
+      return false;
+    }
+    const segments = value.split("/");
+    if (segments.some((segment) => segment === "" || segment === "." || segment === "..")) {
+      return false;
+    }
+    return /^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(value);
+  };
+  var isGuestPackageSvgIcon = (value) => isSafeAssetPath(value) && value.toLowerCase().endsWith(".svg");
+  var toPublicIntegration = (integration) => {
+    const auth = resolveIntegrationAuth(integration) ?? "oauth";
+    const next = {
+      name: integration.name,
+      description: integration.description,
+      auth
+    };
+    const api = resolveIntegrationApi(integration);
+    if (api?.apiOrigin) {
+      next.apiOrigin = api.apiOrigin;
+    }
+    if (auth === "token" && integration.token) {
+      next.token = { scheme: integration.token.scheme ?? "raw" };
+      if (integration.token.usernameLabel) {
+        next.token.usernameLabel = integration.token.usernameLabel;
+      }
+    }
+    if (integration.settings && integration.settings.length > 0) {
+      next.settings = integration.settings.map((field2) => ({
+        id: field2.id,
+        label: field2.label
+      }));
+    }
+    return next;
+  };
+  var toPublicService = (service, granted, socketBindings) => {
+    if (!service) {
+      return void 0;
+    }
+    const next = {
+      runtime: service.runtime,
+      granted
+    };
+    if (service.permissions) {
+      const permissions = {};
+      if (service.permissions.sockets && service.permissions.sockets.length > 0) {
+        permissions.sockets = service.permissions.sockets.map((binding) => binding.id);
+      }
+      if (service.permissions.exec && service.permissions.exec.length > 0) {
+        permissions.exec = [...service.permissions.exec];
+      }
+      if (permissions.sockets || permissions.exec) {
+        next.permissions = permissions;
+      }
+    }
+    if (socketBindings && socketBindings.length > 0) {
+      next.socketBindings = socketBindings.map((binding) => ({
+        id: binding.id,
+        candidates: [...binding.candidates],
+        resolved: binding.resolved,
+        override: binding.override
+      }));
+    }
+    if (service.provides && service.provides.length > 0) {
+      next.provides = [...service.provides];
+    }
+    if (service.surface) {
+      next.surface = true;
+    }
+    return next;
+  };
+
   // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
   var GUEST_FILE_EDITORS_MAX = 8;
   var GUEST_FILE_EDITOR_TITLE_MAX = 60;
@@ -5711,6 +5950,26 @@ ${lines.join("\n")}`;
       }
     };
   }
+  var DEFAULT_WORK_INSTRUCTIONS = `### Work Type & Proportionate Paths:
+- Labels \`bug\` and \`enhancement\` are the only work-type source.
+- When both or neither are present, the work type is undecided and must be asked about, not guessed. Never infer a type from the title, the mood of the report, or the area of the code.
+- Undecided work type is an alignment question to the user, not a default. Only block work that depends on the unanswered question; independent authorised work continues.
+- Work Log: Exactly one required sentence in the Work Log stating which work type applies and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+- Proportionate paths:
+  - Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.
+  - Feature path: desired outcome, research and alternatives, user decisions, then implementation.
+  - Both paths keep existing evidence rules and existing human authority over release and closure.`;
+  function resolveIssueWorkType(issue) {
+    if (!issue || !Array.isArray(issue.labels)) return "undecided";
+    const labelNames = issue.labels.map(
+      (l) => (typeof l === "string" ? l : l?.name || "").toLowerCase().trim()
+    );
+    const hasBug = labelNames.includes("bug");
+    const hasEnhancement = labelNames.includes("enhancement");
+    if (hasBug && !hasEnhancement) return "bug";
+    if (hasEnhancement && !hasBug) return "feature";
+    return "undecided";
+  }
   var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
 
 Input Objective / User Mind-Dump:
@@ -5733,8 +5992,9 @@ Instructions for the Agent:
    - Human Tasks: Add a "### Human Tasks:" section with interactive Markdown checkboxes (- [ ]) with verb-first items (e.g. "Approve ...", "Review PR #N", "Grant access to ...", "Deploy ...") written at the moment the agent blocks on a human or hands off for validation.
    - Test Plan: Add a "## Test Plan (Issue):" section with interactive Markdown checkboxes (- [ ]) listing exact automated verification commands.
    - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
-   - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation").
-4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo". An agent never sets phase:done, phase:archive or status:done and never closes an issue.
+   - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation"). Existing labels "bug" and "enhancement" are the single source of work type. When both or neither are present, the work type is undecided and must be asked about, not guessed; never infer a type from the title, the mood of the report, or the area of the code. Never introduce a "type:*" label or body work-type field.
+   - Work Log: Optional "### Work Log:" section for execution notes and evidence. The Work Log contract requires exactly one required sentence: which work type applies and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo". An agent never sets phase:done, phase:archive or status:done and never closes an issue. Undecided work type is an alignment question to the user, not a default; only block work that depends on the unanswered question while independent authorised work continues.
 5. Creation: If a GitHub token is configured or available in ~/.git-credentials, create issues directly via curl:
    curl -s -X POST -H "Authorization: Bearer <token>" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/{repo}/issues -d '{"title":"...","body":"...","labels":["status:todo",...]}'
    Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
@@ -6075,6 +6335,25 @@ ${transclusions.join("\n")}
     prompt += `- If blocked on human decisions, permissions, or secrets while the human is away, record explicit items under "### Human Tasks:" in the issue body, mark "status:needs-human", and continue with any unblocked tasks.
 
 `;
+    prompt += `### Work Type & Proportionate Paths:
+`;
+    prompt += `- Labels \`bug\` and \`enhancement\` are the only work-type source.
+`;
+    prompt += `- When both or neither are present, the work type is undecided and must be asked about, not guessed. Never infer a type from the title, the mood of the report, or the area of the code.
+`;
+    prompt += `- Undecided work type is an alignment question to the user, not a default. Only block work that depends on the unanswered question; independent authorised work continues.
+`;
+    prompt += `- Work Log: Exactly one required sentence in the Work Log stating which work type applies and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+`;
+    prompt += `- Proportionate paths:
+`;
+    prompt += `  - Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.
+`;
+    prompt += `  - Feature path: desired outcome, research and alternatives, user decisions, then implementation.
+`;
+    prompt += `  - Both paths keep existing evidence rules and existing human authority over release and closure.
+
+`;
     prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
     return prompt;
   }
@@ -6084,7 +6363,7 @@ ${transclusions.join("\n")}
       name: "Bug Report",
       description: "Investigate unexpected behavior, identify root cause, and draft fix subtasks",
       promptInstructions: `### Problem Description
-[Detailed explanation of what went wrong, including error messages or unexpected behavior]
+[Detailed explanation of observed versus expected behaviour, including error messages]
 
 ### Steps to Reproduce
 1. [First step]
@@ -6104,13 +6383,17 @@ ${transclusions.join("\n")}
       name: "Feature / Enhancement",
       description: "Design and specify new functionality with architectural plan and subtasks",
       promptInstructions: `### Goal & User Value
-[Why this feature is needed and what problem it solves]
+[Desired outcome: why this feature is needed and what problem it solves]
+
+### Research & Alternatives
+[Explore alternatives, trade-offs, and design choices]
 
 ### Architectural & UI Design
 [Proposed technical architecture, component structure, or API changes]
 
 ### Actionable Implementation Subtasks
 - [ ] Define interfaces and types
+- [ ] Align on user decisions
 - [ ] Implement core logic / components
 - [ ] Add unit and integration tests
 - [ ] Verify end-to-end user flow`
@@ -13180,6 +13463,9 @@ ${transclusions.join("\n")}
     brief += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.
 
 `;
+    brief += `${DEFAULT_WORK_INSTRUCTIONS}
+
+`;
     if (useWt || existingThemeWorktree) {
       brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
     } else {
@@ -13409,6 +13695,9 @@ ${transclusions.join("\n")}
         prompt += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.
 `;
         prompt += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.
+
+`;
+        prompt += `${DEFAULT_WORK_INSTRUCTIONS}
 
 `;
         prompt += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
