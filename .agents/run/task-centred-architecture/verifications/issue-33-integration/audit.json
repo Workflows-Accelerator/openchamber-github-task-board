@@ -1,0 +1,170 @@
+{
+  "programEquality": [
+    {
+      "name": "browser-matrix.mjs",
+      "original": "d0c7ee2c6b2a10690621751295b04796b5e55292d6e297b993ada27171fcf923",
+      "current": "0ae729623f45331ff9fb7a692c50001d22b09e473538218ac8310f75ea0f1437",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "additional-browser.mjs",
+      "original": "cea0b8e3184c9febbc26f3cf1ea2a224be6bdaa17231380dead7431c1f976141",
+      "current": "98011304027c0e1fd50260556b6585966b76f21bc3e56b7d5e3556421ea5d042",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "additional-browser-cases.mjs",
+      "original": "285782e641f02fc06298d3ef31cd05bda758414b53e7be6694557a77afd26553",
+      "current": "285782e641f02fc06298d3ef31cd05bda758414b53e7be6694557a77afd26553",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "residual-http.mjs",
+      "original": "7a48c48793e5298561a62e8f5c4636a96f3ae38350277d72b05e9362587a8238",
+      "current": "fba397c241f8ef9389a203e7c1eec30e489080b0487abc097cbf17da477eb0c2",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "additional-http.mjs",
+      "original": "bd34103e56b7ee526f25be61ef5a225f82b9f373437d24e1e36365efcf1b791b",
+      "current": "bc664b30098cd462375e56baf95b2db0bfb7bd0e9cf94d64a09e86a3a16fa4db",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "browser-gateway.mjs",
+      "original": "60d4d9afe41755068c1657d6b6cf505c0f63ae3ba342f7d65d612f90a1405bde",
+      "current": "f55d6b9e2f66f624e5d54799cc94d64bcae25dba3b5f90f5330909a08cc18104",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "browser-baseline.mjs",
+      "original": "5379b65544c093130a82a6579f8079b05cd33fe4332acf928094191f24ed1498",
+      "current": "5379b65544c093130a82a6579f8079b05cd33fe4332acf928094191f24ed1498",
+      "onlyArtifactRelocation": true
+    },
+    {
+      "name": "probes.mjs",
+      "original": "88d5a1040c4c55ebdd9d9b6db6525b5484fffb0e5dfe9f3f555fb596e2aebfeb",
+      "current": "b5c7c6bbc0176a7c8857ccdd28f65e8c7e9047db84816c14258b8353d561edbb",
+      "onlyArtifactRelocation": true
+    }
+  ],
+  "matrices": [
+    {
+      "name": "candidate-browser-matrix",
+      "total": 84,
+      "passed": 84,
+      "failed": 0
+    },
+    {
+      "name": "additional-browser-matrix",
+      "total": 117,
+      "passed": 117,
+      "failed": 0
+    },
+    {
+      "name": "candidate-residual-http",
+      "total": 36,
+      "passed": 36,
+      "failed": 0
+    },
+    {
+      "name": "additional-http",
+      "total": 129,
+      "passed": 129,
+      "failed": 0
+    }
+  ],
+  "browser": [
+    {
+      "name": "candidate-browser-matrix",
+      "invalid": 81,
+      "valid": 3,
+      "screenshots": 27,
+      "runtimeEvents": 0,
+      "oneCommittedPatchEveryCase": true
+    },
+    {
+      "name": "additional-browser-matrix",
+      "invalid": 96,
+      "valid": 21,
+      "screenshots": 27,
+      "runtimeEvents": 0,
+      "oneCommittedPatchEveryCase": true
+    }
+  ],
+  "logs": [
+    {
+      "name": "candidate-browser-matrix",
+      "lines": 678,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    },
+    {
+      "name": "additional-browser-matrix",
+      "lines": 942,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    },
+    {
+      "name": "browser-gateway",
+      "lines": 153,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    },
+    {
+      "name": "browser-verification",
+      "lines": 24,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    },
+    {
+      "name": "candidate-residual-http",
+      "lines": 73,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    },
+    {
+      "name": "additional-http",
+      "lines": 264,
+      "unexpectedFormats": 0,
+      "credentialOrExceptionText": 0
+    }
+  ],
+  "gates": {
+    "gates-exits.log": "web-tests exit: 0\nfocused exit: 0\nprotocol exit: 0\nroot-tests exit: 0\nroot-typecheck exit: 0\nweb-typecheck exit: 0\n",
+    "matrix-exits.log": "residual-http exit: 0\nprobes exit: 0\nbrowser-baseline exit: 0\nbrowser-gateway exit: 0\ncandidate-browser exit: 0\n",
+    "additional-exits.log": "additional-browser exit: 0\n",
+    "additional-http-exits.log": "additional-http exit: 0\n"
+  },
+  "testSuites": {
+    "web-tests.log": {
+      "total": 338,
+      "passed": 338,
+      "failed": 0
+    },
+    "root-tests.log": {
+      "total": 517,
+      "passed": 517,
+      "failed": 0
+    },
+    "focused.log": {
+      "total": 230,
+      "passed": 230,
+      "failed": 0
+    },
+    "protocol-tests.log": {
+      "total": 12,
+      "passed": 12,
+      "failed": 0
+    }
+  },
+  "legacy": {
+    "gateway": 19,
+    "baseline": 32,
+    "preserved": 28,
+    "gatewayScreenshots": 20,
+    "baselineScreenshots": 10
+  },
+  "bundleHashes": "bee9a616c4f0ccd1df7cff7f9f4aebc110110deb43b1c30b2e84f6a1b0e8e858  /tmp/integration-build/server.mjs\nbee9a616c4f0ccd1df7cff7f9f4aebc110110deb43b1c30b2e84f6a1b0e8e858  web/dist/server.mjs\nweb/dist/server.mjs\n"
+}
