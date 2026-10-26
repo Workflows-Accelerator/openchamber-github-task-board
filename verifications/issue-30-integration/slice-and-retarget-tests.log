@@ -1,0 +1,238 @@
+TAP version 13
+# (node:14221) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: DEFAULT_AI_ISSUE_PROMPT adheres strictly to Issue Body Contract v1 and contains zero emojis
+ok 1 - DEFAULT_AI_ISSUE_PROMPT adheres strictly to Issue Body Contract v1 and contains zero emojis
+  ---
+  duration_ms: 1.540231
+  type: 'test'
+  ...
+# Subtest: DEFAULT_AI_ALIGNMENT_PROMPT enforces Issue Body Contract v1 sections and contains zero emojis
+ok 2 - DEFAULT_AI_ALIGNMENT_PROMPT enforces Issue Body Contract v1 sections and contains zero emojis
+  ---
+  duration_ms: 0.35151
+  type: 'test'
+  ...
+# Subtest: buildConsolidatedIssuePrompt avoids duplicate subtasks checklist and adds AFK protocol
+ok 3 - buildConsolidatedIssuePrompt avoids duplicate subtasks checklist and adds AFK protocol
+  ---
+  duration_ms: 1.030335
+  type: 'test'
+  ...
+# Subtest: DEFAULT_TEMPLATES, mergeTemplates, and buildAgentIssuePrompt are first-class exports in core.ts
+ok 4 - DEFAULT_TEMPLATES, mergeTemplates, and buildAgentIssuePrompt are first-class exports in core.ts
+  ---
+  duration_ms: 0.498632
+  type: 'test'
+  ...
+# Subtest: panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
+ok 5 - panel/main.ts preflight and batch briefs include extended skills (UI, API, Perf, Security, Refactor) and AFK protocol
+  ---
+  duration_ms: 21.679255
+  type: 'test'
+  ...
+# Subtest: panel/main.ts handleFilePathClick checks currentDirectory and currentProject candidates
+ok 6 - panel/main.ts handleFilePathClick checks currentDirectory and currentProject candidates
+  ---
+  duration_ms: 0.379455
+  type: 'test'
+  ...
+# (node:14222) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: Work Log contract in docs/issue-body-contract.md specifies single justification sentence and rules
+ok 7 - Work Log contract in docs/issue-body-contract.md specifies single justification sentence and rules
+  ---
+  duration_ms: 18.111631
+  type: 'test'
+  ...
+# Subtest: DEFAULT_WORK_INSTRUCTIONS states unambiguous work-type rules and proportionate paths
+ok 8 - DEFAULT_WORK_INSTRUCTIONS states unambiguous work-type rules and proportionate paths
+  ---
+  duration_ms: 0.711658
+  type: 'test'
+  ...
+# Subtest: resolveIssueWorkType determines bug vs feature vs undecided strictly from labels
+ok 9 - resolveIssueWorkType determines bug vs feature vs undecided strictly from labels
+  ---
+  duration_ms: 0.681183
+  type: 'test'
+  ...
+# Subtest: DEFAULT_TEMPLATES bug and feature templates satisfy proportionate path contract without second source of truth
+ok 10 - DEFAULT_TEMPLATES bug and feature templates satisfy proportionate path contract without second source of truth
+  ---
+  duration_ms: 0.357882
+  type: 'test'
+  ...
+# Subtest: DEFAULT_AI_ISSUE_PROMPT enforces single work-type source, Work Log justification, and zero emojis
+ok 11 - DEFAULT_AI_ISSUE_PROMPT enforces single work-type source, Work Log justification, and zero emojis
+  ---
+  duration_ms: 0.295896
+  type: 'test'
+  ...
+# Subtest: buildConsolidatedIssuePrompt includes work instructions with proportionate paths
+ok 12 - buildConsolidatedIssuePrompt includes work instructions with proportionate paths
+  ---
+  duration_ms: 4.971226
+  type: 'test'
+  ...
+# Subtest: renderSingleIssueBrief and renderBatchLaunchPrompt enforce work-type resolution and path isolation across all 5 cases
+ok 13 - renderSingleIssueBrief and renderBatchLaunchPrompt enforce work-type resolution and path isolation across all 5 cases
+  ---
+  duration_ms: 2.178785
+  type: 'test'
+  ...
+# Subtest: panel/main.ts live launch paths deliver exactly the issue-specific renderer output
+ok 14 - panel/main.ts live launch paths deliver exactly the issue-specific renderer output
+  ---
+  duration_ms: 84.561984
+  type: 'test'
+  ...
+# Subtest: getNextLayoutMode cycles list -> kanban -> graph -> list correctly
+ok 15 - getNextLayoutMode cycles list -> kanban -> graph -> list correctly
+  ---
+  duration_ms: 2.262781
+  type: 'test'
+  ...
+# Subtest: getActiveLayoutMode determines current active view accurately
+ok 16 - getActiveLayoutMode determines current active view accurately
+  ---
+  duration_ms: 2.504302
+  type: 'test'
+  ...
+# Subtest: panel/index.html drawer has zero dark blur and supports split push & full page
+ok 17 - panel/index.html drawer has zero dark blur and supports split push & full page
+  ---
+  duration_ms: 0.638192
+  type: 'test'
+  ...
+# Subtest: panel/index.html modal and popover feature smooth open animations
+ok 18 - panel/index.html modal and popover feature smooth open animations
+  ---
+  duration_ms: 0.349822
+  type: 'test'
+  ...
+# Subtest: panel/index.html scratchpad modal has increased height and flex textarea
+ok 19 - panel/index.html scratchpad modal has increased height and flex textarea
+  ---
+  duration_ms: 0.581572
+  type: 'test'
+  ...
+# Subtest: panel/index.html repo dropdown and button have expanded width
+ok 20 - panel/index.html repo dropdown and button have expanded width
+  ---
+  duration_ms: 0.248883
+  type: 'test'
+  ...
+# Subtest: panel/index.html has sidebar view cycle button for compact screens
+ok 21 - panel/index.html has sidebar view cycle button for compact screens
+  ---
+  duration_ms: 3.885317
+  type: 'test'
+  ...
+# Subtest: panel/index.html chkGraphShowDone is unchecked by default
+ok 22 - panel/index.html chkGraphShowDone is unchecked by default
+  ---
+  duration_ms: 0.354421
+  type: 'test'
+  ...
+# Subtest: panel/main.ts initializes graphShowDone to false
+ok 23 - panel/main.ts initializes graphShowDone to false
+  ---
+  duration_ms: 11.617288
+  type: 'test'
+  ...
+# Subtest: Escape closes active modals before drawer
+ok 24 - Escape closes active modals before drawer
+  ---
+  duration_ms: 1.550651
+  type: 'test'
+  ...
+# Subtest: parseFriendlyTitle extracts friendly human title from markdown headers and bold markers
+ok 25 - parseFriendlyTitle extracts friendly human title from markdown headers and bold markers
+  ---
+  duration_ms: 13.351989
+  type: 'test'
+  ...
+# Subtest: parseFriendlyTitle handles missing or malformed markdown gracefully
+ok 26 - parseFriendlyTitle handles missing or malformed markdown gracefully
+  ---
+  duration_ms: 0.368496
+  type: 'test'
+  ...
+# Subtest: renderIssueCard in main.ts renders friendly title and conditional card-subtitle-tech
+ok 27 - renderIssueCard in main.ts renders friendly title and conditional card-subtitle-tech
+  ---
+  duration_ms: 0.402217
+  type: 'test'
+  ...
+# Subtest: card title and subtitle logic generates correct HTML snippets
+ok 28 - card title and subtitle logic generates correct HTML snippets
+  ---
+  duration_ms: 0.318414
+  type: 'test'
+  ...
+# Subtest: updatePreflightBrief in main.ts enriches brief with skill transclusions for bug, enhancement, documentation
+ok 29 - updatePreflightBrief in main.ts enriches brief with skill transclusions for bug, enhancement, documentation
+  ---
+  duration_ms: 3.769959
+  type: 'test'
+  ...
+# Subtest: hostile edge cases: angle brackets, quotes, placeholder ignoring, bold variations, and next-line guards
+ok 30 - hostile edge cases: angle brackets, quotes, placeholder ignoring, bold variations, and next-line guards
+  ---
+  duration_ms: 0.476005
+  type: 'test'
+  ...
+# Subtest: card-subtitle-tech styling supports narrow-screen word wrapping and XSS escaping
+ok 31 - card-subtitle-tech styling supports narrow-screen word wrapping and XSS escaping
+  ---
+  duration_ms: 1.133034
+  type: 'test'
+  ...
+# (node:14242) ExperimentalWarning: stripTypeScriptTypes is an experimental feature and might change at any time
+# (Use `node --trace-warnings ...` to show where the warning was created)
+# Subtest: resolveIssueSkills: maps standard labels to canonical skills and transclusions
+ok 32 - resolveIssueSkills: maps standard labels to canonical skills and transclusions
+  ---
+  duration_ms: 4.086415
+  type: 'test'
+  ...
+# Subtest: resolveIssueSkills: handles theme prefix variants and explicit issue skills
+ok 33 - resolveIssueSkills: handles theme prefix variants and explicit issue skills
+  ---
+  duration_ms: 0.626128
+  type: 'test'
+  ...
+# Subtest: resolveIssueSkills: deduplicates across multiple issues and handles edge cases safely
+ok 34 - resolveIssueSkills: deduplicates across multiple issues and handles edge cases safely
+  ---
+  duration_ms: 0.460488
+  type: 'test'
+  ...
+# Subtest: buildLaunchSessionPayload: natively declares skill IDs at payload top-level and in metadata
+ok 35 - buildLaunchSessionPayload: natively declares skill IDs at payload top-level and in metadata
+  ---
+  duration_ms: 0.578402
+  type: 'test'
+  ...
+# Subtest: buildConsolidatedIssuePrompt: includes recommended skills alongside transclusion fallback
+ok 36 - buildConsolidatedIssuePrompt: includes recommended skills alongside transclusion fallback
+  ---
+  duration_ms: 0.730766
+  type: 'test'
+  ...
+# Subtest: panel/main.ts: all session launch surfaces declare native skills and retain transclusions
+ok 37 - panel/main.ts: all session launch surfaces declare native skills and retain transclusions
+  ---
+  duration_ms: 25.493055
+  type: 'test'
+  ...
+1..37
+# tests 37
+# suites 0
+# pass 37
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 969.150767

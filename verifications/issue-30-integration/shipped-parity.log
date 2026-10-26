@@ -1,0 +1,118 @@
+TAP version 13
+# Subtest: shipped main.js is readable: every core-owned declaration is present
+ok 1 - shipped main.js is readable: every core-owned declaration is present
+  ---
+  duration_ms: 2.498104
+  type: 'test'
+  ...
+# Subtest: parseFriendlyTitle: shipped == core
+ok 2 - parseFriendlyTitle: shipped == core
+  ---
+  duration_ms: 4.282652
+  type: 'test'
+  ...
+# Subtest: parseSubtasks / parseOpenQuestions: shipped == core
+ok 3 - parseSubtasks / parseOpenQuestions: shipped == core
+  ---
+  duration_ms: 2.796444
+  type: 'test'
+  ...
+# Subtest: parseAcceptanceCriteria: shipped == core
+ok 4 - parseAcceptanceCriteria: shipped == core
+  ---
+  duration_ms: 0.689815
+  type: 'test'
+  ...
+# Subtest: parseHumanTasks / collectHumanTodos: shipped == core
+ok 5 - parseHumanTasks / collectHumanTodos: shipped == core
+  ---
+  duration_ms: 2.284345
+  type: 'test'
+  ...
+# Subtest: markdown mutators: shipped == core
+ok 6 - markdown mutators: shipped == core
+  ---
+  duration_ms: 4.361599
+  type: 'test'
+  ...
+# Subtest: isVagueIdea and formatQuestionBadge: shipped == core
+ok 7 - isVagueIdea and formatQuestionBadge: shipped == core
+  ---
+  duration_ms: 1.230982
+  type: 'test'
+  ...
+# Subtest: theme helpers: shipped == core
+ok 8 - theme helpers: shipped == core
+  ---
+  duration_ms: 1.919703
+  type: 'test'
+  ...
+# Subtest: prompt builders: shipped == core
+ok 9 - prompt builders: shipped == core
+  ---
+  duration_ms: 0.650812
+  type: 'test'
+  ...
+# Subtest: attach payloads: shipped == core
+ok 10 - attach payloads: shipped == core
+  ---
+  duration_ms: 3.359773
+  type: 'test'
+  ...
+# Subtest: dependency helpers: shipped == core
+ok 11 - dependency helpers: shipped == core
+  ---
+  duration_ms: 5.558138
+  type: 'test'
+  ...
+# Subtest: session index: shipped == core
+ok 12 - session index: shipped == core
+  ---
+  duration_ms: 1.071545
+  type: 'test'
+  ...
+# Subtest: scopeDoneIssues: shipped == core
+ok 13 - scopeDoneIssues: shipped == core
+  ---
+  duration_ms: 2.534398
+  type: 'test'
+  ...
+# Subtest: normalizeGithubIssues and mergeIssuePages: shipped == core
+ok 14 - normalizeGithubIssues and mergeIssuePages: shipped == core
+  ---
+  duration_ms: 2.695858
+  type: 'test'
+  ...
+# Subtest: extractQuestionOptions / extractQuestionContext: shipped == core
+ok 15 - extractQuestionOptions / extractQuestionContext: shipped == core
+  ---
+  duration_ms: 1.479571
+  type: 'test'
+  ...
+# Subtest: draft review helpers: shipped == core
+ok 16 - draft review helpers: shipped == core
+  ---
+  duration_ms: 5.679939
+  type: 'test'
+  ...
+# Subtest: optimistic mutators: shipped == core
+ok 17 - optimistic mutators: shipped == core
+  ---
+  duration_ms: 1.379021
+  type: 'test'
+  ...
+# Subtest: resolveIssueSkills: shipped == core
+ok 18 - resolveIssueSkills: shipped == core
+  ---
+  duration_ms: 2.19544
+  type: 'test'
+  ...
+1..18
+# tests 18
+# suites 0
+# pass 18
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 601.593667
