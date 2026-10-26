@@ -1,5 +1,5 @@
 <env_preflight>
-BLOCKED DRAFT — dispatch only after the startup supervisor build ses_c43bb6ac007df0382aa0f811 finishes, so the runbook can name the supervisor's real interface. Fill exact supervisor commit, files, test commands and its own report path at dispatch.
+BLOCKED DRAFT — supervisor build ses_c43bb6ac007df0382aa0f811 finished at commit 4a3ecee in /workspace/config/opencode/.worktrees/team-ops-board-entrypoint; its independent hostile review is still running, so treat the shipped interface as provisional and record any assumption that depends on the review outcome.
 Repo /workspace/extensions/github-task-board
 Worktree /workspace/extensions/github-task-board/.worktrees/team-ops-board-deployment
 Branch ops/board-deployment, HEAD40952c60d44c9afc5f98cc135acc5210407d92b9 tracked-clean; untracked private reports under .agents/run/task-centred-architecture/outputs/board-deployment-*-private.md and verifications/board-deployment-*-private/** are immutable and must stay untracked.
@@ -16,7 +16,8 @@ One surgical, executable deployment runbook that closes every open recheck defec
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/outputs/deployment-plan-review-gate.md]
 [@/workspace/extensions/github-task-board/.worktrees/team-ops-board-deployment/.agents/run/task-centred-architecture/outputs/board-deployment-plan-recheck-private.md]
 [@/workspace/extensions/github-task-board/.worktrees/team-ops-board-deployment/.agents/run/task-centred-architecture/outputs/board-deployment-plan-corrected-private.md]
-Supervisor implementation and its report path: FILL_AT_DISPATCH.
+Supervisor implementation (provisional): /workspace/config/opencode/.worktrees/team-ops-board-entrypoint at commit4a3ecee — entrypoint.sh (+9 guard lines), tools/board/start.sh, tools/board/supervisor.sh, tests/board-supervisor.test.mjs. Read those files directly and use their actual variables, defaults and commands: BOARD_ENABLED, BOARD_RELEASE_DIR default /workspace/releases/board/current, BOARD_STATE_DIR default /tmp/opencode/board-supervisor, BOARD_CHECKSUM_MANIFEST or checksums.sha256/SHA256SUMS/manifest.sha256, BOARD_START_CMD default `node web/dist/server.mjs`, BOARD_BACKOFF_INITIAL/MAX/MULTIPLIER/JITTER, BOARD_MAX_RESTARTS (0 = unlimited), BOARD_LOG_MAX_BYTES, BOARD_HEALTH_URL/INTERVAL. Its own independent hostile review is running (ses_e5b58fbb6787fb31c25d8b79); do not assume the current file names or defaults survive it. Mark every supervisor-dependent step that the review could change and keep the runbook easy to adjust.
+Other open manager doubts the runbook must not paper over: start.sh may block on its PID poll when fractional sleep is unavailable; supervisor.log is appended without rotation; a new release placed at the current pointer does not restart an already-running child; lock/PID/logs live in /tmp. Give the exact operator step for each (restart the supervisor, rotate/disable logs, etc.) rather than claiming the behaviour is automatic.
 </context_files>
 <skills>
 [@/workspace/config/opencode/.agents/skills/ship/devops/devops-cockpit/SKILL.md]
