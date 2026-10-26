@@ -91,6 +91,7 @@ class HttpError extends Error {
 }
 
 const MAX_BODY_BYTES = 64 * 1024;
+const MAX_AGGREGATE_ISSUES = 500;
 const SECURITY_HEADERS: Record<string, string> = {
   'content-security-policy':
     "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
@@ -656,9 +657,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       }
     }
     await Promise.all(Array.from({ length: 3 }, () => worker()));
-    const partial = discovery.discoveryFailed || failures.length > 0 || truncated;
+    const truncatedByIssueCap = issues.length > MAX_AGGREGATE_ISSUES;
+    if (truncatedByIssueCap) issues.length = MAX_AGGREGATE_ISSUES;
+    const limited = truncated || truncatedByIssueCap;
+    const partial = discovery.discoveryFailed || failures.length > 0 || limited;
     return { scope: 'all', repo: 'All repositories', ...discovery, issues, failures,
-      fetchedAt: new Date(now()).toISOString(), partial, complete: !partial, truncated,
+      fetchedAt: new Date(now()).toISOString(), partial, complete: !partial, truncated: limited,
+      truncatedByIssueCap, issueCap: MAX_AGGREGATE_ISSUES,
       repositoriesRequested: discovery.repositories.length, repositoriesLoaded: loaded,
       concurrency: 3, maxPagesPerRepository: 10, excludedPullRequests: excluded };
   }

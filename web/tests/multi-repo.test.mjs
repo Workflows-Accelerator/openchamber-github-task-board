@@ -371,6 +371,32 @@ test('aggregate refresh is bounded, one failure stays local and partial results 
   }
 });
 
+test('F4: the combined view caps total issues and marks the result truncated and partial', async () => {
+  const issues = (count) => Array.from({ length: count }, (_, index) =>
+    makeIssue({ number: index + 1, title: `Task ${index + 1}`, body: '## Overview\n\nBody\n' }));
+  const { board, close } = await multiFixture({
+    repositories: [
+      repoFixture('owner/alpha', issues(300), { id: 101 }),
+      repoFixture('owner/beta', issues(250), { id: 102 }),
+    ],
+  });
+  try {
+    const client = await signedIn(board.url);
+    const combined = await client.request('/api/combined/board');
+    assert.equal(combined.status, 200);
+    assert.equal(combined.json.issues.length, 500);
+    assert.equal(combined.json.issueCap, 500);
+    assert.equal(combined.json.truncatedByIssueCap, true);
+    assert.equal(combined.json.truncated, true);
+    assert.equal(combined.json.partial, true);
+    assert.equal(combined.json.complete, false);
+    const keys = new Set(combined.json.issues.map((issue) => issue.key));
+    assert.equal(keys.size, 500, 'capped rows remain repository-qualified and unique');
+  } finally {
+    await close();
+  }
+});
+
 test('repository discovery fails loudly on a malformed page and respects the page bound', async () => {
   const mockFetchFor = (handler) => async (url, init) => handler(String(url), init);
 
@@ -487,6 +513,77 @@ test('expired failed discovery retains display identities but cannot authorize a
     assert.equal(fake.patchCalls.length, 0);
     assert.equal(fake.requests.filter(r => r.path.startsWith('/repos/')).length, before);
   } finally { await close(); }
+});
+
+test('F1: a write during a gated discovery refresh cannot use the pre-refresh allowlist', async () => {
+  let now = 1_700_000_000_000;
+  const fake = await startFakeGitHub({
+    token: SYNTHETIC_TOKEN,
+    repositories: [
+      repoFixture('owner/alpha', [makeIssue({ number: 1, title: 'Alpha', body: '## Overview\n\nAlpha\n', labels: ['status:todo'] })], { id: 101 }),
+      repoFixture('owner/beta', [makeIssue({ number: 1, title: 'Beta', body: '## Overview\n\nBeta\n', labels: ['status:todo'] })], { id: 102 }),
+    ],
+  });
+  let releaseDiscovery = () => {};
+  let discoveryGate = null;
+  let discoveryEntered = false;
+  let gateRefresh = false;
+  const fetchImpl = async (input, init) => {
+    if (gateRefresh && String(input).includes('/user/repos')) {
+      discoveryEntered = true;
+      await discoveryGate;
+    }
+    return fetch(input, init);
+  };
+  const board = await startBoard(fake, { now: () => now, fetchImpl });
+  try {
+    const client = await signedIn(board.url);
+    assert.equal((await client.request('/api/repos')).status, 200);
+    const alpha = await client.request('/api/repos/owner/alpha/issues/1');
+    assert.equal(alpha.status, 200);
+
+    fake.setRepoAccessible('owner/alpha', false);
+    now += 61_000;
+    gateRefresh = true;
+    discoveryGate = new Promise((resolve) => { releaseDiscovery = resolve; });
+    const refresh = client.request('/api/repos');
+    while (!discoveryEntered) await new Promise((resolve) => setImmediate(resolve));
+    const before = fake.requests.length;
+
+    const write = client.request('/api/repos/owner/alpha/issues/1/status', {
+      method: 'POST',
+      body: { status: 'status:done', fingerprint: alpha.json.issue.fingerprint },
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    releaseDiscovery();
+    const [refreshed, refused] = await Promise.all([refresh, write]);
+
+    assert.equal(refreshed.status, 200);
+    assert.equal(refreshed.json.discoveryFailed, false);
+    const alphaEntry = refreshed.json.repositories.find((repository) => repository.full === 'owner/alpha');
+    assert.equal(alphaEntry.available, false);
+    assert.equal(refused.status, 400);
+    assert.equal(refused.json.error, 'repository_not_allowed');
+    const alphaCalls = fake.requests.slice(before).filter((request) => request.path.startsWith('/repos/owner/alpha'));
+    assert.deepEqual(alphaCalls, [], 'no pre-dispatch or fingerprint read for the revoked repository');
+    assert.equal(fake.patchCalls.length, 0);
+
+    // A repository in both old and refreshed results still resolves and writes.
+    const beta = await client.request('/api/repos/owner/beta/issues/1');
+    assert.equal(beta.status, 200);
+    const betaWrite = await client.request('/api/repos/owner/beta/issues/1/section', {
+      method: 'PUT',
+      body: { sectionId: 'overview', text: 'Beta remains editable', fingerprint: beta.json.issue.fingerprint },
+    });
+    assert.equal(betaWrite.status, 200);
+    assert.equal(fake.patchCalls.length, 1);
+    assert.equal(fake.patchCalls[0].repo, 'owner/beta');
+    assert.match(fake.findIssue(1, 'owner/beta').body, /Beta remains editable/);
+  } finally {
+    releaseDiscovery();
+    await board.app.close();
+    await fake.close();
+  }
 });
 
 test('identical contents in same-number issues do not permit a cross-repository fingerprint replay on any write path', async () => {

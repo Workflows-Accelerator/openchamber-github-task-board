@@ -205,6 +205,8 @@ test('listIssues dedupes issues and stops when a page adds nothing new', async (
   assert.deepEqual(result.items.map((i) => i.number), [1, 2]);
   // Should stop on page 2 when all items are duplicates, not looping up to maxPages 10
   assert.equal(callCount, 2);
+  // Stopping on a duplicate-only page leaves any later pages unread: say so.
+  assert.equal(result.truncated, true);
 });
 
 test('error kinds distinguish 401, 403 rate-limit, 403 forbidden, 422 invalid, 500 server', async () => {

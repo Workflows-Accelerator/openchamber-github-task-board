@@ -348,7 +348,9 @@ export class GitHubClient {
       pages += 1;
 
       if (data.length > 0 && newCount === 0) {
-        // Page added nothing new; stop pagination to avoid duplicate loops
+        // Page added nothing new; stop pagination to avoid duplicate loops, but
+        // report truncation because any later issues were not read.
+        truncated = true;
         break;
       }
 

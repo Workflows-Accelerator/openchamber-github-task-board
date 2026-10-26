@@ -41,8 +41,10 @@ export class RepositoryRegistry {
   }
 
   async view(): Promise<RepositoryView> {
-    if (this.attemptedAt !== null && this.now() - this.attemptedAt < this.ttlMs) return this.snapshot();
+    // A refresh marks attemptedAt before the list request completes. Await that
+    // refresh first so authorisation can never use the pre-refresh allowlist.
     if (this.inFlight) return this.inFlight;
+    if (this.attemptedAt !== null && this.now() - this.attemptedAt < this.ttlMs) return this.snapshot();
     this.inFlight = this.refresh().finally(() => { this.inFlight = null; });
     return this.inFlight;
   }

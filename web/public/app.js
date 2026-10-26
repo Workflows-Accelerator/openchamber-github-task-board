@@ -21,6 +21,8 @@
     readGeneration: 0,
     writeGeneration: 0,
     boardGeneration: 0,
+    boardLoad: null,
+    boardLoads: 0,
     uncertain: new Set(),
   };
 
@@ -34,6 +36,24 @@
   }
   function sameIdentity(a, b) {
     return identity(a) === identity(b) && (!a.repository || (b.repository && a.repository.id === b.repository.id));
+  }
+  function sameRepository(a, b) {
+    return Boolean(a && b && a.repository && b.repository &&
+      a.repository.full === b.repository.full && a.repository.id === b.repository.id);
+  }
+  function invalidateDetailForWrite(issue) {
+    // Only a write bound to the detail currently being read may discard that read.
+    if (!state.pending || sameRepository(state.pending, issue)) state.writeGeneration++;
+  }
+  function invalidateBoardForWrite(issue) {
+    // A write may only invalidate a board load for its own repository (or the
+    // combined view, which contains it). Switching repositories is never
+    // cancelled by a write issued against the previous one.
+    if (!state.boardLoad) return;
+    if (state.boardLoad.scope === 'all' ||
+        (issue.repository && state.boardLoad.scope === issue.repository.full)) {
+      state.boardGeneration++;
+    }
   }
   function rememberDraft() {
     var issue = state.detail;
@@ -77,8 +97,8 @@
     });
   }
   function publishMutation(response, issue, generation, kind, answerIndex) {
-    state.writeGeneration++;
-    state.boardGeneration++;
+    invalidateDetailForWrite(issue);
+    invalidateBoardForWrite(issue);
     state.uncertain.delete(identity(issue));
     var draftKey = identity(issue) + ':' + issue.fingerprint;
     var draft = state.drafts.get(draftKey);
@@ -264,6 +284,15 @@
         throw new ApiError('unauthenticated', 401, payload);
       }
 
+      if (payload && payload.error === 'discovery_unavailable') {
+        // The server refused before dispatch. That is a definite refusal, not
+        // an ambiguous write outcome, so it must never enter the UNKNOWN set.
+        throw new ApiError('discovery_unavailable', response.status, {
+          error: 'discovery_unavailable',
+          message: 'Discovery failed; nothing was sent. Refresh to try again',
+        });
+      }
+
       if (response.status >= 500) {
         var msg500 = (payload && payload.message) || 'Outcome unknown \u2014 refresh to check GitHub state';
         if (!msg500.toLowerCase().includes('outcome unknown')) {
@@ -412,8 +441,9 @@
     renderFreshness();
     var scopeStatus = $('scope-status');
     if (scopeStatus) {
-      scopeStatus.textContent = board.partial ? 'Partial refresh — results are NOT complete. ' +
-        (board.failures || []).map(function (failure) { return failure.repository.full + ': ' + failure.message; }).join('; ') :
+      var partialReasons = (board.failures || []).map(function (failure) { return failure.repository.full + ': ' + failure.message; });
+      if (board.truncatedByIssueCap) partialReasons.push('combined issue cap of ' + board.issueCap + ' reached');
+      scopeStatus.textContent = board.partial ? 'Partial refresh — results are NOT complete. ' + partialReasons.join('; ') :
         (board.repository && !board.repository.hasIssues ? 'Issues disabled for this repository.' :
         (board.repository && board.repository.archived ? 'Archived repository — visible, but GitHub may refuse edits.' : 'Refresh complete.'));
       scopeStatus.className = board.partial ? 'notice error' : 'muted small';
@@ -495,7 +525,7 @@
       ? 'Discovery failed — last known picker retained; refresh later. Repository operations are paused.'
       : (!view.visibleCount ? 'No repositories visible to this token.' : 'Only repositories visible to the bot token are listed.');
     $('refresh-policy').textContent = 'Discovery cached for ' + (view.freshnessMs / 1000) +
-      's. Manual refresh only; combined requests use 3 workers, at most 10 pages per repository. Hidden private repositories cannot be enumerated.';
+      's. Manual refresh only; combined requests use 3 workers, at most 10 pages per repository and at most 500 issues in total. Hidden private repositories cannot be enumerated.';
   }
   async function rememberedChoice(view) {
     if (state.selected !== null) return;
@@ -522,6 +552,8 @@
     state.pending = null;
     var generation = ++state.boardGeneration;
     var previousScope = state.board && state.board.repo;
+    state.boardLoad = { generation: generation, scope: state.selected };
+    state.boardLoads++;
     $('refresh-btn').disabled = true;
     $('refresh-btn').hidden = false;
     $('signout-btn').hidden = false;
@@ -531,6 +563,7 @@
       state.repositories = view;
       await rememberedChoice(view);
       renderPicker();
+      state.boardLoad = { generation: generation, scope: state.selected };
       var selected = view.repositories.find(function (repository) { return repository.full === state.selected; });
       if (view.discoveryFailed || (state.selected !== 'all' && (!selected || !selected.available))) {
         var message = view.discoveryFailed ? 'Discovery failed — tasks are not refreshed.' : state.selected + ' is unavailable. Last known identity retained; not an empty repository.';
@@ -564,12 +597,17 @@
         state.board = null;
         $('task-list').textContent = '';
         $('board-count').textContent = '';
+        $('repo-label').textContent = state.selected === 'all' ? 'All repositories' : state.selected;
         $('empty-state').hidden = false;
         $('empty-state').querySelector('p').textContent = 'The board could not be loaded — unavailable, not empty.';
         setNotice(error.message + '. Use Refresh to try again.', true);
       }
       showView('board');
-    } finally { if (generation === state.boardGeneration) $('refresh-btn').disabled = false; }
+    } finally {
+      state.boardLoads = Math.max(0, state.boardLoads - 1);
+      if (state.boardLoad && state.boardLoad.generation === generation) state.boardLoad = null;
+      if (state.boardLoads === 0) $('refresh-btn').disabled = false;
+    }
   }
 
   function detailBadges(issue) {
@@ -779,7 +817,7 @@
     var issue = state.detail;
     rememberDraft();
     var generation = ++state.readGeneration;
-    state.boardGeneration++;
+    invalidateBoardForWrite(issue);
     var text = $('overview-text').value;
     var sections = Array.isArray(issue.editableSections) ? issue.editableSections : [];
     var sectionId = sections.length > 0 ? sections[0].id : 'overview';
@@ -802,8 +840,8 @@
       $('save-status').textContent = 'Saved just now.';
       announce('Overview saved.');
     } catch (error) {
-      state.writeGeneration++;
-      state.boardGeneration++;
+      invalidateDetailForWrite(issue);
+      invalidateBoardForWrite(issue);
       if (error.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
       if (error.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
       if (error.status === 409) {
@@ -841,7 +879,7 @@
     rememberDraft();
     state.busy = true;
     var generation = ++state.readGeneration;
-    state.boardGeneration++;
+    invalidateBoardForWrite(issue);
     try {
       var response = await api(issuePath(issue) + '/questions/' + answerIndex + '/answer', {
         expected: issue,
@@ -857,8 +895,8 @@
       if (!publishMutation(response, issue, generation, 'question', answerIndex)) return;
       announce('Answer saved.');
     } catch (error) {
-      state.writeGeneration++;
-      state.boardGeneration++;
+      invalidateDetailForWrite(issue);
+      invalidateBoardForWrite(issue);
       if (error.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
       if (error.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
       if (error.status === 409) {
@@ -888,7 +926,7 @@
     rememberDraft();
     state.busy = true;
     var generation = ++state.readGeneration;
-    state.boardGeneration++;
+    invalidateBoardForWrite(issue);
     try {
       var response = await api(issuePath(issue) + '/status', {
         expected: issue,
@@ -904,8 +942,8 @@
       if (!publishMutation(response, issue, generation, 'status', null)) return;
       announce('Status updated.');
     } catch (error) {
-      state.writeGeneration++;
-      state.boardGeneration++;
+      invalidateDetailForWrite(issue);
+      invalidateBoardForWrite(issue);
       if (error.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
       if (error.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
       if (error.status === 409) {

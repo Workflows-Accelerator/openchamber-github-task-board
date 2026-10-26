@@ -147,6 +147,19 @@ accept on `https` origins (and on `http://localhost` for local testing).
   and refuses detected pre-save conflicts, GitHub's API does not support transactional or conditional issue PATCH.
   A simultaneous edit on GitHub or by an agent can still be overwritten.
 - Ambiguous write outcomes require human refresh and inspection; the board will not guess or retry.
+  A pre-dispatch discovery refusal (`503 discovery_unavailable`) is different: nothing was sent,
+  so it is shown as a definite refusal with retry guidance and never enters the uncertain set.
+- The combined view returns at most 500 issues. Reaching that cap, a per-repository page
+  bound, or a duplicate-only page that stopped pagination is marked `truncated` and `partial`;
+  results are never published as complete.
+- Repository choice is remembered as an opaque SHA-256 digest of the repository numeric id
+  (or `owner/name` when no id exists), never as a name or credential. Numeric ids are
+  brute-forceable; this digest is a convenience preference and never an authorization input.
+- Unavailable-repository history is process-memory only. A restart forgets last-known
+  identities that the token can no longer see; this is accepted and not a durable inventory.
+- Proof for this slice is synthetic only: local fake-GitHub fixtures and localhost. No real
+  multi-repository token, live GitHub permission change, hidden-private-repository enumeration,
+  production deployment, installed extension or physical mobile device was exercised.
 - Residual defect remediations (F1–F5) and protocol corrections are documented in `.agents/run/task-centred-architecture/outputs/issue-33-last-correction.md`, which supersedes previous closure claims. Prior reports are immutable.
 - There is no notification/question loop and no agent integration. Those are
   separate, parked workstreams.
@@ -162,9 +175,11 @@ accept on `https` origins (and on `http://localhost` for local testing).
   entries; exceeding the bound fails discovery rather than dropping entries).
   Restart loses inaccessible history; this is not a durable repository inventory.
 - Combined refresh: `/api/combined/board`, three fixed workers, concurrent aggregate
-  requests coalesce, no retries, at most 10 issue pages per repository. Per-repository
-  failure, truncation or lost access makes the response and UI explicitly partial.
-  No background polling. Refresh is manual; the footer discloses bounds.
+  requests coalesce, no retries, at most 10 issue pages per repository, and at most
+  500 issues in total. Per-repository failure, truncation or the total issue cap makes
+  the response and UI explicitly partial and truncated; a page of only duplicate issues
+  also reports truncation because later pages were not read. No background polling.
+  Refresh is manual; the footer discloses bounds.
 - Last choice is remembered as `all` or an opaque SHA-256 repository-identity digest
   in localStorage. No repository name, token, session/CSRF value or issue/draft
   content is persisted. It is a preference, not a secret or authorization input.

@@ -25,6 +25,9 @@ function browser(handler) {
   const context = vm.createContext({ document: { getElementById: get, createElement: node },
     window: { setTimeout: f => f(), setInterval() {}, addEventListener() {}, location: { hash: '' } },
     fetch: async (path, request) => { calls.push({ path, request }); const payload = await handler(path, request);
+      if (payload && payload.__httpStatus !== undefined) {
+        return { ok: payload.__httpStatus < 400, status: payload.__httpStatus, text: async () => JSON.stringify(payload.body) };
+      }
       return { ok: true, status: 200, text: async () => JSON.stringify(payload) }; },
   });
   const source = readFileSync('web/public/app.js', 'utf8').replace('  boot();',
@@ -119,6 +122,71 @@ test('answer confirms only the qualified combined row question count', async () 
   await app.saveAnswer(0, get('answer-0'));
   assert.equal(app.state.board.issues[0].counts.openQuestions.open, 0);
   assert.equal(app.state.board.issues[1].counts.openQuestions.open, 1);
+});
+
+test('F2: a write for the previous repository cannot discard the newly selected repository board', async () => {
+  const boardFor = (repository) => ({
+    scope: 'repo', repo: repository.full, repository, login: 'owner',
+    fetchedAt: '2026-10-26T10:00:00.000Z', truncated: false, complete: true, partial: false,
+    excludedPullRequests: 0, issues: buildBoardList([raw(repository.full)], repository).issues,
+  });
+  const view = {
+    fetchedAt: '2026-10-26T10:00:00.000Z', freshnessMs: 60000, stale: false,
+    discoveryFailed: false, error: null, visibleCount: 2,
+    repositories: [alpha, beta].map((repository) => ({
+      ...repository, available: true, lastSeenAt: '2026-10-26T10:00:00.000Z',
+    })),
+  };
+  let releaseWrite, releaseBeta, betaStartedResolve;
+  const write = new Promise((resolve) => { releaseWrite = resolve; });
+  const betaBoard = new Promise((resolve) => { releaseBeta = resolve; });
+  const betaStarted = new Promise((resolve) => { betaStartedResolve = resolve; });
+  const { app, get, calls } = browser((path, request) => {
+    if (path === '/api/repos') return view;
+    if (path === '/api/repos/owner/beta/board') {
+      betaStartedResolve();
+      return betaBoard;
+    }
+    if (request.method === 'PUT') return write;
+    return { issue: detail(alpha), statusOptions: options };
+  });
+  app.state.selected = 'owner/alpha';
+  app.state.board = boardFor(alpha);
+  app.renderBoard();
+  assert.match(get('repo-label').textContent, /owner\/alpha/);
+
+  const saving = app.saveOverview();
+  app.state.selected = 'owner/beta';
+  const loading = app.loadBoard();
+  await betaStarted;
+  assert.ok(calls.some((call) => call.path === '/api/repos/owner/beta/board'), 'beta board request started');
+  releaseWrite({ issue: buildIssueDetail({ ...raw('Alpha updated') }, alpha), statusOptions: options });
+  await saving;
+  releaseBeta(boardFor(beta));
+  await loading;
+
+  assert.equal(app.state.board.repository.full, 'owner/beta');
+  assert.match(get('repo-label').textContent, /owner\/beta/);
+  assert.equal(get('refresh-btn').disabled, false, 'new board re-enables Refresh');
+});
+
+test('F3: a pre-dispatch discovery refusal is definite and never marked UNKNOWN', async () => {
+  for (const kind of ['section', 'status']) {
+    const { app, get, calls } = browser(() => ({
+      __httpStatus: 503,
+      body: { error: 'discovery_unavailable', message: 'Repository discovery failed; no operation was dispatched' },
+    }));
+    const before = app.state.detail;
+    if (kind === 'section') await app.saveOverview();
+    else await app.saveStatus();
+    assert.equal(calls.length, 1, `${kind}: no dispatch or retry`);
+    assert.equal(app.state.detail, before, `${kind}: detail retained`);
+    assert.equal(app.state.uncertain.size, 0, `${kind}: no uncertain marker`);
+    assert.equal(app.state.uncertain.has('owner/alpha#1'), false);
+    const message = get(kind === 'section' ? 'save-status' : 'notice').textContent;
+    assert.match(message, /nothing was sent/i);
+    assert.doesNotMatch(message, /outcome unknown/i);
+  }
 });
 
 test('clearing a qualified draft does not resurrect an older typed value on return', async () => {
