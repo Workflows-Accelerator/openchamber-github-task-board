@@ -536,3 +536,21 @@ test('discovery rejects malformed entries and conflicting duplicate immutable id
     await assert.rejects(() => client.listRepositories(), GitHubError);
   }
 });
+
+test('unknown repository after an expired failed discovery still causes zero upstream calls', async () => {
+  let now = 1_700_000_000_000;
+  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
+  fake.setDiscoveryFailure(true);
+  const board = await startBoard(fake, { now: () => now });
+  try {
+    const client = await signedIn(board.url);
+    now += 61_000;
+    const before = fake.requests.length;
+    const response = await client.request('/api/repos/fabricated/name/issues/1/status', {
+      method: 'POST', body: { status: 'status:done', fingerprint: 'a'.repeat(64) },
+    });
+    assert.equal(response.status, 400);
+    assert.equal(response.json.error, 'repository_not_allowed');
+    assert.equal(fake.requests.length, before);
+  } finally { await board.app.close(); await fake.close(); }
+});

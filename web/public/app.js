@@ -14,7 +14,87 @@
     stale: false,
     conflict: false,
     busy: false,
+    repositories: null,
+    selected: null,
+    pending: null,
+    drafts: new Map(),
+    readGeneration: 0,
+    writeGeneration: 0,
+    boardGeneration: 0,
+    uncertain: new Set(),
   };
+
+  function identity(issue) {
+    return issue && issue.repository ? issue.repository.full + '#' + issue.number : '#' + (issue && issue.number);
+  }
+  function issuePath(issue) {
+    return issue.repository
+      ? '/api/repos/' + encodeURIComponent(issue.repository.owner) + '/' + encodeURIComponent(issue.repository.name) + '/issues/' + issue.number
+      : '/api/issues/' + issue.number;
+  }
+  function sameIdentity(a, b) {
+    return identity(a) === identity(b) && (!a.repository || (b.repository && a.repository.id === b.repository.id));
+  }
+  function rememberDraft() {
+    var issue = state.detail;
+    if (!issue) return;
+    var sections = issue.editableSections || [];
+    var answers = [];
+    issue.openQuestions.forEach(function (question) {
+      if (question.answerIndex === null) return;
+      var input = $('answer-' + question.answerIndex);
+      if (input && input.value) answers.push({ text: question.text, index: question.index, value: input.value });
+    });
+    var overview = sections.length && $('overview-text').value !== sections[0].text ? $('overview-text').value : null;
+    if (overview !== null || answers.length) {
+      state.drafts.set(identity(issue) + ':' + issue.fingerprint, {
+        key: identity(issue), fingerprint: issue.fingerprint, overview: overview, answers: answers,
+      });
+      // Bounded memory only, never browser storage.
+      if (state.drafts.size > 100) state.drafts.delete(state.drafts.keys().next().value);
+    }
+  }
+  function restoreDraft() {
+    var issue = state.detail;
+    var recoverable = $('recoverable-drafts');
+    if (recoverable) { recoverable.textContent = ''; recoverable.hidden = true; }
+    state.drafts.forEach(function (draft) {
+      if (draft.key !== identity(issue)) return;
+      if (draft.fingerprint === issue.fingerprint) {
+        if (draft.overview !== null) $('overview-text').value = draft.overview;
+        draft.answers.forEach(function (answer) {
+          var question = issue.openQuestions.find(function (q) { return q.index === answer.index && q.text === answer.text && !q.completed; });
+          if (question) $('answer-' + question.answerIndex).value = answer.value;
+        });
+      } else if (recoverable) {
+        recoverable.hidden = false;
+        recoverable.textContent += 'Recoverable draft from an earlier observed revision (not assigned to current fields). ' +
+          (draft.overview !== null ? 'Overview: ' + draft.overview + '\n' : '') +
+          draft.answers.map(function (a) { return 'Original question: ' + a.text + '\nDraft answer: ' + a.value; }).join('\n');
+      }
+    });
+  }
+  function publishMutation(response, issue, generation, kind, answerIndex) {
+    state.writeGeneration++;
+    state.boardGeneration++;
+    state.uncertain.delete(identity(issue));
+    var draftKey = identity(issue) + ':' + issue.fingerprint;
+    var draft = state.drafts.get(draftKey);
+    if (draft) {
+      if (kind === 'section') draft.overview = null;
+      if (kind === 'question') draft.answers = draft.answers.filter(function (a) { return a.index !== issue.openQuestions.find(function (q) { return q.answerIndex === answerIndex; }).index; });
+      if (draft.overview === null && !draft.answers.length) state.drafts.delete(draftKey);
+    }
+    if (state.board) state.board.issues = state.board.issues.map(function (row) {
+      return sameIdentity(row, issue) ? Object.assign({}, row, response.issue) : row;
+    });
+    if (generation !== state.readGeneration || !state.detail || !sameIdentity(state.detail, issue)) return false;
+    state.detail = response.issue;
+    state.statusOptions = response.statusOptions;
+    state.conflict = false;
+    renderDetail(false);
+    return true;
+  }
 
   function $(id) {
     return document.getElementById(id);
@@ -67,12 +147,22 @@
   }
   ApiError.prototype = Object.create(Error.prototype);
 
-  function isValidMutationPayload(payload, expectedNumber) {
+  function isValidMutationPayload(payload, expected) {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
     var issue = payload.issue;
     if (!issue || typeof issue !== 'object' || Array.isArray(issue)) return false;
     if (typeof issue.number !== 'number' || !Number.isInteger(issue.number) || issue.number <= 0) return false;
+    var expectedNumber = typeof expected === 'object' && expected ? expected.number : expected;
     if (expectedNumber !== undefined && expectedNumber !== null && issue.number !== expectedNumber) return false;
+    if (expected && typeof expected === 'object' && expected.repository) {
+      var repository = issue.repository;
+      if (!repository || typeof repository !== 'object' || Array.isArray(repository) ||
+          typeof repository.owner !== 'string' || typeof repository.name !== 'string' ||
+          repository.full !== repository.owner + '/' + repository.name ||
+          typeof repository.archived !== 'boolean' || typeof repository.hasIssues !== 'boolean' ||
+          repository.full !== expected.repository.full || repository.id !== expected.repository.id ||
+          issue.key !== identity(expected)) return false;
+    }
     if (typeof issue.fingerprint !== 'string' || !issue.fingerprint) return false;
     if (typeof issue.title !== 'string') return false;
     if (issue.state !== 'open' && issue.state !== 'closed') return false;
@@ -149,9 +239,10 @@
 
     if (isMutation) {
       if (response.ok) {
-        var numMatch = /^\/api\/issues\/(\d+)(?:\/|$)/.exec(path);
-        var expectedNum = numMatch ? Number(numMatch[1]) : undefined;
-        if (!jsonParsed || !isValidMutationPayload(payload, expectedNum)) {
+        var numMatch = /^\/api\/(?:repos\/([^/]+)\/([^/]+)\/)?issues\/(\d+)(?:\/|$)/.exec(path);
+        var expectedNum = numMatch ? Number(numMatch[3]) : undefined;
+        var expected = options.expected || expectedNum;
+        if (!jsonParsed || !isValidMutationPayload(payload, expected)) {
           throw new ApiError('write_outcome_unknown', response.status, {
             error: 'write_outcome_unknown',
             message: 'Outcome unknown \u2014 refresh to check GitHub state',
@@ -217,6 +308,14 @@
     state.conflict = false;
     state.loadedAt = null;
     state.stale = false;
+    state.readGeneration++;
+    state.boardGeneration++;
+    state.pending = null;
+    state.repositories = null;
+    state.drafts.clear();
+    state.uncertain.clear();
+    $('repository-picker').hidden = true;
+    $('repo-select').textContent = '';
     clearRenderedData();
     showView('login');
     $('refresh-btn').hidden = true;
@@ -248,9 +347,10 @@
     if (state.board) renderBoard();
   }
 
-  function openIssueView(number) {
-    setHash('#/issue/' + number);
-    openIssue(number);
+  function openIssueView(issue) {
+    state.pending = issue;
+    setHash('#/issue/' + issue.number);
+    openIssue(issue);
   }
 
   function showView(name) {
@@ -297,18 +397,26 @@
 
   function renderBoard() {
     var board = state.board;
-    $('repo-label').textContent = board.repo;
+    $('repo-label').textContent = board.repo + (board.repository && board.repository.archived ? ' · archived' : '');
     document.title = 'Task Board · ' + board.repo;
     $('board-count').textContent =
       board.issues.length + (board.issues.length === 1 ? ' task' : ' tasks');
     renderFreshness();
+    var scopeStatus = $('scope-status');
+    if (scopeStatus) {
+      scopeStatus.textContent = board.partial ? 'Partial refresh — results are NOT complete. ' +
+        (board.failures || []).map(function (failure) { return failure.repository.full + ': ' + failure.message; }).join('; ') :
+        (board.repository && !board.repository.hasIssues ? 'Issues disabled for this repository.' :
+        (board.repository && board.repository.archived ? 'Archived repository — visible, but GitHub may refuse edits.' : 'Refresh complete.'));
+      scopeStatus.className = board.partial ? 'notice error' : 'muted small';
+    }
 
     var list = $('task-list');
     list.textContent = '';
     var empty = $('empty-state');
     empty.hidden = board.issues.length !== 0;
     if (board.issues.length === 0) {
-      empty.querySelector('p').textContent = 'No tasks in ' + board.repo + '.';
+      empty.querySelector('p').textContent = board.partial ? 'No tasks loaded. This refresh is incomplete, not an empty repository.' : 'No tasks in ' + board.repo + '.';
     }
 
     board.issues.forEach(function (issue) {
@@ -322,7 +430,8 @@
       ]);
 
       var meta = el('div', { class: 'task-meta' }, [
-        el('span', { text: '#' + issue.number }),
+        el('span', { text: (issue.repository ? issue.repository.full + ' ' : '') + '#' + issue.number }),
+        issue.repository && issue.repository.archived ? badge('archived') : null,
         el('span', { text: 'updated ' + relative(issue.updatedAt) }),
         issue.counts.openQuestions.open > 0
           ? el('span', {
@@ -350,9 +459,9 @@
         {
           class: 'task-row',
           type: 'button',
-          'aria-label': 'Open task #' + issue.number + ': ' + issue.title,
+          'aria-label': 'Open task ' + (issue.repository ? issue.repository.full + ' ' : '') + '#' + issue.number + ': ' + issue.title,
           onclick: function () {
-            openIssueView(issue.number);
+            openIssueView(issue);
           },
         },
         [title, badges, meta],
@@ -362,38 +471,97 @@
     });
   }
 
-  async function loadBoard(options) {
-    options = options || {};
+  function renderPicker() {
+    var view = state.repositories;
+    var select = $('repo-select');
+    select.textContent = '';
+    select.appendChild(el('option', { value: 'all', text: 'All repositories (combined)' }));
+    view.repositories.forEach(function (repository) {
+      select.appendChild(el('option', { value: repository.full, text: repository.full +
+        (repository.archived ? ' · archived' : '') + (!repository.available ? ' · unavailable' : '') +
+        (!repository.hasIssues ? ' · issues disabled' : '') }));
+    });
+    select.value = state.selected;
+    $('repository-picker').hidden = false;
+    $('discovery-status').textContent = view.discoveryFailed
+      ? 'Discovery failed — last known picker retained; refresh later. Repository operations are paused.'
+      : (!view.visibleCount ? 'No repositories visible to this token.' : 'Only repositories visible to the bot token are listed.');
+    $('refresh-policy').textContent = 'Discovery cached for ' + (view.freshnessMs / 1000) +
+      's. Manual refresh only; combined requests use 3 workers, at most 10 pages per repository. Hidden private repositories cannot be enumerated.';
+  }
+  async function rememberedChoice(view) {
+    if (state.selected !== null) return;
+    var remembered = null;
+    try { remembered = window.localStorage.getItem('board-repository-choice'); } catch (error) {}
+    state.selected = view.repositories.length ? view.repositories[0].full : 'all';
+    if (remembered === 'all') state.selected = 'all';
+    else if (remembered && window.crypto && window.crypto.subtle) {
+      for (var repository of view.repositories) {
+        if (await choiceDigest(repository) === remembered) { state.selected = repository.full; break; }
+      }
+    }
+  }
+  async function choiceDigest(repository) {
+    // Store an opaque digest, never repository names, issue content or credentials.
+    var bytes = new TextEncoder().encode(String(repository.id || repository.full));
+    var digest = await window.crypto.subtle.digest('SHA-256', bytes);
+    return Array.from(new Uint8Array(digest)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+  }
+  async function loadBoard() {
+    rememberDraft();
+    state.readGeneration++;
+    state.detail = null;
+    state.pending = null;
+    var generation = ++state.boardGeneration;
+    var previousScope = state.board && state.board.repo;
     $('refresh-btn').disabled = true;
+    $('refresh-btn').hidden = false;
+    $('signout-btn').hidden = false;
     try {
-      var board = await api('/api/board');
+      var view = await api('/api/repos');
+      if (generation !== state.boardGeneration) return;
+      state.repositories = view;
+      await rememberedChoice(view);
+      renderPicker();
+      var selected = view.repositories.find(function (repository) { return repository.full === state.selected; });
+      if (view.discoveryFailed || (state.selected !== 'all' && (!selected || !selected.available))) {
+        var message = view.discoveryFailed ? 'Discovery failed — tasks are not refreshed.' : state.selected + ' is unavailable. Last known identity retained; not an empty repository.';
+        state.board = null;
+        $('task-list').textContent = '';
+        $('board-count').textContent = '';
+        $('repo-label').textContent = state.selected === 'all' ? 'All repositories' : state.selected;
+        $('empty-state').hidden = false;
+        $('empty-state').querySelector('p').textContent = message;
+        $('scope-status').textContent = message;
+        setNotice(message, true);
+        showView('board');
+        return;
+      }
+      var path = selected ? '/api/repos/' + encodeURIComponent(selected.owner) + '/' + encodeURIComponent(selected.name) + '/board' : '/api/combined/board';
+      var board = await api(path);
+      if (generation !== state.boardGeneration) return;
       state.board = board;
       state.loadedAt = Date.now();
       state.stale = false;
       renderBoard();
       setNotice('');
       showView('board');
-      $('refresh-btn').hidden = false;
-      $('signout-btn').hidden = false;
     } catch (error) {
-      if (error.status === 401) return;
-      if (state.board) {
+      if (error.status === 401 || generation !== state.boardGeneration) return;
+      if (state.board && previousScope === (state.selected === 'all' ? 'All repositories' : state.selected)) {
         state.stale = true;
         renderFreshness();
         setNotice('Could not refresh. Showing the last board loaded in this browser.', true);
-        showView('board');
       } else {
-        showView('board');
+        state.board = null;
         $('task-list').textContent = '';
         $('board-count').textContent = '';
-        var empty = $('empty-state');
-        empty.hidden = false;
-        empty.querySelector('p').textContent = 'The board could not be loaded.';
+        $('empty-state').hidden = false;
+        $('empty-state').querySelector('p').textContent = 'The board could not be loaded — unavailable, not empty.';
         setNotice(error.message + '. Use Refresh to try again.', true);
       }
-    } finally {
-      $('refresh-btn').disabled = false;
-    }
+      showView('board');
+    } finally { if (generation === state.boardGeneration) $('refresh-btn').disabled = false; }
   }
 
   function detailBadges(issue) {
@@ -401,6 +569,10 @@
     container.textContent = '';
     container.appendChild(badge(issue.state === 'closed' ? 'closed' : 'open', 'state-' + (issue.state === 'closed' ? 'closed' : 'open')));
     container.appendChild(badge(statusText(issue.statusLabel), 'status'));
+    if (issue.repository) {
+      container.appendChild(badge(issue.repository.full));
+      if (issue.repository.archived) container.appendChild(badge('archived'));
+    }
     if (issue.phase) container.appendChild(badge('phase: ' + String(issue.phase).replace(/_/g, ' '), 'phase'));
     if (issue.attention && issue.attention !== 'none') {
       container.appendChild(badge('needs ' + String(issue.attention).replace('needs-', ''), 'attention'));
@@ -533,6 +705,7 @@
     renderStatus(issue);
     renderHumanTasks(issue);
     $('save-status').textContent = '';
+    restoreDraft();
 
     if (focusHeading) {
       window.setTimeout(function () {
@@ -541,42 +714,50 @@
     }
   }
 
-  async function openIssue(number, options) {
+  async function openIssue(target, options) {
     options = options || {};
+    if (typeof target === 'number') {
+      var repository = state.repositories && state.repositories.repositories.find(function (r) { return r.full === state.selected; });
+      if (!repository) return;
+      target = { number: target, repository: repository };
+    }
+    rememberDraft();
+    var generation = ++state.readGeneration;
+    var writeGeneration = state.writeGeneration;
+    state.pending = target;
     try {
-      var response = await api('/api/issues/' + encodeURIComponent(String(number)));
+      var response = await api(issuePath(target));
+      if (generation !== state.readGeneration || writeGeneration !== state.writeGeneration) return;
+      if (!isValidMutationPayload(response, target)) throw new ApiError('invalid_detail', 502, { message: 'Invalid task detail; last valid data retained' });
       state.detail = response.issue;
-      state.statusOptions = response.statusOptions || [];
+      state.statusOptions = response.statusOptions;
+      state.uncertain.delete(identity(target));
       state.conflict = false;
       renderDetail(true);
       setNotice('');
       showView('detail');
       $('refresh-btn').hidden = false;
       $('signout-btn').hidden = false;
-      if (options.focus !== false) {
-        window.setTimeout(function () {
-          $('detail-title').focus();
-        }, 20);
-      }
     } catch (error) {
-      if (error.status === 401) return;
-      setHash('#/');
-      showBoard();
+      if (error.status === 401 || generation !== state.readGeneration) return;
       setNotice(error.message + '.', true);
     }
   }
 
   function route() {
     var match = /^#\/issue\/(\d+)$/.exec(window.location.hash || '');
-    if (match) {
-      openIssue(Number(match[1]));
-    } else {
-      showBoard();
+    if (match && state.pending && state.pending.number === Number(match[1])) {
+      // The click already carries the exact qualified identity; never infer a
+      // repository from a bare number in a combined view.
+      return;
     }
+    if (match && state.selected !== 'all') openIssue(Number(match[1]));
+    else { rememberDraft(); state.readGeneration++; state.pending = null; state.detail = null; showBoard(); }
   }
 
-  function handleConflict(error) {
-    if (error.payload && error.payload.issue) {
+  function handleConflict(error, issue, generation) {
+    if (generation !== state.readGeneration || !state.detail || !sameIdentity(state.detail, issue)) return;
+    if (isValidMutationPayload(error.payload, issue)) {
       state.detail = error.payload.issue;
       state.statusOptions = error.payload.statusOptions || state.statusOptions;
       state.conflict = true;
@@ -586,8 +767,11 @@
   }
 
   async function saveOverview() {
-    if (!state.detail) return;
+    if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) return;
     var issue = state.detail;
+    rememberDraft();
+    var generation = ++state.readGeneration;
+    state.boardGeneration++;
     var text = $('overview-text').value;
     var sections = Array.isArray(issue.editableSections) ? issue.editableSections : [];
     var sectionId = sections.length > 0 ? sections[0].id : 'overview';
@@ -595,26 +779,27 @@
     $('save-overview').disabled = true;
     $('save-status').textContent = 'Saving…';
     try {
-      var response = await api('/api/issues/' + issue.number + '/section', {
+      var response = await api(issuePath(issue) + '/section', {
+        expected: issue,
         method: 'PUT',
         body: { sectionId: sectionId, text: text, fingerprint: issue.fingerprint },
       });
-      if (!isValidMutationPayload(response, issue.number)) {
+      if (!isValidMutationPayload(response, issue)) {
         throw new ApiError('write_outcome_unknown', 200, {
           error: 'write_outcome_unknown',
           message: 'Outcome unknown \u2014 refresh to check GitHub state',
         });
       }
-      state.detail = response.issue;
-      state.statusOptions = response.statusOptions || state.statusOptions;
-      state.conflict = false;
-      renderDetail(false);
+      if (!publishMutation(response, issue, generation, 'section')) return;
       $('save-status').textContent = 'Saved just now.';
       announce('Overview saved.');
     } catch (error) {
-      if (error.status === 401) return;
+      state.writeGeneration++;
+      state.boardGeneration++;
+      if (error.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
+      if (error.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
       if (error.status === 409) {
-        handleConflict(error);
+        handleConflict(error, issue, generation);
         $('save-status').textContent = 'Not saved: conflict.';
       } else if (error.status === 429) {
         $('save-status').textContent = 'Too many attempts. Wait and try again.';
@@ -634,7 +819,7 @@
   }
 
   async function saveAnswer(answerIndex, input) {
-    if (!state.detail) return;
+    if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) return;
     var value = input.value.trim();
     if (!value) {
       input.setAttribute('aria-invalid', 'true');
@@ -643,27 +828,32 @@
       return;
     }
     input.removeAttribute('aria-invalid');
-    var currentNumber = state.detail.number;
+    var issue = state.detail;
+    rememberDraft();
+    state.busy = true;
+    var generation = ++state.readGeneration;
+    state.boardGeneration++;
     try {
-      var response = await api('/api/issues/' + currentNumber + '/questions/' + answerIndex + '/answer', {
+      var response = await api(issuePath(issue) + '/questions/' + answerIndex + '/answer', {
+        expected: issue,
         method: 'POST',
-        body: { answer: value, fingerprint: state.detail.fingerprint },
+        body: { answer: value, fingerprint: issue.fingerprint },
       });
-      if (!isValidMutationPayload(response, currentNumber)) {
+      if (!isValidMutationPayload(response, issue)) {
         throw new ApiError('write_outcome_unknown', 200, {
           error: 'write_outcome_unknown',
           message: 'Outcome unknown \u2014 refresh to check GitHub state',
         });
       }
-      state.detail = response.issue;
-      state.statusOptions = response.statusOptions || state.statusOptions;
-      state.conflict = false;
-      renderDetail(false);
+      if (!publishMutation(response, issue, generation, 'question', answerIndex)) return;
       announce('Answer saved.');
     } catch (error) {
-      if (error.status === 401) return;
+      state.writeGeneration++;
+      state.boardGeneration++;
+      if (error.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
+      if (error.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
       if (error.status === 409) {
-        handleConflict(error);
+        handleConflict(error, issue, generation);
       } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
         var msg = error.message || 'Outcome unknown \u2014 refresh to check GitHub state';
         if (!msg.toLowerCase().includes('refresh')) {
@@ -673,11 +863,11 @@
       } else {
         setNotice(error.message + '.', true);
       }
-    }
+    } finally { state.busy = false; }
   }
 
   async function saveStatus() {
-    if (!state.detail) return;
+    if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) return;
     var select = $('status-select');
     var value = select.value;
     if (!value) {
@@ -685,27 +875,32 @@
       announce('Choose a status first.');
       return;
     }
-    var currentNumber = state.detail.number;
+    var issue = state.detail;
+    rememberDraft();
+    state.busy = true;
+    var generation = ++state.readGeneration;
+    state.boardGeneration++;
     try {
-      var response = await api('/api/issues/' + currentNumber + '/status', {
+      var response = await api(issuePath(issue) + '/status', {
+        expected: issue,
         method: 'POST',
-        body: { status: value, fingerprint: state.detail.fingerprint },
+        body: { status: value, fingerprint: issue.fingerprint },
       });
-      if (!isValidMutationPayload(response, currentNumber)) {
+      if (!isValidMutationPayload(response, issue)) {
         throw new ApiError('write_outcome_unknown', 200, {
           error: 'write_outcome_unknown',
           message: 'Outcome unknown \u2014 refresh to check GitHub state',
         });
       }
-      state.detail = response.issue;
-      state.statusOptions = response.statusOptions || state.statusOptions;
-      state.conflict = false;
-      renderDetail(false);
+      if (!publishMutation(response, issue, generation, 'status', null)) return;
       announce('Status updated.');
     } catch (error) {
-      if (error.status === 401) return;
+      state.writeGeneration++;
+      state.boardGeneration++;
+      if (error.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
+      if (error.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
       if (error.status === 409) {
-        handleConflict(error);
+        handleConflict(error, issue, generation);
       } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
         var msg = error.message || 'Outcome unknown \u2014 refresh to check GitHub state';
         if (!msg.toLowerCase().includes('refresh')) {
@@ -715,7 +910,7 @@
       } else {
         setNotice(error.message + '.', true);
       }
-    }
+    } finally { state.busy = false; }
   }
 
   async function signOut() {
@@ -767,21 +962,35 @@
 
     $('refresh-btn').addEventListener('click', function () {
       if (state.detail && /^#\/issue\//.test(window.location.hash)) {
-        openIssue(state.detail.number);
+        openIssue(state.detail);
       } else {
         loadBoard();
       }
     });
 
+    $('repo-select').addEventListener('change', async function () {
+      state.selected = $('repo-select').value;
+      try {
+        var repository = state.repositories.repositories.find(function (r) { return r.full === state.selected; });
+        var opaque = state.selected === 'all' ? 'all' : await choiceDigest(repository);
+        window.localStorage.setItem('board-repository-choice', opaque);
+      } catch (error) { /* Storage or digest unavailable: keep memory choice. */ }
+      setHash('#/');
+      await loadBoard();
+    });
     $('signout-btn').addEventListener('click', signOut);
     $('back-btn').addEventListener('click', function () {
+      rememberDraft();
+      state.readGeneration++;
+      state.detail = null;
+      state.pending = null;
       setHash('#/');
       showBoard();
     });
     $('save-overview').addEventListener('click', saveOverview);
     $('apply-status').addEventListener('click', saveStatus);
     $('conflict-reload').addEventListener('click', function () {
-      if (state.detail) openIssue(state.detail.number);
+      if (state.detail) openIssue(state.detail);
     });
 
     window.addEventListener('hashchange', route);

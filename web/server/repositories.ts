@@ -50,7 +50,7 @@ export class RepositoryRegistry {
   async resolve(owner: string, name: string): Promise<RepositoryEntry> {
     const full = `${owner}/${name}`;
     // A warmed registry rejects fabricated names without even a discovery call.
-    if (this.fetchedAt !== null && !this.known.has(full)) throw new RepositoryNotAllowedError();
+    if (!this.known.has(full)) throw new RepositoryNotAllowedError();
     const view = await this.view();
     const found = view.repositories.find(repository => repository.full === full && repository.available);
     if (!found) throw new RepositoryNotAllowedError();
