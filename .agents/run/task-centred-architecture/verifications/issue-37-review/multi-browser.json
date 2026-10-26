@@ -1,0 +1,123 @@
+{
+  "results": [
+    {
+      "name": "all four repository identities available",
+      "pass": true
+    },
+    {
+      "name": "same-number combined rows separate with labels",
+      "pass": true
+    },
+    {
+      "name": "combined/1280 no overflow",
+      "pass": true
+    },
+    {
+      "name": "combined/360 no overflow",
+      "pass": true
+    },
+    {
+      "name": "beta receives neither alpha draft",
+      "pass": true
+    },
+    {
+      "name": "combined write reaches beta only",
+      "pass": true
+    },
+    {
+      "name": "alpha drafts survive same-number navigation",
+      "pass": true
+    },
+    {
+      "name": "archived explicitly marked",
+      "pass": true
+    },
+    {
+      "name": "archived/1280 no overflow",
+      "pass": true
+    },
+    {
+      "name": "archived/360 no overflow",
+      "pass": true
+    },
+    {
+      "name": "empty/1280 no overflow",
+      "pass": true
+    },
+    {
+      "name": "empty/360 no overflow",
+      "pass": true
+    },
+    {
+      "name": "honest empty state",
+      "pass": true
+    },
+    {
+      "name": "last repository remembered without repository name in storage or URL",
+      "pass": true
+    },
+    {
+      "name": "partial failure names unavailable member",
+      "pass": true
+    },
+    {
+      "name": "partial/1280 no overflow",
+      "pass": true
+    },
+    {
+      "name": "partial/360 no overflow",
+      "pass": true
+    },
+    {
+      "name": "lost access retained identity, never empty",
+      "pass": true
+    },
+    {
+      "name": "unavailable/1280 no overflow",
+      "pass": true
+    },
+    {
+      "name": "unavailable/360 no overflow",
+      "pass": true
+    },
+    {
+      "name": "failed discovery retains picker identities",
+      "pass": true
+    },
+    {
+      "name": "discovery-failed/1280 no overflow",
+      "pass": true
+    },
+    {
+      "name": "discovery-failed/360 no overflow",
+      "pass": true
+    },
+    {
+      "name": "new qualified paths are redacted in logs",
+      "pass": true
+    },
+    {
+      "name": "signout removes issue and repository DOM",
+      "pass": true
+    }
+  ],
+  "screenshots": [
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/combined-1280.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/combined-360.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/archived-1280.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/archived-360.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/empty-1280.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/empty-360.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/partial-1280.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/partial-360.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/unavailable-1280.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/unavailable-360.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/discovery-failed-1280.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo/.agents/run/task-centred-architecture/verifications/issue-37-review/screenshots/discovery-failed-360.png"
+  ],
+  "summary": {
+    "checks": 25,
+    "passed": 25
+  },
+  "runtimeErrors": []
+}

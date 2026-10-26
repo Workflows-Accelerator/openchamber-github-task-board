@@ -1,0 +1,253 @@
+TAP version 13
+# Subtest: qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+not ok 1 - qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 4.407756
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:38:55'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:39:31)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.start (node:internal/test_runner/test:944:17)
+    startSubtestAfterBootstrap (node:internal/test_runner/harness:296:17)
+  ...
+# Subtest: qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+not ok 2 - qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 1.886859
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:38:55'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:39:31)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+  ...
+# Subtest: qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+not ok 3 - qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 1.662863
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:38:55'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:39:31)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+  ...
+# Subtest: qualified overview drafts survive navigation without crossing same-number repositories
+not ok 4 - qualified overview drafts survive navigation without crossing same-number repositories
+  ---
+  duration_ms: 1.762374
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:52:1'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:53:24)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+  ...
+# Subtest: observed revision change never rebinds an old answer; original question draft is recoverable
+not ok 5 - observed revision change never rebinds an old answer; original question draft is recoverable
+  ---
+  duration_ms: 8.12065
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:64:1'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:66:24)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+  ...
+# Subtest: same-number combined row update replaces only the written repository
+not ok 6 - same-number combined row update replaces only the written repository
+  ---
+  duration_ms: 2.522769
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:73:1'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:75:19)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+  ...
+# Subtest: older detail read cannot replace a newer confirmed mutation
+not ok 7 - older detail read cannot replace a newer confirmed mutation
+  ---
+  duration_ms: 6.068888
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:82:1'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:86:19)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+  ...
+# Subtest: a detail refresh started during a write cannot clear the later UNKNOWN outcome
+not ok 8 - a detail refresh started during a write cannot clear the later UNKNOWN outcome
+  ---
+  duration_ms: 4.752136
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:93:1'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:97:31)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+  ...
+# Subtest: detached question input stays bound to its exact source repository and observed revision
+not ok 9 - detached question input stays bound to its exact source repository and observed revision
+  ---
+  duration_ms: 3.704531
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:106:1'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:107:31)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+  ...
+# Subtest: answer confirms only the qualified combined row question count
+not ok 10 - answer confirms only the qualified combined row question count
+  ---
+  duration_ms: 4.680289
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:115:1'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:117:24)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+  ...
+# Subtest: clearing a qualified draft does not resurrect an older typed value on return
+not ok 11 - clearing a qualified draft does not resurrect an older typed value on return
+  ---
+  duration_ms: 2.399419
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:124:1'
+  failureType: 'testCodeFailure'
+  error: 'rememberDraft is not defined'
+  code: 'ERR_TEST_FAILURE'
+  name: 'ReferenceError'
+  stack: |-
+    evalmachine.<anonymous>:808:103
+    evalmachine.<anonymous>:809:3
+    Script.runInContext (node:vm:149:12)
+    Object.runInContext (node:vm:301:6)
+    browser (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:32:6)
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/base/web/tests/multi-repo-client.test.mjs:125:24)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 0
+# fail 11
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 477.522913
+EXIT:1

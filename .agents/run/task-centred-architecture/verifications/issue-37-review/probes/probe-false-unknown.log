@@ -1,0 +1,2 @@
+{"uncertain":["owner/alpha#1"],"notice":"Outcome unknown — refresh to check GitHub state","calls":[{"path":"/api/repos/owner/alpha/issues/1/status","method":"POST"}]}
+EXIT:0

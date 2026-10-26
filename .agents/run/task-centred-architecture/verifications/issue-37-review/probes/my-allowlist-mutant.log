@@ -1,0 +1,34 @@
+TAP version 13
+# Subtest: fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+not ok 1 - fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+  ---
+  duration_ms: 259.690128
+  type: 'test'
+  location: '/tmp/opencode/issue37-review/mutant/web/tests/multi-repo.test.mjs:202:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    /api/repos/evil/repo/board
+
+    404 !== 400
+
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 400
+  actual: 404
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/issue37-review/mutant/web/tests/multi-repo.test.mjs:217:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+1..1
+# tests 1
+# suites 0
+# pass 0
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 653.737322
+EXIT:1
