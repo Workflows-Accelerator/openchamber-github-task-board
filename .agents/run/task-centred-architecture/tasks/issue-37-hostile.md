@@ -1,9 +1,9 @@
 <env_preflight>
-BLOCKED DRAFT — fill candidate commit, dirty/clean state, builder report and active-worker facts after recovery builder ses_f456ddf0ac270174a79ccf0a finishes. No review dispatch while builder runs.
+Recovery builder ses_f456ddf0ac270174a79ccf0a finished at candidate5b231ff (actual9router/genius); tracked-clean. No active builder. This reviewer is independent and must not trust the build report.
 Repo /workspace/extensions/github-task-board
 Worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-37-multi-repo
-Branch feat/issue-37-multi-repo; base752407a, candidate FILL_AT_DISPATCH. Product/test diff from752407a read-only. Own only .agents/run/task-centred-architecture/outputs/issue-37-hostile.md and verifications/issue-37-review/**. Preserve original build/recovery evidence immutable. Scratch /tmp/opencode.
-Dependencies linked. No installs/env copy. Commands node --test web/tests/*.test.mjs; npm test; npx tsc -p web/tsconfig.json; npm run typecheck; npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=web/dist/server.mjs. Never force-add web/dist. Build/probe/mutant in scratch if necessary, no source changes.
+Branch feat/issue-37-multi-repo; base752407a, candidate5b231ff. Product/test diff from752407a read-only. Own only .agents/run/task-centred-architecture/outputs/issue-37-hostile.md and verifications/issue-37-review/**. Preserve original build/recovery evidence immutable. Scratch /tmp/opencode.
+Dependencies linked. No installs/env copy. Commands node --test web/tests/*.test.mjs; npm test; npx tsc -p web/tsconfig.json; npm run typecheck; npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=web/dist/server.mjs. Never force-add web/dist. Build/probe/mutant in scratch if necessary, no source changes. Verify the builder's claimed red-before state by reverting candidate source in a scratch copy or running the named regressions against752407a; do not mutate the candidate tree.
 Do not touch panel/service/root tests/shared skills/config, credentials, real GitHub writes, other worktrees, hosting or infrastructure. No product fixes/merge/push/master/deploy/issue closure. Another ops worker may inspect production, do NOT interact with it or production.
 Facts authoritative at dispatch; no broad initial status/pwd/ls. Targeted inspection needed for diff/commit evidence and after failures.
 </env_preflight>
@@ -14,7 +14,7 @@ Independently decide whether multi-repository support satisfies every approved c
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/tasks/issue-37-multi-repository.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/tasks/issue-37-build-recovery.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/decisions-2026-10-24.md]
-Builder report FILL_AT_DISPATCH. Do not trust summary counts or unused names as evidence.
+Builder report .agents/run/task-centred-architecture/outputs/issue-37-build-recovery.md (claims: web380/root517/types; bundle b1d2b27232b38303761d6c90c8c406190953b6c0f53a7ed8484eec217c1061f6; saved matrices 32/84/117/36/129/19; 25 screenshots; recovered source2/12; mutant exits). Claims only. Builder's own low findings to test: no total combined issue cap, pseudonymous choice digest, in-memory unavailable history. Do not trust summary counts or unused names as evidence.
 </context_files>
 <skills>
 [@/workspace/config/opencode/.agents/skills/review/adversarial/doubt-driven-development/SKILL.md]
