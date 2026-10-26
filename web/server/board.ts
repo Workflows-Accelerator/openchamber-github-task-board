@@ -37,7 +37,9 @@ export class BoardError extends Error {
 const statusSet = new Set<string>(STATUS_LABELS as readonly string[]);
 const fencePattern = /^ {0,3}(`{3,}|~{3,})/;
 const closeFencePattern = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
-const indentedCodeLinePattern = /^(?: {4,}|\t)/;
+// A tab after zero to three spaces advances to Markdown column four;
+// four leading spaces already reach code indentation, regardless of what follows.
+const indentedCodeLinePattern = /^(?: {4}| {0,3}\t)/;
 const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
 const questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
 const humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
