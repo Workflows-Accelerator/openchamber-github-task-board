@@ -5,8 +5,8 @@ Status: INCOMPLETE — NOT RELEASE READY
 Timestamp: 2026-10-26
 
 Decision17 final corrections: #33 CLEARED and integrated. Independent e4b0091 actual9router/genius Security APPROVED/Spec PASS/Quality APPROVED; merge6b1603f/proofbf745aa accepted, feature branch pushed throughbf745aa. Merged web338/root517/focused230/protocol12/bothtypes/build+parity bee9a616; browser201(177malformed+24valid,1PATCH each)/HTTP165/gateway19/baseline32/probes28 all pass; 84screenshots+2134log audit. #33 awaiting batch human.
-#35 final R1-R9 correction RUNNING ses_0c095fb063b12328c3b70274 genius from220d1d5 clean, receipt6417278407/in-progress. Latest failed #35 proof (220d1d5 HALT) remains authoritative until new independent verdict. Further failed recheck parks issue. No master/deploy/closure.
-Hosting prep correction c828bf3/848c9f8/cd0734b actual9router/engineer claims all five findings closed (token-origin escape removed, honest version, isolated start test, GET-only docs, build prerequisite) with hosting11/web349/root517/types/bundle c385ced6; NOT accepted. Independent recheck ses_1199b4d0ff9aa1f8fc699b2d running. No deployment, proxy/TLS/restart proof.
+#35 final builder3b4eced actual9router/genius finished: claims allR1-R9 closed (targeted36/preserved45/full553, types/build/parity, independent165/165, saved30/0defects, number-only mutants exit1), bundle563ff9b2 ignored; NOT accepted. Final independent recheck tasks/issue-35-last-hostile.md READY, one bounded check, failure PARKS.
+Hosting slice ACCEPTED at source gate (799eda2, actual9router/engineer PROCEED): hosting11/web349/root517/both types/bundle c385ced6, red-before on b8e517c, token-origin escape gone with no residual override. Release integration brief tasks/hosting-integration.md next; no push/deploy/proxy/TLS/restart proof.
 
 ## Executed levels by member
 | Member | L0 static | L1 regression | L2 integration | L3 user's way | L4 independent hostile | L5 human |

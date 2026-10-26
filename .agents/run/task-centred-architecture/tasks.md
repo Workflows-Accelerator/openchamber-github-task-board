@@ -5,10 +5,10 @@
 | Outcome | State | Evidence / next |
 |---|---|---|
 | #33 browser board | MERGED/PUSHED, awaiting batch human | L4e4b0091 PASS/APPROVED; merge6b1603f/proofbf745aa accepted web338/root517/browser201/HTTP165/types/build/parity. Feature push confirmed; clean source removed/pruned, branch retained. DB deregistration pending |
-| #35 refresh write coverage | RUNNING final R1-R9 correction | ses_0c095fb063b12328c3b70274 genius source220d1d5 clean, tasks/issue-35-last-correction.md; actual model on wake; receipt6417278407/in-progress. Decision17 one final correction/check, failure PARKS |
+| #35 refresh write coverage | BUILDER DONE, final recheck next | Builder3b4eced actual9router/genius clean claims all R1-R9 closed: targeted36/preserved45/full553/types/build/parity, independent165/165, saved30/0defects, mutants exit1. NOT accepted; tasks/issue-35-last-hostile.md READY. Any required failure PARKS |
 | #28/#34/#36 panel protections | MERGED/PUSHED, awaiting batch | Accepted unchanged, installed host/liveGitHub NOT VERIFIED |
-| Hosting prep (bind/health/start) | RECHECK RUNNING | Correction c828bf3/848c9f8/cd0734b addresses H1 token-origin escape, M2 honest version, L3 isolation, I4 docs; claims hosting11/web349/root517/types/bundle c385ced6. Recheck ses_1199b4d0ff9aa1f8fc699b2d engineer; no deploy authority |
-| #37 visible repositories | ALIGNED, QUEUED | decision15 show archived/empty; next web frontier after hosting |
+| Hosting prep (bind/health/start) | ACCEPTED, release integration next | Recheck ses_1199b4d0ff9aa1f8fc699b2d actual9router/engineer PROCEED799eda2; gate outputs/hosting-review-gate.md; brief tasks/hosting-integration.md; no push/deploy authority |
+| #37 visible repositories | ALIGNED, QUEUED | decision15 show archived/empty; starts only after hosting merge frees web/** |
 | #31 questions/alerts loop | ALIGNED, QUEUED | PWA push + 60s polling after hosting/#37 |
 | #30 proportionate feature/bug path | BLOCKED #35 | Brief ready; expiration excluded/unanswered |
 

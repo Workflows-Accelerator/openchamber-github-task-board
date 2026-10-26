@@ -1,8 +1,8 @@
 <env_preflight>
-BLOCKED DRAFT. Fill candidate/clean/files/report and confirm no active builder after issue-35-last-correction finishes. Prior220d1d5/product0af35ae is FAILED and cannot pass by omission.
+READY — builder ses_0c095fb063b12328c3b70274 actual9router/genius finished. Candidate3b4eced12908b00d315b31adc5bb4c017b9ae9b5, tracked clean; no active builder. Product diff220d1d5..3b4eced: panel/main.ts +778/-?, generated main.js, test/issue-35-write-refresh.test.js +546, current report/proofs; panel/core.ts, service/**, web/** untouched. Builder claims targeted36/preserved45/full553/typecheck/build/parity, independent165=165pass, saved30=0defects, mutants exit1, hash563ff9b2 ignored. NOT accepted; last bounded check.
 Repo /workspace/extensions/github-task-board
 Worktree /workspace/extensions/github-task-board/.worktrees/team-dev-issue-35-write-refresh
-Branch fix/issue-35-write-refresh; new candidate FILL_AT_DISPATCH, clean state FILL_AT_DISPATCH. Existing dependency symlink, no installs/env/DB or root integration merge.
+Branch fix/issue-35-write-refresh; candidate3b4eced, tracked clean. Existing dependency symlink, no installs/env/DB or root integration merge.
 Product panel/main.ts/main.js, focused tests read-only; own outputs/issue-35-last-hostile.md and verifications/issue-35-last-review/** only. Prior proofs read-only, disposable probes/mutants/builds /tmp/opencode. No web/service/core/shared config/credentials/other worktrees/production GitHub/installed host/product patch/push/merge/close/master/deploy.
 Commands node --test test/issue-35-write-refresh.test.js; node --test test/current-board.test.js test/issue-34-answer-integrity.test.js; npm test; npm run typecheck; npm run build in archived same-depth tree, compare generated panel bytes/hash with candidate. Prior25targeted/45preserved/542full can increase, don't assume final count. build relative comments require matching scratch depth.
 Preflight authoritative when filled, skip startup status/pwd/ls. Targeted precommit/failure checks permitted.
@@ -14,7 +14,8 @@ Independently prove or reject the final nine-finding correction at runtime, with
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/decisions-2026-10-24.md]
 [@/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/tasks/issue-35-last-correction.md]
 [@/workspace/extensions/github-task-board/.worktrees/team-dev-issue-35-write-refresh/.agents/run/task-centred-architecture/outputs/issue-35-correction-hostile.md]
-New builder report outputs/issue-35-last-correction.md FILL_AT_DISPATCH. Read full220d1d5..candidate diff including test/probe changes, not count/report summaries. Last authoritative independent165-observation matrix/proof under verifications/issue-35-correction-review. Old repro runner success means expected defects reproduced, never new acceptance.
+[@/workspace/extensions/github-task-board/.worktrees/team-dev-issue-35-write-refresh/.agents/run/task-centred-architecture/outputs/issue-35-last-correction.md]
+Read the full220d1d5..3b4eced product and test diff, not count/report summaries. Last authoritative independent165-observation matrix/proof is verifications/issue-35-correction-review; its runner exit0 means expected defects were reproduced, never new acceptance. New builder evidence: verifications/issue-35-last-correction/**.
 </context_files>
 <skills>
 [@/workspace/config/opencode/.agents/skills/review/adversarial/doubt-driven-development/SKILL.md]
