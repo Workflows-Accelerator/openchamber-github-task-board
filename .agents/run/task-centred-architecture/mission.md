@@ -1,13 +1,13 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-26 #37 merged and published; #30/supervisor/deployment in review
-State: releasing/proving; alignment decisions1–24 CONFIRMED.
-- Review branch PUBLISHED fresh from54816f6 to73ad23f (includes accepted #37 integration8660d21/proof095768f and deterministic panel bundle audit; feature-branch push only, no master). Manager acceptance outputs/issue-37-integration-acceptance.md.
-- Owner decisions21–24 recorded: supervisor conditional merge (passed independent fb3e175 recheck then release dispatch), final#30 correction, standalone question loop stops at saved answers+notifications (no resumption), one staged deployment-package replacement. #31 body reconciled (no resumption, no #35 dependency) with receipt6427913024 and moved planned; #30 receipt6427564861 moved in-progress.
-- Supervisor RELEASED: independent fb3e175 recheck ses_7896cfe1285972c43f256c49 actual9router/engineer Security APPROVED/Spec PASS/Quality APPROVED/PROCEED; owner-authorised release ses_aef9d14a405a1668c3ab164e merged9a23609 into opencode-config master and pushed, remote tip abd6d6b verified by ls-remote, 23/23+655+19, nine syntax checks, default-off no-PID. Receipt outputs/board-supervisor-release-receipt.md pins abd6d6b for deployment; live deployment untouched. L5 waived for this internal default-off merge only by decisions20/21.
-- #30 FINAL recheck ses_c654ade2635dfdb492ae158d actual9router/genius PROCEED, zero required findings (614/614 prompt bytes identical, four+eight mutants fail, full525/525 after unchanged timing flake, panel7cb9aaa). ACCEPTED; integration dispatched.
-- #31 plan 2f6d0dd (80 lines) proposes three slices, preserves #33/#34 answer path, strict push-endpoint SSRF filtering, generic lockscreen text, in-memory baseline, bounded observer. Three genuine forks remain for the owner (relay filtering scope, restart baseline persistence, VAPID key origin); no implementation approval yet.
-- Deployment staged package ses_43aa2971b4c1879bb721558c genius RUNNING; must pin abd6d6b and all-repo095768f; v4 HALT findings must be closed or explicitly blocked. No runbook execution.
+## Latest checkpoint — 2026-10-26 #30 merged and pushed; #37/#33 ready; deployment replacement running
+State: releasing/proving; alignment decisions 1–24 CONFIRMED.
+- #30 INTEGRATED AND PUSHED: merge 8a57578 / proof 298ab52 into feat/v2-binding-and-ratelimit, pushed to origin 298ab52. Web 384/384, root 525/525, both types 0 errors, parity 18/18, prompts 45/45 byte-identical against accepted 959bfd2. Receipt: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/30#issuecomment-6428951284. Awaiting batch human review (L5).
+- #37 MULTI-REPO & #33 OFFLINE SYNC: previously merged, proved, and pushed on review branch. Awaiting batch human review.
+- Supervisor RELEASED: opencode-config master abd6d6b pinned for deployment; live deployment untouched.
+- Staged deployment package replacement ses_43aa2971b4c1879bb721558c genius RUNNING in .worktrees/team-ops-board-deployment; zero runbook execution.
+- #31 standalone loop plan 2f6d0dd ready; 3 architecture decisions pending owner choice before Slice A dispatch.
+- #35 parked for later mission.
 
 - Config root fetch timed out manager-side120s; release worker bounded to ONE fetch and must stop rather than push blind.
 
