@@ -2,8 +2,8 @@
 // GitHub REST client (server-side only).
 //
 // The token lives in this process and is only ever sent in the Authorization
-// header. Every URL is built from the configured repository; no caller can
-// change which repository is addressed.
+// header. Each client is bound to a server-resolved repository; routes must
+// resolve the token-visible allowlist before constructing a client.
 // ==========================================
 
 export type GitHubErrorKind =
@@ -42,10 +42,27 @@ export interface GitHubRepoRef {
   full: string;
 }
 
+export interface GitHubRepositorySummary {
+  id: number | null;
+  owner: string;
+  name: string;
+  full: string;
+  archived: boolean;
+  hasIssues: boolean;
+  disabled: boolean;
+  private: boolean;
+}
+
+export interface RepositoryList {
+  repositories: GitHubRepositorySummary[];
+  pages: number;
+  truncated: boolean;
+}
+
 export interface GitHubClientOptions {
   apiBase: string;
   token: string;
-  repo: GitHubRepoRef;
+  repo?: GitHubRepoRef | null;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
   maxPages?: number;
@@ -112,7 +129,7 @@ function kindForStatus(
 export class GitHubClient {
   private readonly apiBase: string;
   private readonly token: string;
-  private readonly repo: GitHubRepoRef;
+  private readonly repo: GitHubRepoRef | null;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
   private readonly maxPages: number;
@@ -121,18 +138,19 @@ export class GitHubClient {
   constructor(options: GitHubClientOptions) {
     this.apiBase = options.apiBase.replace(/\/+$/, '');
     this.token = options.token;
-    this.repo = options.repo;
+    this.repo = options.repo ?? null;
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.timeoutMs = options.timeoutMs ?? 15_000;
     this.maxPages = options.maxPages ?? 10;
     this.perPage = options.perPage ?? 100;
   }
 
-  get repository(): GitHubRepoRef {
+  get repository(): GitHubRepoRef | null {
     return this.repo;
   }
 
   private issuesBase(): string {
+    if (!this.repo) throw new GitHubError('invalid', 0, 'Repository has not been resolved');
     return `${this.apiBase}/repos/${encodeURIComponent(this.repo.owner)}/${encodeURIComponent(this.repo.name)}`;
   }
 
@@ -228,6 +246,70 @@ export class GitHubClient {
       throw new GitHubError('server', 200, 'GitHub repository response was malformed');
     }
     return data;
+  }
+
+  private repositoriesUrl(page: number): string {
+    const query = new URLSearchParams({
+      per_page: String(this.perPage),
+      page: String(page),
+      affiliation: 'owner,collaborator,organization_member',
+      sort: 'full_name',
+      direction: 'asc',
+    });
+    return `${this.apiBase}/user/repos?${query.toString()}`;
+  }
+
+  async listRepositories(): Promise<RepositoryList> {
+    const repositories: GitHubRepositorySummary[] = [];
+    const seen = new Map<string, number | null>();
+    let pages = 0;
+    let nextUrl: string | null = this.repositoriesUrl(1);
+    const apiOrigin = new URL(this.apiBase).origin;
+    const expectedPath = new URL(`${this.apiBase}/user/repos`).pathname;
+
+    while (nextUrl) {
+      if (pages >= this.maxPages) {
+        throw new GitHubError('server', 200, 'GitHub repository discovery exceeded the page bound');
+      }
+      const { data, headers } = await this.request(nextUrl);
+      if (!Array.isArray(data)) {
+        throw new GitHubError('server', 200, 'GitHub repository list response was not a list');
+      }
+
+      for (const item of data) {
+        const summary = parseRepositorySummary(item);
+        if (seen.has(summary.full)) {
+          throw new GitHubError('server', 200, 'GitHub repository discovery repeated an identity');
+        }
+        seen.set(summary.full, summary.id);
+        repositories.push(summary);
+      }
+      pages += 1;
+
+      const link = headers.get('link') ?? '';
+      const nextMatch = /<([^>]+)>\s*;\s*rel="next"/i.exec(link);
+      if (nextMatch) {
+        let parsedNext: URL;
+        try {
+          parsedNext = new URL(nextMatch[1], this.apiBase);
+        } catch {
+          throw new GitHubError('server', 200, 'GitHub repository pagination Link header URL was malformed');
+        }
+        if (parsedNext.origin !== apiOrigin) {
+          throw new GitHubError('server', 200, 'GitHub repository pagination left the configured API origin');
+        }
+        if (parsedNext.pathname !== expectedPath) {
+          throw new GitHubError('server', 200, 'GitHub repository pagination left the repository list path');
+        }
+        nextUrl = parsedNext.toString();
+      } else if (data.length >= this.perPage) {
+        nextUrl = this.repositoriesUrl(pages + 1);
+      } else {
+        nextUrl = null;
+      }
+    }
+
+    return { repositories, pages, truncated: false };
   }
 
   async listIssues(): Promise<IssueList> {
@@ -328,6 +410,31 @@ export class GitHubClient {
     }
     return { item: data, etag: headers.get('etag') };
   }
+}
+
+export function parseRepositorySummary(item: any): GitHubRepositorySummary {
+  if (!item || typeof item !== 'object' || Array.isArray(item)) {
+    throw new GitHubError('server', 200, 'GitHub repository response was malformed');
+  }
+  const full: string = typeof item.full_name === 'string' ? item.full_name : '';
+  const parts = full.split('/');
+  if (parts.length !== 2 || !parts.every(part => /^[A-Za-z0-9_.-]+$/.test(part) && part !== '.' && part !== '..') ||
+      item.name !== parts[1] || item.owner?.login !== parts[0] ||
+      typeof item.archived !== 'boolean' || typeof item.has_issues !== 'boolean' ||
+      (item.id !== undefined && (!Number.isSafeInteger(item.id) || item.id <= 0))) {
+    throw new GitHubError('server', 200, 'GitHub repository response was malformed');
+  }
+  const id = typeof item.id === 'number' && Number.isInteger(item.id) && item.id > 0 ? item.id : null;
+  return {
+    id,
+    owner: parts[0],
+    name: parts[1],
+    full,
+    archived: item.archived === true,
+    hasIssues: item.has_issues !== false,
+    disabled: item.disabled === true,
+    private: item.private === true,
+  };
 }
 
 export function parseIssueNumber(value: unknown): number {

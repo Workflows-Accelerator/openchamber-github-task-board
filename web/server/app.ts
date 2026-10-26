@@ -1,7 +1,7 @@
 // ==========================================
 // Standalone single-user board server.
 //
-// - reads and edits one configured GitHub repository
+// - reads and edits exact token-visible GitHub repositories
 // - GitHub credentials never leave this process
 // - browser auth is a password session + CSRF token
 // - no agent control, no session launch, no background polling
@@ -25,6 +25,7 @@ import {
   parseCookieHeader,
 } from './auth.ts';
 import { GitHubClient, GitHubError, parseIssueNumber, type IssueRead } from './github.ts';
+import { RepositoryRegistry, RepositoryNotAllowedError, DiscoveryUnavailableError, type RepositoryEntry } from './repositories.ts';
 import { STATUS_METADATA } from '../../panel/labels.ts';
 import { findSections, replaceSectionText, SectionError } from './sections.ts';
 import {
@@ -35,6 +36,7 @@ import {
   buildBoardList,
   buildIssueDetail,
   issueFingerprint,
+  issueKey,
   labelNames,
   statusLabelOf,
 } from './board.ts';
@@ -49,6 +51,7 @@ export interface BoardServerOptions {
   loginTimeoutMs?: number;
   logger?: (line: string) => void;
   packageJsonUrl?: URL | string;
+  repositoryTtlMs?: number;
 }
 
 export interface BoardServer {
@@ -348,13 +351,19 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       'BOARD_GITHUB_LOGIN does not match the account that owns BOARD_GITHUB_TOKEN',
     );
   }
-  try {
-    await github.getRepository();
-  } catch (error) {
-    if (error instanceof GitHubError && (error.kind === 'unauthorized' || error.kind === 'forbidden')) {
-      throw new ConfigError('BOARD_REPO', 'BOARD_REPO is not accessible to the stored GitHub token');
+  const repositories = new RepositoryRegistry({ client: github, now, ttlMs: options.repositoryTtlMs });
+  await repositories.view(); // Nonfatal: sign-in can disclose discovery failure distinctly.
+  function clientFor(repository: RepositoryEntry): GitHubClient {
+    return new GitHubClient({ apiBase: options.githubApiBase ?? config.githubApiBase,
+      token: config.githubToken, repo: repository, fetchImpl: options.fetchImpl });
+  }
+  async function resolveRepository(owner: string, name: string): Promise<RepositoryEntry> {
+    try { return await repositories.resolve(owner, name); }
+    catch (error) {
+      if (error instanceof RepositoryNotAllowedError) throw new HttpError(400, 'repository_not_allowed', error.message);
+      if (error instanceof DiscoveryUnavailableError) throw new HttpError(503, 'discovery_unavailable', 'Repository discovery failed; no operation was dispatched');
+      throw error;
     }
-    throw new ConfigError('BOARD_REPO', 'BOARD_REPO could not be verified with GitHub');
   }
 
   const sessions = new SessionStore({
@@ -412,7 +421,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       }
 
       const pathname = (req.url ?? '/').split('?')[0];
-      log(`${req.method ?? 'GET'} ${pathname} ${response.status} ${Date.now() - startedAt}ms`);
+      log(`${req.method ?? 'GET'} ${pathname.replace(/\/api\/repos\/[^/]+\/[^/]+/, '/api/repos/:owner/:name')} ${response.status} ${Date.now() - startedAt}ms`);
     })();
   });
 
@@ -422,7 +431,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         throw new HttpError(
           400,
           'repository_not_allowed',
-          'The repository is fixed by the server configuration and cannot be supplied by the client',
+          'Repository query overrides are not allowed; use an exact discovered repository route',
         );
       }
     }
@@ -430,7 +439,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       throw new HttpError(
         400,
         'repository_not_allowed',
-        'The repository is fixed by the server configuration and cannot be supplied by the client',
+        'Repository query overrides are not allowed; use an exact discovered repository route',
       );
     }
   }
@@ -506,56 +515,65 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
     const record = requireSession(req);
 
-    if (url.pathname === '/api/board' && method !== 'GET') {
-      return methodNotAllowed('GET');
+    if (url.pathname === '/api/repos') {
+      if (method !== 'GET') return methodNotAllowed('GET');
+      return { status: 200, body: await repositories.view() };
     }
-    if (method === 'GET' && url.pathname === '/api/board') {
-      const { items, truncated } = await github.listIssues().catch(mapGitHubError);
-      const { issues, excluded } = buildBoardList(items);
-      return {
-        status: 200,
-        body: {
-          repo: config.repo.full,
-          login: config.githubLogin,
-          fetchedAt: new Date(now()).toISOString(),
-          truncated,
-          excludedPullRequests: excluded,
-          issues,
-        },
-      };
+    if (url.pathname === '/api/combined/board') {
+      if (method !== 'GET') return methodNotAllowed('GET');
+      return { status: 200, body: await combinedBoard() };
     }
 
-    const detailMatch = /^\/api\/issues\/([^/]+)$/.exec(url.pathname);
+    // Legacy single-repository routes resolve the same allowlist. No fallback.
+    let route = url.pathname;
+    let repository: RepositoryEntry | null = null;
+    const qualified = /^\/api\/repos\/([^/]+)\/([^/]+)(\/.*)$/.exec(route);
+    if (qualified) {
+      repository = await resolveRepository(qualified[1], qualified[2]);
+      route = '/api' + qualified[3];
+    } else if (route.startsWith('/api/repos/')) {
+      throw new HttpError(400, 'repository_not_allowed', 'An exact discovered owner/name is required');
+    } else if (route === '/api/board' || route.startsWith('/api/issues/')) {
+      if (!config.repo) throw new HttpError(400, 'repository_not_allowed', 'Select a discovered repository');
+      repository = await resolveRepository(config.repo.owner, config.repo.name);
+    }
+    const scopedGithub = repository ? clientFor(repository) : null;
+    if (route === '/api/board') {
+      if (method !== 'GET') return methodNotAllowed('GET');
+      return { status: 200, body: await repositoryBoard(repository!) };
+    }
+
+    const detailMatch = /^\/api\/issues\/([^/]+)$/.exec(route);
     if (method === 'GET' && detailMatch) {
       const number = parseIssueNumberOrThrow(detailMatch[1]);
-      const read = await github.getIssue(number).catch(mapGitHubError);
+      const read = await scopedGithub!.getIssue(number).catch(mapGitHubError);
       if (read.item.pull_request) {
         throw new HttpError(404, 'not_found', 'That number is a pull request, not an issue');
       }
       return {
         status: 200,
         body: {
-          issue: buildIssueDetail(read.item),
+          issue: buildIssueDetail(read.item, repository),
           fetchedAt: new Date(now()).toISOString(),
           statusOptions: statusOptions(),
         },
       };
     }
 
-    const sectionMatch = /^\/api\/issues\/([^/]+)\/section$/.exec(url.pathname);
+    const sectionMatch = /^\/api\/issues\/([^/]+)\/section$/.exec(route);
     if (sectionMatch) {
       if (method !== 'PUT') return methodNotAllowed('PUT');
       requireCsrf(req, record);
       const number = parseIssueNumberOrThrow(sectionMatch[1]);
       const body = await readJsonBody(req);
-      return writeIssue(number, body, {
+      return writeIssue(repository!, number, body, {
         kind: 'section',
         sectionId: body?.sectionId,
         text: body?.text,
       });
     }
 
-    const answerMatch = /^\/api\/issues\/([^/]+)\/questions\/([^/]+)\/answer$/.exec(url.pathname);
+    const answerMatch = /^\/api\/issues\/([^/]+)\/questions\/([^/]+)\/answer$/.exec(route);
     if (answerMatch) {
       if (method !== 'POST') return methodNotAllowed('POST');
       requireCsrf(req, record);
@@ -565,14 +583,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         throw new HttpError(400, 'invalid_request', 'The question index is not valid');
       }
       const body = await readJsonBody(req);
-      return writeIssue(number, body, {
+      return writeIssue(repository!, number, body, {
         kind: 'question',
         index,
         answer: body?.answer,
       });
     }
 
-    const statusMatch = /^\/api\/issues\/([^/]+)\/status$/.exec(url.pathname);
+    const statusMatch = /^\/api\/issues\/([^/]+)\/status$/.exec(route);
     if (statusMatch) {
       if (method !== 'POST') return methodNotAllowed('POST');
       requireCsrf(req, record);
@@ -581,7 +599,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       if (!body || typeof body.status !== 'string') {
         throw new HttpError(400, 'invalid_request', 'A status label is required');
       }
-      return writeIssue(number, body, {
+      return writeIssue(repository!, number, body, {
         kind: 'status',
         status: body.status,
       });
@@ -594,6 +612,55 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       return { status: 404, body: { error: 'not_found', message: 'Not found' } };
     }
     return { status: 404, body: { error: 'not_found', message: 'Not found' } };
+  }
+
+  async function repositoryBoard(repository: RepositoryEntry) {
+    const listed = repository.hasIssues ? await clientFor(repository).listIssues().catch(mapGitHubError) : { items: [], truncated: false };
+    const { issues, excluded } = buildBoardList(listed.items, repository);
+    return { scope: 'repo', repository, repo: repository.full, login: config.githubLogin,
+      fetchedAt: new Date(now()).toISOString(), truncated: listed.truncated,
+      complete: !listed.truncated, partial: listed.truncated, excludedPullRequests: excluded, issues };
+  }
+
+  let aggregateInFlight: Promise<unknown> | null = null;
+  function combinedBoard(): Promise<unknown> {
+    if (aggregateInFlight) return aggregateInFlight;
+    aggregateInFlight = aggregate().finally(() => { aggregateInFlight = null; });
+    return aggregateInFlight;
+  }
+  async function aggregate() {
+    const discovery = await repositories.view();
+    const issues: ReturnType<typeof buildBoardList>['issues'] = [];
+    const failures: Array<{ repository: RepositoryEntry; message: string }> = [];
+    let cursor = 0;
+    let loaded = 0;
+    let truncated = false;
+    let excluded = 0;
+    async function worker() {
+      while (cursor < discovery.repositories.length) {
+        const repository = discovery.repositories[cursor++];
+        if (!repository.available || discovery.discoveryFailed) {
+          failures.push({ repository, message: discovery.discoveryFailed ? 'Discovery failed; not refreshed' : 'Unavailable' });
+          continue;
+        }
+        try {
+          const board = await repositoryBoard(repository);
+          issues.push(...board.issues);
+          excluded += board.excludedPullRequests;
+          truncated ||= board.truncated;
+          if (board.truncated) failures.push({ repository, message: 'Issue page bound reached; incomplete' });
+          loaded++;
+        } catch {
+          failures.push({ repository, message: 'Unavailable or refresh failed' });
+        }
+      }
+    }
+    await Promise.all(Array.from({ length: 3 }, () => worker()));
+    const partial = discovery.discoveryFailed || failures.length > 0 || truncated;
+    return { scope: 'all', repo: 'All repositories', ...discovery, issues, failures,
+      fetchedAt: new Date(now()).toISOString(), partial, complete: !partial, truncated,
+      repositoriesRequested: discovery.repositories.length, repositoriesLoaded: loaded,
+      concurrency: 3, maxPagesPerRepository: 10, excludedPullRequests: excluded };
   }
 
   function methodNotAllowed(allow: string): HandlerResponse {
@@ -622,12 +689,12 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   const LOGIN_SLOT_TIMEOUT_MS = 3_000;
   const inFlightLogins = new Set<string>();
   const scryptQueue = new ScryptQueue(2, 4);
-  const issueLocks = new Map<number, Promise<void>>();
+  const issueLocks = new Map<string, Promise<void>>();
 
-  async function withIssueLock<T>(number: number, fn: () => Promise<T>): Promise<T> {
-    while (issueLocks.has(number)) {
+  async function withIssueLock<T>(key: string, fn: () => Promise<T>): Promise<T> {
+    while (issueLocks.has(key)) {
       try {
-        await issueLocks.get(number);
+        await issueLocks.get(key);
       } catch {
         // ignore errors from prior lock holders
       }
@@ -636,11 +703,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     const lockPromise = new Promise<void>((resolve) => {
       release = resolve;
     });
-    issueLocks.set(number, lockPromise);
+    issueLocks.set(key, lockPromise);
     try {
       return await fn();
     } finally {
-      issueLocks.delete(number);
+      issueLocks.delete(key);
       release();
     }
   }
@@ -719,6 +786,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   }
 
   async function writeIssue(
+    repository: RepositoryEntry,
     number: number,
     body: any,
     op: WriteOp,
@@ -732,16 +800,19 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       );
     }
 
-    return withIssueLock(number, async () => {
+    return withIssueLock(issueKey(repository, number), async () => {
+      // A queued write must re-resolve freshness before any issue request.
+      repository = await resolveRepository(repository.owner, repository.name);
+      const github = clientFor(repository);
       const fresh = await github.getIssue(number).catch(mapGitHubError);
       if (fresh.item.pull_request) {
         throw new HttpError(404, 'not_found', 'That number is a pull request, not an issue');
       }
 
-      const currentFingerprint = issueFingerprint(fresh.item);
+      const currentFingerprint = issueFingerprint(fresh.item, repository);
       if (currentFingerprint !== supplied) {
         throw new HttpError(409, 'conflict', 'This task changed on GitHub after you opened it; nothing was written', {
-          issue: buildIssueDetail(fresh.item),
+          issue: buildIssueDetail(fresh.item, repository),
           statusOptions: statusOptions(),
         });
       }
@@ -779,7 +850,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         if (op.answer.length > 2000) {
           throw new HttpError(400, 'invalid_edit', 'The answer is too long');
         }
-        const baseDetail = buildIssueDetail(fresh.item);
+        const baseDetail = buildIssueDetail(fresh.item, repository);
         const baseQ = baseDetail.openQuestions.find((q) => q.answerIndex === op.index);
         if (!baseQ || baseQ.completed) {
           throw new HttpError(400, 'invalid_edit', 'That open question is no longer answerable');
@@ -803,7 +874,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         if (op.kind === 'section') {
           patch = { body: replaceSectionText(fresh.item.body ?? '', baseSectionId, op.text) };
         } else if (op.kind === 'question') {
-          const curDetail = buildIssueDetail(fresh.item);
+          const curDetail = buildIssueDetail(fresh.item, repository);
           const curQView = curDetail.openQuestions[baseQuestionIndex];
           const answerIdx = curQView?.answerIndex ?? op.index;
           patch = { body: applyQuestionAnswer(fresh.item, answerIdx, op.answer) };
@@ -822,7 +893,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         if (error instanceof GitHubError && error.status === 412) {
           const reread = await github.getIssue(number).catch(mapGitHubError);
           throw new HttpError(409, 'conflict', 'This task changed on GitHub while saving; nothing was written', {
-            issue: buildIssueDetail(reread.item),
+            issue: buildIssueDetail(reread.item, repository),
             statusOptions: statusOptions(),
           });
         }
@@ -853,7 +924,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           }
         }
       } else if (op.kind === 'question') {
-        const curDetail = buildIssueDetail(currentItem);
+        const curDetail = buildIssueDetail(currentItem, repository);
         const curQ = curDetail.openQuestions[baseQuestionIndex];
         const cleanAnswer = targetAnswer.trim().replace(/\r?\n+/g, ' ');
         if (curQ && curQ.completed && curQ.text.includes(cleanAnswer)) {
@@ -871,7 +942,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         return {
           status: 200,
           body: {
-            issue: buildIssueDetail(currentItem),
+            issue: buildIssueDetail(currentItem, repository),
             savedAt: new Date(now()).toISOString(),
             statusOptions: statusOptions(),
           },
@@ -883,7 +954,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         'write_outcome_unknown',
         'Outcome unknown \u2014 check the issue on GitHub',
         {
-          issue: buildIssueDetail(currentItem),
+          issue: buildIssueDetail(currentItem, repository),
           statusOptions: statusOptions(),
         },
       );

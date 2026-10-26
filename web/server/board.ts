@@ -174,8 +174,26 @@ export function parseWebOpenQuestions(body: string | null | undefined): Array<{
   return questions;
 }
 
+export interface BoardRepository {
+  owner: string;
+  name: string;
+  full: string;
+  id: number | null;
+  archived: boolean;
+  hasIssues: boolean;
+}
+
+export function issueKey(
+  repository: { full: string } | null | undefined,
+  number: number,
+): string {
+  return repository && repository.full ? `${repository.full}#${number}` : `#${number}`;
+}
+
 export interface BoardListItem {
   number: number;
+  key: string;
+  repository: BoardRepository | null;
   title: string;
   state: 'open' | 'closed';
   htmlUrl: string;
@@ -201,6 +219,8 @@ export interface OpenQuestionView {
 
 export interface IssueDetail {
   number: number;
+  key: string;
+  repository: BoardRepository | null;
   title: string;
   state: 'open' | 'closed';
   htmlUrl: string;
@@ -247,14 +267,14 @@ function countsOf(items: Array<{ completed: boolean }> = []) {
   };
 }
 
-export function issueFingerprint(raw: any): string {
+export function issueFingerprint(raw: any, repository: BoardRepository | null = null): string {
   const body = typeof raw?.body === 'string' ? raw.body : '';
   const labels = labelNames(raw)
     .map((label) => label.trim().toLowerCase())
     .sort();
   const state = raw?.state === 'closed' ? 'closed' : 'open';
   return createHash('sha256')
-    .update(JSON.stringify({ body, labels, state }))
+    .update(JSON.stringify({ body, labels, state, ...(repository ? { repository: repository.id ?? repository.full, full: repository.full, number: raw.number } : {}) }))
     .digest('hex');
 }
 
@@ -263,7 +283,7 @@ function normalizedOf(raw: any): Issue | null {
   return issues.length > 0 ? issues[0] : null;
 }
 
-export function buildBoardList(rawItems: any[]): { issues: BoardListItem[]; excluded: number } {
+export function buildBoardList(rawItems: any[], repository: BoardRepository | null = null): { issues: BoardListItem[]; excluded: number } {
   const raw = Array.isArray(rawItems) ? rawItems : [];
   const normalized = normalizeGithubIssues(raw);
   const issues: BoardListItem[] = normalized.map((issue) => {
@@ -272,6 +292,8 @@ export function buildBoardList(rawItems: any[]): { issues: BoardListItem[]; excl
     const questions = parseWebOpenQuestions(issue.body ?? '');
     return {
       number: issue.number,
+      key: issueKey(repository, issue.number),
+      repository,
       title: issue.title,
       state: issue.state,
       htmlUrl: issue.html_url,
@@ -291,7 +313,7 @@ export function buildBoardList(rawItems: any[]): { issues: BoardListItem[]; excl
   return { issues, excluded: raw.length - normalized.length };
 }
 
-export function buildIssueDetail(raw: any): IssueDetail {
+export function buildIssueDetail(raw: any, repository: BoardRepository | null = null): IssueDetail {
   if (!raw || raw.pull_request) {
     throw new BoardError('not_an_issue', 'That number is a pull request or not an issue');
   }
@@ -317,11 +339,13 @@ export function buildIssueDetail(raw: any): IssueDetail {
 
   return {
     number: issue.number,
+      key: issueKey(repository, issue.number),
+      repository,
     title: issue.title,
     state: issue.state,
     htmlUrl: issue.html_url,
     body: issue.body,
-    fingerprint: issueFingerprint(raw),
+    fingerprint: issueFingerprint(raw, repository),
     labels,
     statusLabel: statusLabelOf(labels),
     phase: metadata.phase,
