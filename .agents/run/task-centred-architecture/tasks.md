@@ -8,7 +8,7 @@
 | #35 refresh write coverage | FINAL RECHECK RUNNING | Builder3b4eced claims all R1-R9 (targeted36/preserved45/full553, independent165/165, saved30/0defects, mutants exit1). Recheck ses_7eb4eb7c0413e2b80ef3b063 genius tasks/issue-35-last-hostile.md; any required defect PARKS |
 | #28/#34/#36 panel protections | MERGED/PUSHED, awaiting batch | Accepted unchanged, installed host/liveGitHub NOT VERIFIED |
 | Hosting prep (bind/health/start) | MERGED/PUSHED, awaiting batch | Gate799eda2 PROCEED; merge4f39e26/evidence54816f6 accepted; manager re-ran hosting11/11; live loopback+/health proven, no deploy/proxy/TLS/restart. Worktree removed, branch retained |
-| #37 visible repositories | ALIGNED, READY next | decision15 show archived/empty; web/** now free after hosting merge |
+| #37 visible repositories | RUNNING genius | ses_9802e90bb3cb4ea6e5184c30 in team-dev-issue-37-multi-repo feat/issue-37-multi-repo base752407a, tasks/issue-37-multi-repository.md; web-only, disjoint from #35 panel |
 | #31 questions/alerts loop | ALIGNED, QUEUED | PWA push + 60s polling after hosting/#37 |
 | #30 proportionate feature/bug path | BLOCKED #35 | Brief ready; expiration excluded/unanswered |
 
