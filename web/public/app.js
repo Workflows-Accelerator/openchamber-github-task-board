@@ -68,21 +68,39 @@
   ApiError.prototype = Object.create(Error.prototype);
 
   function isValidMutationPayload(payload, expectedNumber) {
-    if (!payload || typeof payload !== 'object') return false;
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) return false;
     var issue = payload.issue;
-    if (!issue || typeof issue !== 'object') return false;
+    if (!issue || typeof issue !== 'object' || Array.isArray(issue)) return false;
     if (typeof issue.number !== 'number' || !Number.isInteger(issue.number) || issue.number <= 0) return false;
     if (expectedNumber !== undefined && expectedNumber !== null && issue.number !== expectedNumber) return false;
     if (typeof issue.fingerprint !== 'string' || !issue.fingerprint) return false;
     if (typeof issue.title !== 'string') return false;
-    if (typeof issue.state !== 'string') return false;
-    if (!Array.isArray(issue.editableSections)) return false;
-    if (!Array.isArray(issue.openQuestions)) return false;
-    if (!Array.isArray(issue.humanTasks)) return false;
-    if (!Array.isArray(issue.acceptanceCriteria)) return false;
-    if (!Array.isArray(issue.subtasks) && !Array.isArray(issue.subtests)) return false;
-    var statusOpts = payload.statusOptions || issue.statusOptions;
-    if (!Array.isArray(statusOpts)) return false;
+    if (issue.state !== 'open' && issue.state !== 'closed') return false;
+    if (issue.statusLabel !== null && typeof issue.statusLabel !== 'string') return false;
+    if (issue.updatedAt !== null && typeof issue.updatedAt !== 'string') return false;
+    if (typeof issue.phase !== 'string' || typeof issue.attention !== 'string') return false;
+    // Validate the entries consumed by rendering and the next save before any
+    // detail assignment can replace the last valid view or either typed draft.
+    if (!Array.isArray(issue.editableSections) || !issue.editableSections.every(function (section) {
+      return section && typeof section === 'object' && !Array.isArray(section) &&
+        typeof section.id === 'string' && typeof section.title === 'string' && typeof section.text === 'string';
+    })) return false;
+    var answerIndex = 0;
+    if (!Array.isArray(issue.openQuestions) || !issue.openQuestions.every(function (question, index) {
+      if (!question || typeof question !== 'object' || Array.isArray(question) ||
+          question.index !== index || typeof question.text !== 'string' || typeof question.completed !== 'boolean') return false;
+      return question.completed ? question.answerIndex === null : question.answerIndex === answerIndex++;
+    })) return false;
+    if (![issue.humanTasks, issue.acceptanceCriteria, issue.subtasks].every(function (items) {
+      return Array.isArray(items) && items.every(function (item) {
+        return item && typeof item === 'object' && !Array.isArray(item) &&
+          typeof item.text === 'string' && typeof item.completed === 'boolean';
+      });
+    })) return false;
+    if (!Array.isArray(payload.statusOptions) || !payload.statusOptions.every(function (option) {
+      return option && typeof option === 'object' && !Array.isArray(option) &&
+        typeof option.value === 'string' && typeof option.label === 'string';
+    })) return false;
     return true;
   }
 
