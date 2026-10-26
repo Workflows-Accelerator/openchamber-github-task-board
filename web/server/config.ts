@@ -6,11 +6,13 @@
 // ==========================================
 
 import { randomBytes, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
+import { isIP } from 'node:net';
 
 export const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1, keylen: 32 } as const;
 export const MIN_PASSWORD_LENGTH = 8;
 export const MIN_SESSION_SECRET_LENGTH = 32;
 export const DEFAULT_PORT = 8787;
+export const DEFAULT_HOST = '127.0.0.1';
 export const DEFAULT_GITHUB_API_BASE = 'https://api.github.com';
 
 export interface RepoRef {
@@ -27,6 +29,7 @@ export interface BoardConfig {
   passwordWasGenerated: boolean;
   sessionSecret: string;
   port: number;
+  host: string;
   baseUrl: string | null;
   githubApiBase: string;
 }
@@ -89,6 +92,22 @@ function parsePort(value: string | undefined): number {
     throw new ConfigError('BOARD_PORT', 'BOARD_PORT must be an integer between 1 and 65535');
   }
   return port;
+}
+
+function parseHost(value: string | undefined): string {
+  if (value === undefined || value.trim() === '') return DEFAULT_HOST;
+  const host = value.trim();
+  if (isIP(host)) {
+    return host;
+  }
+  if (/^[\d.]+$/.test(host) || host.includes(':')) {
+    throw new ConfigError('BOARD_HOST', 'BOARD_HOST must be a valid host or IP address');
+  }
+  const hostnamePattern = /^(?=.{1,253}$)(?:(?!-)[A-Za-z0-9-]{1,63}(?<!-)\.)*(?!-)[A-Za-z0-9-]{1,63}(?<!-)$/;
+  if (!hostnamePattern.test(host)) {
+    throw new ConfigError('BOARD_HOST', 'BOARD_HOST must be a valid host or IP address');
+  }
+  return host;
 }
 
 function parseBaseUrl(value: string | undefined): string | null {
@@ -247,7 +266,9 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
   }
 
   const port = parsePort(read(env, 'BOARD_PORT'));
+  const host = parseHost(read(env, 'BOARD_HOST'));
   const baseUrl = parseBaseUrl(read(env, 'BOARD_BASE_URL'));
+  const githubApiBase = read(env, 'BOARD_GITHUB_API_BASE') ?? DEFAULT_GITHUB_API_BASE;
 
   return {
     githubToken: githubToken.trim(),
@@ -257,8 +278,9 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
     passwordWasGenerated,
     sessionSecret,
     port,
+    host,
     baseUrl,
-    githubApiBase: DEFAULT_GITHUB_API_BASE,
+    githubApiBase,
   };
 }
 
@@ -266,6 +288,7 @@ export function describeConfig(config: BoardConfig): Record<string, unknown> {
   return {
     repo: config.repo.full,
     login: config.githubLogin,
+    host: config.host,
     port: config.port,
     baseUrl: config.baseUrl,
     githubApiBase: config.githubApiBase,

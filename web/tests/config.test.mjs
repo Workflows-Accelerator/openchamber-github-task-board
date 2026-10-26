@@ -32,6 +32,7 @@ test('loadConfig accepts a complete environment', () => {
   assert.equal(cfg.repo.owner, 'owner');
   assert.equal(cfg.repo.name, 'repo');
   assert.equal(cfg.port, 8787);
+  assert.equal(cfg.host, '127.0.0.1');
   assert.equal(cfg.sessionSecret, SECRET);
   assert.equal(cfg.baseUrl, null);
   assert.equal(cfg.passwordWasGenerated, true);
@@ -90,6 +91,11 @@ test('loadConfig rejects invalid values and names the variable', () => {
     ['BOARD_PASSWORD_HASH', 'scrypt$nope'],
     ['BOARD_BASE_URL', 'ftp://example.test'],
     ['BOARD_GITHUB_TOKEN', '   '],
+    ['BOARD_HOST', 'invalid host with spaces'],
+    ['BOARD_HOST', '999.999.999.999'],
+    ['BOARD_HOST', '127.0.0.256'],
+    ['BOARD_HOST', '-leading-dash'],
+    ['BOARD_HOST', 'http://localhost'],
   ];
   for (const [variable, value] of cases) {
     assert.throws(
@@ -105,10 +111,12 @@ test('loadConfig accepts a valid base URL and port', () => {
     validEnv({
       BOARD_BASE_URL: 'https://board.example.test',
       BOARD_PORT: '9443',
+      BOARD_HOST: '0.0.0.0',
     }),
   );
   assert.equal(cfg.baseUrl, 'https://board.example.test');
   assert.equal(cfg.port, 9443);
+  assert.equal(cfg.host, '0.0.0.0');
 });
 
 test('config errors never contain secret values', () => {

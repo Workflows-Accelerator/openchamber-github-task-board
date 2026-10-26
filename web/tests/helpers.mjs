@@ -25,9 +25,10 @@ export async function startBoard(fake, options = {}) {
     logger: (line) => logs.push(line),
     ...options,
   });
-  const { port } = await app.listen(0);
-  const base = `http://127.0.0.1:${port}`;
-  return { app, config, logs, url: base, port };
+  const { port, host } = await app.listen(options.port ?? 0, options.host ?? config.host);
+  const baseHost = host === '0.0.0.0' ? '127.0.0.1' : (host ?? '127.0.0.1');
+  const base = `http://${baseHost}:${port}`;
+  return { app, config, logs, url: base, port, host };
 }
 
 export class HttpSession {

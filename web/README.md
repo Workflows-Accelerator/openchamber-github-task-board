@@ -31,7 +31,9 @@ printing its value.
 | `BOARD_PASSWORD` | one of these | Plain password, hashed in memory at startup (minimum 8 characters). |
 | `BOARD_SESSION_SECRET` | yes | At least 32 characters. Signs session cookies; changing it ends every session. |
 | `BOARD_PORT` | no | Listen port, default `8787`. |
+| `BOARD_HOST` | no | Listen address/host, default `127.0.0.1`. Must be a valid IP or hostname; fails startup on invalid input. |
 | `BOARD_BASE_URL` | no | Public origin, e.g. `https://board.example.test` (used for HSTS and Origin/Referer write validation). |
+| `BOARD_GITHUB_API_BASE` | no | Upstream GitHub API base URL, default `https://api.github.com`. |
 
 If both password variables are set, `BOARD_PASSWORD_HASH` wins.
 
@@ -58,15 +60,18 @@ deployable bundle:
 npx esbuild web/server.ts --bundle --platform=node --format=esm \
   --target=node20 --packages=external --outfile=web/dist/server.mjs
 
-# run from source using an env file or secret manager (avoid inline secrets in shell history)
-node --env-file=.env.board web/server.ts
+# run the built bundle via production npm script
+npm run start:web
 
-# run the built bundle
+# run the built bundle directly
 node --env-file=.env.board web/dist/server.mjs
+
+# or run from source (development)
+node --env-file=.env.board web/server.ts
 ```
 
-The server listens on `127.0.0.1` only. Put a TLS-terminating reverse proxy in
-front of it for a domain; the session cookie is always `Secure`, which browsers
+The server listens on `127.0.0.1` by default, or on the explicitly configured `BOARD_HOST`.
+Put a TLS-terminating reverse proxy in front of it for a domain; the session cookie is always `Secure`, which browsers
 accept on `https` origins (and on `http://localhost` for local testing).
 
 ## Security model
@@ -136,6 +141,52 @@ accept on `https` origins (and on `http://localhost` for local testing).
 - Residual defect remediations (F1–F5) and protocol corrections are documented in `.agents/run/task-centred-architecture/outputs/issue-33-last-correction.md`, which supersedes previous closure claims. Prior reports are immutable.
 - There is no notification/question loop and no agent integration. Those are
   separate, parked workstreams.
+
+## Operations
+
+### Required environment variables
+Only variable names are documented here; never record secret values in repository files or command logs:
+- `BOARD_GITHUB_TOKEN`
+- `BOARD_GITHUB_LOGIN`
+- `BOARD_REPO`
+- `BOARD_SESSION_SECRET`
+- One of `BOARD_PASSWORD_HASH` (recommended) or `BOARD_PASSWORD`
+
+Optional configuration variables:
+- `BOARD_HOST` (defaults to `127.0.0.1`)
+- `BOARD_PORT` (defaults to `8787`)
+- `BOARD_BASE_URL` (optional public origin for CSRF origin/referer validation)
+- `BOARD_GITHUB_API_BASE` (defaults to `https://api.github.com`)
+
+### Supervisor and restart persistence
+The board process has no supervisor today and does not survive a container restart or process crash on its own. If the process exits or the container restarts, an external process supervisor, orchestrator, or container entrypoint startup hook is required to restart it.
+
+### Container recreation and downtime
+Publishing the board port requires container recreation, which briefly interrupts other running container services.
+
+### Access model
+Anyone with the board password has full board access. The GitHub identity of the visitor is not checked or authenticated against GitHub; all GitHub actions and queries are performed using the single server-configured token.
+
+### Best-effort writes and concurrency
+Issue updates use a best-effort concurrency model. While the board checks fingerprints before saving and serializes edits per issue in-process, GitHub does not support transactional or conditional issue writes. A simultaneous external edit on GitHub or by an autonomous agent can still be overwritten by the board's save. Ambiguous write outcomes require human refresh and inspection; the board will not guess or automatically retry.
+
+### Liveness endpoint (`GET /health`)
+An unauthenticated liveness endpoint is provided at `GET /health`, returning HTTP 200 with process liveness and version identity:
+```json
+{
+  "status": "ok",
+  "version": "1.2.1",
+  "uptime": 123
+}
+```
+Non-GET requests return HTTP 405 with `Allow: GET`.
+
+Liveness is not readiness:
+- `GET /health` proves only that the Node process is running and its HTTP listener can accept connections.
+- It does not prove upstream GitHub reachability or token validity.
+- It does not prove that TLS is terminated or valid.
+- It does not prove that a reverse proxy routes to the board process.
+- It offers no guarantee or promise of uptime.
 
 ## Tests
 
