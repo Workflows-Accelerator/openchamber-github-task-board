@@ -1,11 +1,13 @@
 # Run work from the task board
 
-## Latest checkpoint — 2026-10-26 #30 merged and pushed; #37/#33 ready; deployment replacement running
-State: releasing/proving; alignment decisions 1–24 CONFIRMED.
-- #30 INTEGRATED AND PUSHED: merge 8a57578 / proof 298ab52 into feat/v2-binding-and-ratelimit, pushed to origin 298ab52. Web 384/384, root 525/525, both types 0 errors, parity 18/18, prompts 45/45 byte-identical against accepted 959bfd2. Receipt: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/30#issuecomment-6428951284. Awaiting batch human review (L5).
-- #37 MULTI-REPO & #33 OFFLINE SYNC: previously merged, proved, and pushed on review branch. Awaiting batch human review.
-- Supervisor RELEASED: opencode-config master abd6d6b pinned for deployment; live deployment untouched.
-- Staged deployment package replacement ses_43aa2971b4c1879bb721558c genius RUNNING in .worktrees/team-ops-board-deployment; zero runbook execution.
+## Latest checkpoint — 2026-10-27 Master released and pushed; Issues #38 and #39 created
+State: released/published; alignment decisions 1–25 CONFIRMED.
+- MASTER RELEASED AND PUSHED: ses_dca71d16ae10d9ecdf52467b actual 9router/engineer fast-forwarded master from 6f781be to 95bcf97 (exit 0). Full test gates verified on master: web 384/384 pass, root 525/525 pass, both typechecks clean (0 errors). Pushed to origin/master at 95bcf974fd5f5414fd5e55a0fad5b33e6817ea3c, confirmed by git ls-remote. Release receipt: outputs/master-release-receipt.md. Release comments posted on issues #33, #37, and #30.
+- ISSUES CREATED PER OWNER INSTRUCTION:
+  - Issue #38 (https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/38): "Incomplete tasks stay in draft" (labeled status:draft).
+  - Issue #39 (https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/39): "Front desk agent for tasks" (labeled status:draft).
+- Live deployment prerequisites: Coolify environment variables (BOARD_GITHUB_TOKEN, BOARD_PASSWORD, BOARD_SESSION_SECRET) and port 8787 domain mapping on coolify-main pending operator execution.
+- Staged deployment package replacement written in .worktrees/team-ops-board-deployment/.agents/run/task-centred-architecture/outputs/board-deployment-staged-private.
 - #31 standalone loop plan 2f6d0dd ready; 3 architecture decisions pending owner choice before Slice A dispatch.
 - #35 parked for later mission.
 
