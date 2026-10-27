@@ -223,6 +223,65 @@ export function getIssuePriority(issue: Issue): string | null {
   return null;
 }
 
+export function normalizePriority(priorityOrIssue: string | Issue | any): string | null {
+  if (!priorityOrIssue) return null;
+  let raw: string | null = null;
+  if (typeof priorityOrIssue === 'string') {
+    raw = priorityOrIssue;
+  } else if (typeof priorityOrIssue === 'object') {
+    raw = getIssuePriority(priorityOrIssue);
+  }
+  if (!raw || typeof raw !== 'string') return null;
+  let lower = raw.trim().toLowerCase();
+  if (lower.startsWith('priority:')) {
+    lower = lower.slice(9).trim();
+  }
+  if (lower === 'urgent' || lower === 'critical') return 'critical';
+  if (lower === 'high' || lower === 'important') return 'important';
+  if (lower === 'medium' || lower === 'useful') return 'useful';
+  if (lower === 'low' || lower === 'optional') return 'optional';
+  if (lower === 'none' || !lower) return null;
+  return lower;
+}
+
+export function syncDrawerPrioritySelect(
+  selectEl: { value: string; options?: ArrayLike<{ value: string }> } | null | undefined,
+  priorityOrIssue: string | Issue | any
+): string {
+  if (!selectEl) return 'none';
+  let raw = (typeof priorityOrIssue === 'string'
+    ? priorityOrIssue
+    : getIssuePriority(priorityOrIssue) || ''
+  )
+    .trim()
+    .toLowerCase();
+  if (raw.startsWith('priority:')) {
+    raw = raw.slice(9).trim();
+  }
+  const normalized = normalizePriority(raw) || 'none';
+
+  const options = Array.from(selectEl.options || []);
+  if (options.length > 0) {
+    const hasRaw = options.some((opt) => (opt.value || '').toLowerCase() === raw);
+    if (hasRaw && raw && raw !== 'none') {
+      const match = options.find((opt) => (opt.value || '').toLowerCase() === raw);
+      selectEl.value = match ? match.value : raw;
+      return selectEl.value;
+    }
+    const hasNormalized = options.some((opt) => (opt.value || '').toLowerCase() === normalized);
+    if (hasNormalized) {
+      const match = options.find((opt) => (opt.value || '').toLowerCase() === normalized);
+      selectEl.value = match ? match.value : normalized;
+      return selectEl.value;
+    }
+    selectEl.value = 'none';
+    return 'none';
+  }
+
+  selectEl.value = normalized;
+  return normalized;
+}
+
 export function updatePriorityLabels(currentLabels: any[], newPriority: string | null): string[] {
   const cleanExisting = currentLabels
     .map((l) => (typeof l === 'string' ? l : l.name || ''))
@@ -528,11 +587,7 @@ export function groupIssuesBy(
     ];
     const map = new Map(groups.map((g) => [g.id, g]));
     for (const issue of issuesList) {
-      let p = getIssuePriority(issue) || 'none';
-      if (p === 'urgent') p = 'critical';
-      else if (p === 'high') p = 'important';
-      else if (p === 'medium') p = 'useful';
-      else if (p === 'low') p = 'optional';
+      const p = normalizePriority(getIssuePriority(issue)) || 'none';
       (map.get(p) || map.get('none'))?.issues.push(issue);
     }
     return groups;

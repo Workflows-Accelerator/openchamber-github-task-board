@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import {
   hasPriorityLabel as coreHasPriorityLabel,
   getIssuePriority as coreGetIssuePriority,
+  normalizePriority,
+  syncDrawerPrioritySelect,
+  groupIssuesBy as coreGroupIssuesBy,
   resolveIssueColumn,
 } from '../panel/labels.ts';
 
@@ -215,8 +218,8 @@ export function groupIssuesBy(issuesList, groupBy) {
     ];
     const map = new Map(groups.map((g) => [g.id, g]));
     for (const issue of issuesList) {
-      const p = getIssuePriority(issue) || 'none';
-      map.get(p)?.issues.push(issue);
+      const p = normalizePriority(getIssuePriority(issue)) || 'none';
+      (map.get(p) || map.get('none'))?.issues.push(issue);
     }
     return groups;
   }
@@ -427,4 +430,129 @@ test('resolveIssueColumn defaults unprioritized issues to draft without demoting
   assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [] }, runningSession), 'in-progress');
   assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [] }, idleSession), 'needs-human');
   assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [] }, waitingSession), 'needs-human');
+});
+
+test('normalizePriority maps aliases to canonical priority values', () => {
+  assert.equal(normalizePriority('urgent'), 'critical');
+  assert.equal(normalizePriority('critical'), 'critical');
+  assert.equal(normalizePriority('high'), 'important');
+  assert.equal(normalizePriority('important'), 'important');
+  assert.equal(normalizePriority('medium'), 'useful');
+  assert.equal(normalizePriority('useful'), 'useful');
+  assert.equal(normalizePriority('low'), 'optional');
+  assert.equal(normalizePriority('optional'), 'optional');
+  assert.equal(normalizePriority('priority:urgent'), 'critical');
+  assert.equal(normalizePriority('priority:high'), 'important');
+  assert.equal(normalizePriority('priority:medium'), 'useful');
+  assert.equal(normalizePriority('priority:low'), 'optional');
+  assert.equal(normalizePriority('priority:none'), null);
+  assert.equal(normalizePriority('none'), null);
+  assert.equal(normalizePriority(''), null);
+  assert.equal(normalizePriority(null), null);
+  assert.equal(normalizePriority({ labels: [{ name: 'priority:urgent' }] }), 'critical');
+  assert.equal(normalizePriority({ labels: [{ name: 'priority:high' }] }), 'important');
+  assert.equal(normalizePriority({ labels: [{ name: 'priority:medium' }] }), 'useful');
+  assert.equal(normalizePriority({ labels: [{ name: 'priority:low' }] }), 'optional');
+  assert.equal(normalizePriority({ labels: [{ name: 'priority:critical' }] }), 'critical');
+  assert.equal(normalizePriority({ labels: [] }), null);
+});
+
+test('groupIssuesBy groups priority aliases into correct canonical buckets without dropping issues', () => {
+  const issues = [
+    { number: 1, title: 'Blocker Bug', labels: [{ name: 'priority:urgent' }] },
+    { number: 2, title: 'Urgent Crash', labels: [{ name: 'priority:critical' }] },
+    { number: 3, title: 'High Priority Feature', labels: [{ name: 'priority:high' }] },
+    { number: 4, title: 'Important Refactor', labels: [{ name: 'priority:important' }] },
+    { number: 5, title: 'Medium Priority Task', labels: [{ name: 'priority:medium' }] },
+    { number: 6, title: 'Useful Enhancement', labels: [{ name: 'priority:useful' }] },
+    { number: 7, title: 'Low Priority Tweak', labels: [{ name: 'priority:low' }] },
+    { number: 8, title: 'Optional Clean-up', labels: [{ name: 'priority:optional' }] },
+    { number: 9, title: 'Unprioritized Idea', labels: [] },
+    { number: 10, title: 'Custom Priority', labels: [{ name: 'priority:custom' }] },
+  ];
+
+  for (const fn of [groupIssuesBy, coreGroupIssuesBy]) {
+    const groups = fn(issues, 'priority');
+    const groupMap = new Map(groups.map((g) => [g.id, g.issues]));
+
+    assert.equal(groupMap.get('critical').length, 2, 'urgent and critical must be in critical group');
+    assert.deepEqual(groupMap.get('critical').map((i) => i.number), [1, 2]);
+
+    assert.equal(groupMap.get('important').length, 2, 'high and important must be in important group');
+    assert.deepEqual(groupMap.get('important').map((i) => i.number), [3, 4]);
+
+    assert.equal(groupMap.get('useful').length, 2, 'medium and useful must be in useful group');
+    assert.deepEqual(groupMap.get('useful').map((i) => i.number), [5, 6]);
+
+    assert.equal(groupMap.get('optional').length, 2, 'low and optional must be in optional group');
+    assert.deepEqual(groupMap.get('optional').map((i) => i.number), [7, 8]);
+
+    assert.equal(groupMap.get('none').length, 2, 'unprioritized and unknown priority must be in none group');
+    assert.deepEqual(groupMap.get('none').map((i) => i.number), [9, 10]);
+
+    // Zero omitted issues
+    const totalGrouped = groups.reduce((acc, g) => acc + g.issues.length, 0);
+    assert.equal(totalGrouped, issues.length, 'All issues must be present across groups without silent drops');
+  }
+});
+
+test('syncDrawerPrioritySelect accurately synchronizes canonical and alias priorities with select element', () => {
+  const canonicalOptions = [
+    { value: 'none' },
+    { value: 'critical' },
+    { value: 'important' },
+    { value: 'useful' },
+    { value: 'optional' },
+  ];
+
+  // 1. Alias priority mapping when select has canonical options
+  const select1 = { value: '', options: canonicalOptions };
+  assert.equal(syncDrawerPrioritySelect(select1, 'urgent'), 'critical');
+  assert.equal(select1.value, 'critical');
+
+  assert.equal(syncDrawerPrioritySelect(select1, 'high'), 'important');
+  assert.equal(select1.value, 'important');
+
+  assert.equal(syncDrawerPrioritySelect(select1, 'medium'), 'useful');
+  assert.equal(select1.value, 'useful');
+
+  assert.equal(syncDrawerPrioritySelect(select1, 'low'), 'optional');
+  assert.equal(select1.value, 'optional');
+
+  assert.equal(syncDrawerPrioritySelect(select1, 'critical'), 'critical');
+  assert.equal(select1.value, 'critical');
+
+  assert.equal(syncDrawerPrioritySelect(select1, 'important'), 'important');
+  assert.equal(select1.value, 'important');
+
+  assert.equal(syncDrawerPrioritySelect(select1, null), 'none');
+  assert.equal(select1.value, 'none');
+
+  // 2. Issue object input support
+  assert.equal(syncDrawerPrioritySelect(select1, { labels: [{ name: 'priority:urgent' }] }), 'critical');
+  assert.equal(select1.value, 'critical');
+  assert.equal(syncDrawerPrioritySelect(select1, { labels: [{ name: 'priority:high' }] }), 'important');
+  assert.equal(select1.value, 'important');
+  assert.equal(syncDrawerPrioritySelect(select1, { labels: [{ name: 'priority:medium' }] }), 'useful');
+  assert.equal(select1.value, 'useful');
+  assert.equal(syncDrawerPrioritySelect(select1, { labels: [{ name: 'priority:low' }] }), 'optional');
+  assert.equal(select1.value, 'optional');
+  assert.equal(syncDrawerPrioritySelect(select1, { labels: [] }), 'none');
+  assert.equal(select1.value, 'none');
+
+  // 3. Select with raw alias options prefers exact option value
+  const selectWithAliases = {
+    value: '',
+    options: [
+      { value: 'none' },
+      { value: 'urgent' },
+      { value: 'high' },
+      { value: 'critical' },
+    ],
+  };
+  assert.equal(syncDrawerPrioritySelect(selectWithAliases, 'urgent'), 'urgent');
+  assert.equal(selectWithAliases.value, 'urgent');
+
+  // 4. Safe null fallback
+  assert.equal(syncDrawerPrioritySelect(null, 'urgent'), 'none');
 });

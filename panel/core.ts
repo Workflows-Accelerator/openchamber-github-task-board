@@ -3420,6 +3420,41 @@ export function hasPriorityLabel(issueOrLabels: any): boolean {
   return false;
 }
 
+export function normalizePriority(priorityOrIssue: string | Issue | any): string | null {
+  if (!priorityOrIssue) return null;
+  let raw: string | null = null;
+  if (typeof priorityOrIssue === 'string') {
+    raw = priorityOrIssue;
+  } else if (typeof priorityOrIssue === 'object') {
+    const rawLabels = Array.isArray(priorityOrIssue)
+      ? priorityOrIssue
+      : Array.isArray(priorityOrIssue.labels)
+      ? priorityOrIssue.labels
+      : [];
+    for (const l of rawLabels) {
+      const name = (typeof l === 'string' ? l : l?.name || '').trim().toLowerCase();
+      if (name.startsWith('priority:')) {
+        const val = name.slice(9).trim();
+        if (val && val !== 'none') {
+          raw = val;
+          break;
+        }
+      }
+    }
+  }
+  if (!raw || typeof raw !== 'string') return null;
+  let lower = raw.trim().toLowerCase();
+  if (lower.startsWith('priority:')) {
+    lower = lower.slice(9).trim();
+  }
+  if (lower === 'urgent' || lower === 'critical') return 'critical';
+  if (lower === 'high' || lower === 'important') return 'important';
+  if (lower === 'medium' || lower === 'useful') return 'useful';
+  if (lower === 'low' || lower === 'optional') return 'optional';
+  if (lower === 'none' || !lower) return null;
+  return lower;
+}
+
 export function resolveIssueColumn(
   issue: Issue | any,
   sessionOrList?: any

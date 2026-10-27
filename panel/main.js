@@ -4203,6 +4203,53 @@ ${placeholder}
     }
     return null;
   }
+  function normalizePriority(priorityOrIssue) {
+    if (!priorityOrIssue) return null;
+    let raw = null;
+    if (typeof priorityOrIssue === "string") {
+      raw = priorityOrIssue;
+    } else if (typeof priorityOrIssue === "object") {
+      raw = getIssuePriority(priorityOrIssue);
+    }
+    if (!raw || typeof raw !== "string") return null;
+    let lower = raw.trim().toLowerCase();
+    if (lower.startsWith("priority:")) {
+      lower = lower.slice(9).trim();
+    }
+    if (lower === "urgent" || lower === "critical") return "critical";
+    if (lower === "high" || lower === "important") return "important";
+    if (lower === "medium" || lower === "useful") return "useful";
+    if (lower === "low" || lower === "optional") return "optional";
+    if (lower === "none" || !lower) return null;
+    return lower;
+  }
+  function syncDrawerPrioritySelect(selectEl, priorityOrIssue) {
+    if (!selectEl) return "none";
+    let raw = (typeof priorityOrIssue === "string" ? priorityOrIssue : getIssuePriority(priorityOrIssue) || "").trim().toLowerCase();
+    if (raw.startsWith("priority:")) {
+      raw = raw.slice(9).trim();
+    }
+    const normalized = normalizePriority(raw) || "none";
+    const options = Array.from(selectEl.options || []);
+    if (options.length > 0) {
+      const hasRaw = options.some((opt) => (opt.value || "").toLowerCase() === raw);
+      if (hasRaw && raw && raw !== "none") {
+        const match = options.find((opt) => (opt.value || "").toLowerCase() === raw);
+        selectEl.value = match ? match.value : raw;
+        return selectEl.value;
+      }
+      const hasNormalized = options.some((opt) => (opt.value || "").toLowerCase() === normalized);
+      if (hasNormalized) {
+        const match = options.find((opt) => (opt.value || "").toLowerCase() === normalized);
+        selectEl.value = match ? match.value : normalized;
+        return selectEl.value;
+      }
+      selectEl.value = "none";
+      return "none";
+    }
+    selectEl.value = normalized;
+    return normalized;
+  }
   function updatePriorityLabels(currentLabels, newPriority) {
     const cleanExisting = currentLabels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.toLowerCase().startsWith("priority:"));
     if (newPriority && typeof newPriority === "string" && newPriority.trim().toLowerCase() !== "none") {
@@ -4417,11 +4464,7 @@ ${placeholder}
       ];
       const map2 = new Map(groups2.map((g) => [g.id, g]));
       for (const issue of issuesList) {
-        let p = getIssuePriority(issue) || "none";
-        if (p === "urgent") p = "critical";
-        else if (p === "high") p = "important";
-        else if (p === "medium") p = "useful";
-        else if (p === "low") p = "optional";
+        const p = normalizePriority(getIssuePriority(issue)) || "none";
         (map2.get(p) || map2.get("none"))?.issues.push(issue);
       }
       return groups2;
@@ -7260,6 +7303,36 @@ Blocked by ${blockerRef}`;
       }
     }
     return false;
+  }
+  function normalizePriority2(priorityOrIssue) {
+    if (!priorityOrIssue) return null;
+    let raw = null;
+    if (typeof priorityOrIssue === "string") {
+      raw = priorityOrIssue;
+    } else if (typeof priorityOrIssue === "object") {
+      const rawLabels = Array.isArray(priorityOrIssue) ? priorityOrIssue : Array.isArray(priorityOrIssue.labels) ? priorityOrIssue.labels : [];
+      for (const l of rawLabels) {
+        const name = (typeof l === "string" ? l : l?.name || "").trim().toLowerCase();
+        if (name.startsWith("priority:")) {
+          const val = name.slice(9).trim();
+          if (val && val !== "none") {
+            raw = val;
+            break;
+          }
+        }
+      }
+    }
+    if (!raw || typeof raw !== "string") return null;
+    let lower = raw.trim().toLowerCase();
+    if (lower.startsWith("priority:")) {
+      lower = lower.slice(9).trim();
+    }
+    if (lower === "urgent" || lower === "critical") return "critical";
+    if (lower === "high" || lower === "important") return "important";
+    if (lower === "medium" || lower === "useful") return "useful";
+    if (lower === "low" || lower === "optional") return "optional";
+    if (lower === "none" || !lower) return null;
+    return lower;
   }
   function resolveIssueColumn2(issue, sessionOrList) {
     if (!issue) return null;
@@ -10121,8 +10194,8 @@ Blocked by ${blockerRef}`;
       ];
       const map2 = new Map(groups2.map((g) => [g.id, g]));
       for (const issue of issuesList) {
-        const p = getIssuePriority(issue) || "none";
-        map2.get(p)?.issues.push(issue);
+        const p = normalizePriority(getIssuePriority(issue)) || "none";
+        (map2.get(p) || map2.get("none"))?.issues.push(issue);
       }
       return groups2;
     }
@@ -10472,7 +10545,7 @@ Blocked by ${blockerRef}`;
       const isArch = isIssueArchived(issue);
       if (showArchivedOnly ? !isArch : isArch) return false;
       if (filterPriority !== "all") {
-        const p = getIssuePriority(issue);
+        const p = normalizePriority(getIssuePriority(issue));
         if (p !== filterPriority) return false;
       }
       if (filterTag !== "all") {
@@ -12975,7 +13048,7 @@ Blocked by ${blockerRef}`;
     const col = resolveIssueColumn3(issue);
     elDrawerStatusSelect.value = col || "none";
     if (elDrawerPrioritySelect) {
-      elDrawerPrioritySelect.value = getIssuePriority(issue) || "none";
+      syncDrawerPrioritySelect(elDrawerPrioritySelect, getIssuePriority(issue));
     }
     if (elDrawerComplexitySelect) {
       elDrawerComplexitySelect.value = getIssueComplexity(issue) || "none";

@@ -7,6 +7,8 @@ import {
   isSystemLabel,
   filterDisplayLabels,
   getIssuePriority,
+  normalizePriority,
+  syncDrawerPrioritySelect,
   hasPriorityLabel,
   updatePriorityLabels,
   getIssueComplexity,
@@ -45,6 +47,8 @@ export {
   isSystemLabel,
   filterDisplayLabels,
   getIssuePriority,
+  normalizePriority,
+  syncDrawerPrioritySelect,
   updatePriorityLabels,
   getIssueComplexity,
   updateComplexityLabel,
@@ -2959,8 +2963,8 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[
     ];
     const map = new Map(groups.map((g) => [g.id, g]));
     for (const issue of issuesList) {
-      const p = getIssuePriority(issue) || 'none';
-      map.get(p)?.issues.push(issue);
+      const p = normalizePriority(getIssuePriority(issue)) || 'none';
+      (map.get(p) || map.get('none'))?.issues.push(issue);
     }
     return groups;
   }
@@ -3427,7 +3431,7 @@ function renderViews(): void {
     if (showArchivedOnly ? !isArch : isArch) return false;
 
     if (filterPriority !== 'all') {
-      const p = getIssuePriority(issue);
+      const p = normalizePriority(getIssuePriority(issue));
       if (p !== filterPriority) return false;
     }
 
@@ -6471,7 +6475,7 @@ function renderDrawer(issue: Issue, skipComments: boolean = false, gen: number =
   elDrawerStatusSelect.value = col || 'none';
 
   if (elDrawerPrioritySelect) {
-    elDrawerPrioritySelect.value = getIssuePriority(issue) || 'none';
+    syncDrawerPrioritySelect(elDrawerPrioritySelect, getIssuePriority(issue));
   }
 
   if (elDrawerComplexitySelect) {

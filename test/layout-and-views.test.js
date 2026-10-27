@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseFriendlyTitle, renderSingleIssueBrief } from '../panel/core.ts';
+import { syncDrawerPrioritySelect } from '../panel/labels.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_HTML = fs.readFileSync(path.join(here, '..', 'panel', 'index.html'), 'utf8');
@@ -471,4 +472,41 @@ test('card-subtitle-tech styling supports narrow-screen word wrapping and XSS es
   // When escaping HTML:
   const escapedTitle = titles.title.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   assert.ok(!escapedTitle.includes('<'));
+});
+
+test('panel/main.ts groupIssuesBy and drawer priority population normalize priority aliases', () => {
+  const currentMainTs = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
+
+  // groupIssuesBy in panel/main.ts normalizes priority aliases
+  assert.ok(
+    currentMainTs.includes('normalizePriority(getIssuePriority(issue))'),
+    'groupIssuesBy in panel/main.ts must normalize priority aliases'
+  );
+
+  // Drawer priority population in panel/main.ts synchronizes aliases
+  assert.ok(
+    currentMainTs.includes('syncDrawerPrioritySelect(elDrawerPrioritySelect'),
+    'renderDrawer in panel/main.ts must use syncDrawerPrioritySelect for drawer priority synchronization'
+  );
+});
+
+test('drawerPrioritySelect in index.html synchronizes accurately with priority aliases', () => {
+  const match = INDEX_HTML.match(/<select[^>]*id="drawerPrioritySelect"[^>]*>([\s\S]*?)<\/select>/);
+  assert.ok(match, 'drawerPrioritySelect must exist in panel/index.html');
+  const optionMatches = [...match[1].matchAll(/<option[^>]*value="([^"]*)"/g)].map((m) => ({ value: m[1] }));
+  assert.ok(optionMatches.length >= 5);
+
+  const mockSelect = { value: '', options: optionMatches };
+  assert.equal(syncDrawerPrioritySelect(mockSelect, 'urgent'), 'critical');
+  assert.equal(mockSelect.value, 'critical');
+  assert.equal(syncDrawerPrioritySelect(mockSelect, 'high'), 'important');
+  assert.equal(mockSelect.value, 'important');
+  assert.equal(syncDrawerPrioritySelect(mockSelect, 'medium'), 'useful');
+  assert.equal(mockSelect.value, 'useful');
+  assert.equal(syncDrawerPrioritySelect(mockSelect, 'low'), 'optional');
+  assert.equal(mockSelect.value, 'optional');
+  assert.equal(syncDrawerPrioritySelect(mockSelect, 'critical'), 'critical');
+  assert.equal(mockSelect.value, 'critical');
+  assert.equal(syncDrawerPrioritySelect(mockSelect, 'none'), 'none');
+  assert.equal(mockSelect.value, 'none');
 });
