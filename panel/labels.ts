@@ -184,14 +184,41 @@ export function filterDisplayLabels(
   return labels.filter((l) => !isSystemLabel(typeof l === 'string' ? l : l.name || ''));
 }
 
+export function hasPriorityLabel(issueOrLabels: any): boolean {
+  if (!issueOrLabels) return false;
+  const rawLabels = Array.isArray(issueOrLabels)
+    ? issueOrLabels
+    : Array.isArray(issueOrLabels.labels)
+    ? issueOrLabels.labels
+    : [];
+  for (const l of rawLabels) {
+    const name = (typeof l === 'string' ? l : l?.name || '').trim().toLowerCase();
+    if (name.startsWith('priority:')) {
+      const val = name.slice(9).trim();
+      if (val && val !== 'none') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export function getIssuePriority(issue: Issue): string | null {
   if (!issue || !issue.labels) return null;
   for (const l of issue.labels) {
     const name = (typeof l === 'string' ? l : l.name || '').toLowerCase();
     if (name === 'priority:critical') return 'critical';
+    if (name === 'priority:urgent') return 'urgent';
     if (name === 'priority:important') return 'important';
+    if (name === 'priority:high') return 'high';
     if (name === 'priority:useful') return 'useful';
+    if (name === 'priority:medium') return 'medium';
     if (name === 'priority:optional') return 'optional';
+    if (name === 'priority:low') return 'low';
+    if (name.startsWith('priority:')) {
+      const val = name.slice(9).trim();
+      if (val && val !== 'none') return val;
+    }
   }
   return null;
 }
@@ -231,7 +258,16 @@ export function updateComplexityLabel(currentLabels: any[], newComplexity: strin
   return cleanExisting;
 }
 
-const PRIORITY_WEIGHTS: Record<string, number> = { critical: 4, important: 3, useful: 2, optional: 1 };
+const PRIORITY_WEIGHTS: Record<string, number> = {
+  critical: 4,
+  urgent: 4,
+  important: 3,
+  high: 3,
+  useful: 2,
+  medium: 2,
+  optional: 1,
+  low: 1,
+};
 const COMPLEXITY_WEIGHTS: Record<string, number> = { XL: 5, L: 4, M: 3, S: 2, XS: 1 };
 
 export function sortIssuesList(list: Issue[], sortKey: string): Issue[] {
@@ -409,67 +445,41 @@ export function resolveIssueColumn(
     return 'in-progress';
   }
 
+  // Dynamic session detection for issues:
+  // Active/waiting/idle sessions must maintain in-flight routing and not demote to draft
+  if (isSessionRunning) {
+    return 'in-progress';
+  }
+  if (isSessionWaiting || isSessionIdle) {
+    return 'needs-human';
+  }
+
+  // Issues without a priority label default to status:draft
+  if (!hasPriorityLabel(issue)) {
+    return 'draft';
+  }
+
   // Explicit status:planned label
   if (labelNames.includes('status:planned')) {
-    if (isSessionRunning) {
-      return 'in-progress';
-    }
-    if (isSessionWaiting) {
-      return 'needs-human';
-    }
     return 'planned';
   }
 
   // Explicit status:todo label
   if (labelNames.includes('status:todo')) {
-    if (isSessionRunning) {
-      return 'in-progress';
-    }
-    if (isSessionWaiting) {
-      return 'needs-human';
-    }
     return 'todo';
   }
 
   // Explicit status:backlog label
   if (labelNames.includes('status:backlog')) {
-    if (isSessionRunning) {
-      return 'in-progress';
-    }
-    if (isSessionWaiting) {
-      return 'needs-human';
-    }
     return 'backlog';
   }
 
-  // Explicit status:draft or isVagueIdea(issue)
+  // Explicit status:draft or missing essential criteria (checkVague)
   if (labelNames.includes('status:draft') || checkVague(issue)) {
-    if (isSessionRunning) {
-      return 'in-progress';
-    }
-    if (isSessionWaiting) {
-      return 'needs-human';
-    }
-    if (isSessionIdle) {
-      return 'needs-human';
-    }
     return 'draft';
   }
 
-  // Dynamic session detection for issues without explicit status labels
-  if (session) {
-    if (isSessionRunning) {
-      return 'in-progress';
-    }
-    if (isSessionWaiting) {
-      return 'needs-human';
-    }
-    if (isSessionIdle) {
-      return 'needs-human';
-    }
-  }
-
-  // Default for unlabelled well-formed issues -> 'todo'
+  // Default for unlabelled well-formed prioritized issues -> 'todo'
   return 'todo';
 }
 
@@ -518,8 +528,12 @@ export function groupIssuesBy(
     ];
     const map = new Map(groups.map((g) => [g.id, g]));
     for (const issue of issuesList) {
-      const p = getIssuePriority(issue) || 'none';
-      map.get(p)?.issues.push(issue);
+      let p = getIssuePriority(issue) || 'none';
+      if (p === 'urgent') p = 'critical';
+      else if (p === 'high') p = 'important';
+      else if (p === 'medium') p = 'useful';
+      else if (p === 'low') p = 'optional';
+      (map.get(p) || map.get('none'))?.issues.push(issue);
     }
     return groups;
   }

@@ -3401,6 +3401,25 @@ export function resolveV2Metadata(
   };
 }
 
+export function hasPriorityLabel(issueOrLabels: any): boolean {
+  if (!issueOrLabels) return false;
+  const rawLabels = Array.isArray(issueOrLabels)
+    ? issueOrLabels
+    : Array.isArray(issueOrLabels.labels)
+    ? issueOrLabels.labels
+    : [];
+  for (const l of rawLabels) {
+    const name = (typeof l === 'string' ? l : l?.name || '').trim().toLowerCase();
+    if (name.startsWith('priority:')) {
+      const val = name.slice(9).trim();
+      if (val && val !== 'none') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 export function resolveIssueColumn(
   issue: Issue | any,
   sessionOrList?: any
@@ -3438,33 +3457,9 @@ export function resolveIssueColumn(
     return 'in-progress';
   }
 
-  // Explicit status:planned label
-  if (labelNames.includes('status:planned')) {
-    if (isSessionRunning) return 'in-progress';
-    if (isSessionWaiting) return 'needs-human';
-    return 'planned';
-  }
-
-  // Explicit status:todo label
-  if (labelNames.includes('status:todo')) {
-    if (isSessionRunning) return 'in-progress';
-    if (isSessionWaiting) return 'needs-human';
-    return 'todo';
-  }
-
-  // Explicit status:backlog label
-  if (labelNames.includes('status:backlog')) {
-    if (isSessionRunning) return 'in-progress';
-    if (isSessionWaiting) return 'needs-human';
-    return 'backlog';
-  }
-
-  // Explicit status:draft
-  if (labelNames.includes('status:draft')) {
-    if (isSessionRunning) return 'in-progress';
-    if (isSessionWaiting || isSessionIdle) return 'needs-human';
-    return 'draft';
-  }
+  // Dynamic in-flight session detection
+  if (isSessionRunning) return 'in-progress';
+  if (isSessionWaiting || isSessionIdle) return 'needs-human';
 
   // Check if explicit v2 labels exist
   const hasExplicitPhase = labelNames.some((l: string) => l.startsWith('phase:'));
@@ -3513,18 +3508,32 @@ export function resolveIssueColumn(
     }
   }
 
-  // Legacy fallback for issues without status labels or v2 labels:
-  if (isVagueIdea(issue)) {
-    if (isSessionRunning) return 'in-progress';
-    if (isSessionWaiting || isSessionIdle) return 'needs-human';
+  // Issues without a priority label default to status:draft
+  if (!hasPriorityLabel(issue)) {
     return 'draft';
   }
 
-  if (matchedSession) {
-    if (isSessionRunning) return 'in-progress';
-    if (isSessionWaiting || isSessionIdle) return 'needs-human';
+  // Explicit status:planned label
+  if (labelNames.includes('status:planned')) {
+    return 'planned';
   }
 
+  // Explicit status:todo label
+  if (labelNames.includes('status:todo')) {
+    return 'todo';
+  }
+
+  // Explicit status:backlog label
+  if (labelNames.includes('status:backlog')) {
+    return 'backlog';
+  }
+
+  // Explicit status:draft or missing essential criteria (isVagueIdea)
+  if (labelNames.includes('status:draft') || isVagueIdea(issue)) {
+    return 'draft';
+  }
+
+  // Default for unlabelled well-formed prioritized issues -> 'todo'
   return 'todo';
 }
 

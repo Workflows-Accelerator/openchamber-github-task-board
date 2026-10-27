@@ -146,3 +146,46 @@ test('applyStatusChange refuses labels outside the agreed set', () => {
     (err) => err instanceof BoardError && err.code === 'not_editable',
   );
 });
+
+test('buildBoardList projects unprioritized issues to draft and prioritized issues to target columns', () => {
+  const wellFormedBody =
+    'A full description of the task that contains more than twenty words to satisfy the length threshold requirement cleanly.\n\n### Actionable Subtasks Checklist:\n- [ ] Subtask 1';
+
+  const rawIssues = [
+    // Unprioritized issues -> draft
+    makeIssue({ number: 101, title: 'Unprioritized Todo', body: BODY, labels: ['status:todo'] }),
+    makeIssue({ number: 102, title: 'Unprioritized Planned', body: BODY, labels: ['status:planned'] }),
+    makeIssue({ number: 103, title: 'Unprioritized Backlog', body: BODY, labels: ['status:backlog'] }),
+    makeIssue({ number: 104, title: 'Unprioritized No Status', body: BODY, labels: [] }),
+
+    // Prioritized issues -> target columns
+    makeIssue({ number: 105, title: 'Prioritized Todo', body: BODY, labels: ['status:todo', 'priority:high'] }),
+    makeIssue({ number: 106, title: 'Prioritized Planned', body: BODY, labels: ['status:planned', 'priority:medium'] }),
+    makeIssue({ number: 107, title: 'Prioritized Backlog', body: BODY, labels: ['status:backlog', 'priority:low'] }),
+    makeIssue({ number: 108, title: 'Prioritized Well Formed', body: wellFormedBody, labels: ['priority:urgent'] }),
+
+    // In-flight and terminal statuses -> never demoted
+    makeIssue({ number: 109, title: 'In Progress', body: BODY, labels: ['status:in-progress'] }),
+    makeIssue({ number: 110, title: 'In Review', body: BODY, labels: ['status:in-review'] }),
+    makeIssue({ number: 111, title: 'Needs Human', body: BODY, labels: ['status:needs-human'] }),
+    makeIssue({ number: 112, title: 'Closed Issue', body: BODY, state: 'closed', labels: [] }),
+  ];
+
+  const { issues } = buildBoardList(rawIssues);
+  const colMap = new Map(issues.map((i) => [i.number, i.column]));
+
+  assert.equal(colMap.get(101), 'draft');
+  assert.equal(colMap.get(102), 'draft');
+  assert.equal(colMap.get(103), 'draft');
+  assert.equal(colMap.get(104), 'draft');
+
+  assert.equal(colMap.get(105), 'todo');
+  assert.equal(colMap.get(106), 'planned');
+  assert.equal(colMap.get(107), 'backlog');
+  assert.equal(colMap.get(108), 'todo');
+
+  assert.equal(colMap.get(109), 'in-progress');
+  assert.equal(colMap.get(110), 'in-review');
+  assert.equal(colMap.get(111), 'needs-human');
+  assert.equal(colMap.get(112), 'done');
+});

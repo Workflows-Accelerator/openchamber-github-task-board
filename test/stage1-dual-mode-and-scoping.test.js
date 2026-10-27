@@ -532,8 +532,9 @@ test('resolveV2Metadata derives liveness and dependencyState from linked session
 
 test('resolveIssueColumn preserves exact v1 behavior and projects v2 issues into Kanban columns', () => {
   // 1. v1 issues resolve identically to baseline
-  const legacyTodo = { number: 10, title: 'Todo', state: 'open', labels: [{ name: 'status:todo' }] };
+  const legacyTodo = { number: 10, title: 'Todo', state: 'open', labels: [{ name: 'status:todo' }, { name: 'priority:medium' }] };
   assert.equal(resolveIssueColumn(legacyTodo), 'todo');
+  assert.equal(resolveIssueColumn({ number: 10, title: 'Todo', state: 'open', labels: [{ name: 'status:todo' }] }), 'draft');
 
   const legacyProgress = { number: 11, title: 'In Progress', state: 'open', labels: [{ name: 'status:in-progress' }] };
   assert.equal(resolveIssueColumn(legacyProgress), 'in-progress');

@@ -108,19 +108,22 @@ test('a) All 8 columns resolve correctly according to labels and session states'
   assert.equal(resolveIssueColumn(inProgressIssue, idleSession), 'needs-human');
 
   // 5. status:planned
-  const plannedIssue = { number: 6, state: 'open', labels: [{ name: 'status:planned' }] };
+  const plannedIssue = { number: 6, state: 'open', labels: [{ name: 'status:planned' }, { name: 'priority:medium' }] };
   assert.equal(resolveIssueColumn(plannedIssue), 'planned');
   assert.equal(resolveIssueColumn(plannedIssue, runningSession), 'in-progress');
+  assert.equal(resolveIssueColumn({ number: 6, state: 'open', labels: [{ name: 'status:planned' }] }), 'draft');
 
   // 6. status:todo
-  const todoIssue = { number: 7, state: 'open', labels: [{ name: 'status:todo' }] };
+  const todoIssue = { number: 7, state: 'open', labels: [{ name: 'status:todo' }, { name: 'priority:medium' }] };
   assert.equal(resolveIssueColumn(todoIssue), 'todo');
   assert.equal(resolveIssueColumn(todoIssue, runningSession), 'in-progress');
+  assert.equal(resolveIssueColumn({ number: 7, state: 'open', labels: [{ name: 'status:todo' }] }), 'draft');
 
   // 7. status:backlog
-  const backlogIssue = { number: 8, state: 'open', labels: [{ name: 'status:backlog' }] };
+  const backlogIssue = { number: 8, state: 'open', labels: [{ name: 'status:backlog' }, { name: 'priority:low' }] };
   assert.equal(resolveIssueColumn(backlogIssue), 'backlog');
   assert.equal(resolveIssueColumn(backlogIssue, runningSession), 'in-progress');
+  assert.equal(resolveIssueColumn({ number: 8, state: 'open', labels: [{ name: 'status:backlog' }] }), 'draft');
 
   // 8. status:draft
   const draftIssue = { number: 9, state: 'open', labels: [{ name: 'status:draft' }] };
@@ -137,8 +140,13 @@ test('a) All 8 columns resolve correctly according to labels and session states'
     labels: [],
     subtasks: [{ text: 'Implement JWT signing', completed: false }],
   };
-  // Default for unlabelled well-formed issue -> 'todo'
-  assert.equal(resolveIssueColumn(wellFormedUnlabelled), 'todo');
+  // Default for unlabelled unprioritized issue -> 'draft'
+  assert.equal(resolveIssueColumn(wellFormedUnlabelled), 'draft');
+  // Adding priority advances well-formed issue -> 'todo'
+  assert.equal(
+    resolveIssueColumn({ ...wellFormedUnlabelled, labels: [{ name: 'priority:medium' }] }),
+    'todo'
+  );
   // Session running -> 'in-progress'
   assert.equal(resolveIssueColumn(wellFormedUnlabelled, runningSession), 'in-progress');
   // Session idle -> 'needs-human'
@@ -333,9 +341,9 @@ test('d) reconciler updates status labels without loops or race conditions', asy
 
 test('resolveDefaultTab prioritizes needs-human > in-review > in-progress > todo > planned > backlog > draft > all', () => {
   const draftIssue = { number: 1, state: 'open', labels: [{ name: 'status:draft' }] };
-  const backlogIssue = { number: 2, state: 'open', labels: [{ name: 'status:backlog' }] };
-  const plannedIssue = { number: 3, state: 'open', labels: [{ name: 'status:planned' }] };
-  const todoIssue = { number: 4, state: 'open', labels: [{ name: 'status:todo' }] };
+  const backlogIssue = { number: 2, state: 'open', labels: [{ name: 'status:backlog' }, { name: 'priority:low' }] };
+  const plannedIssue = { number: 3, state: 'open', labels: [{ name: 'status:planned' }, { name: 'priority:medium' }] };
+  const todoIssue = { number: 4, state: 'open', labels: [{ name: 'status:todo' }, { name: 'priority:high' }] };
   const inProgressIssue = { number: 5, state: 'open', labels: [{ name: 'status:in-progress' }] };
   const inReviewIssue = { number: 6, state: 'open', labels: [{ name: 'status:in-review' }] };
   const needsHumanIssue = { number: 7, state: 'open', labels: [{ name: 'status:needs-human' }] };
@@ -377,9 +385,9 @@ test('resolveDefaultTab prioritizes needs-human > in-review > in-progress > todo
 test('groupIssuesBy organizes issues into all 8 columns in order', () => {
   const issuesList = [
     { number: 1, state: 'open', labels: [{ name: 'status:draft' }] },
-    { number: 2, state: 'open', labels: [{ name: 'status:backlog' }] },
-    { number: 3, state: 'open', labels: [{ name: 'status:todo' }] },
-    { number: 4, state: 'open', labels: [{ name: 'status:planned' }] },
+    { number: 2, state: 'open', labels: [{ name: 'status:backlog' }, { name: 'priority:low' }] },
+    { number: 3, state: 'open', labels: [{ name: 'status:todo' }, { name: 'priority:medium' }] },
+    { number: 4, state: 'open', labels: [{ name: 'status:planned' }, { name: 'priority:high' }] },
     { number: 5, state: 'open', labels: [{ name: 'status:in-progress' }] },
     { number: 6, state: 'open', labels: [{ name: 'status:needs-human' }] },
     { number: 7, state: 'open', labels: [{ name: 'status:in-review' }] },

@@ -7,6 +7,7 @@ import {
   isSystemLabel,
   filterDisplayLabels,
   getIssuePriority,
+  hasPriorityLabel,
   updatePriorityLabels,
   getIssueComplexity,
   updateComplexityLabel,
@@ -3128,67 +3129,41 @@ export function resolveIssueColumn(
     return 'in-progress';
   }
 
+  // Dynamic session detection for issues:
+  // Active/waiting/idle sessions must maintain in-flight routing and not demote to draft
+  if (isSessionRunning) {
+    return 'in-progress';
+  }
+  if (isSessionWaiting || isSessionIdle) {
+    return 'needs-human';
+  }
+
+  // Issues without a priority label default to status:draft
+  if (!hasPriorityLabel(issue)) {
+    return 'draft';
+  }
+
   // Explicit status:planned label
   if (labelNames.includes('status:planned')) {
-    if (isSessionRunning) {
-      return 'in-progress';
-    }
-    if (isSessionWaiting) {
-      return 'needs-human';
-    }
     return 'planned';
   }
 
   // Explicit status:todo label
   if (labelNames.includes('status:todo')) {
-    if (isSessionRunning) {
-      return 'in-progress';
-    }
-    if (isSessionWaiting) {
-      return 'needs-human';
-    }
     return 'todo';
   }
 
   // Explicit status:backlog label
   if (labelNames.includes('status:backlog')) {
-    if (isSessionRunning) {
-      return 'in-progress';
-    }
-    if (isSessionWaiting) {
-      return 'needs-human';
-    }
     return 'backlog';
   }
 
   // Explicit status:draft or isVagueIdea(issue)
   if (labelNames.includes('status:draft') || isVagueIdea(issue)) {
-    if (isSessionRunning) {
-      return 'in-progress';
-    }
-    if (isSessionWaiting) {
-      return 'needs-human';
-    }
-    if (isSessionIdle) {
-      return 'needs-human';
-    }
     return 'draft';
   }
 
-  // Dynamic session detection for issues without explicit status labels
-  if (session) {
-    if (isSessionRunning) {
-      return 'in-progress';
-    }
-    if (isSessionWaiting) {
-      return 'needs-human';
-    }
-    if (isSessionIdle) {
-      return 'needs-human';
-    }
-  }
-
-  // Default for unlabelled well-formed issues
+  // Default for unlabelled well-formed prioritized issues
   return 'todo';
 }
 

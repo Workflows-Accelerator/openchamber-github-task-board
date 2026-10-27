@@ -1,5 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {
+  hasPriorityLabel as coreHasPriorityLabel,
+  getIssuePriority as coreGetIssuePriority,
+  resolveIssueColumn,
+} from '../panel/labels.ts';
 
 export function addLabelToIssue(currentLabels, newLabel) {
   const clean = newLabel.trim();
@@ -129,9 +134,17 @@ export function getIssuePriority(issue) {
   for (const l of issue.labels) {
     const name = (typeof l === 'string' ? l : l.name || '').toLowerCase();
     if (name === 'priority:critical') return 'critical';
+    if (name === 'priority:urgent') return 'urgent';
     if (name === 'priority:important') return 'important';
+    if (name === 'priority:high') return 'high';
     if (name === 'priority:useful') return 'useful';
+    if (name === 'priority:medium') return 'medium';
     if (name === 'priority:optional') return 'optional';
+    if (name === 'priority:low') return 'low';
+    if (name.startsWith('priority:')) {
+      const val = name.slice(9).trim();
+      if (val && val !== 'none') return val;
+    }
   }
   return null;
 }
@@ -307,4 +320,111 @@ test('filterDisplayLabels excludes extension system tags (status, priority, comp
   assert.equal(visible.length, 2);
   assert.equal(visible[0].name, 'bug');
   assert.equal(visible[1].name, 'frontend');
+});
+
+test('hasPriorityLabel identifies valid priorities and rejects none/empty', () => {
+  const validTiers = [
+    'priority:urgent',
+    'priority:high',
+    'priority:medium',
+    'priority:low',
+    'priority:critical',
+    'priority:important',
+    'priority:useful',
+    'priority:optional',
+    'PRIORITY:HIGH',
+    'Priority:Urgent',
+  ];
+
+  for (const tier of validTiers) {
+    assert.equal(coreHasPriorityLabel([tier]), true, `expected ${tier} to be recognized`);
+    assert.equal(coreHasPriorityLabel({ labels: [{ name: tier }] }), true, `expected object with ${tier} to be recognized`);
+  }
+
+  const invalidLabels = [
+    'priority:none',
+    'priority:',
+    'priority:   ',
+    'status:todo',
+    'status:in-progress',
+    'bug',
+    'theme:auth',
+  ];
+
+  for (const invalid of invalidLabels) {
+    assert.equal(coreHasPriorityLabel([invalid]), false, `expected ${invalid} to be rejected`);
+    assert.equal(coreHasPriorityLabel({ labels: [{ name: invalid }] }), false);
+  }
+
+  assert.equal(coreHasPriorityLabel(null), false);
+  assert.equal(coreHasPriorityLabel(undefined), false);
+  assert.equal(coreHasPriorityLabel([]), false);
+  assert.equal(coreHasPriorityLabel({ labels: [] }), false);
+  assert.equal(coreHasPriorityLabel({}), false);
+});
+
+test('getIssuePriority normalizes both standard tiers (urgent/high/medium/low) and legacy tiers', () => {
+  assert.equal(coreGetIssuePriority({ labels: [{ name: 'priority:urgent' }] }), 'urgent');
+  assert.equal(coreGetIssuePriority({ labels: [{ name: 'priority:high' }] }), 'high');
+  assert.equal(coreGetIssuePriority({ labels: [{ name: 'priority:medium' }] }), 'medium');
+  assert.equal(coreGetIssuePriority({ labels: [{ name: 'priority:low' }] }), 'low');
+  assert.equal(coreGetIssuePriority({ labels: [{ name: 'priority:critical' }] }), 'critical');
+  assert.equal(coreGetIssuePriority({ labels: [{ name: 'priority:important' }] }), 'important');
+  assert.equal(coreGetIssuePriority({ labels: [{ name: 'priority:useful' }] }), 'useful');
+  assert.equal(coreGetIssuePriority({ labels: [{ name: 'priority:optional' }] }), 'optional');
+  assert.equal(coreGetIssuePriority({ labels: [{ name: 'priority:none' }] }), null);
+  assert.equal(coreGetIssuePriority({ labels: [] }), null);
+});
+
+test('resolveIssueColumn defaults unprioritized issues to draft without demoting in-flight or closed work', () => {
+  const baseOpenIssue = {
+    number: 99,
+    state: 'open',
+    title: 'Well-formed task title with sufficient words',
+    body: 'This is a long well-formed issue description that meets all criteria for testing.',
+    subtasks: [{ text: 'subtask 1', completed: false }],
+  };
+
+  // 1. Unprioritized issues default to draft
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [] }), 'draft');
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'status:todo' }] }), 'draft');
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'status:planned' }] }), 'draft');
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'status:backlog' }] }), 'draft');
+
+  // 2. Adding a priority label advances to the target column
+  assert.equal(
+    resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'status:todo' }, { name: 'priority:high' }] }),
+    'todo'
+  );
+  assert.equal(
+    resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'status:planned' }, { name: 'priority:medium' }] }),
+    'planned'
+  );
+  assert.equal(
+    resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'status:backlog' }, { name: 'priority:low' }] }),
+    'backlog'
+  );
+  assert.equal(
+    resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'priority:urgent' }] }),
+    'todo'
+  );
+
+  // 3. Closed issues are never demoted to draft
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, state: 'closed', labels: [] }), 'done');
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, state: 'closed', labels: [{ name: 'status:draft' }] }), 'done');
+
+  // 4. Advanced statuses are never demoted to draft even without priority
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'status:done' }] }), 'done');
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'status:in-review' }] }), 'in-review');
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'status:needs-human' }] }), 'needs-human');
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [{ name: 'status:in-progress' }] }), 'in-progress');
+
+  // 5. Active sessions never demote to draft even without priority
+  const runningSession = { id: 's1', activity: 'running' };
+  const idleSession = { id: 's2', activity: 'idle' };
+  const waitingSession = { id: 's3', activity: 'waiting-question' };
+
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [] }, runningSession), 'in-progress');
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [] }, idleSession), 'needs-human');
+  assert.equal(resolveIssueColumn({ ...baseOpenIssue, labels: [] }, waitingSession), 'needs-human');
 });

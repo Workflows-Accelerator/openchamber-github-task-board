@@ -20,14 +20,14 @@ const mkProject = (id, name, directory) => ({
   linkedRepo: null,
 });
 
-// A non-vague, unlabelled issue so column resolution is driven purely by the
-// attached session (idle -> needs-human) rather than by labels or draft heuristics.
+// A non-vague issue with priority so column resolution is driven purely by the
+// attached session (idle -> needs-human) rather than by draft heuristics.
 const mkIssue = (repo, number = 5) => ({
   number,
   repo,
   state: 'open',
   body: 'word '.repeat(30),
-  labels: [],
+  labels: [{ name: 'priority:medium' }],
   subtasks: [{ text: 'x' }],
 });
 
