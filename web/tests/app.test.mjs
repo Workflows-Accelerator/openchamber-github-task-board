@@ -1101,3 +1101,53 @@ test('batch-align POST /api/repos/:owner/:name/issues/batch-align aligns draft i
     await close();
   }
 });
+
+test('PWA manifest.json is served with 200 and valid JSON', async () => {
+  const { board, close } = await fixture();
+  try {
+    const res = await fetch(`${board.url}/manifest.json`);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') ?? '', /application\/manifest\+json/);
+    const json = await res.json();
+    assert.equal(json.name, 'Workflows Task Board');
+    assert.equal(json.short_name, 'Task Board');
+    assert.equal(json.start_url, '/');
+    assert.equal(json.display, 'standalone');
+    assert.equal(json.background_color, '#09090b');
+    assert.equal(json.theme_color, '#09090b');
+    assert.ok(Array.isArray(json.icons));
+    assert.ok(json.icons.some((i) => i.src === '/icon.svg' && i.purpose === 'any maskable'));
+  } finally {
+    await close();
+  }
+});
+
+test('sw.js is served with 200, application/javascript, and Service-Worker-Allowed header', async () => {
+  const { board, close } = await fixture();
+  try {
+    const res = await fetch(`${board.url}/sw.js`);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') ?? '', /application\/javascript/);
+    assert.equal(res.headers.get('service-worker-allowed'), '/');
+    const text = await res.text();
+    assert.ok(text.includes('CACHE_NAME'));
+    assert.ok(text.includes('/manifest.json'));
+    assert.ok(text.includes('/icon.svg'));
+  } finally {
+    await close();
+  }
+});
+
+test('GET /api/combined/board returns 200 for authenticated user', async () => {
+  const { board, close } = await fixture();
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+    const res = await client.request('/api/combined/board');
+    assert.equal(res.status, 200);
+    assert.equal(res.json.scope, 'all');
+    assert.ok(Array.isArray(res.json.issues));
+  } finally {
+    await close();
+  }
+});

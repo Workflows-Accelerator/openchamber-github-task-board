@@ -377,11 +377,18 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   });
   const limiter = new LoginRateLimiter({ now });
 
-  const assets: Record<string, { body: string; type: string }> = {
+  const assets: Record<string, { body: string; type: string; headers?: Record<string, string> }> = {
     '/': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
     '/index.html': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
     '/app.js': { body: loadStatic('app.js'), type: 'text/javascript; charset=utf-8' },
     '/theme.css': { body: loadStatic('theme.css'), type: 'text/css; charset=utf-8' },
+    '/manifest.json': { body: loadStatic('manifest.json'), type: 'application/manifest+json; charset=utf-8' },
+    '/sw.js': {
+      body: loadStatic('sw.js'),
+      type: 'application/javascript; charset=utf-8',
+      headers: { 'service-worker-allowed': '/' },
+    },
+    '/icon.svg': { body: loadStatic('icon.svg'), type: 'image/svg+xml; charset=utf-8' },
   };
 
   const server = http.createServer((req, res) => {
@@ -486,7 +493,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
     if (method === 'GET' && assets[url.pathname]) {
       const asset = assets[url.pathname];
-      return { status: 200, text: asset.body, type: asset.type };
+      return { status: 200, text: asset.body, type: asset.type, headers: asset.headers };
     }
     if (method !== 'GET' && assets[url.pathname]) {
       return { status: 405, body: { error: 'method_not_allowed', message: 'That method is not allowed' }, headers: { allow: 'GET' } };
