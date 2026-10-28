@@ -326,11 +326,14 @@ label {
 }
 
 .quick-add-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-bottom: 12px;
 }
 
 .quick-add-input {
-  width: 100%;
+  flex: 1;
   padding: 8px 12px;
   background: var(--surf);
   border: 1px solid var(--border);
@@ -340,6 +343,13 @@ label {
   font-size: 13px;
   outline-color: var(--prim);
   transition: border-color 0.15s ease;
+}
+
+.align-drafts-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-size: 12px;
+  padding: 8px 12px;
 }
 
 .quick-add-input:focus {

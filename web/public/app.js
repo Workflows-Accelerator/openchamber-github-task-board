@@ -1061,6 +1061,54 @@
       });
     }
 
+    var alignDraftsBtn = $('align-drafts-btn');
+    if (alignDraftsBtn) {
+      alignDraftsBtn.addEventListener('click', async function () {
+        var targetRepo = null;
+        if (state.selected && state.selected !== 'all') {
+          targetRepo = state.selected;
+        } else if (state.board && state.board.repository) {
+          targetRepo = state.board.repository.full;
+        } else if (state.repositories && state.repositories.repositories && state.repositories.repositories.length === 1) {
+          targetRepo = state.repositories.repositories[0].full;
+        }
+
+        if (!targetRepo) {
+          setNotice('Select a specific repository before aligning drafts.', true);
+          return;
+        }
+
+        var parts = targetRepo.split('/');
+        if (parts.length !== 2) {
+          setNotice('Repository format is invalid.', true);
+          return;
+        }
+
+        var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues/batch-align';
+        alignDraftsBtn.disabled = true;
+        try {
+          var response = await api(endpoint, {
+            method: 'POST'
+          });
+          setNotice('');
+          if (response && response.issues && state.board) {
+            state.board.issues = response.issues;
+            renderBoard();
+          } else {
+            await loadBoard();
+          }
+          var count = response && typeof response.alignedCount === 'number' ? response.alignedCount : 0;
+          var msg = 'Aligned ' + count + ' draft ' + (count === 1 ? 'issue' : 'issues') + '.';
+          announce(msg);
+          setNotice(msg, false);
+        } catch (error) {
+          setNotice(error.message || 'Failed to align draft issues.', true);
+        } finally {
+          alignDraftsBtn.disabled = false;
+        }
+      });
+    }
+
     $('refresh-btn').addEventListener('click', function () {
       if (state.detail && /^#\/issue\//.test(window.location.hash)) {
         openIssue(state.detail);

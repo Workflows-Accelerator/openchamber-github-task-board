@@ -3823,8 +3823,11 @@
       <!-- Draft -->
       <div class="kanban-col" data-column="draft">
         <div class="kanban-col-header">
-          <span>Draft</span>
-          <span class="status-pill" id="kCountDraft">0</span>
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span>Draft</span>
+            <span class="status-pill" id="kCountDraft">0</span>
+          </div>
+          <button class="btn btn-xs" id="btnAlignDrafts" title="Align, structure, and prioritize all draft issues" type="button">Align Drafts</button>
         </div>
         <div class="kanban-quick-add-wrap">
           <input type="text" class="kanban-quick-add-input" id="quickAddDraftInput" placeholder="Quick add draft... (press Enter)" />

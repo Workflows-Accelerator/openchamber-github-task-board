@@ -1027,3 +1027,77 @@ test('quick-add POST /api/repos/:owner/:name/issues creates draft issue with 201
     await close();
   }
 });
+
+test('batch-align POST /api/repos/:owner/:name/issues/batch-align aligns draft issues', async () => {
+  const issues = [
+    makeIssue({
+      number: 101,
+      title: 'Draft feature',
+      body: 'Basic initial notes on feature.',
+      labels: ['status:draft'],
+    }),
+    makeIssue({
+      number: 102,
+      title: 'Should we add sqlite support?',
+      body: 'Unclear if sqlite is fast enough. TBD.',
+      labels: ['status:draft', 'priority:high'],
+    }),
+    makeIssue({
+      number: 103,
+      title: 'Already in backlog',
+      body: '## Overview\nDone planning.',
+      labels: ['status:backlog', 'priority:medium'],
+    }),
+  ];
+
+  const { fake, board, close } = await fixture({ issues });
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+
+    // 1. Unauthenticated 401
+    const anon = new HttpSession(board.url);
+    const anonRes = await anon.request('/api/repos/owner/repo/issues/batch-align', {
+      method: 'POST',
+      headers: { 'x-csrf-token': 'any' },
+    });
+    assert.equal(anonRes.status, 401);
+
+    // 2. CSRF rejection 403
+    const badCsrf = await client.request('/api/repos/owner/repo/issues/batch-align', {
+      method: 'POST',
+      headers: { 'x-csrf-token': 'invalid' },
+      csrf: false,
+    });
+    assert.equal(badCsrf.status, 403);
+
+    // 3. Successful batch alignment
+    const res = await client.request('/api/repos/owner/repo/issues/batch-align', {
+      method: 'POST',
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.json.ok, true);
+    assert.equal(res.json.alignedCount, 2);
+    assert.ok(Array.isArray(res.json.issues));
+
+    // Verify issues in fake GitHub were patched
+    const patched101 = fake.issues.find((i) => i.number === 101);
+    assert.ok(patched101);
+    assert.ok(!patched101.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:draft'));
+    assert.ok(patched101.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:backlog'));
+    assert.ok(patched101.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'priority:medium'));
+    assert.ok(patched101.body.includes('## Overview'));
+    assert.ok(patched101.body.includes('## Scope'));
+    assert.ok(patched101.body.includes('## Acceptance Criteria'));
+
+    const patched102 = fake.issues.find((i) => i.number === 102);
+    assert.ok(patched102);
+    assert.ok(!patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:draft'));
+    assert.ok(patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:backlog'));
+    assert.ok(patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'priority:high'));
+    assert.ok(patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'needs:human'));
+    assert.ok(patched102.body.includes('## Open Questions'));
+  } finally {
+    await close();
+  }
+});

@@ -184,6 +184,9 @@ import {
   filterIssuesByAttention,
   resolveV2Metadata,
   parseAcceptanceCriteria,
+  detectDraftAmbiguity,
+  alignDraftBody,
+  alignDraftIssue,
   type HumanAttention,
 } from './core.js';
 export type { TestItem, DraftIssue, HumanAttention };
@@ -3943,8 +3946,11 @@ function renderKanbanView(filteredIssues: Issue[]): void {
     colEl.dataset.column = col.id;
     colEl.innerHTML = `
       <div class="kanban-col-header">
-        <span>${escapeHtml(col.title)}</span>
-        <span class="status-pill">${colIssues.length}</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span>${escapeHtml(col.title)}</span>
+          <span class="status-pill">${colIssues.length}</span>
+        </div>
+        ${col.id === 'draft' ? `<button class="btn btn-xs" id="btnAlignDrafts" title="Align, structure, and prioritize all draft issues" type="button">Align Drafts</button>` : ''}
       </div>
       ${col.id === 'draft' ? `
       <div class="kanban-quick-add-wrap">
@@ -3961,6 +3967,12 @@ function renderKanbanView(filteredIssues: Issue[]): void {
             e.preventDefault();
             void quickAddDraft(qInput);
           }
+        });
+      }
+      const alignBtn = colEl.querySelector('#btnAlignDrafts') as HTMLButtonElement | null;
+      if (alignBtn) {
+        alignBtn.addEventListener('click', () => {
+          void batchAlignDrafts();
         });
       }
     }
@@ -8368,6 +8380,92 @@ async function quickAddDraft(titleInput: HTMLInputElement): Promise<void> {
   }
 }
 
+async function batchAlignDrafts(): Promise<void> {
+  const activeRepo = currentRepo;
+  if (!isAllProjectsMode && !activeRepo) {
+    if (host?.toast) {
+      void host.toast({ kind: 'info', message: 'Pick a repository to align draft issues.' });
+    }
+    openRepoPopover();
+    return;
+  }
+
+  // Find all draft issues in active scope
+  const targetDrafts = issues.filter((issue) => {
+    if (isIssueClosed(issue)) return false;
+    const col = resolveIssueColumn(issue);
+    if (col !== 'draft') return false;
+    if (isAllProjectsMode) return true;
+    const r = repoForIssue(issue);
+    return !r || r === activeRepo;
+  });
+
+  if (targetDrafts.length === 0) {
+    if (host?.toast) {
+      void host.toast({ kind: 'info', message: 'No draft issues to align.' });
+    }
+    return;
+  }
+
+  addLog(`Aligning ${targetDrafts.length} draft issues...`);
+  let successCount = 0;
+  const errors: string[] = [];
+
+  for (const draft of targetDrafts) {
+    const issueRepo = repoForIssue(draft) || activeRepo;
+    if (!issueRepo || !draft.number) continue;
+
+    const { body: structuredBody, labels: newLabels, hasAmbiguity } = alignDraftIssue(draft);
+    const finishWrite = trackIssueWrite(issueRepo, draft, ['body', 'labels']);
+
+    // Optimistic update locally
+    const prevBody = draft.body;
+    const prevLabels = [...(draft.labels || [])];
+    draft.body = structuredBody;
+    draft.labels = newLabels.map((l) => ({ name: l }));
+
+    try {
+      await githubRequestWithRetry('PATCH', `/repos/${issueRepo}/issues/${draft.number}`, {
+        body: structuredBody,
+        labels: newLabels,
+      });
+      finishWrite(true);
+      successCount += 1;
+      addLog(`Aligned draft #${draft.number} (${hasAmbiguity ? 'needs-human' : 'backlog'})`, 'succ');
+    } catch (err: any) {
+      finishWrite(false);
+      draft.body = prevBody;
+      draft.labels = prevLabels;
+      errors.push(`#${draft.number}: ${err.message || 'Error'}`);
+      addLog(`Failed to align draft #${draft.number}: ${err.message}`, 'error');
+    }
+  }
+
+  // Sync cache and re-render
+  if (isAllProjectsMode) {
+    issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+    if (host?.storage) {
+      void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any).catch(() => {});
+    }
+  } else if (activeRepo) {
+    issueCache.set(activeRepo, { timestamp: Date.now(), issues });
+    if (host?.storage) {
+      void host.storage.set(`cached_issues_${activeRepo}`, { timestamp: Date.now(), issues } as any).catch(() => {});
+    }
+  }
+
+  statusReconciler.schedule(issues);
+  renderViews();
+
+  if (host?.toast) {
+    if (successCount > 0) {
+      void host.toast({ kind: 'success', message: `Aligned ${successCount} draft issues` });
+    } else {
+      void host.toast({ kind: 'error', message: `Failed to align draft issues: ${errors.join(', ')}` });
+    }
+  }
+}
+
 async function submitNewIssue(): Promise<void> {
   const title = elNewIssueTitleInput.value.trim();
   const rawBody = elNewIssueBodyInput.value.trim();
@@ -8981,6 +9079,13 @@ function initEvents(): void {
         e.preventDefault();
         void quickAddDraft(initialQuickAddInput);
       }
+    });
+  }
+
+  const initialBtnAlignDrafts = document.getElementById('btnAlignDrafts') as HTMLButtonElement | null;
+  if (initialBtnAlignDrafts) {
+    initialBtnAlignDrafts.addEventListener('click', () => {
+      void batchAlignDrafts();
     });
   }
 
