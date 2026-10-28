@@ -2141,6 +2141,159 @@ export function formatDraftReviewMeta(subtaskCount: number, questionCount: numbe
   return `${subtaskLabel} · ${questionLabel}`;
 }
 
+export function detectDraftAmbiguity(title: string | null | undefined, body: string | null | undefined): {
+  hasAmbiguity: boolean;
+  questions: string[];
+} {
+  const cleanTitle = (title || '').trim();
+  const cleanBody = (body || '').trim();
+  const text = `${cleanTitle}\n\n${cleanBody}`;
+
+  const questions: string[] = [];
+  // Split on newlines or sentence boundaries
+  const segments = text.split(/(?:\r?\n|(?<=[.?!])\s+)/);
+
+  for (const segment of segments) {
+    const trimmed = segment.trim();
+    if (!trimmed) continue;
+    // Check if segment has question mark or ambiguity indicators
+    if (trimmed.includes('?') || /\b(?:tbd|todo|unclear|undecided|investigate|needs clarification)\b/i.test(trimmed)) {
+      const cleanQ = trimmed.replace(/^[-*+]\s*(\[[ xX]\]\s*)?/, '').trim();
+      if (cleanQ && !questions.includes(cleanQ)) {
+        questions.push(cleanQ);
+      }
+    }
+  }
+
+  // Also check title alone if it ended with a question mark
+  if (cleanTitle.endsWith('?') && !questions.includes(cleanTitle)) {
+    questions.push(cleanTitle);
+  }
+
+  return {
+    hasAmbiguity: questions.length > 0,
+    questions,
+  };
+}
+
+export function alignDraftBody(
+  title: string | null | undefined,
+  body: string | null | undefined
+): { body: string; hasAmbiguity: boolean; questions: string[] } {
+  const rawBody = (body || '').trim();
+  const cleanTitle = (title || '').trim();
+  const ambiguity = detectDraftAmbiguity(cleanTitle, rawBody);
+
+  // Parse existing sections or content
+  const hasOverview = /##\s*Overview/i.test(rawBody);
+  const hasScope = /##\s*Scope/i.test(rawBody);
+  const hasAc = /##\s*Acceptance Criteria/i.test(rawBody);
+  const hasQuestions = /##\s*Open Questions/i.test(rawBody);
+
+  let overviewContent = '';
+  let scopeContent = '';
+  let acContent = '';
+  let questionsContent = '';
+
+  if (hasOverview || hasScope || hasAc || hasQuestions) {
+    const overviewMatch = rawBody.match(/##\s*Overview\s*\n+([\s\S]*?)(?=\n##|$)/i);
+    const scopeMatch = rawBody.match(/##\s*Scope\s*\n+([\s\S]*?)(?=\n##|$)/i);
+    const acMatch = rawBody.match(/##\s*Acceptance Criteria\s*\n+([\s\S]*?)(?=\n##|$)/i);
+    const qMatch = rawBody.match(/##\s*Open Questions\s*\n+([\s\S]*?)(?=\n##|$)/i);
+
+    overviewContent = (overviewMatch ? overviewMatch[1] : '').trim();
+    scopeContent = (scopeMatch ? scopeMatch[1] : '').trim();
+    acContent = (acMatch ? acMatch[1] : '').trim();
+    questionsContent = (qMatch ? qMatch[1] : '').trim();
+
+    // If overview was missing but there was unsectioned text before first heading
+    if (!overviewContent) {
+      const preHeading = rawBody.split(/\n##\s+/i)[0].trim();
+      if (preHeading && !/^##\s+/i.test(rawBody)) {
+        overviewContent = preHeading;
+      }
+    }
+  } else {
+    // No structured sections exist yet
+    overviewContent = rawBody;
+  }
+
+  if (!overviewContent) {
+    overviewContent = cleanTitle || 'No overview provided.';
+  }
+  if (!scopeContent) {
+    scopeContent = `- Implement changes for ${cleanTitle || 'task'}.`;
+  }
+  if (!acContent) {
+    acContent = `- [ ] Implementation completed and verified.`;
+  }
+
+  let result = `## Overview\n${overviewContent}\n\n## Scope\n${scopeContent}\n\n## Acceptance Criteria\n${acContent}`;
+
+  if (ambiguity.hasAmbiguity || questionsContent) {
+    let qBlock = questionsContent;
+    if (!qBlock) {
+      qBlock = ambiguity.questions.map((q) => `- [ ] ${q}`).join('\n');
+    }
+    result += `\n\n## Open Questions\n${qBlock}`;
+  }
+
+  return {
+    body: result,
+    hasAmbiguity: ambiguity.hasAmbiguity,
+    questions: ambiguity.questions,
+  };
+}
+
+export function alignDraftIssue(issue: {
+  title?: string;
+  body?: string;
+  labels?: any[];
+}): {
+  body: string;
+  labels: string[];
+  hasAmbiguity: boolean;
+} {
+  const title = issue.title || '';
+  const body = issue.body || '';
+  const { body: structuredBody, hasAmbiguity } = alignDraftBody(title, body);
+
+  const existingLabels = (issue.labels || []).map((l: any) =>
+    typeof l === 'string' ? l : l.name || ''
+  );
+
+  // Filter out status:draft
+  let newLabels = existingLabels.filter((l) => l.toLowerCase() !== 'status:draft');
+
+  // Add status:backlog if not already having a status
+  if (!newLabels.some((l) => l.toLowerCase().startsWith('status:'))) {
+    newLabels.push('status:backlog');
+  } else {
+    // If it had status:draft removed, replace with status:backlog
+    newLabels = newLabels.filter((l) => !l.toLowerCase().startsWith('status:'));
+    newLabels.push('status:backlog');
+  }
+
+  // Ensure priority label exists, default priority:medium
+  const hasPriority = newLabels.some((l) => l.toLowerCase().startsWith('priority:'));
+  if (!hasPriority) {
+    newLabels.push('priority:medium');
+  }
+
+  // If ambiguity detected, apply needs:human
+  if (hasAmbiguity) {
+    if (!newLabels.some((l) => l.toLowerCase() === 'needs:human')) {
+      newLabels.push('needs:human');
+    }
+  }
+
+  return {
+    body: structuredBody,
+    labels: Array.from(new Set(newLabels)),
+    hasAmbiguity,
+  };
+}
+
 export function createDraftIssuePayload(draft: {
   title: string;
   body?: string;

@@ -246,6 +246,25 @@ export async function startFakeGitHub(options = {}) {
         return send(200, items, headers);
       }
 
+      if (url.pathname === `/repos/${spec.repo}/issues` && req.method === 'POST') {
+        let payload;
+        try {
+          payload = await readBody(req);
+        } catch {
+          return send(400, { message: 'Bad Request' });
+        }
+        const nextNumber = spec.issues.reduce((max, i) => Math.max(max, i.number), 0) + 1;
+        const newIssue = makeIssue({
+          number: nextNumber,
+          title: payload.title,
+          body: payload.body ?? '',
+          labels: payload.labels ?? [],
+          repo: spec.repo,
+        });
+        spec.issues.unshift(newIssue);
+        return send(201, newIssue, { etag: etagFor(newIssue) });
+      }
+
       const issueMatch = new RegExp(`^/repos/${spec.repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/issues/(\\d+)$`).exec(
         url.pathname,
       );

@@ -976,3 +976,178 @@ test('concurrent login flood across distinct addresses is bounded with 429 retry
     await close();
   }
 });
+
+test('quick-add POST /api/repos/:owner/:name/issues creates draft issue with 201', async () => {
+  const { fake, board, close } = await fixture();
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+
+    // 1. Successful draft creation defaulting to status:draft
+    const res = await client.request('/api/repos/owner/repo/issues', {
+      method: 'POST',
+      body: { title: 'Implement quick brain dump' },
+    });
+    assert.equal(res.status, 201);
+    assert.equal(res.json.ok, true);
+    assert.equal(res.json.issue.title, 'Implement quick brain dump');
+    assert.ok(res.json.issue.labels.includes('status:draft'));
+    assert.equal(res.json.issue.column, 'draft');
+
+    // Verify GitHub mock received the issue
+    const createdIssue = fake.issues.find((i) => i.title === 'Implement quick brain dump');
+    assert.ok(createdIssue);
+    assert.ok(createdIssue.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:draft'));
+
+    // 2. 400 empty title validation
+    const emptyTitle = await client.request('/api/repos/owner/repo/issues', {
+      method: 'POST',
+      body: { title: '   ' },
+    });
+    assert.equal(emptyTitle.status, 400);
+
+    // 3. 403 CSRF rejection
+    const uncsrf = await client.request('/api/repos/owner/repo/issues', {
+      method: 'POST',
+      headers: { 'x-csrf-token': 'wrong-token' },
+      body: { title: 'Should fail' },
+      csrf: false,
+    });
+    assert.equal(uncsrf.status, 403);
+
+    // 4. 401 unauthenticated
+    const anon = new HttpSession(board.url);
+    const anonRes = await anon.request('/api/repos/owner/repo/issues', {
+      method: 'POST',
+      headers: { 'x-csrf-token': 'any' },
+      body: { title: 'Should fail' },
+    });
+    assert.equal(anonRes.status, 401);
+  } finally {
+    await close();
+  }
+});
+
+test('batch-align POST /api/repos/:owner/:name/issues/batch-align aligns draft issues', async () => {
+  const issues = [
+    makeIssue({
+      number: 101,
+      title: 'Draft feature',
+      body: 'Basic initial notes on feature.',
+      labels: ['status:draft'],
+    }),
+    makeIssue({
+      number: 102,
+      title: 'Should we add sqlite support?',
+      body: 'Unclear if sqlite is fast enough. TBD.',
+      labels: ['status:draft', 'priority:high'],
+    }),
+    makeIssue({
+      number: 103,
+      title: 'Already in backlog',
+      body: '## Overview\nDone planning.',
+      labels: ['status:backlog', 'priority:medium'],
+    }),
+  ];
+
+  const { fake, board, close } = await fixture({ issues });
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+
+    // 1. Unauthenticated 401
+    const anon = new HttpSession(board.url);
+    const anonRes = await anon.request('/api/repos/owner/repo/issues/batch-align', {
+      method: 'POST',
+      headers: { 'x-csrf-token': 'any' },
+    });
+    assert.equal(anonRes.status, 401);
+
+    // 2. CSRF rejection 403
+    const badCsrf = await client.request('/api/repos/owner/repo/issues/batch-align', {
+      method: 'POST',
+      headers: { 'x-csrf-token': 'invalid' },
+      csrf: false,
+    });
+    assert.equal(badCsrf.status, 403);
+
+    // 3. Successful batch alignment
+    const res = await client.request('/api/repos/owner/repo/issues/batch-align', {
+      method: 'POST',
+    });
+    assert.equal(res.status, 200);
+    assert.equal(res.json.ok, true);
+    assert.equal(res.json.alignedCount, 2);
+    assert.ok(Array.isArray(res.json.issues));
+
+    // Verify issues in fake GitHub were patched
+    const patched101 = fake.issues.find((i) => i.number === 101);
+    assert.ok(patched101);
+    assert.ok(!patched101.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:draft'));
+    assert.ok(patched101.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:backlog'));
+    assert.ok(patched101.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'priority:medium'));
+    assert.ok(patched101.body.includes('## Overview'));
+    assert.ok(patched101.body.includes('## Scope'));
+    assert.ok(patched101.body.includes('## Acceptance Criteria'));
+
+    const patched102 = fake.issues.find((i) => i.number === 102);
+    assert.ok(patched102);
+    assert.ok(!patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:draft'));
+    assert.ok(patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:backlog'));
+    assert.ok(patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'priority:high'));
+    assert.ok(patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'needs:human'));
+    assert.ok(patched102.body.includes('## Open Questions'));
+  } finally {
+    await close();
+  }
+});
+
+test('PWA manifest.json is served with 200 and valid JSON', async () => {
+  const { board, close } = await fixture();
+  try {
+    const res = await fetch(`${board.url}/manifest.json`);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') ?? '', /application\/manifest\+json/);
+    const json = await res.json();
+    assert.equal(json.name, 'Workflows Task Board');
+    assert.equal(json.short_name, 'Task Board');
+    assert.equal(json.start_url, '/');
+    assert.equal(json.display, 'standalone');
+    assert.equal(json.background_color, '#09090b');
+    assert.equal(json.theme_color, '#09090b');
+    assert.ok(Array.isArray(json.icons));
+    assert.ok(json.icons.some((i) => i.src === '/icon.svg' && i.purpose === 'any maskable'));
+  } finally {
+    await close();
+  }
+});
+
+test('sw.js is served with 200, application/javascript, and Service-Worker-Allowed header', async () => {
+  const { board, close } = await fixture();
+  try {
+    const res = await fetch(`${board.url}/sw.js`);
+    assert.equal(res.status, 200);
+    assert.match(res.headers.get('content-type') ?? '', /application\/javascript/);
+    assert.equal(res.headers.get('service-worker-allowed'), '/');
+    const text = await res.text();
+    assert.ok(text.includes('CACHE_NAME'));
+    assert.ok(text.includes('/manifest.json'));
+    assert.ok(text.includes('/icon.svg'));
+  } finally {
+    await close();
+  }
+});
+
+test('GET /api/combined/board returns 200 for authenticated user', async () => {
+  const { board, close } = await fixture();
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+    const res = await client.request('/api/combined/board');
+    assert.equal(res.status, 200);
+    assert.equal(res.json.scope, 'all');
+    assert.ok(Array.isArray(res.json.issues));
+  } finally {
+    await close();
+  }
+});

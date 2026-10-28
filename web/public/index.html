@@ -2,9 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#09090b">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Task Board">
   <title>Task Board</title>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="apple-touch-icon" href="/icon.svg">
   <link rel="stylesheet" href="/theme.css">
 </head>
 <body>
@@ -38,8 +44,19 @@
 
     <section id="board-view" class="view" aria-labelledby="board-title" hidden>
       <div id="repository-picker" class="repository-picker" hidden>
-        <label for="repo-select">Repository</label>
-        <select id="repo-select"></select>
+        <label id="repo-picker-label" for="repo-select-btn">Repository</label>
+        <div class="repo-picker-wrapper">
+          <button id="repo-select-btn" class="button repo-select-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="repo-picker-label repo-select-btn">
+            <span id="repo-select-btn-text">All Projects</span>
+            <span class="repo-select-chevron" aria-hidden="true">&#x25BE;</span>
+          </button>
+          <div id="repo-popover" class="repo-popover" role="dialog" aria-modal="true" aria-label="Select Project" hidden>
+            <div class="repo-popover-header">
+              <input id="repo-search-input" class="repo-search-input" type="search" placeholder="Search projects..." autocomplete="off" />
+            </div>
+            <div id="repo-options-list" class="repo-options-list" role="listbox"></div>
+          </div>
+        </div>
         <p id="discovery-status" class="muted small"></p>
         <p id="refresh-policy" class="muted small"></p>
       </div>
@@ -48,6 +65,17 @@
         <h1 id="board-title" tabindex="-1">Tasks</h1>
         <p id="board-count" class="muted"></p>
       </div>
+      <div id="mobile-views" class="mobile-view-tabs" role="tablist" aria-label="Task view filters">
+        <button id="tab-all" class="view-tab active" type="button" role="tab" aria-selected="true" data-filter="all">All Tasks</button>
+        <button id="tab-needs-human" class="view-tab" type="button" role="tab" aria-selected="false" data-filter="needs-human">Needs Human</button>
+        <button id="tab-running" class="view-tab" type="button" role="tab" aria-selected="false" data-filter="running">Running</button>
+        <button id="tab-drafts" class="view-tab" type="button" role="tab" aria-selected="false" data-filter="drafts">Drafts</button>
+      </div>
+      <form id="quick-add-form" class="quick-add-bar">
+        <label for="quick-add-input" class="sr-only">Quick add draft issue</label>
+        <input id="quick-add-input" class="quick-add-input" type="text" placeholder="Quick add draft... (press Enter)" autocomplete="off" />
+        <button id="align-drafts-btn" class="button align-drafts-btn" type="button" title="Align, structure, and prioritize all draft issues">Align Drafts</button>
+      </form>
       <div id="empty-state" class="empty" hidden>
         <p>No tasks in this repository.</p>
         <p class="muted">Open issues appear here when they are created on GitHub.</p>

@@ -24,6 +24,7 @@
     boardLoad: null,
     boardLoads: 0,
     uncertain: new Set(),
+    mobileViewFilter: 'all',
   };
 
   function identity(issue) {
@@ -419,6 +420,18 @@
     return label ? label.replace(/^status:/i, '').replace(/-/g, ' ') : 'no status';
   }
 
+  function priorityOf(issue) {
+    var labels = Array.isArray(issue.labels) ? issue.labels : [];
+    for (var i = 0; i < labels.length; i++) {
+      var name = typeof labels[i] === 'string' ? labels[i] : (labels[i] && labels[i].name) || '';
+      var lower = name.toLowerCase();
+      if (lower.startsWith('priority:')) {
+        return lower.slice(9).trim();
+      }
+    }
+    return null;
+  }
+
   function renderFreshness() {
     var node = $('freshness');
     if (state.stale) {
@@ -436,8 +449,28 @@
     var board = state.board;
     $('repo-label').textContent = board.repo + (board.repository && board.repository.archived ? ' · archived' : '');
     document.title = 'Task Board · ' + board.repo;
+    var issuesToRender = (board.issues || []).filter(function (issue) {
+      if (state.mobileViewFilter === 'needs-human') {
+        var hasNeedsHumanLabel = Array.isArray(issue.labels) && issue.labels.some(function (l) {
+          var name = typeof l === 'string' ? l : (l && l.name) || '';
+          return name.toLowerCase() === 'needs:human';
+        });
+        var hasAttention = issue.attention && issue.attention !== 'none';
+        var hasOpenQuestions = issue.counts && issue.counts.openQuestions && issue.counts.openQuestions.open > 0;
+        return hasNeedsHumanLabel || hasAttention || hasOpenQuestions;
+      }
+      if (state.mobileViewFilter === 'running') {
+        return (issue.statusLabel && issue.statusLabel.toLowerCase() === 'status:in-progress') ||
+          (issue.phase && issue.phase.toLowerCase().includes('in_progress'));
+      }
+      if (state.mobileViewFilter === 'drafts') {
+        return issue.statusLabel && issue.statusLabel.toLowerCase() === 'status:draft';
+      }
+      return true;
+    });
+
     $('board-count').textContent =
-      board.issues.length + (board.issues.length === 1 ? ' task' : ' tasks');
+      issuesToRender.length + (issuesToRender.length === 1 ? ' task' : ' tasks');
     renderFreshness();
     var scopeStatus = $('scope-status');
     if (scopeStatus) {
@@ -452,15 +485,18 @@
     var list = $('task-list');
     list.textContent = '';
     var empty = $('empty-state');
-    empty.hidden = board.issues.length !== 0;
-    if (board.issues.length === 0) {
+    empty.hidden = issuesToRender.length !== 0;
+    if (issuesToRender.length === 0) {
       empty.querySelector('p').textContent = board.partial ? 'No tasks loaded. This refresh is incomplete, not an empty repository.' : 'No tasks in ' + board.repo + '.';
     }
 
-    board.issues.forEach(function (issue) {
+    issuesToRender.forEach(function (issue) {
+      var priority = priorityOf(issue);
       var badges = el('div', { class: 'badges' }, [
         badge(issue.state === 'closed' ? 'closed' : 'open', 'state-' + (issue.state === 'closed' ? 'closed' : 'open')),
+        issue.repository ? badge(issue.repository.full, 'repo-badge') : null,
         issue.statusLabel ? badge(statusText(issue.statusLabel), 'status') : null,
+        priority ? badge(priority, 'badge-priority badge-priority-' + priority) : null,
         issue.phase ? badge('phase: ' + issue.phase.replace(/_/g, ' '), 'phase') : null,
         issue.attention && issue.attention !== 'none'
           ? badge('needs ' + issue.attention.replace('needs-', ''), 'attention')
@@ -512,14 +548,29 @@
   function renderPicker() {
     var view = state.repositories;
     var select = $('repo-select');
-    select.textContent = '';
-    select.appendChild(el('option', { value: 'all', text: 'All repositories (combined)' }));
-    view.repositories.forEach(function (repository) {
-      select.appendChild(el('option', { value: repository.full, text: repository.full +
-        (repository.archived ? ' · archived' : '') + (!repository.available ? ' · unavailable' : '') +
-        (!repository.hasIssues ? ' · issues disabled' : '') }));
-    });
-    select.value = state.selected;
+    if (select) {
+      select.textContent = '';
+      select.appendChild(el('option', { value: 'all', text: 'All Projects' }));
+      view.repositories.forEach(function (repository) {
+        select.appendChild(el('option', { value: repository.full, text: repository.full +
+          (repository.archived ? ' · archived' : '') + (!repository.available ? ' · unavailable' : '') +
+          (!repository.hasIssues ? ' · issues disabled' : '') }));
+      });
+      select.value = state.selected;
+    }
+
+    var btnText = $('repo-select-btn-text');
+    if (btnText) {
+      if (state.selected === 'all') {
+        btnText.textContent = 'All Projects';
+      } else {
+        var cur = view.repositories.find(function (r) { return r.full === state.selected; });
+        btnText.textContent = cur ? cur.full : state.selected;
+      }
+    }
+
+    renderRepoOptions();
+
     $('repository-picker').hidden = false;
     $('discovery-status').textContent = view.discoveryFailed
       ? 'Discovery failed — last known picker retained; refresh later. Repository operations are paused.'
@@ -527,13 +578,102 @@
     $('refresh-policy').textContent = 'Discovery cached for ' + (view.freshnessMs / 1000) +
       's. Manual refresh only; combined requests use 3 workers, at most 10 pages per repository and at most 500 issues in total. Hidden private repositories cannot be enumerated.';
   }
+
+  function renderRepoOptions() {
+    var list = $('repo-options-list');
+    if (!list) return;
+    list.textContent = '';
+    var view = state.repositories;
+    if (!view) return;
+
+    var searchInput = $('repo-search-input');
+    var query = (searchInput && searchInput.value ? searchInput.value : '').trim().toLowerCase();
+
+    // Pinned All Projects option
+    if (!query || 'all projects'.includes(query) || 'combined'.includes(query)) {
+      var allCount = view.visibleCount || view.repositories.length;
+      var allItem = el('button', {
+        class: 'repo-option' + (state.selected === 'all' ? ' selected' : ''),
+        type: 'button',
+        role: 'option',
+        'aria-selected': state.selected === 'all' ? 'true' : 'false',
+        onclick: function () {
+          selectProject('all');
+        }
+      }, [
+        el('span', { class: 'repo-option-name', text: 'All Projects' }),
+        el('span', { class: 'badge', text: allCount + (allCount === 1 ? ' repo' : ' repos') })
+      ]);
+      list.appendChild(allItem);
+    }
+
+    var filtered = view.repositories.filter(function (repo) {
+      if (!query) return true;
+      return repo.full.toLowerCase().includes(query);
+    });
+
+    filtered.forEach(function (repo) {
+      var tags = [];
+      if (repo.archived) tags.push('archived');
+      if (!repo.available) tags.push('unavailable');
+      if (!repo.hasIssues) tags.push('issues disabled');
+
+      var item = el('button', {
+        class: 'repo-option' + (state.selected === repo.full ? ' selected' : ''),
+        type: 'button',
+        role: 'option',
+        'aria-selected': state.selected === repo.full ? 'true' : 'false',
+        onclick: function () {
+          selectProject(repo.full);
+        }
+      }, [
+        el('span', { class: 'repo-option-name', text: repo.full }),
+        tags.length ? el('span', { class: 'badge', text: tags.join(' · ') }) : null
+      ]);
+      list.appendChild(item);
+    });
+  }
+
+  function toggleRepoPopover(open) {
+    var popover = $('repo-popover');
+    var btn = $('repo-select-btn');
+    if (!popover || !btn) return;
+    var shouldOpen = typeof open === 'boolean' ? open : popover.hidden;
+    popover.hidden = !shouldOpen;
+    btn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+    if (shouldOpen) {
+      var searchInput = $('repo-search-input');
+      if (searchInput) {
+        searchInput.value = '';
+        renderRepoOptions();
+        window.setTimeout(function () { searchInput.focus(); }, 30);
+      }
+    }
+  }
+
+  async function selectProject(newScope) {
+    toggleRepoPopover(false);
+    if (state.selected === newScope) return;
+    state.selected = newScope;
+    var select = $('repo-select');
+    if (select) select.value = newScope;
+    try {
+      var repository = state.repositories && state.repositories.repositories.find(function (r) { return r.full === state.selected; });
+      var opaque = state.selected === 'all' ? 'all' : await choiceDigest(repository);
+      window.localStorage.setItem('board-repository-choice', opaque);
+    } catch (error) { /* Storage or digest unavailable: keep memory choice. */ }
+    setHash('#/');
+    await loadBoard();
+  }
+
   async function rememberedChoice(view) {
     if (state.selected !== null) return;
     var remembered = null;
     try { remembered = window.localStorage.getItem('board-repository-choice'); } catch (error) {}
-    state.selected = view.repositories.length ? view.repositories[0].full : 'all';
-    if (remembered === 'all') state.selected = 'all';
-    else if (remembered && window.crypto && window.crypto.subtle) {
+    state.selected = 'all';
+    if (remembered === 'all') {
+      state.selected = 'all';
+    } else if (remembered && window.crypto && window.crypto.subtle) {
       for (var repository of view.repositories) {
         if (await choiceDigest(repository) === remembered) { state.selected = repository.full; break; }
       }
@@ -1007,6 +1147,114 @@
       }
     });
 
+    var quickAddForm = $('quick-add-form');
+    if (quickAddForm) {
+      quickAddForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        var input = $('quick-add-input');
+        if (!input) return;
+        var title = input.value.trim();
+        if (!title) return;
+
+        var targetRepo = null;
+        if (state.selected && state.selected !== 'all') {
+          targetRepo = state.selected;
+        } else if (state.board && state.board.repository) {
+          targetRepo = state.board.repository.full;
+        } else if (state.repositories && Array.isArray(state.repositories.repositories) && state.repositories.repositories.length > 0) {
+          var preferred = state.repositories.repositories.find(function (r) {
+            return r.name === 'openchamber-github-task-board' || r.full.includes('openchamber-github-task-board');
+          });
+          targetRepo = preferred ? preferred.full : state.repositories.repositories[0].full;
+        }
+
+        if (!targetRepo) {
+          setNotice('Select a specific repository before adding a draft.', true);
+          return;
+        }
+
+        var parts = targetRepo.split('/');
+        if (parts.length !== 2) {
+          setNotice('Repository format is invalid.', true);
+          return;
+        }
+
+        var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues';
+        input.disabled = true;
+        try {
+          var response = await api(endpoint, {
+            method: 'POST',
+            body: { title: title, labels: ['status:draft'] }
+          });
+          input.value = '';
+          setNotice('');
+          if (response && response.issue && state.board) {
+            state.board.issues.unshift(response.issue);
+            renderBoard();
+          } else {
+            await loadBoard();
+          }
+          announce('Draft issue added: ' + title);
+        } catch (error) {
+          setNotice(error.message || 'Failed to create draft issue.', true);
+        } finally {
+          input.disabled = false;
+          input.focus();
+        }
+      });
+    }
+
+    var alignDraftsBtn = $('align-drafts-btn');
+    if (alignDraftsBtn) {
+      alignDraftsBtn.addEventListener('click', async function () {
+        var targetRepo = null;
+        if (state.selected && state.selected !== 'all') {
+          targetRepo = state.selected;
+        } else if (state.board && state.board.repository) {
+          targetRepo = state.board.repository.full;
+        } else if (state.repositories && Array.isArray(state.repositories.repositories) && state.repositories.repositories.length > 0) {
+          var preferred = state.repositories.repositories.find(function (r) {
+            return r.name === 'openchamber-github-task-board' || r.full.includes('openchamber-github-task-board');
+          });
+          targetRepo = preferred ? preferred.full : state.repositories.repositories[0].full;
+        }
+
+        if (!targetRepo) {
+          setNotice('Select a specific repository before aligning drafts.', true);
+          return;
+        }
+
+        var parts = targetRepo.split('/');
+        if (parts.length !== 2) {
+          setNotice('Repository format is invalid.', true);
+          return;
+        }
+
+        var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues/batch-align';
+        alignDraftsBtn.disabled = true;
+        try {
+          var response = await api(endpoint, {
+            method: 'POST'
+          });
+          setNotice('');
+          if (response && response.issues && state.board) {
+            state.board.issues = response.issues;
+            renderBoard();
+          } else {
+            await loadBoard();
+          }
+          var count = response && typeof response.alignedCount === 'number' ? response.alignedCount : 0;
+          var msg = 'Aligned ' + count + ' draft ' + (count === 1 ? 'issue' : 'issues') + '.';
+          announce(msg);
+          setNotice(msg, false);
+        } catch (error) {
+          setNotice(error.message || 'Failed to align draft issues.', true);
+        } finally {
+          alignDraftsBtn.disabled = false;
+        }
+      });
+    }
+
     $('refresh-btn').addEventListener('click', function () {
       if (state.detail && /^#\/issue\//.test(window.location.hash)) {
         openIssue(state.detail);
@@ -1015,16 +1263,77 @@
       }
     });
 
-    $('repo-select').addEventListener('change', async function () {
-      state.selected = $('repo-select').value;
-      try {
-        var repository = state.repositories.repositories.find(function (r) { return r.full === state.selected; });
-        var opaque = state.selected === 'all' ? 'all' : await choiceDigest(repository);
-        window.localStorage.setItem('board-repository-choice', opaque);
-      } catch (error) { /* Storage or digest unavailable: keep memory choice. */ }
-      setHash('#/');
-      await loadBoard();
-    });
+    var repoSelect = $('repo-select');
+    if (repoSelect) {
+      repoSelect.addEventListener('change', async function () {
+        await selectProject(repoSelect.value);
+      });
+    }
+
+    var repoSelectBtn = $('repo-select-btn');
+    if (repoSelectBtn) {
+      repoSelectBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        toggleRepoPopover();
+      });
+    }
+
+    var repoSearchInput = $('repo-search-input');
+    if (repoSearchInput) {
+      repoSearchInput.addEventListener('input', function () {
+        renderRepoOptions();
+      });
+      repoSearchInput.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+    }
+
+    var repoPopover = $('repo-popover');
+    if (repoPopover) {
+      repoPopover.addEventListener('click', function (e) {
+        e.stopPropagation();
+      });
+    }
+
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+      document.addEventListener('click', function (e) {
+        var popover = $('repo-popover');
+        var btn = $('repo-select-btn');
+        if (popover && !popover.hidden) {
+          if (!popover.contains(e.target) && (!btn || !btn.contains(e.target))) {
+            toggleRepoPopover(false);
+          }
+        }
+      });
+
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+          var popover = $('repo-popover');
+          if (popover && !popover.hidden) {
+            toggleRepoPopover(false);
+            var btn = $('repo-select-btn');
+            if (btn && typeof btn.focus === 'function') btn.focus();
+          }
+        }
+      });
+    }
+
+    if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
+      var viewTabs = document.querySelectorAll('.view-tab');
+      viewTabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          var filter = tab.getAttribute('data-filter') || 'all';
+          state.mobileViewFilter = filter;
+          viewTabs.forEach(function (t) {
+            var isCurrent = t === tab;
+            t.classList.toggle('active', isCurrent);
+            t.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
+          });
+          if (state.board) renderBoard();
+        });
+      });
+    }
+
     $('signout-btn').addEventListener('click', signOut);
     $('back-btn').addEventListener('click', function () {
       rememberDraft();
@@ -1045,6 +1354,11 @@
   }
 
   async function boot() {
+    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function () {});
+      });
+    }
     bind();
     try {
       var session = await api('/api/session');

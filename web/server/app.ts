@@ -27,6 +27,7 @@ import {
 import { GitHubClient, GitHubError, parseIssueNumber, type IssueRead } from './github.ts';
 import { RepositoryRegistry, RepositoryNotAllowedError, DiscoveryUnavailableError, type RepositoryEntry } from './repositories.ts';
 import { STATUS_METADATA } from '../../panel/labels.ts';
+import { alignDraftIssue } from '../../panel/core.ts';
 import { findSections, replaceSectionText, SectionError } from './sections.ts';
 import {
   BoardError,
@@ -34,6 +35,7 @@ import {
   applySectionEdit,
   applyStatusChange,
   buildBoardList,
+  buildBoardListItem,
   buildIssueDetail,
   issueFingerprint,
   issueKey,
@@ -375,11 +377,18 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   });
   const limiter = new LoginRateLimiter({ now });
 
-  const assets: Record<string, { body: string; type: string }> = {
+  const assets: Record<string, { body: string; type: string; headers?: Record<string, string> }> = {
     '/': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
     '/index.html': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
     '/app.js': { body: loadStatic('app.js'), type: 'text/javascript; charset=utf-8' },
     '/theme.css': { body: loadStatic('theme.css'), type: 'text/css; charset=utf-8' },
+    '/manifest.json': { body: loadStatic('manifest.json'), type: 'application/manifest+json; charset=utf-8' },
+    '/sw.js': {
+      body: loadStatic('sw.js'),
+      type: 'application/javascript; charset=utf-8',
+      headers: { 'service-worker-allowed': '/' },
+    },
+    '/icon.svg': { body: loadStatic('icon.svg'), type: 'image/svg+xml; charset=utf-8' },
   };
 
   const server = http.createServer((req, res) => {
@@ -484,7 +493,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
     if (method === 'GET' && assets[url.pathname]) {
       const asset = assets[url.pathname];
-      return { status: 200, text: asset.body, type: asset.type };
+      return { status: 200, text: asset.body, type: asset.type, headers: asset.headers };
     }
     if (method !== 'GET' && assets[url.pathname]) {
       return { status: 405, body: { error: 'method_not_allowed', message: 'That method is not allowed' }, headers: { allow: 'GET' } };
@@ -542,6 +551,81 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     if (route === '/api/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
       return { status: 200, body: await repositoryBoard(repository!) };
+    }
+
+    if (route === '/api/issues' && method === 'POST') {
+      requireCsrf(req, record);
+      const body = await readJsonBody(req);
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        throw new HttpError(400, 'invalid_request', 'Body must be a JSON object');
+      }
+      if (typeof body.title !== 'string' || !body.title.trim()) {
+        throw new HttpError(400, 'invalid_request', 'Issue title is required and cannot be empty');
+      }
+      const title = body.title.trim();
+      let issueBody: string | undefined = undefined;
+      if (body.body !== undefined) {
+        if (typeof body.body !== 'string') {
+          throw new HttpError(400, 'invalid_request', 'Issue body must be a string');
+        }
+        issueBody = body.body;
+      }
+      let labels: string[] = ['status:draft'];
+      if (body.labels !== undefined) {
+        if (!Array.isArray(body.labels) || !body.labels.every((l: unknown) => typeof l === 'string')) {
+          throw new HttpError(400, 'invalid_request', 'Labels must be an array of strings');
+        }
+        labels = body.labels;
+      }
+      const created = await scopedGithub!.createIssue({
+        title,
+        body: issueBody,
+        labels,
+      }).catch(mapGitHubError);
+
+      return {
+        status: 201,
+        body: {
+          ok: true,
+          issue: buildBoardListItem(created.item, repository),
+        },
+      };
+    }
+
+    if (route === '/api/issues/batch-align') {
+      if (method !== 'POST') return methodNotAllowed('POST');
+      requireCsrf(req, record);
+
+      const listed = repository!.hasIssues
+        ? await clientFor(repository!).listIssues().catch(mapGitHubError)
+        : { items: [], truncated: false };
+
+      const openIssues = (listed.items || []).filter((item: any) => !item.pull_request && item.state !== 'closed');
+      const draftIssues = openIssues.filter((item: any) => {
+        const itemLabels = labelNames(item).map((l: string) => l.toLowerCase());
+        return itemLabels.includes('status:draft');
+      });
+
+      let alignedCount = 0;
+      for (const draft of draftIssues) {
+        const { body: newBody, labels: newLabels } = alignDraftIssue(draft);
+        await scopedGithub!.updateIssue(draft.number, {
+          body: newBody,
+          labels: newLabels,
+        }).catch(mapGitHubError);
+        alignedCount += 1;
+      }
+
+      // Refresh repository board issues
+      const refreshedBoard = await repositoryBoard(repository!);
+      return {
+        status: 200,
+        body: {
+          ok: true,
+          alignedCount,
+          issues: refreshedBoard.issues,
+        },
+      };
     }
 
     const detailMatch = /^\/api\/issues\/([^/]+)$/.exec(route);
