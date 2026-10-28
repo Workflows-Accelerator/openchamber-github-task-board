@@ -67,6 +67,7 @@ interface HandlerResponse {
   status: number;
   body?: unknown;
   text?: string;
+  buffer?: Buffer;
   type?: string;
   headers?: Record<string, string>;
 }
@@ -107,6 +108,10 @@ const FORBIDDEN_QUERY_KEYS = ['repo', 'repository', 'owner', 'name', 'org', 'org
 
 function loadStatic(name: string): string {
   return readFileSync(new URL(`../public/${name}`, import.meta.url), 'utf8');
+}
+
+function loadStaticBuffer(name: string): Buffer {
+  return readFileSync(new URL(`../public/${name}`, import.meta.url));
 }
 
 let cachedVersion: string | null = null;
@@ -377,7 +382,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   });
   const limiter = new LoginRateLimiter({ now });
 
-  const assets: Record<string, { body: string; type: string; headers?: Record<string, string> }> = {
+  const assets: Record<string, { body: string | Buffer; type: string; headers?: Record<string, string> }> = {
     '/': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
     '/index.html': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
     '/app.js': { body: loadStatic('app.js'), type: 'text/javascript; charset=utf-8' },
@@ -389,6 +394,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       headers: { 'service-worker-allowed': '/' },
     },
     '/icon.svg': { body: loadStatic('icon.svg'), type: 'image/svg+xml; charset=utf-8' },
+    '/icon-192.png': { body: loadStaticBuffer('icon-192.png'), type: 'image/png' },
+    '/icon-512.png': { body: loadStaticBuffer('icon-512.png'), type: 'image/png' },
+    '/apple-touch-icon.png': { body: loadStaticBuffer('apple-touch-icon.png'), type: 'image/png' },
   };
 
   const server = http.createServer((req, res) => {
@@ -420,7 +428,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         res.setHeader(name, value);
       }
       res.statusCode = response.status;
-      if (response.text !== undefined) {
+      if (response.buffer !== undefined) {
+        res.setHeader('content-type', response.type ?? 'application/octet-stream');
+        res.end(response.buffer);
+      } else if (response.text !== undefined) {
         res.setHeader('content-type', response.type ?? 'text/plain; charset=utf-8');
         res.end(response.text);
       } else if (response.body !== undefined) {
@@ -493,6 +504,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
     if (method === 'GET' && assets[url.pathname]) {
       const asset = assets[url.pathname];
+      if (Buffer.isBuffer(asset.body)) {
+        return { status: 200, buffer: asset.body, type: asset.type, headers: asset.headers };
+      }
       return { status: 200, text: asset.body, type: asset.type, headers: asset.headers };
     }
     if (method !== 'GET' && assets[url.pathname]) {
@@ -629,20 +643,34 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
 
     const detailMatch = /^\/api\/issues\/([^/]+)$/.exec(route);
-    if (method === 'GET' && detailMatch) {
-      const number = parseIssueNumberOrThrow(detailMatch[1]);
-      const read = await scopedGithub!.getIssue(number).catch(mapGitHubError);
-      if (read.item.pull_request) {
-        throw new HttpError(404, 'not_found', 'That number is a pull request, not an issue');
+    if (detailMatch) {
+      if (method === 'GET') {
+        const number = parseIssueNumberOrThrow(detailMatch[1]);
+        const read = await scopedGithub!.getIssue(number).catch(mapGitHubError);
+        if (read.item.pull_request) {
+          throw new HttpError(404, 'not_found', 'That number is a pull request, not an issue');
+        }
+        return {
+          status: 200,
+          body: {
+            issue: buildIssueDetail(read.item, repository),
+            fetchedAt: new Date(now()).toISOString(),
+            statusOptions: statusOptions(),
+          },
+        };
       }
-      return {
-        status: 200,
-        body: {
-          issue: buildIssueDetail(read.item, repository),
-          fetchedAt: new Date(now()).toISOString(),
-          statusOptions: statusOptions(),
-        },
-      };
+      if (method === 'PATCH') {
+        requireCsrf(req, record);
+        const number = parseIssueNumberOrThrow(detailMatch[1]);
+        const body = await readJsonBody(req);
+        return writeIssue(repository!, number, body, {
+          kind: 'patch',
+          body: body?.body,
+          status: body?.status,
+          state: body?.state,
+        });
+      }
+      return methodNotAllowed('GET, PATCH');
     }
 
     const sectionMatch = /^\/api\/issues\/([^/]+)\/section$/.exec(route);
@@ -691,8 +719,8 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
 
     if (url.pathname.startsWith('/api/')) {
-      if (!['GET', 'POST', 'PUT', 'DELETE'].includes(method)) {
-        return methodNotAllowed('GET, POST, PUT, DELETE');
+      if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
+        return methodNotAllowed('GET, POST, PUT, DELETE, PATCH');
       }
       return { status: 404, body: { error: 'not_found', message: 'Not found' } };
     }
@@ -771,7 +799,8 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   type WriteOp =
     | { kind: 'section'; sectionId: unknown; text: unknown }
     | { kind: 'question'; index: number; answer: unknown }
-    | { kind: 'status'; status: unknown };
+    | { kind: 'status'; status: unknown }
+    | { kind: 'patch'; body?: unknown; status?: unknown; state?: unknown };
 
   const MAX_IN_FLIGHT_LOGINS = 10;
   const LOGIN_BODY_TIMEOUT_MS = 2_000;
@@ -951,10 +980,27 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         if (typeof op.status !== 'string' || !op.status) {
           throw new HttpError(400, 'invalid_edit', 'A status label is required');
         }
-        baseStatus = statusLabelOf(labelNames(fresh.item));
+        baseStatus = statusLabelOf(labelNames(fresh.item)) ?? '';
         targetStatus = op.status;
         if (targetStatus === baseStatus) {
           throw new HttpError(400, 'invalid_edit', 'That change would leave the issue unchanged');
+        }
+      } else if (op.kind === 'patch') {
+        if (op.body === undefined && op.status === undefined && op.state === undefined) {
+          throw new HttpError(400, 'invalid_edit', 'At least one field (body, status, or state) is required');
+        }
+        if (op.body !== undefined && typeof op.body !== 'string') {
+          throw new HttpError(400, 'invalid_edit', 'Body must be a string');
+        }
+        if (op.status !== undefined) {
+          if (typeof op.status !== 'string' || !op.status) {
+            throw new HttpError(400, 'invalid_edit', 'A status label must be a non-empty string');
+          }
+          baseStatus = statusLabelOf(labelNames(fresh.item)) ?? '';
+          targetStatus = op.status;
+        }
+        if (op.state !== undefined && op.state !== 'open' && op.state !== 'closed') {
+          throw new HttpError(400, 'invalid_edit', 'State must be open or closed');
         }
       }
 
@@ -967,8 +1013,27 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           const curQView = curDetail.openQuestions[baseQuestionIndex];
           const answerIdx = curQView?.answerIndex ?? op.index;
           patch = { body: applyQuestionAnswer(fresh.item, answerIdx, op.answer) };
-        } else {
+        } else if (op.kind === 'status') {
           patch = { labels: applyStatusChange(fresh.item, op.status) };
+        } else if (op.kind === 'patch') {
+          patch = {};
+          if (typeof op.body === 'string') {
+            patch.body = op.body;
+          }
+          if (typeof op.status === 'string') {
+            patch.labels = applyStatusChange(fresh.item, op.status);
+          }
+          if (typeof op.state === 'string') {
+            patch.state = op.state;
+          }
+          const currentBodyNorm = (fresh.item.body ?? '').replace(/\r\n/g, '\n');
+          const targetBodyNorm = typeof op.body === 'string' ? op.body.replace(/\r\n/g, '\n') : currentBodyNorm;
+          const bodyChanged = typeof op.body === 'string' && currentBodyNorm !== targetBodyNorm;
+          const statusChanged = typeof op.status === 'string' && targetStatus !== baseStatus;
+          const stateChanged = typeof op.state === 'string' && op.state !== fresh.item.state;
+          if (!bodyChanged && !statusChanged && !stateChanged) {
+            throw new HttpError(400, 'invalid_edit', 'That change would leave the issue unchanged');
+          }
         }
       } catch (error) {
         if (error instanceof BoardError) throw new HttpError(400, 'invalid_edit', error.message);
@@ -1022,6 +1087,22 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       } else if (op.kind === 'status') {
         const curStatus = statusLabelOf(labelNames(currentItem));
         if (curStatus === targetStatus) {
+          verified = true;
+        }
+      } else if (op.kind === 'patch') {
+        let matches = true;
+        if (typeof op.body === 'string') {
+          const normCur = (currentItem.body ?? '').replace(/\r\n/g, '\n');
+          const normTarget = op.body.replace(/\r\n/g, '\n');
+          if (normCur !== normTarget) matches = false;
+        }
+        if (typeof op.status === 'string') {
+          if (statusLabelOf(labelNames(currentItem)) !== op.status) matches = false;
+        }
+        if (typeof op.state === 'string') {
+          if (currentItem.state !== op.state) matches = false;
+        }
+        if (matches) {
           verified = true;
         }
       }

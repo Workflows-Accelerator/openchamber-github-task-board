@@ -269,6 +269,9 @@
     if (isMutation) {
       if (response.ok) {
         var numMatch = /^\/api\/(?:repos\/([^/]+)\/([^/]+)\/)?issues\/(\d+)(?:\/|$)/.exec(path);
+        if (!numMatch && !options.expected) {
+          return payload;
+        }
         var expectedNum = numMatch ? Number(numMatch[3]) : undefined;
         var expected = options.expected || expectedNum;
         if (!jsonParsed || !isValidMutationPayload(payload, expected)) {
@@ -391,11 +394,327 @@
     openIssue(issue);
   }
 
+  var OFFLINE_DRAFTS_KEY = 'openchamber_offline_drafts';
+  var isSyncingOfflineDrafts = false;
+
+  function getOfflineDrafts() {
+    try {
+      var raw = localStorage.getItem(OFFLINE_DRAFTS_KEY);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function saveOfflineDrafts(drafts) {
+    try {
+      if (!drafts || drafts.length === 0) {
+        localStorage.removeItem(OFFLINE_DRAFTS_KEY);
+      } else {
+        localStorage.setItem(OFFLINE_DRAFTS_KEY, JSON.stringify(drafts));
+      }
+    } catch (e) {}
+  }
+
+  function saveToOfflineQueue(title, repo) {
+    var drafts = getOfflineDrafts();
+    var exists = drafts.some(function (d) {
+      return d.title === title && d.repo === repo;
+    });
+    if (!exists) {
+      drafts.push({
+        id: 'offline-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+        title: title,
+        repo: repo,
+        createdAt: new Date().toISOString(),
+        offline: true,
+        labels: ['status:draft'],
+      });
+      saveOfflineDrafts(drafts);
+    }
+    if (state.board) renderBoard();
+  }
+
+  async function syncOfflineDrafts() {
+    if (isSyncingOfflineDrafts || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+    var drafts = getOfflineDrafts();
+    if (drafts.length === 0) return;
+
+    isSyncingOfflineDrafts = true;
+    var remaining = [];
+    var syncedCount = 0;
+
+    for (var i = 0; i < drafts.length; i++) {
+      var draft = drafts[i];
+      var parts = (draft.repo || '').split('/');
+      if (parts.length !== 2) continue;
+      var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues';
+      try {
+        await api(endpoint, {
+          method: 'POST',
+          body: { title: draft.title, labels: draft.labels || ['status:draft'] },
+        });
+        syncedCount++;
+      } catch (err) {
+        if (err.kind === 'network' || /network|offline|failed to fetch/i.test(err.message)) {
+          remaining = remaining.concat(drafts.slice(i));
+          break;
+        }
+      }
+    }
+
+    saveOfflineDrafts(remaining);
+    isSyncingOfflineDrafts = false;
+
+    if (syncedCount > 0) {
+      setNotice('Synced ' + syncedCount + ' offline draft' + (syncedCount === 1 ? '' : 's') + ' to GitHub.', false);
+      if (state.board) await loadBoard();
+    }
+  }
+
+  function parseFriendlyTitle(body, defaultTitle) {
+    if (!body || typeof body !== 'string') {
+      return { title: defaultTitle || '', subtitle: null };
+    }
+    var cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+    var match = cleanBody.match(/(?:^|\r?\n)[ \t]*(?:#{1,6}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
+    if (match) {
+      var extracted = match[1].trim();
+      if (!extracted) {
+        var matchIndex = match.index || 0;
+        var remainder = cleanBody.slice(matchIndex + match[0].length);
+        var lines = remainder.split(/\r?\n/);
+        for (var i = 0; i < lines.length; i++) {
+          var line = lines[i].trim();
+          if (!line) continue;
+          if (
+            line.startsWith('#') ||
+            /^\*\*(?:overview|description|details|context|background|about|tasks?|subtasks?|questions?):?\*\*/i.test(line) ||
+            /^[-*+]\s+/.test(line) ||
+            /^\d+\.\s+/.test(line)
+          ) {
+            break;
+          }
+          extracted = line;
+          break;
+        }
+      }
+      if (extracted) {
+        extracted = extracted.replace(/^<([^>]+)>$/, '$1').replace(/^["'](.*)["']$/, '$1').trim();
+        if (
+          extracted.toLowerCase() === '3-6 words plain english title' ||
+          extracted.toLowerCase() === '<3-6 words plain english title>'
+        ) {
+          return { title: defaultTitle || '', subtitle: null };
+        }
+        return {
+          title: extracted,
+          subtitle: defaultTitle || null,
+        };
+      }
+    }
+    return { title: defaultTitle || '', subtitle: null };
+  }
+
+  function resolveFriendlyTitle(issue) {
+    if (!issue) return { title: '', subtitle: null };
+    if (issue.friendlyTitle && issue.friendlyTitle !== issue.title) {
+      return { title: issue.friendlyTitle, subtitle: issue.title };
+    }
+    if (issue.body) {
+      var parsed = parseFriendlyTitle(issue.body, issue.title);
+      if (parsed.subtitle && parsed.title && parsed.title !== issue.title) {
+        return { title: parsed.title, subtitle: issue.title };
+      }
+    }
+    return { title: issue.title || '', subtitle: null };
+  }
+
+  var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
+
+  function updateSubtaskInMarkdown(body, lineIndex, completed) {
+    if (!body || typeof body !== 'string') return '';
+    var lines = body.split('\n');
+    if (lineIndex >= 0 && lineIndex < lines.length) {
+      var rawLine = lines[lineIndex];
+      var hasCr = rawLine.endsWith('\r');
+      var cleanLine = hasCr ? rawLine.slice(0, -1) : rawLine;
+      var match = cleanLine.match(checklistRegex);
+      if (match) {
+        var mark = completed ? 'x' : ' ';
+        lines[lineIndex] = match[1] + mark + match[3] + match[4] + (hasCr ? '\r' : '');
+      }
+    }
+    return lines.join('\n');
+  }
+
+  function updateChecklistInMarkdown(body, lineIndex, text, completed) {
+    if (!body || typeof body !== 'string') return '';
+    var lines = body.split('\n');
+    var targetLine = -1;
+    if (lineIndex !== undefined && lineIndex >= 0 && lineIndex < lines.length) {
+      var clean = lines[lineIndex].replace(/\r$/, '');
+      if (checklistRegex.test(clean) && (!text || clean.includes(text))) {
+        targetLine = lineIndex;
+      }
+    }
+    if (targetLine === -1 && text) {
+      for (var i = 0; i < lines.length; i++) {
+        var c = lines[i].replace(/\r$/, '');
+        if (checklistRegex.test(c) && c.includes(text)) {
+          targetLine = i;
+          break;
+        }
+      }
+    }
+    if (targetLine >= 0) {
+      return updateSubtaskInMarkdown(body, targetLine, completed);
+    }
+    return body;
+  }
+
+  function parseQuestionOptions(text) {
+    if (!text || typeof text !== 'string') return [];
+    var options = [];
+    var bracketRegex = /\[([A-Za-z0-9]+)\]\s*([^\[\]\r\n\(\)]+)/g;
+    var match;
+    while ((match = bracketRegex.exec(text)) !== null) {
+      var key = match[1].toLowerCase();
+      if (key === 'x' || key === ' ') continue;
+      var opt = match[2].trim().replace(/[,\.;]+$/, '').replace(/\s*(?:or|\/)\s*$/, '');
+      if (opt && !options.includes(opt)) options.push(opt);
+    }
+    if (options.length === 0) {
+      var parenRegex = /\(([A-Za-z0-9]+)\)\s*([^()\r\n\[\]]+)/g;
+      while ((match = parenRegex.exec(text)) !== null) {
+        var opt = match[2].trim().replace(/[,\.;]+$/, '').replace(/\s*(?:or|\/)\s*$/, '');
+        if (opt && !options.includes(opt)) options.push(opt);
+      }
+    }
+    if (options.length === 0) {
+      var chipRegex = /\[([A-Za-z0-9 \-_]{1,30})\](?!\()/g;
+      while ((match = chipRegex.exec(text)) !== null) {
+        var val = match[1].trim();
+        if (val.toLowerCase() === 'x' || val === '' || val.toLowerCase() === 'answer') continue;
+        if (!options.includes(val)) options.push(val);
+      }
+    }
+    return options;
+  }
+
+  function renderChecklist(listId, emptyId, items, isAc) {
+    var list = $(listId);
+    if (!list) return;
+    list.textContent = '';
+    var arr = Array.isArray(items) ? items : [];
+    var emptyEl = $(emptyId);
+    if (emptyEl) emptyEl.hidden = arr.length > 0;
+    if (arr.length === 0) return;
+
+    arr.forEach(function (item, idx) {
+      var checkbox = el('input', {
+        type: 'checkbox',
+        class: 'checklist-checkbox',
+        checked: Boolean(item.completed),
+        'aria-label': item.text || 'Checklist item ' + idx,
+        onchange: function () {
+          toggleChecklistItem(item, isAc, checkbox.checked);
+        },
+      });
+      var textSpan = el('span', {
+        class: 'checklist-text' + (item.completed ? ' completed' : ''),
+        text: item.text || '',
+      });
+      var label = el('label', { class: 'checklist-label' }, [
+        checkbox,
+        textSpan,
+      ]);
+      list.appendChild(el('li', { class: 'checklist-item' }, [label]));
+    });
+  }
+
+  async function toggleChecklistItem(item, isAc, checked) {
+    var issue = state.detail;
+    if (!issue) return;
+    var oldBody = issue.body;
+    var oldCompleted = item.completed;
+    var newBody = updateChecklistInMarkdown(issue.body, item.lineIndex, item.text, checked);
+    if (newBody === oldBody) return;
+
+    item.completed = checked;
+    issue.body = newBody;
+    renderDetail(false);
+
+    try {
+      var response = await api(issuePath(issue), {
+        method: 'PATCH',
+        body: {
+          fingerprint: issue.fingerprint,
+          body: newBody,
+        },
+      });
+      if (response && response.issue) {
+        state.detail = response.issue;
+        renderDetail(false);
+      }
+    } catch (err) {
+      item.completed = oldCompleted;
+      issue.body = oldBody;
+      renderDetail(false);
+      setNotice(err.message || 'Failed to update checklist item', true);
+    }
+  }
+
+  async function toggleMarkDone() {
+    var issue = state.detail;
+    if (!issue) return;
+    var isDone = issue.state === 'closed' || (issue.statusLabel && issue.statusLabel.toLowerCase() === 'status:done');
+    var targetStatus = isDone ? 'status:todo' : 'status:done';
+    var targetState = isDone ? 'open' : 'closed';
+    var btn = $('mark-done-btn');
+    if (btn) btn.disabled = true;
+
+    try {
+      var response = await api(issuePath(issue), {
+        method: 'PATCH',
+        body: {
+          fingerprint: issue.fingerprint,
+          status: targetStatus,
+          state: targetState,
+        },
+      });
+      if (response && response.issue) {
+        state.detail = response.issue;
+        if (response.statusOptions) state.statusOptions = response.statusOptions;
+        renderDetail(false);
+        setNotice('Task ' + (isDone ? 'reopened' : 'marked done'), false);
+        if (state.board && Array.isArray(state.board.issues)) {
+          var bIssue = state.board.issues.find(function (i) { return i.number === issue.number; });
+          if (bIssue) {
+            bIssue.statusLabel = targetStatus;
+            bIssue.state = targetState;
+            renderBoard();
+          }
+        }
+      }
+    } catch (err) {
+      setNotice(err.message || 'Failed to update task state', true);
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  }
+
   function showView(name) {
     ['login', 'board', 'detail'].forEach(function (view) {
       var section = document.getElementById(view + '-view');
       section.hidden = view !== name;
     });
+    var backdrop = $('drawer-backdrop');
+    if (backdrop) {
+      backdrop.hidden = name !== 'detail';
+    }
   }
 
   function relative(iso) {
@@ -447,9 +766,47 @@
 
   function renderBoard() {
     var board = state.board;
+    if (!board) return;
     $('repo-label').textContent = board.repo + (board.repository && board.repository.archived ? ' · archived' : '');
     document.title = 'Task Board · ' + board.repo;
-    var issuesToRender = (board.issues || []).filter(function (issue) {
+
+    var serverTitles = new Set((board.issues || []).map(function (bi) {
+      return (bi.repository ? bi.repository.full : '') + '::' + bi.title;
+    }));
+
+    var offlineItems = getOfflineDrafts().filter(function (d) {
+      if (state.selected && state.selected !== 'all') {
+        return d.repo === state.selected;
+      }
+      return true;
+    }).filter(function (d) {
+      var key = (d.repo || '') + '::' + d.title;
+      return !serverTitles.has(key);
+    }).map(function (d) {
+      return {
+        id: d.id,
+        number: 0,
+        title: d.title,
+        state: 'open',
+        labels: ['status:draft'],
+        statusLabel: 'status:draft',
+        phase: 'alignment',
+        attention: 'none',
+        column: 'draft',
+        offline: true,
+        repository: d.repo ? { full: d.repo } : null,
+        updatedAt: d.createdAt,
+        counts: {
+          subtasks: { total: 0, done: 0 },
+          openQuestions: { total: 0, open: 0 },
+          humanTasks: { total: 0, open: 0 },
+        },
+      };
+    });
+
+    var allIssues = (board.issues || []).concat(offlineItems);
+
+    var issuesToRender = allIssues.filter(function (issue) {
       if (state.mobileViewFilter === 'needs-human') {
         var hasNeedsHumanLabel = Array.isArray(issue.labels) && issue.labels.some(function (l) {
           var name = typeof l === 'string' ? l : (l && l.name) || '';
@@ -494,6 +851,7 @@
       var priority = priorityOf(issue);
       var badges = el('div', { class: 'badges' }, [
         badge(issue.state === 'closed' ? 'closed' : 'open', 'state-' + (issue.state === 'closed' ? 'closed' : 'open')),
+        issue.offline ? badge('(offline)', 'badge-offline') : null,
         issue.repository ? badge(issue.repository.full, 'repo-badge') : null,
         issue.statusLabel ? badge(statusText(issue.statusLabel), 'status') : null,
         priority ? badge(priority, 'badge-priority badge-priority-' + priority) : null,
@@ -504,17 +862,17 @@
       ]);
 
       var meta = el('div', { class: 'task-meta' }, [
-        el('span', { text: (issue.repository ? issue.repository.full + ' ' : '') + '#' + issue.number }),
+        el('span', { text: issue.offline ? '(offline draft)' : (issue.repository ? issue.repository.full + ' ' : '') + '#' + issue.number }),
         issue.repository && issue.repository.archived ? badge('archived') : null,
         el('span', { text: 'updated ' + relative(issue.updatedAt) }),
-        issue.counts.openQuestions.open > 0
+        issue.counts && issue.counts.openQuestions && issue.counts.openQuestions.open > 0
           ? el('span', {
               text:
                 issue.counts.openQuestions.open +
                 (issue.counts.openQuestions.open === 1 ? ' open question' : ' open questions'),
             })
           : null,
-        issue.counts.humanTasks.open > 0
+        issue.counts && issue.counts.humanTasks && issue.counts.humanTasks.open > 0
           ? el('span', {
               text:
                 issue.counts.humanTasks.open +
@@ -523,18 +881,28 @@
           : null,
       ]);
 
-      var title = el('div', { class: 'task-top' }, [
-        el('span', { class: 'task-title', text: issue.title }),
-        el('span', { class: 'task-number', text: '#' + issue.number }),
-      ]);
+      var titleInfo = resolveFriendlyTitle(issue);
+      var titleChildren = [
+        el('span', { class: 'task-title', text: titleInfo.title }),
+      ];
+      if (titleInfo.subtitle) {
+        titleChildren.push(el('span', { class: 'task-subtitle muted small', text: titleInfo.subtitle }));
+      }
+      titleChildren.push(el('span', { class: 'task-number', text: issue.offline ? 'offline' : '#' + issue.number }));
+
+      var title = el('div', { class: 'task-top' }, titleChildren);
 
       var row = el(
         'button',
         {
-          class: 'task-row',
+          class: 'task-row' + (issue.offline ? ' task-row-offline' : ''),
           type: 'button',
-          'aria-label': 'Open task ' + (issue.repository ? issue.repository.full + ' ' : '') + '#' + issue.number + ': ' + issue.title,
+          'aria-label': 'Open task ' + (issue.repository ? issue.repository.full + ' ' : '') + (issue.offline ? 'offline draft: ' : '#' + issue.number + ': ') + titleInfo.title,
           onclick: function () {
+            if (issue.offline) {
+              setNotice('This draft is saved offline. It will sync automatically when back online.', false);
+              return;
+            }
             openIssueView(issue);
           },
         },
@@ -811,15 +1179,33 @@
           saveAnswer(question.answerIndex, input, issue);
         },
       });
+      var options = parseQuestionOptions(question.text);
+      var actionsEl = el('div', { class: 'question-actions' }, [
+        el('label', { class: 'sr-only', for: 'answer-' + question.answerIndex, text: 'Answer: ' + question.text }),
+        input,
+        button,
+      ]);
+      var itemChildren = [
+        el('p', { class: 'question-text', text: question.text }),
+      ];
+      if (options.length > 0) {
+        var chips = el('div', { class: 'question-option-chips' }, options.map(function (opt) {
+          return el('button', {
+            type: 'button',
+            class: 'question-option-btn',
+            text: opt,
+            onclick: function () {
+              input.value = opt;
+              saveAnswer(question.answerIndex, input, issue);
+            },
+          });
+        }));
+        itemChildren.push(chips);
+      }
+      itemChildren.push(actionsEl);
+
       list.appendChild(
-        el('li', { class: 'question-item' }, [
-          el('p', { class: 'question-text', text: question.text }),
-          el('div', { class: 'question-actions' }, [
-            el('label', { class: 'sr-only', for: 'answer-' + question.answerIndex, text: 'Answer: ' + question.text }),
-            input,
-            button,
-          ]),
-        ]),
+        el('li', { class: 'question-item' }, itemChildren),
       );
     });
   }
@@ -836,6 +1222,12 @@
       select.appendChild(node);
     });
     select.value = issue.statusLabel || '';
+
+    var markDoneBtn = $('mark-done-btn');
+    if (markDoneBtn) {
+      var isDone = issue.state === 'closed' || (issue.statusLabel && issue.statusLabel.toLowerCase() === 'status:done');
+      markDoneBtn.textContent = isDone ? 'Reopen Issue' : 'Mark Done';
+    }
   }
 
   function renderHumanTasks(issue) {
@@ -856,7 +1248,20 @@
   function renderDetail(focusHeading) {
     var issue = state.detail;
     if (!issue) return;
-    $('detail-title').textContent = issue.title || '';
+
+    var titleInfo = resolveFriendlyTitle(issue);
+    $('detail-title').textContent = titleInfo.title || '';
+    var subtitleEl = $('detail-subtitle');
+    if (subtitleEl) {
+      if (titleInfo.subtitle) {
+        subtitleEl.textContent = titleInfo.subtitle;
+        subtitleEl.hidden = false;
+      } else {
+        subtitleEl.textContent = '';
+        subtitleEl.hidden = true;
+      }
+    }
+
     detailBadges(issue);
     $('detail-freshness').textContent = 'Updated on GitHub ' + relative(issue.updatedAt);
 
@@ -866,6 +1271,9 @@
       $('conflict-message').textContent =
         'This task changed on GitHub after you opened it. Nothing was written. Review the current version, then edit again.';
     }
+
+    renderChecklist('ac-list', 'no-ac', issue.acceptanceCriteria || [], true);
+    renderChecklist('subtasks-list', 'no-subtasks', issue.subtasks || [], false);
 
     var sections = Array.isArray(issue.editableSections) ? issue.editableSections : [];
     var overview = sections.length > 0 ? sections[0] : null;
@@ -1128,6 +1536,7 @@
         $('password').value = '';
         await loadBoard();
         route();
+        syncOfflineDrafts();
         announce('Signed in.');
       } catch (requestError) {
         if (requestError.status === 429) {
@@ -1179,6 +1588,14 @@
           return;
         }
 
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          saveToOfflineQueue(title, targetRepo);
+          input.value = '';
+          setNotice('Offline: draft saved locally. It will sync when connected.', false);
+          announce('Draft issue saved offline: ' + title);
+          return;
+        }
+
         var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues';
         input.disabled = true;
         try {
@@ -1196,61 +1613,17 @@
           }
           announce('Draft issue added: ' + title);
         } catch (error) {
-          setNotice(error.message || 'Failed to create draft issue.', true);
+          if (error.kind === 'network' || /network|failed to fetch|offline/i.test(error.message || '')) {
+            saveToOfflineQueue(title, targetRepo);
+            input.value = '';
+            setNotice('Offline: draft saved locally. It will sync when connected.', false);
+            announce('Draft issue saved offline: ' + title);
+          } else {
+            setNotice(error.message || 'Failed to create draft issue.', true);
+          }
         } finally {
           input.disabled = false;
           input.focus();
-        }
-      });
-    }
-
-    var alignDraftsBtn = $('align-drafts-btn');
-    if (alignDraftsBtn) {
-      alignDraftsBtn.addEventListener('click', async function () {
-        var targetRepo = null;
-        if (state.selected && state.selected !== 'all') {
-          targetRepo = state.selected;
-        } else if (state.board && state.board.repository) {
-          targetRepo = state.board.repository.full;
-        } else if (state.repositories && Array.isArray(state.repositories.repositories) && state.repositories.repositories.length > 0) {
-          var preferred = state.repositories.repositories.find(function (r) {
-            return r.name === 'openchamber-github-task-board' || r.full.includes('openchamber-github-task-board');
-          });
-          targetRepo = preferred ? preferred.full : state.repositories.repositories[0].full;
-        }
-
-        if (!targetRepo) {
-          setNotice('Select a specific repository before aligning drafts.', true);
-          return;
-        }
-
-        var parts = targetRepo.split('/');
-        if (parts.length !== 2) {
-          setNotice('Repository format is invalid.', true);
-          return;
-        }
-
-        var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues/batch-align';
-        alignDraftsBtn.disabled = true;
-        try {
-          var response = await api(endpoint, {
-            method: 'POST'
-          });
-          setNotice('');
-          if (response && response.issues && state.board) {
-            state.board.issues = response.issues;
-            renderBoard();
-          } else {
-            await loadBoard();
-          }
-          var count = response && typeof response.alignedCount === 'number' ? response.alignedCount : 0;
-          var msg = 'Aligned ' + count + ' draft ' + (count === 1 ? 'issue' : 'issues') + '.';
-          announce(msg);
-          setNotice(msg, false);
-        } catch (error) {
-          setNotice(error.message || 'Failed to align draft issues.', true);
-        } finally {
-          alignDraftsBtn.disabled = false;
         }
       });
     }
@@ -1313,8 +1686,40 @@
             toggleRepoPopover(false);
             var btn = $('repo-select-btn');
             if (btn && typeof btn.focus === 'function') btn.focus();
+            return;
+          }
+          if (state.detail && !$('detail-view').hidden) {
+            rememberDraft();
+            state.readGeneration++;
+            state.detail = null;
+            state.pending = null;
+            setHash('#/');
+            showBoard();
           }
         }
+      });
+    }
+
+    var backdrop = $('drawer-backdrop');
+    if (backdrop) {
+      backdrop.addEventListener('click', function () {
+        rememberDraft();
+        state.readGeneration++;
+        state.detail = null;
+        state.pending = null;
+        setHash('#/');
+        showBoard();
+      });
+    }
+
+    var markDoneBtn = $('mark-done-btn');
+    if (markDoneBtn) {
+      markDoneBtn.addEventListener('click', toggleMarkDone);
+    }
+
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('online', function () {
+        syncOfflineDrafts();
       });
     }
 
@@ -1349,8 +1754,12 @@
       if (state.detail) openIssue(state.detail);
     });
 
-    window.addEventListener('hashchange', route);
-    window.setInterval(renderFreshness, 30 * 1000);
+    if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
+      window.addEventListener('hashchange', route);
+    }
+    if (typeof window !== 'undefined' && typeof window.setInterval === 'function') {
+      window.setInterval(renderFreshness, 30 * 1000);
+    }
   }
 
   async function boot() {
@@ -1366,6 +1775,7 @@
         state.csrf = session.csrfToken;
         await loadBoard();
         route();
+        syncOfflineDrafts();
         return;
       }
     } catch (error) {
@@ -1373,6 +1783,23 @@
       return;
     }
     showLogin();
+  }
+
+  if (typeof window !== 'undefined') {
+    window.__taskBoard = {
+      state: state,
+      parseFriendlyTitle: parseFriendlyTitle,
+      resolveFriendlyTitle: resolveFriendlyTitle,
+      updateSubtaskInMarkdown: updateSubtaskInMarkdown,
+      updateChecklistInMarkdown: updateChecklistInMarkdown,
+      parseQuestionOptions: parseQuestionOptions,
+      getOfflineDrafts: getOfflineDrafts,
+      saveOfflineDrafts: saveOfflineDrafts,
+      saveToOfflineQueue: saveToOfflineQueue,
+      syncOfflineDrafts: syncOfflineDrafts,
+      toggleChecklistItem: toggleChecklistItem,
+      toggleMarkDone: toggleMarkDone,
+    };
   }
 
   boot();

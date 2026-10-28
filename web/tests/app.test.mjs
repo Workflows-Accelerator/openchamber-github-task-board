@@ -151,6 +151,9 @@ test('the shell page loads without a session and exposes no data or agent contro
     assert.equal(html.includes('First task'), false);
     assert.equal(html.includes(SYNTHETIC_TOKEN), false);
     assert.equal(/start\s+agent|open\s+session|agent\s+activity/i.test(html), false);
+    assert.equal(html.includes('align-drafts-btn'), false);
+    assert.equal(html.includes('btnAlignDrafts'), false);
+    assert.equal(html.includes('Align Drafts'), false);
     assert.match(response.headers.get('content-security-policy') ?? '', /default-src 'self'/);
     assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
     assert.match(response.headers.get('x-frame-options') ?? '', /DENY/);

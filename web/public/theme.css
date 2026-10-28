@@ -345,13 +345,6 @@ label {
   transition: border-color 0.15s ease;
 }
 
-.align-drafts-btn {
-  white-space: nowrap;
-  flex-shrink: 0;
-  font-size: 12px;
-  padding: 8px 12px;
-}
-
 .quick-add-input:focus {
   border-color: var(--prim);
 }
@@ -770,3 +763,115 @@ pre {
 
 #recoverable-drafts { white-space: pre-wrap; overflow-wrap: anywhere; }
 .badge { white-space: normal; overflow-wrap: anywhere; }
+
+/* Drawer & Backdrop */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 40;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+.drawer-backdrop:not([hidden]) {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.task-drawer {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Checklist Styles */
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.checklist-item {
+  display: flex;
+  align-items: flex-start;
+  min-height: 44px;
+}
+.checklist-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border-radius: var(--rad-sm);
+  background: var(--surf-muted);
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: background 0.15s ease;
+}
+.checklist-label:hover {
+  background: var(--surf-hover);
+}
+.checklist-checkbox {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--prim);
+}
+.checklist-text {
+  flex: 1;
+  font-size: 13px;
+  color: var(--fg);
+  word-break: break-word;
+}
+.checklist-text.completed {
+  text-decoration: line-through;
+  color: var(--fg-muted);
+}
+
+/* Offline badge */
+.badge.badge-offline {
+  background: rgba(245, 158, 11, 0.18);
+  color: #f59e0b;
+  border: 1px solid #f59e0b;
+  font-weight: 500;
+}
+
+/* Task Subtitle for Friendly Titles */
+.task-subtitle {
+  display: block;
+  font-size: 11px;
+  color: var(--fg-muted);
+  font-weight: normal;
+  margin-top: 1px;
+}
+
+/* Question Option Chips */
+.question-option-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.question-option-btn {
+  min-height: 36px;
+  padding: 6px 12px;
+  font-size: 12px;
+  background: var(--surf-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-sm);
+  color: var(--fg);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.question-option-btn:hover {
+  background: var(--surf-hover);
+  border-color: var(--prim);
+}

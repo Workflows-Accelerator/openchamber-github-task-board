@@ -10,7 +10,9 @@
   <meta name="apple-mobile-web-app-title" content="Task Board">
   <title>Task Board</title>
   <link rel="manifest" href="/manifest.json">
-  <link rel="apple-touch-icon" href="/icon.svg">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/theme.css">
 </head>
 <body>
@@ -74,7 +76,6 @@
       <form id="quick-add-form" class="quick-add-bar">
         <label for="quick-add-input" class="sr-only">Quick add draft issue</label>
         <input id="quick-add-input" class="quick-add-input" type="text" placeholder="Quick add draft... (press Enter)" autocomplete="off" />
-        <button id="align-drafts-btn" class="button align-drafts-btn" type="button" title="Align, structure, and prioritize all draft issues">Align Drafts</button>
       </form>
       <div id="empty-state" class="empty" hidden>
         <p>No tasks in this repository.</p>
@@ -83,11 +84,14 @@
       <ul id="task-list" class="task-list" aria-label="Tasks"></ul>
     </section>
 
-    <section id="detail-view" class="view" aria-labelledby="detail-title" hidden>
+    <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+
+    <section id="detail-view" class="view task-drawer" aria-labelledby="detail-title" hidden>
       <button id="back-btn" class="button back" type="button">Back to board</button>
 
       <div class="detail-head">
         <h1 id="detail-title" tabindex="-1"></h1>
+        <p id="detail-subtitle" class="task-subtitle muted small" hidden></p>
         <div id="detail-meta" class="badges"></div>
         <p id="detail-freshness" class="muted small"></p>
       </div>
@@ -100,6 +104,18 @@
       <p id="edit-warning" class="muted small edit-warning">Best-effort editing: a simultaneous edit on GitHub or by an agent can still be overwritten.</p>
 
       <pre id="recoverable-drafts" class="notice" hidden></pre>
+
+      <section class="panel" id="ac-section" aria-labelledby="ac-title">
+        <h2 id="ac-title">Acceptance criteria</h2>
+        <p id="no-ac" class="muted" hidden>No acceptance criteria.</p>
+        <ul id="ac-list" class="checklist"></ul>
+      </section>
+
+      <section class="panel" id="subtasks-section" aria-labelledby="subtasks-title">
+        <h2 id="subtasks-title">Actionable subtasks</h2>
+        <p id="no-subtasks" class="muted" hidden>No actionable subtasks.</p>
+        <ul id="subtasks-list" class="checklist"></ul>
+      </section>
 
       <section class="panel" aria-labelledby="overview-title">
         <h2 id="overview-title">Overview</h2>
@@ -124,6 +140,7 @@
           <label for="status-select">Status label</label>
           <select id="status-select"></select>
           <button id="apply-status" class="button primary" type="button">Apply status</button>
+          <button id="mark-done-btn" class="button" type="button">Mark Done</button>
         </div>
       </section>
 

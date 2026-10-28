@@ -396,7 +396,7 @@ export class GitHubClient {
     options: { etag?: string | null } = {},
   ): Promise<IssueRead> {
     const safeNumber = parseIssueNumber(number);
-    const allowed = new Set(['body', 'labels']);
+    const allowed = new Set(['body', 'labels', 'state']);
     for (const key of Object.keys(patch)) {
       if (!allowed.has(key)) {
         throw new GitHubError('invalid', 0, `Refusing to write unsupported field ${key}`);

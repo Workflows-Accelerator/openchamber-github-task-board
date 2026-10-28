@@ -1,3 +1,58 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
-  <path d="M3 3a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H3zm6 0a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1H9zm6 0a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1V4a1 1 0 0 0-1-1h-4z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#14171d"/>
+      <stop offset="100%" stop-color="#0a0b0e"/>
+    </linearGradient>
+    <linearGradient id="heroCardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#2a303c"/>
+      <stop offset="100%" stop-color="#21252f"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="6" stdDeviation="8" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <!-- Background squircle -->
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="url(#bgGrad)"/>
+  <rect x="24" y="24" width="464" height="464" rx="96" fill="none" stroke="#2d3440" stroke-width="2" opacity="0.6"/>
+
+  <!-- Column 1: Drafts -->
+  <rect x="62" y="92" width="114" height="328" rx="18" fill="#181b22" stroke="#262b36" stroke-width="1.5"/>
+  <rect x="76" y="110" width="58" height="12" rx="6" fill="#f59e0b" opacity="0.9"/>
+  <rect x="72" y="138" width="94" height="92" rx="12" fill="#222630" stroke="#2e3543" stroke-width="1"/>
+  <rect x="82" y="152" width="56" height="8" rx="4" fill="#8c929d" opacity="0.7"/>
+  <rect x="82" y="168" width="74" height="6" rx="3" fill="#5a606d" opacity="0.6"/>
+  <rect x="72" y="242" width="94" height="74" rx="12" fill="#222630" stroke="#2e3543" stroke-width="1"/>
+  <rect x="82" y="256" width="64" height="8" rx="4" fill="#8c929d" opacity="0.7"/>
+
+  <!-- Column 2: In-Progress / Active Tasks -->
+  <rect x="199" y="92" width="114" height="328" rx="18" fill="#181b22" stroke="#262b36" stroke-width="1.5"/>
+  <rect x="213" y="110" width="62" height="12" rx="6" fill="#3b82f6"/>
+  <rect x="209" y="138" width="94" height="80" rx="12" fill="#222630" stroke="#2e3543" stroke-width="1"/>
+  <rect x="219" y="152" width="60" height="8" rx="4" fill="#8c929d" opacity="0.7"/>
+
+  <!-- Hero Active Task Card -->
+  <g filter="url(#shadow)">
+    <rect x="209" y="230" width="94" height="114" rx="12" fill="url(#heroCardGrad)" stroke="#3b82f6" stroke-width="1.5"/>
+    <rect x="219" y="246" width="52" height="10" rx="5" fill="#3b82f6"/>
+    <rect x="219" y="266" width="74" height="7" rx="3.5" fill="#f0f2f5" opacity="0.9"/>
+    <rect x="219" y="281" width="58" height="6" rx="3" fill="#8c929d" opacity="0.7"/>
+    <!-- Checklist items indicator -->
+    <circle cx="223" cy="303" r="3" fill="#3b82f6"/>
+    <rect x="231" y="300" width="45" height="6" rx="3" fill="#8c929d" opacity="0.6"/>
+    <circle cx="223" cy="319" r="3" fill="#3b82f6"/>
+    <rect x="231" y="316" width="55" height="6" rx="3" fill="#8c929d" opacity="0.6"/>
+  </g>
+
+  <!-- Column 3: Done -->
+  <rect x="336" y="92" width="114" height="328" rx="18" fill="#181b22" stroke="#262b36" stroke-width="1.5"/>
+  <rect x="350" y="110" width="50" height="12" rx="6" fill="#10b981"/>
+  <rect x="346" y="138" width="94" height="102" rx="12" fill="#222630" stroke="#2e3543" stroke-width="1"/>
+  <rect x="356" y="152" width="40" height="10" rx="5" fill="#10b981" opacity="0.85"/>
+  <rect x="356" y="172" width="74" height="7" rx="3.5" fill="#8c929d" opacity="0.7"/>
+  <rect x="356" y="187" width="54" height="6" rx="3" fill="#5a606d" opacity="0.5"/>
+  <rect x="346" y="252" width="94" height="84" rx="12" fill="#222630" stroke="#2e3543" stroke-width="1"/>
+  <rect x="356" y="266" width="40" height="10" rx="5" fill="#10b981" opacity="0.85"/>
+  <rect x="356" y="286" width="68" height="7" rx="3.5" fill="#8c929d" opacity="0.7"/>
 </svg>

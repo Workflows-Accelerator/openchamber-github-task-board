@@ -277,6 +277,8 @@ let currentAttentionFilter: 'all' | 'needs-decision' | 'needs-permission' | 'nee
 let graphSelectedTheme: string = 'all';
 let graphShowDone: boolean = false;
 let isDraggingEdge: boolean = false;
+let isAligningDrafts = false;
+let aligningDraftsCount = 0;
 let dragSourceNum: number | null = null;
 let currentGraph: DependencyGraph | null = null;
 let isWideScreen: boolean = false;
@@ -3950,7 +3952,7 @@ function renderKanbanView(filteredIssues: Issue[]): void {
           <span>${escapeHtml(col.title)}</span>
           <span class="status-pill">${colIssues.length}</span>
         </div>
-        ${col.id === 'draft' ? `<button class="btn btn-xs" id="btnAlignDrafts" title="Align, structure, and prioritize all draft issues" type="button">Align Drafts</button>` : ''}
+        ${col.id === 'draft' ? `<button class="btn btn-xs" id="btnAlignDrafts" title="Align, structure, and prioritize all draft issues" type="button"${isAligningDrafts ? ' disabled' : ''}>${isAligningDrafts ? `<span class="btn-spinner"></span>Aligning (${aligningDraftsCount} drafts)...` : 'Align Drafts'}</button>` : ''}
       </div>
       ${col.id === 'draft' ? `
       <div class="kanban-quick-add-wrap">
@@ -8381,6 +8383,7 @@ async function quickAddDraft(titleInput: HTMLInputElement): Promise<void> {
 }
 
 async function batchAlignDrafts(): Promise<void> {
+  if (isAligningDrafts) return;
   const activeRepo = currentRepo;
   if (!isAllProjectsMode && !activeRepo) {
     if (host?.toast) {
@@ -8407,62 +8410,81 @@ async function batchAlignDrafts(): Promise<void> {
     return;
   }
 
+  isAligningDrafts = true;
+  aligningDraftsCount = targetDrafts.length;
+
+  const countWord = `${targetDrafts.length} draft${targetDrafts.length === 1 ? '' : 's'}`;
+  document.querySelectorAll<HTMLButtonElement>('#btnAlignDrafts').forEach((btn) => {
+    btn.disabled = true;
+    btn.innerHTML = `<span class="btn-spinner"></span>Aligning (${countWord})...`;
+  });
+
   addLog(`Aligning ${targetDrafts.length} draft issues...`);
   let successCount = 0;
   const errors: string[] = [];
 
-  for (const draft of targetDrafts) {
-    const issueRepo = repoForIssue(draft) || activeRepo;
-    if (!issueRepo || !draft.number) continue;
+  try {
+    for (const draft of targetDrafts) {
+      const issueRepo = repoForIssue(draft) || activeRepo;
+      if (!issueRepo || !draft.number) continue;
 
-    const { body: structuredBody, labels: newLabels, hasAmbiguity } = alignDraftIssue(draft);
-    const finishWrite = trackIssueWrite(issueRepo, draft, ['body', 'labels']);
+      const { body: structuredBody, labels: newLabels, hasAmbiguity } = alignDraftIssue(draft);
+      const finishWrite = trackIssueWrite(issueRepo, draft, ['body', 'labels']);
 
-    // Optimistic update locally
-    const prevBody = draft.body;
-    const prevLabels = [...(draft.labels || [])];
-    draft.body = structuredBody;
-    draft.labels = newLabels.map((l) => ({ name: l }));
+      // Optimistic update locally
+      const prevBody = draft.body;
+      const prevLabels = [...(draft.labels || [])];
+      draft.body = structuredBody;
+      draft.labels = newLabels.map((l) => ({ name: l }));
 
-    try {
-      await githubRequestWithRetry('PATCH', `/repos/${issueRepo}/issues/${draft.number}`, {
-        body: structuredBody,
-        labels: newLabels,
-      });
-      finishWrite(true);
-      successCount += 1;
-      addLog(`Aligned draft #${draft.number} (${hasAmbiguity ? 'needs-human' : 'backlog'})`, 'succ');
-    } catch (err: any) {
-      finishWrite(false);
-      draft.body = prevBody;
-      draft.labels = prevLabels;
-      errors.push(`#${draft.number}: ${err.message || 'Error'}`);
-      addLog(`Failed to align draft #${draft.number}: ${err.message}`, 'error');
+      try {
+        await githubRequestWithRetry('PATCH', `/repos/${issueRepo}/issues/${draft.number}`, {
+          body: structuredBody,
+          labels: newLabels,
+        });
+        finishWrite(true);
+        successCount += 1;
+        addLog(`Aligned draft #${draft.number} (${hasAmbiguity ? 'needs-human' : 'backlog'})`, 'succ');
+      } catch (err: any) {
+        finishWrite(false);
+        draft.body = prevBody;
+        draft.labels = prevLabels;
+        errors.push(`#${draft.number}: ${err.message || 'Error'}`);
+        addLog(`Failed to align draft #${draft.number}: ${err.message}`, 'error');
+      }
     }
-  }
 
-  // Sync cache and re-render
-  if (isAllProjectsMode) {
-    issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
-    if (host?.storage) {
-      void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any).catch(() => {});
+    // Sync cache and re-render
+    if (isAllProjectsMode) {
+      issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any).catch(() => {});
+      }
+    } else if (activeRepo) {
+      issueCache.set(activeRepo, { timestamp: Date.now(), issues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${activeRepo}`, { timestamp: Date.now(), issues } as any).catch(() => {});
+      }
     }
-  } else if (activeRepo) {
-    issueCache.set(activeRepo, { timestamp: Date.now(), issues });
-    if (host?.storage) {
-      void host.storage.set(`cached_issues_${activeRepo}`, { timestamp: Date.now(), issues } as any).catch(() => {});
-    }
-  }
 
-  statusReconciler.schedule(issues);
-  renderViews();
+    statusReconciler.schedule(issues);
+    renderViews();
 
-  if (host?.toast) {
-    if (successCount > 0) {
-      void host.toast({ kind: 'success', message: `Aligned ${successCount} draft issues` });
-    } else {
-      void host.toast({ kind: 'error', message: `Failed to align draft issues: ${errors.join(', ')}` });
+    if (host?.toast) {
+      if (successCount > 0) {
+        const alignedWord = `${successCount} draft${successCount === 1 ? '' : 's'}`;
+        void host.toast({ kind: 'success', message: `Aligned ${alignedWord} to Backlog` });
+      } else {
+        void host.toast({ kind: 'error', message: `Failed to align draft issues: ${errors.join(', ')}` });
+      }
     }
+  } finally {
+    isAligningDrafts = false;
+    aligningDraftsCount = 0;
+    document.querySelectorAll<HTMLButtonElement>('#btnAlignDrafts').forEach((btn) => {
+      btn.disabled = false;
+      btn.innerHTML = 'Align Drafts';
+    });
   }
 }
 

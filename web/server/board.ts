@@ -9,6 +9,7 @@
 import { createHash } from 'node:crypto';
 import {
   normalizeGithubIssues,
+  parseFriendlyTitle,
   parseTestPlan,
   resolveIssueColumn,
   resolveV2Metadata,
@@ -195,6 +196,7 @@ export interface BoardListItem {
   key: string;
   repository: BoardRepository | null;
   title: string;
+  friendlyTitle?: string | null;
   state: 'open' | 'closed';
   htmlUrl: string;
   labels: string[];
@@ -222,6 +224,7 @@ export interface IssueDetail {
   key: string;
   repository: BoardRepository | null;
   title: string;
+  friendlyTitle?: string | null;
   state: 'open' | 'closed';
   htmlUrl: string;
   body: string;
@@ -236,8 +239,8 @@ export interface IssueDetail {
   editableSections: Array<{ id: string; title: string; text: string }>;
   openQuestions: OpenQuestionView[];
   humanTasks: Array<{ text: string; completed: boolean }>;
-  acceptanceCriteria: Array<{ text: string; completed: boolean }>;
-  subtasks: Array<{ text: string; completed: boolean }>;
+  acceptanceCriteria: Array<{ text: string; completed: boolean; lineIndex?: number }>;
+  subtasks: Array<{ text: string; completed: boolean; lineIndex?: number }>;
   testPlan: {
     issue: Array<{ text: string; completed: boolean }>;
     batch: Array<{ text: string; completed: boolean }>;
@@ -292,11 +295,14 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
   const metadata = resolveV2Metadata(issue);
   const labels = labelNames(issue);
   const questions = parseWebOpenQuestions(issue.body ?? '');
+  const friendly = parseFriendlyTitle(issue.body, issue.title);
+  const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
   return {
     number: issue.number,
     key: issueKey(repository, issue.number),
     repository,
     title: issue.title,
+    friendlyTitle,
     state: issue.state,
     htmlUrl: issue.html_url,
     labels,
@@ -320,11 +326,14 @@ export function buildBoardList(rawItems: any[], repository: BoardRepository | nu
     const metadata = resolveV2Metadata(issue);
     const labels = labelNames(issue);
     const questions = parseWebOpenQuestions(issue.body ?? '');
+    const friendly = parseFriendlyTitle(issue.body, issue.title);
+    const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
     return {
       number: issue.number,
       key: issueKey(repository, issue.number),
       repository,
       title: issue.title,
+      friendlyTitle,
       state: issue.state,
       htmlUrl: issue.html_url,
       labels,
@@ -366,12 +375,15 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     return view;
   });
   const testPlan = parseTestPlan(issue.body);
+  const friendly = parseFriendlyTitle(issue.body, issue.title);
+  const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
 
   return {
     number: issue.number,
-      key: issueKey(repository, issue.number),
-      repository,
+    key: issueKey(repository, issue.number),
+    repository,
     title: issue.title,
+    friendlyTitle,
     state: issue.state,
     htmlUrl: issue.html_url,
     body: issue.body,
@@ -389,8 +401,13 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     acceptanceCriteria: (issue.acceptanceCriteria ?? []).map((item) => ({
       text: item.text,
       completed: item.completed,
+      lineIndex: item.lineIndex,
     })),
-    subtasks: issue.subtasks.map((item) => ({ text: item.text, completed: item.completed })),
+    subtasks: issue.subtasks.map((item) => ({
+      text: item.text,
+      completed: item.completed,
+      lineIndex: item.lineIndex,
+    })),
     testPlan: {
       issue: testPlan.issueTests.map((item) => ({ text: item.text, completed: item.completed })),
       batch: testPlan.batchTests.map((item) => ({ text: item.text, completed: item.completed })),
