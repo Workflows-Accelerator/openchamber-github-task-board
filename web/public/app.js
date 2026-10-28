@@ -1007,6 +1007,60 @@
       }
     });
 
+    var quickAddForm = $('quick-add-form');
+    if (quickAddForm) {
+      quickAddForm.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        var input = $('quick-add-input');
+        if (!input) return;
+        var title = input.value.trim();
+        if (!title) return;
+
+        var targetRepo = null;
+        if (state.selected && state.selected !== 'all') {
+          targetRepo = state.selected;
+        } else if (state.board && state.board.repository) {
+          targetRepo = state.board.repository.full;
+        } else if (state.repositories && state.repositories.repositories && state.repositories.repositories.length === 1) {
+          targetRepo = state.repositories.repositories[0].full;
+        }
+
+        if (!targetRepo) {
+          setNotice('Select a specific repository before adding a draft.', true);
+          return;
+        }
+
+        var parts = targetRepo.split('/');
+        if (parts.length !== 2) {
+          setNotice('Repository format is invalid.', true);
+          return;
+        }
+
+        var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues';
+        input.disabled = true;
+        try {
+          var response = await api(endpoint, {
+            method: 'POST',
+            body: { title: title, labels: ['status:draft'] }
+          });
+          input.value = '';
+          setNotice('');
+          if (response && response.issue && state.board) {
+            state.board.issues.unshift(response.issue);
+            renderBoard();
+          } else {
+            await loadBoard();
+          }
+          announce('Draft issue added: ' + title);
+        } catch (error) {
+          setNotice(error.message || 'Failed to create draft issue.', true);
+        } finally {
+          input.disabled = false;
+          input.focus();
+        }
+      });
+    }
+
     $('refresh-btn').addEventListener('click', function () {
       if (state.detail && /^#\/issue\//.test(window.location.hash)) {
         openIssue(state.detail);

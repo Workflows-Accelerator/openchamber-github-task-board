@@ -3946,8 +3946,24 @@ function renderKanbanView(filteredIssues: Issue[]): void {
         <span>${escapeHtml(col.title)}</span>
         <span class="status-pill">${colIssues.length}</span>
       </div>
+      ${col.id === 'draft' ? `
+      <div class="kanban-quick-add-wrap">
+        <input type="text" class="kanban-quick-add-input" id="quickAddDraftInput" placeholder="Quick add draft... (press Enter)" />
+      </div>` : ''}
       <div class="kanban-cards" data-column="${escapeHtml(col.id)}"></div>
     `;
+
+    if (col.id === 'draft') {
+      const qInput = colEl.querySelector('#quickAddDraftInput') as HTMLInputElement | null;
+      if (qInput) {
+        qInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            void quickAddDraft(qInput);
+          }
+        });
+      }
+    }
 
     const cardsContainer = colEl.querySelector('.kanban-cards') as HTMLDivElement;
 
@@ -7708,7 +7724,7 @@ async function acceptAndPostDraft(): Promise<void> {
   }
 }
 
-let currentNewIssueMode: NewIssueMode = 'ai';
+let currentNewIssueMode: NewIssueMode = 'manual';
 
 function setNewIssueMode(mode: NewIssueMode): void {
   currentNewIssueMode = mode;
@@ -8282,14 +8298,74 @@ async function openNewIssueModal(): Promise<void> {
   elAiPromptConfigPanel.style.display = 'none';
   hideDraftReviewCard();
 
-  setNewIssueMode('ai'); // AI Assisted is the first and default!
+  setNewIssueMode('manual'); // Manual / direct creation is the frictionless default!
   elNewIssueModalBackdrop.classList.add('active');
-  setTimeout(() => elAiIssueInput.focus(), 50);
+  setTimeout(() => elNewIssueTitleInput.focus(), 50);
 }
 
 function closeNewIssueModal(): void {
   elNewIssueModalBackdrop.classList.remove('active');
   hideDraftReviewCard();
+}
+
+async function quickAddDraft(titleInput: HTMLInputElement): Promise<void> {
+  const title = titleInput.value.trim();
+  if (!title) return;
+
+  if (isAllProjectsMode) {
+    await host.toast({ kind: 'info', message: 'Pick a specific repository to create an issue.' });
+    openRepoPopover();
+    return;
+  }
+  const targetRepo = currentRepo;
+  if (!targetRepo) {
+    openRepoPopover();
+    return;
+  }
+
+  titleInput.disabled = true;
+  try {
+    addLog(`Quick-adding draft in ${targetRepo}: "${title}"...`);
+    const created: any = await githubRequestWithRetry('POST', `/repos/${targetRepo}/issues`, {
+      title,
+      labels: ['status:draft'],
+    });
+    addLog(`Created draft issue #${created.number}: ${created.title}`, 'succ');
+    await host.toast({ kind: 'success', message: `Created draft #${created.number} on GitHub` });
+    titleInput.value = '';
+
+    if (created && created.number) {
+      const normalizedCreated = normalizeGithubIssues([{ ...created, repo: targetRepo }]);
+      normalizedCreated.forEach((i) => {
+        i.repo = targetRepo;
+      });
+
+      if (currentRepo === targetRepo || isAllProjectsMode) {
+        issues = mergeIssuePages(issues, normalizedCreated);
+        renderViews();
+        statusReconciler.schedule(issues);
+      }
+
+      const existingCached = issueCache.get(targetRepo)?.issues || [];
+      const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
+      issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues } as any).catch(() => {});
+      }
+      if (isAllProjectsMode) {
+        issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues } as any).catch(() => {});
+        }
+      }
+    }
+  } catch (err: any) {
+    addLog(`Failed to create draft issue: ${err.message}`, 'error');
+    await host.toast({ kind: 'error', message: `Failed to create draft: ${err.message || 'Unknown error'}` });
+  } finally {
+    titleInput.disabled = false;
+    titleInput.focus();
+  }
 }
 
 async function submitNewIssue(): Promise<void> {
@@ -8894,6 +8970,17 @@ function initEvents(): void {
       if (elSelectFilterPriority) elSelectFilterPriority.value = 'all';
       if (elSelectFilterTag) elSelectFilterTag.value = 'all';
       renderViews();
+    });
+  }
+
+  // Quick Add Draft Handler for initial/static Draft column input
+  const initialQuickAddInput = document.getElementById('quickAddDraftInput') as HTMLInputElement | null;
+  if (initialQuickAddInput) {
+    initialQuickAddInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        void quickAddDraft(initialQuickAddInput);
+      }
     });
   }
 

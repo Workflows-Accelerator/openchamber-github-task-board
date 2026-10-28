@@ -1006,6 +1006,25 @@
       gap: 8px;
       min-height: 40px;
     }
+    .kanban-quick-add-wrap {
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border-subtle);
+      background: var(--surf);
+    }
+    .kanban-quick-add-input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--rad-sm);
+      padding: 5px 8px;
+      color: var(--fg);
+      font-size: 11.5px;
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    .kanban-quick-add-input:focus {
+      border-color: var(--prim);
+    }
     .kanban-cards.drag-over {
       background: var(--prim-subtle);
       border: 1.5px dashed var(--prim);
@@ -3807,6 +3826,9 @@
           <span>Draft</span>
           <span class="status-pill" id="kCountDraft">0</span>
         </div>
+        <div class="kanban-quick-add-wrap">
+          <input type="text" class="kanban-quick-add-input" id="quickAddDraftInput" placeholder="Quick add draft... (press Enter)" />
+        </div>
         <div class="kanban-cards" id="kCardsDraft" data-status="draft"></div>
       </div>
       <!-- Backlog -->
@@ -4387,11 +4409,11 @@ Auto-saved continuously. When ready, click 'Align & Clarify with AI' so the agen
         </button>
       </div>
 
-      <!-- Segmented Mode Switch (AI Assisted is first and active by default) -->
+      <!-- Segmented Mode Switch (Manual / Direct Creation is default) -->
       <div class="mode-switch-wrap">
         <div class="mode-switch">
-          <button class="mode-switch-btn active" id="btnSwitchAI" type="button">AI Assisted</button>
-          <button class="mode-switch-btn" id="btnSwitchManual" type="button">Manual</button>
+          <button class="mode-switch-btn active" id="btnSwitchManual" type="button">Manual</button>
+          <button class="mode-switch-btn" id="btnSwitchAI" type="button">AI Assisted</button>
         </div>
       </div>
 
@@ -4402,8 +4424,8 @@ Auto-saved continuously. When ready, click 'Align & Clarify with AI' so the agen
           <span id="newIssueRepoTarget" style="font-family: var(--font-mono); font-size: 11px; color: var(--prim); font-weight: 500;"></span>
         </div>
 
-        <!-- Mode 1: AI Assisted (Default & Single Input) -->
-        <div id="paneNewIssueAI" style="display: flex; flex-direction: column; gap: 10px;">
+        <!-- Mode 1: AI Assisted (Secondary) -->
+        <div id="paneNewIssueAI" style="display: none; flex-direction: column; gap: 10px;">
           <div>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
               <label style="font-size: 11.5px; color: var(--fg-muted);">Describe the task, bug, or feature to create:</label>
@@ -4491,8 +4513,8 @@ Auto-saved continuously. When ready, click 'Align & Clarify with AI' so the agen
           </div>
         </div>
 
-        <!-- Mode 2: Manual (Secondary) -->
-        <div id="paneNewIssueManual" style="display: none; flex-direction: column; gap: 10px;">
+        <!-- Mode 2: Manual Direct Creation (Default) -->
+        <div id="paneNewIssueManual" style="display: flex; flex-direction: column; gap: 10px;">
           <div>
             <label style="display: block; font-size: 11px; color: var(--fg-muted); margin-bottom: 4px;">Issue Title</label>
             <input type="text" id="newIssueTitleInput" class="form-ctrl" style="width: 100%;" placeholder="e.g. Fix button alignment in login modal" />
@@ -4543,7 +4565,7 @@ Auto-saved continuously. When ready, click 'Align & Clarify with AI' so the agen
       </div>
 
       <!-- Footer for AI mode -->
-      <div class="modal-foot" id="footNewIssueAI" style="display: flex; justify-content: flex-end; gap: 8px;">
+      <div class="modal-foot" id="footNewIssueAI" style="display: none; justify-content: flex-end; gap: 8px;">
         <button class="btn btn-sm" id="btnNewIssueAICancel" type="button">Cancel</button>
         <button class="btn btn-sm btn-primary" id="btnLaunchAISession" type="button">
           <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M19.376 12.416L8.777 19.482A.5.5 0 0 1 8 19.066V4.934a.5.5 0 0 1 .777-.416l10.599 7.066a.5.5 0 0 1 0 .832z"/></svg>
@@ -4552,7 +4574,7 @@ Auto-saved continuously. When ready, click 'Align & Clarify with AI' so the agen
       </div>
 
       <!-- Footer for Manual mode -->
-      <div class="modal-foot" id="footNewIssueManual" style="display: none; justify-content: space-between;">
+      <div class="modal-foot" id="footNewIssueManual" style="display: flex; justify-content: space-between;">
         <a id="linkOpenGithubNew" href="#" target="_blank" style="font-size: 11px; color: var(--fg-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
           <span>Open on GitHub -></span>
         </a>

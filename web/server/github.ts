@@ -412,6 +412,27 @@ export class GitHubClient {
     }
     return { item: data, etag: headers.get('etag') };
   }
+
+  async createIssue(payload: {
+    title: string;
+    body?: string;
+    labels?: string[];
+  }): Promise<IssueRead> {
+    const allowed = new Set(['title', 'body', 'labels']);
+    for (const key of Object.keys(payload)) {
+      if (!allowed.has(key)) {
+        throw new GitHubError('invalid', 0, `Refusing to write unsupported field ${key}`);
+      }
+    }
+    const { data, headers } = await this.request(this.issuesBase() + '/issues', {
+      method: 'POST',
+      body: payload,
+    });
+    if (!data || typeof data.number !== 'number') {
+      throw new GitHubError('server', 200, 'GitHub issue response was malformed');
+    }
+    return { item: data, etag: headers.get('etag') };
+  }
 }
 
 export function parseRepositorySummary(item: any): GitHubRepositorySummary {

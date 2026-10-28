@@ -976,3 +976,54 @@ test('concurrent login flood across distinct addresses is bounded with 429 retry
     await close();
   }
 });
+
+test('quick-add POST /api/repos/:owner/:name/issues creates draft issue with 201', async () => {
+  const { fake, board, close } = await fixture();
+  try {
+    const client = new HttpSession(board.url);
+    await client.login();
+
+    // 1. Successful draft creation defaulting to status:draft
+    const res = await client.request('/api/repos/owner/repo/issues', {
+      method: 'POST',
+      body: { title: 'Implement quick brain dump' },
+    });
+    assert.equal(res.status, 201);
+    assert.equal(res.json.ok, true);
+    assert.equal(res.json.issue.title, 'Implement quick brain dump');
+    assert.ok(res.json.issue.labels.includes('status:draft'));
+    assert.equal(res.json.issue.column, 'draft');
+
+    // Verify GitHub mock received the issue
+    const createdIssue = fake.issues.find((i) => i.title === 'Implement quick brain dump');
+    assert.ok(createdIssue);
+    assert.ok(createdIssue.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:draft'));
+
+    // 2. 400 empty title validation
+    const emptyTitle = await client.request('/api/repos/owner/repo/issues', {
+      method: 'POST',
+      body: { title: '   ' },
+    });
+    assert.equal(emptyTitle.status, 400);
+
+    // 3. 403 CSRF rejection
+    const uncsrf = await client.request('/api/repos/owner/repo/issues', {
+      method: 'POST',
+      headers: { 'x-csrf-token': 'wrong-token' },
+      body: { title: 'Should fail' },
+      csrf: false,
+    });
+    assert.equal(uncsrf.status, 403);
+
+    // 4. 401 unauthenticated
+    const anon = new HttpSession(board.url);
+    const anonRes = await anon.request('/api/repos/owner/repo/issues', {
+      method: 'POST',
+      headers: { 'x-csrf-token': 'any' },
+      body: { title: 'Should fail' },
+    });
+    assert.equal(anonRes.status, 401);
+  } finally {
+    await close();
+  }
+});

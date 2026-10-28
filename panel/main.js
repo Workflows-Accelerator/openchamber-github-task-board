@@ -10944,8 +10944,23 @@ Blocked by ${blockerRef}`;
         <span>${escapeHtml(col.title)}</span>
         <span class="status-pill">${colIssues.length}</span>
       </div>
+      ${col.id === "draft" ? `
+      <div class="kanban-quick-add-wrap">
+        <input type="text" class="kanban-quick-add-input" id="quickAddDraftInput" placeholder="Quick add draft... (press Enter)" />
+      </div>` : ""}
       <div class="kanban-cards" data-column="${escapeHtml(col.id)}"></div>
     `;
+      if (col.id === "draft") {
+        const qInput = colEl.querySelector("#quickAddDraftInput");
+        if (qInput) {
+          qInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void quickAddDraft(qInput);
+            }
+          });
+        }
+      }
       const cardsContainer = colEl.querySelector(".kanban-cards");
       cardsContainer.addEventListener("dragover", (e) => {
         e.preventDefault();
@@ -14026,7 +14041,7 @@ Blocked by ${blockerRef}`;
       }
     }
   }
-  var currentNewIssueMode = "ai";
+  var currentNewIssueMode = "manual";
   function setNewIssueMode(mode) {
     currentNewIssueMode = mode;
     elBtnSwitchAI.classList.toggle("active", mode === "ai");
@@ -14545,13 +14560,69 @@ Blocked by ${blockerRef}`;
     await loadDraftAiInput();
     elAiPromptConfigPanel.style.display = "none";
     hideDraftReviewCard();
-    setNewIssueMode("ai");
+    setNewIssueMode("manual");
     elNewIssueModalBackdrop.classList.add("active");
-    setTimeout(() => elAiIssueInput.focus(), 50);
+    setTimeout(() => elNewIssueTitleInput.focus(), 50);
   }
   function closeNewIssueModal() {
     elNewIssueModalBackdrop.classList.remove("active");
     hideDraftReviewCard();
+  }
+  async function quickAddDraft(titleInput) {
+    const title = titleInput.value.trim();
+    if (!title) return;
+    if (isAllProjectsMode) {
+      await host.toast({ kind: "info", message: "Pick a specific repository to create an issue." });
+      openRepoPopover();
+      return;
+    }
+    const targetRepo = currentRepo;
+    if (!targetRepo) {
+      openRepoPopover();
+      return;
+    }
+    titleInput.disabled = true;
+    try {
+      addLog(`Quick-adding draft in ${targetRepo}: "${title}"...`);
+      const created = await githubRequestWithRetry("POST", `/repos/${targetRepo}/issues`, {
+        title,
+        labels: ["status:draft"]
+      });
+      addLog(`Created draft issue #${created.number}: ${created.title}`, "succ");
+      await host.toast({ kind: "success", message: `Created draft #${created.number} on GitHub` });
+      titleInput.value = "";
+      if (created && created.number) {
+        const normalizedCreated = normalizeGithubIssues([{ ...created, repo: targetRepo }]);
+        normalizedCreated.forEach((i) => {
+          i.repo = targetRepo;
+        });
+        if (currentRepo === targetRepo || isAllProjectsMode) {
+          issues = mergeIssuePages(issues, normalizedCreated);
+          renderViews();
+          statusReconciler.schedule(issues);
+        }
+        const existingCached = issueCache.get(targetRepo)?.issues || [];
+        const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
+        issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues }).catch(() => {
+          });
+        }
+        if (isAllProjectsMode) {
+          issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+          if (host?.storage) {
+            void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+            });
+          }
+        }
+      }
+    } catch (err) {
+      addLog(`Failed to create draft issue: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to create draft: ${err.message || "Unknown error"}` });
+    } finally {
+      titleInput.disabled = false;
+      titleInput.focus();
+    }
   }
   async function submitNewIssue() {
     const title = elNewIssueTitleInput.value.trim();
@@ -15049,6 +15120,15 @@ Blocked by ${blockerRef}`;
         if (elSelectFilterPriority) elSelectFilterPriority.value = "all";
         if (elSelectFilterTag) elSelectFilterTag.value = "all";
         renderViews();
+      });
+    }
+    const initialQuickAddInput = document.getElementById("quickAddDraftInput");
+    if (initialQuickAddInput) {
+      initialQuickAddInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          void quickAddDraft(initialQuickAddInput);
+        }
       });
     }
     elBtnNewIssue.addEventListener("click", () => {

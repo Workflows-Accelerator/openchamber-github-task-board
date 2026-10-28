@@ -325,6 +325,27 @@ label {
   color: var(--fg-muted);
 }
 
+.quick-add-bar {
+  margin-bottom: 12px;
+}
+
+.quick-add-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--rad);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  outline-color: var(--prim);
+  transition: border-color 0.15s ease;
+}
+
+.quick-add-input:focus {
+  border-color: var(--prim);
+}
+
 .task-list,
 .question-list,
 .plain-list {

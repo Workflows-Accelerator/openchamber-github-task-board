@@ -48,6 +48,10 @@
         <h1 id="board-title" tabindex="-1">Tasks</h1>
         <p id="board-count" class="muted"></p>
       </div>
+      <form id="quick-add-form" class="quick-add-bar">
+        <label for="quick-add-input" class="sr-only">Quick add draft issue</label>
+        <input id="quick-add-input" class="quick-add-input" type="text" placeholder="Quick add draft... (press Enter)" autocomplete="off" />
+      </form>
       <div id="empty-state" class="empty" hidden>
         <p>No tasks in this repository.</p>
         <p class="muted">Open issues appear here when they are created on GitHub.</p>

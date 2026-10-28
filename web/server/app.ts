@@ -34,6 +34,7 @@ import {
   applySectionEdit,
   applyStatusChange,
   buildBoardList,
+  buildBoardListItem,
   buildIssueDetail,
   issueFingerprint,
   issueKey,
@@ -542,6 +543,45 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     if (route === '/api/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
       return { status: 200, body: await repositoryBoard(repository!) };
+    }
+
+    if (route === '/api/issues' && method === 'POST') {
+      requireCsrf(req, record);
+      const body = await readJsonBody(req);
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        throw new HttpError(400, 'invalid_request', 'Body must be a JSON object');
+      }
+      if (typeof body.title !== 'string' || !body.title.trim()) {
+        throw new HttpError(400, 'invalid_request', 'Issue title is required and cannot be empty');
+      }
+      const title = body.title.trim();
+      let issueBody: string | undefined = undefined;
+      if (body.body !== undefined) {
+        if (typeof body.body !== 'string') {
+          throw new HttpError(400, 'invalid_request', 'Issue body must be a string');
+        }
+        issueBody = body.body;
+      }
+      let labels: string[] = ['status:draft'];
+      if (body.labels !== undefined) {
+        if (!Array.isArray(body.labels) || !body.labels.every((l: unknown) => typeof l === 'string')) {
+          throw new HttpError(400, 'invalid_request', 'Labels must be an array of strings');
+        }
+        labels = body.labels;
+      }
+      const created = await scopedGithub!.createIssue({
+        title,
+        body: issueBody,
+        labels,
+      }).catch(mapGitHubError);
+
+      return {
+        status: 201,
+        body: {
+          ok: true,
+          issue: buildBoardListItem(created.item, repository),
+        },
+      };
     }
 
     const detailMatch = /^\/api\/issues\/([^/]+)$/.exec(route);

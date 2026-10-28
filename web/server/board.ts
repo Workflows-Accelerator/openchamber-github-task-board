@@ -283,6 +283,36 @@ function normalizedOf(raw: any): Issue | null {
   return issues.length > 0 ? issues[0] : null;
 }
 
+export function buildBoardListItem(rawItem: any, repository: BoardRepository | null = null): BoardListItem {
+  const normalized = normalizeGithubIssues([rawItem]);
+  if (!normalized.length) {
+    throw new BoardError('not_an_issue', 'That item is not an issue');
+  }
+  const issue = normalized[0];
+  const metadata = resolveV2Metadata(issue);
+  const labels = labelNames(issue);
+  const questions = parseWebOpenQuestions(issue.body ?? '');
+  return {
+    number: issue.number,
+    key: issueKey(repository, issue.number),
+    repository,
+    title: issue.title,
+    state: issue.state,
+    htmlUrl: issue.html_url,
+    labels,
+    statusLabel: statusLabelOf(labels),
+    phase: metadata.phase,
+    attention: metadata.attention,
+    column: resolveIssueColumn(issue),
+    updatedAt: issue.updated_at ?? null,
+    counts: {
+      subtasks: countsOf(issue.subtasks),
+      openQuestions: countsOf(questions),
+      humanTasks: countsOf(issue.humanTasks ?? []),
+    },
+  };
+}
+
 export function buildBoardList(rawItems: any[], repository: BoardRepository | null = null): { issues: BoardListItem[]; excluded: number } {
   const raw = Array.isArray(rawItems) ? rawItems : [];
   const normalized = normalizeGithubIssues(raw);
