@@ -3727,6 +3727,245 @@ ${GUEST_UI_LOOK_CSS}`;
     }
   }
 
+  // panel/viewstate.ts
+  var SHORT_NAME_DROP_TOKENS = /* @__PURE__ */ new Set(["openchamber", "github", "gh", "repo"]);
+  function titleCaseToken(token) {
+    if (!token) return "";
+    return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase();
+  }
+  function projectNameKey(fullRepo) {
+    return String(fullRepo || "").trim().toLowerCase();
+  }
+  function shortName(fullRepo, overrides) {
+    const raw = String(fullRepo || "").trim();
+    if (!raw) return "";
+    if (overrides) {
+      const override = overrides[projectNameKey(raw)];
+      if (typeof override === "string" && override.trim()) return override.trim();
+    }
+    const slash = raw.lastIndexOf("/");
+    const repoPart = slash >= 0 ? raw.slice(slash + 1) : raw;
+    if (!repoPart) return raw;
+    const tokens = repoPart.split(/[-_.]+/).filter(Boolean);
+    const kept = tokens.filter((t) => !SHORT_NAME_DROP_TOKENS.has(t.toLowerCase()));
+    if (kept.length === 0) return titleCaseToken(repoPart);
+    return kept.map(titleCaseToken).join(" ");
+  }
+  function normalizeProjectNameOverrides(stored) {
+    const out = {};
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) return out;
+    for (const [key, value] of Object.entries(stored)) {
+      if (typeof value !== "string") continue;
+      const name = value.trim();
+      const k = projectNameKey(key);
+      if (!k || !name) continue;
+      out[k] = name;
+    }
+    return out;
+  }
+  var ORDER_GAP = 1e3;
+  var ORDER_MARKER_LINE_REGEX = /^[ \t]*<!--\s*board-order:\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)\s*-->[ \t]*$/gim;
+  function parseOrderMarker(body) {
+    if (!body || typeof body !== "string") return null;
+    let result = null;
+    ORDER_MARKER_LINE_REGEX.lastIndex = 0;
+    let match;
+    while ((match = ORDER_MARKER_LINE_REGEX.exec(body)) !== null) {
+      const n = Number(match[1]);
+      if (Number.isFinite(n)) result = n;
+    }
+    return result;
+  }
+  function stripOrderMarker(body) {
+    if (!body || typeof body !== "string") return "";
+    ORDER_MARKER_LINE_REGEX.lastIndex = 0;
+    if (!ORDER_MARKER_LINE_REGEX.test(body)) return body;
+    ORDER_MARKER_LINE_REGEX.lastIndex = 0;
+    return body.replace(ORDER_MARKER_LINE_REGEX, "").replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").replace(/\s+$/, "");
+  }
+  function formatOrderNumber(order) {
+    if (!Number.isFinite(order)) return "0";
+    if (Number.isInteger(order)) return String(order);
+    const fixed = order.toFixed(10).replace(/0+$/, "").replace(/\.$/, "");
+    return fixed === "-0" ? "0" : fixed;
+  }
+  function setOrderMarker(body, order) {
+    const base = stripOrderMarker(body || "");
+    const marker = `<!-- board-order: ${formatOrderNumber(order)} -->`;
+    return base ? `${base}
+
+${marker}` : marker;
+  }
+  function midpointOrder(prev, next) {
+    if (prev === null && next === null) return ORDER_GAP;
+    if (prev === null) return next - ORDER_GAP;
+    if (next === null) return prev + ORDER_GAP;
+    return (prev + next) / 2;
+  }
+  function createdTime(item) {
+    const t = item.created_at ? Date.parse(item.created_at) : NaN;
+    return Number.isFinite(t) ? t : 0;
+  }
+  function compareManualOrder(a, b) {
+    const oa = parseOrderMarker(a.body);
+    const ob = parseOrderMarker(b.body);
+    if (oa !== null && ob === null) return -1;
+    if (oa === null && ob !== null) return 1;
+    if (oa !== null && ob !== null && oa !== ob) return oa - ob;
+    const ca = createdTime(a);
+    const cb = createdTime(b);
+    if (ca !== cb) return ca - cb;
+    return (a.number || 0) - (b.number || 0);
+  }
+  function sortByManualOrder(items) {
+    return [...items].sort(compareManualOrder);
+  }
+  function nextAppendOrder(items) {
+    let max = null;
+    for (const item of items) {
+      const o = parseOrderMarker(item.body);
+      if (o !== null && (max === null || o > max)) max = o;
+    }
+    return max === null ? ORDER_GAP : max + ORDER_GAP;
+  }
+  function slotOrder(rest, slot) {
+    const prev = slot > 0 ? rest[slot - 1] : null;
+    const next = slot < rest.length ? rest[slot] : null;
+    const prevOrder = prev ? parseOrderMarker(prev.body) : null;
+    if (prev && prevOrder === null) return null;
+    const nextOrder = next ? parseOrderMarker(next.body) : null;
+    const order = midpointOrder(prevOrder, nextOrder);
+    if (prevOrder !== null && nextOrder !== null && !(order > prevOrder && order < nextOrder)) return null;
+    return order;
+  }
+  function computeMove(ordered, fromIndex, toIndex) {
+    if (fromIndex < 0 || fromIndex >= ordered.length) return null;
+    const to = Math.max(0, Math.min(ordered.length - 1, toIndex));
+    if (to === fromIndex) return null;
+    const rest = ordered.filter((_, i) => i !== fromIndex);
+    const direct = slotOrder(rest, to);
+    if (direct !== null) return { index: fromIndex, order: direct, exact: true };
+    if (Math.abs(to - fromIndex) === 1) {
+      const restSwap = ordered.filter((_, i) => i !== to);
+      const swapped = slotOrder(restSwap, fromIndex);
+      if (swapped !== null) return { index: to, order: swapped, exact: true };
+    }
+    const firstUnmarked = rest.findIndex((it) => parseOrderMarker(it.body) === null);
+    if (firstUnmarked < 0) return null;
+    if (to > fromIndex ? firstUnmarked <= fromIndex : firstUnmarked >= fromIndex) return null;
+    const fallback = slotOrder(rest, firstUnmarked);
+    if (fallback === null) return null;
+    return { index: fromIndex, order: fallback, exact: false };
+  }
+  var VIEW_IDS = ["simple", "cards", "kanban", "graph", "pending"];
+  var SORT_IDS = ["priority", "updated", "created", "manual"];
+  var STAGE_IDS = ["draft", "backlog", "todo", "planned", "in-progress", "needs-human", "in-review", "done"];
+  var KIND_FILTERS = ["needs-me", "human", "questions"];
+  var VIEW_LABELS = {
+    simple: "Simple list",
+    cards: "Cards",
+    kanban: "Kanban board",
+    graph: "Graph",
+    pending: "Pending items"
+  };
+  var SORT_LABELS = {
+    priority: "Priority",
+    updated: "Recently updated",
+    created: "Recently created",
+    manual: "Manual order"
+  };
+  var KIND_FILTER_LABELS = {
+    "needs-me": "Needs me",
+    human: "Human tasks",
+    questions: "Questions"
+  };
+  var DEFAULT_VIEW_STATE = Object.freeze({ view: "simple", filters: [], sort: "priority" });
+  function defaultViewState() {
+    return { view: DEFAULT_VIEW_STATE.view, filters: [], sort: DEFAULT_VIEW_STATE.sort };
+  }
+  function isValidFilterToken(token) {
+    if (typeof token !== "string" || !token) return false;
+    if (KIND_FILTERS.includes(token)) return true;
+    if (token.startsWith("stage:")) return STAGE_IDS.includes(token.slice(6));
+    if (token.startsWith("project:")) return token.length > "project:".length;
+    return false;
+  }
+  function normalizeViewState(stored) {
+    const state = defaultViewState();
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) return state;
+    const s = stored;
+    if (typeof s.view === "string" && VIEW_IDS.includes(s.view)) state.view = s.view;
+    if (typeof s.sort === "string" && SORT_IDS.includes(s.sort)) state.sort = s.sort;
+    if (Array.isArray(s.filters)) {
+      const seen = /* @__PURE__ */ new Set();
+      for (const f of s.filters) {
+        if (isValidFilterToken(f) && !seen.has(f)) {
+          seen.add(f);
+          state.filters.push(f);
+        }
+      }
+    }
+    return state;
+  }
+  function toggleFilter(filters, token) {
+    if (!isValidFilterToken(token)) return [...filters];
+    return filters.includes(token) ? filters.filter((f) => f !== token) : [...filters, token];
+  }
+  function stageFilters(filters) {
+    return filters.filter((f) => f.startsWith("stage:")).map((f) => f.slice(6));
+  }
+  function projectFilters(filters) {
+    return filters.filter((f) => f.startsWith("project:")).map((f) => f.slice(8));
+  }
+  function isQuickCaptureMode(state) {
+    return state.view === "simple" && state.filters.includes("stage:draft");
+  }
+  function applyFilters(items, filters, acc) {
+    if (!filters || filters.length === 0) return [...items];
+    const kinds = filters.filter((f) => KIND_FILTERS.includes(f));
+    const stages = new Set(stageFilters(filters));
+    const projects = new Set(projectFilters(filters).map(projectNameKey));
+    return items.filter((item) => {
+      if (stages.size > 0 && !stages.has(acc.stageOf(item))) return false;
+      if (projects.size > 0 && !projects.has(projectNameKey(acc.repoOf(item)))) return false;
+      if (kinds.length > 0) {
+        const ok = kinds.some(
+          (k) => k === "needs-me" ? acc.needsMe(item) : k === "human" ? acc.hasHumanTasks(item) : acc.hasOpenQuestions(item)
+        );
+        if (!ok) return false;
+      }
+      return true;
+    });
+  }
+  function timeOf(value) {
+    const t = value ? Date.parse(value) : NaN;
+    return Number.isFinite(t) ? t : 0;
+  }
+  function applySort(items, sort, priorityWeight) {
+    const copy = [...items];
+    const byNumberDesc = (a, b) => (b.number || 0) - (a.number || 0);
+    switch (sort) {
+      case "manual":
+        return copy.sort(compareManualOrder);
+      case "updated":
+        return copy.sort((a, b) => {
+          const d = timeOf(b.updated_at || b.created_at) - timeOf(a.updated_at || a.created_at);
+          return d !== 0 ? d : byNumberDesc(a, b);
+        });
+      case "created":
+        return copy.sort((a, b) => {
+          const d = timeOf(b.created_at) - timeOf(a.created_at);
+          return d !== 0 ? d : byNumberDesc(a, b);
+        });
+      case "priority":
+      default:
+        return copy.sort((a, b) => {
+          const d = (priorityWeight(b) || 0) - (priorityWeight(a) || 0);
+          return d !== 0 ? d : byNumberDesc(a, b);
+        });
+    }
+  }
+
   // panel/markdown.ts
   var LIST_ITEM_REGEX = /^(\s*)(?:([-*])|(\d+)\.)\s+(.*)$/;
   function splitTableRow(row) {
@@ -3873,7 +4112,8 @@ ${GUEST_UI_LOOK_CSS}`;
     }
     return out.join("");
   }
-  function renderMarkdown(raw) {
+  function renderMarkdown(input) {
+    const raw = typeof input === "string" ? stripOrderMarker(input) : input;
     if (!raw || typeof raw !== "string") return '<p style="color: var(--fg-muted); font-style: italic;">No description provided.</p>';
     let html = raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
     const codeBlocks = [];
@@ -3995,7 +4235,7 @@ ${placeholder}
   }
   function getIssueDescriptionPreview(body) {
     if (!body || typeof body !== "string") return "";
-    const lines = body.split(/\r?\n/);
+    const lines = stripOrderMarker(body).split(/\r?\n/);
     const GENERIC_HEADERS = /^(overview|description|context|summary|details|background|goal|problem|about)$/i;
     let fallback = "";
     for (let rawLine of lines) {

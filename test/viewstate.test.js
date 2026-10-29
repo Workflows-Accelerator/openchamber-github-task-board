@@ -243,3 +243,14 @@ test('filter + sort combine: drafts in manual order, needs-me by priority', () =
   assert.deepEqual(nums(applySort(applyFilters(items, ['needs-me'], acc), 'priority', w)), [2, 3]);
   assert.deepEqual(nums(applySort(applyFilters(items, ['questions'], acc), 'created', w)), [4, 3]);
 });
+
+test('board-order marker never renders in issue body views', async () => {
+  const { renderMarkdown, getIssueDescriptionPreview } = await import('../panel/markdown.ts');
+  const body = 'Short idea\n\n<!-- board-order: 1500 -->';
+  const html = renderMarkdown(body);
+  assert.ok(!html.includes('board-order'), 'renderMarkdown strips the marker');
+  assert.ok(html.includes('Short idea'));
+  assert.equal(getIssueDescriptionPreview(body), 'Short idea');
+  assert.equal(getIssueDescriptionPreview('<!-- board-order: 1500 -->'), '', 'draft with no description has no preview');
+  assert.ok(!renderMarkdown('<!-- board-order: 1500 -->').includes('board-order'));
+});
