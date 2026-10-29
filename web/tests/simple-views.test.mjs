@@ -172,3 +172,43 @@ test('an empty friendly-title heading cannot expose hidden order marker as title
   assert.doesNotMatch(JSON.stringify(buildIssueDetail(raw)), /<!-- board-order/);
   assert.doesNotMatch(JSON.stringify(buildBoardListItem(raw)), /<!-- board-order/);
 });
+
+test('F9: default startBoard and browserConfig isolate project-names.json per fixture and clean up on close', async (t) => {
+  const standInTmp = await fs.mkdtemp(path.join('/tmp/antigravity', 'f9-isolation-'));
+  const previousTmp = process.env.TMPDIR;
+  process.env.TMPDIR = standInTmp;
+  const fake = await startFakeGitHub({ repo: 'owner/repo' });
+  let first;
+  let second;
+  try {
+    first = await startBoard(fake);
+    second = await startBoard(fake);
+    assert.notEqual(path.dirname(first.sessionFile), path.dirname(second.sessionFile));
+    const a = new HttpSession(first.url);
+    const b = new HttpSession(second.url);
+    await a.login();
+    await b.login();
+    const put = await a.request('/api/project-names', {
+      method: 'PUT',
+      body: { repository: 'owner/repo', name: 'Isolated Name' },
+    });
+    assert.equal(put.status, 200);
+    const seenByB = await b.request('/api/project-names');
+    assert.deepEqual(seenByB.json.projectNames, {});
+    const dirA = path.dirname(first.sessionFile);
+    const dirB = path.dirname(second.sessionFile);
+    await first.app.close();
+    first = null;
+    await second.app.close();
+    second = null;
+    await assert.rejects(fs.access(dirA));
+    await assert.rejects(fs.access(dirB));
+  } finally {
+    if (previousTmp === undefined) delete process.env.TMPDIR;
+    else process.env.TMPDIR = previousTmp;
+    if (first) await first.app.close();
+    if (second) await second.app.close();
+    await fake.close();
+    await fs.rm(standInTmp, { recursive: true, force: true });
+  }
+});

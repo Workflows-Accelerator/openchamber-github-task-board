@@ -184,7 +184,8 @@ test('/health returns version "unknown" when package.json cannot be read', async
 });
 
 test('BOARD_GITHUB_API_BASE in environment is ignored and upstream defaults to api.github.com', async () => {
-  const sessionFile = path.join(os.tmpdir(), `test-board-sessions-${randomBytes(8).toString('hex')}.json`);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-board-'));
+  const sessionFile = path.join(tempDir, 'sessions.json');
   const env = {
     BOARD_GITHUB_TOKEN: SYNTHETIC_TOKEN,
     BOARD_GITHUB_LOGIN: 'board-owner',
@@ -235,7 +236,7 @@ test('BOARD_GITHUB_API_BASE in environment is ignored and upstream defaults to a
   } finally {
     await app.close();
     try {
-      if (fs.existsSync(sessionFile)) fs.unlinkSync(sessionFile);
+      fs.rmSync(tempDir, { recursive: true, force: true });
     } catch {}
   }
 });
@@ -306,7 +307,8 @@ test('existing authenticated routes still require the password', async () => {
 test('the start command serves /health', async () => {
   ensureBundleBuilt();
   const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
-  const sessionFile = path.join(os.tmpdir(), `test-board-sessions-${randomBytes(8).toString('hex')}.json`);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-board-'));
+  const sessionFile = path.join(tempDir, 'sessions.json');
   let child = null;
   try {
     // Choose an available port
@@ -362,7 +364,7 @@ test('the start command serves /health', async () => {
       child.kill('SIGTERM');
     }
     try {
-      if (fs.existsSync(sessionFile)) fs.unlinkSync(sessionFile);
+      fs.rmSync(tempDir, { recursive: true, force: true });
     } catch {}
     await fake.close();
   }
@@ -371,7 +373,8 @@ test('the start command serves /health', async () => {
 test('npm run start:web package script serves /health', async () => {
   ensureBundleBuilt();
   const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
-  const sessionFile = path.join(os.tmpdir(), `test-board-sessions-${randomBytes(8).toString('hex')}.json`);
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'test-board-'));
+  const sessionFile = path.join(tempDir, 'sessions.json');
   let child = null;
   try {
     const testPort = 18789;
@@ -427,7 +430,7 @@ test('npm run start:web package script serves /health', async () => {
       } catch {}
     }
     try {
-      if (fs.existsSync(sessionFile)) fs.unlinkSync(sessionFile);
+      fs.rmSync(tempDir, { recursive: true, force: true });
     } catch {}
     await fake.close();
   }
