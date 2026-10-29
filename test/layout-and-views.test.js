@@ -119,7 +119,11 @@ test('Graph uses shared stage Filter instead of its own Show Done control', () =
 test('Graph admits every shared-filter result, including Done, without a second hidden predicate', () => {
   assert.equal(MAIN_TS.includes('graphShowDone'), false);
   assert.equal(MAIN_TS.includes('graphSelectedTheme'), false);
-  assert.ok(MAIN_TS.includes('const visibleNumbers = new Set(Array.from(graph.nodes.values()).map((node) => node.issue.number))'));
+  assert.ok(
+    MAIN_TS.includes(
+      'Array.from(graph.nodes.values()).map((node) => `${getIssueRepoFullName(node.issue) || \'\'}#${node.issue.number}`)'
+    )
+  );
 });
 
 test('Escape closes active modals before drawer', () => {

@@ -299,5 +299,55 @@ test('blocker remove interaction removes dependency cleanly and updates chips', 
   assert.equal(renderBlockerChips(targetIssue, parseIssueDependencies(targetIssue.body)), '');
 });
 
+test('H3: buildDependencyGraph preserves colliding issue numbers across repositories and scopes unqualified #N blockers to the same repository', () => {
+  const issues = [
+    {
+      number: 1,
+      repo: 'acme/alpha',
+      title: 'Alpha One (done)',
+      body: '',
+      state: 'closed',
+      labels: [{ name: 'theme:alpha' }],
+    },
+    {
+      number: 2,
+      repo: 'acme/alpha',
+      title: 'Alpha Two (unblocked because alpha#1 is closed)',
+      body: 'Blocked by #1',
+      state: 'open',
+      labels: [{ name: 'theme:alpha' }],
+    },
+    {
+      number: 1,
+      repo: 'acme/beta',
+      title: 'Beta One (open blocker)',
+      body: '',
+      state: 'open',
+      labels: [{ name: 'theme:beta' }],
+    },
+    {
+      number: 2,
+      repo: 'acme/beta',
+      title: 'Beta Two (blocked by beta#1)',
+      body: 'Blocked by #1',
+      state: 'open',
+      labels: [{ name: 'theme:beta' }],
+    },
+  ];
 
+  const graph = buildDependencyGraph(issues);
+  assert.equal(graph.nodes.size, 4, 'all 4 cross-repo issues must remain in graph.nodes');
+  const alpha1 = graph.nodes.get('acme/alpha#1');
+  const alpha2 = graph.nodes.get('acme/alpha#2');
+  const beta1 = graph.nodes.get('acme/beta#1');
+  const beta2 = graph.nodes.get('acme/beta#2');
+  assert.ok(alpha1 && alpha2 && beta1 && beta2);
+  assert.equal(alpha1.isDone, true);
+  assert.equal(alpha2.isBlocked, false, 'alpha#2 must resolve #1 to closed alpha#1, not open beta#1');
+  assert.equal(alpha2.isFrontier, true);
+  assert.equal(beta1.isDone, false);
+  assert.equal(beta1.downstreamImpact, 1);
+  assert.equal(beta2.isBlocked, true, 'beta#2 must resolve #1 to open beta#1');
+  assert.deepEqual(beta2.openBlockers, [1]);
+});
 

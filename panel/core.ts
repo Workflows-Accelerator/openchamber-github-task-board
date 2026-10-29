@@ -2661,9 +2661,12 @@ export function serializeDraftSubtasks(body: string, subtaskTexts: string[]): st
 const DEPENDENCY_LINE_REGEX = /(?:^|\n)\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*([^\n]+)/gi;
 
 export interface DependencyNode {
+  key?: string;
   issue: Issue;
   blockers: number[];
   openBlockers: number[];
+  blockerKeys?: string[];
+  openBlockerKeys?: string[];
   dependents: number[];
   openDependents: number[];
   downstreamImpact: number;
@@ -2678,13 +2681,15 @@ export interface DependencyNode {
 export interface DependencyEdge {
   from: number;
   to: number;
+  fromKey?: string;
+  toKey?: string;
   isCrossTheme: boolean;
   isClosed: boolean;
   isFrontier: boolean;
 }
 
 export interface DependencyGraph {
-  nodes: Map<number, DependencyNode>;
+  nodes: Map<string | number, DependencyNode>;
   layers: DependencyNode[][];
   edges: DependencyEdge[];
   themes: string[];
@@ -2789,28 +2794,101 @@ export function extractIssueReferences(body: string | null | undefined, selfNumb
 }
 
 export function buildDependencyGraph(issues: Issue[]): DependencyGraph {
-  const nodes = new Map<number, DependencyNode>();
-  const byNumber = new Map<number, Issue>();
+  const parseRepo = (raw: string | null | undefined): string => {
+    if (!raw || typeof raw !== 'string') return '';
+    const trimmed = raw.trim();
+    const urlMatch = trimmed.match(/github\.com[/:]([^/\s#?]+)\/([^/\s#?.]+?)(?:\.git)?(?:[/?#]|$)/i);
+    if (urlMatch) return `${urlMatch[1]}/${urlMatch[2]}`;
+    const directMatch = trimmed.match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
+    return directMatch ? `${directMatch[1]}/${directMatch[2]}` : '';
+  };
+  const issueRepoOf = (issue: Issue | null | undefined): string => {
+    if (!issue) return '';
+    return parseRepo(issue.repo) || parseRepo(issue.html_url) || '';
+  };
+
+  class DependencyNodeMap extends Map<string | number, DependencyNode> {
+    private byLowerKey = new Map<string, DependencyNode>();
+    private byNumber = new Map<number, DependencyNode>();
+
+    override set(key: string | number, value: DependencyNode): this {
+      const strKey = typeof key === 'number'
+        ? `${issueRepoOf(value?.issue)}#${key}`
+        : key;
+      super.set(strKey, value);
+      this.byLowerKey.set(strKey.toLowerCase(), value);
+      if (value?.issue && !this.byNumber.has(value.issue.number)) {
+        this.byNumber.set(value.issue.number, value);
+      }
+      return this;
+    }
+
+    override get(key: string | number): DependencyNode | undefined {
+      if (typeof key === 'number') {
+        return super.get(`#${key}`) ?? this.byNumber.get(key);
+      }
+      return super.get(key) ?? this.byLowerKey.get(key.toLowerCase());
+    }
+
+    override has(key: string | number): boolean {
+      return this.get(key) !== undefined;
+    }
+  }
+
+  const parseScopedIssueDependencies = (
+    body: string | null | undefined,
+    defaultRepo: string
+  ): Array<{ key: string; number: number }> => {
+    if (!body || typeof body !== 'string') return [];
+    const byKey = new Map<string, { key: string; number: number }>();
+    const matches = body.matchAll(DEPENDENCY_LINE_REGEX);
+    for (const match of matches) {
+      const text = match[1] || '';
+      const refMatches = text.matchAll(/(?:([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(\d+)/g);
+      for (const rm of refMatches) {
+        const n = parseInt(rm[2], 10);
+        if (!Number.isFinite(n) || n <= 0) continue;
+        const repoPart = parseRepo(rm[1]) || defaultRepo;
+        const key = `${repoPart}#${n}`;
+        const lower = key.toLowerCase();
+        if (!byKey.has(lower)) {
+          byKey.set(lower, { key, number: n });
+        }
+      }
+    }
+    return Array.from(byKey.values()).sort((a, b) => a.number - b.number || a.key.localeCompare(b.key));
+  };
+
+  const nodes = new DependencyNodeMap();
+  const byKey = new Map<string, Issue>();
+  const openDependentKeys = new Map<string, string[]>();
 
   for (const issue of issues) {
-    byNumber.set(issue.number, issue);
+    const issueKey = `${issueRepoOf(issue)}#${issue.number}`;
+    byKey.set(issueKey.toLowerCase(), issue);
   }
 
   // 1. Initial node creation
   for (const issue of issues) {
+    const issueRepo = issueRepoOf(issue);
+    const issueKey = `${issueRepo}#${issue.number}`;
     const isDone =
       issue.state === 'closed' ||
       (issue.labels || []).some((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase() === 'status:done');
 
-    const blockers = parseIssueDependencies(issue.body);
-    const openBlockers = blockers.filter((num) => {
-      const target = byNumber.get(num);
+    const blockerRefs = parseScopedIssueDependencies(issue.body, issueRepo);
+    const openBlockerRefs = blockerRefs.filter((ref) => {
+      const target = byKey.get(ref.key.toLowerCase());
       if (!target) return true; // unknown issue treated as open blocker
       return (
         target.state !== 'closed' &&
         !(target.labels || []).some((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase() === 'status:done')
       );
     });
+    const blockers = blockerRefs.map((ref) => ref.number);
+    const openBlockers = openBlockerRefs.map((ref) => ref.number);
+    const blockerKeys = blockerRefs.map((ref) => ref.key);
+    const openBlockerKeys = openBlockerRefs.map((ref) => ref.key);
 
     const isFrontier = !isDone && openBlockers.length === 0;
     const isBlocked = !isDone && openBlockers.length > 0;
@@ -2824,10 +2902,14 @@ export function buildDependencyGraph(issues: Issue[]): DependencyGraph {
       }
     }
 
-    nodes.set(issue.number, {
+    openDependentKeys.set(issueKey, []);
+    nodes.set(issueKey, {
+      key: issueKey,
       issue,
       blockers,
       openBlockers,
+      blockerKeys,
+      openBlockerKeys,
       dependents: [],
       openDependents: [],
       downstreamImpact: 0,
@@ -2840,14 +2922,20 @@ export function buildDependencyGraph(issues: Issue[]): DependencyGraph {
     });
   }
 
+  const nodeKeyOf = (n: DependencyNode): string =>
+    n.key || `${issueRepoOf(n.issue)}#${n.issue.number}`;
+
   // 2. Inverted dependency graph (dependents)
   for (const node of nodes.values()) {
-    for (const blockerNum of node.blockers) {
-      const blockerNode = nodes.get(blockerNum);
+    const nodeKey = nodeKeyOf(node);
+    for (const blockerKey of node.blockerKeys || []) {
+      const blockerNode = nodes.get(blockerKey);
       if (blockerNode) {
+        const blockerCanonicalKey = nodeKeyOf(blockerNode);
         blockerNode.dependents.push(node.issue.number);
         if (!node.isDone) {
           blockerNode.openDependents.push(node.issue.number);
+          openDependentKeys.get(blockerCanonicalKey)?.push(nodeKey);
         }
       }
     }
@@ -2859,68 +2947,72 @@ export function buildDependencyGraph(issues: Issue[]): DependencyGraph {
       node.downstreamImpact = 0;
       continue;
     }
-    const seen = new Set<number>([node.issue.number]);
-    const queue = [...node.openDependents];
+    const nodeKey = nodeKeyOf(node);
+    const seen = new Set<string>([nodeKey]);
+    const queue = [...(openDependentKeys.get(nodeKey) || [])];
     while (queue.length > 0) {
       const curr = queue.shift()!;
       if (seen.has(curr)) continue;
       seen.add(curr);
-      const currNode = nodes.get(curr);
-      if (currNode) {
-        queue.push(...currNode.openDependents);
+      const nextDeps = openDependentKeys.get(curr);
+      if (nextDeps) {
+        queue.push(...nextDeps);
       }
     }
     node.downstreamImpact = seen.size - 1;
   }
 
   // 4. Assign waterfall layers (cycle-safe Tarjan's SCC + Longest Path)
-  const openNodeNumbers = Array.from(nodes.values())
+  const openNodeKeys = Array.from(nodes.values())
     .filter((n) => !n.isDone)
-    .map((n) => n.issue.number);
+    .map((n) => nodeKeyOf(n));
 
-  const indices = new Map<number, number>();
-  const lowLinks = new Map<number, number>();
-  const stack: number[] = [];
-  const onStack = new Set<number>();
-  const componentOf = new Map<number, number>();
-  const components: number[][] = [];
+  const indices = new Map<string, number>();
+  const lowLinks = new Map<string, number>();
+  const stack: string[] = [];
+  const onStack = new Set<string>();
+  const componentOf = new Map<string, number>();
+  const components: string[][] = [];
   let nextIndex = 0;
 
-  const visit = (num: number): void => {
+  const visit = (nodeKey: string): void => {
     const idx = nextIndex++;
-    indices.set(num, idx);
-    lowLinks.set(num, idx);
-    stack.push(num);
-    onStack.add(num);
+    indices.set(nodeKey, idx);
+    lowLinks.set(nodeKey, idx);
+    stack.push(nodeKey);
+    onStack.add(nodeKey);
 
-    const node = nodes.get(num);
-    const activeBlockers = (node?.openBlockers || []).filter((b) => nodes.has(b) && !nodes.get(b)!.isDone);
+    const node = nodes.get(nodeKey);
+    const activeBlockers = (node?.openBlockerKeys || [])
+      .map((bk) => nodes.get(bk))
+      .filter((bn): bn is DependencyNode => Boolean(bn && !bn.isDone))
+      .map((bn) => nodeKeyOf(bn));
 
     for (const blocker of activeBlockers) {
       if (!indices.has(blocker)) {
         visit(blocker);
-        lowLinks.set(num, Math.min(lowLinks.get(num)!, lowLinks.get(blocker)!));
+        lowLinks.set(nodeKey, Math.min(lowLinks.get(nodeKey)!, lowLinks.get(blocker)!));
       } else if (onStack.has(blocker)) {
-        lowLinks.set(num, Math.min(lowLinks.get(num)!, indices.get(blocker)!));
+        lowLinks.set(nodeKey, Math.min(lowLinks.get(nodeKey)!, indices.get(blocker)!));
       }
     }
 
-    if (lowLinks.get(num) === idx) {
-      const component: number[] = [];
+    if (lowLinks.get(nodeKey) === idx) {
+      const component: string[] = [];
       while (stack.length > 0) {
         const member = stack.pop()!;
         onStack.delete(member);
         componentOf.set(member, components.length);
         component.push(member);
-        if (member === num) break;
+        if (member === nodeKey) break;
       }
       components.push(component);
     }
   };
 
-  for (const num of openNodeNumbers) {
-    if (!indices.has(num)) {
-      visit(num);
+  for (const nodeKey of openNodeKeys) {
+    if (!indices.has(nodeKey)) {
+      visit(nodeKey);
     }
   }
 
@@ -2932,8 +3024,10 @@ export function buildDependencyGraph(issues: Issue[]): DependencyGraph {
     for (const member of components[compIdx]) {
       const memberNode = nodes.get(member);
       if (!memberNode) continue;
-      for (const blocker of memberNode.openBlockers) {
-        const blockerComp = componentOf.get(blocker);
+      for (const blockerKey of memberNode.openBlockerKeys || []) {
+        const blockerNode = nodes.get(blockerKey);
+        const canonicalBlockerKey = blockerNode ? nodeKeyOf(blockerNode) : blockerKey;
+        const blockerComp = componentOf.get(canonicalBlockerKey);
         if (blockerComp !== undefined && blockerComp !== compIdx) {
           maxBlockerLayer = Math.max(maxBlockerLayer, layerOfComponent(blockerComp));
         }
@@ -2945,10 +3039,11 @@ export function buildDependencyGraph(issues: Issue[]): DependencyGraph {
   };
 
   for (const node of nodes.values()) {
+    const nodeKey = nodeKeyOf(node);
     if (node.isDone) {
       node.layer = 0;
     } else {
-      const comp = componentOf.get(node.issue.number);
+      const comp = componentOf.get(nodeKey);
       node.layer = comp !== undefined ? layerOfComponent(comp) : 0;
     }
   }
@@ -2965,24 +3060,39 @@ export function buildDependencyGraph(issues: Issue[]): DependencyGraph {
   }
 
   // 6. Barycenter heuristic ordering within layers
-  const pos = new Map<number, number>();
+  const pos = new Map<string, number>();
   layers[0].sort((a, b) => {
     if (a.isDone !== b.isDone) return a.isDone ? 1 : -1;
     if (a.isFrontier !== b.isFrontier) return a.isFrontier ? -1 : 1;
-    return b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number;
+    return (
+      b.downstreamImpact - a.downstreamImpact ||
+      a.issue.number - b.issue.number ||
+      issueRepoOf(a.issue).localeCompare(issueRepoOf(b.issue))
+    );
   });
-  layers[0].forEach((n, idx) => pos.set(n.issue.number, idx));
+  layers[0].forEach((n, idx) => pos.set(nodeKeyOf(n), idx));
 
   for (let l = 1; l < layers.length; l++) {
     const layer = layers[l];
     const key = (n: DependencyNode): number => {
-      const blockerPositions = n.blockers.map((b) => pos.get(b)).filter((p): p is number => p !== undefined);
+      const blockerPositions = (n.blockerKeys || [])
+        .map((bk) => {
+          const bn = nodes.get(bk);
+          return pos.get(bn ? nodeKeyOf(bn) : bk);
+        })
+        .filter((p): p is number => p !== undefined);
       return blockerPositions.length > 0
         ? blockerPositions.reduce((acc, p) => acc + p, 0) / blockerPositions.length
         : n.issue.number;
     };
-    layer.sort((a, b) => key(a) - key(b) || b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number);
-    layer.forEach((n, idx) => pos.set(n.issue.number, idx));
+    layer.sort(
+      (a, b) =>
+        key(a) - key(b) ||
+        b.downstreamImpact - a.downstreamImpact ||
+        a.issue.number - b.issue.number ||
+        issueRepoOf(a.issue).localeCompare(issueRepoOf(b.issue))
+    );
+    layer.forEach((n, idx) => pos.set(nodeKeyOf(n), idx));
   }
 
   // 7. Edges & themes
@@ -2991,6 +3101,7 @@ export function buildDependencyGraph(issues: Issue[]): DependencyGraph {
   const frontierNodes: DependencyNode[] = [];
 
   for (const node of nodes.values()) {
+    const toKey = nodeKeyOf(node);
     if (node.isFrontier) {
       frontierNodes.push(node);
     }
@@ -3001,13 +3112,18 @@ export function buildDependencyGraph(issues: Issue[]): DependencyGraph {
     }
     list.push(node);
 
-    for (const blockerNum of node.blockers) {
-      const blockerNode = nodes.get(blockerNum);
+    const blockerKeys = node.blockerKeys || [];
+    for (let i = 0; i < node.blockers.length; i++) {
+      const blockerNum = node.blockers[i];
+      const blockerKey = blockerKeys[i] || `${issueRepoOf(node.issue)}#${blockerNum}`;
+      const blockerNode = nodes.get(blockerKey);
       const isCrossTheme = blockerNode ? blockerNode.theme !== node.theme : false;
       const isClosed = node.isDone || (blockerNode?.isDone ?? false);
       edges.push({
         from: blockerNum,
         to: node.issue.number,
+        fromKey: blockerNode ? nodeKeyOf(blockerNode) : blockerKey,
+        toKey,
         isCrossTheme,
         isClosed,
         isFrontier: node.isFrontier,
