@@ -396,7 +396,7 @@ export class GitHubClient {
     options: { etag?: string | null } = {},
   ): Promise<IssueRead> {
     const safeNumber = parseIssueNumber(number);
-    const allowed = new Set(['body', 'labels', 'state']);
+    const allowed = new Set(['title', 'body', 'labels', 'state']);
     for (const key of Object.keys(patch)) {
       if (!allowed.has(key)) {
         throw new GitHubError('invalid', 0, `Refusing to write unsupported field ${key}`);
@@ -411,6 +411,12 @@ export class GitHubClient {
       throw new GitHubError('server', 200, 'GitHub issue response was malformed');
     }
     return { item: data, etag: headers.get('etag') };
+  }
+
+  async addComment(number: number, body: string): Promise<void> {
+    await this.request(`${this.issuesBase()}/issues/${parseIssueNumber(number)}/comments`, {
+      method: 'POST', body: { body },
+    });
   }
 
   async createIssue(payload: {

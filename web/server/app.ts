@@ -8,7 +8,8 @@
 // ==========================================
 
 import http from 'node:http';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync, renameSync } from 'node:fs';
+import path from 'node:path';
 import { createHash } from 'node:crypto';
 import {
   ConfigError,
@@ -32,6 +33,7 @@ import { alignDraftIssue } from '../../panel/core.ts';
 import { findSections, replaceSectionText, SectionError } from './sections.ts';
 import {
   BoardError,
+  parseOrderMarker, stripOrderMarker, setOrderMarker, midpointOrder,
   applyQuestionAnswer,
   applySectionEdit,
   applyStatusChange,
@@ -400,6 +402,20 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     ? (options.sessionFilePath || undefined)
     : config.sessionFilePath;
 
+  // Fixed filename beside board data. Repository/name input never becomes a path.
+  const namesPath = path.join(path.dirname(sessionFilePath || config.sessionFilePath), 'project-names.json');
+  function projectNames(): Record<string, string> {
+    try {
+      const parsed = JSON.parse(readFileSync(namesPath, 'utf8'));
+      if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') return {};
+      return Object.fromEntries(Object.entries(parsed).filter(([key, value]) =>
+        /^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(key) && typeof value === 'string' && value.length <= 60)) as Record<string, string>;
+    } catch (error: any) {
+      if (error.code === 'ENOENT') return {};
+      throw new HttpError(500, 'names_unavailable', 'Project names could not be read; nothing was changed');
+    }
+  }
+
   const sessions = new SessionStore({
     secret: config.sessionSecret,
     filePath: sessionFilePath,
@@ -586,7 +602,26 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
     if (url.pathname === '/api/repos') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      return { status: 200, body: await repositories.view() };
+      return { status: 200, body: { ...await repositories.view(), projectNames: projectNames() } };
+    }
+    if (url.pathname === '/api/project-names') {
+      if (method === 'GET') return { status: 200, body: { projectNames: projectNames() } };
+      if (method !== 'PUT') return methodNotAllowed('GET, PUT');
+      requireCsrf(req, record);
+      const body = await readJsonBody(req);
+      if (typeof body?.repository !== 'string' || !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(body.repository) ||
+          typeof body?.name !== 'string' || body.name.trim().length > 60 || /[\x00-\x1f\x7f<>]/.test(body.name)) {
+        throw new HttpError(400, 'invalid_name', 'Use a project name of 1–60 characters (empty resets); no control characters or angle brackets');
+      }
+      const [owner, name] = body.repository.split('/');
+      const repository = await resolveRepository(owner, name);
+      const names = projectNames();
+      const key = repository.full.toLowerCase();
+      if (body.name.trim()) names[key] = body.name.trim(); else delete names[key];
+      mkdirSync(path.dirname(namesPath), { recursive: true, mode: 0o700 });
+      writeFileSync(namesPath + '.tmp', JSON.stringify(names, null, 2) + '\n', { mode: 0o600 });
+      renameSync(namesPath + '.tmp', namesPath);
+      return { status: 200, body: { projectNames: names } };
     }
     if (url.pathname === '/api/combined/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
@@ -602,7 +637,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       route = '/api' + qualified[3];
     } else if (route.startsWith('/api/repos/')) {
       throw new HttpError(400, 'repository_not_allowed', 'An exact discovered owner/name is required');
-    } else if (route === '/api/board' || route.startsWith('/api/issues/')) {
+    } else if (route === '/api/board' || route === '/api/issues' || route.startsWith('/api/issues/')) {
       if (!config.repo) throw new HttpError(400, 'repository_not_allowed', 'Select a discovered repository');
       repository = await resolveRepository(config.repo.owner, config.repo.name);
     }
@@ -618,7 +653,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         throw new HttpError(400, 'invalid_request', 'Body must be a JSON object');
       }
-      if (typeof body.title !== 'string' || !body.title.trim()) {
+      if (typeof body.title !== 'string' || !body.title.trim() || body.title.trim().length > 256) {
         throw new HttpError(400, 'invalid_request', 'Issue title is required and cannot be empty');
       }
       const title = body.title.trim();
@@ -685,6 +720,16 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           issues: refreshedBoard.issues,
         },
       };
+    }
+
+    const draftMatch = /^\/api\/issues\/([^/]+)\/(draft|order|move)$/.exec(route);
+    if (draftMatch) {
+      if (method !== 'PUT') return methodNotAllowed('PUT');
+      requireCsrf(req, record);
+      const body = await readJsonBody(req);
+      return writeIssue(repository!, parseIssueNumberOrThrow(draftMatch[1]), body, {
+        kind: draftMatch[2] as 'draft' | 'order' | 'move', data: body,
+      });
     }
 
     const detailMatch = /^\/api\/issues\/([^/]+)$/.exec(route);
@@ -842,6 +887,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   }
 
   type WriteOp =
+    | { kind: 'draft' | 'order' | 'move'; data: any }
     | { kind: 'section'; sectionId: unknown; text: unknown }
     | { kind: 'question'; index: number; answer: unknown }
     | { kind: 'status'; status: unknown }
@@ -980,6 +1026,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         });
       }
 
+      let movedTo: string | null = null;
       let baseSectionId = '';
       let baseText = '';
       let targetText = '';
@@ -1051,8 +1098,55 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
       let patch: Record<string, unknown> = {};
       try {
-        if (op.kind === 'section') {
-          patch = { body: replaceSectionText(fresh.item.body ?? '', baseSectionId, op.text) };
+        if (op.kind === 'draft' || op.kind === 'order' || op.kind === 'move') {
+          if (fresh.item.state !== 'open' || statusLabelOf(labelNames(fresh.item)) !== 'status:draft') {
+            throw new HttpError(400, 'not_draft', 'Only open drafts can be edited, moved or reordered here');
+          }
+          if (op.kind === 'draft') {
+            if (typeof op.data.title !== 'string' || !op.data.title.trim() || op.data.title.trim().length > 256 ||
+                typeof op.data.description !== 'string' || op.data.description.length > 50000 || /<!--\s*board-order:/i.test(op.data.description)) {
+              throw new HttpError(400, 'invalid_draft', 'Use a title of 1–256 characters and a description up to 50,000 characters');
+            }
+            const order = parseOrderMarker(fresh.item.body ?? '');
+            patch = { title: op.data.title.trim(), body: order === null ? op.data.description : setOrderMarker(op.data.description, order) };
+          } else if (op.kind === 'order') {
+            const previous = op.data.previous;
+            const next = op.data.next;
+            if (![previous, next].every((value) => value === null || (typeof value === 'number' && Number.isFinite(value)))) {
+              throw new HttpError(400, 'invalid_order', 'Order neighbours must be finite numbers or null');
+            }
+            const order = midpointOrder(previous, next);
+            if (!Number.isFinite(order) || (previous !== null && next !== null && !(order > previous && order < next))) {
+              throw new HttpError(409, 'order_precision', 'No space between these neighbours; choose another position');
+            }
+            patch = { body: setOrderMarker(fresh.item.body ?? '', order) };
+          } else {
+            if (typeof op.data.target !== 'string' || !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(op.data.target)) {
+              throw new HttpError(400, 'invalid_target', 'Select a discovered target project');
+            }
+            const [owner, name] = op.data.target.split('/');
+            const target = await resolveRepository(owner, name);
+            if (target.full.toLowerCase() === repository.full.toLowerCase() || target.archived || !target.hasIssues) {
+              throw new HttpError(400, 'invalid_target', 'Select a different writable project');
+            }
+            const created = await clientFor(target).createIssue({ title: fresh.item.title,
+              body: fresh.item.body ?? '', labels: labelNames(fresh.item) }).catch(mapGitHubError);
+            movedTo = created.item.html_url;
+            // Never close source unless creation and its link comment both succeeded.
+            try { await github.addComment(number, `Moved to ${movedTo}`); }
+            catch { throw new HttpError(409, 'partial_move', 'Target created, source remains open. Do not repeat move; inspect both issues.', { targetUrl: movedTo }); }
+            // Comment creation may change GitHub's ETag; re-read and compare content.
+            const afterComment = await github.getIssue(number).catch(mapGitHubError);
+            if (issueFingerprint(afterComment.item, repository) !== supplied) {
+              throw new HttpError(409, 'partial_move', 'Target created, source changed and was not closed. Do not repeat move.', { targetUrl: movedTo });
+            }
+            fresh.etag = afterComment.etag;
+            patch = { state: 'closed' };
+          }
+        } else if (op.kind === 'section') {
+          patch = { body: replaceSectionText(stripOrderMarker(fresh.item.body ?? ''), baseSectionId, op.text) };
+          const order = parseOrderMarker(fresh.item.body ?? '');
+          if (order !== null) patch.body = setOrderMarker(patch.body as string, order);
         } else if (op.kind === 'question') {
           const curDetail = buildIssueDetail(fresh.item, repository);
           const curQView = curDetail.openQuestions[baseQuestionIndex];
@@ -1063,7 +1157,8 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         } else if (op.kind === 'patch') {
           patch = {};
           if (typeof op.body === 'string') {
-            patch.body = op.body;
+            const order = parseOrderMarker(fresh.item.body ?? '');
+            patch.body = order !== null ? setOrderMarker(op.body, order) : op.body;
           }
           if (typeof op.status === 'string') {
             patch.labels = applyStatusChange(fresh.item, op.status);
@@ -1089,6 +1184,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       try {
         await github.updateIssue(number, patch, { etag: fresh.etag });
       } catch (error) {
+        if (movedTo) throw new HttpError(409, 'partial_move', 'Target created; source close failed or is uncertain. Do not repeat move; inspect both issues.', { targetUrl: movedTo });
         if (error instanceof GitHubError && error.status === 412) {
           const reread = await github.getIssue(number).catch(mapGitHubError);
           throw new HttpError(409, 'conflict', 'This task changed on GitHub while saving; nothing was written', {
@@ -1106,13 +1202,16 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       try {
         reread = await github.getIssue(number);
       } catch {
+        if (movedTo) throw new HttpError(409, 'partial_move', 'Target created; source close could not be verified. Do not repeat move.', { targetUrl: movedTo });
         throw new HttpError(502, 'write_outcome_unknown', 'Outcome unknown \u2014 check the issue on GitHub');
       }
 
       const currentItem = reread.item;
       let verified = false;
 
-      if (op.kind === 'section') {
+      if (op.kind === 'draft' || op.kind === 'order' || op.kind === 'move') {
+        verified = Object.entries(patch).every(([key, value]) => currentItem[key] === value);
+      } else if (op.kind === 'section') {
         const curSec = findSections(currentItem.body ?? '').find((s) => s.id === op.sectionId);
         const expectedSec = findSections((patch.body as string) ?? '').find((s) => s.id === op.sectionId);
         if (curSec && expectedSec) {
@@ -1138,7 +1237,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         let matches = true;
         if (typeof op.body === 'string') {
           const normCur = (currentItem.body ?? '').replace(/\r\n/g, '\n');
-          const normTarget = op.body.replace(/\r\n/g, '\n');
+          const normTarget = (patch.body as string).replace(/\r\n/g, '\n');
           if (normCur !== normTarget) matches = false;
         }
         if (typeof op.status === 'string') {
@@ -1159,6 +1258,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           body: {
             issue: buildIssueDetail(currentItem, repository),
             savedAt: new Date(now()).toISOString(),
+            ...(movedTo ? { targetUrl: movedTo } : {}),
             statusOptions: statusOptions(),
           },
         };

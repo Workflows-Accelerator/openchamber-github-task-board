@@ -23,6 +23,50 @@ import {
   SectionError,
 } from './sections.ts';
 
+// Web-owned shared contracts. No dependency on the panel view-state implementation.
+export function shortName(full: string, overrides: Record<string, string> = {}): string {
+  if (overrides[full.toLowerCase()]?.trim()) return overrides[full.toLowerCase()].trim();
+  const part = full.slice(full.lastIndexOf('/') + 1);
+  const title = (token: string) => token.charAt(0).toUpperCase() + token.slice(1).toLowerCase();
+  const tokens = part.split(/[-_.]+/).filter(Boolean)
+    .filter((token) => !['openchamber', 'github', 'gh', 'repo'].includes(token.toLowerCase()));
+  return tokens.length ? tokens.map(title).join(' ') : title(part);
+}
+
+const orderLine = /^[ \t]*<!--\s*board-order:\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)\s*-->[ \t]*\r?$/gim;
+export function parseOrderMarker(body: string = ''): number | null {
+  const matches = [...body.matchAll(orderLine)].map((m) => Number(m[1])).filter(Number.isFinite);
+  return matches.length ? matches[matches.length - 1] : null;
+}
+export function stripOrderMarker(body: string = ''): string {
+  // Leave every non-marker byte alone, including CRLF and checklist line numbers.
+  return body.replace(orderLine, '');
+}
+export function setOrderMarker(body: string, order: number): string {
+  if (!Number.isFinite(order)) throw new BoardError('invalid', 'Order must be finite');
+  const base = stripOrderMarker(body).replace(/\s+$/, '');
+  const eol = body.includes('\r\n') ? '\r\n' : '\n';
+  return (base ? base + eol + eol : '') + `<!-- board-order: ${order} -->`;
+}
+export function midpointOrder(previous: number | null, next: number | null): number {
+  return previous === null ? (next === null ? 1000 : next - 1000) :
+    next === null ? previous + 1000 : previous / 2 + next / 2;
+}
+function listFields(raw: any, repository: BoardRepository | null) {
+  const body = typeof raw.body === 'string' ? raw.body : '';
+  const description = stripOrderMarker(body).trimEnd();
+  const dependencies: number[] = [];
+  for (const line of description.split(/\r?\n/)) {
+    if (/^\s*(?:[-*+]\s*)?(?:blocked by|depends on|requires)\b/i.test(line)) {
+      for (const match of line.matchAll(/#(\d+)/g)) dependencies.push(Number(match[1]));
+    }
+  }
+  return { createdAt: raw.created_at ?? null, description, order: parseOrderMarker(body),
+    fingerprint: issueFingerprint(raw, repository), dependencies,
+    pendingItems: [...(normalizedOf(raw)?.humanTasks ?? []), ...parseWebOpenQuestions(body)]
+      .map((item) => ({ text: item.text, completed: item.completed })) };
+}
+
 export type BoardErrorCode = 'not_an_issue' | 'not_editable' | 'invalid';
 
 export class BoardError extends Error {
@@ -205,6 +249,12 @@ export interface BoardListItem {
   attention: string;
   column: string | null;
   updatedAt: string | null;
+  createdAt: string | null;
+  description: string;
+  order: number | null;
+  fingerprint: string;
+  dependencies: number[];
+  pendingItems: Array<{ text: string; completed: boolean }>;
   counts: {
     subtasks: { total: number; done: number };
     openQuestions: { total: number; open: number };
@@ -277,7 +327,7 @@ export function issueFingerprint(raw: any, repository: BoardRepository | null = 
     .sort();
   const state = raw?.state === 'closed' ? 'closed' : 'open';
   return createHash('sha256')
-    .update(JSON.stringify({ body, labels, state, ...(repository ? { repository: repository.id ?? repository.full, full: repository.full, number: raw.number } : {}) }))
+    .update(JSON.stringify({ body, title: raw?.title ?? '', labels, state, ...(repository ? { repository: repository.id ?? repository.full, full: repository.full, number: raw.number } : {}) }))
     .digest('hex');
 }
 
@@ -298,6 +348,7 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
   const friendly = parseFriendlyTitle(issue.body, issue.title);
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
   return {
+    ...listFields(rawItem, repository),
     number: issue.number,
     key: issueKey(repository, issue.number),
     repository,
@@ -321,35 +372,8 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
 
 export function buildBoardList(rawItems: any[], repository: BoardRepository | null = null): { issues: BoardListItem[]; excluded: number } {
   const raw = Array.isArray(rawItems) ? rawItems : [];
-  const normalized = normalizeGithubIssues(raw);
-  const issues: BoardListItem[] = normalized.map((issue) => {
-    const metadata = resolveV2Metadata(issue);
-    const labels = labelNames(issue);
-    const questions = parseWebOpenQuestions(issue.body ?? '');
-    const friendly = parseFriendlyTitle(issue.body, issue.title);
-    const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
-    return {
-      number: issue.number,
-      key: issueKey(repository, issue.number),
-      repository,
-      title: issue.title,
-      friendlyTitle,
-      state: issue.state,
-      htmlUrl: issue.html_url,
-      labels,
-      statusLabel: statusLabelOf(labels),
-      phase: metadata.phase,
-      attention: metadata.attention,
-      column: resolveIssueColumn(issue),
-      updatedAt: issue.updated_at ?? null,
-      counts: {
-        subtasks: countsOf(issue.subtasks),
-        openQuestions: countsOf(questions),
-        humanTasks: countsOf(issue.humanTasks ?? []),
-      },
-    };
-  });
-  return { issues, excluded: raw.length - normalized.length };
+  const issues = raw.filter((item) => normalizedOf(item)).map((item) => buildBoardListItem(item, repository));
+  return { issues, excluded: raw.length - issues.length };
 }
 
 export function buildIssueDetail(raw: any, repository: BoardRepository | null = null): IssueDetail {
@@ -379,6 +403,7 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
 
   return {
+    ...listFields(raw, repository),
     number: issue.number,
     key: issueKey(repository, issue.number),
     repository,
@@ -386,7 +411,7 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     friendlyTitle,
     state: issue.state,
     htmlUrl: issue.html_url,
-    body: issue.body,
+    body: stripOrderMarker(issue.body),
     fingerprint: issueFingerprint(raw, repository),
     labels,
     statusLabel: statusLabelOf(labels),
@@ -395,7 +420,7 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     column: resolveIssueColumn(issue),
     updatedAt: issue.updated_at ?? null,
     createdAt: issue.created_at ?? null,
-    editableSections: editableSections(issue.body),
+    editableSections: editableSections(stripOrderMarker(issue.body)),
     openQuestions,
     humanTasks: (issue.humanTasks ?? []).map((task) => ({ text: task.text, completed: task.completed })),
     acceptanceCriteria: (issue.acceptanceCriteria ?? []).map((item) => ({

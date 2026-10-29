@@ -115,6 +115,7 @@ export async function startFakeGitHub(options = {}) {
   const state = {
     requests: [],
     patchCalls: [],
+    commentCalls: [],
     unknownRepoHits: [],
     failAll: false,
     failDiscovery: false,
@@ -265,6 +266,11 @@ export async function startFakeGitHub(options = {}) {
         return send(201, newIssue, { etag: etagFor(newIssue) });
       }
 
+      if (parts[3] === 'issues' && parts[5] === 'comments' && req.method === 'POST') {
+        const payload = await readBody(req);
+        state.commentCalls.push({ repo: spec.repo, number: Number(parts[4]), payload });
+        return send(201, { id: state.commentCalls.length, ...payload });
+      }
       const issueMatch = new RegExp(`^/repos/${spec.repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/issues/(\\d+)$`).exec(
         url.pathname,
       );
@@ -311,6 +317,7 @@ export async function startFakeGitHub(options = {}) {
           }
 
           if (applyPayload) {
+            if (payload && typeof payload.title === 'string') issue.title = payload.title;
             if (payload && typeof payload.body === 'string') issue.body = payload.body;
             if (payload && Array.isArray(payload.labels)) {
               issue.labels = payload.labels.map((name) => ({ name, color: 'ededed' }));
