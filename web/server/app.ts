@@ -402,6 +402,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
   const sessions = new SessionStore({
     secret: config.sessionSecret,
+    passwordHash: config.passwordHash,
     filePath: sessionFilePath,
     absoluteTtlMs: options.sessionTtlMs,
     idleTtlMs: options.idleTtlMs,
