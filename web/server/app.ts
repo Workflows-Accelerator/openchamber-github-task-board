@@ -977,7 +977,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       );
     }
 
-    return withIssueLock(issueKey(repository, number), async () => {
+    const runLocked = async (): Promise<HandlerResponse> => {
       // A queued write must re-resolve freshness before any issue request.
       repository = await resolveRepository(repository.owner, repository.name);
       const github = clientFor(repository);
@@ -1077,14 +1077,273 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             const order = parseOrderMarker(fresh.item.body ?? '');
             patch = { title: op.data.title.trim(), body: order === null ? op.data.description : setOrderMarker(op.data.description, order) };
           } else if (op.kind === 'order') {
+            if (Array.isArray(op.data?.updates)) {
+              const rawUpdates = op.data.updates;
+              const rawNeighbours = Array.isArray(op.data.neighbours) ? op.data.neighbours : [];
+              if (rawUpdates.length < 1 || rawUpdates.length > 200 || rawNeighbours.length > 200) {
+                throw new HttpError(400, 'invalid_order', 'Order update list is invalid');
+              }
+              interface PreparedOrderItem {
+                key: string;
+                repo: RepositoryEntry;
+                number: number;
+                fingerprint: string;
+                order: number | null;
+                isUpdate: boolean;
+                isPrimary: boolean;
+                read: IssueRead;
+              }
+              const preparedMap = new Map<string, PreparedOrderItem>();
+              const updateSequence: PreparedOrderItem[] = [];
+              let prevOrderVal: number | null = null;
+              let includesPrimary = false;
+
+              for (const entry of rawUpdates) {
+                if (!entry || typeof entry !== 'object') {
+                  throw new HttpError(400, 'invalid_order', 'Order update entry is invalid');
+                }
+                const repoStr = typeof entry.repo === 'string' && entry.repo ? entry.repo : repository.full;
+                if (!/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(repoStr)) {
+                  throw new HttpError(400, 'invalid_order', 'Order update repository is invalid');
+                }
+                const itemNum = parseIssueNumberOrThrow(String(entry.number ?? ''));
+                const itemFp = typeof entry.fingerprint === 'string' ? entry.fingerprint : '';
+                if (!/^[a-f0-9]{64}$/.test(itemFp)) {
+                  throw new HttpError(400, 'fingerprint_required', 'Each reordered draft requires a valid fingerprint');
+                }
+                if (typeof entry.order !== 'number' || !Number.isFinite(entry.order)) {
+                  throw new HttpError(400, 'invalid_order', 'Each reordered draft requires a finite numeric order');
+                }
+                if (prevOrderVal !== null && !(entry.order > prevOrderVal)) {
+                  throw new HttpError(409, 'invalid_order', 'Order updates must be strictly increasing');
+                }
+                prevOrderVal = entry.order;
+                const [uOwner, uName] = repoStr.split('/');
+                const uRepo = uOwner.toLowerCase() === repository.owner.toLowerCase() && uName.toLowerCase() === repository.name.toLowerCase()
+                  ? repository
+                  : await resolveRepository(uOwner, uName);
+                const k = issueKey(uRepo, itemNum);
+                if (preparedMap.has(k)) {
+                  throw new HttpError(400, 'invalid_order', 'Duplicate draft in order updates');
+                }
+                const isPrimary = uRepo.full.toLowerCase() === repository.full.toLowerCase() && itemNum === number;
+                if (isPrimary) {
+                  if (itemFp !== supplied) {
+                    throw new HttpError(409, 'conflict', 'This task changed on GitHub after you opened it; nothing was written');
+                  }
+                  includesPrimary = true;
+                }
+                const itemRead = isPrimary ? fresh : await clientFor(uRepo).getIssue(itemNum).catch(mapGitHubError);
+                if (itemRead.item.pull_request || itemRead.item.state !== 'open' || statusLabelOf(labelNames(itemRead.item)) !== 'status:draft') {
+                  throw new HttpError(400, 'not_draft', 'Only open drafts can be reordered');
+                }
+                if (issueFingerprint(itemRead.item, uRepo) !== itemFp) {
+                  throw new HttpError(409, 'conflict', 'A draft in this order changed on GitHub; refresh and try again', {
+                    issue: buildIssueDetail(fresh.item, repository),
+                    statusOptions: statusOptions(),
+                  });
+                }
+                const prepared: PreparedOrderItem = {
+                  key: k,
+                  repo: uRepo,
+                  number: itemNum,
+                  fingerprint: itemFp,
+                  order: entry.order,
+                  isUpdate: true,
+                  isPrimary,
+                  read: itemRead,
+                };
+                preparedMap.set(k, prepared);
+                updateSequence.push(prepared);
+              }
+
+              if (!includesPrimary) {
+                throw new HttpError(400, 'invalid_order', 'Order updates must include the target draft');
+              }
+
+              for (const entry of rawNeighbours) {
+                if (!entry || typeof entry !== 'object') {
+                  throw new HttpError(400, 'invalid_order', 'Order neighbour entry is invalid');
+                }
+                const repoStr = typeof entry.repo === 'string' && entry.repo ? entry.repo : repository.full;
+                if (!/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(repoStr)) {
+                  throw new HttpError(400, 'invalid_order', 'Order neighbour repository is invalid');
+                }
+                const itemNum = parseIssueNumberOrThrow(String(entry.number ?? ''));
+                const itemFp = typeof entry.fingerprint === 'string' ? entry.fingerprint : '';
+                if (!/^[a-f0-9]{64}$/.test(itemFp)) {
+                  throw new HttpError(400, 'fingerprint_required', 'Each neighbour draft requires a valid fingerprint');
+                }
+                const [nOwner, nName] = repoStr.split('/');
+                const nRepo = nOwner.toLowerCase() === repository.owner.toLowerCase() && nName.toLowerCase() === repository.name.toLowerCase()
+                  ? repository
+                  : await resolveRepository(nOwner, nName);
+                const k = issueKey(nRepo, itemNum);
+                if (preparedMap.has(k)) continue;
+                const nRead = await clientFor(nRepo).getIssue(itemNum).catch(mapGitHubError);
+                if (nRead.item.pull_request || nRead.item.state !== 'open' || statusLabelOf(labelNames(nRead.item)) !== 'status:draft') {
+                  throw new HttpError(409, 'conflict', 'A neighbouring draft is no longer an open draft; refresh and try again');
+                }
+                if (issueFingerprint(nRead.item, nRepo) !== itemFp) {
+                  throw new HttpError(409, 'conflict', 'A neighbouring draft changed on GitHub; nothing was written', {
+                    issue: buildIssueDetail(fresh.item, repository),
+                    statusOptions: statusOptions(),
+                  });
+                }
+                preparedMap.set(k, {
+                  key: k,
+                  repo: nRepo,
+                  number: itemNum,
+                  fingerprint: itemFp,
+                  order: parseOrderMarker(nRead.item.body ?? ''),
+                  isUpdate: false,
+                  isPrimary: false,
+                  read: nRead,
+                });
+              }
+
+              const updatedDetails: Array<ReturnType<typeof buildIssueDetail>> = [];
+              let primaryDetail: ReturnType<typeof buildIssueDetail> | null = null;
+              let writesCompleted = 0;
+
+              for (const item of updateSequence) {
+                const nextBody = setOrderMarker(item.read.item.body ?? '', item.order as number);
+                if (nextBody === (item.read.item.body ?? '')) {
+                  const detail = buildIssueDetail(item.read.item, item.repo);
+                  updatedDetails.push(detail);
+                  if (item.isPrimary) primaryDetail = detail;
+                  continue;
+                }
+                const itemClient = clientFor(item.repo);
+                try {
+                  await itemClient.updateIssue(item.number, { body: nextBody }, { etag: item.read.etag });
+                } catch (error) {
+                  if (error instanceof GitHubError && error.status === 412) {
+                    if (writesCompleted > 0) {
+                      throw new HttpError(
+                        409,
+                        'partial_order',
+                        'Order was only partially updated because another draft changed concurrently; refresh to reconcile the current order.',
+                        { updatedIssues: updatedDetails, statusOptions: statusOptions() },
+                      );
+                    }
+                    const reread = await github.getIssue(number).catch(mapGitHubError);
+                    throw new HttpError(409, 'conflict', 'This task changed on GitHub while saving; nothing was written', {
+                      issue: buildIssueDetail(reread.item, repository),
+                      statusOptions: statusOptions(),
+                    });
+                  }
+                  if (writesCompleted > 0) {
+                    throw new HttpError(
+                      502,
+                      'write_outcome_unknown',
+                      'Order was partially written before a GitHub error; refresh the board to reconcile before retrying.',
+                      { updatedIssues: updatedDetails, statusOptions: statusOptions() },
+                    );
+                  }
+                  if (error instanceof GitHubError && (error.kind === 'network' || error.kind === 'server')) {
+                    throw new HttpError(502, 'write_outcome_unknown', 'Outcome unknown \u2014 check the issue on GitHub');
+                  }
+                  mapGitHubError(error);
+                }
+
+                let rereadItem: IssueRead;
+                try {
+                  rereadItem = await itemClient.getIssue(item.number);
+                } catch {
+                  throw new HttpError(
+                    502,
+                    'write_outcome_unknown',
+                    'Outcome unknown \u2014 check the issue on GitHub',
+                    { updatedIssues: updatedDetails, statusOptions: statusOptions() },
+                  );
+                }
+                if ((rereadItem.item.body ?? '') !== nextBody) {
+                  throw new HttpError(
+                    502,
+                    'write_outcome_unknown',
+                    'Outcome unknown \u2014 check the issue on GitHub',
+                    { updatedIssues: updatedDetails, statusOptions: statusOptions() },
+                  );
+                }
+                writesCompleted += 1;
+                const detail = buildIssueDetail(rereadItem.item, item.repo);
+                updatedDetails.push(detail);
+                if (item.isPrimary) primaryDetail = detail;
+              }
+
+              log(`write order issue=${number} count=${writesCompleted}`);
+              return {
+                status: 200,
+                body: {
+                  issue: primaryDetail ?? buildIssueDetail(fresh.item, repository),
+                  updatedIssues: updatedDetails,
+                  savedAt: new Date(now()).toISOString(),
+                  statusOptions: statusOptions(),
+                },
+              };
+            }
+
             const previous = op.data.previous;
             const next = op.data.next;
             if (![previous, next].every((value) => value === null || (typeof value === 'number' && Number.isFinite(value)))) {
               throw new HttpError(400, 'invalid_order', 'Order neighbours must be finite numbers or null');
             }
-            const order = midpointOrder(previous, next);
+            if (previous !== null && next !== null && previous > next) {
+              throw new HttpError(409, 'invalid_order', 'Order neighbours must be in ascending order');
+            }
+            const listed = repository.hasIssues
+              ? await github.listIssues().catch(mapGitHubError)
+              : { items: [], truncated: false };
+            const otherDrafts = (listed.items || []).filter(
+              (item: any) =>
+                !item.pull_request &&
+                item.state === 'open' &&
+                item.number !== number &&
+                statusLabelOf(labelNames(item)) === 'status:draft',
+            );
+            const otherOrders = otherDrafts
+              .map((item: any) => parseOrderMarker(item.body ?? ''))
+              .filter((val): val is number => val !== null);
+
+            if (previous !== null && next !== null && otherOrders.some((val) => val > previous && val < next)) {
+              throw new HttpError(409, 'conflict', 'Another draft moved into that position; refresh the board and try again', {
+                issue: buildIssueDetail(fresh.item, repository),
+                statusOptions: statusOptions(),
+              });
+            }
+            if (otherOrders.length > 0) {
+              const prevKnown = previous !== null && otherOrders.includes(previous);
+              const nextKnown = next !== null && otherOrders.includes(next);
+              if ((prevKnown || nextKnown) && ((previous !== null && !prevKnown) || (next !== null && !nextKnown))) {
+                throw new HttpError(409, 'conflict', 'A neighbouring draft changed order on GitHub; refresh the board and try again', {
+                  issue: buildIssueDetail(fresh.item, repository),
+                  statusOptions: statusOptions(),
+                });
+              }
+            }
+
+            let order = midpointOrder(previous, next);
+            if (otherOrders.includes(order)) {
+              throw new HttpError(409, 'conflict', 'Another draft already occupies that order position; refresh the board and try again', {
+                issue: buildIssueDetail(fresh.item, repository),
+                statusOptions: statusOptions(),
+              });
+            }
             if (!Number.isFinite(order) || (previous !== null && next !== null && !(order > previous && order < next))) {
-              throw new HttpError(409, 'order_precision', 'No space between these neighbours; choose another position');
+              const baseOrder = previous ?? 0;
+              order = baseOrder + 1000;
+              const trailingDrafts = otherDrafts
+                .map((item: any) => ({ item, order: parseOrderMarker(item.body ?? '') }))
+                .filter((entry): entry is { item: any; order: number } => entry.order !== null && entry.order >= (next ?? order))
+                .sort((a, b) => a.order - b.order || a.item.number - b.item.number);
+              let step = 2;
+              for (const trailing of trailingDrafts) {
+                const trailingRead = await github.getIssue(trailing.item.number).catch(mapGitHubError);
+                const rebalancedBody = setOrderMarker(trailingRead.item.body ?? '', baseOrder + step * 1000);
+                step += 1;
+                await github.updateIssue(trailing.item.number, { body: rebalancedBody }, { etag: trailingRead.etag }).catch(mapGitHubError);
+              }
             }
             patch = { body: setOrderMarker(fresh.item.body ?? '', order) };
           } else {
@@ -1321,7 +1580,12 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           statusOptions: statusOptions(),
         },
       );
-    });
+    };
+
+    if (op.kind === 'order') {
+      return withIssueLock('board:order', () => withIssueLock(issueKey(repository, number), runLocked));
+    }
+    return withIssueLock(issueKey(repository, number), runLocked);
   }
 
   return {

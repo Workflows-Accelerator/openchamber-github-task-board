@@ -271,6 +271,132 @@ test('GitHub ETag rejection during reorder is a conflict, never a successful ord
   assert.equal(parseOrderMarker(fake.findIssue(1).body), 1000);
 });
 
+test('F5: reorder rebalances automatically across 60 successive midpoint bisections without 409 precision failure', async (t) => {
+  const { client, fake } = await fixture(t);
+  let lo = 1000;
+  let hi = 2000;
+  for (let i = 0; i < 60; i += 1) {
+    const res = await client.request(endpoint + '/order', {
+      method: 'PUT',
+      body: { fingerprint: await fingerprint(client), previous: lo, next: hi },
+    });
+    assert.equal(res.status, 200, `iteration ${i}: ${res.text}`);
+    hi = res.json.issue.order;
+    assert.ok(Number.isFinite(hi));
+    assert.ok(hi > lo);
+  }
+  assert.ok(Number.isFinite(parseOrderMarker(fake.findIssue(1).body)));
+});
+
+test('F5: reorder validates neighbour fingerprints, rejects stale/colliding boundaries, and handles multi-issue initialization and partial failure', async (t) => {
+  const { client, fake } = await fixture(t, {
+    repositories: [
+      {
+        repo: 'owner/alpha',
+        issues: [
+          makeIssue({ number: 1, title: 'A', body: 'Body A', labels: ['status:draft'], repo: 'owner/alpha', created_at: '2026-10-01T09:00:00Z' }),
+          makeIssue({ number: 2, title: 'B', body: 'Body B', labels: ['status:draft'], repo: 'owner/alpha', created_at: '2026-10-01T09:01:00Z' }),
+          makeIssue({ number: 3, title: 'C', body: 'Body C', labels: ['status:draft'], repo: 'owner/alpha', created_at: '2026-10-01T09:02:00Z' }),
+        ],
+      },
+    ],
+  });
+  const getIssue = async (num) => (await client.request(`/api/repos/owner/alpha/issues/${num}`)).json.issue;
+  const a0 = await getIssue(1);
+  const b0 = await getIssue(2);
+  const c0 = await getIssue(3);
+
+  // Stale neighbour fingerprint rejected with zero writes
+  const staleNeighbour = await client.request(endpoint + '/order', {
+    method: 'PUT',
+    body: {
+      fingerprint: a0.fingerprint,
+      updates: [
+        { repo: 'owner/alpha', number: 2, fingerprint: b0.fingerprint, order: 1000 },
+        { repo: 'owner/alpha', number: 1, fingerprint: a0.fingerprint, order: 2000 },
+      ],
+      neighbours: [{ repo: 'owner/alpha', number: 3, fingerprint: '0'.repeat(64), order: null }],
+    },
+  });
+  assert.equal(staleNeighbour.status, 409);
+  assert.equal(fake.patchCalls.length, 0);
+
+  // Lazy initialization of unmarked B and A so A moves after B while C stays unmarked
+  const initMove = await client.request(endpoint + '/order', {
+    method: 'PUT',
+    body: {
+      fingerprint: a0.fingerprint,
+      updates: [
+        { repo: 'owner/alpha', number: 2, fingerprint: b0.fingerprint, order: 1000 },
+        { repo: 'owner/alpha', number: 1, fingerprint: a0.fingerprint, order: 2000 },
+      ],
+      neighbours: [{ repo: 'owner/alpha', number: 3, fingerprint: c0.fingerprint, order: null }],
+    },
+  });
+  assert.equal(initMove.status, 200, initMove.text);
+  assert.equal(parseOrderMarker(fake.findIssue(2).body), 1000);
+  assert.equal(parseOrderMarker(fake.findIssue(1).body), 2000);
+  assert.equal(parseOrderMarker(fake.findIssue(3).body), null);
+
+  // Set C to 3000, then move A (at 2000) to 4000, and verify C with stale boundary [1000, 2000] is rejected
+  const c1 = await getIssue(3);
+  await client.request('/api/repos/owner/alpha/issues/3/order', {
+    method: 'PUT',
+    body: { fingerprint: c1.fingerprint, previous: 2000, next: null },
+  });
+  const c2 = await getIssue(3);
+  const a1 = await getIssue(1);
+  const moveA = await client.request('/api/repos/owner/alpha/issues/1/order', {
+    method: 'PUT',
+    body: { fingerprint: a1.fingerprint, previous: 3000, next: null },
+  });
+  assert.equal(moveA.status, 200);
+  const staleBoundary = await client.request('/api/repos/owner/alpha/issues/3/order', {
+    method: 'PUT',
+    body: { fingerprint: c2.fingerprint, previous: 1000, next: 2000 },
+  });
+  assert.equal(staleBoundary.status, 409);
+
+  // Concurrent requests for the same boundary cannot both succeed with identical rank
+  const bNow = await getIssue(2);
+  const cNow = await getIssue(3);
+  const concurrent = await Promise.all([
+    client.request('/api/repos/owner/alpha/issues/2/order', {
+      method: 'PUT',
+      body: { fingerprint: bNow.fingerprint, previous: 5000, next: 6000 },
+    }),
+    client.request('/api/repos/owner/alpha/issues/3/order', {
+      method: 'PUT',
+      body: { fingerprint: cNow.fingerprint, previous: 5000, next: 6000 },
+    }),
+  ]);
+  assert.deepEqual(concurrent.map((r) => r.status).sort(), [200, 409]);
+
+  // Partial multi-issue write failure reports partial_order honestly
+  const aPre = await getIssue(1);
+  const bPre = await getIssue(2);
+  let patchCount = 0;
+  fake.setPatchHook(() => {
+    patchCount += 1;
+    if (patchCount === 2) return { status: 412, payload: { message: 'Precondition Failed' } };
+    return null;
+  });
+  const partial = await client.request('/api/repos/owner/alpha/issues/1/order', {
+    method: 'PUT',
+    body: {
+      fingerprint: aPre.fingerprint,
+      updates: [
+        { repo: 'owner/alpha', number: 2, fingerprint: bPre.fingerprint, order: 7000 },
+        { repo: 'owner/alpha', number: 1, fingerprint: aPre.fingerprint, order: 8000 },
+      ],
+    },
+  });
+  fake.setPatchHook(null);
+  assert.equal(partial.status, 409);
+  assert.equal(partial.json.error, 'partial_order');
+  assert.equal(parseOrderMarker(fake.findIssue(2).body), 7000);
+});
+
 test('an empty friendly-title heading cannot expose hidden order marker as title', () => {
   const raw = makeIssue({ number: 1, title: 'Technical title', body: '### Friendly Title:\n<!-- board-order: 5 -->' });
   assert.doesNotMatch(JSON.stringify(buildIssueDetail(raw)), /<!-- board-order/);
