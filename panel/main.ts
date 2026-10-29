@@ -4,6 +4,12 @@ import { setupCustomDropdown, initAllCustomDropdowns } from './dropdown.js';
 import { escapeHtml, slugify, sanitizeHexColor, addLog, logEntries } from './utils.js';
 import { renderMarkdown, getIssueDescriptionPreview } from './markdown.js';
 import {
+  shortName, projectNameKey, normalizeProjectNameOverrides, defaultViewState, normalizeViewState,
+  VIEW_LABELS, KIND_FILTER_LABELS, STAGE_IDS, toggleFilter, isQuickCaptureMode, applyFilters, applySort,
+  parseOrderMarker, stripOrderMarker, setOrderMarker, computeMove, sortByManualOrder, nextAppendOrder,
+  type ViewState, type ViewId, type SortId,
+} from './viewstate.js';
+import {
   isSystemLabel,
   filterDisplayLabels,
   getIssuePriority,
@@ -262,20 +268,24 @@ let sessionIndexByRepo: Map<string, SessionInfo> = new Map();
 let worktrees: any[] = [];
 let activeIssue: Issue | null = null;
 let searchQuery: string = '';
-let activeTab: TabId = 'all';
-let userSelectedTab: boolean = false;
 let showArchivedOnly: boolean = false;
 let showAllDoneIssues: boolean = false;
-let currentSort: 'newest' | 'oldest' | 'priority' | 'complexity' | 'subtasks' | 'title' = 'newest';
-let filterPriority: string = 'all';
-let filterTag: string = 'all';
-let currentGroupBy: 'theme' | 'priority' | 'none' | 'status' | 'tag' | 'project' = 'theme';
-let isFilterBarOpen: boolean = false;
+let viewState: ViewState = defaultViewState();
+let projectNameOverrides: Record<string, string> = {};
+let deviceStorageSupported = false;
+let viewStateRevision = 0;
+let viewStateLoadGeneration = 0;
+let viewStateWriteQueue: Promise<void> = Promise.resolve();
 let selectedIssueNumbers = new Set<number>();
-let userLayoutPreference: 'auto' | 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention' = 'auto';
-let currentAttentionFilter: 'all' | 'needs-decision' | 'needs-permission' | 'needs-review' = 'all';
-let graphSelectedTheme: string = 'all';
-let graphShowDone: boolean = false;
+const draftMutations = new Set<string>();
+let draftReorderBusy = false;
+let draggedDraftKey: string | null = null;
+let draftCaptureTitle = '';
+let draftCaptureDescription = '';
+let draftCaptureRepo = '';
+let draftDescriptionVisible = false;
+let draftCaptureBusy = false;
+let optimisticDraftNumber = -1;
 let isDraggingEdge: boolean = false;
 let isAligningDrafts = false;
 let aligningDraftsCount = 0;
@@ -284,7 +294,7 @@ let currentGraph: DependencyGraph | null = null;
 let isWideScreen: boolean = false;
 let draggedIssueNumber: number | null = null;
 let isLoading: boolean = false;
-let currentRenderedLayout: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention' | null = null;
+let currentRenderedLayout: ViewId | null = null;
 let lastRateLimitRemaining: number | null = null;
 let activeStreamEpoch = 0;
 let currentSessionRepo: string | null = null;
@@ -308,20 +318,6 @@ export function isGroupCollapsed(key: string): boolean {
   return collapsedGroupKeys.has(key);
 }
 
-export function selectTab(tabId: TabId): void {
-  activeTab = tabId;
-  const bar = document.getElementById('statusTabBar');
-  if (bar) {
-    bar.querySelectorAll('.status-tab').forEach((tab) => {
-      if (tab.getAttribute('data-tab') === tabId) {
-        tab.classList.add('active');
-      } else {
-        tab.classList.remove('active');
-      }
-    });
-  }
-}
-
 // ==========================================
 // DOM Elements
 // ==========================================
@@ -334,26 +330,11 @@ const elInputCustomRepo = document.getElementById('inputCustomRepo') as HTMLInpu
 const elBtnSaveCustomRepo = document.getElementById('btnSaveCustomRepo') as HTMLButtonElement;
 
 const elSearchInput = document.getElementById('searchInput') as HTMLInputElement;
-const elBtnLayoutToggle = document.getElementById('btnLayoutToggle') as HTMLButtonElement | null;
 const elBtnViewSelect = document.getElementById('btnViewSelect') as HTMLButtonElement | null;
 const elViewSelectPopover = document.getElementById('viewSelectPopover') as HTMLDivElement | null;
 const elViewSelectCurrentLabel = document.getElementById('viewSelectCurrentLabel') as HTMLSpanElement | null;
-const elViewSelectCurrentIcon = document.getElementById('viewSelectCurrentIcon') as HTMLSpanElement | null;
-const elBtnGraphToggle = document.getElementById('btnGraphToggle') as HTMLButtonElement | null;
-const elBtnViewAttention = document.getElementById('btnViewAttention') as HTMLButtonElement | null;
-const elAttentionViewBadge = document.getElementById('attentionViewBadge') as HTMLSpanElement | null;
-const elBtnViewHuman = document.getElementById('btnViewHuman') as HTMLButtonElement | null;
-const elBtnViewAllTasks = document.getElementById('btnViewAllTasks') as HTMLButtonElement | null;
-const elBtnViewQuestions = document.getElementById('btnViewQuestions') as HTMLButtonElement | null;
-const elBtnViewList = document.getElementById('btnViewList') as HTMLButtonElement | null;
-const elBtnViewKanban = document.getElementById('btnViewKanban') as HTMLButtonElement | null;
-const elBtnViewGraph = document.getElementById('btnViewGraph') as HTMLButtonElement | null;
-const elMenuItemToggleGraph = document.getElementById('menuItemToggleGraph') as HTMLDivElement | null;
-const elTxtMenuGraph = document.getElementById('txtMenuGraph') as HTMLSpanElement | null;
 
 const elGraphViewContainer = document.getElementById('graphViewContainer') as HTMLElement | null;
-const elGraphThemePills = document.getElementById('graphThemePills') as HTMLDivElement | null;
-const elChkGraphShowDone = document.getElementById('chkGraphShowDone') as HTMLInputElement | null;
 const elGraphStatFrontier = document.getElementById('graphStatFrontier') as HTMLSpanElement | null;
 const elGraphStatBlocked = document.getElementById('graphStatBlocked') as HTMLSpanElement | null;
 const elGraphStatDone = document.getElementById('graphStatDone') as HTMLSpanElement | null;
@@ -381,13 +362,9 @@ const elBtnLogsToggle = document.getElementById('btnLogsToggle') as HTMLButtonEl
 
 // Filter & Sort elements
 const elBtnFilterToggle = document.getElementById('btnFilterToggle') as HTMLButtonElement | null;
-const elFilterBar = document.getElementById('filterBar') as HTMLDivElement | null;
+const elFilterPopover = document.getElementById('filterPopover') as HTMLDivElement;
+const elActiveFilters = document.getElementById('activeFilters') as HTMLDivElement;
 const elSelectSort = document.getElementById('selectSort') as HTMLSelectElement | null;
-const elSelectGroupBy = document.getElementById('selectGroupBy') as HTMLSelectElement | null;
-const elSelectFilterPriority = document.getElementById('selectFilterPriority') as HTMLSelectElement | null;
-const elSelectFilterTag = document.getElementById('selectFilterTag') as HTMLSelectElement | null;
-const elBtnStartTagIssues = document.getElementById('btnStartTagIssues') as HTMLButtonElement | null;
-const elBtnResetFilters = document.getElementById('btnResetFilters') as HTMLButtonElement | null;
 
 // Batch action bar elements
 const elBatchActionBar = document.getElementById('batchActionBar') as HTMLDivElement | null;
@@ -397,11 +374,10 @@ const elBtnBatchStart = document.getElementById('btnBatchStart') as HTMLButtonEl
 const elBtnBatchAttach = document.getElementById('btnBatchAttach') as HTMLButtonElement | null;
 const elBtnBatchDeselect = document.getElementById('btnBatchDeselect') as HTMLButtonElement | null;
 
-const elStatusTabBar = document.getElementById('statusTabBar') as HTMLElement;
+const elSimpleListViewContainer = document.getElementById('simpleListViewContainer') as HTMLElement;
 const elListViewContainer = document.getElementById('listViewContainer') as HTMLElement;
 const elKanbanViewContainer = document.getElementById('kanbanViewContainer') as HTMLElement;
 const elHumanViewContainer = document.getElementById('humanViewContainer') as HTMLElement | null;
-const elAllTasksViewContainer = document.getElementById('allTasksViewContainer') as HTMLElement | null;
 const elQuestionsViewContainer = document.getElementById('questionsViewContainer') as HTMLElement | null;
 const elAttentionViewContainer = document.getElementById('attentionViewContainer') as HTMLElement | null;
 
@@ -791,8 +767,13 @@ async function autoResolveRepoForActiveContext(activeSession?: any): Promise<voi
   if (activeSession) {
     currentActiveSession = activeSession;
   }
-  // Never steal focus when manual override is active.
+  // Never let asynchronous discovery for an older context steal selection.
   if (isManualRepoOverride) return;
+  const contextRepo = currentRepo;
+  const contextDirectory = currentDirectory;
+  const contextSessionId = currentActiveSession?.id;
+  const contextIsCurrent = () => !isManualRepoOverride && currentRepo === contextRepo &&
+    currentDirectory === contextDirectory && currentActiveSession?.id === contextSessionId;
 
   // If currentDirectory is inside /workspace/.local/share/opencode/worktree/,
   // extract parent repository root from .git file and match that project in allProjects first,
@@ -802,6 +783,7 @@ async function autoResolveRepoForActiveContext(activeSession?: any): Promise<voi
     try {
       const cleanCurDir = currentDirectory.replace(/\/+$/, '');
       const gitFileRes = await host.readFile(`${cleanCurDir}/.git`);
+      if (!contextIsCurrent()) return;
       if (gitFileRes && gitFileRes.content) {
         const match = gitFileRes.content.match(/^gitdir:\s*(.+)$/m);
         if (match) {
@@ -846,6 +828,7 @@ async function autoResolveRepoForActiveContext(activeSession?: any): Promise<voi
   // Step 2: Native Git remote in directory or project has HIGHEST precedence over stale storage
   if (currentDirectory) {
     const dirRemote = await inspectGitConfigInDir(currentDirectory);
+    if (!contextIsCurrent()) return;
     if (dirRemote) {
       const full = `${dirRemote.owner}/${dirRemote.repo}`;
       if (targetProject) {
@@ -868,6 +851,7 @@ async function autoResolveRepoForActiveContext(activeSession?: any): Promise<voi
   // Step 3: Check stored link for this specific project
   if (targetProject) {
     const storedLink = await host.storage.get(`repo_${targetProject.id}`);
+    if (!contextIsCurrent()) return;
     if (typeof storedLink === 'string' && storedLink.includes('/')) {
       const cleanStored = storedLink.trim();
       currentSessionRepo = cleanStored;
@@ -895,6 +879,7 @@ async function autoResolveRepoForActiveContext(activeSession?: any): Promise<voi
 
   // Check stored custom/previous repo as fallback before giving up
   const previousRepo = await host.storage.get('selected_repo');
+  if (!contextIsCurrent()) return;
   if (typeof previousRepo === 'string' && previousRepo.includes('/')) {
     const cleanPrev = previousRepo.trim();
     currentSessionRepo = cleanPrev;
@@ -937,7 +922,6 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
 
   drawerGeneration++;
   commentsCache.clear();
-  userSelectedTab = false;
   isAllProjectsMode = false;
   allProjectsRepoRefs = [];
   workspaceRootNoticeShown = false;
@@ -947,7 +931,7 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
   issues = [];
   showAllDoneIssues = false;
   clearSelection();
-  elTxtRepoLabel.textContent = repo.split('/')[1] || repo;
+  elTxtRepoLabel.textContent = displayProjectName(repo);
   elTxtRepoLabel.title = `Project: ${currentProject?.name || 'Workspace'} • Repo: ${repo} (via ${source})`;
   addLog(`Switched repository to ${repo} [${source}]`, 'succ');
   hideBanner();
@@ -961,7 +945,8 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
   }
   if (elScratchpadModalBackdrop && elScratchpadModalBackdrop.classList.contains('active')) {
     if (elScratchpadRepoBadge) {
-      elScratchpadRepoBadge.textContent = repo || 'Global';
+      elScratchpadRepoBadge.textContent = displayProjectName(repo) || 'Global';
+      elScratchpadRepoBadge.title = repo || '';
     }
     void loadScratchpadContent(repo);
   } else {
@@ -972,7 +957,7 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
 
 function renderRepoPopoverList(): void {
   const sessionRepo = getSessionLinkedRepo();
-  const sessionRepoDisplay = sessionRepo ? `Session repo: ${escapeHtml(sessionRepo)}` : 'Session repo: none linked';
+  const sessionRepoDisplay = sessionRepo ? `Session repo: <span title="${escapeHtml(sessionRepo)}">${escapeHtml(displayProjectName(sessionRepo))}</span>` : 'Session repo: none linked';
 
   const projectItemsHtml = allProjects.length === 0
     ? `
@@ -994,12 +979,12 @@ function renderRepoPopoverList(): void {
         <div class="popover-item ${isSelectedRepo ? 'is-active selected-repo' : ''}" data-project-id="${escapeHtml(p.id)}" data-repo="${escapeHtml(repoName || '')}">
           <div style="display: flex; justify-content: space-between; align-items: center;">
             <div style="display: flex; align-items: center; gap: 5px;">
-              <span class="popover-item-title">${escapeHtml(p.name)}</span>
+              <span class="popover-item-title" title="${escapeHtml(repoName || p.name)}">${escapeHtml(repoName ? displayProjectName(repoName) : p.name)}</span>
               ${isCurrentProject ? '<span class="status-pill" style="font-size: 9px; padding: 0 4px;">active</span>' : ''}
             </div>
             ${activeBadge}
           </div>
-          <span class="popover-item-sub">${repoName ? escapeHtml(repoName) : '<span style="color: var(--warn); font-style: italic;">No repo linked • click to link</span>'}</span>
+          <span class="popover-item-sub" title="${escapeHtml(repoName || '')}">${repoName ? escapeHtml(displayProjectName(repoName)) : '<span style="color: var(--warn); font-style: italic;">No repo linked • click to link</span>'}</span>
         </div>
       `;
         })
@@ -1127,12 +1112,9 @@ async function selectAllProjects(): Promise<void> {
   isAllProjectsMode = true;
   allProjectsRepoRefs = refs;
   currentRepo = ALL_PROJECTS_CACHE_KEY;
-  userSelectedTab = false;
   issues = [];
   showAllDoneIssues = false;
   clearSelection();
-  currentGroupBy = 'project';
-  if (elSelectGroupBy) elSelectGroupBy.value = 'project';
   elTxtRepoLabel.textContent = 'All Projects';
   elTxtRepoLabel.title = `Aggregated issues across ${refs.length} repositories`;
   hideBanner();
@@ -1432,8 +1414,9 @@ function renderBoardFreshness(state: 'refreshing' | 'partial' | 'stale' | 'compl
   const timestamp = repoFullSyncTimestamps.get(repo);
   const lastSuccess = timestamp ? `Last full sync: ${new Date(timestamp).toLocaleString()}` : 'No completed full sync';
   element.textContent = state === 'complete'
-    ? `${repo} · ${lastSuccess}`
-    : `${repo} · ${state === 'refreshing' ? 'Refreshing — cached data is provisional' : state === 'partial' ? 'Partial results — refresh incomplete' : 'Stale / unavailable — refresh failed'} · ${lastSuccess}`;
+    ? `${displayProjectName(repo)} · ${lastSuccess}`
+    : `${displayProjectName(repo)} · ${state === 'refreshing' ? 'Refreshing — cached data is provisional' : state === 'partial' ? 'Partial results — refresh incomplete' : 'Stale / unavailable — refresh failed'} · ${lastSuccess}`;
+  element.title = repo;
 }
 
 function admitsIssueSnapshot(repo: string, epoch: number): boolean {
@@ -1802,8 +1785,7 @@ async function fetchIssues(force: boolean = false): Promise<void> {
       renderBoardFreshness('partial', repo);
       await streamRemainingPages(repo, storageKey, 2, epoch, force, snapshot, startedAt);
     }
-    if (!obsoleteIssueSnapshotEpochs.has(epoch) && admitsIssueSnapshot(repo, epoch) && !userSelectedTab) {
-      selectTab(resolveDefaultTab(issues));
+    if (!obsoleteIssueSnapshotEpochs.has(epoch) && admitsIssueSnapshot(repo, epoch)) {
       renderViews();
     }
   } catch (err: any) {
@@ -1919,7 +1901,7 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
     const cached = readCachedIssueCollection(issueCache, cacheKey, ISSUE_CACHE_TTL_MS);
     if (cached) {
       issues = cached;
-      if (!userSelectedTab) selectTab(resolveDefaultTab(issues));
+
       renderViews();
       addLog(`Rendered ${issues.length} aggregated issues from memory cache`);
       return;
@@ -1933,7 +1915,7 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
       if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
         issues = stored.issues;
         issueCache.set(cacheKey, { timestamp: stored.timestamp || Date.now(), issues });
-        if (!userSelectedTab) selectTab(resolveDefaultTab(issues));
+
         renderViews();
         addLog(`Instantly rendered ${issues.length} aggregated issues from persistent storage`);
       }
@@ -1984,7 +1966,6 @@ async function fetchAllProjectIssues(force: boolean = false): Promise<void> {
     }
     lastSyncTimestamp = Date.now();
 
-    if (!userSelectedTab) selectTab(resolveDefaultTab(issues));
     renderViews();
     statusReconciler.schedule(issues);
     addLog(`Aggregated ${issues.length} deduplicated issues across ${sources.length} repositories`, 'succ');
@@ -2069,7 +2050,7 @@ async function syncRepoIncremental(repo: string, sinceIso: string, watermarkTime
       if (host?.toast) {
         void host.toast({
           kind: 'info',
-          message: `Incremental sync for ${cleanRepo} exceeded 1,000 changes. Consider manual refresh.`,
+          message: `Incremental sync for ${displayProjectName(cleanRepo)} exceeded 1,000 changes. Consider manual refresh.`,
         });
       }
     } else {
@@ -2996,7 +2977,9 @@ export function groupIssuesBy(issuesList: Issue[], groupBy: string): IssueGroup[
     if (!isAllProjectsMode) {
       return [{ id: currentRepo || 'all', title: currentRepo || 'All Items', issues: issuesList }];
     }
-    return groupIssuesByProject(issuesList, allProjects);
+    return groupIssuesByProject(issuesList, allProjects).map((group) => ({
+      ...group, title: displayProjectName(repoForIssue(group.issues[0])) || group.title,
+    }));
   }
 
   if (groupBy === 'none') {
@@ -3235,21 +3218,10 @@ function updateBadgeCounts(): void {
 
   const total = visibleIssues.length;
 
-  // Tab counts
   const setTxt = (id: string, val: number) => {
     const el = document.getElementById(id);
     if (el) el.textContent = String(val);
   };
-  setTxt('tabCountAll', total);
-  setTxt('tabCountDraft', counts['draft']);
-  setTxt('tabCountBacklog', counts['backlog']);
-  setTxt('tabCountTodo', counts['todo']);
-  setTxt('tabCountPlanned', counts['planned']);
-  setTxt('tabCountProgress', counts['in-progress']);
-  setTxt('tabCountNeedsHuman', counts['needs-human']);
-  setTxt('tabCountReview', counts['in-review']);
-  setTxt('tabCountDone', counts['done']);
-
   // Kanban counts
   setTxt('kCountDraft', counts['draft']);
   setTxt('kCountBacklog', counts['backlog']);
@@ -3316,9 +3288,7 @@ function renderEmptyState(
   if (elHumanViewContainer) {
     elHumanViewContainer.innerHTML = html;
   }
-  if (elAllTasksViewContainer) {
-    elAllTasksViewContainer.innerHTML = html;
-  }
+  elSimpleListViewContainer.innerHTML = html;
   if (elQuestionsViewContainer) {
     elQuestionsViewContainer.innerHTML = html;
   }
@@ -3364,180 +3334,859 @@ function renderArchiveView(archivedIssues: Issue[]): void {
   });
 }
 
-function updateAttentionBadge(issuesList: Issue[]): void {
-  if (!elAttentionViewBadge) return;
-  const targetSessionIndex = sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex;
-  const grouped = groupIssuesByAttention(issuesList, targetSessionIndex);
-  const total = grouped['needs-decision'].length + grouped['needs-permission'].length + grouped['needs-review'].length;
-  if (total > 0) {
-    elAttentionViewBadge.textContent = String(total);
-    elAttentionViewBadge.style.display = 'inline-flex';
-  } else {
-    elAttentionViewBadge.textContent = '0';
-    elAttentionViewBadge.style.display = 'none';
+function displayProjectName(repo: string): string {
+  return shortName(repo, projectNameOverrides);
+}
+
+function viewStateStorageKey(): string {
+  return `view_state_${currentDirectory || currentRepo || 'workspace'}`;
+}
+
+function rememberViewState(): void {
+  viewStateRevision++;
+  const scope = deviceStorageSupported ? 'device' : 'instance';
+  const key = viewStateStorageKey();
+  const snapshot = { ...viewState, filters: [...viewState.filters] };
+  // Host storage writes may complete out of order; persist gestures serially.
+  viewStateWriteQueue = viewStateWriteQueue.then(() => host.storage.set(key, snapshot, { scope })).catch((err: any) => {
+    addLog(`Could not remember view settings: ${err.message}`, 'warn');
+    void host.toast({ kind: 'error', message: 'Could not remember View / Filter / Sort.' });
+  });
+}
+
+async function loadViewState(): Promise<void> {
+  const generation = ++viewStateLoadGeneration;
+  const revision = viewStateRevision;
+  const key = viewStateStorageKey();
+  try {
+    await viewStateWriteQueue;
+    const stored = await host.storage.get(key, { scope: deviceStorageSupported ? 'device' : 'instance' });
+    if (generation !== viewStateLoadGeneration || revision !== viewStateRevision || key !== viewStateStorageKey()) return;
+    viewState = normalizeViewState(stored);
+  } catch (err: any) {
+    addLog(`Could not load view settings: ${err.message}`, 'warn');
+  }
+  if (generation === viewStateLoadGeneration) renderViews();
+}
+
+function availableProjectRepos(): string[] {
+  const repos = [
+    ...buildProjectRepoRefs().map((ref) => ref.repo),
+    ...allProjectsRepoRefs.map((ref) => ref.repo),
+    ...issues.map(repoForIssue),
+  ];
+  if (currentRepo && currentRepo !== ALL_PROJECTS_CACHE_KEY) repos.push(currentRepo);
+  return [...new Map(repos.filter(Boolean).map((repo) => [repo.toLowerCase(), repo])).values()];
+}
+
+function filterLabel(token: string): string {
+  if (token.startsWith('stage:')) return STATUS_METADATA[token.slice(6) as ColumnId]?.displayName || token;
+  if (token.startsWith('project:')) return displayProjectName(token.slice(8));
+  return KIND_FILTER_LABELS[token] || token;
+}
+
+function changeFilter(token: string): void {
+  viewState.filters = toggleFilter(viewState.filters, token);
+  rememberViewState();
+  renderViews();
+}
+
+function renderFilterControls(): void {
+  if (elSelectSort) elSelectSort.value = viewState.sort;
+  elBtnFilterToggle?.classList.toggle('active', viewState.filters.length > 0);
+  // Keep focus when a checkbox-like chip is toggled in the open popover.
+  const focusedToken = (document.activeElement as HTMLElement | null)?.getAttribute('data-filter');
+  elFilterPopover.innerHTML = '';
+  const groups = [
+    { title: 'Attention', tokens: ['needs-me', 'human', 'questions'] },
+    { title: 'Stage', tokens: STAGE_IDS.map((stage) => `stage:${stage}`) },
+    { title: 'Project', tokens: availableProjectRepos().map((repo) => `project:${repo}`) },
+  ];
+  for (const group of groups) {
+    const section = document.createElement('div');
+    section.className = 'filter-group';
+    const title = document.createElement('div');
+    title.className = 'filter-group-title';
+    title.textContent = group.title;
+    section.appendChild(title);
+    for (const token of group.tokens) {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'filter-chip';
+      chip.textContent = filterLabel(token);
+      chip.title = token.startsWith('project:') ? token.slice(8) : filterLabel(token);
+      chip.setAttribute('data-filter', token);
+      chip.setAttribute('aria-pressed', String(viewState.filters.includes(token)));
+      chip.addEventListener('click', (event) => { event.stopPropagation(); changeFilter(token); });
+      section.appendChild(chip);
+    }
+    elFilterPopover.appendChild(section);
+  }
+  elActiveFilters.innerHTML = '';
+  elActiveFilters.style.display = viewState.filters.length ? 'flex' : 'none';
+  for (const token of viewState.filters) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'filter-chip';
+    chip.textContent = `${filterLabel(token)} ×`;
+    chip.title = token.startsWith('project:') ? token.slice(8) : filterLabel(token);
+    chip.setAttribute('aria-label', `Remove ${filterLabel(token)} filter`);
+    chip.addEventListener('click', () => {
+      changeFilter(token);
+      elBtnFilterToggle?.focus();
+    });
+    elActiveFilters.appendChild(chip);
+  }
+  if (viewState.filters.length) {
+    const clear = document.createElement('button');
+    clear.type = 'button';
+    clear.className = 'btn btn-sm';
+    clear.textContent = 'Clear';
+    clear.addEventListener('click', () => {
+      viewState.filters = [];
+      rememberViewState();
+      renderViews();
+      elBtnFilterToggle?.focus();
+    });
+    elActiveFilters.appendChild(clear);
+  }
+  if (focusedToken && elFilterPopover.style.display !== 'none') {
+    Array.from(elFilterPopover.querySelectorAll<HTMLElement>('[data-filter]'))
+      .find((chip) => chip.getAttribute('data-filter') === focusedToken)?.focus();
   }
 }
 
 function renderViews(): void {
   updateBadgeCounts();
-
-  // Populate dynamic tag filter
-  if (elSelectFilterTag) {
-    const existingTags = new Set<string>();
-    issues.forEach((i) => {
-      (i.labels || []).forEach((l) => {
-        const name = typeof l === 'string' ? l : l.name || '';
-        if (
-          name &&
-          !name.startsWith('status:') &&
-          !name.startsWith('priority:') &&
-          !name.startsWith('complexity:') &&
-          name.toLowerCase() !== 'archived' &&
-          name.toLowerCase() !== 'archive'
-        ) {
-          existingTags.add(name);
-        }
-      });
-    });
-
-    const currentVal = elSelectFilterTag.value;
-    const sortedTags = Array.from(existingTags).sort();
-    let optionsHtml = `<option value="all"${filterTag === 'all' ? ' selected' : ''}>All Tags</option>`;
-    sortedTags.forEach((t) => {
-      optionsHtml += `<option value="${escapeHtml(t)}"${filterTag === t ? ' selected' : ''}>${escapeHtml(t)}</option>`;
-    });
-    elSelectFilterTag.innerHTML = optionsHtml;
-    if (sortedTags.includes(currentVal)) {
-      elSelectFilterTag.value = currentVal;
-    }
-  }
-
-  // Check if filters are active
-  const hasActiveFilters = filterPriority !== 'all' || filterTag !== 'all' || currentSort !== 'newest';
-  if (elBtnResetFilters) {
-    elBtnResetFilters.style.display = hasActiveFilters ? 'inline-flex' : 'none';
-  }
-  if (elBtnFilterToggle) {
-    elBtnFilterToggle.classList.toggle('active', hasActiveFilters || isFilterBarOpen);
-  }
-  if (elBtnStartTagIssues) {
-    if (filterTag !== 'all') {
-      elBtnStartTagIssues.style.display = 'inline-flex';
-      elBtnStartTagIssues.textContent = `Select All with "${filterTag}"`;
-    } else {
-      elBtnStartTagIssues.style.display = 'none';
-    }
-  }
-
-  // Filter issues
+  renderFilterControls();
   const q = searchQuery.toLowerCase().trim();
-  const filtered = issues.filter((issue) => {
-    const isArch = isIssueArchived(issue);
-    if (showArchivedOnly ? !isArch : isArch) return false;
-
-    if (filterPriority !== 'all') {
-      const p = normalizePriority(getIssuePriority(issue));
-      if (p !== filterPriority) return false;
-    }
-
-    if (filterTag !== 'all') {
-      const hasTag = (issue.labels || []).some((l) => {
-        const name = typeof l === 'string' ? l : l.name || '';
-        return name === filterTag;
-      });
-      if (!hasTag) return false;
-    }
-
-    if (!q) return true;
-    return (
-      issue.title.toLowerCase().includes(q) ||
-      String(issue.number).includes(q) ||
-      issue.labels.some((l) => (typeof l === 'string' ? l : l.name || '').toLowerCase().includes(q))
-    );
+  const searched = issues.filter((issue) => {
+    if (showArchivedOnly ? !isIssueArchived(issue) : isIssueArchived(issue)) return false;
+    return !q || issue.title.toLowerCase().includes(q) || String(issue.number).includes(q) ||
+      (issue.labels || []).some((label) => (typeof label === 'string' ? label : label.name || '').toLowerCase().includes(q));
   });
-
-  // Sort issues
-  const sorted = sortIssuesList(filtered, currentSort);
-
-  // If in Archive Mode: render single flat list only (not standard categories)
+  const attention = groupIssuesByAttention(searched, sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex);
+  const needsMe = new Set([...attention['needs-decision'], ...attention['needs-permission'], ...attention['needs-review']]);
+  const filtered = applyFilters(searched, viewState.filters, {
+    stageOf: (issue) => resolveIssueColumn(issue) || 'todo',
+    repoOf: repoForIssue,
+    needsMe: (issue) => needsMe.has(issue) || resolveIssueColumn(issue) === 'needs-human' || collectHumanTodos(issue, getIssueSession(issue)).length > 0,
+    hasHumanTasks: (issue) => parseHumanTasks(issue.body || '').length > 0 || (issue.humanTasks || []).length > 0,
+    hasOpenQuestions: (issue) => parseOpenQuestions(issue.body || '').some((question) => !question.completed) || getRecoverableQuestionDrafts(issue).length > 0,
+  });
+  const priorityWeights: Record<string, number> = { critical: 4, important: 3, useful: 2, optional: 1 };
+  const sorted = applySort(filtered, viewState.sort, (issue) => priorityWeights[normalizePriority(getIssuePriority(issue)) || ''] || 0);
+  applyLayoutMode(false);
   if (showArchivedOnly) {
-    document.body.removeAttribute('data-layout');
-    if (elStatusTabBar) elStatusTabBar.style.display = 'none';
-    if (elKanbanViewContainer) elKanbanViewContainer.style.display = 'none';
-    if (elGraphViewContainer) elGraphViewContainer.style.display = 'none';
-    if (elHumanViewContainer) elHumanViewContainer.style.display = 'none';
-    if (elAllTasksViewContainer) elAllTasksViewContainer.style.display = 'none';
-    if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = 'none';
-    if (elAttentionViewContainer) elAttentionViewContainer.style.display = 'none';
-    if (elListViewContainer) {
-      elListViewContainer.style.display = 'flex';
-      renderArchiveView(sorted);
-    }
+    renderArchiveView(sorted);
     return;
   }
 
-  // Restore normal view layout
-  if (elStatusTabBar) elStatusTabBar.style.display = '';
-  if (elKanbanViewContainer) elKanbanViewContainer.style.display = '';
-  if (elListViewContainer) elListViewContainer.style.display = '';
-  if (elGraphViewContainer) elGraphViewContainer.style.display = '';
-  if (elHumanViewContainer) elHumanViewContainer.style.display = '';
-  if (elAllTasksViewContainer) elAllTasksViewContainer.style.display = '';
-  if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = '';
-  if (elAttentionViewContainer) elAttentionViewContainer.style.display = '';
-
-  // Synchronize layout attributes and tab visibility
-  applyLayoutMode(false);
-
-  const activeLayout: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention' =
-    document.body.getAttribute('data-layout') === 'graph'
-      ? 'graph'
-      : document.body.getAttribute('data-layout') === 'kanban'
-        ? 'kanban'
-        : document.body.getAttribute('data-layout') === 'attention'
-          ? 'attention'
-          : document.body.getAttribute('data-layout') === 'human'
-            ? 'human'
-            : document.body.getAttribute('data-layout') === 'all-tasks'
-              ? 'all-tasks'
-              : document.body.getAttribute('data-layout') === 'questions'
-                ? 'questions'
-                : 'list';
-
-  // Always keep toolbar attention badge synchronized
-  updateAttentionBadge(filtered);
-
-  // Clear previously rendered container if switching away from it to prevent stale DOM & listeners
+  // Only the selected surface is constructed. Supplemental question/attention
+  // controls live inside its scroll area, never in separate view layouts.
+  const activeLayout = viewState.view;
   if (currentRenderedLayout && currentRenderedLayout !== activeLayout) {
-    if (currentRenderedLayout === 'human' && elHumanViewContainer) elHumanViewContainer.innerHTML = '';
-    if (currentRenderedLayout === 'all-tasks' && elAllTasksViewContainer) elAllTasksViewContainer.innerHTML = '';
-    if (currentRenderedLayout === 'questions' && elQuestionsViewContainer) elQuestionsViewContainer.innerHTML = '';
-    if (currentRenderedLayout === 'attention' && elAttentionViewContainer) elAttentionViewContainer.innerHTML = '';
-    if (currentRenderedLayout === 'kanban' && elKanbanViewContainer) elKanbanViewContainer.innerHTML = '';
-    if (currentRenderedLayout === 'list' && elListViewContainer) elListViewContainer.innerHTML = '';
-    if (currentRenderedLayout === 'graph' && elGraphViewContainer) elGraphViewContainer.innerHTML = '';
+    elSimpleListViewContainer.innerHTML = '';
+    elListViewContainer.innerHTML = '';
+    if (elHumanViewContainer) elHumanViewContainer.innerHTML = '';
   }
+  if (elQuestionsViewContainer) { elQuestionsViewContainer.innerHTML = ''; elQuestionsViewContainer.style.display = 'none'; }
+  if (elAttentionViewContainer) { elAttentionViewContainer.innerHTML = ''; elAttentionViewContainer.style.display = 'none'; }
+  if (activeLayout === 'simple') renderSimpleListView(sorted);
+  else if (activeLayout === 'cards') renderListView(sorted);
+  else if (activeLayout === 'kanban') renderKanbanView(sorted);
+  else if (activeLayout === 'graph') renderGraphView(sorted);
+  else if (activeLayout === 'pending') renderHumanTasksView(sorted);
 
-  // Render ONLY the active view to avoid triple-DOM overhead
-  if (activeLayout === 'list') {
-    renderListView(sorted);
-  } else if (activeLayout === 'kanban') {
-    renderKanbanView(sorted);
-  } else if (activeLayout === 'graph') {
-    renderGraphView(sorted);
-  } else if (activeLayout === 'human') {
-    renderHumanTasksView(sorted);
-  } else if (activeLayout === 'all-tasks') {
-    renderAllTasksView(sorted);
-  } else if (activeLayout === 'questions') {
-    renderQuestionsView(sorted);
-  } else if (activeLayout === 'attention') {
-    renderAttentionView(sorted);
+  if ((activeLayout === 'simple' || activeLayout === 'cards') && !isQuickCaptureMode(viewState)) {
+    const target = activeLayout === 'simple' ? elSimpleListViewContainer : elListViewContainer;
+    if (viewState.filters.includes('needs-me') && elAttentionViewContainer) {
+      renderAttentionView(sorted);
+      target.appendChild(elAttentionViewContainer);
+      elAttentionViewContainer.style.display = 'flex';
+    } else if (elAttentionViewContainer) elAttentionViewContainer.style.display = 'none';
+    if (viewState.filters.includes('questions') && elQuestionsViewContainer) {
+      renderQuestionsView(sorted);
+      target.appendChild(elQuestionsViewContainer);
+      elQuestionsViewContainer.style.display = 'flex';
+    } else if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = 'none';
   }
   currentRenderedLayout = activeLayout;
-
-  // Sync batch bar & card selections
   updateBatchBar();
+}
+
+function projectPicker(repo: string, label: string): HTMLSelectElement {
+  const select = document.createElement('select');
+  select.className = 'select-sm simple-project';
+  select.setAttribute('aria-label', label);
+  const repos = availableProjectRepos();
+  if (repo && !repos.includes(repo)) repos.unshift(repo);
+  select.innerHTML = repos.map((value) => `<option value="${escapeHtml(value)}" title="${escapeHtml(value)}">${escapeHtml(displayProjectName(value))}</option>`).join('');
+  select.value = repo || repos[0] || '';
+  select.title = select.value;
+  return select;
+}
+
+interface PendingDraftEditState {
+  title?: string;
+  description?: string;
+}
+
+type DraftFocusField = 'title' | 'description' | 'project' | 'move-up' | 'move-down' | 'row';
+
+interface DraftFocusSnapshot {
+  key: string;
+  field: DraftFocusField;
+  selectionStart: number | null;
+  selectionEnd: number | null;
+}
+
+const pendingDraftEdits = new Map<string, PendingDraftEditState>();
+const draftTitleMutations = new Set<string>();
+let pendingDraftFocusTarget: DraftFocusSnapshot | null = null;
+let isRenderingSimpleListView = false;
+
+function setPendingDraftField(key: string, field: keyof PendingDraftEditState, value: string): void {
+  const existing = pendingDraftEdits.get(key) || {};
+  existing[field] = value;
+  pendingDraftEdits.set(key, existing);
+}
+
+function clearPendingDraftField(key: string, field: keyof PendingDraftEditState): void {
+  const existing = pendingDraftEdits.get(key);
+  if (!existing) return;
+  delete existing[field];
+  if (existing.title === undefined && existing.description === undefined) {
+    pendingDraftEdits.delete(key);
+  }
+}
+
+function findEnclosingDraftRow(el: HTMLElement | null): HTMLElement | null {
+  let cur: HTMLElement | null = el;
+  while (cur) {
+    if (typeof cur.getAttribute === 'function' && cur.getAttribute('data-draft-key')) return cur;
+    cur = (cur as any).parentElement || null;
+  }
+  return null;
+}
+
+function snapshotDraftElementFocus(el: HTMLElement | null): DraftFocusSnapshot | null {
+  if (!el) return null;
+  const row = findEnclosingDraftRow(el);
+  if (!row) return null;
+  const key = row.getAttribute('data-draft-key') || '';
+  if (!key) return null;
+  let field: DraftFocusField | null = null;
+  if (el === row) field = 'row';
+  else if (el.classList?.contains('simple-title')) field = 'title';
+  else if (el.classList?.contains('simple-description')) field = 'description';
+  else if (el.classList?.contains('simple-project')) field = 'project';
+  else if (el.classList?.contains('simple-move-up')) field = 'move-up';
+  else if (el.classList?.contains('simple-move-down')) field = 'move-down';
+  if (!field) return null;
+  const anyInput = el as HTMLInputElement;
+  return {
+    key,
+    field,
+    selectionStart: typeof anyInput.selectionStart === 'number' ? anyInput.selectionStart : null,
+    selectionEnd: typeof anyInput.selectionEnd === 'number' ? anyInput.selectionEnd : null,
+  };
+}
+
+function restoreDraftElementFocus(snapshot: DraftFocusSnapshot | null): void {
+  if (!snapshot) return;
+  const row = Array.from(elSimpleListViewContainer.querySelectorAll<HTMLElement>('[data-draft-key]'))
+    .find((candidate) => candidate.getAttribute('data-draft-key') === snapshot.key);
+  if (!row) return;
+  let target: HTMLElement | null = null;
+  if (snapshot.field === 'row') target = row;
+  else if (snapshot.field === 'title') target = row.querySelector<HTMLElement>('.simple-title');
+  else if (snapshot.field === 'description') target = row.querySelector<HTMLElement>('.simple-description');
+  else if (snapshot.field === 'project') target = row.querySelector<HTMLElement>('.simple-project');
+  else if (snapshot.field === 'move-up') target = row.querySelector<HTMLElement>('.simple-move-up');
+  else if (snapshot.field === 'move-down') target = row.querySelector<HTMLElement>('.simple-move-down');
+  if (!target || (target as HTMLInputElement).disabled) return;
+  target.focus();
+  if (
+    snapshot.selectionStart !== null &&
+    snapshot.selectionEnd !== null &&
+    typeof (target as HTMLInputElement).setSelectionRange === 'function'
+  ) {
+    try {
+      (target as HTMLInputElement).setSelectionRange(snapshot.selectionStart, snapshot.selectionEnd);
+    } catch {
+      // Ignore selection errors on non-text inputs
+    }
+  }
+}
+
+function renderSimpleListView(sorted: Issue[]): void {
+  const activeFocus = snapshotDraftElementFocus(document.activeElement as HTMLElement | null);
+  const focusToRestore = activeFocus || pendingDraftFocusTarget;
+  pendingDraftFocusTarget = null;
+
+  isRenderingSimpleListView = true;
+  try {
+    elSimpleListViewContainer.innerHTML = '';
+  } finally {
+    isRenderingSimpleListView = false;
+  }
+  const quickCapture = isQuickCaptureMode(viewState);
+  if (!sorted.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-box';
+    empty.textContent = isLoading ? 'Loading tasks...' : quickCapture ? 'No drafts match. Add an idea below.' : 'No tasks match the active filters.';
+    elSimpleListViewContainer.appendChild(empty);
+  }
+  if (quickCapture) {
+    const tools = document.createElement('div');
+    tools.className = 'simple-tools';
+    tools.innerHTML = `<span>↑/↓ or Alt+Up / Down to reorder${viewState.sort === 'manual' ? '' : ' (switches to Manual order)'}</span><button class="btn btn-xs" id="btnAlignDrafts" type="button"${isAligningDrafts ? ' disabled' : ''}>${isAligningDrafts ? `<span class="btn-spinner"></span>Aligning (${aligningDraftsCount} drafts)...` : 'Align Drafts'}</button>`;
+    tools.querySelector('#btnAlignDrafts')?.addEventListener('click', () => { void batchAlignDrafts(); });
+    elSimpleListViewContainer.appendChild(tools);
+  }
+  for (let rowIndex = 0; rowIndex < sorted.length; rowIndex++) {
+    const issue = sorted[rowIndex];
+    const repo = repoForIssue(issue);
+    const key = issueWriteKey(repo, issue);
+    const stage = resolveIssueColumn(issue) || 'todo';
+    const editable = quickCapture && stage === 'draft' && issue.number > 0;
+    const unconfirmed = Boolean((issue as any).unconfirmed);
+    const bodyBusy = draftMutations.has(key) || issue.number < 0 || unconfirmed;
+    const titleBusy = bodyBusy || draftTitleMutations.has(key);
+    const row = document.createElement('div');
+    row.className = 'simple-row';
+    if (unconfirmed) row.classList.add('simple-row-unconfirmed');
+    row.setAttribute('tabindex', '0');
+    row.setAttribute('data-draft-key', key);
+    row.setAttribute('aria-label', `${issue.title}. ${STATUS_METADATA[stage].label}${unconfirmed ? '. Outcome unconfirmed; refresh required.' : editable ? '. Alt+Up or Alt+Down to reorder.' : ''}`);
+    row.setAttribute('aria-busy', String(draftMutations.has(key) || draftTitleMutations.has(key) || issue.number < 0));
+    const dot = document.createElement('span');
+    dot.className = 'simple-status-dot';
+    dot.style.background = STATUS_METADATA[stage].color;
+    dot.title = STATUS_METADATA[stage].label;
+    row.appendChild(dot);
+    const content = document.createElement('div');
+    content.className = 'simple-content';
+    if (editable) {
+      const savedEdit = pendingDraftEdits.get(key);
+      const title = document.createElement('input');
+      title.className = 'form-ctrl simple-title';
+      title.value = savedEdit?.title !== undefined ? savedEdit.title : issue.title;
+      title.disabled = titleBusy;
+      title.setAttribute('aria-label', `Title for draft #${issue.number}`);
+      title.addEventListener('input', () => {
+        if (title.value === issue.title) clearPendingDraftField(key, 'title');
+        else setPendingDraftField(key, 'title', title.value);
+      });
+      title.addEventListener('blur', (event) => {
+        if (isRenderingSimpleListView || (title as any).isConnected === false) return;
+        const relatedEl = (event as FocusEvent)?.relatedTarget as HTMLElement | null;
+        if (relatedEl && (relatedEl === elBtnRefresh || elBtnRefresh?.contains(relatedEl))) {
+          pendingDraftFocusTarget = {
+            key,
+            field: 'title',
+            selectionStart: typeof title.selectionStart === 'number' ? title.selectionStart : null,
+            selectionEnd: typeof title.selectionEnd === 'number' ? title.selectionEnd : null,
+          };
+          return;
+        }
+        const related = snapshotDraftElementFocus(relatedEl);
+        if (related) pendingDraftFocusTarget = related;
+        if (!title.value.trim()) {
+          title.value = issue.title;
+          clearPendingDraftField(key, 'title');
+        }
+        void editDraftTitle(issue, title.value);
+      });
+      title.addEventListener('keydown', (event) => {
+        if (event.key === 'Tab' && !event.shiftKey) {
+          pendingDraftFocusTarget = { key, field: 'description', selectionStart: null, selectionEnd: null };
+        }
+        if (event.key === 'Enter') { event.preventDefault(); title.blur(); }
+        if (event.key === 'Escape') {
+          title.value = issue.title;
+          clearPendingDraftField(key, 'title');
+          title.blur();
+        }
+      });
+      content.appendChild(title);
+      const description = document.createElement('textarea');
+      description.className = 'form-ctrl simple-description';
+      description.rows = 1;
+      const originalDescription = stripOrderMarker(issue.body || '');
+      description.value = savedEdit?.description !== undefined ? savedEdit.description : originalDescription;
+      description.placeholder = 'Add description…';
+      description.disabled = bodyBusy;
+      description.setAttribute('aria-label', `Description for draft #${issue.number}`);
+      description.addEventListener('input', () => {
+        if (description.value.replace(/\r\n/g, '\n') === originalDescription.replace(/\r\n/g, '\n')) {
+          clearPendingDraftField(key, 'description');
+        } else {
+          setPendingDraftField(key, 'description', description.value);
+        }
+      });
+      description.addEventListener('blur', (event) => {
+        if (isRenderingSimpleListView || (description as any).isConnected === false) return;
+        const relatedEl = (event as FocusEvent)?.relatedTarget as HTMLElement | null;
+        if (relatedEl && (relatedEl === elBtnRefresh || elBtnRefresh?.contains(relatedEl))) {
+          pendingDraftFocusTarget = {
+            key,
+            field: 'description',
+            selectionStart: typeof description.selectionStart === 'number' ? description.selectionStart : null,
+            selectionEnd: typeof description.selectionEnd === 'number' ? description.selectionEnd : null,
+          };
+          return;
+        }
+        const related = snapshotDraftElementFocus(relatedEl);
+        if (related) pendingDraftFocusTarget = related;
+        void editDraftDescription(issue, description.value, originalDescription);
+      });
+      description.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); description.blur(); }
+        if (event.key === 'Escape') {
+          description.value = originalDescription;
+          clearPendingDraftField(key, 'description');
+          description.blur();
+        }
+      });
+      content.appendChild(description);
+    } else {
+      const title = document.createElement('button');
+      title.className = 'simple-title';
+      title.textContent = issue.title || `Issue #${issue.number}`;
+      title.disabled = bodyBusy;
+      title.addEventListener('click', () => openDrawer(issue));
+      content.appendChild(title);
+      const preview = getIssueDescriptionPreview(issue.body);
+      if (preview) {
+        const description = document.createElement('div');
+        description.className = 'simple-description';
+        description.textContent = preview;
+        content.appendChild(description);
+      }
+    }
+    row.appendChild(content);
+    if (unconfirmed) {
+      const badge = document.createElement('span');
+      badge.className = 'badge-unconfirmed';
+      badge.title = 'Outcome unknown — refresh to reconcile before modifying';
+      badge.textContent = 'unconfirmed';
+      row.appendChild(badge);
+    }
+    if (isAllProjectsMode && repo) {
+      if (editable) {
+        const select = projectPicker(repo, `Project for draft #${issue.number}`);
+        select.disabled = titleBusy;
+        select.addEventListener('change', () => { void transferDraftProject(issue, select.value, select); });
+        row.appendChild(select);
+      } else {
+        const pill = document.createElement('span');
+        pill.className = 'status-pill project-pill';
+        pill.textContent = displayProjectName(repo);
+        pill.title = repo;
+        row.appendChild(pill);
+      }
+    }
+    if (editable) {
+      const moveControls = document.createElement('div');
+      moveControls.className = 'simple-move-controls';
+      const moveUp = document.createElement('button');
+      moveUp.type = 'button';
+      moveUp.className = 'simple-move-btn simple-move-up';
+      moveUp.textContent = '↑';
+      moveUp.title = `Move draft #${issue.number} up`;
+      moveUp.setAttribute('aria-label', `Move draft #${issue.number} up`);
+      moveUp.disabled = titleBusy || rowIndex <= 0;
+      moveUp.addEventListener('click', (event) => {
+        event.stopPropagation();
+        void reorderDraft(issue, sorted, rowIndex - 1);
+      });
+      const moveDown = document.createElement('button');
+      moveDown.type = 'button';
+      moveDown.className = 'simple-move-btn simple-move-down';
+      moveDown.textContent = '↓';
+      moveDown.title = `Move draft #${issue.number} down`;
+      moveDown.setAttribute('aria-label', `Move draft #${issue.number} down`);
+      moveDown.disabled = titleBusy || rowIndex >= sorted.length - 1;
+      moveDown.addEventListener('click', (event) => {
+        event.stopPropagation();
+        void reorderDraft(issue, sorted, rowIndex + 1);
+      });
+      moveControls.appendChild(moveUp);
+      moveControls.appendChild(moveDown);
+      row.appendChild(moveControls);
+    }
+    // Opening the existing drawer keeps questions, permissions and review
+    // actions reachable in every view, including the minimalist list.
+    row.addEventListener('keydown', (event) => {
+      if (editable && event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+        event.preventDefault();
+        void reorderDraft(issue, sorted, sorted.indexOf(issue) + (event.key === 'ArrowUp' ? -1 : 1));
+      } else if (event.key === 'Enter' && event.target === row) {
+        event.preventDefault();
+        openDrawer(issue);
+      }
+    });
+    if (editable && !titleBusy) {
+      row.draggable = true;
+      row.addEventListener('dragstart', (event) => {
+        draggedDraftKey = key;
+        event.dataTransfer?.setData('text/plain', key);
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragend', () => { draggedDraftKey = null; });
+      row.addEventListener('dragover', (event) => { if (draggedDraftKey) event.preventDefault(); });
+      row.addEventListener('drop', (event) => {
+        event.preventDefault();
+        const moving = sorted.find((entry) => issueWriteKey(repoForIssue(entry), entry) === draggedDraftKey);
+        draggedDraftKey = null;
+        if (moving) void reorderDraft(moving, sorted, sorted.indexOf(issue));
+      });
+    }
+    elSimpleListViewContainer.appendChild(row);
+  }
+  if (quickCapture) renderDraftAddRow();
+  restoreDraftElementFocus(focusToRestore);
+}
+
+function renderDraftAddRow(): void {
+  const add = document.createElement('div');
+  add.className = 'simple-add';
+  add.innerHTML = `<div class="simple-add-top"><input class="form-ctrl" id="draftCaptureTitle" aria-label="New draft title" placeholder="Add an idea… Enter to save" /><button class="btn btn-sm" id="btnDraftDescription" type="button" aria-expanded="${draftDescriptionVisible}">Description</button></div><textarea class="form-ctrl" id="draftCaptureDescription" aria-label="New draft description" placeholder="Optional inspiration for the AI. Shift+Enter for a new line." rows="2"></textarea>`;
+  const title = add.querySelector<HTMLInputElement>('#draftCaptureTitle')!;
+  const description = add.querySelector<HTMLTextAreaElement>('#draftCaptureDescription')!;
+  title.value = draftCaptureTitle;
+  description.value = draftCaptureDescription;
+  title.disabled = description.disabled = draftCaptureBusy;
+  description.style.display = draftDescriptionVisible ? '' : 'none';
+  title.addEventListener('input', () => { draftCaptureTitle = title.value; });
+  description.addEventListener('input', () => { draftCaptureDescription = description.value; });
+  const toggle = add.querySelector<HTMLButtonElement>('#btnDraftDescription')!;
+  toggle.addEventListener('click', () => {
+    draftDescriptionVisible = !draftDescriptionVisible;
+    description.style.display = draftDescriptionVisible ? '' : 'none';
+    toggle.setAttribute('aria-expanded', String(draftDescriptionVisible));
+    if (draftDescriptionVisible) description.focus();
+  });
+  title.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    if (event.shiftKey) {
+      draftDescriptionVisible = true;
+      description.style.display = '';
+      toggle.setAttribute('aria-expanded', 'true');
+      description.focus();
+    } else void createQuickCaptureDraft();
+  });
+  description.addEventListener('keydown', (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); void createQuickCaptureDraft(); }
+  });
+  if (isAllProjectsMode) {
+    const select = projectPicker(draftCaptureRepo, 'Project for new draft');
+    draftCaptureRepo = select.value;
+    select.disabled = draftCaptureBusy;
+    select.addEventListener('change', () => { draftCaptureRepo = select.value; select.title = select.value; });
+    add.querySelector('.simple-add-top')!.prepend(select);
+  }
+  elSimpleListViewContainer.appendChild(add);
+}
+
+async function createQuickCaptureDraft(): Promise<void> {
+  if (draftCaptureBusy || !draftCaptureTitle.trim()) return;
+  const repo = isAllProjectsMode ? draftCaptureRepo : currentRepo;
+  if (!repo || repo === ALL_PROJECTS_CACHE_KEY) { openRepoPopover(); return; }
+  const title = draftCaptureTitle.trim();
+  const description = draftCaptureDescription;
+  const body = setOrderMarker(description, nextAppendOrder(issues.filter((issue) => repoForIssue(issue) === repo && resolveIssueColumn(issue) === 'draft')));
+  const temporary = normalizeGithubIssues([{
+    number: optimisticDraftNumber--, title, body, repo, labels: [{ name: 'status:draft' }],
+    state: 'open', created_at: new Date().toISOString(), html_url: '',
+  }])[0];
+  draftCaptureBusy = true;
+  issues = [...issues, temporary];
+  renderViews();
+  try {
+    // No session launch: quick capture is a plain GitHub draft issue write.
+    const created = await githubRequestWithRetry('POST', `/repos/${repo}/issues`, { title, body, labels: ['status:draft'] });
+    const normalized = normalizeGithubIssues([{ ...created, repo }]);
+    issues = issues.filter((issue) => issue !== temporary);
+    if (isAllProjectsMode || currentRepo === repo) {
+      issues = mergeIssuePages(issues, normalized);
+      if (normalized[0]) admitIssueRecord(repo, normalized[0]);
+    }
+    issueCache.delete(repo);
+    issueCache.delete(ALL_PROJECTS_CACHE_KEY);
+    draftCaptureTitle = draftCaptureDescription = '';
+    void host.toast({ kind: 'success', message: `Draft created in ${displayProjectName(repo)}` });
+  } catch (err: any) {
+    issues = issues.filter((issue) => issue !== temporary);
+    void host.toast({ kind: 'error', message: `Could not create draft: ${err.message}. Your idea is kept below; check GitHub before retrying if the connection failed.` });
+  } finally {
+    draftCaptureBusy = false;
+    renderViews();
+    document.getElementById('draftCaptureTitle')?.focus();
+  }
+}
+
+async function editDraftTitle(issue: Issue, value: string): Promise<void> {
+  const repo = repoForIssue(issue);
+  const key = issueWriteKey(repo, issue);
+  const title = value.trim();
+  if (!title || title === issue.title) {
+    clearPendingDraftField(key, 'title');
+    return;
+  }
+  if (draftMutations.has(key) || draftTitleMutations.has(key) || (issue as any).unconfirmed) return;
+  draftTitleMutations.add(key);
+  const previous = issue.title;
+  const finish = trackIssueWrite(repo, issue, ['record']);
+  clearPendingDraftField(key, 'title');
+  issue.title = title;
+  renderViews();
+  try {
+    const response = await githubRequestWithRetry('PATCH', `/repos/${repo}/issues/${issue.number}`, { title });
+    if (response?.updated_at) issue.updated_at = response.updated_at;
+    findIssueRecord(repo, issue).title = title;
+    finish(true);
+  } catch (err: any) {
+    finish(false);
+    issue.title = previous;
+    findIssueRecord(repo, issue).title = previous;
+    void host.toast({ kind: 'error', message: `Could not rename draft: ${err.message}` });
+  } finally {
+    draftTitleMutations.delete(key);
+    issueCache.delete(repo);
+    renderViews();
+  }
+}
+
+async function editDraftDescription(issue: Issue, value: string, original: string): Promise<void> {
+  const normalizeEol = (s: string): string => (s || '').replace(/\r\n/g, '\n');
+  const key = issueWriteKey(repoForIssue(issue), issue);
+  if (normalizeEol(value) === normalizeEol(original)) {
+    clearPendingDraftField(key, 'description');
+    return;
+  }
+  if (draftMutations.has(key) || (issue as any).unconfirmed) return;
+  draftMutations.add(key);
+  setPendingDraftField(key, 'description', value);
+  try {
+    const fresh = await reloadIssueBeforeMutation(issue);
+    if (!fresh) throw new Error('Could not refresh draft; nothing was overwritten');
+    if (normalizeEol(stripOrderMarker(fresh.body)) !== normalizeEol(original)) {
+      clearPendingDraftField(key, 'description');
+      throw new Error('Description changed remotely; review the refreshed draft before editing again');
+    }
+    const order = parseOrderMarker(fresh.body);
+    const eolValue = fresh.body.includes('\r\n') ? normalizeEol(value).replace(/\n/g, '\r\n') : value;
+    const ok = await updateIssueBody(
+      issue,
+      order === null ? stripOrderMarker(eolValue) : setOrderMarker(eolValue, order),
+      { suppressToast: true }
+    );
+    if (ok) {
+      clearPendingDraftField(key, 'description');
+    } else {
+      setPendingDraftField(key, 'description', value);
+    }
+  } catch (err: any) {
+    void host.toast({ kind: 'error', message: err.message });
+  } finally {
+    draftMutations.delete(key);
+    renderViews();
+  }
+}
+
+async function reorderDraft(issue: Issue, displayed: Issue[], targetIndex: number): Promise<void> {
+  if (draftReorderBusy || (issue as any).unconfirmed || targetIndex < 0 || targetIndex >= displayed.length) return;
+  const switchedToManual = viewState.sort !== 'manual';
+  if (switchedToManual) {
+    viewState.sort = 'manual';
+    rememberViewState();
+    void host.toast({ kind: 'info', message: 'Switched to Manual order.' });
+  }
+  const displayedFrom = displayed.indexOf(issue);
+  const target = displayed[targetIndex];
+  const ordered = sortByManualOrder(displayed.filter((entry) => resolveIssueColumn(entry) === 'draft' && entry.number > 0));
+  const from = ordered.indexOf(issue);
+  const to = ordered.indexOf(target);
+  const directionMismatch =
+    switchedToManual &&
+    displayedFrom >= 0 &&
+    ((targetIndex < displayedFrom && to > from) || (targetIndex > displayedFrom && to < from));
+  if (from < 0 || to < 0 || from === to || directionMismatch) {
+    renderViews();
+    return;
+  }
+  const move = computeMove(ordered, from, to);
+  if (!move || move.length === 0) {
+    void host.toast({ kind: 'info', message: 'Order gap is full; move cancelled.' });
+    renderViews();
+    return;
+  }
+  const rest = ordered.filter((entry) => entry !== issue);
+  const neighbours = [rest[to - 1], rest[to]].filter((entry): entry is Issue => !!entry);
+  const writtenIssues = move.map((step) => ordered[step.index]).filter((entry): entry is Issue => !!entry);
+  const participants = Array.from(new Set([issue, ...writtenIssues, ...neighbours]));
+  if (participants.some((entry) => Boolean((entry as any).unconfirmed))) return;
+  const keys = participants.map((entry) => issueWriteKey(repoForIssue(entry), entry));
+  if (
+    keys.some(
+      (key) =>
+        draftMutations.has(key) ||
+        draftTitleMutations.has(key) ||
+        Array.from(issueWriteTrackers.get(key)?.values() || []).some((write) => write.pending > 0)
+    )
+  ) {
+    return;
+  }
+  draftReorderBusy = true;
+  keys.forEach((key) => draftMutations.add(key));
+  try {
+    // Reload all participating issues (written items and destination neighbours).
+    // Abort if any marker changed since the gesture rather than writing into a stale order gap.
+    const before = participants.map((entry) => parseOrderMarker(entry.body));
+    const fresh = await Promise.all(participants.map(reloadIssueBeforeMutation));
+    if (fresh.some((entry) => !entry)) throw new Error('Could not refresh draft order; move cancelled');
+    if (participants.some((entry, index) => parseOrderMarker(entry.body) !== before[index])) {
+      throw new Error('Order changed while moving; try again');
+    }
+    const freshMove = computeMove(ordered, from, to);
+    if (!freshMove || freshMove.length === 0) throw new Error('Order gap is full; move cancelled');
+    for (const step of freshMove) {
+      const targetIssue = ordered[step.index];
+      const ok = await updateIssueBody(targetIssue, setOrderMarker(targetIssue.body, step.order), { suppressToast: true });
+      if (!ok) break;
+    }
+  } catch (err: any) {
+    void host.toast({ kind: 'error', message: `Could not reorder draft: ${err.message}` });
+  } finally {
+    keys.forEach((key) => draftMutations.delete(key));
+    draftReorderBusy = false;
+    renderViews();
+    Array.from(elSimpleListViewContainer.querySelectorAll<HTMLElement>('[data-draft-key]'))
+      .find((row) => row.getAttribute('data-draft-key') === issueWriteKey(repoForIssue(issue), issue))?.focus();
+  }
+}
+
+async function transferDraftProject(issue: Issue, targetRepo: string, selectEl?: HTMLSelectElement | null): Promise<void> {
+  const repo = repoForIssue(issue);
+  const key = issueWriteKey(repo, issue);
+  const resetSelect = () => {
+    if (selectEl) {
+      selectEl.value = repo;
+      selectEl.title = repo;
+    }
+    const rowSelect = Array.from(elSimpleListViewContainer.querySelectorAll<HTMLElement>('[data-draft-key]'))
+      .find((r) => r.getAttribute('data-draft-key') === key)
+      ?.querySelector<HTMLSelectElement>('.simple-project');
+    if (rowSelect) {
+      rowSelect.value = repo;
+      rowSelect.title = repo;
+    }
+  };
+  if (
+    !repo ||
+    !targetRepo ||
+    repo.toLowerCase() === targetRepo.toLowerCase() ||
+    draftMutations.has(key) ||
+    draftTitleMutations.has(key) ||
+    draftReorderBusy ||
+    Array.from(issueWriteTrackers.get(key)?.values() || []).some((write) => write.pending > 0) ||
+    (issue as any).unconfirmed
+  ) {
+    resetSelect();
+    return;
+  }
+  const allowedTarget = availableProjectRepos().find((candidate) => candidate.toLowerCase() === targetRepo.toLowerCase());
+  if (!allowedTarget) {
+    resetSelect();
+    void host.toast({ kind: 'error', message: `Could not move draft: unknown target project ${targetRepo}` });
+    return;
+  }
+  const sourceLabel = displayProjectName(repo) || repo;
+  const targetLabel = displayProjectName(allowedTarget) || allowedTarget;
+  const confirmMessage = `Move draft #${issue.number} from ${sourceLabel} (${repo}) to ${targetLabel} (${allowedTarget})? Its issue number and URL may change, and GitHub repository transfer permissions apply.`;
+  const confirmFn = typeof window.confirm === 'function' ? window.confirm.bind(window) : null;
+  if (confirmFn && !confirmFn(confirmMessage)) {
+    resetSelect();
+    return;
+  }
+  const oldNumber = issue.number;
+  // Discard pre-transfer refreshes; their old identity must never reappear.
+  activeStreamEpoch++;
+  isLoading = false;
+  if (elIconRefresh) elIconRefresh.style.animation = '';
+  draftMutations.add(key);
+  renderViews();
+  let graphqlStarted = false;
+  try {
+    const [rawIssue, rawRepo] = await Promise.all([
+      githubRequestWithRetry('GET', `/repos/${repo}/issues/${issue.number}`),
+      githubRequestWithRetry('GET', `/repos/${allowedTarget}`),
+    ]);
+    if (!rawIssue?.node_id || !rawRepo?.node_id) throw new Error('GitHub did not return transfer IDs');
+    // A transfer is not a copy: GitHub retains the issue history and redirects
+    // its old URL. Permissions/organization restrictions surface as errors.
+    graphqlStarted = true;
+    const result = await githubRequest('POST', '/graphql', {
+      query: 'mutation($issue:ID!,$repository:ID!){transferIssue(input:{issueId:$issue,repositoryId:$repository}){issue{number url repository{nameWithOwner}}}}',
+      variables: { issue: rawIssue.node_id, repository: rawRepo.node_id },
+    });
+    const moved = result?.data?.transferIssue?.issue;
+    if (!moved) {
+      if (Array.isArray(result?.errors) && result.errors.length > 0) {
+        graphqlStarted = false;
+        throw new Error(result.errors[0]?.message || 'Transfer denied');
+      }
+      throw new Error('Transfer outcome unknown; check GitHub before retrying');
+    }
+    activeStreamEpoch++;
+    isLoading = false;
+    if (elIconRefresh) elIconRefresh.style.animation = '';
+    const published = findIssueRecord(repo, issue);
+    const oldEdit = pendingDraftEdits.get(key);
+    pendingDraftEdits.delete(key);
+    for (const record of new Set([issue, published])) {
+      delete (record as any).unconfirmed;
+      record.repo = moved.repository.nameWithOwner;
+      record.number = moved.number;
+      record.html_url = moved.url;
+      record.projectId = allProjects.find((project) => getProjectRepoFullName(project)?.toLowerCase() === allowedTarget.toLowerCase())?.id;
+    }
+    if (oldEdit) {
+      pendingDraftEdits.set(issueWriteKey(moved.repository.nameWithOwner, moved.number), oldEdit);
+    }
+    selectedIssueNumbers.delete(oldNumber);
+    commentsCache.clear();
+    drawerGeneration++;
+    issueWriteTrackers.delete(key);
+    admitIssueRecord(moved.repository.nameWithOwner, published);
+    if (activeIssue === issue || activeIssue === published) renderDrawer(published, true);
+    issueCache.delete(repo);
+    issueCache.delete(allowedTarget);
+    issueCache.delete(ALL_PROJECTS_CACHE_KEY);
+    void host.toast({ kind: 'success', message: `Draft moved to ${displayProjectName(moved.repository.nameWithOwner)}` });
+  } catch (err: any) {
+    if (graphqlStarted && !isDefinitivePreCommitRejection(err)) {
+      const published = findIssueRecord(repo, issue);
+      (issue as any).unconfirmed = true;
+      (published as any).unconfirmed = true;
+      issueCache.delete(repo);
+      issueCache.delete(allowedTarget);
+      issueCache.delete(ALL_PROJECTS_CACHE_KEY);
+      void host.toast({
+        kind: 'error',
+        message: `Transfer outcome unknown for #${issue.number} — refresh to reconcile ${sourceLabel} and ${targetLabel} before modifying.`,
+      });
+    } else {
+      void host.toast({ kind: 'error', message: `Could not move draft: ${err.message}` });
+    }
+  } finally {
+    draftMutations.delete(key);
+    renderViews();
+  }
 }
 
 function formatAlertBadges(issue: Issue): string {
@@ -3717,6 +4366,7 @@ function renderIssueCard(issue: Issue, inKanban: boolean): HTMLElement {
         <input type="checkbox" class="card-checkbox" data-issue="${issue.number}" ${isSelected ? 'checked' : ''} title="Select issue for batch actions" />
         <span class="card-id">#${issue.number}</span>
         ${(issue as any).unconfirmed ? '<span class="badge badge-unconfirmed" style="background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4); font-size: 10px; padding: 1px 4px; border-radius: 3px; font-weight: 500;" title="Write outcome unconfirmed — refresh required">unconfirmed</span>' : ''}
+        ${isAllProjectsMode ? `<span class="status-pill project-pill" title="${escapeHtml(repoForIssue(issue))}">${escapeHtml(displayProjectName(repoForIssue(issue)))}</span>` : ''}
         ${priorityHtml}
         ${complexityHtml}
         ${vagueBadgeHtml}
@@ -3829,9 +4479,8 @@ const buildCardElement = renderIssueCard;
 function renderListView(filteredIssues: Issue[]): void {
   elListViewContainer.innerHTML = '';
 
-  const listItems = activeTab === 'all'
-    ? filteredIssues
-    : filteredIssues.filter((i) => resolveIssueColumn(i) === activeTab);
+  const listItems = filteredIssues;
+  const currentGroupBy = isAllProjectsMode ? 'project' : 'none';
 
   if (listItems.length === 0) {
     if (isLoading && issues.length === 0) {
@@ -3879,7 +4528,7 @@ function renderListView(filteredIssues: Issue[]): void {
         <div class="list-group-header" role="button" tabindex="0" title="Click to collapse / expand group">
           <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
             <svg class="list-group-chevron icon icon-sm" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
-            <span>${escapeHtml(grp.title)}</span>
+            <span title="${escapeHtml(isAllProjectsMode ? repoForIssue(grp.issues[0]) : grp.title)}">${escapeHtml(grp.title)}</span>
           </div>
           <span class="status-pill">${grp.issues.length}</span>
         </div>
@@ -3928,6 +4577,7 @@ function renderListView(filteredIssues: Issue[]): void {
 }
 
 function renderKanbanView(filteredIssues: Issue[]): void {
+  const currentGroupBy: string = isAllProjectsMode ? 'project' : 'none';
   elKanbanViewContainer.innerHTML = '';
   const kanbanFragment = document.createDocumentFragment();
   const columns: Array<{ id: ColumnId; title: string }> = [
@@ -4333,7 +4983,8 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
       const repoPill = document.createElement('span');
       repoPill.className = 'status-pill';
       repoPill.style.fontSize = '10px';
-      repoPill.textContent = repoName.split('/')[1] || repoName;
+      repoPill.textContent = displayProjectName(repoName);
+      repoPill.title = repoName;
       meta.appendChild(repoPill);
     }
 
@@ -4658,7 +5309,7 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
       repoHeader.className = 'human-repo-header';
       repoHeader.innerHTML = `
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
-        <span>${escapeHtml(repo)}</span>
+        <span title="${escapeHtml(repo)}">${escapeHtml(displayProjectName(repo))}</span>
       `;
       repoGroup.appendChild(repoHeader);
 
@@ -4722,140 +5373,6 @@ function renderHumanTasksView(filteredIssues: Issue[]): void {
   }
 
   elHumanViewContainer.appendChild(fragment);
-}
-
-function renderAllTasksView(filteredIssues: Issue[]): void {
-  if (!elAllTasksViewContainer) return;
-  elAllTasksViewContainer.innerHTML = '';
-
-  if (filteredIssues.length === 0) {
-    if (isLoading && issues.length === 0) {
-      elAllTasksViewContainer.innerHTML = `
-        <div class="empty-box">
-          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
-          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading tasks...</span>
-        </div>
-      `;
-      return;
-    }
-    elAllTasksViewContainer.innerHTML = `
-      <div class="empty-box">
-        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
-        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">No tasks match the active filters</span>
-        <span style="color: var(--fg-muted); font-size: 11.5px;">Try adjusting your search query, status tab, or labels.</span>
-      </div>
-    `;
-    return;
-  }
-
-  const groups: Record<ColumnId, Issue[]> = {
-    draft: [],
-    backlog: [],
-    todo: [],
-    planned: [],
-    'in-progress': [],
-    'needs-human': [],
-    'in-review': [],
-    done: [],
-  };
-
-  for (const issue of filteredIssues) {
-    const col = resolveIssueColumn(issue);
-    if (col && groups[col]) {
-      groups[col].push(issue);
-    }
-  }
-
-  const fragment = document.createDocumentFragment();
-
-  STATUS_COLUMNS.forEach((colId) => {
-    const colIssues = groups[colId];
-    if (colIssues.length === 0) return;
-
-    const groupEl = document.createElement('div');
-    groupEl.className = 'all-tasks-group';
-    groupEl.setAttribute('role', 'region');
-    groupEl.setAttribute('aria-label', `${STATUS_METADATA[colId].label} (${colIssues.length} tasks)`);
-
-    const header = document.createElement('div');
-    header.className = 'all-tasks-group-header';
-    header.innerHTML = `
-      <div class="all-tasks-group-title" role="heading" aria-level="2">
-        <span class="status-dot" style="background: ${STATUS_METADATA[colId].color}; width: 8px; height: 8px; border-radius: 50%; display: inline-block;"></span>
-        <span>${escapeHtml(STATUS_METADATA[colId].label)}</span>
-      </div>
-      <span class="status-pill">${colIssues.length}</span>
-    `;
-    groupEl.appendChild(header);
-
-    const cardsContainer = document.createElement('div');
-    cardsContainer.className = 'all-tasks-group-cards';
-
-    colIssues.forEach((issue) => {
-      const card = document.createElement('div');
-      card.className = 'all-task-card';
-      card.setAttribute('role', 'button');
-      card.setAttribute('tabindex', '0');
-      const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
-      card.setAttribute('aria-label', `Open issue #${issue.number}: ${displayTitle}`);
-
-      const content = document.createElement('div');
-      content.className = 'all-task-content';
-
-      const titleEl = document.createElement('div');
-      titleEl.className = 'all-task-title';
-      titleEl.textContent = displayTitle;
-      if (isPlaceholder) {
-        titleEl.style.fontStyle = 'italic';
-        titleEl.style.color = 'var(--fg-muted)';
-      }
-      content.appendChild(titleEl);
-
-      if (displaySubtitle) {
-        const subEl = document.createElement('div');
-        subEl.className = 'card-subtitle-tech';
-        subEl.style.cssText = 'font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;';
-        subEl.textContent = displaySubtitle;
-        content.appendChild(subEl);
-      }
-
-      const meta = document.createElement('div');
-      meta.className = 'all-task-meta';
-
-      const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
-      if (isAllProjectsMode && repoName) {
-        const repoPill = document.createElement('span');
-        repoPill.className = 'status-pill';
-        repoPill.style.fontSize = '10px';
-        repoPill.textContent = repoName.split('/')[1] || repoName;
-        meta.appendChild(repoPill);
-      }
-
-      const numSpan = document.createElement('span');
-      numSpan.style.cssText = 'font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted);';
-      numSpan.textContent = `#${issue.number}`;
-      meta.appendChild(numSpan);
-
-      card.appendChild(content);
-      card.appendChild(meta);
-
-      const onCardClick = () => openDrawer(issue);
-      card.addEventListener('click', onCardClick);
-      card.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onCardClick();
-        }
-      });
-
-      cardsContainer.appendChild(card);
-    });
-
-    groupEl.appendChild(cardsContainer);
-    fragment.appendChild(groupEl);
-  });
-
-  elAllTasksViewContainer.appendChild(fragment);
 }
 
 function renderQuestionsView(filteredIssues: Issue[]): void {
@@ -4940,7 +5457,8 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
       const repoPill = document.createElement('span');
       repoPill.className = 'status-pill';
       repoPill.style.fontSize = '10px';
-      repoPill.textContent = repoName.split('/')[1] || repoName;
+      repoPill.textContent = displayProjectName(repoName);
+      repoPill.title = repoName;
       meta.appendChild(repoPill);
     }
 
@@ -5198,7 +5716,7 @@ function renderQuestionsView(filteredIssues: Issue[]): void {
       repoHeader.className = 'questions-repo-header';
       repoHeader.innerHTML = `
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
-        <span>${escapeHtml(repo)}</span>
+        <span title="${escapeHtml(repo)}">${escapeHtml(displayProjectName(repo))}</span>
       `;
       repoGroup.appendChild(repoHeader);
 
@@ -5229,17 +5747,6 @@ export function renderAttentionView(filteredIssues: Issue[]): void {
   const reviews = grouped['needs-review'];
   const totalAttention = decisions.length + permissions.length + reviews.length;
 
-  // Update badge
-  if (elAttentionViewBadge) {
-    if (totalAttention > 0) {
-      elAttentionViewBadge.textContent = String(totalAttention);
-      elAttentionViewBadge.style.display = 'inline-flex';
-    } else {
-      elAttentionViewBadge.textContent = '0';
-      elAttentionViewBadge.style.display = 'none';
-    }
-  }
-
   // Handle Loading & Zero Attention Empty States
   if (totalAttention === 0) {
     if (isLoading && filteredIssues.length === 0) {
@@ -5264,53 +5771,9 @@ export function renderAttentionView(filteredIssues: Issue[]): void {
 
   const fragment = document.createDocumentFragment();
 
-  // Header with Sub-Filter Pills
-  const header = document.createElement('div');
+  const header = document.createElement('h3');
   header.className = 'attention-header';
-
-  const headerTop = document.createElement('div');
-  headerTop.className = 'attention-header-top';
-
-  const titleEl = document.createElement('div');
-  titleEl.className = 'attention-title';
-  titleEl.innerHTML = `
-    <svg class="icon" viewBox="0 0 24 24" style="color: var(--warn);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-    <span>Attention Action Queues</span>
-  `;
-  headerTop.appendChild(titleEl);
-
-  const filtersBar = document.createElement('div');
-  filtersBar.className = 'attention-sub-filters';
-  filtersBar.setAttribute('role', 'tablist');
-  filtersBar.setAttribute('aria-label', 'Attention Queue Sub-filters');
-
-  const filterConfigs: Array<{
-    key: 'all' | 'needs-decision' | 'needs-permission' | 'needs-review';
-    label: string;
-    count: number;
-  }> = [
-    { key: 'all', label: 'All Attention', count: totalAttention },
-    { key: 'needs-decision', label: 'Needs Decision', count: decisions.length },
-    { key: 'needs-permission', label: 'Needs Permission', count: permissions.length },
-    { key: 'needs-review', label: 'Needs Review', count: reviews.length },
-  ];
-
-  filterConfigs.forEach((cfg) => {
-    const btn = document.createElement('button');
-    btn.className = `attention-sub-filter-btn${currentAttentionFilter === cfg.key ? ' active' : ''}`;
-    btn.setAttribute('role', 'tab');
-    btn.setAttribute('aria-selected', currentAttentionFilter === cfg.key ? 'true' : 'false');
-    btn.setAttribute('data-subfilter', cfg.key);
-    btn.innerHTML = `<span>${escapeHtml(cfg.label)}</span><span class="filter-count">${cfg.count}</span>`;
-    btn.addEventListener('click', () => {
-      currentAttentionFilter = cfg.key;
-      renderAttentionView(filteredIssues);
-    });
-    filtersBar.appendChild(btn);
-  });
-
-  header.appendChild(headerTop);
-  header.appendChild(filtersBar);
+  header.textContent = 'Attention Action Queues';
   fragment.appendChild(header);
 
   // Helper to build an attention card
@@ -5360,7 +5823,7 @@ export function renderAttentionView(filteredIssues: Issue[]): void {
     if ((isAllProjectsMode || currentRepo === null) && repoName) {
       const repoBadge = document.createElement('span');
       repoBadge.className = 'attention-repo-badge';
-      repoBadge.textContent = repoName.split('/')[1] || repoName;
+      repoBadge.textContent = displayProjectName(repoName);
       repoBadge.title = repoName;
       metaEl.appendChild(repoBadge);
     }
@@ -5451,10 +5914,6 @@ export function renderAttentionView(filteredIssues: Issue[]): void {
     dotClass: string,
     items: Issue[]
   ) => {
-    if (currentAttentionFilter !== 'all' && currentAttentionFilter !== category) {
-      return;
-    }
-
     const section = document.createElement('section');
     section.className = 'attention-queue-section';
     section.setAttribute('aria-label', `${title} queue`);
@@ -5508,148 +5967,16 @@ export function renderAttentionView(filteredIssues: Issue[]): void {
   elAttentionViewContainer.appendChild(fragment);
 }
 
-function updateViewModeButtons(mode: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention'): void {
-  const syncBtn = (btn: HTMLButtonElement | null, isActive: boolean) => {
-    if (!btn) return;
-    if (isActive) btn.classList.add('active');
-    else btn.classList.remove('active');
-    btn.setAttribute('aria-checked', isActive ? 'true' : 'false');
-  };
-
-  syncBtn(elBtnViewAttention, mode === 'attention');
-  syncBtn(elBtnViewHuman, mode === 'human');
-  syncBtn(elBtnViewAllTasks, mode === 'all-tasks');
-  syncBtn(elBtnViewQuestions, mode === 'questions');
-  syncBtn(elBtnViewList, mode === 'list');
-  syncBtn(elBtnViewKanban, mode === 'kanban');
-  syncBtn(elBtnViewGraph, mode === 'graph');
-
-  if (elViewSelectCurrentLabel) {
-    elViewSelectCurrentLabel.textContent =
-      mode === 'attention'
-        ? 'Attention'
-        : mode === 'human'
-          ? 'Human Tasks'
-          : mode === 'questions'
-            ? 'Questions'
-            : mode === 'kanban'
-              ? 'Board'
-              : mode === 'graph'
-                ? 'Graph'
-                : mode === 'all-tasks'
-                  ? 'All Tasks'
-                  : 'List';
-  }
-
-  if (elViewSelectCurrentIcon) {
-    if (mode === 'attention') {
-      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
-    } else if (mode === 'human') {
-      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
-    } else if (mode === 'questions') {
-      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
-    } else if (mode === 'kanban') {
-      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>';
-    } else if (mode === 'graph') {
-      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>';
-    } else if (mode === 'all-tasks') {
-      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M22 7h-9v2h9V7zm0 8h-9v2h9v-2zM5.54 11L2 7.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 11zm0 8L2 15.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 19z"/></svg>';
-    } else {
-      elViewSelectCurrentIcon.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>';
-    }
-  }
-
-  document.querySelectorAll('.view-opt-item').forEach((item) => {
-    const itemMode = item.getAttribute('data-mode');
-    item.classList.toggle('active', itemMode === mode);
-  });
-
-  if (elBtnLayoutToggle) {
-    if (mode === 'attention') {
-      elBtnLayoutToggle.title = 'View: Attention (click to switch to Human Tasks)';
-      elBtnLayoutToggle.setAttribute('aria-label', 'View: Attention (click to switch to Human Tasks)');
-      elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
-    } else if (mode === 'human') {
-      elBtnLayoutToggle.title = 'View: Human Tasks (click to switch to All Tasks)';
-      elBtnLayoutToggle.setAttribute('aria-label', 'View: Human Tasks (click to switch to All Tasks)');
-      elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>';
-    } else if (mode === 'all-tasks') {
-      elBtnLayoutToggle.title = 'View: All Tasks (click to switch to Questions)';
-      elBtnLayoutToggle.setAttribute('aria-label', 'View: All Tasks (click to switch to Questions)');
-      elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M22 7h-9v2h9V7zm0 8h-9v2h9v-2zM5.54 11L2 7.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 11zm0 8L2 15.46l1.41-1.41 2.12 2.12 4.24-4.24 1.41 1.41L5.54 19z"/></svg>';
-    } else if (mode === 'questions') {
-      elBtnLayoutToggle.title = 'View: Questions (click to switch to List)';
-      elBtnLayoutToggle.setAttribute('aria-label', 'View: Questions (click to switch to List)');
-      elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
-    } else if (mode === 'list') {
-      elBtnLayoutToggle.title = 'View: List (click to switch to Board)';
-      elBtnLayoutToggle.setAttribute('aria-label', 'View: List (click to switch to Board)');
-      elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>';
-    } else if (mode === 'kanban') {
-      elBtnLayoutToggle.title = 'View: Board (click to switch to Graph)';
-      elBtnLayoutToggle.setAttribute('aria-label', 'View: Board (click to switch to Graph)');
-      elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M3 3h4v18H3V3zm7 0h4v12h-4V3zm7 0h4v15h-4V3z"/></svg>';
-    } else {
-      elBtnLayoutToggle.title = 'View: Graph (click to switch to Attention)';
-      elBtnLayoutToggle.setAttribute('aria-label', 'View: Graph (click to switch to Attention)');
-      elBtnLayoutToggle.innerHTML = '<svg class="icon" viewBox="0 0 24 24"><path d="M11 2v4.18C8.6 6.6 6.8 8.6 6.8 11v2H4v7h7v-7H9.2v-2c0-1.5 1.2-2.8 2.8-2.8s2.8 1.3 2.8 2.8v2H13v7h7v-7h-2.2v-2c0-2.4-1.8-4.4-4.2-4.82V2h-2.6zM9 15v3H6v-3h3zm9 0v3h-3v-3h3z"/></svg>';
-    }
-  }
-}
-
 function applyLayoutMode(triggerRender: boolean = true): void {
-  if (showArchivedOnly) {
-    document.body.removeAttribute('data-layout');
-    return;
-  }
   isWideScreen = window.innerWidth >= 680;
-
-  let newLayout: 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention' = 'list';
-  if (userLayoutPreference === 'attention') {
-    newLayout = 'attention';
-    document.body.setAttribute('data-layout', 'attention');
-    updateViewModeButtons('attention');
-  } else if (userLayoutPreference === 'human') {
-    newLayout = 'human';
-    document.body.setAttribute('data-layout', 'human');
-    updateViewModeButtons('human');
-  } else if (userLayoutPreference === 'all-tasks') {
-    newLayout = 'all-tasks';
-    document.body.setAttribute('data-layout', 'all-tasks');
-    updateViewModeButtons('all-tasks');
-  } else if (userLayoutPreference === 'questions') {
-    newLayout = 'questions';
-    document.body.setAttribute('data-layout', 'questions');
-    updateViewModeButtons('questions');
-  } else if (userLayoutPreference === 'graph') {
-    newLayout = 'graph';
-    document.body.setAttribute('data-layout', 'graph');
-    updateViewModeButtons('graph');
-  } else if (userLayoutPreference === 'kanban') {
-    newLayout = 'kanban';
-    document.body.setAttribute('data-layout', 'kanban');
-    updateViewModeButtons('kanban');
-  } else if (userLayoutPreference === 'list') {
-    newLayout = 'list';
-    document.body.removeAttribute('data-layout');
-    updateViewModeButtons('list');
-  } else {
-    if (isWideScreen) {
-      newLayout = 'kanban';
-      document.body.setAttribute('data-layout', 'kanban');
-      updateViewModeButtons('kanban');
-    } else {
-      newLayout = 'list';
-      document.body.removeAttribute('data-layout');
-      updateViewModeButtons('list');
-    }
-  }
-
-  if (triggerRender && currentRenderedLayout !== newLayout) {
-    renderViews();
-  } else if (newLayout === 'graph') {
-    drawCurrentGraphEdges();
-  }
+  document.body.setAttribute('data-layout', showArchivedOnly ? 'cards' : viewState.view);
+  if (elViewSelectCurrentLabel) elViewSelectCurrentLabel.textContent = VIEW_LABELS[viewState.view];
+  document.querySelectorAll<HTMLElement>('.view-opt-item').forEach((item) => {
+    const active = item.getAttribute('data-mode') === viewState.view;
+    item.classList.toggle('active', active);
+    item.setAttribute('aria-checked', String(active));
+  });
+  if (triggerRender) renderViews();
 }
 
 // ==========================================
@@ -5860,6 +6187,7 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
   const card = document.createElement('div');
   card.className = 'graph-card';
   card.dataset.issueNumber = String(node.issue.number);
+  card.dataset.issueKey = node.key || `${getIssueRepoFullName(node.issue) || ''}#${node.issue.number}`;
   card.setAttribute('tabindex', '0');
   card.setAttribute('role', 'button');
   card.setAttribute('aria-label', `Issue #${node.issue.number}: ${node.issue.title}`);
@@ -5908,6 +6236,7 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
       <input type="checkbox" class="graph-card-check" ${node.isDone ? 'checked' : ''} title="Mark done / todo" />
       <span class="graph-card-num">#${node.issue.number}</span>
       <span class="graph-card-theme" title="${escapeHtml(node.theme)}">${escapeHtml(node.theme)}</span>
+      ${isAllProjectsMode ? `<span class="status-pill project-pill" title="${escapeHtml(repoForIssue(node.issue))}">${escapeHtml(displayProjectName(repoForIssue(node.issue)))}</span>` : ''}
       ${priorityHtml}
     </div>
     <div class="graph-card-title" title="${escapeHtml(node.issue.title)}">${escapeHtml(node.issue.title)}</div>
@@ -5998,23 +6327,22 @@ function drawGraphEdges(graph: DependencyGraph): void {
 
   // 1. Batch READ phase: Read canvas and all card positions in a single layout pass
   const canvasRect = elGraphCanvas.getBoundingClientRect();
-  const cardElements = new Map<number, HTMLElement>();
-  elGraphCanvas.querySelectorAll<HTMLElement>('.graph-card').forEach((card) => {
-    const num = parseInt(card.dataset.issueNumber || '0', 10);
-    if (num > 0) cardElements.set(num, card);
-  });
-
   const cardRects = new Map<number, DOMRect>();
-  cardElements.forEach((card, num) => {
-    cardRects.set(num, card.getBoundingClientRect());
+  const cardRectsByKey = new Map<string, DOMRect>();
+  elGraphCanvas.querySelectorAll<HTMLElement>('.graph-card').forEach((card) => {
+    const rect = card.getBoundingClientRect();
+    const key = card.dataset.issueKey || '';
+    if (key) cardRectsByKey.set(key.toLowerCase(), rect);
+    const num = parseInt(card.dataset.issueNumber || '0', 10);
+    if (num > 0 && !cardRects.has(num)) cardRects.set(num, rect);
   });
 
   // 2. Batch WRITE phase: Build SVG paths in fragment to prevent layout thrashing
   const edgeFragment = document.createDocumentFragment();
 
   for (const edge of graph.edges) {
-    const sourceRect = cardRects.get(edge.from);
-    const targetRect = cardRects.get(edge.to);
+    const sourceRect = (edge.fromKey ? cardRectsByKey.get(edge.fromKey.toLowerCase()) : undefined) || cardRects.get(edge.from);
+    const targetRect = (edge.toKey ? cardRectsByKey.get(edge.toKey.toLowerCase()) : undefined) || cardRects.get(edge.to);
     if (!sourceRect || !targetRect) continue;
 
     const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
@@ -6142,63 +6470,9 @@ function renderGraphView(filteredIssues: Issue[]): void {
     txtGraphStatDone.textContent = `${doneCount} Done`;
   }
 
-  if (elGraphThemePills) {
-    elGraphThemePills.innerHTML = '';
-    const allChip = document.createElement('div');
-    allChip.className = `graph-theme-chip ${graphSelectedTheme === 'all' ? 'active' : ''}`;
-    allChip.setAttribute('tabindex', '0');
-    allChip.setAttribute('role', 'button');
-    allChip.setAttribute('aria-label', `Filter by All Themes (${filteredIssues.length} issues)`);
-    allChip.innerHTML = `<span>All Themes</span><span style="font-size: 9.5px; opacity: 0.7;">(${filteredIssues.length})</span>`;
-    allChip.addEventListener('click', () => {
-      graphSelectedTheme = 'all';
-      renderViews();
-    });
-    allChip.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        allChip.click();
-      }
-    });
-    elGraphThemePills.appendChild(allChip);
-
-    graph.themes.forEach((theme) => {
-      const themeCount = graph.themeNodes.get(theme)?.length || 0;
-      const chip = document.createElement('div');
-      chip.className = `graph-theme-chip ${graphSelectedTheme === theme ? 'active' : ''}`;
-      chip.setAttribute('tabindex', '0');
-      chip.setAttribute('role', 'button');
-      chip.setAttribute('aria-label', `Filter by theme ${theme} (${themeCount} issues)`);
-      const dotCol = getThemeColor(theme);
-      chip.innerHTML = `
-        <span class="graph-theme-dot" style="--dot-color: ${dotCol};"></span>
-        <span>${escapeHtml(theme)}</span>
-        <span style="font-size: 9.5px; opacity: 0.7;">(${themeCount})</span>
-      `;
-      chip.addEventListener('click', () => {
-        graphSelectedTheme = theme;
-        renderViews();
-      });
-      chip.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          chip.click();
-        }
-      });
-      elGraphThemePills.appendChild(chip);
-    });
-  }
-
-  const visibleNumbers = new Set<number>();
-  for (const node of graph.nodes.values()) {
-    if (!graphShowDone && node.isDone) continue;
-    if (graphSelectedTheme !== 'all') {
-      if (node.theme !== graphSelectedTheme && !node.dependents.some((d) => graph.nodes.get(d)?.theme === graphSelectedTheme)) {
-        continue;
-      }
-    }
-    visibleNumbers.add(node.issue.number);
-  }
+  const visibleNumbers = new Set(
+    Array.from(graph.nodes.values()).map((node) => `${getIssueRepoFullName(node.issue) || ''}#${node.issue.number}`)
+  );
 
   elGraphLayers.innerHTML = '';
 
@@ -6213,7 +6487,9 @@ function renderGraphView(filteredIssues: Issue[]): void {
   }
 
   graph.layers.forEach((layerNodes, layerIdx) => {
-    const layerVisible = layerNodes.filter((n) => visibleNumbers.has(n.issue.number));
+    const layerVisible = layerNodes
+      .filter((n) => visibleNumbers.has(`${getIssueRepoFullName(n.issue) || ''}#${n.issue.number}`))
+      .sort((a, b) => filteredIssues.indexOf(a.issue) - filteredIssues.indexOf(b.issue));
     if (layerVisible.length === 0) return;
 
     const rowEl = document.createElement('div');
@@ -8125,7 +8401,8 @@ async function openScratchpadModal(): Promise<void> {
   const targetRepo = isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo;
   activeScratchpadRepo = targetRepo;
   if (elScratchpadRepoBadge) {
-    elScratchpadRepoBadge.textContent = isAllProjectsMode ? 'All Projects' : (currentRepo || 'Global');
+    elScratchpadRepoBadge.textContent = isAllProjectsMode ? 'All Projects' : (displayProjectName(currentRepo || '') || 'Global');
+    elScratchpadRepoBadge.title = isAllProjectsMode ? 'All Projects' : currentRepo || 'Global';
   }
   await loadScratchpadContent();
   if (elScratchpadModalBackdrop) {
@@ -8296,7 +8573,8 @@ async function openNewIssueModal(): Promise<void> {
     openRepoPopover();
     return;
   }
-  elNewIssueRepoTarget.textContent = currentRepo;
+  elNewIssueRepoTarget.textContent = displayProjectName(currentRepo || '');
+  elNewIssueRepoTarget.title = currentRepo || '';
   elNewIssueTitleInput.value = '';
   elNewIssueBodyInput.value = '';
   if (elNewIssueComplexitySelect) elNewIssueComplexitySelect.value = 'M';
@@ -8738,67 +9016,134 @@ function initEvents(): void {
     }
   });
 
-  // Segmented View Switcher (Attention / Human / All Tasks / Questions / List / Board / Graph)
-  elBtnViewAttention?.addEventListener('click', () => {
-    userLayoutPreference = 'attention';
-    applyLayoutMode();
-  });
-  elBtnViewHuman?.addEventListener('click', () => {
-    userLayoutPreference = 'human';
-    applyLayoutMode();
-  });
-  elBtnViewAllTasks?.addEventListener('click', () => {
-    userLayoutPreference = 'all-tasks';
-    applyLayoutMode();
-  });
-  elBtnViewQuestions?.addEventListener('click', () => {
-    userLayoutPreference = 'questions';
-    applyLayoutMode();
-  });
-  elBtnViewList?.addEventListener('click', () => {
-    userLayoutPreference = 'list';
-    applyLayoutMode();
-  });
-  elBtnViewKanban?.addEventListener('click', () => {
-    userLayoutPreference = 'kanban';
-    applyLayoutMode();
-  });
-  elBtnViewGraph?.addEventListener('click', () => {
-    userLayoutPreference = 'graph';
-    applyLayoutMode();
-  });
-
-  // Categorized View Selector Dropdown (Tasks vs Issues)
-  elBtnViewSelect?.addEventListener('click', (e) => {
-    e.stopPropagation();
+  // One View picker at every width; native buttons provide Enter/Space access.
+  const closeViewPicker = () => {
+    if (elViewSelectPopover) elViewSelectPopover.style.display = 'none';
+    elBtnViewSelect?.setAttribute('aria-expanded', 'false');
+  };
+  const closeFilterPicker = () => {
+    elFilterPopover.style.display = 'none';
+    elBtnFilterToggle?.setAttribute('aria-expanded', 'false');
+  };
+  elBtnViewSelect?.addEventListener('click', (event) => {
+    event.stopPropagation();
     if (!elViewSelectPopover) return;
-    const isHidden = elViewSelectPopover.style.display === 'none';
-    elViewSelectPopover.style.display = isHidden ? 'flex' : 'none';
-    elBtnViewSelect.setAttribute('aria-expanded', isHidden ? 'true' : 'false');
+    const opening = elViewSelectPopover.style.display === 'none';
+    closeFilterPicker();
+    elViewSelectPopover.style.display = opening ? 'flex' : 'none';
+    elBtnViewSelect.setAttribute('aria-expanded', String(opening));
+    if (opening) elViewSelectPopover.querySelector<HTMLElement>('.view-opt-item')?.focus();
   });
-
-  document.addEventListener('click', (e) => {
-    if (elViewSelectPopover && elViewSelectPopover.style.display !== 'none') {
-      const target = e.target as Node;
-      if (!elViewSelectPopover.contains(target) && !elBtnViewSelect?.contains(target)) {
-        elViewSelectPopover.style.display = 'none';
-        elBtnViewSelect?.setAttribute('aria-expanded', 'false');
-      }
-    }
-  });
-
   document.querySelectorAll<HTMLElement>('.view-opt-item').forEach((item) => {
     item.addEventListener('click', () => {
-      const mode = item.getAttribute('data-mode') as 'list' | 'kanban' | 'graph' | 'human' | 'all-tasks' | 'questions' | 'attention' | null;
-      if (mode) {
-        userLayoutPreference = mode;
-        applyLayoutMode();
-      }
-      if (elViewSelectPopover) {
-        elViewSelectPopover.style.display = 'none';
-        elBtnViewSelect?.setAttribute('aria-expanded', 'false');
-      }
+      viewState.view = item.getAttribute('data-mode') as ViewId;
+      rememberViewState();
+      applyLayoutMode();
+      closeViewPicker();
+      elBtnViewSelect?.focus();
     });
+  });
+  elViewSelectPopover?.addEventListener('keydown', (event) => {
+    const options = Array.from(elViewSelectPopover.querySelectorAll<HTMLElement>('.view-opt-item'));
+    const index = options.indexOf(document.activeElement as HTMLElement);
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      options[(index + (event.key === 'ArrowDown' ? 1 : options.length - 1)) % options.length]?.focus();
+    }
+    if (event.key === 'Escape') { closeViewPicker(); elBtnViewSelect?.focus(); }
+  });
+  elBtnFilterToggle?.addEventListener('click', (event) => {
+    event.stopPropagation();
+    const opening = elFilterPopover.style.display === 'none';
+    closeViewPicker();
+    elFilterPopover.style.display = opening ? 'flex' : 'none';
+    elBtnFilterToggle.setAttribute('aria-expanded', String(opening));
+    if (opening) {
+      elFilterPopover.style.left = '0px';
+      elFilterPopover.style.right = 'auto';
+      const rect = elFilterPopover.getBoundingClientRect();
+      const viewportW = window.innerWidth || document.documentElement?.clientWidth || 360;
+      if (rect.width > 0) {
+        if (rect.left < 8) {
+          elFilterPopover.style.left = `${Math.round(8 - rect.left)}px`;
+        } else if (rect.right > viewportW - 8) {
+          const shift = Math.min(rect.left - 8, rect.right - (viewportW - 8));
+          if (shift > 0) elFilterPopover.style.left = `${Math.round(-shift)}px`;
+        }
+      }
+      elFilterPopover.querySelector<HTMLElement>('button')?.focus();
+    }
+  });
+  elFilterPopover.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') { event.stopPropagation(); closeFilterPicker(); elBtnFilterToggle?.focus(); }
+  });
+  document.addEventListener('click', (event) => {
+    const target = event.target as Node;
+    if (!elViewSelectPopover?.contains(target) && !elBtnViewSelect?.contains(target)) closeViewPicker();
+    if (!elFilterPopover.contains(target) && !elBtnFilterToggle?.contains(target)) closeFilterPicker();
+  });
+
+  const settings = document.getElementById('boardSettingsBackdrop')!;
+  const closeSettings = () => {
+    settings.classList.remove('active');
+    document.getElementById('btnMoreMenu')?.focus();
+  };
+  document.getElementById('menuItemSettings')?.addEventListener('click', () => {
+    closeMoreMenu();
+    const list = document.getElementById('projectNamesList')!;
+    list.innerHTML = '';
+    for (const repo of availableProjectRepos()) {
+      const row = document.createElement('div');
+      row.className = 'project-name-row';
+      const label = document.createElement('label');
+      label.textContent = displayProjectName(repo);
+      label.title = repo;
+      const input = document.createElement('input');
+      input.className = 'form-ctrl';
+      input.setAttribute('data-repo-name', repo);
+      input.setAttribute('aria-label', `Project name for ${repo}`);
+      input.value = projectNameOverrides[projectNameKey(repo)] || '';
+      input.placeholder = shortName(repo);
+      row.appendChild(label);
+      row.appendChild(input);
+      list.appendChild(row);
+    }
+    if (!list.children.length) list.textContent = 'Select a repository to rename its project.';
+    settings.classList.add('active');
+    document.getElementById('btnCloseBoardSettings')?.focus();
+  });
+  document.getElementById('btnCloseBoardSettings')?.addEventListener('click', closeSettings);
+  settings.addEventListener('click', (event) => { if (event.target === settings) closeSettings(); });
+  settings.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') { event.stopPropagation(); closeSettings(); }
+    if (event.key === 'Tab') {
+      const controls = Array.from(settings.querySelectorAll<HTMLElement>('button, input'));
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+    }
+  });
+  document.getElementById('btnSaveProjectNames')?.addEventListener('click', async () => {
+    const button = document.getElementById('btnSaveProjectNames') as HTMLButtonElement;
+    if (button.disabled) return;
+    button.disabled = true;
+    const next = { ...projectNameOverrides };
+    document.getElementById('projectNamesList')!.querySelectorAll<HTMLInputElement>('[data-repo-name]').forEach((input) => {
+      const key = projectNameKey(input.getAttribute('data-repo-name') || '');
+      if (input.value.trim()) next[key] = input.value.trim();
+      else delete next[key];
+    });
+    try {
+      await host.storage.set('project_name_overrides', next);
+      projectNameOverrides = next;
+      if (!isAllProjectsMode && currentRepo) elTxtRepoLabel.textContent = displayProjectName(currentRepo);
+      renderRepoPopoverList();
+      renderViews();
+      closeSettings();
+    } catch (err: any) {
+      void host.toast({ kind: 'error', message: `Could not save project names: ${err.message}` });
+    } finally { button.disabled = false; }
   });
 
   // File Preview Modal handlers
@@ -8835,100 +9180,7 @@ function initEvents(): void {
     }
   });
 
-  // More menu direct view items
-  document.getElementById('menuItemViewAttention')?.addEventListener('click', () => {
-    userLayoutPreference = 'attention';
-    applyLayoutMode();
-    closeMoreMenu();
-  });
-  document.getElementById('menuItemViewHuman')?.addEventListener('click', () => {
-    userLayoutPreference = 'human';
-    applyLayoutMode();
-    closeMoreMenu();
-  });
-  document.getElementById('menuItemViewAllTasks')?.addEventListener('click', () => {
-    userLayoutPreference = 'all-tasks';
-    applyLayoutMode();
-    closeMoreMenu();
-  });
-  document.getElementById('menuItemViewQuestions')?.addEventListener('click', () => {
-    userLayoutPreference = 'questions';
-    applyLayoutMode();
-    closeMoreMenu();
-  });
-  document.getElementById('menuItemViewList')?.addEventListener('click', () => {
-    userLayoutPreference = 'list';
-    applyLayoutMode();
-    closeMoreMenu();
-  });
-  document.getElementById('menuItemViewBoard')?.addEventListener('click', () => {
-    userLayoutPreference = 'kanban';
-    applyLayoutMode();
-    closeMoreMenu();
-  });
-  document.getElementById('menuItemViewGraph')?.addEventListener('click', () => {
-    userLayoutPreference = 'graph';
-    applyLayoutMode();
-    closeMoreMenu();
-  });
 
-  if (elBtnLayoutToggle) {
-    elBtnLayoutToggle.addEventListener('click', () => {
-      const cur = document.body.getAttribute('data-layout');
-      userLayoutPreference = cur === 'kanban'
-        ? 'graph'
-        : cur === 'graph'
-          ? 'attention'
-          : cur === 'attention'
-            ? 'human'
-            : cur === 'human'
-              ? 'all-tasks'
-              : cur === 'all-tasks'
-                ? 'questions'
-                : cur === 'questions'
-                  ? 'list'
-                  : 'kanban';
-      applyLayoutMode();
-      if (host?.toast) {
-        const name = userLayoutPreference === 'kanban'
-          ? 'Board'
-          : userLayoutPreference === 'graph'
-            ? 'Graph'
-            : userLayoutPreference === 'attention'
-              ? 'Attention'
-              : userLayoutPreference === 'human'
-                ? 'Human Tasks'
-                : userLayoutPreference === 'all-tasks'
-                  ? 'All Tasks'
-                  : userLayoutPreference === 'questions'
-                    ? 'Questions'
-                    : 'List';
-        void host.toast({ kind: 'info', message: `Switched to ${name} view` });
-      }
-    });
-  }
-
-  if (elBtnGraphToggle) {
-    elBtnGraphToggle.addEventListener('click', () => {
-      userLayoutPreference = document.body.getAttribute('data-layout') === 'graph' ? (isWideScreen ? 'kanban' : 'list') : 'graph';
-      applyLayoutMode();
-    });
-  }
-
-  if (elMenuItemToggleGraph) {
-    elMenuItemToggleGraph.addEventListener('click', () => {
-      userLayoutPreference = 'graph';
-      applyLayoutMode();
-      closeMoreMenu();
-    });
-  }
-
-  if (elChkGraphShowDone) {
-    elChkGraphShowDone.addEventListener('change', () => {
-      graphShowDone = elChkGraphShowDone.checked;
-      renderViews();
-    });
-  }
 
   if (elSelectAddBlocker) {
     elSelectAddBlocker.addEventListener('change', () => {
@@ -8941,9 +9193,8 @@ function initEvents(): void {
 
   // Window resize handler for responsive view adaptivity
   window.addEventListener('resize', () => {
-    if (userLayoutPreference === 'auto') {
-      applyLayoutMode();
-    }
+    isWideScreen = window.innerWidth >= 680;
+    if (viewState.view === 'graph') drawCurrentGraphEdges();
   });
 
   // Refresh
@@ -9042,56 +9293,11 @@ function initEvents(): void {
     });
   }
 
-  // Filter & Sort events
-  if (elBtnFilterToggle && elFilterBar) {
-    elBtnFilterToggle.addEventListener('click', () => {
-      isFilterBarOpen = !isFilterBarOpen;
-      elFilterBar.style.display = isFilterBarOpen ? 'flex' : 'none';
-      elBtnFilterToggle.classList.toggle('active', isFilterBarOpen || filterPriority !== 'all' || filterTag !== 'all' || currentSort !== 'newest');
-    });
-  }
-
-  if (elSelectSort) {
-    elSelectSort.addEventListener('change', () => {
-      currentSort = elSelectSort.value as any;
-      renderViews();
-    });
-  }
-
-  if (elSelectGroupBy) {
-    elSelectGroupBy.addEventListener('change', () => {
-      currentGroupBy = elSelectGroupBy.value as any;
-      renderViews();
-    });
-  }
-
-  if (elSelectFilterPriority) {
-    elSelectFilterPriority.addEventListener('change', () => {
-      filterPriority = elSelectFilterPriority.value;
-      renderViews();
-    });
-  }
-
-  if (elSelectFilterTag) {
-    elSelectFilterTag.addEventListener('change', () => {
-      filterTag = elSelectFilterTag.value;
-      renderViews();
-    });
-  }
-
-  if (elBtnResetFilters) {
-    elBtnResetFilters.addEventListener('click', () => {
-      currentSort = 'newest';
-      filterPriority = 'all';
-      filterTag = 'all';
-      currentGroupBy = 'theme';
-      if (elSelectSort) elSelectSort.value = 'newest';
-      if (elSelectGroupBy) elSelectGroupBy.value = 'theme';
-      if (elSelectFilterPriority) elSelectFilterPriority.value = 'all';
-      if (elSelectFilterTag) elSelectFilterTag.value = 'all';
-      renderViews();
-    });
-  }
+  elSelectSort?.addEventListener('change', () => {
+    viewState.sort = elSelectSort.value as SortId;
+    rememberViewState();
+    renderViews();
+  });
 
   // Quick Add Draft Handler for initial/static Draft column input
   const initialQuickAddInput = document.getElementById('quickAddDraftInput') as HTMLInputElement | null;
@@ -9350,16 +9556,6 @@ function initEvents(): void {
     void host.toast({ kind: 'info', message: 'Copied logs to clipboard' });
   });
 
-  // Status Tab Bar clicks
-  elStatusTabBar.querySelectorAll('.status-tab').forEach((tab) => {
-    tab.addEventListener('click', () => {
-      userSelectedTab = true;
-      const targetTab = (tab.getAttribute('data-tab') as TabId) || 'all';
-      selectTab(targetTab);
-      renderListView(issues);
-    });
-  });
-
   // Drawer events
   elBtnDrawerClose.addEventListener('click', closeDrawer);
   elDrawerScrim.addEventListener('click', closeDrawer);
@@ -9516,7 +9712,9 @@ function initEvents(): void {
   // Description Edit & Collapse events
   elBtnEditDescription.addEventListener('click', () => {
     if (!activeIssue) return;
-    elDrawerDescriptionTextarea.value = activeIssue.body || '';
+    const rawWithoutMarker = stripOrderMarker(activeIssue.body || '');
+    elDrawerDescriptionTextarea.value = rawWithoutMarker;
+    elDrawerDescriptionTextarea.dataset.originalDescription = rawWithoutMarker;
     elDrawerDescriptionViewBox.style.display = 'none';
     elDrawerDescriptionEditBox.style.display = 'flex';
     elDrawerDescriptionTextarea.focus();
@@ -9529,11 +9727,14 @@ function initEvents(): void {
 
   elBtnSaveDescription.addEventListener('click', async () => {
     if (!activeIssue) return;
-    const newBody = elDrawerDescriptionTextarea.value;
-    elDrawerDescriptionEditBox.style.display = 'none';
-    elDrawerDescriptionViewBox.style.display = 'block';
-    await reloadIssueBeforeMutation(activeIssue);
-    await updateIssueBody(activeIssue, newBody);
+    const issue = activeIssue;
+    const original = elDrawerDescriptionTextarea.dataset.originalDescription || '';
+    await editDraftDescription(issue, elDrawerDescriptionTextarea.value, original);
+    if (activeIssue === issue) {
+      elDrawerDescriptionEditBox.style.display = 'none';
+      elDrawerDescriptionViewBox.style.display = 'block';
+      renderDrawer(issue, true);
+    }
   });
 
   elBtnToggleCollapse.addEventListener('click', () => {
@@ -9692,18 +9893,6 @@ function initEvents(): void {
       clearSelection();
     });
   }
-  if (elBtnStartTagIssues) {
-    elBtnStartTagIssues.addEventListener('click', () => {
-      if (filterTag === 'all') return;
-      const taggedIssues = issues.filter((i) =>
-        (i.labels || []).some((l) => (typeof l === 'string' ? l : l.name || '') === filterTag)
-      );
-      taggedIssues.forEach((i) => selectedIssueNumbers.add(i.number));
-      updateBatchBar();
-      void host.toast({ kind: 'info', message: `Selected ${taggedIssues.length} issues with tag "${filterTag}"` });
-    });
-  }
-
   setupDragAndDrop();
 }
 
@@ -9718,11 +9907,22 @@ host.onReady(async (ctx) => {
   applyHostReady(ctx, document.documentElement);
 
   currentDirectory = ctx.directory || '';
+  deviceStorageSupported = ctx.features?.deviceStorage === true;
+  void host.storage.get('project_name_overrides').then((stored) => {
+    projectNameOverrides = normalizeProjectNameOverrides(stored);
+    if (currentRepo && !isAllProjectsMode) elTxtRepoLabel.textContent = displayProjectName(currentRepo);
+    renderRepoPopoverList();
+    renderViews();
+  }).catch((err: any) => {
+    addLog(`Could not load project names: ${err.message}`, 'warn');
+  });
+  if (viewStateRevision === 0) void loadViewState();
 
   // Handle settings override
   if (ctx.settings && ctx.settings.repo) {
     currentRepo = ctx.settings.repo.trim();
-    elTxtRepoLabel.textContent = currentRepo.split('/')[1] || currentRepo;
+    elTxtRepoLabel.textContent = displayProjectName(currentRepo);
+    elTxtRepoLabel.title = currentRepo;
     addLog(`Repo set from extension settings: ${currentRepo}`, 'info');
   }
 
@@ -9735,7 +9935,9 @@ host.onReady(async (ctx) => {
 // React to directory change (when user switches projects, worktrees, or chats)
 host.onDirectory(async (dir) => {
   addLog(`Directory changed: ${dir}`);
+  const changedWorkspace = currentDirectory !== (dir || '');
   currentDirectory = dir || '';
+  if (changedWorkspace) void loadViewState();
   if (dir) {
     await autoResolveRepoForActiveContext();
   }
@@ -9760,8 +9962,9 @@ host.onSession(async (rawSess) => {
 
     if (!isManualRepoOverride) {
       const sessDir = sess.directory || sess.location?.directory;
-      if (sessDir) {
+      if (sessDir && sessDir !== currentDirectory) {
         currentDirectory = sessDir;
+        void loadViewState();
       }
       if (Array.isArray(sess.items) && sess.items.length > 0) {
         for (const it of sess.items) {
@@ -9775,6 +9978,7 @@ host.onSession(async (rawSess) => {
       const matched = sessions.find((s) => s.id === sess.id);
       if (matched && matched.directory && matched.directory !== currentDirectory) {
         currentDirectory = matched.directory;
+        void loadViewState();
       }
       await autoResolveRepoForActiveContext(sess);
     }

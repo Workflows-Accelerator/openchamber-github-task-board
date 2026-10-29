@@ -10,35 +10,16 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 const INDEX_HTML = fs.readFileSync(path.join(here, '..', 'panel', 'index.html'), 'utf8');
 const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
 
-export function getNextLayoutMode(currentLayout) {
-  if (currentLayout === 'kanban') return 'graph';
-  if (currentLayout === 'graph') return 'list';
-  return 'kanban';
-}
+import { normalizeViewState, VIEW_IDS } from '../panel/viewstate.ts';
 
-export function getActiveLayoutMode({ userLayoutPreference = 'auto', showArchivedOnly = false, isWideScreen = false }) {
-  if (showArchivedOnly) return 'list';
-  if (userLayoutPreference === 'graph') return 'graph';
-  if (userLayoutPreference === 'kanban') return 'kanban';
-  if (userLayoutPreference === 'list') return 'list';
-  return isWideScreen ? 'kanban' : 'list';
-}
-
-test('getNextLayoutMode cycles list -> kanban -> graph -> list correctly', () => {
-  assert.equal(getNextLayoutMode('list'), 'kanban');
-  assert.equal(getNextLayoutMode(null), 'kanban');
-  assert.equal(getNextLayoutMode(''), 'kanban');
-  assert.equal(getNextLayoutMode('kanban'), 'graph');
-  assert.equal(getNextLayoutMode('graph'), 'list');
+test('View picker includes every supported layout once', () => {
+  assert.deepEqual([...INDEX_HTML.matchAll(/class="view-opt-item" data-mode="([^"]+)"/g)].map((match) => match[1]), VIEW_IDS);
 });
 
-test('getActiveLayoutMode determines current active view accurately', () => {
-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'graph' }), 'graph');
-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'kanban' }), 'kanban');
-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'list' }), 'list');
-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'auto', isWideScreen: true }), 'kanban');
-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'auto', isWideScreen: false }), 'list');
-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'graph', showArchivedOnly: true }), 'list');
+test('View defaults do not change with viewport width; saved selections are restored', () => {
+  assert.equal(normalizeViewState(null).view, 'simple');
+  for (const view of VIEW_IDS) assert.equal(normalizeViewState({ view }).view, view);
+  assert.ok(MAIN_TS.includes("document.body.setAttribute('data-layout', showArchivedOnly ? 'cards' : viewState.view)"));
 });
 
 test('panel/index.html drawer has zero dark blur and supports split push & full page', () => {
@@ -93,10 +74,10 @@ test('panel/index.html repo dropdown and button have expanded width', () => {
   assert.ok(INDEX_HTML.includes('width: 380px'), 'repoPopover must have width: 380px');
 });
 
-test('panel/index.html has sidebar view cycle button for compact screens', () => {
-  assert.ok(INDEX_HTML.includes('btn-cycle-views'), 'btn-cycle-views CSS class must exist');
-  assert.ok(INDEX_HTML.includes('id="btnLayoutToggle"'), 'btnLayoutToggle button must exist in toolbar');
-  assert.ok(INDEX_HTML.includes('display: none !important'), 'btn-cycle-views must hide on wide screen');
+test('panel/index.html keeps the one view picker visible on compact screens', () => {
+  assert.ok(INDEX_HTML.includes('id="btnViewSelect"'));
+  assert.ok(INDEX_HTML.includes('.btn-view-select { display: inline-flex !important;'));
+  assert.equal(INDEX_HTML.includes('id="btnLayoutToggle"'), false);
 });
 
 export function handleEscapeKey({
@@ -129,17 +110,19 @@ export function handleEscapeKey({
   return 'none';
 }
 
-test('panel/index.html chkGraphShowDone is unchecked by default', () => {
-  const match = INDEX_HTML.match(/<input[^>]*id=["']chkGraphShowDone["'][^>]*>/);
-  assert.ok(match, 'chkGraphShowDone input must exist in panel/index.html');
-  assert.equal(match[0].includes('checked'), false, 'chkGraphShowDone must not have checked attribute');
+test('Graph uses shared stage Filter instead of its own Show Done control', () => {
+  assert.equal(INDEX_HTML.includes('id="chkGraphShowDone"'), false);
+  assert.ok(INDEX_HTML.includes('id="filterPopover"'));
+  assert.ok(MAIN_TS.includes('STAGE_IDS.map((stage) => `stage:${stage}`)'));
 });
 
-test('panel/main.ts initializes graphShowDone to false', () => {
-  assert.match(
-    MAIN_TS,
-    /let\s+graphShowDone\s*:\s*boolean\s*=\s*false;/,
-    'panel/main.ts initializes graphShowDone to false'
+test('Graph admits every shared-filter result, including Done, without a second hidden predicate', () => {
+  assert.equal(MAIN_TS.includes('graphShowDone'), false);
+  assert.equal(MAIN_TS.includes('graphSelectedTheme'), false);
+  assert.ok(
+    MAIN_TS.includes(
+      'Array.from(graph.nodes.values()).map((node) => `${getIssueRepoFullName(node.issue) || \'\'}#${node.issue.number}`)'
+    )
   );
 });
 

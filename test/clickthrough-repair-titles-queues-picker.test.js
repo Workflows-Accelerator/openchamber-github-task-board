@@ -153,7 +153,7 @@ test('D15: Popover shows session linked repo inline and highlights active sessio
   app.renderRepoPopoverList();
   const listEl = elements.get('detectedReposList');
   assert.ok(
-    listEl.innerHTML.includes('Session repo: Workflows-Accelerator/openchamber-github-task-board'),
+    listEl.innerHTML.includes('Session repo: <span title="Workflows-Accelerator/openchamber-github-task-board">Task Board</span>'),
     'must display linked session repo inline'
   );
   const currentSessionOpt = listEl.querySelector('.current-session-option');

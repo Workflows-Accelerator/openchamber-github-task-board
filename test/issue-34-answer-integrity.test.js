@@ -954,7 +954,7 @@ test('Finding 6: Typed answer is preserved across refusal in Questions View, Dra
       issues: [issueQV],
       currentRepo: 'test-owner/test-repo',
       isManualRepoOverride: true,
-      userLayoutPreference: 'questions',
+      viewState: { view: 'simple', filters: ['questions'], sort: 'priority' },
     });
     app.applyLayoutMode();
     app.renderViews();
@@ -1070,7 +1070,7 @@ test('Finding 6: Typed answer is preserved across refusal in Questions View, Dra
       issues: [issueHuman],
       currentRepo: 'test-owner/test-repo',
       isManualRepoOverride: true,
-      userLayoutPreference: 'human',
+      viewState: { view: 'pending', filters: [], sort: 'priority' },
     });
     app.applyLayoutMode();
     app.renderViews();
@@ -1400,7 +1400,7 @@ test('Decision 14 Isolation C2: Remotely changed question leaves current input e
     issues: [issue],
     currentRepo: 'owner/repo-main',
     isManualRepoOverride: true,
-    userLayoutPreference: 'questions',
+    viewState: { view: 'simple', filters: ['questions'], sort: 'priority' },
   });
   app.applyLayoutMode();
   app.renderViews();
@@ -1469,7 +1469,7 @@ test('Decision 14 Isolation C3: Remotely deleted questions renders issue with re
     issues: [issueZero],
     currentRepo: 'owner/repo-main',
     isManualRepoOverride: true,
-    userLayoutPreference: 'questions',
+    viewState: { view: 'simple', filters: ['questions'], sort: 'priority' },
   });
   app.applyLayoutMode();
   app.renderViews();
@@ -1506,7 +1506,7 @@ test('Decision 14 Isolation C3: Remotely deleted questions renders issue with re
   );
 });
 
-test('Decision 14 Layout D1: Direct renderers do not mutate userLayoutPreference or data-layout', async () => {
+test('Decision 14 Layout D1: Direct renderers do not mutate viewState or data-layout', async () => {
   const { app } = createTestApp({
     onRequest: async () => ({ status: 200, body: '{}' }),
   });

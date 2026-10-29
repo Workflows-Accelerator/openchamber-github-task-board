@@ -2,6 +2,8 @@
 // Markdown Renderer & Description Preview
 // ==========================================
 
+import { stripOrderMarker } from './viewstate.ts';
+
 const LIST_ITEM_REGEX = /^(\s*)(?:([-*])|(\d+)\.)\s+(.*)$/;
 
 function splitTableRow(row: string): string[] {
@@ -152,7 +154,9 @@ function buildListHtml(lines: string[]): string {
   return out.join('');
 }
 
-export function renderMarkdown(raw: string): string {
+export function renderMarkdown(input: string): string {
+  // The hidden board-order marker must never render in issue body views.
+  const raw = typeof input === 'string' ? stripOrderMarker(input) : input;
   if (!raw || typeof raw !== 'string') return '<p style="color: var(--fg-muted); font-style: italic;">No description provided.</p>';
 
   // 1. Critical Security: Escape HTML first
@@ -303,7 +307,7 @@ export function renderMarkdown(raw: string): string {
 
 export function getIssueDescriptionPreview(body: string | null | undefined): string {
   if (!body || typeof body !== 'string') return '';
-  const lines = body.split(/\r?\n/);
+  const lines = stripOrderMarker(body).split(/\r?\n/);
   const GENERIC_HEADERS = /^(overview|description|context|summary|details|background|goal|problem|about)$/i;
   let fallback = '';
   for (let rawLine of lines) {

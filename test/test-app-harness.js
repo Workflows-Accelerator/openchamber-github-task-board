@@ -159,7 +159,11 @@ export function createTestApp(options = {}) {
         add: function (...cls) { cls.forEach((c) => this._classes.add(c)); },
         remove: function (...cls) { cls.forEach((c) => this._classes.delete(c)); },
         contains: function (c) { return this._classes.has(c); },
-        toggle: function (c) { if (this._classes.has(c)) this._classes.delete(c); else this._classes.add(c); },
+        toggle: function (c, force) {
+          const add = force === undefined ? !this._classes.has(c) : force;
+          if (add) this._classes.add(c); else this._classes.delete(c);
+          return add;
+        },
       },
       get className() {
         return Array.from(this.classList._classes).join(' ');
@@ -223,6 +227,10 @@ export function createTestApp(options = {}) {
         if (name === 'id') {
           el.id = strVal;
         }
+        if (name.startsWith('data-')) {
+          const prop = name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+          el.dataset[prop] = strVal;
+        }
       },
       getAttribute: function (name) {
         if (name === 'class') {
@@ -265,8 +273,15 @@ export function createTestApp(options = {}) {
           child.children = [];
           return child;
         }
+        if (child.parentElement) child.parentElement.removeChild(child);
+        child.parentElement = el;
         el.children.push(child);
         return child;
+      },
+      prepend: function (child) {
+        if (child.parentElement) child.parentElement.removeChild(child);
+        child.parentElement = el;
+        el.children.unshift(child);
       },
       removeChild: function (child) {
         el.children = el.children.filter((c) => c !== child);
@@ -328,12 +343,25 @@ export function createTestApp(options = {}) {
         childCache.clear();
         el.children = parseHtmlChildren(innerHTMLValue, createElement);
       },
-      textContent: '',
+      get textContent() {
+        if (el.children.length) return el.children.map((child) => child.textContent).join('');
+        return innerHTMLValue.replace(/<[^>]*>/g, '');
+      },
+      set textContent(value) {
+        innerHTMLValue = String(value);
+        el.children = [];
+      },
       value: '',
+      selectionStart: null,
+      selectionEnd: null,
+      setSelectionRange: function (start, end) {
+        el.selectionStart = start;
+        el.selectionEnd = end;
+      },
       checked: false,
       disabled: false,
-      focus: () => {},
-      blur: () => {},
+      focus: () => { mockDoc.activeElement = el; },
+      blur: () => { el.dispatchEvent({ type: 'blur', target: el }); mockDoc.activeElement = mockDoc.body; },
     };
     return el;
   };
@@ -427,7 +455,9 @@ export function createTestApp(options = {}) {
   };
 
   let messageListener = null;
-  const mockStorage = new Map();
+  let markReady;
+  const ready = new Promise((resolve) => { markReady = resolve; });
+  const mockStorage = new Map(Object.entries(options.storage || {}));
   const hostCalls = [];
 
   const setIntervalCalls = [];
@@ -438,6 +468,12 @@ export function createTestApp(options = {}) {
 
   const mockWindow = {
     document: mockDoc,
+    innerWidth: options.innerWidth || 980,
+    confirm: (message) => {
+      hostCalls.push({ type: 'confirm', payload: { message } });
+      if (typeof options.onConfirm === 'function') return Boolean(options.onConfirm(message));
+      return true;
+    },
     addEventListener: (type, listener) => {
       if (type === 'message') messageListener = listener;
     },
@@ -460,12 +496,14 @@ export function createTestApp(options = {}) {
                     session: null,
                     connection: { status: 'connected' },
                     settings: options.settings || {},
+                    features: options.features || {},
                     theme: { mode: 'dark', tokens: { font: 'sans', foreground: '#fff', background: '#000' } },
                   },
                 },
               });
               Object.defineProperty(evt, 'source', { value: mockWindow.parent });
               messageListener(evt);
+              markReady();
             }
           }, 1);
         } else if (data && data.id) {
@@ -498,7 +536,7 @@ export function createTestApp(options = {}) {
                     resultPayload = { storage: true, op: 'set', key: data.payload.key, value: data.payload.value };
                   }
                 } else if (data.payload?.op === 'get') {
-                  resultPayload = { storage: true, op: 'get', key: data.payload.key, value: mockStorage.get(data.payload.key) };
+                  resultPayload = { storage: true, op: 'get', key: data.payload.key, found: mockStorage.has(data.payload.key), value: mockStorage.get(data.payload.key) };
                 }
               } else if (options.onRequest) {
                 try {
@@ -583,6 +621,14 @@ export function createTestApp(options = {}) {
       renderHumanTasksView,
       renderQuestionsView,
       renderViews,
+      renderSimpleListView,
+      createQuickCaptureDraft,
+      editDraftTitle,
+      editDraftDescription,
+      reorderDraft,
+      transferDraftProject,
+      loadViewState,
+      rememberViewState,
       openDrawer,
       closeDrawer,
       renderDrawer,
@@ -599,7 +645,11 @@ export function createTestApp(options = {}) {
         issues,
         currentRepo,
         isManualRepoOverride,
-        userLayoutPreference,
+        viewState,
+        projectNameOverrides,
+        draftCaptureTitle,
+        draftCaptureDescription,
+        draftCaptureBusy,
         activeSessionId,
         currentActiveSession,
         currentSessionRepo,
@@ -624,7 +674,11 @@ export function createTestApp(options = {}) {
         if (updates.issues !== undefined) issues = updates.issues;
         if (updates.currentRepo !== undefined) currentRepo = updates.currentRepo;
         if (updates.isManualRepoOverride !== undefined) isManualRepoOverride = updates.isManualRepoOverride;
-        if (updates.userLayoutPreference !== undefined) userLayoutPreference = updates.userLayoutPreference;
+        if (updates.viewState !== undefined) { viewState = normalizeViewState(updates.viewState); viewStateRevision++; }
+        if (updates.projectNameOverrides !== undefined) projectNameOverrides = updates.projectNameOverrides;
+        if (updates.draftCaptureTitle !== undefined) draftCaptureTitle = updates.draftCaptureTitle;
+        if (updates.draftCaptureDescription !== undefined) draftCaptureDescription = updates.draftCaptureDescription;
+        if (updates.draftCaptureRepo !== undefined) draftCaptureRepo = updates.draftCaptureRepo;
         if (updates.activeSessionId !== undefined) activeSessionId = updates.activeSessionId;
         if (updates.currentActiveSession !== undefined) currentActiveSession = updates.currentActiveSession;
         if (updates.currentSessionRepo !== undefined) currentSessionRepo = updates.currentSessionRepo;
@@ -658,6 +712,7 @@ export function createTestApp(options = {}) {
   };
 
   const emitSession = async (session) => {
+    await ready;
     emitMessage({
       channel: 'openchamber.sdk',
       v: 1,
@@ -668,6 +723,7 @@ export function createTestApp(options = {}) {
   };
 
   const emitDirectory = async (directory) => {
+    await ready;
     emitMessage({
       channel: 'openchamber.sdk',
       v: 1,
