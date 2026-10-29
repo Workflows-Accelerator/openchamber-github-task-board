@@ -17,9 +17,9 @@ import { startBoard, browserConfig, HttpSession, BOARD_PASSWORD } from './helper
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, '../..');
-const ARTIFACT_ROOT = path.join(
+const ARTIFACT_ROOT = process.env.ARTIFACT_ROOT || path.join(
   ROOT,
-  '.agents/run/task-centred-architecture/verifications/issue-33-standalone-board',
+  '.agents/run/issue-48-web-correction/verifications/issue-33-standalone-board',
 );
 const SHOTS = path.join(ARTIFACT_ROOT, 'screenshots');
 const STAMP = new Date().toISOString().replace(/[:.]/g, '-');
@@ -314,9 +314,10 @@ async function main() {
     await waitFor('!document.getElementById("board-view").hidden', 'board view');
     await waitFor('document.querySelectorAll(".task-row").length === 3', 'three task rows');
     check('pull requests are excluded from the board', (await evaluate('document.querySelectorAll(".task-row").length')) === 3);
+    // Issue #48: default scope is the combined All Projects board.
     check(
-      'board names the configured repository',
-      (await evaluate('document.getElementById("repo-label").textContent')) === 'owner/repo',
+      'board names the default All Projects scope',
+      (await evaluate('document.getElementById("repo-label").textContent')) === 'All Projects',
     );
     check(
       'session cookie is not readable from JavaScript',
@@ -332,8 +333,16 @@ async function main() {
     await screenshot('board-desktop');
     await noOverflow('desktop board');
 
+    // Narrow to the configured repository through the real picker; later
+    // stale/empty checks exercise single-repository semantics.
+    await evaluate('document.getElementById("repo-select-btn").click()');
+    await waitFor('!document.getElementById("repo-popover").hidden', 'project picker open');
+    await evaluate(`Array.from(document.querySelectorAll('#repo-options-list .repo-option')).find((node) => node.textContent.includes('owner/repo')).click()`);
+    await waitFor('document.getElementById("repo-label").textContent === "Repo" && document.querySelectorAll(".task-row").length === 3', 'configured repository board');
+    check('board names the configured repository', (await evaluate('document.getElementById("repo-label").getAttribute("title")')) === 'owner/repo');
+
     // Open a task through its real button.
-    await evaluate('document.querySelector(".task-row").click()');
+    await evaluate('Array.from(document.querySelectorAll(".task-row")).find((row) => row.textContent.includes("Ship the standalone board")).click()');
     await waitFor('!document.getElementById("detail-view").hidden', 'detail view');
     await waitFor('document.getElementById("detail-title").textContent.includes("Ship the standalone board")', 'detail title');
     check('detail shows phase metadata', (await evaluate('document.getElementById("detail-meta").textContent')).toLowerCase().includes('execution'));
@@ -508,7 +517,9 @@ async function main() {
     })))()`);
     check(
       'every control is a native element in the tab order',
-      controls.length > 0 && controls.every((control) => !control.disabled && control.tabIndex >= 0),
+      // #47: the read-only, visually hidden username field exists only for
+      // password-manager autofill and is intentionally outside the tab order.
+      controls.length > 0 && controls.every((control) => control.id === 'username' || (!control.disabled && control.tabIndex >= 0)),
       JSON.stringify(controls),
     );
     const focusStyle = await evaluate(`(() => {

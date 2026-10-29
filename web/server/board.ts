@@ -401,7 +401,7 @@ export interface IssueDetail {
   createdAt: string | null;
   editableSections: Array<{ id: string; title: string; text: string }>;
   openQuestions: OpenQuestionView[];
-  humanTasks: Array<{ text: string; completed: boolean }>;
+  humanTasks: Array<{ text: string; completed: boolean; lineIndex?: number }>;
   acceptanceCriteria: Array<{ text: string; completed: boolean; lineIndex?: number }>;
   subtasks: Array<{ text: string; completed: boolean; lineIndex?: number }>;
   testPlan: {
@@ -535,7 +535,11 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     createdAt: issue.created_at ?? null,
     editableSections: editableSections(stripOrderMarker(issue.body)),
     openQuestions,
-    humanTasks: (issue.humanTasks ?? []).map((task) => ({ text: task.text, completed: task.completed })),
+    humanTasks: (issue.humanTasks ?? []).map((task) => ({
+      text: task.text,
+      completed: task.completed,
+      lineIndex: task.lineIndex,
+    })),
     acceptanceCriteria: (issue.acceptanceCriteria ?? []).map((item) => ({
       text: item.text,
       completed: item.completed,

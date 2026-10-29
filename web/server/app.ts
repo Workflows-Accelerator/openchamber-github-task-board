@@ -1292,6 +1292,47 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             if (previous !== null && next !== null && previous > next) {
               throw new HttpError(409, 'invalid_order', 'Order neighbours must be in ascending order');
             }
+            const hasExplicitNeighbours = Array.isArray(op.data.neighbours);
+            if (hasExplicitNeighbours) {
+              if (op.data.neighbours.length > 200) {
+                throw new HttpError(400, 'invalid_order', 'Order neighbour list is invalid');
+              }
+              for (const entry of op.data.neighbours) {
+                if (!entry || typeof entry !== 'object') {
+                  throw new HttpError(400, 'invalid_order', 'Order neighbour entry is invalid');
+                }
+                const repoStr = typeof entry.repo === 'string' && entry.repo ? entry.repo : repository.full;
+                if (!/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(repoStr)) {
+                  throw new HttpError(400, 'invalid_order', 'Order neighbour repository is invalid');
+                }
+                const itemNum = parseIssueNumberOrThrow(String(entry.number ?? ''));
+                const itemFp = typeof entry.fingerprint === 'string' ? entry.fingerprint : '';
+                if (!/^[a-f0-9]{64}$/.test(itemFp)) {
+                  throw new HttpError(400, 'fingerprint_required', 'Each neighbour draft requires a valid fingerprint');
+                }
+                const [nOwner, nName] = repoStr.split('/');
+                const nRepo = nOwner.toLowerCase() === repository.owner.toLowerCase() && nName.toLowerCase() === repository.name.toLowerCase()
+                  ? repository
+                  : await resolveRepository(nOwner, nName);
+                const nRead = await clientFor(nRepo).getIssue(itemNum).catch(mapGitHubError);
+                if (nRead.item.pull_request || nRead.item.state !== 'open' || statusLabelOf(labelNames(nRead.item)) !== 'status:draft') {
+                  throw new HttpError(409, 'conflict', 'A neighbouring draft is no longer an open draft; refresh and try again');
+                }
+                if (issueFingerprint(nRead.item, nRepo) !== itemFp) {
+                  throw new HttpError(409, 'conflict', 'A neighbouring draft changed on GitHub; nothing was written', {
+                    issue: buildIssueDetail(fresh.item, repository),
+                    statusOptions: statusOptions(),
+                  });
+                }
+                if (entry.order !== undefined && parseOrderMarker(nRead.item.body ?? '') !== entry.order) {
+                  throw new HttpError(409, 'conflict', 'A neighbouring draft changed order on GitHub; refresh the board and try again', {
+                    issue: buildIssueDetail(fresh.item, repository),
+                    statusOptions: statusOptions(),
+                  });
+                }
+              }
+            }
+
             const listed = repository.hasIssues
               ? await github.listIssues().catch(mapGitHubError)
               : { items: [], truncated: false };
@@ -1312,7 +1353,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
                 statusOptions: statusOptions(),
               });
             }
-            if (otherOrders.length > 0) {
+            if (!hasExplicitNeighbours && otherOrders.length > 0) {
               const prevKnown = previous !== null && otherOrders.includes(previous);
               const nextKnown = next !== null && otherOrders.includes(next);
               if ((prevKnown || nextKnown) && ((previous !== null && !prevKnown) || (next !== null && !nextKnown))) {
@@ -1324,7 +1365,8 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             }
 
             let order = midpointOrder(previous, next);
-            if (otherOrders.includes(order)) {
+            const midpointUsable = Number.isFinite(order) && (previous === null || order > previous) && (next === null || order < next);
+            if (midpointUsable && otherOrders.includes(order)) {
               throw new HttpError(409, 'conflict', 'Another draft already occupies that order position; refresh the board and try again', {
                 issue: buildIssueDetail(fresh.item, repository),
                 statusOptions: statusOptions(),

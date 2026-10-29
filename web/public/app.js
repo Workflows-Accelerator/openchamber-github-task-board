@@ -28,6 +28,8 @@
     projectNames: {},
     draftBusy: false,
     draftEdits: new Map(),
+    drawerOpenerKey: null,
+    drawerFromDraftBtn: false,
   };
 
   function identity(issue) {
@@ -109,16 +111,31 @@
     if (draft) {
       if (kind === 'section') draft.overview = null;
       if (kind === 'question') draft.answers = draft.answers.filter(function (a) { return a.index !== issue.openQuestions.find(function (q) { return q.answerIndex === answerIndex; }).index; });
-      if (draft.overview === null && !draft.answers.length) state.drafts.delete(draftKey);
+      if (draft.overview === null && !draft.answers.length) {
+        state.drafts.delete(draftKey);
+      } else if (kind !== 'section' && response.issue && response.issue.fingerprint && response.issue.fingerprint !== issue.fingerprint) {
+        var oldOverview = issue.editableSections && issue.editableSections[0] ? issue.editableSections[0].text : '';
+        var newOverview = response.issue.editableSections && response.issue.editableSections[0] ? response.issue.editableSections[0].text : '';
+        if (oldOverview === newOverview) {
+          state.drafts.delete(draftKey);
+          draft.fingerprint = response.issue.fingerprint;
+          state.drafts.set(identity(issue) + ':' + response.issue.fingerprint, draft);
+        }
+      }
     }
     if (state.board) state.board.issues = state.board.issues.map(function (row) {
       if (!sameIdentity(row, issue)) return row;
       var current = response.issue;
-      return Object.assign({}, row, current, { counts: {
-        subtasks: { total: current.subtasks.length, done: current.subtasks.filter(function (item) { return item.completed; }).length },
-        openQuestions: { total: current.openQuestions.length, open: current.openQuestions.filter(function (item) { return !item.completed; }).length },
-        humanTasks: { total: current.humanTasks.length, open: current.humanTasks.filter(function (item) { return !item.completed; }).length },
-      } });
+      return Object.assign({}, row, current, {
+        pendingItems: (current.humanTasks || []).concat(current.openQuestions || []).map(function (item) {
+          return { text: item.text, completed: item.completed };
+        }),
+        counts: {
+          subtasks: { total: current.subtasks.length, done: current.subtasks.filter(function (item) { return item.completed; }).length },
+          openQuestions: { total: current.openQuestions.length, open: current.openQuestions.filter(function (item) { return !item.completed; }).length },
+          humanTasks: { total: current.humanTasks.length, open: current.humanTasks.filter(function (item) { return !item.completed; }).length },
+        },
+      });
     });
     if (generation !== state.readGeneration || !state.detail || !sameIdentity(state.detail, issue)) return false;
     state.detail = response.issue;
@@ -140,7 +157,13 @@
       if (value === undefined || value === null) return;
       if (key === 'class') node.className = value;
       else if (key === 'text') node.textContent = value;
+      else if (key === 'checked' || key === 'disabled' || key === 'hidden' || key === 'selected') {
+        node[key] = Boolean(value);
+      }
       else if (key.startsWith('on') && typeof value === 'function') node.addEventListener(key.slice(2), value);
+      else if (typeof value === 'boolean') {
+        if (value) node.setAttribute(key, '');
+      }
       else node.setAttribute(key, value);
     });
     (children || []).forEach(function (child) {
@@ -186,7 +209,15 @@
     if (typeof issue.number !== 'number' || !Number.isInteger(issue.number) || issue.number <= 0) return false;
     var expectedNumber = typeof expected === 'object' && expected ? expected.number : expected;
     if (expectedNumber !== undefined && expectedNumber !== null && issue.number !== expectedNumber) return false;
-    if (expected && typeof expected === 'object' && expected.repository) {
+    if (expected && typeof expected === 'object' && expected.transferTarget) {
+      var targetRepo = issue.repository;
+      if (!targetRepo || typeof targetRepo !== 'object' || Array.isArray(targetRepo) ||
+          typeof targetRepo.owner !== 'string' || typeof targetRepo.name !== 'string' ||
+          targetRepo.full !== targetRepo.owner + '/' + targetRepo.name ||
+          typeof targetRepo.archived !== 'boolean' || typeof targetRepo.hasIssues !== 'boolean' ||
+          targetRepo.full.toLowerCase() !== String(expected.transferTarget).toLowerCase() ||
+          issue.key !== identity(issue)) return false;
+    } else if (expected && typeof expected === 'object' && expected.repository) {
       var repository = issue.repository;
       if (!repository || typeof repository !== 'object' || Array.isArray(repository) ||
           typeof repository.owner !== 'string' || typeof repository.name !== 'string' ||
@@ -388,13 +419,49 @@
     }
   }
 
+  function restoreDrawerFocus() {
+    var key = state.drawerOpenerKey;
+    var fromDraft = state.drawerFromDraftBtn;
+    state.drawerOpenerKey = null;
+    state.drawerFromDraftBtn = false;
+    if (!key) return;
+    if (document.querySelector) {
+      var safeKey = String(key).replace(/"/g, '\\"');
+      var selector = fromDraft
+        ? '.draft-open-btn[data-issue-key="' + safeKey + '"]'
+        : '.task-row[data-issue-key="' + safeKey + '"]';
+      var target = document.querySelector(selector) || document.querySelector('[data-issue-key="' + safeKey + '"]');
+      if (target && !target.hidden && typeof target.focus === 'function') {
+        target.focus();
+        return;
+      }
+    }
+    var fallback = $('view-btn') || $('board-title');
+    if (fallback && typeof fallback.focus === 'function') fallback.focus();
+  }
+
   function showBoard() {
+    var shouldRestoreFocus = Boolean(state.drawerOpenerKey);
     showView('board');
     setNotice('');
     if (state.board) renderBoard();
+    if (shouldRestoreFocus) restoreDrawerFocus();
   }
 
-  function openIssueView(issue) {
+  function closeDrawer() {
+    rememberDraft();
+    state.readGeneration++;
+    state.detail = null;
+    state.pending = null;
+    state.closingHash = window.location.hash !== '#/';
+    setHash('#/');
+    showBoard();
+  }
+
+  function openIssueView(issue, fromDraftBtn) {
+    state.closingHash = false;
+    state.drawerOpenerKey = identity(issue);
+    state.drawerFromDraftBtn = Boolean(fromDraftBtn);
     state.pending = issue;
     setHash('#/issue/' + issue.number);
     openIssue(issue);
@@ -402,6 +469,7 @@
 
   var OFFLINE_DRAFTS_KEY = 'openchamber_offline_drafts';
   var isSyncingOfflineDrafts = false;
+  var offlineSeq = 0;
 
   function getOfflineDrafts() {
     try {
@@ -426,23 +494,56 @@
 
   function saveToOfflineQueue(title, repo, description, order) {
     var drafts = getOfflineDrafts();
-    var exists = drafts.some(function (d) {
-      return d.title === title && d.repo === repo;
-    });
-    if (!exists) {
-      drafts.push({
-        id: 'offline-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-        title: title,
-        description: description || '',
-        order: order,
-        repo: repo,
-        createdAt: new Date().toISOString(),
-        offline: true,
-        labels: ['status:draft'],
+    if (description === undefined && order === undefined) {
+      var existing = drafts.find(function (d) {
+        return d.title === title && d.repo === repo && !d.description && d.order === undefined;
       });
-      saveOfflineDrafts(drafts);
+      if (existing) return existing;
     }
+    var entry = {
+      id: 'offline-' + Date.now() + '-' + (++offlineSeq) + '-' + Math.random().toString(36).slice(2, 8),
+      title: title,
+      description: description || '',
+      order: order,
+      repo: repo,
+      createdAt: new Date().toISOString(),
+      offline: true,
+      labels: ['status:draft'],
+      revision: 1,
+      state: 'queued',
+      uncertain: false,
+    };
+    drafts.push(entry);
+    saveOfflineDrafts(drafts);
     if (state.board) renderBoard();
+    return entry;
+  }
+
+  function showOfflineShell() {
+    state.csrf = null;
+    state.detail = null;
+    state.pending = null;
+    state.selected = 'all';
+    var repos = [];
+    getOfflineDrafts().forEach(function (d) {
+      if (d && d.repo && !repos.some(function (r) { return r.full === d.repo; })) {
+        var parts = String(d.repo).split('/');
+        repos.push({ owner: parts[0] || '', name: parts[1] || d.repo, full: d.repo, id: 0, available: true, archived: false, hasIssues: true });
+      }
+    });
+    state.repositories = { repositories: repos, visibleCount: repos.length, discoveryFailed: false, freshnessMs: 60000 };
+    state.board = { repo: 'Offline local drafts', repository: null, issues: [], count: 0, statusOptions: [] };
+    state.viewState.view = 'simple';
+    state.viewState.sort = 'manual';
+    if (!state.viewState.filters.includes('stage:draft')) {
+      state.viewState.filters = state.viewState.filters.concat('stage:draft');
+    }
+    $('repository-picker').hidden = true;
+    $('refresh-btn').hidden = false;
+    $('signout-btn').hidden = true;
+    renderBoard();
+    showView('board');
+    setNotice('Offline mode \u2014 showing local drafts only. Reconnect and refresh to sign in and sync with GitHub.', true);
   }
 
   async function syncOfflineDrafts() {
@@ -453,25 +554,63 @@
     isSyncingOfflineDrafts = true;
     var remaining = [];
     var syncedCount = 0;
+    var hadUncertain = false;
 
     for (var i = 0; i < drafts.length; i++) {
       var draft = drafts[i];
+      if (draft.uncertain || draft.state === 'uncertain') {
+        hadUncertain = true;
+        var latestUncertain = getOfflineDrafts().find(function (d) { return d.id === draft.id; }) || draft;
+        remaining.push(latestUncertain);
+        continue;
+      }
       var parts = (draft.repo || '').split('/');
       if (parts.length !== 2) { remaining.push(draft); continue; }
-      var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues';
+      var sentRevision = draft.revision || 1;
       try {
-        await api(endpoint, {
-          method: 'POST',
-          body: Object.assign({ title: draft.title, labels: draft.labels || ['status:draft'] },
-            draft.description || Number.isFinite(draft.order) ? { body: (draft.description || '') + (Number.isFinite(draft.order) ? '\n\n<!-- board-order: ' + draft.order + ' -->' : '') } : {}),
-        });
-        syncedCount++;
+        var response;
+        if (draft.confirmedNumber && draft.confirmedFingerprint) {
+          var updateEndpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues/' + draft.confirmedNumber + '/draft';
+          response = await api(updateEndpoint, {
+            method: 'PUT',
+            expected: draft.confirmedNumber,
+            body: { fingerprint: draft.confirmedFingerprint, title: draft.title, description: draft.description || '' },
+          });
+        } else {
+          var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues';
+          response = await api(endpoint, {
+            method: 'POST',
+            body: Object.assign({ title: draft.title, labels: draft.labels || ['status:draft'] },
+              draft.description || Number.isFinite(draft.order) ? { body: (draft.description || '') + (Number.isFinite(draft.order) ? '\n\n<!-- board-order: ' + draft.order + ' -->' : '') } : {}),
+          });
+        }
+        var latestAfter = getOfflineDrafts().find(function (d) { return d.id === draft.id; });
+        if (latestAfter && (latestAfter.revision || 1) > sentRevision) {
+          remaining.push(Object.assign({}, latestAfter, {
+            state: 'queued',
+            uncertain: false,
+            confirmedNumber: response && response.issue ? response.issue.number : draft.confirmedNumber,
+            confirmedFingerprint: response && response.issue ? response.issue.fingerprint : draft.confirmedFingerprint,
+          }));
+        } else {
+          syncedCount++;
+        }
       } catch (err) {
-        if (err.status === 401 || err.status >= 500 || err.code === 'write_outcome_unknown' || /network|offline|failed to fetch/i.test(err.message)) {
-          remaining = remaining.concat(drafts.slice(i));
+        var currentOnErr = getOfflineDrafts().find(function (d) { return d.id === draft.id; }) || draft;
+        if (err.status === 401) {
+          remaining.push(currentOnErr);
+          remaining = remaining.concat(drafts.slice(i + 1));
           break;
         }
-        remaining.push(draft);
+        if (err.status >= 500 || err.code === 'write_outcome_unknown' || /network|offline|failed to fetch/i.test(err.message)) {
+          hadUncertain = true;
+          remaining.push(Object.assign({}, currentOnErr, { state: 'uncertain', uncertain: true }));
+          remaining = remaining.concat(drafts.slice(i + 1).map(function (d) {
+            return getOfflineDrafts().find(function (cur) { return cur.id === d.id; }) || d;
+          }));
+          break;
+        }
+        remaining.push(currentOnErr);
       }
     }
 
@@ -482,8 +621,12 @@
     isSyncingOfflineDrafts = false;
 
     if (syncedCount > 0) {
-      setNotice('Synced ' + syncedCount + ' offline draft' + (syncedCount === 1 ? '' : 's') + ' to GitHub.', false);
+      setNotice('Synced ' + syncedCount + ' offline draft' + (syncedCount === 1 ? '' : 's') + ' to GitHub.' +
+        (hadUncertain ? ' Some drafts have an uncertain outcome; review before retrying.' : ''), hadUncertain);
       if (state.board) await loadBoard();
+    } else if (hadUncertain) {
+      setNotice('Offline draft sync outcome unknown \u2014 refresh and check the board before retrying.', true);
+      if (state.board) renderBoard();
     }
   }
 
@@ -633,7 +776,7 @@
         checked: Boolean(item.completed),
         'aria-label': item.text || 'Checklist item ' + idx,
         onchange: function () {
-          toggleChecklistItem(item, isAc, checkbox.checked);
+          return toggleChecklistItem(item, isAc, checkbox.checked);
         },
       });
       var textSpan = el('span', {
@@ -649,48 +792,68 @@
   }
 
   async function toggleChecklistItem(item, isAc, checked) {
+    if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) {
+      renderDetail(false);
+      return;
+    }
     var issue = state.detail;
-    if (!issue) return;
-    var oldBody = issue.body;
-    var oldCompleted = item.completed;
+    rememberDraft();
     var newBody = updateChecklistInMarkdown(issue.body, item.lineIndex, item.text, checked);
-    if (newBody === oldBody) return;
+    if (newBody === issue.body) return;
 
-    item.completed = checked;
-    issue.body = newBody;
-    renderDetail(false);
+    state.busy = true;
+    var generation = ++state.readGeneration;
+    invalidateBoardForWrite(issue);
 
     try {
       var response = await api(issuePath(issue), {
+        expected: issue,
         method: 'PATCH',
         body: {
           fingerprint: issue.fingerprint,
           body: newBody,
         },
       });
-      if (response && response.issue) {
-        state.detail = response.issue;
+      if (!isValidMutationPayload(response, issue)) {
+        throw new ApiError('write_outcome_unknown', 200, {
+          error: 'write_outcome_unknown',
+          message: 'Outcome unknown \u2014 refresh to check GitHub state',
+        });
+      }
+      if (!publishMutation(response, issue, generation, 'checklist')) return;
+      announce('Checklist updated.');
+    } catch (err) {
+      invalidateDetailForWrite(issue);
+      invalidateBoardForWrite(issue);
+      if (err.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
+      if (err.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
+      if (err.status === 409) {
+        handleConflict(err, issue, generation);
+      } else {
         renderDetail(false);
       }
-    } catch (err) {
-      item.completed = oldCompleted;
-      issue.body = oldBody;
-      renderDetail(false);
       setNotice(err.message || 'Failed to update checklist item', true);
+    } finally {
+      state.busy = false;
     }
   }
 
   async function toggleMarkDone() {
+    if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) return;
     var issue = state.detail;
-    if (!issue) return;
+    rememberDraft();
     var isDone = issue.state === 'closed' || (issue.statusLabel && issue.statusLabel.toLowerCase() === 'status:done');
     var targetStatus = isDone ? 'status:todo' : 'status:done';
     var targetState = isDone ? 'open' : 'closed';
     var btn = $('mark-done-btn');
     if (btn) btn.disabled = true;
+    state.busy = true;
+    var generation = ++state.readGeneration;
+    invalidateBoardForWrite(issue);
 
     try {
       var response = await api(issuePath(issue), {
+        expected: issue,
         method: 'PATCH',
         body: {
           fingerprint: issue.fingerprint,
@@ -698,23 +861,25 @@
           state: targetState,
         },
       });
-      if (response && response.issue) {
-        state.detail = response.issue;
-        if (response.statusOptions) state.statusOptions = response.statusOptions;
-        renderDetail(false);
-        setNotice('Task ' + (isDone ? 'reopened' : 'marked done'), false);
-        if (state.board && Array.isArray(state.board.issues)) {
-          var bIssue = state.board.issues.find(function (i) { return i.number === issue.number; });
-          if (bIssue) {
-            bIssue.statusLabel = targetStatus;
-            bIssue.state = targetState;
-            renderBoard();
-          }
-        }
+      if (!isValidMutationPayload(response, issue)) {
+        throw new ApiError('write_outcome_unknown', 200, {
+          error: 'write_outcome_unknown',
+          message: 'Outcome unknown \u2014 refresh to check GitHub state',
+        });
       }
+      if (!publishMutation(response, issue, generation, 'status')) return;
+      setNotice('Task ' + (isDone ? 'reopened' : 'marked done'), false);
     } catch (err) {
+      invalidateDetailForWrite(issue);
+      invalidateBoardForWrite(issue);
+      if (err.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
+      if (err.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
+      if (err.status === 409) {
+        handleConflict(err, issue, generation);
+      }
       setNotice(err.message || 'Failed to update task state', true);
     } finally {
+      state.busy = false;
       if (btn) btn.disabled = false;
     }
   }
@@ -727,6 +892,9 @@
     var backdrop = $('drawer-backdrop');
     if (backdrop) {
       backdrop.hidden = name !== 'detail';
+    }
+    if (name === 'board' && typeof document !== 'undefined' && document.querySelectorAll) {
+      document.querySelectorAll('.draft-description').forEach(autoSizeTextarea);
     }
   }
 
@@ -933,22 +1101,40 @@
   function offlineRows() {
     return getOfflineDrafts().filter(function (draft) { return !state.selected || state.selected === 'all' || draft.repo === state.selected; }).map(function (draft) {
       return { id: draft.id, number: 0, title: draft.title, description: draft.description || '', order: draft.order,
-        offline: true, state: 'open', statusLabel: 'status:draft', labels: ['status:draft'],
+        offline: true, uncertain: Boolean(draft.uncertain || draft.state === 'uncertain'),
+        revision: draft.revision || 1, confirmedNumber: draft.confirmedNumber,
+        state: 'open', statusLabel: 'status:draft', labels: ['status:draft'],
         repository: { full: draft.repo }, createdAt: draft.createdAt, updatedAt: draft.createdAt, counts: {} };
     });
   }
   function updateOffline(issue, changes) {
-    saveOfflineDrafts(getOfflineDrafts().map(function (draft) { return draft.id === issue.id ? Object.assign({}, draft, changes) : draft; }));
+    saveOfflineDrafts(getOfflineDrafts().map(function (draft) {
+      if (draft.id !== issue.id) return draft;
+      return Object.assign({}, draft, changes, { revision: (draft.revision || 1) + 1 });
+    }));
   }
-  function replaceBoardRow(issue, response) {
-    if (!state.board) return;
-    var row = response.issue;
-    state.board.issues = state.board.issues.map(function (old) { return sameIdentity(old, issue) ? Object.assign({}, old, row, {
+  function applyDetailToRow(old, row) {
+    return Object.assign({}, old, row, {
       description: row.description !== undefined ? row.description : row.body,
+      pendingItems: (row.humanTasks || []).concat(row.openQuestions || []).map(function (t) {
+        return { text: t.text, completed: t.completed };
+      }),
       counts: { subtasks: { total: row.subtasks.length, done: row.subtasks.filter(function (t) { return t.completed; }).length },
         openQuestions: { total: row.openQuestions.length, open: row.openQuestions.filter(function (t) { return !t.completed; }).length },
         humanTasks: { total: row.humanTasks.length, open: row.humanTasks.filter(function (t) { return !t.completed; }).length } },
-    }) : old; });
+    });
+  }
+  function replaceBoardRow(issue, response) {
+    if (!state.board) return;
+    var updated = Array.isArray(response.updatedIssues) && response.updatedIssues.length
+      ? response.updatedIssues
+      : [response.issue];
+    state.board.issues = state.board.issues.map(function (old) {
+      var match = updated.find(function (u) { return sameIdentity(old, u); });
+      if (match) return applyDetailToRow(old, match);
+      if (sameIdentity(old, issue)) return applyDetailToRow(old, response.issue);
+      return old;
+    });
   }
   async function draftMutation(issue, action, data) {
     if (state.draftBusy) { setNotice('A draft is saving. Wait before making another change.', true); return false; }
@@ -956,20 +1142,47 @@
     if (typeof navigator !== 'undefined' && !navigator.onLine) { setNotice('Existing GitHub drafts cannot be changed offline. Local drafts can still be edited and reordered.', true); return false; }
     state.draftBusy = true;
     invalidateBoardForWrite(issue);
+    var preFingerprints = new Map();
+    preFingerprints.set(identity(issue), issue.fingerprint);
+    if (data && Array.isArray(data.updates) && state.board && Array.isArray(state.board.issues)) {
+      data.updates.forEach(function (u) {
+        var found = state.board.issues.find(function (b) {
+          var bRepo = b.repository && b.repository.full;
+          var uRepo = u.repo || (issue.repository && issue.repository.full);
+          return b.number === u.number && (!uRepo || !bRepo || bRepo.toLowerCase() === uRepo.toLowerCase());
+        });
+        if (found) preFingerprints.set(identity(found), u.fingerprint || found.fingerprint);
+      });
+    }
     try {
-      var response = await api(issuePath(issue) + '/' + action, { method: 'PUT', expected: issue,
-        body: Object.assign({ fingerprint: issue.fingerprint }, data) });
+      var expected = action === 'move' && data && data.target ? { transferTarget: data.target } : issue;
+      var payloadBody = Object.assign({ fingerprint: issue.fingerprint }, data);
+      var response = await api(issuePath(issue) + '/' + action, { method: 'PUT', expected: expected, body: payloadBody });
       invalidateBoardForWrite(issue);
-      state.draftEdits.delete(issue.offline ? issue.id : identity(issue));
+      if (action === 'draft' || action === 'move') {
+        state.draftEdits.delete(issue.offline ? issue.id : identity(issue));
+      } else if (action === 'order') {
+        var updatedList = Array.isArray(response.updatedIssues) && response.updatedIssues.length ? response.updatedIssues : [response.issue];
+        updatedList.forEach(function (u) {
+          var key = identity(u);
+          var edit = state.draftEdits.get(key);
+          var prevFp = preFingerprints.get(key);
+          if (edit && (!edit.fingerprint || edit.fingerprint === prevFp)) {
+            edit.fingerprint = u.fingerprint;
+          }
+        });
+      }
       replaceBoardRow(issue, response);
-      if (response.targetUrl) await loadBoard(); else renderBoard();
-      if (response.targetUrl) setNotice('Moved to ' + response.targetUrl + '. Source closed.');
+      if (response.targetUrl && state.csrf) await loadBoard(); else renderBoard();
+      if (response.targetUrl) setNotice('Transferred to ' + response.targetUrl + '.');
       return true;
     } catch (error) {
       invalidateBoardForWrite(issue);
-      if (error.code === 'write_outcome_unknown' || error.code === 'partial_move') state.uncertain.add(identity(issue));
+      if (error.code === 'write_outcome_unknown' || error.code === 'partial_move' || error.code === 'partial_order') {
+        state.uncertain.add(identity(issue));
+      }
       setNotice(error.message + (error.payload && error.payload.targetUrl ? ' Target: ' + error.payload.targetUrl : '') +
-        (error.status === 409 && error.code !== 'partial_move' ? ' Refresh before trying again; your text is retained.' : ''), true);
+        (error.status === 409 && error.code !== 'partial_move' && error.code !== 'partial_order' ? ' Refresh before trying again; your text is retained.' : ''), true);
       return false;
     } finally { state.draftBusy = false; }
   }
@@ -977,21 +1190,79 @@
     if (from === to) return;
     var rest = ordered.filter(function (_, index) { return index !== from; });
     to = Math.max(0, Math.min(rest.length, to));
+    var desired = rest.slice(0, to).concat([issue], rest.slice(to));
     var prev = to ? rest[to - 1] : null, next = rest[to] || null;
     var previous = prev && Number.isFinite(prev.order) ? prev.order : null;
     var following = next && Number.isFinite(next.order) ? next.order : null;
-    if (prev && previous === null) {
-      setNotice('This position follows an older unranked draft. Move that draft up first; only the moved item is written.', true); return;
-    }
     var order = previous === null ? (following === null ? 1000 : following - 1000) : following === null ? previous + 1000 : previous / 2 + following / 2;
-    if (previous !== null && following !== null && !(order > previous && order < following)) {
-      setNotice('No space between these positions. Choose another slot.', true); return;
+    var canUseSingleMidpoint = true;
+    for (var k = 0; k < to; k++) {
+      if (!Number.isFinite(desired[k].order) || (k > 0 && !(desired[k].order > desired[k - 1].order))) {
+        canUseSingleMidpoint = false;
+        break;
+      }
     }
-    if (issue.offline) { updateOffline(issue, { order: order }); renderBoard(); }
-    else if (!await draftMutation(issue, 'order', { previous: previous, next: following })) return;
+    if (canUseSingleMidpoint) {
+      if (previous !== null && !(order > previous)) canUseSingleMidpoint = false;
+      if (following !== null && !(order < following)) canUseSingleMidpoint = false;
+      var lastSeen = order;
+      for (var m = to + 1; m < desired.length; m++) {
+        if (Number.isFinite(desired[m].order)) {
+          if (!(desired[m].order > lastSeen)) {
+            canUseSingleMidpoint = false;
+            break;
+          }
+          lastSeen = desired[m].order;
+        }
+      }
+    }
+    if (issue.offline) {
+      if (canUseSingleMidpoint) {
+        updateOffline(issue, { order: order });
+      } else {
+        desired.forEach(function (item, idx) {
+          if (item.offline) updateOffline(item, { order: (idx + 1) * 1000 });
+        });
+      }
+      renderBoard();
+    } else if (canUseSingleMidpoint) {
+      var neighbours = [];
+      if (prev && !prev.offline) {
+        neighbours.push({ repo: prev.repository && prev.repository.full, number: prev.number, fingerprint: prev.fingerprint, order: previous });
+      }
+      if (next && !next.offline) {
+        neighbours.push({ repo: next.repository && next.repository.full, number: next.number, fingerprint: next.fingerprint, order: following });
+      }
+      if (!await draftMutation(issue, 'order', { previous: previous, next: following, neighbours: neighbours })) return;
+    } else {
+      var updates = [];
+      var rebalanceNeighbours = [];
+      desired.forEach(function (item, idx) {
+        var targetOrder = (idx + 1) * 1000;
+        if (item.offline) {
+          updateOffline(item, { order: targetOrder });
+        } else {
+          var entry = { repo: item.repository && item.repository.full, number: item.number, fingerprint: item.fingerprint, order: targetOrder };
+          if (item.order !== targetOrder || sameIdentity(item, issue)) {
+            updates.push(entry);
+          } else {
+            rebalanceNeighbours.push(entry);
+          }
+        }
+      });
+      if (!await draftMutation(issue, 'order', { updates: updates, neighbours: rebalanceNeighbours })) return;
+    }
     announce('Moved ' + issue.title + ' to position ' + (to + 1) + '.');
     var focus = document.querySelector && document.querySelector('[data-draft-key="' + (issue.offline ? issue.id : issue.key) + '"] .drag-handle');
     if (focus) focus.focus();
+  }
+  function autoSizeTextarea(textarea) {
+    if (!textarea || !textarea.style) return;
+    textarea.style.height = 'auto';
+    var scrollHeight = Number(textarea.scrollHeight) || 0;
+    if (scrollHeight > 0) {
+      textarea.style.height = Math.max(44, scrollHeight + 2) + 'px';
+    }
   }
   function draftRow(issue, ordered, index) {
     var title = el('input', { type: 'text', class: 'draft-title', maxlength: '256', 'aria-label': 'Title: ' + issue.title });
@@ -1000,22 +1271,43 @@
     title.value = buffered ? buffered.title : issue.title;
     var description = el('textarea', { class: 'draft-description', rows: '1', 'aria-label': 'Description: ' + issue.title, placeholder: 'Add inspiration or a description…' });
     description.value = buffered ? buffered.description : issue.description || '';
-    var save = el('button', { type: 'submit', class: 'button draft-save', text: 'Save', hidden: 'hidden' });
+    autoSizeTextarea(description);
+    var save = el('button', { type: 'submit', class: 'button draft-save', text: 'Save', hidden: true });
     var form = el('form', { class: 'draft-fields' }, [title, description, save]);
     if (buffered) save.hidden = false;
     [title, description].forEach(function (input) { input.addEventListener('input', function () {
-      save.hidden = false; state.draftEdits.set(editKey, { title: title.value, description: description.value });
+      save.hidden = false;
+      var existing = state.draftEdits.get(editKey);
+      var observedFp = existing && existing.fingerprint ? existing.fingerprint : issue.fingerprint;
+      state.draftEdits.set(editKey, { title: title.value, description: description.value, fingerprint: observedFp });
+      if (input === description) autoSizeTextarea(description);
     }); });
     form.addEventListener('submit', async function (event) {
       event.preventDefault();
       if (!title.value.trim()) { title.focus(); return; }
       if (issue.offline) { updateOffline(issue, { title: title.value.trim(), description: description.value }); state.draftEdits.delete(editKey); renderBoard(); }
-      else if (await draftMutation(issue, 'draft', { title: title.value, description: description.value })) announce('Draft saved.');
+      else {
+        var currentBuf = state.draftEdits.get(editKey);
+        var fpToUse = currentBuf && currentBuf.fingerprint ? currentBuf.fingerprint : issue.fingerprint;
+        if (await draftMutation(issue, 'draft', { title: title.value, description: description.value, fingerprint: fpToUse })) announce('Draft saved.');
+      }
     });
     var handle = el('button', { type: 'button', class: 'button drag-handle', text: '⠿',
       'aria-label': 'Drag to reorder ' + issue.title, title: 'Drag to reorder; or use Move up / Move down' });
     var row = el('li', { class: 'draft-row' + (issue.offline ? ' draft-row-offline' : ''), 'data-draft-key': issue.offline ? issue.id : issue.key }, [handle, form]);
-    var meta = el('div', { class: 'draft-meta' }, [issue.offline ? badge('(offline)', 'badge-offline') : null]);
+    var meta = el('div', { class: 'draft-meta' }, [
+      issue.offline ? badge(issue.uncertain ? '(offline · outcome unknown)' : '(offline)', 'badge-offline') : null,
+    ]);
+    if (issue.offline && issue.uncertain) {
+      meta.appendChild(el('button', { type: 'button', class: 'button', text: 'Retry sync', onclick: function () {
+        saveOfflineDrafts(getOfflineDrafts().map(function (d) { return d.id === issue.id ? Object.assign({}, d, { state: 'queued', uncertain: false }) : d; }));
+        syncOfflineDrafts();
+      } }));
+      meta.appendChild(el('button', { type: 'button', class: 'button', text: 'Dismiss', onclick: function () {
+        saveOfflineDrafts(getOfflineDrafts().filter(function (d) { return d.id !== issue.id; }));
+        renderBoard();
+      } }));
+    }
     if (state.selected === 'all') {
       var project = el('select', { class: 'draft-project', title: issue.repository.full, 'aria-label': 'Project for ' + issue.title });
       var projects = availableProjects();
@@ -1025,12 +1317,12 @@
       project.addEventListener('change', async function () {
         var target = project.value;
         if (issue.offline) { updateOffline(issue, { repo: target }); renderBoard(); return; }
-        if (!window.confirm('Move this draft to ' + shortName(target) + '? Creates a copy there, then links and closes the source.')) { project.value = issue.repository.full; return; }
-        if (!await draftMutation(issue, 'move', { target: target })) project.value = issue.repository.full;
+        if (!window.confirm('Move this draft to ' + shortName(target) + ' (' + target + ')? Transfers the GitHub issue keeping history; issue number and link may change, and GitHub permission restrictions apply.')) { project.value = issue.repository.full; return; }
+        if (!await draftMutation(issue, 'move', { target: target, confirmed: true })) project.value = issue.repository.full;
       });
       meta.appendChild(project);
     } else if (issue.repository) meta.appendChild(projectBadge(issue.repository));
-    if (!issue.offline) meta.appendChild(el('button', { type: 'button', class: 'button', text: '#' + issue.number, 'aria-label': 'Open task ' + issue.number, onclick: function () { openIssueView(issue); } }));
+    if (!issue.offline) meta.appendChild(el('button', { type: 'button', class: 'button draft-open-btn', 'data-issue-key': identity(issue), text: '#' + issue.number, 'aria-label': 'Open task ' + issue.number, onclick: function () { openIssueView(issue, true); } }));
     var controls = el('div', { class: 'draft-moves' });
     [-1, 1].forEach(function (direction) {
       var button = el('button', { type: 'button', class: 'button', text: direction < 0 ? '↑' : '↓',
@@ -1040,8 +1332,10 @@
     });
     meta.appendChild(controls); row.appendChild(meta);
     handle.disabled = state.viewState.sort !== 'manual';
+    var dragStartY = 0;
     handle.addEventListener('pointerdown', function (event) {
       if (state.viewState.sort !== 'manual' || event.button > 0) return;
+      dragStartY = event.clientY;
       event.preventDefault(); handle.setPointerCapture(event.pointerId); row.classList.add('dragging');
     });
     handle.addEventListener('pointermove', function (event) {
@@ -1050,8 +1344,8 @@
       var target = near && near.closest('[data-draft-key]');
       document.querySelectorAll('.drop-target').forEach(function (item) { item.classList.remove('drop-target'); });
       if (target) target.classList.add('drop-target');
-      if (event.clientY > window.innerHeight - 70) window.scrollBy(0, 12);
-      if (event.clientY < 80) window.scrollBy(0, -12);
+      if (event.clientY > window.innerHeight - 70 && event.clientY > dragStartY + 8) window.scrollBy(0, 12);
+      if (event.clientY < 80 && event.clientY < dragStartY - 8) window.scrollBy(0, -12);
     });
     handle.addEventListener('pointerup', function (event) {
       if (!handle.hasPointerCapture(event.pointerId)) return;
@@ -1078,8 +1372,8 @@
       countOf(issue, 'openQuestions') ? badge(countOf(issue, 'openQuestions') + ' questions', 'attention') : null,
       countOf(issue, 'humanTasks') ? badge(countOf(issue, 'humanTasks') + ' human tasks', 'attention') : null]));
     if (!compact) children.push(el('p', { class: 'muted small', text: 'Updated ' + relative(issue.updatedAt) }));
-    return el('button', { type: 'button', class: 'task-row', onclick: function () {
-      if (issue.offline) { setNotice('Saved offline. Use Simple list + Draft filter to edit.'); return; } openIssueView(issue);
+    return el('button', { type: 'button', class: 'task-row', 'data-issue-key': identity(issue), onclick: function () {
+      if (issue.offline) { setNotice('Saved offline. Use Simple list + Draft filter to edit.'); return; } openIssueView(issue, false);
     } }, children);
   }
   function renderBoard() {
@@ -1148,6 +1442,9 @@
       issues.forEach(function (issue, index) {
         list.appendChild(quickCapture() && stageOf(issue) === 'draft' ? draftRow(issue, issues, index) : el('li', {}, [taskCard(issue, state.viewState.view === 'simple')]));
       });
+    }
+    if (list.querySelectorAll) {
+      list.querySelectorAll('.draft-description').forEach(autoSizeTextarea);
     }
   }
 
@@ -1374,7 +1671,18 @@
       container.appendChild(badge('needs ' + String(issue.attention).replace('needs-', ''), 'attention'));
     }
     if (issue.number !== undefined && issue.number !== null) {
-      container.appendChild(badge('#' + issue.number));
+      if (issue.htmlUrl) {
+        container.appendChild(el('a', {
+          class: 'badge github-link',
+          href: issue.htmlUrl,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          text: '#' + issue.number + ' on GitHub \u2197',
+          'aria-label': 'Open issue #' + issue.number + ' on GitHub',
+        }));
+      } else {
+        container.appendChild(badge('#' + issue.number));
+      }
     }
   }
 
@@ -1473,18 +1781,7 @@
   }
 
   function renderHumanTasks(issue) {
-    var list = $('human-list');
-    list.textContent = '';
-    var tasks = Array.isArray(issue.humanTasks) ? issue.humanTasks : [];
-    $('no-human').hidden = tasks.length > 0;
-    tasks.forEach(function (task) {
-      if (!task) return;
-      list.appendChild(
-        el('li', {}, [
-          el('span', { text: (task.completed ? '✓ ' : '○ ') + (task.text || '') }),
-        ]),
-      );
-    });
+    renderChecklist('human-list', 'no-human', issue.humanTasks || [], false);
   }
 
   function renderDetail(focusHeading) {
@@ -1582,6 +1879,11 @@
 
   function route() {
     var match = /^#\/issue\/(\d+)$/.exec(window.location.hash || '');
+    if (!match && state.closingHash) {
+      state.closingHash = false;
+      return;
+    }
+    state.closingHash = false;
     if (match && state.pending && state.pending.number === Number(match[1])) {
       // The click already carries the exact qualified identity; never infer a
       // repository from a bare number in a combined view.
@@ -1765,6 +2067,8 @@
   }
 
   function bind() {
+    if (state.bound) return;
+    state.bound = true;
     $('login-form').addEventListener('submit', async function (event) {
       event.preventDefault();
       var button = $('login-btn');
@@ -1832,7 +2136,31 @@
     if ($('sheet-close')) $('sheet-close').addEventListener('click', closeSheet);
     if ($('board-sheet')) $('board-sheet').addEventListener('cancel', function () { if (sheetOpener) sheetOpener.focus(); });
 
-    $('refresh-btn').addEventListener('click', function () {
+    $('refresh-btn').addEventListener('click', async function () {
+      if (!state.csrf) {
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          showOfflineShell();
+          return;
+        }
+        try {
+          var session = await api('/api/session');
+          if (session && session.authenticated) {
+            state.csrf = session.csrfToken;
+            await loadBoard();
+            syncOfflineDrafts();
+            return;
+          }
+        } catch (e) {
+          if (getOfflineDrafts().length > 0) {
+            showOfflineShell();
+            return;
+          }
+          showLogin('The board could not be reached. Reload to try again.');
+          return;
+        }
+        showLogin();
+        return;
+      }
       if (state.detail && /^#\/issue\//.test(window.location.hash)) {
         openIssue(state.detail);
       } else {
@@ -1893,12 +2221,7 @@
             return;
           }
           if (state.detail && !$('detail-view').hidden) {
-            rememberDraft();
-            state.readGeneration++;
-            state.detail = null;
-            state.pending = null;
-            setHash('#/');
-            showBoard();
+            closeDrawer();
           }
         }
       });
@@ -1907,12 +2230,7 @@
     var backdrop = $('drawer-backdrop');
     if (backdrop) {
       backdrop.addEventListener('click', function () {
-        rememberDraft();
-        state.readGeneration++;
-        state.detail = null;
-        state.pending = null;
-        setHash('#/');
-        showBoard();
+        closeDrawer();
       });
     }
 
@@ -1922,19 +2240,28 @@
     }
 
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-      window.addEventListener('online', function () {
+      window.addEventListener('online', async function () {
+        if (!state.csrf) {
+          try {
+            var session = await api('/api/session');
+            if (session && session.authenticated) {
+              state.csrf = session.csrfToken;
+              await loadBoard();
+            }
+          } catch (e) {}
+        }
         syncOfflineDrafts();
+      });
+      window.addEventListener('resize', function () {
+        if (typeof document !== 'undefined' && document.querySelectorAll) {
+          document.querySelectorAll('.draft-description').forEach(autoSizeTextarea);
+        }
       });
     }
 
     $('signout-btn').addEventListener('click', signOut);
     $('back-btn').addEventListener('click', function () {
-      rememberDraft();
-      state.readGeneration++;
-      state.detail = null;
-      state.pending = null;
-      setHash('#/');
-      showBoard();
+      closeDrawer();
     });
     $('save-overview').addEventListener('click', saveOverview);
     $('apply-status').addEventListener('click', saveStatus);
@@ -2013,6 +2340,10 @@
         return;
       }
     } catch (error) {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        showOfflineShell();
+        return;
+      }
       showLogin('The board could not be reached. Reload to try again.');
       return;
     }
@@ -2022,8 +2353,12 @@
   if (typeof window !== 'undefined') {
     window.__taskBoard = {
       state: state,
+      boot: boot,
       shortName: shortName, filterSort: filterSort, manualCompare: manualCompare,
-      renderBoard: renderBoard, reorderDraft: reorderDraft, draftMutation: draftMutation,
+      renderBoard: renderBoard, renderDetail: renderDetail,
+      openIssue: openIssue, openIssueView: openIssueView, closeDrawer: closeDrawer,
+      showOfflineShell: showOfflineShell,
+      reorderDraft: reorderDraft, draftMutation: draftMutation,
       parseFriendlyTitle: parseFriendlyTitle,
       resolveFriendlyTitle: resolveFriendlyTitle,
       updateSubtaskInMarkdown: updateSubtaskInMarkdown,

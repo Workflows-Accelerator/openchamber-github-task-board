@@ -8,9 +8,10 @@ import { startFakeGitHub, makeIssue } from './fake-github.mjs';
 import { startBoard, BOARD_PASSWORD } from './helpers.mjs';
 
 const { chromium } = await import(pathToFileURL(process.env.PLAYWRIGHT_CORE || '/workspace/.npm/_npx/e41f203b7505f1fb/node_modules/playwright-core/index.mjs'));
-const output = '/workspace/extensions/github-task-board/.agents/run/task-centred-architecture/verifications/screenshots';
+const output = process.env.SCREENSHOT_DIR || path.resolve('.agents/run/issue-48-web-correction/verifications/screenshots');
 await mkdir(output, { recursive: true });
-const directory = await mkdtemp('/tmp/opencode/issue48-browser-');
+await mkdir('/tmp/antigravity', { recursive: true });
+const directory = await mkdtemp('/tmp/antigravity/issue48-browser-');
 const primary = 'Workflows-Accelerator/openchamber-github-task-board';
 const second = 'owner/a-very-long-project-name-that-will-not-fit-in-one-line-on-a-small-phone';
 const synthetic = (number, title, stage, body = '', priority = 'useful') => makeIssue({ number, title, labels: ['status:' + stage, 'priority:' + priority], body, repo: primary });
@@ -39,7 +40,8 @@ try {
   await page.locator('#board-view').waitFor({ state: 'visible' });
   assert.equal(await page.locator('#view-btn').innerText(), 'View: Simple list');
   assert.equal(await page.locator('#sort-btn').innerText(), 'Sort: Priority');
-  checks.push('Default simple list, no filters, priority sort');
+  assert.equal(await page.evaluate(() => localStorage.length + sessionStorage.length), 0);
+  checks.push('Default simple list, no filters, priority sort, zero initial storage');
   async function chooseView(label) {
     await page.locator('#view-btn').click();
     await page.getByRole('button', { name: label, exact: true }).click();
@@ -159,23 +161,30 @@ try {
   await page.waitForFunction(() => !window.__taskBoard.state.draftBusy);
   assert.equal(fake.patchCalls.length, touchWrites + 1);
   checks.push('Native CDP touch drag sends exactly one marker write');
-  // Target project selection exercises full create-link-close from browser.
+  // Target project selection requires confirmation (zero writes on cancel) and transfers via native GraphQL transferIssue.
   const moveTitle = 'Edited browser draft';
   const movingRow = page.locator('.draft-row').filter({ has: page.getByRole('textbox', { name: 'Title: ' + moveTitle, exact: true }) });
+  page.once('dialog', (dialog) => dialog.dismiss());
+  await movingRow.locator('.draft-project').selectOption(second);
+  assert.equal(fake.state.graphqlCalls.length, 0);
+  assert.equal(await movingRow.locator('.draft-project').inputValue(), primary);
   page.once('dialog', (dialog) => dialog.accept());
   await movingRow.locator('.draft-project').selectOption(second);
   await page.waitForFunction((full) => window.__taskBoard.state.board.issues.some((issue) => issue.title === 'Edited browser draft' && issue.repository.full === full), second);
-  assert.equal(fake.repositories[0].issues.find((issue) => issue.title === moveTitle).state, 'closed');
+  assert.equal(fake.state.graphqlCalls.length, 1);
+  assert.equal(fake.repositories[0].issues.find((issue) => issue.title === moveTitle), undefined);
   assert.equal(fake.repositories[1].issues.find((issue) => issue.title === moveTitle).state, 'open');
-  checks.push('Browser project picker creates target, comments link and closes source; board refreshes');
-  // Marker absent from drawer text fields and rendered text.
+  checks.push('Browser project picker confirms transfer, sends zero writes on cancel, and transfers via native GraphQL without copy/close');
+  // Marker absent from drawer text fields and rendered text; closing restores focus to opener.
   const drawerRow = page.locator('.draft-row').filter({ has: page.getByRole('textbox', { name: 'Title: Capture ideas without starting an agent', exact: true }) });
   await drawerRow.getByRole('button', { name: 'Open task 1', exact: true }).click();
   await page.locator('#detail-view').waitFor({ state: 'visible' });
   assert.doesNotMatch(await page.locator('#detail-view').innerText(), /board-order/);
   assert.doesNotMatch(await page.locator('#overview-text').inputValue(), /board-order/);
+  assert.ok(await page.locator('#detail-meta a.github-link').count());
   await page.locator('#back-btn').click();
-  checks.push('Drawer body and overview never display order marker');
+  assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.getAttribute('aria-label')), 'Open task 1');
+  checks.push('Drawer body and overview never display order marker; GitHub link shown; close restores focus to opener');
   // Empty matching results retain Clear and add row, not a blank broken board.
   await page.locator('#filter-btn').click();
   await page.getByRole('button', { name: 'Questions', exact: true }).click();

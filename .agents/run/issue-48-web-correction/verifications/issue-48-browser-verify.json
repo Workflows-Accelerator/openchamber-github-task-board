@@ -1,0 +1,37 @@
+{
+  "checks": [
+    "Default simple list, no filters, priority sort, zero initial storage",
+    "All five views and draft list at both requested sizes; no horizontal page overflow",
+    "360px long project names do not overflow; all visible board targets at least 44px",
+    "Enter creates status:draft issue with description; inline title and description save",
+    "Accessible reorder writes only moved item body marker",
+    "Pointer drag reorder in touch-capable browser",
+    "Offline quick capture + local reorder + automatic sync preserve description",
+    "Settings rename persists and updates short project labels",
+    "View/filter/sort remembered across page reload; sign-in session retained",
+    "Keyboard opens sheet; Escape returns focus to opener",
+    "Native CDP touch drag sends exactly one marker write",
+    "Browser project picker confirms transfer, sends zero writes on cancel, and transfers via native GraphQL without copy/close",
+    "Drawer body and overview never display order marker; GitHub link shown; close restores focus to opener",
+    "Empty filter state remains actionable with Clear and draft add row"
+  ],
+  "screenshots": [
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-390-844-simple.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-390-844-cards.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-390-844-kanban.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-390-844-graph.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-390-844-pending.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-390-844-drafts.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-1280-800-simple.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-1280-800-cards.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-1280-800-kanban.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-1280-800-graph.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-1280-800-pending.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-1280-800-drafts.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-360-800-long-project-drafts.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-360-800-add-row-bottom.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-360-800-view-sheet.png",
+    "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/issue-48-web-360-800-empty-filter.png"
+  ],
+  "pageErrors": []
+}

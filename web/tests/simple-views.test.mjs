@@ -62,7 +62,7 @@ test('F7: dependency parser supports checklist and numbered prefixes and ignores
   );
 });
 test('marker hidden from body, overview, description and pending items; raw fingerprint retained', () => {
-  const raw = makeIssue({ number: 1, body: '## Overview\nIdea\n\n<!-- board-order: 2000 -->', labels: ['status:draft'] });
+  const raw = makeIssue({ number: 1, body: '## Overview\nIdea\n\n## Human Tasks\n- [ ] Approve rollout\n\n<!-- board-order: 2000 -->', labels: ['status:draft'] });
   const detail = buildIssueDetail(raw);
   const row = buildBoardListItem(raw);
   assert.doesNotMatch(detail.body, /board-order/);
@@ -70,6 +70,8 @@ test('marker hidden from body, overview, description and pending items; raw fing
   assert.doesNotMatch(row.description, /board-order/);
   assert.equal(detail.fingerprint, row.fingerprint);
   assert.equal(row.order, 2000);
+  assert.equal(detail.humanTasks.length, 1);
+  assert.equal(typeof detail.humanTasks[0].lineIndex, 'number');
 });
 
 async function fixture(t, options = {}) {
@@ -286,6 +288,29 @@ test('F5: reorder rebalances automatically across 60 successive midpoint bisecti
     assert.ok(hi > lo);
   }
   assert.ok(Number.isFinite(parseOrderMarker(fake.findIssue(1).body)));
+});
+
+test('F5: exhausted midpoint between two marked neighbours rebalances instead of returning 409', async (t) => {
+  let lo = 1000;
+  let hi = 2000;
+  while (true) {
+    const mid = midpointOrder(lo, hi);
+    if (!(mid > lo && mid < hi)) break;
+    hi = mid;
+  }
+  const draft = (number, title, order) => makeIssue({ number, title, body: 'Idea\n\n<!-- board-order: ' + order + ' -->', labels: ['status:draft'], repo: 'owner/alpha' });
+  const { client, fake } = await fixture(t, { repositories: [
+    { repo: 'owner/alpha', issues: [draft(1, 'Moving', 5000), draft(2, 'Lo', lo), draft(3, 'Hi', hi)] },
+    { repo: 'owner/beta', issues: [] },
+  ] });
+  const res = await client.request(endpoint + '/order', {
+    method: 'PUT',
+    body: { fingerprint: await fingerprint(client), previous: lo, next: hi },
+  });
+  assert.equal(res.status, 200, res.text);
+  const moved = parseOrderMarker(fake.findIssue(1).body);
+  assert.ok(moved > parseOrderMarker(fake.findIssue(2).body));
+  assert.ok(parseOrderMarker(fake.findIssue(3).body) > moved);
 });
 
 test('F5: reorder validates neighbour fingerprints, rejects stale/colliding boundaries, and handles multi-issue initialization and partial failure', async (t) => {
