@@ -342,23 +342,22 @@ test('Zero Emoji: Empty states and labels for new views contain zero emojis', ()
 
 test('panel/index.html defines containers for the three simplified views', () => {
   assert.ok(INDEX_HTML.includes('id="humanViewContainer"'), 'humanViewContainer must exist in index.html');
-  assert.ok(INDEX_HTML.includes('id="allTasksViewContainer"'), 'allTasksViewContainer must exist in index.html');
+  assert.ok(INDEX_HTML.includes('id="simpleListViewContainer"'), 'simpleListViewContainer must exist in index.html');
   assert.ok(INDEX_HTML.includes('id="questionsViewContainer"'), 'questionsViewContainer must exist in index.html');
 });
 
-test('panel/index.html defines view mode buttons in viewModeGroup', () => {
-  assert.ok(INDEX_HTML.includes('id="btnViewHuman"'), 'btnViewHuman button must exist');
-  assert.ok(INDEX_HTML.includes('id="btnViewAllTasks"'), 'btnViewAllTasks button must exist');
-  assert.ok(INDEX_HTML.includes('id="btnViewQuestions"'), 'btnViewQuestions button must exist');
-  assert.ok(INDEX_HTML.includes('data-mode="human"'), 'data-mode="human" must exist');
-  assert.ok(INDEX_HTML.includes('data-mode="all-tasks"'), 'data-mode="all-tasks" must exist');
-  assert.ok(INDEX_HTML.includes('data-mode="questions"'), 'data-mode="questions" must exist');
+test('panel/index.html defines one labelled five-view picker, no duplicate group', () => {
+  assert.equal(INDEX_HTML.includes('id="viewModeGroup"'), false);
+  for (const mode of ['simple', 'cards', 'kanban', 'graph', 'pending']) {
+    assert.ok(INDEX_HTML.includes(`data-mode="${mode}"`), `${mode} selectable`);
+  }
+  assert.ok(INDEX_HTML.includes('role="menuitemradio"'));
 });
 
-test('panel/index.html defines layout display styles for the three new views', () => {
-  assert.ok(INDEX_HTML.includes('body[data-layout="human"]'), 'CSS must define human layout selector');
-  assert.ok(INDEX_HTML.includes('body[data-layout="all-tasks"]'), 'CSS must define all-tasks layout selector');
-  assert.ok(INDEX_HTML.includes('body[data-layout="questions"]'), 'CSS must define questions layout selector');
+test('panel/index.html defines layout styles for five task views, questions are filter details', () => {
+  for (const mode of ['simple', 'cards', 'kanban', 'graph', 'pending']) assert.ok(INDEX_HTML.includes(`body[data-layout="${mode}"]`));
+  assert.equal(INDEX_HTML.includes('body[data-layout="questions"]'), false);
+  assert.ok(INDEX_HTML.includes('.questions-view'));
 });
 
 // ---------------------------------------------------------------------------
@@ -367,13 +366,13 @@ test('panel/index.html defines layout display styles for the three new views', (
 
 test('panel/main.ts defines render functions for all three simplified views', () => {
   assert.match(MAIN_TS, /function\s+renderHumanTasksView\s*\(/, 'main.ts must declare renderHumanTasksView');
-  assert.match(MAIN_TS, /function\s+renderAllTasksView\s*\(/, 'main.ts must declare renderAllTasksView');
+  assert.match(MAIN_TS, /function\s+renderSimpleListView\s*\(/, 'main.ts must declare renderSimpleListView');
   assert.match(MAIN_TS, /function\s+renderQuestionsView\s*\(/, 'main.ts must declare renderQuestionsView');
 });
 
-test('panel/main.ts dispatches active layout to renderHumanTasksView, renderAllTasksView, renderQuestionsView', () => {
+test('panel/main.ts dispatches active layout to renderHumanTasksView, renderSimpleListView, renderQuestionsView', () => {
   assert.ok(MAIN_TS.includes('renderHumanTasksView'), 'main.ts must call renderHumanTasksView');
-  assert.ok(MAIN_TS.includes('renderAllTasksView'), 'main.ts must call renderAllTasksView');
+  assert.ok(MAIN_TS.includes('renderSimpleListView'), 'main.ts must call renderSimpleListView');
   assert.ok(MAIN_TS.includes('renderQuestionsView'), 'main.ts must call renderQuestionsView');
 });
 
@@ -413,7 +412,7 @@ test('Loading vs Empty State: Simplified views distinguish loading state from ze
 test('View Switching: Inactive view containers are cleared on layout change to prevent stale DOM', () => {
   assert.ok(MAIN_TS.includes('currentRenderedLayout && currentRenderedLayout !== activeLayout'), 'Must check layout change');
   assert.ok(MAIN_TS.includes("elHumanViewContainer.innerHTML = ''"), 'Must clear humanViewContainer on switch away');
-  assert.ok(MAIN_TS.includes("elAllTasksViewContainer.innerHTML = ''"), 'Must clear allTasksViewContainer on switch away');
+  assert.ok(MAIN_TS.includes("elSimpleListViewContainer.innerHTML = ''"), 'Must clear simpleListViewContainer on switch away');
   assert.ok(MAIN_TS.includes("elQuestionsViewContainer.innerHTML = ''"), 'Must clear questionsViewContainer on switch away');
 });
 
@@ -430,13 +429,12 @@ test('Drawer reveal: Questions view targets existing drawerQuestionsContainer, n
   assert.ok(INDEX_HTML.includes('id="drawerQuestionsContainer"'), 'index.html must define drawerQuestionsContainer');
 });
 
-test('Accessibility: ARIA landmarks and labels configured on simplified views and controls', () => {
-  assert.ok(INDEX_HTML.includes('aria-label="Human Tasks View"'), 'humanViewContainer must have aria-label');
-  assert.ok(INDEX_HTML.includes('aria-label="All Tasks View"'), 'allTasksViewContainer must have aria-label');
-  assert.ok(INDEX_HTML.includes('aria-label="Questions View"'), 'questionsViewContainer must have aria-label');
-  assert.ok(INDEX_HTML.includes('id="btnViewHuman" title="Human Tasks View" aria-label="Human Tasks View"'), 'btnViewHuman must have aria-label');
-  assert.ok(INDEX_HTML.includes('id="btnViewAllTasks" title="All Tasks View" aria-label="All Tasks View"'), 'btnViewAllTasks must have aria-label');
-  assert.ok(INDEX_HTML.includes('id="btnViewQuestions" title="Questions View" aria-label="Questions View"'), 'btnViewQuestions must have aria-label');
-  assert.ok(MAIN_TS.includes('aria-expanded'), 'Inline answer toggles must manage aria-expanded');
-  assert.ok(MAIN_TS.includes('aria-level="2"'), 'All tasks group headers must have aria-level');
+test('Accessibility: ARIA landmarks and labels configured on task views and filter controls', () => {
+  for (const label of ['Pending items', 'Simple task list', 'Questions View', 'Task views', 'Task filters', 'Active filters', 'Sort tasks']) {
+    assert.ok(INDEX_HTML.includes(`aria-label="${label}"`), label);
+  }
+  assert.ok(INDEX_HTML.includes('aria-haspopup="menu"'));
+  assert.ok(INDEX_HTML.includes('aria-haspopup="dialog"'));
+  assert.ok(MAIN_TS.includes('aria-expanded'));
+  assert.ok(MAIN_TS.includes("row.setAttribute('tabindex', '0')"));
 });

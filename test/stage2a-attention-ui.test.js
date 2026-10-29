@@ -19,21 +19,18 @@ const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8
 // ============================================================================
 // 1. DOM Structure & Layout Contracts in panel/index.html
 // ============================================================================
-test('DOM: panel/index.html defines Attention View toolbar button and badge', () => {
-  assert.ok(INDEX_HTML.includes('id="btnViewAttention"'), '#btnViewAttention must exist in index.html');
-  assert.ok(INDEX_HTML.includes('data-mode="attention"'), 'btnViewAttention must specify data-mode="attention"');
-  assert.ok(INDEX_HTML.includes('id="attentionViewBadge"'), '#attentionViewBadge must exist in index.html');
-
-  // Must be in #viewModeGroup
-  const viewModeGroupIdx = INDEX_HTML.indexOf('id="viewModeGroup"');
-  const btnAttentionIdx = INDEX_HTML.indexOf('id="btnViewAttention"');
-  assert.ok(viewModeGroupIdx !== -1 && btnAttentionIdx > viewModeGroupIdx, 'btnViewAttention must be inside #viewModeGroup');
+test('DOM: Needs me is a filter, not a duplicate toolbar view', () => {
+  assert.ok(INDEX_HTML.includes('id="btnFilterToggle"'));
+  assert.ok(INDEX_HTML.includes('id="activeFilters"'));
+  assert.equal(INDEX_HTML.includes('id="btnViewAttention"'), false);
+  assert.ok(MAIN_TS.includes("['needs-me', 'human', 'questions']"));
 });
 
-test('DOM: panel/index.html defines layout menu items for Attention mode', () => {
-  assert.ok(INDEX_HTML.includes('id="viewOptAttention"'), '#viewOptAttention must exist in layout popover');
-  assert.ok(INDEX_HTML.includes('id="menuItemViewAttention"'), '#menuItemViewAttention must exist in sidebar overflow menu');
-  assert.ok(INDEX_HTML.includes('id="sidebarMenuContent"'), '#sidebarMenuContent must exist for sidebar overflow menu');
+test('DOM: one view menu replaces separate Attention menu entries', () => {
+  assert.ok(INDEX_HTML.includes('id="viewOptSimple"'));
+  assert.equal(INDEX_HTML.includes('id="viewOptAttention"'), false);
+  assert.equal(INDEX_HTML.includes('id="menuItemViewAttention"'), false);
+  assert.ok(INDEX_HTML.includes('id="sidebarMenuContent"'));
 });
 
 test('DOM: panel/index.html defines Attention View main container', () => {
@@ -52,7 +49,7 @@ test('CSS: panel/index.html defines required Attention View styles and tokens', 
     '.attention-card',
     '.attention-empty-state',
     '.view-mode-badge',
-    'body[data-layout="attention"]',
+    '.filter-chip',
   ];
 
   for (const sel of requiredSelectors) {
@@ -63,17 +60,10 @@ test('CSS: panel/index.html defines required Attention View styles and tokens', 
 // ============================================================================
 // 2. Main.ts Layout & Wiring Contracts
 // ============================================================================
-test('Main.ts: activeLayout and userLayoutPreference include "attention"', () => {
-  assert.match(
-    MAIN_TS,
-    /activeLayout.*'attention'/,
-    'activeLayout union must include "attention"'
-  );
-  assert.match(
-    MAIN_TS,
-    /userLayoutPreference.*'attention'/,
-    'userLayoutPreference union must include "attention"'
-  );
+test('Main.ts: Needs me is persisted with shared view state rather than a layout', () => {
+  assert.ok(MAIN_TS.includes('let viewState: ViewState = defaultViewState()'));
+  assert.ok(MAIN_TS.includes("viewState.filters.includes('needs-me')"));
+  assert.equal(MAIN_TS.includes('userLayoutPreference'), false);
 });
 
 test('Main.ts: defines renderAttentionView and wires it to layout switching', () => {
@@ -83,7 +73,7 @@ test('Main.ts: defines renderAttentionView and wires it to layout switching', ()
     'main.ts must declare renderAttentionView'
   );
   assert.ok(
-    MAIN_TS.includes("activeLayout === 'attention'"),
+    MAIN_TS.includes("viewState.filters.includes('needs-me')"),
     'main.ts must handle activeLayout === "attention"'
   );
   assert.ok(
@@ -153,46 +143,26 @@ test('groupIssuesByAttention correctly categorizes mock issues for Attention Vie
 // ============================================================================
 // 4. Runtime App Wiring & Layout Switching Integration
 // ============================================================================
-test('Runtime: clicking btnViewAttention activates Attention layout', () => {
-  const { elements, mockDoc } = createTestApp();
-
-  const btnAttention = elements.get('btnViewAttention');
-  assert.ok(btnAttention, '#btnViewAttention must exist in runtime DOM');
-
-  // Initially List view is active
-  assert.equal(btnAttention.getAttribute('aria-checked'), 'false');
-
-  // Click Attention View button
-  btnAttention.click();
-
-  assert.equal(mockDoc.body.getAttribute('data-layout'), 'attention', 'body data-layout must be "attention"');
-  assert.equal(btnAttention.getAttribute('aria-checked'), 'true', 'btnViewAttention must be checked');
-  assert.ok(btnAttention.classList.contains('active'), 'btnViewAttention must have active class');
-
-  // Verify other mode buttons are deactivated
-  assert.equal(elements.get('btnViewHuman').getAttribute('aria-checked'), 'false');
-  assert.equal(elements.get('btnViewList').getAttribute('aria-checked'), 'false');
+test('Runtime: Needs me chip filters Simple list without changing the view', () => {
+  const { app, elements, mockDoc } = createTestApp();
+  app.renderViews();
+  elements.get('btnFilterToggle').click();
+  const chip = elements.get('filterPopover').querySelector('[data-filter="needs-me"]');
+  assert.ok(chip);
+  chip.click();
+  assert.equal(mockDoc.body.getAttribute('data-layout'), 'simple');
+  assert.deepEqual(app.getState().viewState.filters, ['needs-me']);
+  assert.equal(elements.get('btnFilterToggle').getAttribute('aria-expanded'), 'true');
 });
 
-test('Runtime: layout toggle cycle includes Attention mode (Graph -> Attention -> Human)', () => {
-  const { elements, mockDoc } = createTestApp();
-
-  // Switch to graph mode
-  elements.get('btnViewGraph').click();
+test('Runtime: Needs me selection survives switching from Graph to Pending items', () => {
+  const { app, elements, mockDoc } = createTestApp();
+  app.setState({ viewState: { view: 'graph', filters: ['needs-me'], sort: 'priority' } });
+  app.renderViews();
   assert.equal(mockDoc.body.getAttribute('data-layout'), 'graph');
-
-  const btnToggle = elements.get('btnLayoutToggle');
-  assert.equal(btnToggle.title, 'View: Graph (click to switch to Attention)');
-
-  // Click toggle: should transition graph -> attention
-  btnToggle.click();
-  assert.equal(mockDoc.body.getAttribute('data-layout'), 'attention');
-  assert.equal(btnToggle.title, 'View: Attention (click to switch to Human Tasks)');
-
-  // Click toggle again: should transition attention -> human
-  btnToggle.click();
-  assert.equal(mockDoc.body.getAttribute('data-layout'), 'human');
-  assert.equal(btnToggle.title, 'View: Human Tasks (click to switch to All Tasks)');
+  elements.get('viewOptPending').click();
+  assert.equal(mockDoc.body.getAttribute('data-layout'), 'pending');
+  assert.deepEqual(app.getState().viewState.filters, ['needs-me']);
 });
 
 // ============================================================================
@@ -246,13 +216,11 @@ test('Runtime: renderViews in Attention mode populates action queues and badge',
   app.setState({ issues: mockIssues });
 
   // Switch to Attention mode
-  elements.get('btnViewAttention').click();
+  app.setState({ viewState: { view: 'simple', filters: ['needs-me'], sort: 'priority' } });
   app.renderViews();
 
-  // 1. Check toolbar badge
-  const badge = elements.get('attentionViewBadge');
-  assert.equal(badge.textContent, '3', 'Badge must display total count of 3 attention items');
-  assert.notEqual(badge.style.display, 'none', 'Badge must be visible when total > 0');
+  // Active filter chip replaces the old toolbar count badge.
+  assert.ok(elements.get('activeFilters').textContent.includes('Needs me'));
 
   // 2. Check container contents
   const container = elements.get('attentionViewContainer');
@@ -294,6 +262,7 @@ test('Runtime: sub-filter pills filter queue visibility', () => {
     {
       number: 22,
       title: 'feat: needs review',
+      repo: 'review/repo',
       body: 'Check work',
       labels: [{ name: 'phase:verification' }, { name: 'attention:needs-review' }],
       status: 'in-review',
@@ -303,24 +272,19 @@ test('Runtime: sub-filter pills filter queue visibility', () => {
   ];
 
   app.setState({ issues: mockIssues });
-  elements.get('btnViewAttention').click();
+  app.setState({ viewState: { view: 'simple', filters: ['needs-me'], sort: 'priority' } });
   app.renderViews();
 
   const container = elements.get('attentionViewContainer');
 
-  // Find sub-filter buttons
-  const subFilterBtns = container.querySelectorAll('.attention-sub-filter-btn');
-  assert.equal(subFilterBtns.length, 4, 'Must render 4 sub-filter tabs');
+  // One Filter control replaces the old attention presets. Combine Needs me
+  // with stage to narrow the same action queues without hiding other functions.
+  assert.equal(container.querySelectorAll('.attention-sub-filter-btn').length, 0);
+  app.setState({ viewState: { view: 'simple', filters: ['needs-me', 'project:review/repo'], sort: 'priority' } });
+  app.renderViews();
+  assert.ok(container.innerHTML.includes('#22'));
+  assert.ok(!container.innerHTML.includes('#11'));
 
-  const decisionTab = Array.from(subFilterBtns).find((b) => b.getAttribute('data-subfilter') === 'needs-decision');
-  assert.ok(decisionTab, 'Needs Decision sub-filter button must exist');
-
-  // Click Needs Decision sub-filter
-  decisionTab.click();
-
-  const filteredHtml = container.innerHTML;
-  assert.ok(filteredHtml.includes('#11'), 'Issue #11 must be visible under needs-decision filter');
-  assert.ok(!filteredHtml.includes('#22'), 'Issue #22 (needs-review) must be hidden when filtering by needs-decision');
 });
 
 test('Runtime: empty state banner renders when zero attention items exist', () => {
@@ -339,11 +303,11 @@ test('Runtime: empty state banner renders when zero attention items exist', () =
   ];
 
   app.setState({ issues: mockIssues });
-  elements.get('btnViewAttention').click();
+  app.setState({ viewState: { view: 'simple', filters: ['needs-me'], sort: 'priority' } });
   app.renderViews();
 
-  const badge = elements.get('attentionViewBadge');
-  assert.equal(badge.style.display, 'none', 'Badge must be hidden when attention count is 0');
+  assert.equal(elements.has('attentionViewBadge'), false, 'duplicate badge removed');
+  assert.equal(elements.get('attentionViewContainer').querySelectorAll('.attention-card').length, 0);
 
   const container = elements.get('attentionViewContainer');
   assert.ok(
@@ -368,7 +332,7 @@ test('Runtime: clicking attention card opens drawer for that issue', () => {
   ];
 
   app.setState({ issues: mockIssues });
-  elements.get('btnViewAttention').click();
+  app.setState({ viewState: { view: 'simple', filters: ['needs-me'], sort: 'priority' } });
   app.renderViews();
 
   const container = elements.get('attentionViewContainer');
@@ -544,10 +508,7 @@ test('Runtime: Card rendering injects alert badges and excludes them on neutral 
 
   app.setState({ issues: mockIssues });
 
-  // Use flat list view (currentGroupBy = 'none')
-  const selectGroupBy = elements.get('selectGroupBy');
-  selectGroupBy.value = 'none';
-  selectGroupBy.dispatchEvent({ type: 'change', target: selectGroupBy });
+  app.setState({ viewState: { view: 'cards', filters: [], sort: 'priority' } });
 
   app.renderViews();
 

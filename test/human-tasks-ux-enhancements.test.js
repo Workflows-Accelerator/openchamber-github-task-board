@@ -131,13 +131,13 @@ test('panel/index.html defines categorized view dropdown and file preview modal'
   // Dropdown button and popover
   assert.ok(INDEX_HTML.includes('id="btnViewSelect"'), 'btnViewSelect exists in index.html');
   assert.ok(INDEX_HTML.includes('id="viewSelectPopover"'), 'viewSelectPopover exists in index.html');
-  assert.ok(INDEX_HTML.includes('id="viewOptHuman"'), 'viewOptHuman exists in index.html');
-  assert.ok(INDEX_HTML.includes('id="viewOptQuestions"'), 'viewOptQuestions exists in index.html');
+  assert.ok(INDEX_HTML.includes('id="viewOptPending"'), 'viewOptHuman exists in index.html');
+  assert.ok(INDEX_HTML.includes('id="viewOptSimple"'), 'viewOptQuestions exists in index.html');
   assert.ok(INDEX_HTML.includes('id="viewOptKanban"'), 'viewOptKanban exists in index.html');
-  assert.ok(INDEX_HTML.includes('id="viewOptList"'), 'viewOptList exists in index.html');
+  assert.ok(INDEX_HTML.includes('id="viewOptCards"'), 'viewOptList exists in index.html');
   assert.ok(INDEX_HTML.includes('id="viewOptGraph"'), 'viewOptGraph exists in index.html');
-  assert.ok(INDEX_HTML.includes('TASKS'), 'TASKS category header exists');
-  assert.ok(INDEX_HTML.includes('ISSUES'), 'ISSUES category header exists');
+  assert.ok(INDEX_HTML.includes('aria-label="Task views"'), 'single view menu is labelled');
+  assert.ok(!INDEX_HTML.includes('id="viewModeGroup"'), 'duplicate view group removed');
 
   // File Preview Modal
   assert.ok(INDEX_HTML.includes('id="filePreviewModalBackdrop"'), 'filePreviewModalBackdrop exists');
@@ -161,47 +161,20 @@ test('panel/index.html defines categorized view dropdown and file preview modal'
 // ==========================================
 import { createTestApp } from './test-app-harness.js';
 
-test('Toolbar: categorized dropdown provides Tasks and Issues navigation', () => {
+test('Toolbar: one picker provides all five task views', () => {
   const { elements, app } = createTestApp();
-
-  const btnViewSelect = elements.get('btnViewSelect');
-  const viewSelectPopover = elements.get('viewSelectPopover');
-  const viewOptHuman = elements.get('viewOptHuman');
-  const viewOptQuestions = elements.get('viewOptQuestions');
-  const viewOptKanban = elements.get('viewOptKanban');
-  const viewOptList = elements.get('viewOptList');
-  const viewOptGraph = elements.get('viewOptGraph');
-  const currentLabel = elements.get('viewSelectCurrentLabel');
-
-  assert.ok(btnViewSelect, '#btnViewSelect exists in runtime DOM');
-  assert.ok(viewSelectPopover, '#viewSelectPopover exists in runtime DOM');
-  assert.ok(viewOptHuman, '#viewOptHuman exists');
-  assert.ok(viewOptQuestions, '#viewOptQuestions exists');
-  assert.ok(viewOptKanban, '#viewOptKanban exists');
-  assert.ok(viewOptList, '#viewOptList exists');
-  assert.ok(viewOptGraph, '#viewOptGraph exists');
-
-  // Toggle popover
-  assert.equal(viewSelectPopover.style.display, 'none', 'popover initially hidden');
-  btnViewSelect.click();
-  assert.equal(viewSelectPopover.style.display, 'flex', 'popover visible on click');
-  assert.equal(btnViewSelect.getAttribute('aria-expanded'), 'true');
-
-  // Select Human Tasks view
-  viewOptHuman.click();
-  assert.equal(currentLabel.textContent, 'Human Tasks', 'current label updated to Human Tasks');
-  assert.equal(viewSelectPopover.style.display, 'none', 'popover closes after selection');
-  assert.equal(btnViewSelect.getAttribute('aria-expanded'), 'false');
-
-  // Select Questions view
-  btnViewSelect.click();
-  viewOptQuestions.click();
-  assert.equal(currentLabel.textContent, 'Questions', 'current label updated to Questions');
-
-  // Select Board (Kanban) view
-  btnViewSelect.click();
-  viewOptKanban.click();
-  assert.equal(currentLabel.textContent, 'Board', 'current label updated to Board');
+  const picker = elements.get('btnViewSelect');
+  const popover = elements.get('viewSelectPopover');
+  assert.equal(popover.style.display, 'none');
+  for (const [id, mode, label] of [['Simple', 'simple', 'Simple list'], ['Cards', 'cards', 'Cards'], ['Kanban', 'kanban', 'Kanban board'], ['Graph', 'graph', 'Graph'], ['Pending', 'pending', 'Pending items']]) {
+    picker.click();
+    assert.equal(picker.getAttribute('aria-expanded'), 'true');
+    elements.get(`viewOpt${id}`).click();
+    assert.equal(app.getState().viewState.view, mode);
+    assert.equal(elements.get('viewSelectCurrentLabel').textContent, label);
+    assert.equal(popover.style.display, 'none');
+    assert.equal(picker.getAttribute('aria-expanded'), 'false');
+  }
 });
 
 test('Human Tasks View: completed tasks remain visible for review and unchecking; all-done issues move to bottom', () => {
@@ -245,7 +218,7 @@ test('Human Tasks View: completed tasks remain visible for review and unchecking
   app.setState({ issues: sampleIssues, currentRepo: 'owner/repo' });
 
   // Switch to Human Tasks view
-  const humanBtn = elements.get('btnViewHuman');
+  const humanBtn = elements.get('viewOptPending');
   humanBtn.click();
 
   const humanContainer = elements.get('humanViewContainer');
@@ -304,8 +277,8 @@ The batch human review gate (#12) parks issues on status:needs-human.
   app.setState({ issues: [issueWithTableQuestion], currentRepo: 'owner/repo' });
 
   // Switch to Questions view
-  const questionsBtn = elements.get('btnViewQuestions');
-  questionsBtn.click();
+  app.setState({ viewState: { view: 'simple', filters: ['questions'], sort: 'priority' } });
+  app.renderViews();
 
   const questionsContainer = elements.get('questionsViewContainer');
   assert.ok(questionsContainer, 'questionsViewContainer exists');

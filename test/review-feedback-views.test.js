@@ -24,73 +24,26 @@ const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8
 // ==========================================
 // 1. Icon Distinction & Accessibility
 // ==========================================
-test('Icons: All Tasks view-mode button has distinct checklist SVG icon compared to List', () => {
+test('Views: labelled choices replace ambiguous duplicate icon buttons', () => {
   const { elements } = createTestApp();
-
-  const allTasksBtn = elements.get('btnViewAllTasks');
-  const listBtn = elements.get('btnViewList');
-  const humanBtn = elements.get('btnViewHuman');
-  const questionsBtn = elements.get('btnViewQuestions');
-
-  assert.ok(allTasksBtn, '#btnViewAllTasks must exist in runtime DOM');
-  assert.ok(listBtn, '#btnViewList must exist in runtime DOM');
-  assert.ok(humanBtn, '#btnViewHuman must exist in runtime DOM');
-  assert.ok(questionsBtn, '#btnViewQuestions must exist in runtime DOM');
-
-  // Extract path data from runtime elements
-  const extractPath = (el) => {
-    const m = el.innerHTML.match(/<path\s+d="([^"]+)"/);
-    return m ? m[1] : '';
-  };
-
-  const pathAllTasks = extractPath(allTasksBtn);
-  const pathList = extractPath(listBtn);
-  const pathHuman = extractPath(humanBtn);
-  const pathQuestions = extractPath(questionsBtn);
-
-  assert.ok(pathAllTasks, 'All Tasks must have a valid SVG path');
-  assert.ok(pathList, 'List must have a valid SVG path');
-  assert.ok(pathHuman, 'Human must have a valid SVG path');
-  assert.ok(pathQuestions, 'Questions must have a valid SVG path');
-
-  // Assert paths are distinct from each other
-  assert.notEqual(pathAllTasks, pathList, 'All Tasks icon must not match List icon');
-  assert.notEqual(pathAllTasks, pathHuman, 'All Tasks icon must not match Human Tasks icon');
-  assert.notEqual(pathAllTasks, pathQuestions, 'All Tasks icon must not match Questions icon');
-  assert.notEqual(pathHuman, pathList, 'Human Tasks icon must not match List icon');
-  assert.notEqual(pathQuestions, pathList, 'Questions icon must not match List icon');
-
-  // Assert All Tasks contains checkmark segments (checklist shape)
-  assert.ok(
-    pathAllTasks.includes('5.54') || pathAllTasks.includes('7.46') || pathAllTasks.includes('15.46'),
-    'All Tasks icon must contain checklist checkmark coordinates'
-  );
-
-  // Assert accessible attributes are preserved in runtime DOM
-  assert.equal(allTasksBtn.title, 'All Tasks View', 'All Tasks button has title');
-  assert.equal(allTasksBtn.getAttribute('aria-label'), 'All Tasks View', 'All Tasks button has aria-label');
-  assert.equal(allTasksBtn.getAttribute('role'), 'radio', 'All Tasks button has role="radio"');
-  assert.equal(allTasksBtn.getAttribute('aria-checked'), 'false', 'All Tasks button has aria-checked');
+  const choices = ['Simple', 'Cards', 'Kanban', 'Graph', 'Pending'].map((name) => elements.get(`viewOpt${name}`));
+  assert.equal(new Set(choices.map((choice) => choice.textContent)).size, 5);
+  for (const choice of choices) {
+    assert.equal(choice.tagName, 'BUTTON');
+    assert.equal(choice.getAttribute('role'), 'menuitemradio');
+    assert.ok(choice.textContent.trim());
+  }
+  assert.equal(INDEX_HTML.includes('id="btnViewAllTasks"'), false);
 });
 
-test('Icons: sidebar layout toggle icon updates with distinct checklist SVG in all-tasks mode', () => {
-  const { elements } = createTestApp();
-
-  // Trigger switch to all-tasks mode via button click in runtime DOM
-  elements.get('btnViewAllTasks').click();
-
-  const btnLayoutToggle = elements.get('btnLayoutToggle');
-  assert.ok(btnLayoutToggle, 'btnLayoutToggle element exists');
-  assert.equal(btnLayoutToggle.title, 'View: All Tasks (click to switch to Questions)');
-  assert.equal(btnLayoutToggle.getAttribute('aria-label'), 'View: All Tasks (click to switch to Questions)');
-  assert.ok(
-    btnLayoutToggle.innerHTML.includes('M22 7h-9v2h9V7zm0 8h-9v2h9v-2z'),
-    'Sidebar toggle button must render distinct checklist SVG in all-tasks mode'
-  );
-  assert.ok(
-    btnLayoutToggle.innerHTML.includes('M5.54 11L2 7.46'),
-    'Sidebar toggle button must include checklist checkmark coordinates'
-  );
+test('Views: single picker label and checked state follow Pending items selection', () => {
+  const { elements, mockDoc } = createTestApp();
+  elements.get('viewOptPending').click();
+  assert.equal(mockDoc.body.getAttribute('data-layout'), 'pending');
+  assert.equal(elements.get('viewSelectCurrentLabel').textContent, 'Pending items');
+  assert.equal(elements.get('viewOptPending').getAttribute('aria-checked'), 'true');
+  assert.equal(elements.get('viewOptSimple').getAttribute('aria-checked'), 'false');
+  assert.equal(INDEX_HTML.includes('id="btnLayoutToggle"'), false);
 });
 
 // ==========================================

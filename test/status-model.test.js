@@ -415,24 +415,10 @@ test('index.html and main.ts adhere strictly to 8-stage layout and reconciler co
   const html = fs.readFileSync(path.join(here, '..', 'panel', 'index.html'), 'utf8');
   const mainTs = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
 
-  // Order: Draft | Backlog | To Do | Planned | In Progress | Needs Human | Review | Done
-  const tabMatches = [...html.matchAll(/data-tab="([a-z-]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(tabMatches, [
-    'all',
-    'draft',
-    'backlog',
-    'todo',
-    'planned',
-    'in-progress',
-    'needs-human',
-    'in-review',
-    'done',
-  ]);
-
-  // Tab badge counts exist in html
-  assert.ok(html.includes('id="tabCountDraft"'));
-  assert.ok(html.includes('id="tabCountPlanned"'));
-  assert.ok(html.includes('id="tabCountNeedsHuman"'));
+  // Stages moved from tabs to one multi-select Filter; Kanban retains its columns.
+  assert.deepEqual([...html.matchAll(/data-tab="([a-z-]+)"/g)], []);
+  assert.ok(html.includes('id="filterPopover"'));
+  assert.ok(mainTs.includes('STAGE_IDS.map((stage) => `stage:${stage}`)'));
 
   // Kanban columns exist in html in order
   const colMatches = [...html.matchAll(/data-column="([a-z-]+)"/g)].map((m) => m[1]);
