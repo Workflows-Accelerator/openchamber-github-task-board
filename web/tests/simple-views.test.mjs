@@ -131,32 +131,86 @@ test('draft routes validate inputs, sign-in, CSRF and draft-only state', async (
   fake.mutateIssue(1, (issue) => { issue.labels = [{ name: 'status:todo' }]; });
   assert.equal((await client.request(endpoint + '/draft', { method: 'PUT', body: { fingerprint: await fingerprint(client), title: 'No', description: '' } })).json.error, 'not_draft');
 });
-test('move creates target first, links source, then closes source without deleting it', async (t) => {
-  const { fake, client } = await fixture(t);
-  const moved = await client.request(endpoint + '/move', { method: 'PUT', body: { fingerprint: await fingerprint(client), target: 'owner/beta' } });
+test('F1: move requires confirmation and transfers draft via native GraphQL transferIssue preserving history without copy or close', async (t) => {
+  const { fake, client } = await fixture(t, {
+    repositories: [
+      { repo: 'owner/alpha', issues: [makeIssue({ number: 1, title: 'Idea', body: 'Body\n\n<!-- board-order: 1000 -->', labels: ['status:draft', 'priority:high'], repo: 'owner/alpha', created_at: '2026-09-15T08:00:00Z' })] },
+      { repo: 'owner/beta', issues: [makeIssue({ number: 1, title: 'Existing beta #1', body: 'Stay untouched', labels: ['status:todo'], repo: 'owner/beta' })] },
+    ],
+  });
+  const unconfirmed = await client.request(endpoint + '/move', {
+    method: 'PUT',
+    body: { fingerprint: await fingerprint(client), target: 'owner/beta' },
+  });
+  assert.equal(unconfirmed.status, 400);
+  assert.equal(unconfirmed.json.error, 'confirmation_required');
+  assert.equal(fake.requests.filter((r) => r.method !== 'GET').length, 0);
+
+  const originalNodeId = fake.findIssue(1, 'owner/alpha').node_id;
+  const moved = await client.request(endpoint + '/move', {
+    method: 'PUT',
+    body: { fingerprint: await fingerprint(client), target: 'owner/beta', confirmed: true },
+  });
   assert.equal(moved.status, 200, moved.text);
-  assert.equal(fake.findIssue(1).state, 'closed');
-  const target = fake.findIssue(1, 'owner/beta');
-  assert.equal(target.title, 'Idea'); assert.equal(target.state, 'open');
-  assert.equal(parseOrderMarker(target.body), 1000);
-  assert.match(fake.state.commentCalls[0].payload.body, /https:\/\/github.com\/owner\/beta\/issues\/1/);
+  assert.equal(fake.findIssue(1, 'owner/alpha'), null);
+  assert.equal(fake.findIssue(1, 'owner/beta').title, 'Existing beta #1');
+  const transferred = fake.findIssue(2, 'owner/beta');
+  assert.ok(transferred);
+  assert.equal(transferred.title, 'Idea');
+  assert.equal(transferred.state, 'open');
+  assert.equal(transferred.created_at, '2026-09-15T08:00:00Z');
+  assert.equal(transferred.node_id, originalNodeId);
+  assert.equal(parseOrderMarker(transferred.body), 1000);
+  assert.equal(moved.json.issue.key, 'owner/beta#2');
+  assert.equal(moved.json.issue.number, 2);
+  assert.equal(moved.json.sourceKey, 'owner/alpha#1');
+  assert.equal(moved.json.targetUrl, 'https://github.com/owner/beta/issues/2');
+  assert.equal(fake.state.commentCalls.length, 0);
+  assert.equal(fake.patchCalls.length, 0);
   const writes = fake.requests.filter((r) => r.method !== 'GET');
-  assert.deepEqual(writes.map((r) => r.method + ' ' + r.path), ['POST /repos/owner/beta/issues', 'POST /repos/owner/alpha/issues/1/comments', 'PATCH /repos/owner/alpha/issues/1']);
+  assert.deepEqual(writes.map((r) => r.method + ' ' + r.path), ['POST /graphql']);
 });
-test('failed target create never comments or closes source', async (t) => {
-  const { fake, client } = await fixture(t);
-  const fp = await fingerprint(client); fake.setRepoFailing('owner/beta', true);
-  assert.equal((await client.request(endpoint + '/move', { method: 'PUT', body: { fingerprint: fp, target: 'owner/beta' } })).status, 502);
-  assert.equal(fake.findIssue(1).state, 'open');
-  assert.equal(fake.state.commentCalls.length, 0); assert.equal(fake.patchCalls.length, 0);
+
+test('F1: GraphQL permission refusal on transferIssue preserves source draft without copy/close fallback', async (t) => {
+  const { fake, client } = await fixture(t, {
+    graphqlHook: () => ({
+      status: 200,
+      payload: {
+        data: { transferIssue: null },
+        errors: [{ type: 'FORBIDDEN', message: 'Resource not accessible by integration' }],
+      },
+    }),
+  });
+  const fp = await fingerprint(client);
+  const res = await client.request(endpoint + '/move', {
+    method: 'PUT',
+    body: { fingerprint: fp, target: 'owner/beta', confirmed: true },
+  });
+  assert.equal(res.status, 403);
+  assert.equal(res.json.error, 'transfer_forbidden');
+  assert.equal(fake.findIssue(1, 'owner/alpha')?.state, 'open');
+  assert.equal(fake.findIssue(1, 'owner/beta'), null);
+  assert.equal(fake.state.commentCalls.length, 0);
+  assert.equal(fake.patchCalls.length, 0);
 });
-test('halfway move failure returns target link and explicit no-retry warning', async (t) => {
-  const { fake, client } = await fixture(t, { patchHook: () => ({ status: 500 }) });
-  const moved = await client.request(endpoint + '/move', { method: 'PUT', body: { fingerprint: await fingerprint(client), target: 'owner/beta' } });
-  assert.equal(moved.status, 409); assert.equal(moved.json.error, 'partial_move');
-  assert.match(moved.json.targetUrl, /owner\/beta\/issues\/1/);
-  assert.match(moved.json.message, /Do not repeat move/);
-  assert.equal(fake.findIssue(1).state, 'open'); assert.ok(fake.findIssue(1, 'owner/beta'));
+
+test('F1: ambiguous transferIssue outcome returns 502 write_outcome_unknown without blind retry or source close', async (t) => {
+  const { fake, client } = await fixture(t, {
+    graphqlHook: () => ({
+      status: 502,
+      payload: { message: 'Bad Gateway after mutation dispatch' },
+    }),
+  });
+  const moved = await client.request(endpoint + '/move', {
+    method: 'PUT',
+    body: { fingerprint: await fingerprint(client), target: 'owner/beta', confirmed: true },
+  });
+  assert.equal(moved.status, 502);
+  assert.equal(moved.json.error, 'write_outcome_unknown');
+  assert.equal(moved.json.sourceKey, 'owner/alpha#1');
+  assert.equal(moved.json.targetRepo, 'owner/beta');
+  assert.equal(fake.requests.filter((r) => r.path === '/graphql').length, 1);
+  assert.equal(fake.patchCalls.length, 0);
 });
 test('drawer overview and checklist body saves retain hidden marker', async (t) => {
   const { client, fake } = await fixture(t);
@@ -215,13 +269,6 @@ test('GitHub ETag rejection during reorder is a conflict, never a successful ord
   const result = await client.request(endpoint + '/order', { method: 'PUT', body: { fingerprint: await fingerprint(client), previous: null, next: 1000 } });
   assert.equal(result.status, 409); assert.equal(result.json.error, 'conflict');
   assert.equal(parseOrderMarker(fake.findIssue(1).body), 1000);
-});
-test('failed link comment leaves source open with target link and no blind move retry', async (t) => {
-  const { client, fake } = await fixture(t, { commentHook: () => ({ status: 500 }) });
-  const result = await client.request(endpoint + '/move', { method: 'PUT', body: { fingerprint: await fingerprint(client), target: 'owner/beta' } });
-  assert.equal(result.status, 409); assert.equal(result.json.error, 'partial_move');
-  assert.match(result.json.targetUrl, /owner\/beta\/issues\/1/);
-  assert.equal(fake.findIssue(1).state, 'open'); assert.equal(fake.patchCalls.length, 0);
 });
 
 test('an empty friendly-title heading cannot expose hidden order marker as title', () => {

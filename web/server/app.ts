@@ -994,7 +994,6 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         });
       }
 
-      let movedTo: string | null = null;
       let baseSectionId = '';
       let baseText = '';
       let targetText = '';
@@ -1089,6 +1088,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             }
             patch = { body: setOrderMarker(fresh.item.body ?? '', order) };
           } else {
+            if (op.data?.confirmed !== true) {
+              throw new HttpError(400, 'confirmation_required', 'Confirm moving this draft before transferring it on GitHub');
+            }
             if (typeof op.data.target !== 'string' || !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(op.data.target)) {
               throw new HttpError(400, 'invalid_target', 'Select a discovered target project');
             }
@@ -1097,27 +1099,100 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             if (target.full.toLowerCase() === repository.full.toLowerCase() || target.archived || !target.hasIssues) {
               throw new HttpError(400, 'invalid_target', 'Select a different writable project');
             }
-            const created = await clientFor(target).createIssue({ title: fresh.item.title,
-              body: fresh.item.body ?? '', labels: labelNames(fresh.item) }).catch(mapGitHubError);
-            if (!Number.isSafeInteger(created.item.number) || created.item.number <= 0) {
-              throw new HttpError(502, 'write_outcome_unknown', 'Target creation outcome unknown; source was not closed. Inspect target project before retrying.');
+            const targetClient = clientFor(target);
+            const targetRepoRaw = await targetClient.getRepository().catch(mapGitHubError);
+            if (targetRepoRaw.archived || targetRepoRaw.has_issues === false || targetRepoRaw.disabled) {
+              throw new HttpError(400, 'invalid_target', 'Select a different writable project');
             }
-            movedTo = `https://github.com/${target.full}/issues/${created.item.number}`;
-            if (created.item.title !== fresh.item.title || (created.item.body ?? '') !== (fresh.item.body ?? '') || created.item.state !== 'open') {
-              throw new HttpError(409, 'partial_move', 'Target creation response did not match the draft; source was not closed. Do not repeat move.', { targetUrl: movedTo });
+            const issueNodeId = typeof fresh.item.node_id === 'string' ? fresh.item.node_id.trim() : '';
+            const targetRepoNodeId = typeof targetRepoRaw.node_id === 'string' ? targetRepoRaw.node_id.trim() : '';
+            if (!issueNodeId || !targetRepoNodeId) {
+              throw new HttpError(502, 'github_unavailable', 'GitHub did not provide GraphQL node identifiers; the draft remains in its current project');
             }
-            // Never close source unless creation and its link comment both succeeded.
-            try { await github.addComment(number, `Moved to ${movedTo}`); }
-            catch { throw new HttpError(409, 'partial_move', 'Target created, source remains open. Do not repeat move; inspect both issues.', { targetUrl: movedTo }); }
-            // Comment creation may change GitHub's ETag; re-read and compare content.
-            const afterComment = await github.getIssue(number).catch(() => {
-              throw new HttpError(409, 'partial_move', 'Target created; source refresh failed, so source was not closed. Do not repeat move.', { targetUrl: movedTo });
-            });
-            if (issueFingerprint(afterComment.item, repository) !== supplied) {
-              throw new HttpError(409, 'partial_move', 'Target created, source changed and was not closed. Do not repeat move.', { targetUrl: movedTo });
+            const sourceKey = issueKey(repository, number);
+            let transferred;
+            try {
+              transferred = await github.transferIssue({
+                issueId: issueNodeId,
+                repositoryId: targetRepoNodeId,
+              });
+            } catch (error) {
+              if (error instanceof GitHubError) {
+                if (error.kind === 'forbidden' || error.kind === 'unauthorized') {
+                  throw new HttpError(
+                    403,
+                    'transfer_forbidden',
+                    `GitHub refused permission to transfer this draft to ${target.full} with the configured token; the draft remains in ${repository.full}.`,
+                  );
+                }
+                if (error.kind === 'invalid') {
+                  throw new HttpError(
+                    422,
+                    'transfer_rejected',
+                    `GitHub rejected transferring this draft to ${target.full}; the draft remains in ${repository.full}.`,
+                  );
+                }
+                if (error.kind === 'rate_limited') {
+                  mapGitHubError(error);
+                }
+              }
+              throw new HttpError(
+                502,
+                'write_outcome_unknown',
+                'Transfer outcome could not be confirmed from GitHub; refresh the board to reconcile before editing or retrying.',
+                { sourceKey, targetRepo: target.full },
+              );
             }
-            fresh.etag = afterComment.etag;
-            patch = { state: 'closed' };
+            if (transferred.repositoryFullName.toLowerCase() !== target.full.toLowerCase()) {
+              throw new HttpError(
+                502,
+                'write_outcome_unknown',
+                'Transfer destination did not match the selected project; refresh the board to reconcile.',
+                { sourceKey, targetRepo: target.full, targetUrl: transferred.url },
+              );
+            }
+            let targetRead: IssueRead;
+            try {
+              targetRead = await targetClient.getIssue(transferred.number);
+            } catch {
+              throw new HttpError(
+                502,
+                'write_outcome_unknown',
+                'Draft transfer completed or is in progress, but reading the moved issue failed; refresh the board to reconcile.',
+                { sourceKey, targetRepo: target.full, targetNumber: transferred.number, targetUrl: transferred.url },
+              );
+            }
+            if (
+              targetRead.item.pull_request ||
+              targetRead.item.number !== transferred.number ||
+              targetRead.item.state !== 'open' ||
+              targetRead.item.title !== fresh.item.title ||
+              (targetRead.item.body ?? '') !== (fresh.item.body ?? '')
+            ) {
+              throw new HttpError(
+                502,
+                'write_outcome_unknown',
+                'Transferred issue state could not be verified in the target project; refresh the board to reconcile.',
+                { sourceKey, targetRepo: target.full, targetNumber: transferred.number, targetUrl: transferred.url },
+              );
+            }
+            const canonicalUrl = targetRead.item.html_url || transferred.url;
+            log(`transfer source=${sourceKey} target=${issueKey(target, transferred.number)}`);
+            return {
+              status: 200,
+              body: {
+                issue: buildIssueDetail(targetRead.item, target),
+                listItem: buildBoardListItem(targetRead.item, target),
+                sourceKey,
+                sourceRepository: repository.full,
+                sourceNumber: number,
+                targetRepository: target.full,
+                targetNumber: transferred.number,
+                targetUrl: canonicalUrl,
+                savedAt: new Date(now()).toISOString(),
+                statusOptions: statusOptions(),
+              },
+            };
           }
         } else if (op.kind === 'section') {
           patch = { body: replaceSectionText(stripOrderMarker(fresh.item.body ?? ''), baseSectionId, op.text) };
@@ -1160,7 +1235,6 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       try {
         await github.updateIssue(number, patch, { etag: fresh.etag });
       } catch (error) {
-        if (movedTo) throw new HttpError(409, 'partial_move', 'Target created; source close failed or is uncertain. Do not repeat move; inspect both issues.', { targetUrl: movedTo });
         if (error instanceof GitHubError && error.status === 412) {
           const reread = await github.getIssue(number).catch(mapGitHubError);
           throw new HttpError(409, 'conflict', 'This task changed on GitHub while saving; nothing was written', {
@@ -1178,14 +1252,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       try {
         reread = await github.getIssue(number);
       } catch {
-        if (movedTo) throw new HttpError(409, 'partial_move', 'Target created; source close could not be verified. Do not repeat move.', { targetUrl: movedTo });
         throw new HttpError(502, 'write_outcome_unknown', 'Outcome unknown \u2014 check the issue on GitHub');
       }
 
       const currentItem = reread.item;
       let verified = false;
 
-      if (op.kind === 'draft' || op.kind === 'order' || op.kind === 'move') {
+      if (op.kind === 'draft' || op.kind === 'order') {
         verified = Object.entries(patch).every(([key, value]) => currentItem[key] === value);
       } else if (op.kind === 'section') {
         const curSec = findSections(currentItem.body ?? '').find((s) => s.id === op.sectionId);
@@ -1234,13 +1307,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           body: {
             issue: buildIssueDetail(currentItem, repository),
             savedAt: new Date(now()).toISOString(),
-            ...(movedTo ? { targetUrl: movedTo } : {}),
             statusOptions: statusOptions(),
           },
         };
       }
 
-      if (movedTo) throw new HttpError(409, 'partial_move', 'Target created; source close could not be verified. Do not repeat move.', { targetUrl: movedTo });
       throw new HttpError(
         502,
         'write_outcome_unknown',
