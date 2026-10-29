@@ -11,6 +11,8 @@ import {
   buildSessionCookie,
   buildClearCookie,
   csrfMatches,
+  deriveCsrfToken,
+  computePasswordFingerprint,
   DEFAULT_ABSOLUTE_TTL_MS,
   DEFAULT_IDLE_TTL_MS,
   THIRTY_DAYS_MS,
@@ -381,6 +383,107 @@ test('throttles lastSeen writes to disk during session activity', () => {
     // On disk, lastSeenAt should now be updated
     const updatedContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
     assert.equal(updatedContent.sessions[idHash].lastSeenAt, now);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('finding B: sessions.json never persists plaintext CSRF token, and derived CSRF token is verified', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auth-test-csrf-'));
+  const filePath = path.join(tempDir, 'sessions.json');
+
+  try {
+    const store = new SessionStore({ secret: SECRET, filePath, passwordHash: 'some-hash' });
+    const created = store.create('127.0.0.1');
+
+    assert.equal(typeof created.csrfToken, 'string');
+    assert.equal(created.csrfToken.length >= 32, true);
+    assert.equal(created.csrfToken, deriveCsrfToken(SECRET, created.id));
+
+    const raw = fs.readFileSync(filePath, 'utf8');
+    assert.equal(raw.includes(created.csrfToken), false, 'csrf token must not be in sessions.json');
+    assert.equal(raw.includes('csrfToken'), false, 'csrfToken key must not appear in sessions.json');
+
+    const loaded = store.get(created.cookieValue);
+    assert.ok(loaded);
+    assert.equal(loaded.csrfToken, created.csrfToken);
+    assert.equal(csrfMatches(loaded.csrfToken, created.csrfToken), true);
+    assert.equal(csrfMatches(loaded.csrfToken, 'wrong-csrf-token'), false);
+    assert.equal(csrfMatches(loaded.csrfToken, ''), false);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('finding C: changing password invalidates existing sessions across restart', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auth-test-pwd-change-'));
+  const filePath = path.join(tempDir, 'sessions.json');
+  const passwordHashV1 = 'scrypt$16384$8$1$salt1$hash1';
+  const passwordHashV2 = 'scrypt$16384$8$1$salt2$hash2';
+
+  try {
+    const store1 = new SessionStore({ secret: SECRET, filePath, passwordHash: passwordHashV1 });
+    const created = store1.create('10.0.0.1');
+    assert.equal(store1.size, 1);
+    assert.ok(store1.get(created.cookieValue));
+
+    // Inspect file: verify neither password nor password hash is stored in plaintext
+    const raw = fs.readFileSync(filePath, 'utf8');
+    assert.equal(raw.includes(passwordHashV1), false, 'password hash must not be stored in sessions.json');
+    const parsed = JSON.parse(raw);
+    const idHash = Object.keys(parsed.sessions)[0];
+    assert.equal(parsed.sessions[idHash].passwordFingerprint, computePasswordFingerprint(SECRET, passwordHashV1));
+
+    // Restart server with new password hash
+    const store2 = new SessionStore({ secret: SECRET, filePath, passwordHash: passwordHashV2 });
+    assert.equal(store2.size, 0, 'old session must be rejected on load');
+    assert.equal(store2.get(created.cookieValue), null, 'old cookie must be rejected on get');
+
+    // Sweep/persistence cleans it up
+    store2.sweep();
+    const updatedRaw = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.equal(Object.keys(updatedRaw.sessions).length, 0);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('old af9b39c session format is tolerated without crashing and dropped on upgrade', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auth-test-old-format-'));
+  const filePath = path.join(tempDir, 'sessions.json');
+  const oldSessionIdHash = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+
+  try {
+    const oldFormatData = {
+      version: 1,
+      sessions: {
+        [oldSessionIdHash]: {
+          csrfToken: 'plain-old-csrf-token-1234567890',
+          ip: '192.168.1.1',
+          createdAt: 1000,
+          lastSeenAt: 1000,
+          expiresAt: Date.now() + 1000000,
+        },
+      },
+    };
+    fs.writeFileSync(filePath, JSON.stringify(oldFormatData, null, 2), { mode: 0o600 });
+
+    const store = new SessionStore({
+      secret: SECRET,
+      filePath,
+      passwordHash: 'scrypt$16384$8$1$salt$hash',
+    });
+
+    assert.equal(store.size, 0, 'old format session without password fingerprint must be dropped');
+
+    // Create a new session and verify it works and overwrites properly
+    const fresh = store.create('192.168.1.2');
+    assert.equal(store.size, 1);
+    assert.ok(store.get(fresh.cookieValue));
+
+    const newContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.equal(oldSessionIdHash in newContent.sessions, false, 'old format session gone from file');
+    assert.equal(Object.keys(newContent.sessions).length, 1);
   } finally {
     fs.rmSync(tempDir, { recursive: true, force: true });
   }

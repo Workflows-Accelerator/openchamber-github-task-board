@@ -33,7 +33,7 @@ export interface CreatedSession {
 }
 
 interface StoredSession {
-  csrfToken: string;
+  passwordFingerprint: string;
   ip: string | null;
   createdAt: number;
   lastSeenAt: number;
@@ -46,7 +46,7 @@ interface PersistedSessionsData {
   sessions: Record<
     string,
     {
-      csrfToken: string;
+      passwordFingerprint: string;
       ip: string | null;
       createdAt: number;
       lastSeenAt: number;
@@ -57,12 +57,22 @@ interface PersistedSessionsData {
 
 export interface SessionStoreOptions {
   secret: string;
+  passwordHash?: string;
+  passwordFingerprint?: string;
   filePath?: string;
   absoluteTtlMs?: number;
   idleTtlMs?: number;
   maxSessions?: number;
   lastSeenThrottleMs?: number;
   now?: () => number;
+}
+
+export function deriveCsrfToken(secret: string, id: string): string {
+  return createHmac('sha256', secret).update(`csrf:${id}`).digest('hex');
+}
+
+export function computePasswordFingerprint(secret: string, passwordOrHash: string): string {
+  return createHmac('sha256', secret).update(`board_pwd_fp:${passwordOrHash}`).digest('hex');
 }
 
 function sign(secret: string, id: string): string {
@@ -78,6 +88,7 @@ function safeEqualStrings(a: string, b: string): boolean {
 
 export class SessionStore {
   private readonly secret: string;
+  private readonly passwordFingerprint: string;
   private readonly filePath?: string;
   private readonly absoluteTtlMs: number;
   private readonly idleTtlMs: number;
@@ -88,6 +99,11 @@ export class SessionStore {
 
   constructor(options: SessionStoreOptions) {
     this.secret = options.secret;
+    this.passwordFingerprint =
+      options.passwordFingerprint ??
+      (options.passwordHash
+        ? computePasswordFingerprint(this.secret, options.passwordHash)
+        : computePasswordFingerprint(this.secret, 'none'));
     this.filePath = options.filePath;
     this.absoluteTtlMs = options.absoluteTtlMs ?? DEFAULT_ABSOLUTE_TTL_MS;
     this.idleTtlMs = options.idleTtlMs ?? DEFAULT_IDLE_TTL_MS;
@@ -121,31 +137,49 @@ export class SessionStore {
         return;
       }
       const now = this.now();
+      let pruned = false;
       for (const [idHash, rawEntry] of Object.entries(data.sessions)) {
-        if (!rawEntry || typeof rawEntry !== 'object' || Array.isArray(rawEntry)) continue;
+        if (!rawEntry || typeof rawEntry !== 'object' || Array.isArray(rawEntry)) {
+          pruned = true;
+          continue;
+        }
         const entry = rawEntry as Partial<StoredSession>;
-        if (typeof entry.csrfToken !== 'string') continue;
         if (
           typeof entry.createdAt !== 'number' ||
           typeof entry.expiresAt !== 'number' ||
           typeof entry.lastSeenAt !== 'number'
         ) {
+          pruned = true;
           continue;
         }
-        if (!/^[a-f0-9]{64}$/.test(idHash)) continue;
+        if (!/^[a-f0-9]{64}$/.test(idHash)) {
+          pruned = true;
+          continue;
+        }
+        if (
+          typeof entry.passwordFingerprint !== 'string' ||
+          !safeEqualStrings(entry.passwordFingerprint, this.passwordFingerprint)
+        ) {
+          pruned = true;
+          continue;
+        }
 
         if (now >= entry.expiresAt || now - entry.lastSeenAt >= this.idleTtlMs) {
+          pruned = true;
           continue;
         }
 
         this.sessions.set(idHash, {
-          csrfToken: entry.csrfToken,
+          passwordFingerprint: entry.passwordFingerprint,
           ip: typeof entry.ip === 'string' ? entry.ip : null,
           createdAt: entry.createdAt,
           lastSeenAt: entry.lastSeenAt,
           expiresAt: entry.expiresAt,
           lastSavedAt: entry.lastSeenAt,
         });
+      }
+      if (pruned) {
+        this.persist();
       }
     } catch {
       this.sessions.clear();
@@ -161,7 +195,7 @@ export class SessionStore {
       };
       for (const [idHash, record] of this.sessions) {
         data.sessions[idHash] = {
-          csrfToken: record.csrfToken,
+          passwordFingerprint: record.passwordFingerprint,
           ip: record.ip,
           createdAt: record.createdAt,
           lastSeenAt: record.lastSeenAt,
@@ -193,10 +227,10 @@ export class SessionStore {
     }
     const now = this.now();
     const id = randomBytes(24).toString('base64url');
-    const csrfToken = randomBytes(32).toString('hex');
+    const csrfToken = deriveCsrfToken(this.secret, id);
     const idHash = this.hashId(id);
     this.sessions.set(idHash, {
-      csrfToken,
+      passwordFingerprint: this.passwordFingerprint,
       ip,
       createdAt: now,
       lastSeenAt: now,
@@ -224,6 +258,15 @@ export class SessionStore {
     const record = this.sessions.get(idHash);
     if (!record) return null;
 
+    if (
+      !record.passwordFingerprint ||
+      !safeEqualStrings(record.passwordFingerprint, this.passwordFingerprint)
+    ) {
+      this.sessions.delete(idHash);
+      this.persist();
+      return null;
+    }
+
     const now = this.now();
     if (now >= record.expiresAt || now - record.lastSeenAt >= this.idleTtlMs) {
       this.sessions.delete(idHash);
@@ -242,7 +285,7 @@ export class SessionStore {
 
     return {
       id,
-      csrfToken: record.csrfToken,
+      csrfToken: deriveCsrfToken(this.secret, id),
       ip: record.ip,
       createdAt: record.createdAt,
       lastSeenAt: record.lastSeenAt,
@@ -268,7 +311,12 @@ export class SessionStore {
     const now = this.now();
     let removed = false;
     for (const [idHash, record] of this.sessions) {
-      if (now >= record.expiresAt || now - record.lastSeenAt >= this.idleTtlMs) {
+      if (
+        now >= record.expiresAt ||
+        now - record.lastSeenAt >= this.idleTtlMs ||
+        !record.passwordFingerprint ||
+        !safeEqualStrings(record.passwordFingerprint, this.passwordFingerprint)
+      ) {
         this.sessions.delete(idHash);
         removed = true;
       }

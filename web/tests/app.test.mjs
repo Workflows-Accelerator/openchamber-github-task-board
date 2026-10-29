@@ -53,12 +53,19 @@ async function fixture(options = {}) {
 }
 
 function runEntry(env) {
-  return spawnSync(process.execPath, ['web/server.ts'], {
-    cwd: ROOT,
-    env: { PATH: process.env.PATH, ...env },
-    encoding: 'utf8',
-    timeout: 20_000,
-  });
+  const sessionFile = env.BOARD_SESSION_FILE ?? path.join(os.tmpdir(), `test-board-sessions-${randomBytes(8).toString('hex')}.json`);
+  try {
+    return spawnSync(process.execPath, ['web/server.ts'], {
+      cwd: ROOT,
+      env: { PATH: process.env.PATH, BOARD_SESSION_FILE: sessionFile, ...env },
+      encoding: 'utf8',
+      timeout: 20_000,
+    });
+  } finally {
+    try {
+      if (!env.BOARD_SESSION_FILE && fs.existsSync(sessionFile)) fs.unlinkSync(sessionFile);
+    } catch {}
+  }
 }
 
 test('the server entry refuses a missing configuration and names the variable', () => {

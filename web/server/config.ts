@@ -288,7 +288,7 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
         `BOARD_PASSWORD must be at least ${MIN_PASSWORD_LENGTH} characters`,
       );
     }
-    passwordHash = hashPassword(passwordRaw);
+    passwordHash = hashPassword(passwordRaw, scryptSync(sessionSecret, 'board_password_salt', 16));
     passwordWasGenerated = true;
   } else {
     throw new ConfigError(
