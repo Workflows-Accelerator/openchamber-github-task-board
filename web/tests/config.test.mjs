@@ -7,6 +7,8 @@ import {
   verifyPasswordAsync,
   ConfigError,
   describeConfig,
+  resolveSessionFilePath,
+  DEFAULT_SESSION_FILE,
 } from '../server/config.ts';
 
 const TOKEN = 'ghp_synthetic_test_token_do_not_use_0001';
@@ -203,4 +205,24 @@ test('verifyPasswordAsync matches valid password and rejects invalid', async () 
 test('BOARD_REPO is optional for token-wide discovery; supplied invalid values still refuse', () => {
   const config = loadConfig(validEnv({ BOARD_REPO: undefined }));
   assert.equal(config.repo, null);
+});
+
+test('resolveSessionFilePath resolves explicit, env-based, and default paths', () => {
+  const customAbsolute = '/custom/path/sessions.json';
+  assert.equal(resolveSessionFilePath({ BOARD_SESSION_FILE: customAbsolute }), customAbsolute);
+
+  const customRelative = 'data/my-sessions.json';
+  const resolvedRel = resolveSessionFilePath({ BOARD_SESSION_FILE: customRelative });
+  assert.ok(resolvedRel.endsWith('data/my-sessions.json'));
+
+  const dataDir = '/custom/openchamber-data';
+  assert.equal(
+    resolveSessionFilePath({ OPENCHAMBER_DATA_DIR: dataDir }),
+    '/custom/openchamber-data/board/sessions.json',
+  );
+
+  const cfg = loadConfig(validEnv({ BOARD_SESSION_FILE: '/tmp/test-sessions.json' }));
+  assert.equal(cfg.sessionFilePath, '/tmp/test-sessions.json');
+  const described = describeConfig(cfg);
+  assert.equal(described.sessionFile, '/tmp/test-sessions.json');
 });

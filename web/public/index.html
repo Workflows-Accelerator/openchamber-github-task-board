@@ -36,7 +36,9 @@
     <section id="login-view" class="view" aria-labelledby="login-title">
       <h1 id="login-title">Sign in</h1>
       <p class="muted">This board is private. Enter the board password to continue.</p>
-      <form id="login-form" class="login-form">
+      <form id="login-form" class="login-form" method="post" action="/api/session">
+        <label for="username" class="sr-only">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" value="board" readonly tabindex="-1" class="sr-only">
         <label for="password">Password</label>
         <input id="password" name="password" type="password" autocomplete="current-password" required>
         <button id="login-btn" class="button primary" type="submit">Sign in</button>

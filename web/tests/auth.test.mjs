@@ -1,5 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { randomBytes, createHash } from 'node:crypto';
 import {
   SessionStore,
   LoginRateLimiter,
@@ -7,6 +11,9 @@ import {
   buildSessionCookie,
   buildClearCookie,
   csrfMatches,
+  DEFAULT_ABSOLUTE_TTL_MS,
+  DEFAULT_IDLE_TTL_MS,
+  THIRTY_DAYS_MS,
 } from '../server/auth.ts';
 
 const SECRET = 's'.repeat(48);
@@ -183,4 +190,198 @@ test('login limiter bounds failure map size and does not grow without bound on 5
     limiter.recordFailure(`client-${i}`);
   }
   assert.ok(limiter.size <= 100);
+});
+
+test('session store defaults to 30-day absolute and idle TTL, and 30-day cookie Max-Age', () => {
+  const expectedTtl = 30 * 24 * 60 * 60 * 1000;
+  assert.equal(THIRTY_DAYS_MS, expectedTtl);
+  assert.equal(DEFAULT_ABSOLUTE_TTL_MS, expectedTtl);
+  assert.equal(DEFAULT_IDLE_TTL_MS, expectedTtl);
+
+  const store = new SessionStore({ secret: SECRET });
+  assert.equal(store.maxAgeSeconds, 30 * 24 * 60 * 60); // 2,592,000 seconds
+
+  const created = store.create();
+  assert.equal(created.maxAgeSeconds, 2592000);
+  const cookieHeader = buildSessionCookie(created.cookieValue, created.maxAgeSeconds);
+  assert.match(cookieHeader, /Max-Age=2592000/);
+});
+
+test('sessions survive constructing a new SessionStore from the same file', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auth-test-'));
+  const filePath = path.join(tempDir, 'sessions.json');
+
+  try {
+    const store1 = new SessionStore({ secret: SECRET, filePath });
+    const created = store1.create('192.168.1.50');
+    assert.equal(store1.size, 1);
+
+    const store2 = new SessionStore({ secret: SECRET, filePath });
+    assert.equal(store2.size, 1);
+    const loaded = store2.get(created.cookieValue);
+    assert.ok(loaded);
+    assert.equal(loaded.csrfToken, created.csrfToken);
+    assert.equal(loaded.ip, '192.168.1.50');
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('persisted session file contains only SHA-256 hashes and no raw secrets or cookie values', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auth-test-'));
+  const filePath = path.join(tempDir, 'sessions.json');
+
+  try {
+    const store = new SessionStore({ secret: SECRET, filePath });
+    const created = store.create('10.0.0.1');
+
+    assert.ok(fs.existsSync(filePath), 'session file was created');
+    const stat = fs.statSync(filePath);
+    assert.equal(stat.mode & 0o777, 0o600, 'file permissions are 0600');
+
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const parsed = JSON.parse(fileContent);
+
+    assert.equal(parsed.version, 1);
+    assert.ok(parsed.sessions);
+
+    const sessionKeys = Object.keys(parsed.sessions);
+    assert.equal(sessionKeys.length, 1);
+    const idHash = sessionKeys[0];
+    assert.match(idHash, /^[a-f0-9]{64}$/, 'session key is a 64-char hex SHA-256 hash');
+
+    const expectedHash = createHash('sha256').update(created.id).digest('hex');
+    assert.equal(idHash, expectedHash);
+
+    // Ensure raw secrets and cookie values NEVER appear anywhere in the persisted content
+    assert.equal(fileContent.includes(SECRET), false, 'raw secret not in file');
+    assert.equal(fileContent.includes(created.cookieValue), false, 'raw cookie value not in file');
+    assert.equal(fileContent.includes(created.id), false, 'raw id string not in file');
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('expired sessions on disk are rejected and pruned on store initialization', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auth-test-'));
+  const filePath = path.join(tempDir, 'sessions.json');
+
+  try {
+    let now = 1_000_000;
+    const store1 = new SessionStore({
+      secret: SECRET,
+      filePath,
+      absoluteTtlMs: 5000,
+      idleTtlMs: 2000,
+      now: () => now,
+    });
+    const created = store1.create();
+    assert.equal(store1.size, 1);
+
+    // Advance time past expiry
+    now += 6000;
+    const store2 = new SessionStore({
+      secret: SECRET,
+      filePath,
+      absoluteTtlMs: 5000,
+      idleTtlMs: 2000,
+      now: () => now,
+    });
+
+    assert.equal(store2.size, 0, 'expired sessions not loaded into memory');
+    assert.equal(store2.get(created.cookieValue), null, 'get returns null for expired session');
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('sign-out removes the record from memory and persists immediately to disk', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auth-test-'));
+  const filePath = path.join(tempDir, 'sessions.json');
+
+  try {
+    const store = new SessionStore({ secret: SECRET, filePath });
+    const created = store.create();
+    assert.equal(store.size, 1);
+
+    const contentBefore = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.equal(Object.keys(contentBefore.sessions).length, 1);
+
+    store.destroy(created.cookieValue);
+    assert.equal(store.size, 0);
+    assert.equal(store.get(created.cookieValue), null);
+
+    const contentAfter = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.equal(Object.keys(contentAfter.sessions).length, 0);
+
+    const storeReloaded = new SessionStore({ secret: SECRET, filePath });
+    assert.equal(storeReloaded.size, 0);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('corrupted session file is tolerated without crashing and starts empty', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auth-test-'));
+  const filePath = path.join(tempDir, 'sessions.json');
+
+  try {
+    fs.writeFileSync(filePath, '{ invalid json: bad syntax ]]]');
+
+    const store = new SessionStore({ secret: SECRET, filePath });
+    assert.equal(store.size, 0);
+
+    const created = store.create();
+    assert.equal(store.size, 1);
+    assert.ok(store.get(created.cookieValue));
+
+    // File is now written cleanly
+    const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.equal(content.version, 1);
+    assert.equal(Object.keys(content.sessions).length, 1);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test('throttles lastSeen writes to disk during session activity', () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'auth-test-'));
+  const filePath = path.join(tempDir, 'sessions.json');
+
+  try {
+    let now = 1_000_000;
+    const store = new SessionStore({
+      secret: SECRET,
+      filePath,
+      lastSeenThrottleMs: 60_000,
+      now: () => now,
+    });
+    const created = store.create();
+
+    const initialStat = fs.statSync(filePath);
+    const initialContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    const idHash = Object.keys(initialContent.sessions)[0];
+    const initialLastSeen = initialContent.sessions[idHash].lastSeenAt;
+
+    // Advance 10 seconds (less than 60s throttle window) and touch session
+    now += 10_000;
+    const touched = store.get(created.cookieValue);
+    assert.ok(touched);
+    assert.equal(touched.lastSeenAt, now);
+
+    // On disk, lastSeenAt should NOT have been rewritten yet
+    const throttledContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.equal(throttledContent.sessions[idHash].lastSeenAt, initialLastSeen);
+
+    // Advance past the throttle window (60s)
+    now += 55_000; // now is initial + 65s
+    const touchedAgain = store.get(created.cookieValue);
+    assert.ok(touchedAgain);
+
+    // On disk, lastSeenAt should now be updated
+    const updatedContent = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    assert.equal(updatedContent.sessions[idHash].lastSeenAt, now);
+  } finally {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+  }
 });

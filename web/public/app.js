@@ -1762,12 +1762,58 @@
     }
   }
 
-  async function boot() {
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/sw.js').catch(function () {});
-      });
+  function initServiceWorker() {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    var hadController = Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadController) {
+        hadController = true;
+        return;
+      }
+      try {
+        if (sessionStorage.getItem('sw_reloaded')) {
+          setNotice('Updated - reload');
+          return;
+        }
+        sessionStorage.setItem('sw_reloaded', '1');
+      } catch (e) {}
+      window.location.reload();
+    });
+
+    if (typeof window !== 'undefined') {
+      window.setTimeout(function () {
+        try {
+          sessionStorage.removeItem('sw_reloaded');
+        } catch (e) {}
+      }, 5000);
     }
+
+    var doRegister = function () {
+      navigator.serviceWorker
+        .register('/sw.js', { updateViaCache: 'none' })
+        .then(function (registration) {
+          registration.update().catch(function () {});
+          if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', function () {
+              if (document.visibilityState === 'visible') {
+                registration.update().catch(function () {});
+              }
+            });
+          }
+        })
+        .catch(function () {});
+    };
+
+    if (typeof document !== 'undefined' && document.readyState === 'complete') {
+      doRegister();
+    } else if (typeof window !== 'undefined') {
+      window.addEventListener('load', doRegister);
+    }
+  }
+
+  async function boot() {
+    initServiceWorker();
     bind();
     try {
       var session = await api('/api/session');

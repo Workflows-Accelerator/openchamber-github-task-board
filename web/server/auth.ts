@@ -5,12 +5,16 @@
 // signed with BOARD_SESSION_SECRET, HttpOnly, Secure and SameSite=Strict.
 // ==========================================
 
-import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export const SESSION_COOKIE = 'board_session';
-export const DEFAULT_ABSOLUTE_TTL_MS = 12 * 60 * 60 * 1000;
-export const DEFAULT_IDLE_TTL_MS = 2 * 60 * 60 * 1000;
+export const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+export const DEFAULT_ABSOLUTE_TTL_MS = THIRTY_DAYS_MS;
+export const DEFAULT_IDLE_TTL_MS = THIRTY_DAYS_MS;
 export const DEFAULT_MAX_SESSIONS = 50;
+export const DEFAULT_LAST_SEEN_THROTTLE_MS = 60_000;
 
 export interface SessionRecord {
   id: string;
@@ -28,11 +32,36 @@ export interface CreatedSession {
   maxAgeSeconds: number;
 }
 
-interface SessionStoreOptions {
+interface StoredSession {
+  csrfToken: string;
+  ip: string | null;
+  createdAt: number;
+  lastSeenAt: number;
+  expiresAt: number;
+  lastSavedAt?: number;
+}
+
+interface PersistedSessionsData {
+  version: 1;
+  sessions: Record<
+    string,
+    {
+      csrfToken: string;
+      ip: string | null;
+      createdAt: number;
+      lastSeenAt: number;
+      expiresAt: number;
+    }
+  >;
+}
+
+export interface SessionStoreOptions {
   secret: string;
+  filePath?: string;
   absoluteTtlMs?: number;
   idleTtlMs?: number;
   maxSessions?: number;
+  lastSeenThrottleMs?: number;
   now?: () => number;
 }
 
@@ -49,18 +78,24 @@ function safeEqualStrings(a: string, b: string): boolean {
 
 export class SessionStore {
   private readonly secret: string;
+  private readonly filePath?: string;
   private readonly absoluteTtlMs: number;
   private readonly idleTtlMs: number;
   private readonly maxSessions: number;
+  private readonly lastSeenThrottleMs: number;
   private readonly now: () => number;
-  private readonly sessions = new Map<string, SessionRecord>();
+  private readonly sessions = new Map<string, StoredSession>();
 
   constructor(options: SessionStoreOptions) {
     this.secret = options.secret;
+    this.filePath = options.filePath;
     this.absoluteTtlMs = options.absoluteTtlMs ?? DEFAULT_ABSOLUTE_TTL_MS;
     this.idleTtlMs = options.idleTtlMs ?? DEFAULT_IDLE_TTL_MS;
     this.maxSessions = options.maxSessions ?? DEFAULT_MAX_SESSIONS;
+    this.lastSeenThrottleMs = options.lastSeenThrottleMs ?? DEFAULT_LAST_SEEN_THROTTLE_MS;
     this.now = options.now ?? Date.now;
+
+    this.load();
   }
 
   get maxAgeSeconds(): number {
@@ -70,6 +105,83 @@ export class SessionStore {
   get size(): number {
     this.sweep();
     return this.sessions.size;
+  }
+
+  private hashId(id: string): string {
+    return createHash('sha256').update(id).digest('hex');
+  }
+
+  private load(): void {
+    if (!this.filePath) return;
+    try {
+      if (!fs.existsSync(this.filePath)) return;
+      const raw = fs.readFileSync(this.filePath, 'utf8');
+      const data = JSON.parse(raw);
+      if (!data || data.version !== 1 || typeof data.sessions !== 'object' || Array.isArray(data.sessions)) {
+        return;
+      }
+      const now = this.now();
+      for (const [idHash, rawEntry] of Object.entries(data.sessions)) {
+        if (!rawEntry || typeof rawEntry !== 'object' || Array.isArray(rawEntry)) continue;
+        const entry = rawEntry as Partial<StoredSession>;
+        if (typeof entry.csrfToken !== 'string') continue;
+        if (
+          typeof entry.createdAt !== 'number' ||
+          typeof entry.expiresAt !== 'number' ||
+          typeof entry.lastSeenAt !== 'number'
+        ) {
+          continue;
+        }
+        if (!/^[a-f0-9]{64}$/.test(idHash)) continue;
+
+        if (now >= entry.expiresAt || now - entry.lastSeenAt >= this.idleTtlMs) {
+          continue;
+        }
+
+        this.sessions.set(idHash, {
+          csrfToken: entry.csrfToken,
+          ip: typeof entry.ip === 'string' ? entry.ip : null,
+          createdAt: entry.createdAt,
+          lastSeenAt: entry.lastSeenAt,
+          expiresAt: entry.expiresAt,
+          lastSavedAt: entry.lastSeenAt,
+        });
+      }
+    } catch {
+      this.sessions.clear();
+    }
+  }
+
+  private persist(): void {
+    if (!this.filePath) return;
+    try {
+      const data: PersistedSessionsData = {
+        version: 1,
+        sessions: {},
+      };
+      for (const [idHash, record] of this.sessions) {
+        data.sessions[idHash] = {
+          csrfToken: record.csrfToken,
+          ip: record.ip,
+          createdAt: record.createdAt,
+          lastSeenAt: record.lastSeenAt,
+          expiresAt: record.expiresAt,
+        };
+      }
+      const dir = path.dirname(this.filePath);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true, mode: 0o700 });
+      }
+      const json = JSON.stringify(data, null, 2);
+      const tmpPath = `${this.filePath}.${process.pid}.${Date.now()}.${randomBytes(6).toString('hex')}.tmp`;
+      fs.writeFileSync(tmpPath, json, { mode: 0o600 });
+      try {
+        fs.chmodSync(tmpPath, 0o600);
+      } catch {}
+      fs.renameSync(tmpPath, this.filePath);
+    } catch {
+      // Do not crash on disk errors
+    }
   }
 
   create(ip: string | null = null): CreatedSession {
@@ -82,14 +194,16 @@ export class SessionStore {
     const now = this.now();
     const id = randomBytes(24).toString('base64url');
     const csrfToken = randomBytes(32).toString('hex');
-    this.sessions.set(id, {
-      id,
+    const idHash = this.hashId(id);
+    this.sessions.set(idHash, {
       csrfToken,
       ip,
       createdAt: now,
       lastSeenAt: now,
       expiresAt: now + this.absoluteTtlMs,
+      lastSavedAt: now,
     });
+    this.persist();
     return {
       id,
       cookieValue: `${id}.${sign(this.secret, id)}`,
@@ -106,32 +220,61 @@ export class SessionStore {
     const signature = cookieValue.slice(dot + 1);
     if (!safeEqualStrings(signature, sign(this.secret, id))) return null;
 
-    const record = this.sessions.get(id);
+    const idHash = this.hashId(id);
+    const record = this.sessions.get(idHash);
     if (!record) return null;
 
     const now = this.now();
     if (now >= record.expiresAt || now - record.lastSeenAt >= this.idleTtlMs) {
-      this.sessions.delete(id);
+      this.sessions.delete(idHash);
+      this.persist();
       return null;
     }
+
     record.lastSeenAt = now;
-    this.sessions.delete(id);
-    this.sessions.set(id, record);
-    return record;
+    this.sessions.delete(idHash);
+    this.sessions.set(idHash, record);
+
+    if (!record.lastSavedAt || now - record.lastSavedAt >= this.lastSeenThrottleMs) {
+      record.lastSavedAt = now;
+      this.persist();
+    }
+
+    return {
+      id,
+      csrfToken: record.csrfToken,
+      ip: record.ip,
+      createdAt: record.createdAt,
+      lastSeenAt: record.lastSeenAt,
+      expiresAt: record.expiresAt,
+    };
   }
 
   destroy(cookieValue: string | null | undefined): void {
     if (!cookieValue) return;
     const dot = cookieValue.lastIndexOf('.');
-    if (dot > 0) this.sessions.delete(cookieValue.slice(0, dot));
+    if (dot <= 0) return;
+    const id = cookieValue.slice(0, dot);
+    const signature = cookieValue.slice(dot + 1);
+    if (!safeEqualStrings(signature, sign(this.secret, id))) return;
+    const idHash = this.hashId(id);
+    if (this.sessions.has(idHash)) {
+      this.sessions.delete(idHash);
+      this.persist();
+    }
   }
 
   sweep(): void {
     const now = this.now();
-    for (const [id, record] of this.sessions) {
+    let removed = false;
+    for (const [idHash, record] of this.sessions) {
       if (now >= record.expiresAt || now - record.lastSeenAt >= this.idleTtlMs) {
-        this.sessions.delete(id);
+        this.sessions.delete(idHash);
+        removed = true;
       }
+    }
+    if (removed) {
+      this.persist();
     }
   }
 }

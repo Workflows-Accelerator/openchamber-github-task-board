@@ -9,6 +9,7 @@
 
 import http from 'node:http';
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import {
   ConfigError,
   verifyPassword,
@@ -50,6 +51,8 @@ export interface BoardServerOptions {
   now?: () => number;
   sessionTtlMs?: number;
   idleTtlMs?: number;
+  sessionFilePath?: string;
+  versionStamp?: string;
   loginTimeoutMs?: number;
   logger?: (line: string) => void;
   packageJsonUrl?: URL | string;
@@ -127,6 +130,25 @@ export function getPackageVersion(packageJsonUrl: URL | string = new URL('../../
     }
   } catch {}
   return 'unknown';
+}
+
+export function getVersionStamp(
+  packageJsonUrl: URL | string = new URL('../../package.json', import.meta.url),
+): string {
+  const pkgVersion = getPackageVersion(packageJsonUrl);
+  try {
+    const hash = createHash('sha256');
+    const shellAssets = ['index.html', 'app.js', 'theme.css', 'manifest.json'];
+    for (const name of shellAssets) {
+      const content = readFileSync(new URL(`../public/${name}`, import.meta.url));
+      hash.update(name);
+      hash.update(content);
+    }
+    const digest = hash.digest('hex').slice(0, 10);
+    return `${pkgVersion}-${digest}`;
+  } catch {
+    return pkgVersion;
+  }
 }
 
 function redactLine(line: string, secrets: string[]): string {
@@ -374,13 +396,33 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
   }
 
+  const sessionFilePath = options.sessionFilePath !== undefined
+    ? (options.sessionFilePath || undefined)
+    : config.sessionFilePath;
+
   const sessions = new SessionStore({
     secret: config.sessionSecret,
+    filePath: sessionFilePath,
     absoluteTtlMs: options.sessionTtlMs,
     idleTtlMs: options.idleTtlMs,
     now,
   });
   const limiter = new LoginRateLimiter({ now });
+
+  const versionStamp = options.versionStamp ?? getVersionStamp(options.packageJsonUrl);
+  const rawSw = loadStatic('sw.js');
+  let swBody = rawSw;
+  if (/var CACHE_VERSION\s*=\s*['"][^'"]*['"]/.test(rawSw)) {
+    swBody = rawSw.replace(
+      /var CACHE_VERSION\s*=\s*['"][^'"]*['"]/,
+      `var CACHE_VERSION = ${JSON.stringify(versionStamp)}`,
+    );
+  } else if (/var CACHE_NAME\s*=\s*['"][^'"]*['"]/.test(rawSw)) {
+    swBody = rawSw.replace(
+      /var CACHE_NAME\s*=\s*['"][^'"]*['"]/,
+      `var CACHE_NAME = 'workflows-board-' + ${JSON.stringify(versionStamp)}`,
+    );
+  }
 
   const assets: Record<string, { body: string | Buffer; type: string; headers?: Record<string, string> }> = {
     '/': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
@@ -389,9 +431,12 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     '/theme.css': { body: loadStatic('theme.css'), type: 'text/css; charset=utf-8' },
     '/manifest.json': { body: loadStatic('manifest.json'), type: 'application/manifest+json; charset=utf-8' },
     '/sw.js': {
-      body: loadStatic('sw.js'),
+      body: swBody,
       type: 'application/javascript; charset=utf-8',
-      headers: { 'service-worker-allowed': '/' },
+      headers: {
+        'service-worker-allowed': '/',
+        'cache-control': 'no-cache',
+      },
     },
     '/icon.svg': { body: loadStatic('icon.svg'), type: 'image/svg+xml; charset=utf-8' },
     '/icon-192.png': { body: loadStaticBuffer('icon-192.png'), type: 'image/png' },
