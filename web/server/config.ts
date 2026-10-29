@@ -6,6 +6,9 @@
 // ==========================================
 
 import { randomBytes, scrypt, scryptSync, timingSafeEqual } from 'node:crypto';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { isIP } from 'node:net';
 
 export const SCRYPT_PARAMS = { N: 16384, r: 8, p: 1, keylen: 32 } as const;
@@ -14,6 +17,7 @@ export const MIN_SESSION_SECRET_LENGTH = 32;
 export const DEFAULT_PORT = 8787;
 export const DEFAULT_HOST = '127.0.0.1';
 export const DEFAULT_GITHUB_API_BASE = 'https://api.github.com';
+export const DEFAULT_SESSION_FILE = '.openchamber-data/board/sessions.json';
 
 export interface RepoRef {
   owner: string;
@@ -28,6 +32,7 @@ export interface BoardConfig {
   passwordHash: string;
   passwordWasGenerated: boolean;
   sessionSecret: string;
+  sessionFilePath: string;
   port: number;
   host: string;
   baseUrl: string | null;
@@ -207,6 +212,38 @@ export async function verifyPasswordAsync(password: string, stored: string): Pro
   });
 }
 
+export function resolveSessionFilePath(env: Record<string, string | undefined> = process.env): string {
+  const envFile = read(env, 'BOARD_SESSION_FILE');
+  if (envFile !== undefined && envFile.trim() !== '') {
+    const trimmed = envFile.trim();
+    if (path.isAbsolute(trimmed)) return trimmed;
+    if (fs.existsSync('/workspace') && fs.statSync('/workspace').isDirectory()) {
+      return path.resolve('/workspace', trimmed);
+    }
+    return path.resolve(process.cwd(), trimmed);
+  }
+
+  const dataDir = read(env, 'OPENCHAMBER_DATA_DIR');
+  if (dataDir !== undefined && dataDir.trim() !== '') {
+    return path.resolve(dataDir.trim(), 'board', 'sessions.json');
+  }
+
+  if (fs.existsSync('/workspace/.openchamber-data/board')) {
+    return '/workspace/.openchamber-data/board/sessions.json';
+  }
+
+  if (fs.existsSync('/workspace') && fs.statSync('/workspace').isDirectory()) {
+    return path.resolve('/workspace', DEFAULT_SESSION_FILE);
+  }
+
+  const home = read(env, 'HOME') || (typeof os !== 'undefined' && os.homedir ? os.homedir() : '');
+  if (home) {
+    return path.resolve(home, '.openchamber-data', 'board', 'sessions.json');
+  }
+
+  return path.resolve(process.cwd(), DEFAULT_SESSION_FILE);
+}
+
 export function loadConfig(env: Record<string, string | undefined>): BoardConfig {
   const githubToken = requireValue(
     env,
@@ -251,7 +288,7 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
         `BOARD_PASSWORD must be at least ${MIN_PASSWORD_LENGTH} characters`,
       );
     }
-    passwordHash = hashPassword(passwordRaw);
+    passwordHash = hashPassword(passwordRaw, scryptSync(sessionSecret, 'board_password_salt', 16));
     passwordWasGenerated = true;
   } else {
     throw new ConfigError(
@@ -263,6 +300,7 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
   const port = parsePort(read(env, 'BOARD_PORT'));
   const host = parseHost(read(env, 'BOARD_HOST'));
   const baseUrl = parseBaseUrl(read(env, 'BOARD_BASE_URL'));
+  const sessionFilePath = resolveSessionFilePath(env);
 
   return {
     githubToken: githubToken.trim(),
@@ -271,6 +309,7 @@ export function loadConfig(env: Record<string, string | undefined>): BoardConfig
     passwordHash,
     passwordWasGenerated,
     sessionSecret,
+    sessionFilePath,
     port,
     host,
     baseUrl,
@@ -285,6 +324,7 @@ export function describeConfig(config: BoardConfig): Record<string, unknown> {
     host: config.host,
     port: config.port,
     baseUrl: config.baseUrl,
+    sessionFile: config.sessionFilePath,
     passwordSource: config.passwordWasGenerated ? 'BOARD_PASSWORD (hashed at startup)' : 'BOARD_PASSWORD_HASH',
   };
 }

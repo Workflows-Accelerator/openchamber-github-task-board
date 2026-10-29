@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import fs from 'node:fs';
+import os from 'node:os';
+import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { startFakeGitHub, makeIssue } from './fake-github.mjs';
 import {
@@ -50,12 +53,19 @@ async function fixture(options = {}) {
 }
 
 function runEntry(env) {
-  return spawnSync(process.execPath, ['web/server.ts'], {
-    cwd: ROOT,
-    env: { PATH: process.env.PATH, ...env },
-    encoding: 'utf8',
-    timeout: 20_000,
-  });
+  const sessionFile = env.BOARD_SESSION_FILE ?? path.join(os.tmpdir(), `test-board-sessions-${randomBytes(8).toString('hex')}.json`);
+  try {
+    return spawnSync(process.execPath, ['web/server.ts'], {
+      cwd: ROOT,
+      env: { PATH: process.env.PATH, BOARD_SESSION_FILE: sessionFile, ...env },
+      encoding: 'utf8',
+      timeout: 20_000,
+    });
+  } finally {
+    try {
+      if (!env.BOARD_SESSION_FILE && fs.existsSync(sessionFile)) fs.unlinkSync(sessionFile);
+    } catch {}
+  }
 }
 
 test('the server entry refuses a missing configuration and names the variable', () => {
@@ -1031,7 +1041,7 @@ test('quick-add POST /api/repos/:owner/:name/issues creates draft issue with 201
   }
 });
 
-test('batch-align POST /api/repos/:owner/:name/issues/batch-align aligns draft issues', async () => {
+test('F10: extension-only batch-align route is unavailable on standalone web API with zero GitHub writes', async () => {
   const issues = [
     makeIssue({
       number: 101,
@@ -1045,12 +1055,6 @@ test('batch-align POST /api/repos/:owner/:name/issues/batch-align aligns draft i
       body: 'Unclear if sqlite is fast enough. TBD.',
       labels: ['status:draft', 'priority:high'],
     }),
-    makeIssue({
-      number: 103,
-      title: 'Already in backlog',
-      body: '## Overview\nDone planning.',
-      labels: ['status:backlog', 'priority:medium'],
-    }),
   ];
 
   const { fake, board, close } = await fixture({ issues });
@@ -1058,48 +1062,15 @@ test('batch-align POST /api/repos/:owner/:name/issues/batch-align aligns draft i
     const client = new HttpSession(board.url);
     await client.login();
 
-    // 1. Unauthenticated 401
-    const anon = new HttpSession(board.url);
-    const anonRes = await anon.request('/api/repos/owner/repo/issues/batch-align', {
-      method: 'POST',
-      headers: { 'x-csrf-token': 'any' },
-    });
-    assert.equal(anonRes.status, 401);
+    for (const route of ['/api/repos/owner/repo/issues/batch-align', '/api/issues/batch-align']) {
+      const res = await client.request(route, { method: 'POST', body: {} });
+      assert.equal(res.status, 404, route);
+    }
 
-    // 2. CSRF rejection 403
-    const badCsrf = await client.request('/api/repos/owner/repo/issues/batch-align', {
-      method: 'POST',
-      headers: { 'x-csrf-token': 'invalid' },
-      csrf: false,
-    });
-    assert.equal(badCsrf.status, 403);
-
-    // 3. Successful batch alignment
-    const res = await client.request('/api/repos/owner/repo/issues/batch-align', {
-      method: 'POST',
-    });
-    assert.equal(res.status, 200);
-    assert.equal(res.json.ok, true);
-    assert.equal(res.json.alignedCount, 2);
-    assert.ok(Array.isArray(res.json.issues));
-
-    // Verify issues in fake GitHub were patched
-    const patched101 = fake.issues.find((i) => i.number === 101);
-    assert.ok(patched101);
-    assert.ok(!patched101.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:draft'));
-    assert.ok(patched101.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:backlog'));
-    assert.ok(patched101.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'priority:medium'));
-    assert.ok(patched101.body.includes('## Overview'));
-    assert.ok(patched101.body.includes('## Scope'));
-    assert.ok(patched101.body.includes('## Acceptance Criteria'));
-
-    const patched102 = fake.issues.find((i) => i.number === 102);
-    assert.ok(patched102);
-    assert.ok(!patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:draft'));
-    assert.ok(patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:backlog'));
-    assert.ok(patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'priority:high'));
-    assert.ok(patched102.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'needs:human'));
-    assert.ok(patched102.body.includes('## Open Questions'));
+    assert.equal(fake.patchCalls.length, 0);
+    const untouched101 = fake.issues.find((i) => i.number === 101);
+    assert.equal(untouched101.body, 'Basic initial notes on feature.');
+    assert.ok(untouched101.labels.some((l) => (typeof l === 'string' ? l : l.name) === 'status:draft'));
   } finally {
     await close();
   }
@@ -1125,17 +1096,20 @@ test('PWA manifest.json is served with 200 and valid JSON', async () => {
   }
 });
 
-test('sw.js is served with 200, application/javascript, and Service-Worker-Allowed header', async () => {
+test('sw.js is served with 200, application/javascript, cache-control: no-cache, and Service-Worker-Allowed header', async () => {
   const { board, close } = await fixture();
   try {
     const res = await fetch(`${board.url}/sw.js`);
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type') ?? '', /application\/javascript/);
     assert.equal(res.headers.get('service-worker-allowed'), '/');
+    assert.equal(res.headers.get('cache-control'), 'no-cache');
     const text = await res.text();
     assert.ok(text.includes('CACHE_NAME'));
     assert.ok(text.includes('/manifest.json'));
     assert.ok(text.includes('/icon.svg'));
+    // CACHE_VERSION has the version stamp injected
+    assert.match(text, /var CACHE_VERSION = ['"]\d+\.\d+\.\d+-[a-f0-9]{10}['"]/);
   } finally {
     await close();
   }
@@ -1152,5 +1126,111 @@ test('GET /api/combined/board returns 200 for authenticated user', async () => {
     assert.ok(Array.isArray(res.json.issues));
   } finally {
     await close();
+  }
+});
+
+test('login form has username and current-password autocomplete and method=post semantics', async () => {
+  const { board, close } = await fixture();
+  try {
+    const res = await fetch(`${board.url}/`);
+    assert.equal(res.status, 200);
+    const html = await res.text();
+
+    // Form element has method=post
+    assert.match(html, /<form[^>]*id=["']login-form["'][^>]*method=["']post["']/i);
+
+    // Username field recognized by password managers (autocomplete="username", value="board", read-only/hidden)
+    assert.match(
+      html,
+      /<input[^>]*id=["']username["'][^>]*autocomplete=["']username["'][^>]*value=["']board["'][^>]*readonly/i,
+    );
+
+    // Password field has autocomplete="current-password"
+    assert.match(
+      html,
+      /<input[^>]*id=["']password["'][^>]*autocomplete=["']current-password["']/i,
+    );
+  } finally {
+    await close();
+  }
+});
+
+test('login response sets 30-day session cookie Max-Age with secure attributes', async () => {
+  const { board, close } = await fixture();
+  try {
+    const client = new HttpSession(board.url);
+    const res = await client.login();
+    assert.equal(res.status, 200);
+
+    const setCookie = res.headers.get('set-cookie');
+    assert.ok(setCookie, 'set-cookie header present');
+    assert.match(setCookie, /board_session=/);
+    assert.match(setCookie, /HttpOnly/i);
+    assert.match(setCookie, /Secure/i);
+    assert.match(setCookie, /SameSite=Strict/i);
+    // 30 days = 30 * 24 * 3600 = 2592000 seconds
+    assert.match(setCookie, /Max-Age=2592000/);
+  } finally {
+    await close();
+  }
+});
+
+test('sessions persist across server restarts and survive constructing a new server from the same session file', async () => {
+  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'app-session-test-'));
+  const sessionFilePath = path.join(tempDir, 'sessions.json');
+  const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
+
+  try {
+    // 1. Start initial server instance with isolated sessionFilePath
+    const board1 = await startBoard(fake, {
+      sessionFilePath,
+      preserveSessionFile: true,
+    });
+
+    const client = new HttpSession(board1.url);
+    const loginRes = await client.login();
+    assert.equal(loginRes.status, 200);
+    assert.ok(client.cookie, 'session cookie obtained');
+
+    // Confirm session is valid on board1
+    const check1 = await client.request('/api/session');
+    assert.equal(check1.status, 200);
+    assert.equal(check1.json.authenticated, true);
+
+    // 2. Shut down board1 (session file is preserved)
+    await board1.app.close();
+    assert.ok(fs.existsSync(sessionFilePath), 'session file exists on disk after shutdown');
+
+    // 3. Start second server instance using the same sessionFilePath
+    const board2 = await startBoard(fake, {
+      sessionFilePath,
+      preserveSessionFile: true,
+    });
+
+    try {
+      // Re-point client to board2 URL with the existing cookie
+      client.base = board2.url;
+      const check2 = await client.request('/api/session');
+      assert.equal(check2.status, 200);
+      assert.equal(check2.json.authenticated, true, 'session survived server restart');
+
+      // 4. Sign out on board2
+      const logoutRes = await client.logout();
+      assert.equal(logoutRes.status, 204);
+
+      // Verify sign out deleted the record on disk immediately
+      const fileData = JSON.parse(fs.readFileSync(sessionFilePath, 'utf8'));
+      assert.equal(Object.keys(fileData.sessions).length, 0, 'session record removed from file on sign-out');
+
+      // Re-check session on board2
+      const check3 = await client.request('/api/session');
+      assert.equal(check3.status, 200);
+      assert.equal(check3.json.authenticated, false, 'session is now unauthenticated');
+    } finally {
+      await board2.app.close();
+    }
+  } finally {
+    await fake.close();
+    fs.rmSync(tempDir, { recursive: true, force: true });
   }
 });

@@ -36,7 +36,9 @@
     <section id="login-view" class="view" aria-labelledby="login-title">
       <h1 id="login-title">Sign in</h1>
       <p class="muted">This board is private. Enter the board password to continue.</p>
-      <form id="login-form" class="login-form">
+      <form id="login-form" class="login-form" method="post" action="/api/session">
+        <label for="username" class="sr-only">Username</label>
+        <input id="username" name="username" type="text" autocomplete="username" value="board" readonly tabindex="-1" class="sr-only">
         <label for="password">Password</label>
         <input id="password" name="password" type="password" autocomplete="current-password" required>
         <button id="login-btn" class="button primary" type="submit">Sign in</button>
@@ -46,7 +48,7 @@
 
     <section id="board-view" class="view" aria-labelledby="board-title" hidden>
       <div id="repository-picker" class="repository-picker" hidden>
-        <label id="repo-picker-label" for="repo-select-btn">Repository</label>
+        <label id="repo-picker-label" for="repo-select-btn">Project</label>
         <div class="repo-picker-wrapper">
           <button id="repo-select-btn" class="button repo-select-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="repo-picker-label repo-select-btn">
             <span id="repo-select-btn-text">All Projects</span>
@@ -67,21 +69,33 @@
         <h1 id="board-title" tabindex="-1">Tasks</h1>
         <p id="board-count" class="muted"></p>
       </div>
-      <div id="mobile-views" class="mobile-view-tabs" role="tablist" aria-label="Task view filters">
-        <button id="tab-all" class="view-tab active" type="button" role="tab" aria-selected="true" data-filter="all">All Tasks</button>
-        <button id="tab-needs-human" class="view-tab" type="button" role="tab" aria-selected="false" data-filter="needs-human">Needs Human</button>
-        <button id="tab-running" class="view-tab" type="button" role="tab" aria-selected="false" data-filter="running">Running</button>
-        <button id="tab-drafts" class="view-tab" type="button" role="tab" aria-selected="false" data-filter="drafts">Drafts</button>
+      <div class="board-toolbar" role="group" aria-label="Board controls">
+        <button id="view-btn" class="button" type="button" aria-haspopup="dialog">View: Simple list</button>
+        <button id="filter-btn" class="button" type="button" aria-haspopup="dialog">Filter</button>
+        <button id="sort-btn" class="button" type="button" aria-haspopup="dialog">Sort: Priority</button>
+        <button id="settings-btn" class="button" type="button" aria-label="Project settings" aria-haspopup="dialog">Settings</button>
       </div>
-      <form id="quick-add-form" class="quick-add-bar">
-        <label for="quick-add-input" class="sr-only">Quick add draft issue</label>
-        <input id="quick-add-input" class="quick-add-input" type="text" placeholder="Quick add draft... (press Enter)" autocomplete="off" />
-      </form>
+      <div id="filter-chips" class="filter-chips" aria-label="Active filters"></div>
+      <p id="view-hint" class="muted small"></p>
+      <p id="capture-hint" class="muted small" hidden>Capture ideas here. Enter adds a draft, never starts an agent.</p>
       <div id="empty-state" class="empty" hidden>
         <p>No tasks in this repository.</p>
         <p class="muted">Open issues appear here when they are created on GitHub.</p>
       </div>
       <ul id="task-list" class="task-list" aria-label="Tasks"></ul>
+      <form id="quick-add-form" class="quick-add-bar capture-row" hidden>
+        <label for="quick-add-input" class="sr-only">New draft title</label>
+        <input id="quick-add-input" class="quick-add-input" type="text" maxlength="256" placeholder="+ Add a draft…" autocomplete="off" required />
+        <label for="quick-add-description" class="sr-only">Optional description</label>
+        <input id="quick-add-description" type="text" placeholder="Optional description or inspiration" autocomplete="off" />
+        <label for="quick-add-project" class="sr-only">Project for new draft</label>
+        <select id="quick-add-project" aria-label="Project for new draft"></select>
+        <button class="button primary" type="submit">Add draft</button>
+      </form>
+      <dialog id="board-sheet" class="board-sheet" aria-labelledby="sheet-title">
+        <div class="sheet-head"><h2 id="sheet-title"></h2><button id="sheet-close" class="button" type="button">Done</button></div>
+        <div id="sheet-content" class="sheet-content"></div>
+      </dialog>
     </section>
 
     <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
@@ -147,7 +161,7 @@
       <section class="panel" aria-labelledby="human-title">
         <h2 id="human-title">Human tasks</h2>
         <p id="no-human" class="muted" hidden>No human tasks.</p>
-        <ul id="human-list" class="plain-list"></ul>
+        <ul id="human-list" class="checklist"></ul>
       </section>
     </section>
   </main>

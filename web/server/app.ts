@@ -8,7 +8,9 @@
 // ==========================================
 
 import http from 'node:http';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync, renameSync } from 'node:fs';
+import path from 'node:path';
+import { createHash } from 'node:crypto';
 import {
   ConfigError,
   verifyPassword,
@@ -27,10 +29,10 @@ import {
 import { GitHubClient, GitHubError, parseIssueNumber, type IssueRead } from './github.ts';
 import { RepositoryRegistry, RepositoryNotAllowedError, DiscoveryUnavailableError, type RepositoryEntry } from './repositories.ts';
 import { STATUS_METADATA } from '../../panel/labels.ts';
-import { alignDraftIssue } from '../../panel/core.ts';
 import { findSections, replaceSectionText, SectionError } from './sections.ts';
 import {
   BoardError,
+  hasUnfencedOrderMarkerComment, parseOrderMarker, stripOrderMarker, setOrderMarker, midpointOrder,
   applyQuestionAnswer,
   applySectionEdit,
   applyStatusChange,
@@ -50,6 +52,8 @@ export interface BoardServerOptions {
   now?: () => number;
   sessionTtlMs?: number;
   idleTtlMs?: number;
+  sessionFilePath?: string;
+  versionStamp?: string;
   loginTimeoutMs?: number;
   logger?: (line: string) => void;
   packageJsonUrl?: URL | string;
@@ -127,6 +131,25 @@ export function getPackageVersion(packageJsonUrl: URL | string = new URL('../../
     }
   } catch {}
   return 'unknown';
+}
+
+export function getVersionStamp(
+  packageJsonUrl: URL | string = new URL('../../package.json', import.meta.url),
+): string {
+  const pkgVersion = getPackageVersion(packageJsonUrl);
+  try {
+    const hash = createHash('sha256');
+    const shellAssets = ['index.html', 'app.js', 'theme.css', 'manifest.json'];
+    for (const name of shellAssets) {
+      const content = readFileSync(new URL(`../public/${name}`, import.meta.url));
+      hash.update(name);
+      hash.update(content);
+    }
+    const digest = hash.digest('hex').slice(0, 10);
+    return `${pkgVersion}-${digest}`;
+  } catch {
+    return pkgVersion;
+  }
 }
 
 function redactLine(line: string, secrets: string[]): string {
@@ -374,13 +397,48 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
   }
 
+  const sessionFilePath = options.sessionFilePath !== undefined
+    ? (options.sessionFilePath || undefined)
+    : config.sessionFilePath;
+
+  // Fixed filename beside board data. Repository/name input never becomes a path.
+  const namesPath = path.join(path.dirname(sessionFilePath || config.sessionFilePath), 'project-names.json');
+  function projectNames(): Record<string, string> {
+    try {
+      const parsed = JSON.parse(readFileSync(namesPath, 'utf8'));
+      if (!parsed || Array.isArray(parsed) || typeof parsed !== 'object') return {};
+      return Object.fromEntries(Object.entries(parsed).filter(([key, value]) =>
+        /^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(key) && typeof value === 'string' && value.length <= 60)) as Record<string, string>;
+    } catch (error: any) {
+      if (error.code === 'ENOENT') return {};
+      throw new HttpError(500, 'names_unavailable', 'Project names could not be read; nothing was changed');
+    }
+  }
+
   const sessions = new SessionStore({
     secret: config.sessionSecret,
+    passwordHash: config.passwordHash,
+    filePath: sessionFilePath,
     absoluteTtlMs: options.sessionTtlMs,
     idleTtlMs: options.idleTtlMs,
     now,
   });
   const limiter = new LoginRateLimiter({ now });
+
+  const versionStamp = options.versionStamp ?? getVersionStamp(options.packageJsonUrl);
+  const rawSw = loadStatic('sw.js');
+  let swBody = rawSw;
+  if (/var CACHE_VERSION\s*=\s*['"][^'"]*['"]/.test(rawSw)) {
+    swBody = rawSw.replace(
+      /var CACHE_VERSION\s*=\s*['"][^'"]*['"]/,
+      `var CACHE_VERSION = ${JSON.stringify(versionStamp)}`,
+    );
+  } else if (/var CACHE_NAME\s*=\s*['"][^'"]*['"]/.test(rawSw)) {
+    swBody = rawSw.replace(
+      /var CACHE_NAME\s*=\s*['"][^'"]*['"]/,
+      `var CACHE_NAME = 'workflows-board-' + ${JSON.stringify(versionStamp)}`,
+    );
+  }
 
   const assets: Record<string, { body: string | Buffer; type: string; headers?: Record<string, string> }> = {
     '/': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
@@ -389,9 +447,12 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     '/theme.css': { body: loadStatic('theme.css'), type: 'text/css; charset=utf-8' },
     '/manifest.json': { body: loadStatic('manifest.json'), type: 'application/manifest+json; charset=utf-8' },
     '/sw.js': {
-      body: loadStatic('sw.js'),
+      body: swBody,
       type: 'application/javascript; charset=utf-8',
-      headers: { 'service-worker-allowed': '/' },
+      headers: {
+        'service-worker-allowed': '/',
+        'cache-control': 'no-cache',
+      },
     },
     '/icon.svg': { body: loadStatic('icon.svg'), type: 'image/svg+xml; charset=utf-8' },
     '/icon-192.png': { body: loadStaticBuffer('icon-192.png'), type: 'image/png' },
@@ -541,7 +602,26 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
     if (url.pathname === '/api/repos') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      return { status: 200, body: await repositories.view() };
+      return { status: 200, body: { ...await repositories.view(), projectNames: projectNames() } };
+    }
+    if (url.pathname === '/api/project-names') {
+      if (method === 'GET') return { status: 200, body: { projectNames: projectNames() } };
+      if (method !== 'PUT') return methodNotAllowed('GET, PUT');
+      requireCsrf(req, record);
+      const body = await readJsonBody(req);
+      if (typeof body?.repository !== 'string' || !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(body.repository) ||
+          typeof body?.name !== 'string' || body.name.trim().length > 60 || /[\x00-\x1f\x7f<>]/.test(body.name)) {
+        throw new HttpError(400, 'invalid_name', 'Use a project name of 1–60 characters (empty resets); no control characters or angle brackets');
+      }
+      const [owner, name] = body.repository.split('/');
+      const repository = await resolveRepository(owner, name);
+      const names = projectNames();
+      const key = repository.full.toLowerCase();
+      if (body.name.trim()) names[key] = body.name.trim(); else delete names[key];
+      mkdirSync(path.dirname(namesPath), { recursive: true, mode: 0o700 });
+      writeFileSync(namesPath + '.tmp', JSON.stringify(names, null, 2) + '\n', { mode: 0o600 });
+      renameSync(namesPath + '.tmp', namesPath);
+      return { status: 200, body: { projectNames: names } };
     }
     if (url.pathname === '/api/combined/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
@@ -557,7 +637,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       route = '/api' + qualified[3];
     } else if (route.startsWith('/api/repos/')) {
       throw new HttpError(400, 'repository_not_allowed', 'An exact discovered owner/name is required');
-    } else if (route === '/api/board' || route.startsWith('/api/issues/')) {
+    } else if (route === '/api/board' || route === '/api/issues' || route.startsWith('/api/issues/')) {
       if (!config.repo) throw new HttpError(400, 'repository_not_allowed', 'Select a discovered repository');
       repository = await resolveRepository(config.repo.owner, config.repo.name);
     }
@@ -573,7 +653,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       if (!body || typeof body !== 'object' || Array.isArray(body)) {
         throw new HttpError(400, 'invalid_request', 'Body must be a JSON object');
       }
-      if (typeof body.title !== 'string' || !body.title.trim()) {
+      if (typeof body.title !== 'string' || !body.title.trim() || body.title.trim().length > 256) {
         throw new HttpError(400, 'invalid_request', 'Issue title is required and cannot be empty');
       }
       const title = body.title.trim();
@@ -607,39 +687,17 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
 
     if (route === '/api/issues/batch-align') {
-      if (method !== 'POST') return methodNotAllowed('POST');
+      throw new HttpError(404, 'not_found', 'Not found');
+    }
+
+    const draftMatch = /^\/api\/issues\/([^/]+)\/(draft|order|move)$/.exec(route);
+    if (draftMatch) {
+      if (method !== 'PUT') return methodNotAllowed('PUT');
       requireCsrf(req, record);
-
-      const listed = repository!.hasIssues
-        ? await clientFor(repository!).listIssues().catch(mapGitHubError)
-        : { items: [], truncated: false };
-
-      const openIssues = (listed.items || []).filter((item: any) => !item.pull_request && item.state !== 'closed');
-      const draftIssues = openIssues.filter((item: any) => {
-        const itemLabels = labelNames(item).map((l: string) => l.toLowerCase());
-        return itemLabels.includes('status:draft');
+      const body = await readJsonBody(req);
+      return writeIssue(repository!, parseIssueNumberOrThrow(draftMatch[1]), body, {
+        kind: draftMatch[2] as 'draft' | 'order' | 'move', data: body,
       });
-
-      let alignedCount = 0;
-      for (const draft of draftIssues) {
-        const { body: newBody, labels: newLabels } = alignDraftIssue(draft);
-        await scopedGithub!.updateIssue(draft.number, {
-          body: newBody,
-          labels: newLabels,
-        }).catch(mapGitHubError);
-        alignedCount += 1;
-      }
-
-      // Refresh repository board issues
-      const refreshedBoard = await repositoryBoard(repository!);
-      return {
-        status: 200,
-        body: {
-          ok: true,
-          alignedCount,
-          issues: refreshedBoard.issues,
-        },
-      };
     }
 
     const detailMatch = /^\/api\/issues\/([^/]+)$/.exec(route);
@@ -797,6 +855,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   }
 
   type WriteOp =
+    | { kind: 'draft' | 'order' | 'move'; data: any }
     | { kind: 'section'; sectionId: unknown; text: unknown }
     | { kind: 'question'; index: number; answer: unknown }
     | { kind: 'status'; status: unknown }
@@ -918,7 +977,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       );
     }
 
-    return withIssueLock(issueKey(repository, number), async () => {
+    const runLocked = async (): Promise<HandlerResponse> => {
       // A queued write must re-resolve freshness before any issue request.
       repository = await resolveRepository(repository.owner, repository.name);
       const github = clientFor(repository);
@@ -1006,8 +1065,440 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
       let patch: Record<string, unknown> = {};
       try {
-        if (op.kind === 'section') {
-          patch = { body: replaceSectionText(fresh.item.body ?? '', baseSectionId, op.text) };
+        if (op.kind === 'draft' || op.kind === 'order' || op.kind === 'move') {
+          if (fresh.item.state !== 'open' || statusLabelOf(labelNames(fresh.item)) !== 'status:draft') {
+            throw new HttpError(400, 'not_draft', 'Only open drafts can be edited, moved or reordered here');
+          }
+          if (op.kind === 'draft') {
+            if (typeof op.data.title !== 'string' || !op.data.title.trim() || op.data.title.trim().length > 256 ||
+                typeof op.data.description !== 'string' || op.data.description.length > 50000 || hasUnfencedOrderMarkerComment(op.data.description)) {
+              throw new HttpError(400, 'invalid_draft', 'Use a title of 1–256 characters and a description up to 50,000 characters');
+            }
+            const order = parseOrderMarker(fresh.item.body ?? '');
+            patch = { title: op.data.title.trim(), body: order === null ? op.data.description : setOrderMarker(op.data.description, order) };
+          } else if (op.kind === 'order') {
+            if (Array.isArray(op.data?.updates)) {
+              const rawUpdates = op.data.updates;
+              const rawNeighbours = Array.isArray(op.data.neighbours) ? op.data.neighbours : [];
+              if (rawUpdates.length < 1 || rawUpdates.length > 200 || rawNeighbours.length > 200) {
+                throw new HttpError(400, 'invalid_order', 'Order update list is invalid');
+              }
+              interface PreparedOrderItem {
+                key: string;
+                repo: RepositoryEntry;
+                number: number;
+                fingerprint: string;
+                order: number | null;
+                isUpdate: boolean;
+                isPrimary: boolean;
+                read: IssueRead;
+              }
+              const preparedMap = new Map<string, PreparedOrderItem>();
+              const updateSequence: PreparedOrderItem[] = [];
+              let prevOrderVal: number | null = null;
+              let includesPrimary = false;
+
+              for (const entry of rawUpdates) {
+                if (!entry || typeof entry !== 'object') {
+                  throw new HttpError(400, 'invalid_order', 'Order update entry is invalid');
+                }
+                const repoStr = typeof entry.repo === 'string' && entry.repo ? entry.repo : repository.full;
+                if (!/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(repoStr)) {
+                  throw new HttpError(400, 'invalid_order', 'Order update repository is invalid');
+                }
+                const itemNum = parseIssueNumberOrThrow(String(entry.number ?? ''));
+                const itemFp = typeof entry.fingerprint === 'string' ? entry.fingerprint : '';
+                if (!/^[a-f0-9]{64}$/.test(itemFp)) {
+                  throw new HttpError(400, 'fingerprint_required', 'Each reordered draft requires a valid fingerprint');
+                }
+                if (typeof entry.order !== 'number' || !Number.isFinite(entry.order)) {
+                  throw new HttpError(400, 'invalid_order', 'Each reordered draft requires a finite numeric order');
+                }
+                if (prevOrderVal !== null && !(entry.order > prevOrderVal)) {
+                  throw new HttpError(409, 'invalid_order', 'Order updates must be strictly increasing');
+                }
+                prevOrderVal = entry.order;
+                const [uOwner, uName] = repoStr.split('/');
+                const uRepo = uOwner.toLowerCase() === repository.owner.toLowerCase() && uName.toLowerCase() === repository.name.toLowerCase()
+                  ? repository
+                  : await resolveRepository(uOwner, uName);
+                const k = issueKey(uRepo, itemNum);
+                if (preparedMap.has(k)) {
+                  throw new HttpError(400, 'invalid_order', 'Duplicate draft in order updates');
+                }
+                const isPrimary = uRepo.full.toLowerCase() === repository.full.toLowerCase() && itemNum === number;
+                if (isPrimary) {
+                  if (itemFp !== supplied) {
+                    throw new HttpError(409, 'conflict', 'This task changed on GitHub after you opened it; nothing was written');
+                  }
+                  includesPrimary = true;
+                }
+                const itemRead = isPrimary ? fresh : await clientFor(uRepo).getIssue(itemNum).catch(mapGitHubError);
+                if (itemRead.item.pull_request || itemRead.item.state !== 'open' || statusLabelOf(labelNames(itemRead.item)) !== 'status:draft') {
+                  throw new HttpError(400, 'not_draft', 'Only open drafts can be reordered');
+                }
+                if (issueFingerprint(itemRead.item, uRepo) !== itemFp) {
+                  throw new HttpError(409, 'conflict', 'A draft in this order changed on GitHub; refresh and try again', {
+                    issue: buildIssueDetail(fresh.item, repository),
+                    statusOptions: statusOptions(),
+                  });
+                }
+                const prepared: PreparedOrderItem = {
+                  key: k,
+                  repo: uRepo,
+                  number: itemNum,
+                  fingerprint: itemFp,
+                  order: entry.order,
+                  isUpdate: true,
+                  isPrimary,
+                  read: itemRead,
+                };
+                preparedMap.set(k, prepared);
+                updateSequence.push(prepared);
+              }
+
+              if (!includesPrimary) {
+                throw new HttpError(400, 'invalid_order', 'Order updates must include the target draft');
+              }
+
+              for (const entry of rawNeighbours) {
+                if (!entry || typeof entry !== 'object') {
+                  throw new HttpError(400, 'invalid_order', 'Order neighbour entry is invalid');
+                }
+                const repoStr = typeof entry.repo === 'string' && entry.repo ? entry.repo : repository.full;
+                if (!/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(repoStr)) {
+                  throw new HttpError(400, 'invalid_order', 'Order neighbour repository is invalid');
+                }
+                const itemNum = parseIssueNumberOrThrow(String(entry.number ?? ''));
+                const itemFp = typeof entry.fingerprint === 'string' ? entry.fingerprint : '';
+                if (!/^[a-f0-9]{64}$/.test(itemFp)) {
+                  throw new HttpError(400, 'fingerprint_required', 'Each neighbour draft requires a valid fingerprint');
+                }
+                const [nOwner, nName] = repoStr.split('/');
+                const nRepo = nOwner.toLowerCase() === repository.owner.toLowerCase() && nName.toLowerCase() === repository.name.toLowerCase()
+                  ? repository
+                  : await resolveRepository(nOwner, nName);
+                const k = issueKey(nRepo, itemNum);
+                if (preparedMap.has(k)) continue;
+                const nRead = await clientFor(nRepo).getIssue(itemNum).catch(mapGitHubError);
+                if (nRead.item.pull_request || nRead.item.state !== 'open' || statusLabelOf(labelNames(nRead.item)) !== 'status:draft') {
+                  throw new HttpError(409, 'conflict', 'A neighbouring draft is no longer an open draft; refresh and try again');
+                }
+                if (issueFingerprint(nRead.item, nRepo) !== itemFp) {
+                  throw new HttpError(409, 'conflict', 'A neighbouring draft changed on GitHub; nothing was written', {
+                    issue: buildIssueDetail(fresh.item, repository),
+                    statusOptions: statusOptions(),
+                  });
+                }
+                preparedMap.set(k, {
+                  key: k,
+                  repo: nRepo,
+                  number: itemNum,
+                  fingerprint: itemFp,
+                  order: parseOrderMarker(nRead.item.body ?? ''),
+                  isUpdate: false,
+                  isPrimary: false,
+                  read: nRead,
+                });
+              }
+
+              const updatedDetails: Array<ReturnType<typeof buildIssueDetail>> = [];
+              let primaryDetail: ReturnType<typeof buildIssueDetail> | null = null;
+              let writesCompleted = 0;
+
+              for (const item of updateSequence) {
+                const nextBody = setOrderMarker(item.read.item.body ?? '', item.order as number);
+                if (nextBody === (item.read.item.body ?? '')) {
+                  const detail = buildIssueDetail(item.read.item, item.repo);
+                  updatedDetails.push(detail);
+                  if (item.isPrimary) primaryDetail = detail;
+                  continue;
+                }
+                const itemClient = clientFor(item.repo);
+                try {
+                  await itemClient.updateIssue(item.number, { body: nextBody }, { etag: item.read.etag });
+                } catch (error) {
+                  if (error instanceof GitHubError && error.status === 412) {
+                    if (writesCompleted > 0) {
+                      throw new HttpError(
+                        409,
+                        'partial_order',
+                        'Order was only partially updated because another draft changed concurrently; refresh to reconcile the current order.',
+                        { updatedIssues: updatedDetails, statusOptions: statusOptions() },
+                      );
+                    }
+                    const reread = await github.getIssue(number).catch(mapGitHubError);
+                    throw new HttpError(409, 'conflict', 'This task changed on GitHub while saving; nothing was written', {
+                      issue: buildIssueDetail(reread.item, repository),
+                      statusOptions: statusOptions(),
+                    });
+                  }
+                  if (writesCompleted > 0) {
+                    throw new HttpError(
+                      502,
+                      'write_outcome_unknown',
+                      'Order was partially written before a GitHub error; refresh the board to reconcile before retrying.',
+                      { updatedIssues: updatedDetails, statusOptions: statusOptions() },
+                    );
+                  }
+                  if (error instanceof GitHubError && (error.kind === 'network' || error.kind === 'server')) {
+                    throw new HttpError(502, 'write_outcome_unknown', 'Outcome unknown \u2014 check the issue on GitHub');
+                  }
+                  mapGitHubError(error);
+                }
+
+                let rereadItem: IssueRead;
+                try {
+                  rereadItem = await itemClient.getIssue(item.number);
+                } catch {
+                  throw new HttpError(
+                    502,
+                    'write_outcome_unknown',
+                    'Outcome unknown \u2014 check the issue on GitHub',
+                    { updatedIssues: updatedDetails, statusOptions: statusOptions() },
+                  );
+                }
+                if ((rereadItem.item.body ?? '') !== nextBody) {
+                  throw new HttpError(
+                    502,
+                    'write_outcome_unknown',
+                    'Outcome unknown \u2014 check the issue on GitHub',
+                    { updatedIssues: updatedDetails, statusOptions: statusOptions() },
+                  );
+                }
+                writesCompleted += 1;
+                const detail = buildIssueDetail(rereadItem.item, item.repo);
+                updatedDetails.push(detail);
+                if (item.isPrimary) primaryDetail = detail;
+              }
+
+              log(`write order issue=${number} count=${writesCompleted}`);
+              return {
+                status: 200,
+                body: {
+                  issue: primaryDetail ?? buildIssueDetail(fresh.item, repository),
+                  updatedIssues: updatedDetails,
+                  savedAt: new Date(now()).toISOString(),
+                  statusOptions: statusOptions(),
+                },
+              };
+            }
+
+            const previous = op.data.previous;
+            const next = op.data.next;
+            if (![previous, next].every((value) => value === null || (typeof value === 'number' && Number.isFinite(value)))) {
+              throw new HttpError(400, 'invalid_order', 'Order neighbours must be finite numbers or null');
+            }
+            if (previous !== null && next !== null && previous > next) {
+              throw new HttpError(409, 'invalid_order', 'Order neighbours must be in ascending order');
+            }
+            const hasExplicitNeighbours = Array.isArray(op.data.neighbours);
+            if (hasExplicitNeighbours) {
+              if (op.data.neighbours.length > 200) {
+                throw new HttpError(400, 'invalid_order', 'Order neighbour list is invalid');
+              }
+              for (const entry of op.data.neighbours) {
+                if (!entry || typeof entry !== 'object') {
+                  throw new HttpError(400, 'invalid_order', 'Order neighbour entry is invalid');
+                }
+                const repoStr = typeof entry.repo === 'string' && entry.repo ? entry.repo : repository.full;
+                if (!/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(repoStr)) {
+                  throw new HttpError(400, 'invalid_order', 'Order neighbour repository is invalid');
+                }
+                const itemNum = parseIssueNumberOrThrow(String(entry.number ?? ''));
+                const itemFp = typeof entry.fingerprint === 'string' ? entry.fingerprint : '';
+                if (!/^[a-f0-9]{64}$/.test(itemFp)) {
+                  throw new HttpError(400, 'fingerprint_required', 'Each neighbour draft requires a valid fingerprint');
+                }
+                const [nOwner, nName] = repoStr.split('/');
+                const nRepo = nOwner.toLowerCase() === repository.owner.toLowerCase() && nName.toLowerCase() === repository.name.toLowerCase()
+                  ? repository
+                  : await resolveRepository(nOwner, nName);
+                const nRead = await clientFor(nRepo).getIssue(itemNum).catch(mapGitHubError);
+                if (nRead.item.pull_request || nRead.item.state !== 'open' || statusLabelOf(labelNames(nRead.item)) !== 'status:draft') {
+                  throw new HttpError(409, 'conflict', 'A neighbouring draft is no longer an open draft; refresh and try again');
+                }
+                if (issueFingerprint(nRead.item, nRepo) !== itemFp) {
+                  throw new HttpError(409, 'conflict', 'A neighbouring draft changed on GitHub; nothing was written', {
+                    issue: buildIssueDetail(fresh.item, repository),
+                    statusOptions: statusOptions(),
+                  });
+                }
+                if (entry.order !== undefined && parseOrderMarker(nRead.item.body ?? '') !== entry.order) {
+                  throw new HttpError(409, 'conflict', 'A neighbouring draft changed order on GitHub; refresh the board and try again', {
+                    issue: buildIssueDetail(fresh.item, repository),
+                    statusOptions: statusOptions(),
+                  });
+                }
+              }
+            }
+
+            const listed = repository.hasIssues
+              ? await github.listIssues().catch(mapGitHubError)
+              : { items: [], truncated: false };
+            const otherDrafts = (listed.items || []).filter(
+              (item: any) =>
+                !item.pull_request &&
+                item.state === 'open' &&
+                item.number !== number &&
+                statusLabelOf(labelNames(item)) === 'status:draft',
+            );
+            const otherOrders = otherDrafts
+              .map((item: any) => parseOrderMarker(item.body ?? ''))
+              .filter((val): val is number => val !== null);
+
+            if (previous !== null && next !== null && otherOrders.some((val) => val > previous && val < next)) {
+              throw new HttpError(409, 'conflict', 'Another draft moved into that position; refresh the board and try again', {
+                issue: buildIssueDetail(fresh.item, repository),
+                statusOptions: statusOptions(),
+              });
+            }
+            if (!hasExplicitNeighbours && otherOrders.length > 0) {
+              const prevKnown = previous !== null && otherOrders.includes(previous);
+              const nextKnown = next !== null && otherOrders.includes(next);
+              if ((prevKnown || nextKnown) && ((previous !== null && !prevKnown) || (next !== null && !nextKnown))) {
+                throw new HttpError(409, 'conflict', 'A neighbouring draft changed order on GitHub; refresh the board and try again', {
+                  issue: buildIssueDetail(fresh.item, repository),
+                  statusOptions: statusOptions(),
+                });
+              }
+            }
+
+            let order = midpointOrder(previous, next);
+            const midpointUsable = Number.isFinite(order) && (previous === null || order > previous) && (next === null || order < next);
+            if (midpointUsable && otherOrders.includes(order)) {
+              throw new HttpError(409, 'conflict', 'Another draft already occupies that order position; refresh the board and try again', {
+                issue: buildIssueDetail(fresh.item, repository),
+                statusOptions: statusOptions(),
+              });
+            }
+            if (!Number.isFinite(order) || (previous !== null && next !== null && !(order > previous && order < next))) {
+              const baseOrder = previous ?? 0;
+              order = baseOrder + 1000;
+              const trailingDrafts = otherDrafts
+                .map((item: any) => ({ item, order: parseOrderMarker(item.body ?? '') }))
+                .filter((entry): entry is { item: any; order: number } => entry.order !== null && entry.order >= (next ?? order))
+                .sort((a, b) => a.order - b.order || a.item.number - b.item.number);
+              let step = 2;
+              for (const trailing of trailingDrafts) {
+                const trailingRead = await github.getIssue(trailing.item.number).catch(mapGitHubError);
+                const rebalancedBody = setOrderMarker(trailingRead.item.body ?? '', baseOrder + step * 1000);
+                step += 1;
+                await github.updateIssue(trailing.item.number, { body: rebalancedBody }, { etag: trailingRead.etag }).catch(mapGitHubError);
+              }
+            }
+            patch = { body: setOrderMarker(fresh.item.body ?? '', order) };
+          } else {
+            if (op.data?.confirmed !== true) {
+              throw new HttpError(400, 'confirmation_required', 'Confirm moving this draft before transferring it on GitHub');
+            }
+            if (typeof op.data.target !== 'string' || !/^[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(op.data.target)) {
+              throw new HttpError(400, 'invalid_target', 'Select a discovered target project');
+            }
+            const [owner, name] = op.data.target.split('/');
+            const target = await resolveRepository(owner, name);
+            if (target.full.toLowerCase() === repository.full.toLowerCase() || target.archived || !target.hasIssues) {
+              throw new HttpError(400, 'invalid_target', 'Select a different writable project');
+            }
+            const targetClient = clientFor(target);
+            const targetRepoRaw = await targetClient.getRepository().catch(mapGitHubError);
+            if (targetRepoRaw.archived || targetRepoRaw.has_issues === false || targetRepoRaw.disabled) {
+              throw new HttpError(400, 'invalid_target', 'Select a different writable project');
+            }
+            const issueNodeId = typeof fresh.item.node_id === 'string' ? fresh.item.node_id.trim() : '';
+            const targetRepoNodeId = typeof targetRepoRaw.node_id === 'string' ? targetRepoRaw.node_id.trim() : '';
+            if (!issueNodeId || !targetRepoNodeId) {
+              throw new HttpError(502, 'github_unavailable', 'GitHub did not provide GraphQL node identifiers; the draft remains in its current project');
+            }
+            const sourceKey = issueKey(repository, number);
+            let transferred;
+            try {
+              transferred = await github.transferIssue({
+                issueId: issueNodeId,
+                repositoryId: targetRepoNodeId,
+              });
+            } catch (error) {
+              if (error instanceof GitHubError) {
+                if (error.kind === 'forbidden' || error.kind === 'unauthorized') {
+                  throw new HttpError(
+                    403,
+                    'transfer_forbidden',
+                    `GitHub refused permission to transfer this draft to ${target.full} with the configured token; the draft remains in ${repository.full}.`,
+                  );
+                }
+                if (error.kind === 'invalid') {
+                  throw new HttpError(
+                    422,
+                    'transfer_rejected',
+                    `GitHub rejected transferring this draft to ${target.full}; the draft remains in ${repository.full}.`,
+                  );
+                }
+                if (error.kind === 'rate_limited') {
+                  mapGitHubError(error);
+                }
+              }
+              throw new HttpError(
+                502,
+                'write_outcome_unknown',
+                'Transfer outcome could not be confirmed from GitHub; refresh the board to reconcile before editing or retrying.',
+                { sourceKey, targetRepo: target.full },
+              );
+            }
+            if (transferred.repositoryFullName.toLowerCase() !== target.full.toLowerCase()) {
+              throw new HttpError(
+                502,
+                'write_outcome_unknown',
+                'Transfer destination did not match the selected project; refresh the board to reconcile.',
+                { sourceKey, targetRepo: target.full, targetUrl: transferred.url },
+              );
+            }
+            let targetRead: IssueRead;
+            try {
+              targetRead = await targetClient.getIssue(transferred.number);
+            } catch {
+              throw new HttpError(
+                502,
+                'write_outcome_unknown',
+                'Draft transfer completed or is in progress, but reading the moved issue failed; refresh the board to reconcile.',
+                { sourceKey, targetRepo: target.full, targetNumber: transferred.number, targetUrl: transferred.url },
+              );
+            }
+            if (
+              targetRead.item.pull_request ||
+              targetRead.item.number !== transferred.number ||
+              targetRead.item.state !== 'open' ||
+              targetRead.item.title !== fresh.item.title ||
+              (targetRead.item.body ?? '') !== (fresh.item.body ?? '')
+            ) {
+              throw new HttpError(
+                502,
+                'write_outcome_unknown',
+                'Transferred issue state could not be verified in the target project; refresh the board to reconcile.',
+                { sourceKey, targetRepo: target.full, targetNumber: transferred.number, targetUrl: transferred.url },
+              );
+            }
+            const canonicalUrl = targetRead.item.html_url || transferred.url;
+            log(`transfer source=${sourceKey} target=${issueKey(target, transferred.number)}`);
+            return {
+              status: 200,
+              body: {
+                issue: buildIssueDetail(targetRead.item, target),
+                listItem: buildBoardListItem(targetRead.item, target),
+                sourceKey,
+                sourceRepository: repository.full,
+                sourceNumber: number,
+                targetRepository: target.full,
+                targetNumber: transferred.number,
+                targetUrl: canonicalUrl,
+                savedAt: new Date(now()).toISOString(),
+                statusOptions: statusOptions(),
+              },
+            };
+          }
+        } else if (op.kind === 'section') {
+          patch = { body: replaceSectionText(stripOrderMarker(fresh.item.body ?? ''), baseSectionId, op.text) };
+          const order = parseOrderMarker(fresh.item.body ?? '');
+          if (order !== null) patch.body = setOrderMarker(patch.body as string, order);
         } else if (op.kind === 'question') {
           const curDetail = buildIssueDetail(fresh.item, repository);
           const curQView = curDetail.openQuestions[baseQuestionIndex];
@@ -1018,7 +1509,8 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         } else if (op.kind === 'patch') {
           patch = {};
           if (typeof op.body === 'string') {
-            patch.body = op.body;
+            const order = parseOrderMarker(fresh.item.body ?? '');
+            patch.body = order !== null ? setOrderMarker(op.body, order) : op.body;
           }
           if (typeof op.status === 'string') {
             patch.labels = applyStatusChange(fresh.item, op.status);
@@ -1027,7 +1519,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             patch.state = op.state;
           }
           const currentBodyNorm = (fresh.item.body ?? '').replace(/\r\n/g, '\n');
-          const targetBodyNorm = typeof op.body === 'string' ? op.body.replace(/\r\n/g, '\n') : currentBodyNorm;
+          const targetBodyNorm = typeof op.body === 'string' ? (patch.body as string).replace(/\r\n/g, '\n') : currentBodyNorm;
           const bodyChanged = typeof op.body === 'string' && currentBodyNorm !== targetBodyNorm;
           const statusChanged = typeof op.status === 'string' && targetStatus !== baseStatus;
           const stateChanged = typeof op.state === 'string' && op.state !== fresh.item.state;
@@ -1067,7 +1559,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       const currentItem = reread.item;
       let verified = false;
 
-      if (op.kind === 'section') {
+      if (op.kind === 'draft' || op.kind === 'order') {
+        verified = Object.entries(patch).every(([key, value]) => currentItem[key] === value);
+      } else if (op.kind === 'section') {
         const curSec = findSections(currentItem.body ?? '').find((s) => s.id === op.sectionId);
         const expectedSec = findSections((patch.body as string) ?? '').find((s) => s.id === op.sectionId);
         if (curSec && expectedSec) {
@@ -1093,7 +1587,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         let matches = true;
         if (typeof op.body === 'string') {
           const normCur = (currentItem.body ?? '').replace(/\r\n/g, '\n');
-          const normTarget = op.body.replace(/\r\n/g, '\n');
+          const normTarget = (patch.body as string).replace(/\r\n/g, '\n');
           if (normCur !== normTarget) matches = false;
         }
         if (typeof op.status === 'string') {
@@ -1128,7 +1622,12 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           statusOptions: statusOptions(),
         },
       );
-    });
+    };
+
+    if (op.kind === 'order') {
+      return withIssueLock('board:order', () => withIssueLock(issueKey(repository, number), runLocked));
+    }
+    return withIssueLock(issueKey(repository, number), runLocked);
   }
 
   return {

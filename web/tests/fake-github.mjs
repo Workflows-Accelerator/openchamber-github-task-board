@@ -4,6 +4,8 @@
 import { createHash } from 'node:crypto';
 import http from 'node:http';
 
+let issueNodeCounter = 0;
+
 export function makeIssue({
   number,
   title = `Synthetic issue ${number}`,
@@ -11,12 +13,16 @@ export function makeIssue({
   state = 'open',
   labels = [],
   user = 'board-owner',
+  created_at = '2026-10-01T09:00:00Z',
   updated_at = '2026-10-20T10:00:00Z',
   pull_request = false,
   repo = 'owner/repo',
+  node_id,
 } = {}) {
+  issueNodeCounter += 1;
   const issue = {
     number,
+    node_id: node_id ?? `I_kwDO_${repo.replace(/[^a-zA-Z0-9]/g, '_')}_${number}_${issueNodeCounter}`,
     title,
     body,
     state,
@@ -26,7 +32,7 @@ export function makeIssue({
     user: { login: user, avatar_url: '' },
     assignees: [],
     comments: 0,
-    created_at: '2026-10-01T09:00:00Z',
+    created_at,
     updated_at,
     html_url: `https://github.com/${repo}/issues/${number}`,
   };
@@ -66,15 +72,26 @@ function readBody(req) {
 
 function repositorySpec(input, index) {
   const repo = input.repo ?? 'owner/repo';
+  const id = input.id ?? index + 1;
+  const clonedIssues = (input.issues ?? []).map((issue) => {
+    const copy = structuredClone(issue);
+    if (!copy.node_id) {
+      issueNodeCounter += 1;
+      copy.node_id = `I_kwDO_${repo.replace(/[^a-zA-Z0-9]/g, '_')}_${copy.number}_${issueNodeCounter}`;
+    }
+    return copy;
+  });
   return {
     repo,
-    id: input.id ?? index + 1,
+    id,
+    nodeId: input.nodeId ?? `R_kgDO_${repo.replace(/[^a-zA-Z0-9]/g, '_')}_${id}`,
     archived: Boolean(input.archived),
     hasIssues: input.hasIssues !== false,
     private: Boolean(input.private),
     accessible: input.accessible !== false,
     failing: Boolean(input.failing),
-    issues: (input.issues ?? []).map((issue) => structuredClone(issue)),
+    issues: clonedIssues,
+    maxIssueNumber: clonedIssues.reduce((max, i) => Math.max(max, i.number), 0),
   };
 }
 
@@ -115,6 +132,10 @@ export async function startFakeGitHub(options = {}) {
   const state = {
     requests: [],
     patchCalls: [],
+    commentCalls: [],
+    graphqlCalls: [],
+    commentHook: options.commentHook ?? null,
+    graphqlHook: options.graphqlHook ?? null,
     unknownRepoHits: [],
     failAll: false,
     failDiscovery: false,
@@ -144,6 +165,7 @@ export async function startFakeGitHub(options = {}) {
     const [owner, name] = spec.repo.split('/');
     return {
       id: spec.id,
+      node_id: spec.nodeId,
       name,
       full_name: spec.repo,
       owner: { login: owner },
@@ -253,7 +275,9 @@ export async function startFakeGitHub(options = {}) {
         } catch {
           return send(400, { message: 'Bad Request' });
         }
-        const nextNumber = spec.issues.reduce((max, i) => Math.max(max, i.number), 0) + 1;
+        const currentMax = spec.issues.reduce((max, i) => Math.max(max, i.number), spec.maxIssueNumber ?? 0);
+        const nextNumber = currentMax + 1;
+        spec.maxIssueNumber = nextNumber;
         const newIssue = makeIssue({
           number: nextNumber,
           title: payload.title,
@@ -265,6 +289,15 @@ export async function startFakeGitHub(options = {}) {
         return send(201, newIssue, { etag: etagFor(newIssue) });
       }
 
+      if (parts[3] === 'issues' && parts[5] === 'comments' && req.method === 'POST') {
+        const payload = await readBody(req);
+        if (state.commentHook) {
+          const result = await state.commentHook(payload, spec);
+          if (result) return send(result.status, result.payload ?? {});
+        }
+        state.commentCalls.push({ repo: spec.repo, number: Number(parts[4]), payload });
+        return send(201, { id: state.commentCalls.length, ...payload });
+      }
       const issueMatch = new RegExp(`^/repos/${spec.repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/issues/(\\d+)$`).exec(
         url.pathname,
       );
@@ -311,6 +344,7 @@ export async function startFakeGitHub(options = {}) {
           }
 
           if (applyPayload) {
+            if (payload && typeof payload.title === 'string') issue.title = payload.title;
             if (payload && typeof payload.body === 'string') issue.body = payload.body;
             if (payload && Array.isArray(payload.labels)) {
               issue.labels = payload.labels.map((name) => ({ name, color: 'ededed' }));
@@ -327,6 +361,106 @@ export async function startFakeGitHub(options = {}) {
 
     if (req.headers.authorization !== `Bearer ${token}`) {
       return send(401, { message: 'Bad credentials' });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/graphql') {
+      let payload;
+      try {
+        payload = await readBody(req);
+      } catch {
+        return send(400, { message: 'Bad Request' });
+      }
+      const query = typeof payload?.query === 'string' ? payload.query : '';
+      const variables = payload?.variables && typeof payload.variables === 'object' ? payload.variables : {};
+      state.graphqlCalls.push({ query, variables });
+
+      if (state.graphqlHook) {
+        const result = await state.graphqlHook({ query, variables, specs, state, req, res });
+        if (res.writableEnded) return;
+        if (result && typeof result.status === 'number') {
+          if (typeof result.rawBody === 'string') {
+            for (const [name, value] of Object.entries(result.headers ?? {})) res.setHeader(name, value);
+            res.statusCode = result.status;
+            return res.end(result.rawBody);
+          }
+          return send(result.status, result.payload ?? {}, result.headers ?? {});
+        }
+      }
+
+      if (query.includes('transferIssue')) {
+        const issueId = variables.issueId ?? variables.input?.issueId;
+        const repositoryId = variables.repositoryId ?? variables.input?.repositoryId;
+        let sourceSpec = null;
+        let issueIndex = -1;
+        for (const spec of specs) {
+          if (!spec.accessible) continue;
+          const idx = spec.issues.findIndex((i) => i.node_id === issueId);
+          if (idx !== -1) {
+            sourceSpec = spec;
+            issueIndex = idx;
+            break;
+          }
+        }
+        const targetSpec = specs.find((spec) => spec.accessible && spec.nodeId === repositoryId) ?? null;
+        if (sourceSpec?.failing || targetSpec?.failing) {
+          return send(500, { message: 'Injected repository failure' });
+        }
+        if (!sourceSpec || issueIndex === -1 || !targetSpec) {
+          return send(200, {
+            data: { transferIssue: null },
+            errors: [{ type: 'NOT_FOUND', message: 'Could not resolve to a node with the global id' }],
+          });
+        }
+        if (targetSpec.archived || !targetSpec.hasIssues || sourceSpec.repo === targetSpec.repo) {
+          return send(200, {
+            data: { transferIssue: null },
+            errors: [{ type: 'UNPROCESSABLE', message: 'Target repository cannot accept transferred issue' }],
+          });
+        }
+        const [removed] = sourceSpec.issues.splice(issueIndex, 1);
+        sourceSpec.maxIssueNumber = Math.max(sourceSpec.maxIssueNumber ?? 0, removed.number);
+        const currentMax = targetSpec.issues.reduce((max, i) => Math.max(max, i.number), targetSpec.maxIssueNumber ?? 0);
+        const nextNumber = currentMax + 1;
+        targetSpec.maxIssueNumber = nextNumber;
+        const transferred = structuredClone(removed);
+        transferred.number = nextNumber;
+        transferred.html_url = `https://github.com/${targetSpec.repo}/issues/${nextNumber}`;
+        transferred.updated_at = new Date().toISOString();
+        targetSpec.issues.unshift(transferred);
+        const [targetOwner, targetName] = targetSpec.repo.split('/');
+        return send(200, {
+          data: {
+            transferIssue: {
+              issue: {
+                id: transferred.node_id,
+                number: transferred.number,
+                url: transferred.html_url,
+                title: transferred.title,
+                body: transferred.body,
+                state: String(transferred.state ?? 'open').toUpperCase(),
+                createdAt: transferred.created_at,
+                updatedAt: transferred.updated_at,
+                repository: {
+                  id: targetSpec.nodeId,
+                  databaseId: targetSpec.id,
+                  name: targetName,
+                  nameWithOwner: targetSpec.repo,
+                  isArchived: targetSpec.archived,
+                  hasIssuesEnabled: targetSpec.hasIssues,
+                  owner: { login: targetOwner },
+                },
+                labels: {
+                  nodes: (transferred.labels ?? []).map((l) => ({
+                    name: typeof l === 'string' ? l : l.name,
+                  })),
+                },
+              },
+            },
+          },
+        });
+      }
+
+      return send(200, { errors: [{ type: 'BAD_USER_INPUT', message: 'Unsupported GraphQL operation' }] });
     }
 
     if (req.method === 'GET' && url.pathname === '/user') {
@@ -399,6 +533,9 @@ export async function startFakeGitHub(options = {}) {
     },
     setPatchHook(fn) {
       state.patchHook = fn;
+    },
+    setGraphqlHook(fn) {
+      state.graphqlHook = fn;
     },
     setInjectedResponse(status, payload = {}, headers = {}) {
       state.injectedResponse = status ? { status, payload, headers } : null;

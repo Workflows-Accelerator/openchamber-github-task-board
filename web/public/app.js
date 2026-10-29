@@ -24,7 +24,12 @@
     boardLoad: null,
     boardLoads: 0,
     uncertain: new Set(),
-    mobileViewFilter: 'all',
+    viewState: { view: 'simple', filters: [], sort: 'priority' },
+    projectNames: {},
+    draftBusy: false,
+    draftEdits: new Map(),
+    drawerOpenerKey: null,
+    drawerFromDraftBtn: false,
   };
 
   function identity(issue) {
@@ -106,16 +111,31 @@
     if (draft) {
       if (kind === 'section') draft.overview = null;
       if (kind === 'question') draft.answers = draft.answers.filter(function (a) { return a.index !== issue.openQuestions.find(function (q) { return q.answerIndex === answerIndex; }).index; });
-      if (draft.overview === null && !draft.answers.length) state.drafts.delete(draftKey);
+      if (draft.overview === null && !draft.answers.length) {
+        state.drafts.delete(draftKey);
+      } else if (kind !== 'section' && response.issue && response.issue.fingerprint && response.issue.fingerprint !== issue.fingerprint) {
+        var oldOverview = issue.editableSections && issue.editableSections[0] ? issue.editableSections[0].text : '';
+        var newOverview = response.issue.editableSections && response.issue.editableSections[0] ? response.issue.editableSections[0].text : '';
+        if (oldOverview === newOverview) {
+          state.drafts.delete(draftKey);
+          draft.fingerprint = response.issue.fingerprint;
+          state.drafts.set(identity(issue) + ':' + response.issue.fingerprint, draft);
+        }
+      }
     }
     if (state.board) state.board.issues = state.board.issues.map(function (row) {
       if (!sameIdentity(row, issue)) return row;
       var current = response.issue;
-      return Object.assign({}, row, current, { counts: {
-        subtasks: { total: current.subtasks.length, done: current.subtasks.filter(function (item) { return item.completed; }).length },
-        openQuestions: { total: current.openQuestions.length, open: current.openQuestions.filter(function (item) { return !item.completed; }).length },
-        humanTasks: { total: current.humanTasks.length, open: current.humanTasks.filter(function (item) { return !item.completed; }).length },
-      } });
+      return Object.assign({}, row, current, {
+        pendingItems: (current.humanTasks || []).concat(current.openQuestions || []).map(function (item) {
+          return { text: item.text, completed: item.completed };
+        }),
+        counts: {
+          subtasks: { total: current.subtasks.length, done: current.subtasks.filter(function (item) { return item.completed; }).length },
+          openQuestions: { total: current.openQuestions.length, open: current.openQuestions.filter(function (item) { return !item.completed; }).length },
+          humanTasks: { total: current.humanTasks.length, open: current.humanTasks.filter(function (item) { return !item.completed; }).length },
+        },
+      });
     });
     if (generation !== state.readGeneration || !state.detail || !sameIdentity(state.detail, issue)) return false;
     state.detail = response.issue;
@@ -137,7 +157,13 @@
       if (value === undefined || value === null) return;
       if (key === 'class') node.className = value;
       else if (key === 'text') node.textContent = value;
-      else if (key === 'onclick') node.addEventListener('click', value);
+      else if (key === 'checked' || key === 'disabled' || key === 'hidden' || key === 'selected') {
+        node[key] = Boolean(value);
+      }
+      else if (key.startsWith('on') && typeof value === 'function') node.addEventListener(key.slice(2), value);
+      else if (typeof value === 'boolean') {
+        if (value) node.setAttribute(key, '');
+      }
       else node.setAttribute(key, value);
     });
     (children || []).forEach(function (child) {
@@ -183,7 +209,15 @@
     if (typeof issue.number !== 'number' || !Number.isInteger(issue.number) || issue.number <= 0) return false;
     var expectedNumber = typeof expected === 'object' && expected ? expected.number : expected;
     if (expectedNumber !== undefined && expectedNumber !== null && issue.number !== expectedNumber) return false;
-    if (expected && typeof expected === 'object' && expected.repository) {
+    if (expected && typeof expected === 'object' && expected.transferTarget) {
+      var targetRepo = issue.repository;
+      if (!targetRepo || typeof targetRepo !== 'object' || Array.isArray(targetRepo) ||
+          typeof targetRepo.owner !== 'string' || typeof targetRepo.name !== 'string' ||
+          targetRepo.full !== targetRepo.owner + '/' + targetRepo.name ||
+          typeof targetRepo.archived !== 'boolean' || typeof targetRepo.hasIssues !== 'boolean' ||
+          targetRepo.full.toLowerCase() !== String(expected.transferTarget).toLowerCase() ||
+          issue.key !== identity(issue)) return false;
+    } else if (expected && typeof expected === 'object' && expected.repository) {
       var repository = issue.repository;
       if (!repository || typeof repository !== 'object' || Array.isArray(repository) ||
           typeof repository.owner !== 'string' || typeof repository.name !== 'string' ||
@@ -356,7 +390,10 @@
     state.drafts.clear();
     state.uncertain.clear();
     $('repository-picker').hidden = true;
-    $('repo-select').textContent = '';
+    if ($('repo-select')) $('repo-select').textContent = '';
+    state.projectNames = {};
+    state.draftEdits.clear();
+    if ($('board-sheet') && $('board-sheet').open) $('board-sheet').close();
     clearRenderedData();
     showView('login');
     $('refresh-btn').hidden = true;
@@ -382,13 +419,49 @@
     }
   }
 
+  function restoreDrawerFocus() {
+    var key = state.drawerOpenerKey;
+    var fromDraft = state.drawerFromDraftBtn;
+    state.drawerOpenerKey = null;
+    state.drawerFromDraftBtn = false;
+    if (!key) return;
+    if (document.querySelector) {
+      var safeKey = String(key).replace(/"/g, '\\"');
+      var selector = fromDraft
+        ? '.draft-open-btn[data-issue-key="' + safeKey + '"]'
+        : '.task-row[data-issue-key="' + safeKey + '"]';
+      var target = document.querySelector(selector) || document.querySelector('[data-issue-key="' + safeKey + '"]');
+      if (target && !target.hidden && typeof target.focus === 'function') {
+        target.focus();
+        return;
+      }
+    }
+    var fallback = $('view-btn') || $('board-title');
+    if (fallback && typeof fallback.focus === 'function') fallback.focus();
+  }
+
   function showBoard() {
+    var shouldRestoreFocus = Boolean(state.drawerOpenerKey);
     showView('board');
     setNotice('');
     if (state.board) renderBoard();
+    if (shouldRestoreFocus) restoreDrawerFocus();
   }
 
-  function openIssueView(issue) {
+  function closeDrawer() {
+    rememberDraft();
+    state.readGeneration++;
+    state.detail = null;
+    state.pending = null;
+    state.closingHash = window.location.hash !== '#/';
+    setHash('#/');
+    showBoard();
+  }
+
+  function openIssueView(issue, fromDraftBtn) {
+    state.closingHash = false;
+    state.drawerOpenerKey = identity(issue);
+    state.drawerFromDraftBtn = Boolean(fromDraftBtn);
     state.pending = issue;
     setHash('#/issue/' + issue.number);
     openIssue(issue);
@@ -396,6 +469,7 @@
 
   var OFFLINE_DRAFTS_KEY = 'openchamber_offline_drafts';
   var isSyncingOfflineDrafts = false;
+  var offlineSeq = 0;
 
   function getOfflineDrafts() {
     try {
@@ -418,23 +492,58 @@
     } catch (e) {}
   }
 
-  function saveToOfflineQueue(title, repo) {
+  function saveToOfflineQueue(title, repo, description, order) {
     var drafts = getOfflineDrafts();
-    var exists = drafts.some(function (d) {
-      return d.title === title && d.repo === repo;
-    });
-    if (!exists) {
-      drafts.push({
-        id: 'offline-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
-        title: title,
-        repo: repo,
-        createdAt: new Date().toISOString(),
-        offline: true,
-        labels: ['status:draft'],
+    if (description === undefined && order === undefined) {
+      var existing = drafts.find(function (d) {
+        return d.title === title && d.repo === repo && !d.description && d.order === undefined;
       });
-      saveOfflineDrafts(drafts);
+      if (existing) return existing;
     }
+    var entry = {
+      id: 'offline-' + Date.now() + '-' + (++offlineSeq) + '-' + Math.random().toString(36).slice(2, 8),
+      title: title,
+      description: description || '',
+      order: order,
+      repo: repo,
+      createdAt: new Date().toISOString(),
+      offline: true,
+      labels: ['status:draft'],
+      revision: 1,
+      state: 'queued',
+      uncertain: false,
+    };
+    drafts.push(entry);
+    saveOfflineDrafts(drafts);
     if (state.board) renderBoard();
+    return entry;
+  }
+
+  function showOfflineShell() {
+    state.csrf = null;
+    state.detail = null;
+    state.pending = null;
+    state.selected = 'all';
+    var repos = [];
+    getOfflineDrafts().forEach(function (d) {
+      if (d && d.repo && !repos.some(function (r) { return r.full === d.repo; })) {
+        var parts = String(d.repo).split('/');
+        repos.push({ owner: parts[0] || '', name: parts[1] || d.repo, full: d.repo, id: 0, available: true, archived: false, hasIssues: true });
+      }
+    });
+    state.repositories = { repositories: repos, visibleCount: repos.length, discoveryFailed: false, freshnessMs: 60000 };
+    state.board = { repo: 'Offline local drafts', repository: null, issues: [], count: 0, statusOptions: [] };
+    state.viewState.view = 'simple';
+    state.viewState.sort = 'manual';
+    if (!state.viewState.filters.includes('stage:draft')) {
+      state.viewState.filters = state.viewState.filters.concat('stage:draft');
+    }
+    $('repository-picker').hidden = true;
+    $('refresh-btn').hidden = false;
+    $('signout-btn').hidden = true;
+    renderBoard();
+    showView('board');
+    setNotice('Offline mode \u2014 showing local drafts only. Reconnect and refresh to sign in and sync with GitHub.', true);
   }
 
   async function syncOfflineDrafts() {
@@ -445,32 +554,79 @@
     isSyncingOfflineDrafts = true;
     var remaining = [];
     var syncedCount = 0;
+    var hadUncertain = false;
 
     for (var i = 0; i < drafts.length; i++) {
       var draft = drafts[i];
+      if (draft.uncertain || draft.state === 'uncertain') {
+        hadUncertain = true;
+        var latestUncertain = getOfflineDrafts().find(function (d) { return d.id === draft.id; }) || draft;
+        remaining.push(latestUncertain);
+        continue;
+      }
       var parts = (draft.repo || '').split('/');
-      if (parts.length !== 2) continue;
-      var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues';
+      if (parts.length !== 2) { remaining.push(draft); continue; }
+      var sentRevision = draft.revision || 1;
       try {
-        await api(endpoint, {
-          method: 'POST',
-          body: { title: draft.title, labels: draft.labels || ['status:draft'] },
-        });
-        syncedCount++;
+        var response;
+        if (draft.confirmedNumber && draft.confirmedFingerprint) {
+          var updateEndpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues/' + draft.confirmedNumber + '/draft';
+          response = await api(updateEndpoint, {
+            method: 'PUT',
+            expected: draft.confirmedNumber,
+            body: { fingerprint: draft.confirmedFingerprint, title: draft.title, description: draft.description || '' },
+          });
+        } else {
+          var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues';
+          response = await api(endpoint, {
+            method: 'POST',
+            body: Object.assign({ title: draft.title, labels: draft.labels || ['status:draft'] },
+              draft.description || Number.isFinite(draft.order) ? { body: (draft.description || '') + (Number.isFinite(draft.order) ? '\n\n<!-- board-order: ' + draft.order + ' -->' : '') } : {}),
+          });
+        }
+        var latestAfter = getOfflineDrafts().find(function (d) { return d.id === draft.id; });
+        if (latestAfter && (latestAfter.revision || 1) > sentRevision) {
+          remaining.push(Object.assign({}, latestAfter, {
+            state: 'queued',
+            uncertain: false,
+            confirmedNumber: response && response.issue ? response.issue.number : draft.confirmedNumber,
+            confirmedFingerprint: response && response.issue ? response.issue.fingerprint : draft.confirmedFingerprint,
+          }));
+        } else {
+          syncedCount++;
+        }
       } catch (err) {
-        if (err.kind === 'network' || /network|offline|failed to fetch/i.test(err.message)) {
-          remaining = remaining.concat(drafts.slice(i));
+        var currentOnErr = getOfflineDrafts().find(function (d) { return d.id === draft.id; }) || draft;
+        if (err.status === 401) {
+          remaining.push(currentOnErr);
+          remaining = remaining.concat(drafts.slice(i + 1));
           break;
         }
+        if (err.status >= 500 || err.code === 'write_outcome_unknown' || /network|offline|failed to fetch/i.test(err.message)) {
+          hadUncertain = true;
+          remaining.push(Object.assign({}, currentOnErr, { state: 'uncertain', uncertain: true }));
+          remaining = remaining.concat(drafts.slice(i + 1).map(function (d) {
+            return getOfflineDrafts().find(function (cur) { return cur.id === d.id; }) || d;
+          }));
+          break;
+        }
+        remaining.push(currentOnErr);
       }
     }
 
+    // Keep drafts added in another tab while synchronization was in flight.
+    var originalIds = new Set(drafts.map(function (d) { return d.id; }));
+    remaining = remaining.concat(getOfflineDrafts().filter(function (d) { return !originalIds.has(d.id); }));
     saveOfflineDrafts(remaining);
     isSyncingOfflineDrafts = false;
 
     if (syncedCount > 0) {
-      setNotice('Synced ' + syncedCount + ' offline draft' + (syncedCount === 1 ? '' : 's') + ' to GitHub.', false);
+      setNotice('Synced ' + syncedCount + ' offline draft' + (syncedCount === 1 ? '' : 's') + ' to GitHub.' +
+        (hadUncertain ? ' Some drafts have an uncertain outcome; review before retrying.' : ''), hadUncertain);
       if (state.board) await loadBoard();
+    } else if (hadUncertain) {
+      setNotice('Offline draft sync outcome unknown \u2014 refresh and check the board before retrying.', true);
+      if (state.board) renderBoard();
     }
   }
 
@@ -620,7 +776,7 @@
         checked: Boolean(item.completed),
         'aria-label': item.text || 'Checklist item ' + idx,
         onchange: function () {
-          toggleChecklistItem(item, isAc, checkbox.checked);
+          return toggleChecklistItem(item, isAc, checkbox.checked);
         },
       });
       var textSpan = el('span', {
@@ -636,48 +792,68 @@
   }
 
   async function toggleChecklistItem(item, isAc, checked) {
+    if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) {
+      renderDetail(false);
+      return;
+    }
     var issue = state.detail;
-    if (!issue) return;
-    var oldBody = issue.body;
-    var oldCompleted = item.completed;
+    rememberDraft();
     var newBody = updateChecklistInMarkdown(issue.body, item.lineIndex, item.text, checked);
-    if (newBody === oldBody) return;
+    if (newBody === issue.body) return;
 
-    item.completed = checked;
-    issue.body = newBody;
-    renderDetail(false);
+    state.busy = true;
+    var generation = ++state.readGeneration;
+    invalidateBoardForWrite(issue);
 
     try {
       var response = await api(issuePath(issue), {
+        expected: issue,
         method: 'PATCH',
         body: {
           fingerprint: issue.fingerprint,
           body: newBody,
         },
       });
-      if (response && response.issue) {
-        state.detail = response.issue;
+      if (!isValidMutationPayload(response, issue)) {
+        throw new ApiError('write_outcome_unknown', 200, {
+          error: 'write_outcome_unknown',
+          message: 'Outcome unknown \u2014 refresh to check GitHub state',
+        });
+      }
+      if (!publishMutation(response, issue, generation, 'checklist')) return;
+      announce('Checklist updated.');
+    } catch (err) {
+      invalidateDetailForWrite(issue);
+      invalidateBoardForWrite(issue);
+      if (err.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
+      if (err.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
+      if (err.status === 409) {
+        handleConflict(err, issue, generation);
+      } else {
         renderDetail(false);
       }
-    } catch (err) {
-      item.completed = oldCompleted;
-      issue.body = oldBody;
-      renderDetail(false);
       setNotice(err.message || 'Failed to update checklist item', true);
+    } finally {
+      state.busy = false;
     }
   }
 
   async function toggleMarkDone() {
+    if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) return;
     var issue = state.detail;
-    if (!issue) return;
+    rememberDraft();
     var isDone = issue.state === 'closed' || (issue.statusLabel && issue.statusLabel.toLowerCase() === 'status:done');
     var targetStatus = isDone ? 'status:todo' : 'status:done';
     var targetState = isDone ? 'open' : 'closed';
     var btn = $('mark-done-btn');
     if (btn) btn.disabled = true;
+    state.busy = true;
+    var generation = ++state.readGeneration;
+    invalidateBoardForWrite(issue);
 
     try {
       var response = await api(issuePath(issue), {
+        expected: issue,
         method: 'PATCH',
         body: {
           fingerprint: issue.fingerprint,
@@ -685,23 +861,25 @@
           state: targetState,
         },
       });
-      if (response && response.issue) {
-        state.detail = response.issue;
-        if (response.statusOptions) state.statusOptions = response.statusOptions;
-        renderDetail(false);
-        setNotice('Task ' + (isDone ? 'reopened' : 'marked done'), false);
-        if (state.board && Array.isArray(state.board.issues)) {
-          var bIssue = state.board.issues.find(function (i) { return i.number === issue.number; });
-          if (bIssue) {
-            bIssue.statusLabel = targetStatus;
-            bIssue.state = targetState;
-            renderBoard();
-          }
-        }
+      if (!isValidMutationPayload(response, issue)) {
+        throw new ApiError('write_outcome_unknown', 200, {
+          error: 'write_outcome_unknown',
+          message: 'Outcome unknown \u2014 refresh to check GitHub state',
+        });
       }
+      if (!publishMutation(response, issue, generation, 'status')) return;
+      setNotice('Task ' + (isDone ? 'reopened' : 'marked done'), false);
     } catch (err) {
+      invalidateDetailForWrite(issue);
+      invalidateBoardForWrite(issue);
+      if (err.code === 'write_outcome_unknown') state.uncertain.add(identity(issue));
+      if (err.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
+      if (err.status === 409) {
+        handleConflict(err, issue, generation);
+      }
       setNotice(err.message || 'Failed to update task state', true);
     } finally {
+      state.busy = false;
       if (btn) btn.disabled = false;
     }
   }
@@ -714,6 +892,9 @@
     var backdrop = $('drawer-backdrop');
     if (backdrop) {
       backdrop.hidden = name !== 'detail';
+    }
+    if (name === 'board' && typeof document !== 'undefined' && document.querySelectorAll) {
+      document.querySelectorAll('.draft-description').forEach(autoSizeTextarea);
     }
   }
 
@@ -764,153 +945,507 @@
     node.textContent = state.loadedAt ? 'Loaded ' + relative(new Date(state.loadedAt).toISOString()) : '';
   }
 
+  var VIEW_LABELS = { simple: 'Simple list', cards: 'Cards', kanban: 'Kanban board', graph: 'Graph', pending: 'Pending items' };
+  var SORT_LABELS = { priority: 'Priority', updated: 'Recently updated', created: 'Recently created', manual: 'Manual order' };
+  var STAGES = ['draft', 'backlog', 'todo', 'planned', 'in-progress', 'needs-human', 'in-review', 'done'];
+  var KIND_LABELS = { 'needs-me': 'Needs me', human: 'Human tasks', questions: 'Questions' };
+  var VIEW_STATE_KEY = 'openchamber_web_view_state';
+  state.viewState = readViewState();
+  function readViewState() {
+    var result = { view: 'simple', filters: [], sort: 'priority' };
+    try {
+      var saved = JSON.parse(localStorage.getItem(VIEW_STATE_KEY));
+      if (saved && Object.prototype.hasOwnProperty.call(VIEW_LABELS, saved.view)) result.view = saved.view;
+      if (saved && Object.prototype.hasOwnProperty.call(SORT_LABELS, saved.sort)) result.sort = saved.sort;
+      if (saved && Array.isArray(saved.filters)) result.filters = saved.filters.filter(function (token, index, all) {
+        return typeof token === 'string' && all.indexOf(token) === index && (KIND_LABELS[token] ||
+          (token.startsWith('stage:') && STAGES.includes(token.slice(6))) || /^project:[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(token));
+      });
+    } catch (error) { /* Private browsing may deny storage. Memory state remains usable. */ }
+    return result;
+  }
+  function rememberView() {
+    try { localStorage.setItem(VIEW_STATE_KEY, JSON.stringify(state.viewState)); } catch (error) {}
+    renderBoard();
+  }
+  function shortName(full) {
+    var override = state.projectNames[(full || '').toLowerCase()];
+    if (typeof override === 'string' && override.trim()) return override.trim();
+    var part = (full || '').slice((full || '').lastIndexOf('/') + 1);
+    function title(token) { return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase(); }
+    var tokens = part.split(/[-_.]+/).filter(Boolean).filter(function (token) {
+      return !['openchamber', 'github', 'gh', 'repo'].includes(token.toLowerCase());
+    });
+    return tokens.length ? tokens.map(title).join(' ') : title(part);
+  }
+  function projectBadge(repository) {
+    return el('span', { class: 'badge repo-badge', text: shortName(repository.full), title: repository.full, tabindex: '0' });
+  }
+  function stageOf(issue) { return issue.state === 'closed' ? 'done' : (issue.statusLabel || '').replace(/^status:/, '') || issue.column || 'draft'; }
+  function countOf(issue, kind, total) { return issue.counts && issue.counts[kind] ? issue.counts[kind][total ? 'total' : 'open'] || 0 : 0; }
+  function needsMe(issue) {
+    return stageOf(issue) !== 'done' && (stageOf(issue) === 'needs-human' ||
+      (issue.attention && issue.attention !== 'none') || countOf(issue, 'humanTasks') || countOf(issue, 'openQuestions'));
+  }
+  function manualCompare(a, b) {
+    var oa = Number.isFinite(a.order) ? a.order : null, ob = Number.isFinite(b.order) ? b.order : null;
+    if (oa !== null && ob === null) return -1;
+    if (ob !== null && oa === null) return 1;
+    return (oa !== null && ob !== null ? oa - ob : 0) ||
+      (Date.parse(a.createdAt) || 0) - (Date.parse(b.createdAt) || 0) || a.number - b.number ||
+      String(a.repository && a.repository.full).localeCompare(String(b.repository && b.repository.full)) || String(a.id || '').localeCompare(String(b.id || ''));
+  }
+  function filterSort(items, selection) {
+    var kinds = selection.filters.filter(function (f) { return KIND_LABELS[f]; });
+    var stages = selection.filters.filter(function (f) { return f.startsWith('stage:'); }).map(function (f) { return f.slice(6); });
+    var projects = selection.filters.filter(function (f) { return f.startsWith('project:'); }).map(function (f) { return f.slice(8).toLowerCase(); });
+    var weight = { critical: 4, urgent: 4, important: 3, high: 3, useful: 2, medium: 2, optional: 1, low: 1 };
+    return items.filter(function (issue) {
+      return (!stages.length || stages.includes(stageOf(issue))) &&
+        (!projects.length || (issue.repository && projects.includes(issue.repository.full.toLowerCase()))) &&
+        (!kinds.length || kinds.some(function (kind) { return kind === 'needs-me' ? needsMe(issue) : countOf(issue, kind === 'human' ? 'humanTasks' : 'openQuestions') > 0; }));
+    }).sort(function (a, b) {
+      if (selection.sort === 'manual') return manualCompare(a, b);
+      var diff = selection.sort === 'updated' ? (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0) :
+        selection.sort === 'created' ? (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0) :
+        (weight[priorityOf(b)] || 0) - (weight[priorityOf(a)] || 0);
+      return diff || b.number - a.number || manualCompare(a, b);
+    });
+  }
+  function quickCapture() { return state.viewState.view === 'simple' && state.viewState.filters.includes('stage:draft'); }
+  function filterLabel(token) {
+    return KIND_LABELS[token] || (token.startsWith('stage:') ? statusText(token.slice(6)) : shortName(token.slice(8)));
+  }
+  function renderControls() {
+    $('view-btn').textContent = 'View: ' + VIEW_LABELS[state.viewState.view];
+    $('filter-btn').textContent = 'Filter' + (state.viewState.filters.length ? ' (' + state.viewState.filters.length + ')' : '');
+    $('sort-btn').textContent = 'Sort: ' + SORT_LABELS[state.viewState.sort];
+    var chips = $('filter-chips');
+    chips.textContent = '';
+    state.viewState.filters.forEach(function (token) {
+      chips.appendChild(el('button', { type: 'button', class: 'filter-chip', text: filterLabel(token) + ' ×',
+        'aria-label': 'Remove filter ' + filterLabel(token), onclick: function () {
+          state.viewState.filters = state.viewState.filters.filter(function (f) { return f !== token; }); rememberView();
+        } }));
+    });
+    if (state.viewState.filters.length) chips.appendChild(el('button', { type: 'button', class: 'button', text: 'Clear', onclick: function () {
+      state.viewState.filters = []; rememberView();
+    } }));
+    $('capture-hint').hidden = !quickCapture();
+    $('quick-add-form').hidden = !quickCapture();
+    var target = $('quick-add-project');
+    var previous = target.value;
+    target.textContent = '';
+    availableProjects().forEach(function (repo) { target.appendChild(el('option', { value: repo.full, text: shortName(repo.full), title: repo.full })); });
+    var available = availableProjects();
+    target.value = state.selected && state.selected !== 'all' ? state.selected : available.some(function (r) { return r.full === previous; }) ? previous : (available[0] || {}).full || '';
+    target.hidden = state.selected !== 'all';
+  }
+  function availableProjects() {
+    return state.repositories ? state.repositories.repositories.filter(function (r) { return r.available && !r.archived && r.hasIssues; }) : [];
+  }
+  var sheetOpener = null;
+  function closeSheet() {
+    $('board-sheet').close();
+    if (sheetOpener) sheetOpener.focus();
+  }
+  function openSheet(kind, opener) {
+    sheetOpener = opener;
+    var dialog = $('board-sheet'), content = $('sheet-content');
+    content.textContent = '';
+    $('sheet-title').textContent = kind === 'settings' ? 'Project names' : kind === 'filter' ? 'Filter tasks' : kind === 'sort' ? 'Sort tasks' : 'Choose view';
+    if (kind === 'view' || kind === 'sort') {
+      var labels = kind === 'view' ? VIEW_LABELS : SORT_LABELS;
+      Object.keys(labels).forEach(function (key) {
+        content.appendChild(el('button', { type: 'button', class: 'sheet-option', text: labels[key], 'aria-label': labels[key],
+          'aria-pressed': String(state.viewState[kind] === key), onclick: function () {
+            state.viewState[kind] = key; rememberView(); closeSheet();
+          } }));
+      });
+    } else if (kind === 'filter') {
+      var options = Object.keys(KIND_LABELS).concat(STAGES.map(function (stage) { return 'stage:' + stage; }))
+        .concat((state.repositories ? state.repositories.repositories : []).map(function (r) { return 'project:' + r.full; }));
+      ['Attention', 'Stage', 'Project'].forEach(function (title, group) {
+        content.appendChild(el('h3', { text: title }));
+        options.filter(function (token) { return group === 0 ? Boolean(KIND_LABELS[token]) : token.startsWith(group === 1 ? 'stage:' : 'project:'); }).forEach(function (token) {
+          var button = el('button', { type: 'button', class: 'sheet-option', text: filterLabel(token), 'aria-label': filterLabel(token),
+            title: token.startsWith('project:') ? token.slice(8) : '', 'aria-pressed': String(state.viewState.filters.includes(token)), onclick: function () {
+              var filters = state.viewState.filters;
+              state.viewState.filters = filters.includes(token) ? filters.filter(function (f) { return f !== token; }) : filters.concat(token);
+              button.setAttribute('aria-pressed', String(state.viewState.filters.includes(token))); rememberView();
+            } });
+          content.appendChild(button);
+        });
+      });
+      content.appendChild(el('p', { class: 'muted small', text: 'Any selected option within a group; all selected groups must match.' }));
+    } else {
+      content.appendChild(el('p', { class: 'muted', text: 'Names are shared across devices. Empty resets the automatic short name.' }));
+      (state.repositories ? state.repositories.repositories : []).forEach(function (repo) {
+        var input = el('input', { type: 'text', maxlength: '60', 'aria-label': 'Project name for ' + repo.full });
+        input.value = state.projectNames[repo.full.toLowerCase()] || '';
+        var message = el('p', { class: 'muted small', role: 'status' });
+        var form = el('form', { class: 'rename-project' }, [el('label', { text: repo.full }, [input]),
+          el('button', { type: 'submit', class: 'button', text: 'Save name' }), message]);
+        form.addEventListener('submit', async function (event) {
+          event.preventDefault();
+          try {
+            var response = await api('/api/project-names', { method: 'PUT', body: { repository: repo.full, name: input.value } });
+            state.projectNames = response.projectNames; renderPicker(); renderBoard(); message.textContent = 'Saved.';
+          } catch (error) { message.textContent = error.message; }
+        });
+        content.appendChild(form);
+      });
+    }
+    if (!dialog.open) dialog.showModal();
+  }
+  function offlineRows() {
+    return getOfflineDrafts().filter(function (draft) { return !state.selected || state.selected === 'all' || draft.repo === state.selected; }).map(function (draft) {
+      return { id: draft.id, number: 0, title: draft.title, description: draft.description || '', order: draft.order,
+        offline: true, uncertain: Boolean(draft.uncertain || draft.state === 'uncertain'),
+        revision: draft.revision || 1, confirmedNumber: draft.confirmedNumber,
+        state: 'open', statusLabel: 'status:draft', labels: ['status:draft'],
+        repository: { full: draft.repo }, createdAt: draft.createdAt, updatedAt: draft.createdAt, counts: {} };
+    });
+  }
+  function updateOffline(issue, changes) {
+    saveOfflineDrafts(getOfflineDrafts().map(function (draft) {
+      if (draft.id !== issue.id) return draft;
+      return Object.assign({}, draft, changes, { revision: (draft.revision || 1) + 1 });
+    }));
+  }
+  function applyDetailToRow(old, row) {
+    return Object.assign({}, old, row, {
+      description: row.description !== undefined ? row.description : row.body,
+      pendingItems: (row.humanTasks || []).concat(row.openQuestions || []).map(function (t) {
+        return { text: t.text, completed: t.completed };
+      }),
+      counts: { subtasks: { total: row.subtasks.length, done: row.subtasks.filter(function (t) { return t.completed; }).length },
+        openQuestions: { total: row.openQuestions.length, open: row.openQuestions.filter(function (t) { return !t.completed; }).length },
+        humanTasks: { total: row.humanTasks.length, open: row.humanTasks.filter(function (t) { return !t.completed; }).length } },
+    });
+  }
+  function replaceBoardRow(issue, response) {
+    if (!state.board) return;
+    var updated = Array.isArray(response.updatedIssues) && response.updatedIssues.length
+      ? response.updatedIssues
+      : [response.issue];
+    state.board.issues = state.board.issues.map(function (old) {
+      var match = updated.find(function (u) { return sameIdentity(old, u); });
+      if (match) return applyDetailToRow(old, match);
+      if (sameIdentity(old, issue)) return applyDetailToRow(old, response.issue);
+      return old;
+    });
+  }
+  async function draftMutation(issue, action, data) {
+    if (state.draftBusy) { setNotice('A draft is saving. Wait before making another change.', true); return false; }
+    if (state.uncertain.has(identity(issue))) { setNotice('Previous outcome needs review. Refresh and inspect GitHub before retrying.', true); return false; }
+    if (typeof navigator !== 'undefined' && !navigator.onLine) { setNotice('Existing GitHub drafts cannot be changed offline. Local drafts can still be edited and reordered.', true); return false; }
+    state.draftBusy = true;
+    invalidateBoardForWrite(issue);
+    var preFingerprints = new Map();
+    preFingerprints.set(identity(issue), issue.fingerprint);
+    if (data && Array.isArray(data.updates) && state.board && Array.isArray(state.board.issues)) {
+      data.updates.forEach(function (u) {
+        var found = state.board.issues.find(function (b) {
+          var bRepo = b.repository && b.repository.full;
+          var uRepo = u.repo || (issue.repository && issue.repository.full);
+          return b.number === u.number && (!uRepo || !bRepo || bRepo.toLowerCase() === uRepo.toLowerCase());
+        });
+        if (found) preFingerprints.set(identity(found), u.fingerprint || found.fingerprint);
+      });
+    }
+    try {
+      var expected = action === 'move' && data && data.target ? { transferTarget: data.target } : issue;
+      var payloadBody = Object.assign({ fingerprint: issue.fingerprint }, data);
+      var response = await api(issuePath(issue) + '/' + action, { method: 'PUT', expected: expected, body: payloadBody });
+      invalidateBoardForWrite(issue);
+      if (action === 'draft' || action === 'move') {
+        state.draftEdits.delete(issue.offline ? issue.id : identity(issue));
+      } else if (action === 'order') {
+        var updatedList = Array.isArray(response.updatedIssues) && response.updatedIssues.length ? response.updatedIssues : [response.issue];
+        updatedList.forEach(function (u) {
+          var key = identity(u);
+          var edit = state.draftEdits.get(key);
+          var prevFp = preFingerprints.get(key);
+          if (edit && (!edit.fingerprint || edit.fingerprint === prevFp)) {
+            edit.fingerprint = u.fingerprint;
+          }
+        });
+      }
+      replaceBoardRow(issue, response);
+      if (response.targetUrl && state.csrf) await loadBoard(); else renderBoard();
+      if (response.targetUrl) setNotice('Transferred to ' + response.targetUrl + '.');
+      return true;
+    } catch (error) {
+      invalidateBoardForWrite(issue);
+      if (error.code === 'write_outcome_unknown' || error.code === 'partial_move' || error.code === 'partial_order') {
+        state.uncertain.add(identity(issue));
+      }
+      setNotice(error.message + (error.payload && error.payload.targetUrl ? ' Target: ' + error.payload.targetUrl : '') +
+        (error.status === 409 && error.code !== 'partial_move' && error.code !== 'partial_order' ? ' Refresh before trying again; your text is retained.' : ''), true);
+      return false;
+    } finally { state.draftBusy = false; }
+  }
+  async function reorderDraft(issue, from, to, ordered) {
+    if (from === to) return;
+    var rest = ordered.filter(function (_, index) { return index !== from; });
+    to = Math.max(0, Math.min(rest.length, to));
+    var desired = rest.slice(0, to).concat([issue], rest.slice(to));
+    var prev = to ? rest[to - 1] : null, next = rest[to] || null;
+    var previous = prev && Number.isFinite(prev.order) ? prev.order : null;
+    var following = next && Number.isFinite(next.order) ? next.order : null;
+    var order = previous === null ? (following === null ? 1000 : following - 1000) : following === null ? previous + 1000 : previous / 2 + following / 2;
+    var canUseSingleMidpoint = true;
+    for (var k = 0; k < to; k++) {
+      if (!Number.isFinite(desired[k].order) || (k > 0 && !(desired[k].order > desired[k - 1].order))) {
+        canUseSingleMidpoint = false;
+        break;
+      }
+    }
+    if (canUseSingleMidpoint) {
+      if (previous !== null && !(order > previous)) canUseSingleMidpoint = false;
+      if (following !== null && !(order < following)) canUseSingleMidpoint = false;
+      var lastSeen = order;
+      for (var m = to + 1; m < desired.length; m++) {
+        if (Number.isFinite(desired[m].order)) {
+          if (!(desired[m].order > lastSeen)) {
+            canUseSingleMidpoint = false;
+            break;
+          }
+          lastSeen = desired[m].order;
+        }
+      }
+    }
+    if (issue.offline) {
+      if (canUseSingleMidpoint) {
+        updateOffline(issue, { order: order });
+      } else {
+        desired.forEach(function (item, idx) {
+          if (item.offline) updateOffline(item, { order: (idx + 1) * 1000 });
+        });
+      }
+      renderBoard();
+    } else if (canUseSingleMidpoint) {
+      var neighbours = [];
+      if (prev && !prev.offline) {
+        neighbours.push({ repo: prev.repository && prev.repository.full, number: prev.number, fingerprint: prev.fingerprint, order: previous });
+      }
+      if (next && !next.offline) {
+        neighbours.push({ repo: next.repository && next.repository.full, number: next.number, fingerprint: next.fingerprint, order: following });
+      }
+      if (!await draftMutation(issue, 'order', { previous: previous, next: following, neighbours: neighbours })) return;
+    } else {
+      var updates = [];
+      var rebalanceNeighbours = [];
+      desired.forEach(function (item, idx) {
+        var targetOrder = (idx + 1) * 1000;
+        if (item.offline) {
+          updateOffline(item, { order: targetOrder });
+        } else {
+          var entry = { repo: item.repository && item.repository.full, number: item.number, fingerprint: item.fingerprint, order: targetOrder };
+          if (item.order !== targetOrder || sameIdentity(item, issue)) {
+            updates.push(entry);
+          } else {
+            rebalanceNeighbours.push(entry);
+          }
+        }
+      });
+      if (!await draftMutation(issue, 'order', { updates: updates, neighbours: rebalanceNeighbours })) return;
+    }
+    announce('Moved ' + issue.title + ' to position ' + (to + 1) + '.');
+    var focus = document.querySelector && document.querySelector('[data-draft-key="' + (issue.offline ? issue.id : issue.key) + '"] .drag-handle');
+    if (focus) focus.focus();
+  }
+  function autoSizeTextarea(textarea) {
+    if (!textarea || !textarea.style) return;
+    textarea.style.height = 'auto';
+    var scrollHeight = Number(textarea.scrollHeight) || 0;
+    if (scrollHeight > 0) {
+      textarea.style.height = Math.max(44, scrollHeight + 2) + 'px';
+    }
+  }
+  function draftRow(issue, ordered, index) {
+    var title = el('input', { type: 'text', class: 'draft-title', maxlength: '256', 'aria-label': 'Title: ' + issue.title });
+    var editKey = issue.offline ? issue.id : identity(issue);
+    var buffered = state.draftEdits.get(editKey);
+    title.value = buffered ? buffered.title : issue.title;
+    var description = el('textarea', { class: 'draft-description', rows: '1', 'aria-label': 'Description: ' + issue.title, placeholder: 'Add inspiration or a description…' });
+    description.value = buffered ? buffered.description : issue.description || '';
+    autoSizeTextarea(description);
+    var save = el('button', { type: 'submit', class: 'button draft-save', text: 'Save', hidden: true });
+    var form = el('form', { class: 'draft-fields' }, [title, description, save]);
+    if (buffered) save.hidden = false;
+    [title, description].forEach(function (input) { input.addEventListener('input', function () {
+      save.hidden = false;
+      var existing = state.draftEdits.get(editKey);
+      var observedFp = existing && existing.fingerprint ? existing.fingerprint : issue.fingerprint;
+      state.draftEdits.set(editKey, { title: title.value, description: description.value, fingerprint: observedFp });
+      if (input === description) autoSizeTextarea(description);
+    }); });
+    form.addEventListener('submit', async function (event) {
+      event.preventDefault();
+      if (!title.value.trim()) { title.focus(); return; }
+      if (issue.offline) { updateOffline(issue, { title: title.value.trim(), description: description.value }); state.draftEdits.delete(editKey); renderBoard(); }
+      else {
+        var currentBuf = state.draftEdits.get(editKey);
+        var fpToUse = currentBuf && currentBuf.fingerprint ? currentBuf.fingerprint : issue.fingerprint;
+        if (await draftMutation(issue, 'draft', { title: title.value, description: description.value, fingerprint: fpToUse })) announce('Draft saved.');
+      }
+    });
+    var handle = el('button', { type: 'button', class: 'button drag-handle', text: '⠿',
+      'aria-label': 'Drag to reorder ' + issue.title, title: 'Drag to reorder; or use Move up / Move down' });
+    var row = el('li', { class: 'draft-row' + (issue.offline ? ' draft-row-offline' : ''), 'data-draft-key': issue.offline ? issue.id : issue.key }, [handle, form]);
+    var meta = el('div', { class: 'draft-meta' }, [
+      issue.offline ? badge(issue.uncertain ? '(offline · outcome unknown)' : '(offline)', 'badge-offline') : null,
+    ]);
+    if (issue.offline && issue.uncertain) {
+      meta.appendChild(el('button', { type: 'button', class: 'button', text: 'Retry sync', onclick: function () {
+        saveOfflineDrafts(getOfflineDrafts().map(function (d) { return d.id === issue.id ? Object.assign({}, d, { state: 'queued', uncertain: false }) : d; }));
+        syncOfflineDrafts();
+      } }));
+      meta.appendChild(el('button', { type: 'button', class: 'button', text: 'Dismiss', onclick: function () {
+        saveOfflineDrafts(getOfflineDrafts().filter(function (d) { return d.id !== issue.id; }));
+        renderBoard();
+      } }));
+    }
+    if (state.selected === 'all') {
+      var project = el('select', { class: 'draft-project', title: issue.repository.full, 'aria-label': 'Project for ' + issue.title });
+      var projects = availableProjects();
+      if (!projects.some(function (r) { return r.full === issue.repository.full; })) projects = [{ full: issue.repository.full }].concat(projects);
+      projects.forEach(function (repo) { project.appendChild(el('option', { value: repo.full, text: shortName(repo.full), title: repo.full })); });
+      project.value = issue.repository.full;
+      project.addEventListener('change', async function () {
+        var target = project.value;
+        if (issue.offline) { updateOffline(issue, { repo: target }); renderBoard(); return; }
+        if (!window.confirm('Move this draft to ' + shortName(target) + ' (' + target + ')? Transfers the GitHub issue keeping history; issue number and link may change, and GitHub permission restrictions apply.')) { project.value = issue.repository.full; return; }
+        if (!await draftMutation(issue, 'move', { target: target, confirmed: true })) project.value = issue.repository.full;
+      });
+      meta.appendChild(project);
+    } else if (issue.repository) meta.appendChild(projectBadge(issue.repository));
+    if (!issue.offline) meta.appendChild(el('button', { type: 'button', class: 'button draft-open-btn', 'data-issue-key': identity(issue), text: '#' + issue.number, 'aria-label': 'Open task ' + issue.number, onclick: function () { openIssueView(issue, true); } }));
+    var controls = el('div', { class: 'draft-moves' });
+    [-1, 1].forEach(function (direction) {
+      var button = el('button', { type: 'button', class: 'button', text: direction < 0 ? '↑' : '↓',
+        'aria-label': (direction < 0 ? 'Move up: ' : 'Move down: ') + issue.title, onclick: function () { reorderDraft(issue, index, index + direction, ordered); } });
+      button.disabled = state.viewState.sort !== 'manual' || (direction < 0 ? index === 0 : index === ordered.length - 1);
+      controls.appendChild(button);
+    });
+    meta.appendChild(controls); row.appendChild(meta);
+    handle.disabled = state.viewState.sort !== 'manual';
+    var dragStartY = 0;
+    handle.addEventListener('pointerdown', function (event) {
+      if (state.viewState.sort !== 'manual' || event.button > 0) return;
+      dragStartY = event.clientY;
+      event.preventDefault(); handle.setPointerCapture(event.pointerId); row.classList.add('dragging');
+    });
+    handle.addEventListener('pointermove', function (event) {
+      if (!handle.hasPointerCapture(event.pointerId)) return;
+      var near = document.elementFromPoint(event.clientX, event.clientY);
+      var target = near && near.closest('[data-draft-key]');
+      document.querySelectorAll('.drop-target').forEach(function (item) { item.classList.remove('drop-target'); });
+      if (target) target.classList.add('drop-target');
+      if (event.clientY > window.innerHeight - 70 && event.clientY > dragStartY + 8) window.scrollBy(0, 12);
+      if (event.clientY < 80 && event.clientY < dragStartY - 8) window.scrollBy(0, -12);
+    });
+    handle.addEventListener('pointerup', function (event) {
+      if (!handle.hasPointerCapture(event.pointerId)) return;
+      handle.releasePointerCapture(event.pointerId); row.classList.remove('dragging');
+      var near = document.elementFromPoint(event.clientX, event.clientY), target = near && near.closest('[data-draft-key]');
+      document.querySelectorAll('.drop-target').forEach(function (item) { item.classList.remove('drop-target'); });
+      if (!target) return;
+      var key = target.getAttribute('data-draft-key');
+      var to = ordered.findIndex(function (item) { return (item.offline ? item.id : item.key) === key; });
+      if (to >= 0) reorderDraft(issue, index, to, ordered);
+    });
+    handle.addEventListener('pointercancel', function () {
+      row.classList.remove('dragging'); document.querySelectorAll('.drop-target').forEach(function (item) { item.classList.remove('drop-target'); });
+    });
+    return row;
+  }
+  function taskCard(issue, compact) {
+    var friendly = resolveFriendlyTitle(issue);
+    var children = [el('div', { class: 'task-top' }, [el('span', { class: 'task-title', text: friendly.title }), el('span', { class: 'task-number', text: issue.offline ? '(offline)' : '#' + issue.number })])];
+    if (friendly.subtitle && !compact) children.push(el('span', { class: 'task-subtitle muted small', text: friendly.subtitle }));
+    children.push(el('div', { class: 'badges' }, [issue.repository ? projectBadge(issue.repository) : null,
+      badge(statusText('status:' + stageOf(issue)), 'status'), priorityOf(issue) ? badge(priorityOf(issue), 'badge-priority') : null,
+      issue.offline ? badge('(offline)', 'badge-offline') : null,
+      countOf(issue, 'openQuestions') ? badge(countOf(issue, 'openQuestions') + ' questions', 'attention') : null,
+      countOf(issue, 'humanTasks') ? badge(countOf(issue, 'humanTasks') + ' human tasks', 'attention') : null]));
+    if (!compact) children.push(el('p', { class: 'muted small', text: 'Updated ' + relative(issue.updatedAt) }));
+    return el('button', { type: 'button', class: 'task-row', 'data-issue-key': identity(issue), onclick: function () {
+      if (issue.offline) { setNotice('Saved offline. Use Simple list + Draft filter to edit.'); return; } openIssueView(issue, false);
+    } }, children);
+  }
   function renderBoard() {
     var board = state.board;
     if (!board) return;
-    $('repo-label').textContent = board.repo + (board.repository && board.repository.archived ? ' · archived' : '');
-    document.title = 'Task Board · ' + board.repo;
-
-    var serverTitles = new Set((board.issues || []).map(function (bi) {
-      return (bi.repository ? bi.repository.full : '') + '::' + bi.title;
-    }));
-
-    var offlineItems = getOfflineDrafts().filter(function (d) {
-      if (state.selected && state.selected !== 'all') {
-        return d.repo === state.selected;
-      }
-      return true;
-    }).filter(function (d) {
-      var key = (d.repo || '') + '::' + d.title;
-      return !serverTitles.has(key);
-    }).map(function (d) {
-      return {
-        id: d.id,
-        number: 0,
-        title: d.title,
-        state: 'open',
-        labels: ['status:draft'],
-        statusLabel: 'status:draft',
-        phase: 'alignment',
-        attention: 'none',
-        column: 'draft',
-        offline: true,
-        repository: d.repo ? { full: d.repo } : null,
-        updatedAt: d.createdAt,
-        counts: {
-          subtasks: { total: 0, done: 0 },
-          openQuestions: { total: 0, open: 0 },
-          humanTasks: { total: 0, open: 0 },
-        },
-      };
-    });
-
-    var allIssues = (board.issues || []).concat(offlineItems);
-
-    var issuesToRender = allIssues.filter(function (issue) {
-      if (state.mobileViewFilter === 'needs-human') {
-        var hasNeedsHumanLabel = Array.isArray(issue.labels) && issue.labels.some(function (l) {
-          var name = typeof l === 'string' ? l : (l && l.name) || '';
-          return name.toLowerCase() === 'needs:human';
-        });
-        var hasAttention = issue.attention && issue.attention !== 'none';
-        var hasOpenQuestions = issue.counts && issue.counts.openQuestions && issue.counts.openQuestions.open > 0;
-        return hasNeedsHumanLabel || hasAttention || hasOpenQuestions;
-      }
-      if (state.mobileViewFilter === 'running') {
-        return (issue.statusLabel && issue.statusLabel.toLowerCase() === 'status:in-progress') ||
-          (issue.phase && issue.phase.toLowerCase().includes('in_progress'));
-      }
-      if (state.mobileViewFilter === 'drafts') {
-        return issue.statusLabel && issue.statusLabel.toLowerCase() === 'status:draft';
-      }
-      return true;
-    });
-
-    $('board-count').textContent =
-      issuesToRender.length + (issuesToRender.length === 1 ? ' task' : ' tasks');
-    renderFreshness();
+    var name = board.repository ? shortName(board.repository.full) : 'All Projects';
+    $('repo-label').textContent = name;
+    $('repo-label').setAttribute('title', board.repo);
+    document.title = 'Task Board · ' + name;
+    renderControls(); renderFreshness();
+    var issues = filterSort((board.issues || []).concat(offlineRows()), state.viewState);
+    var pending = state.viewState.view === 'pending';
+    if (pending) issues = issues.filter(function (issue) { return stageOf(issue) !== 'done' && (needsMe(issue) || countOf(issue, 'humanTasks', true) || countOf(issue, 'openQuestions', true)); });
+    $('board-count').textContent = issues.length + (issues.length === 1 ? ' task' : ' tasks');
     var scopeStatus = $('scope-status');
     if (scopeStatus) {
-      var partialReasons = (board.failures || []).map(function (failure) { return failure.repository.full + ': ' + failure.message; });
-      if (board.truncatedByIssueCap) partialReasons.push('combined issue cap of ' + board.issueCap + ' reached');
-      scopeStatus.textContent = board.partial ? 'Partial refresh — results are NOT complete. ' + partialReasons.join('; ') :
-        (board.repository && !board.repository.hasIssues ? 'Issues disabled for this repository.' :
-        (board.repository && board.repository.archived ? 'Archived repository — visible, but GitHub may refuse edits.' : 'Refresh complete.'));
+      var reasons = (board.failures || []).map(function (failure) { return shortName(failure.repository.full) + ': ' + failure.message; });
+      if (board.truncatedByIssueCap) reasons.push('combined issue cap of ' + board.issueCap + ' reached');
+      scopeStatus.textContent = board.partial ? 'Partial refresh — results are NOT complete. ' + reasons.join('; ') :
+        board.repository && !board.repository.hasIssues ? 'Issues disabled for this project.' : board.repository && board.repository.archived ? 'Archived project — GitHub may refuse edits.' : '';
       scopeStatus.className = board.partial ? 'notice error' : 'muted small';
     }
-
-    var list = $('task-list');
-    list.textContent = '';
-    var empty = $('empty-state');
-    empty.hidden = issuesToRender.length !== 0;
-    if (issuesToRender.length === 0) {
-      empty.querySelector('p').textContent = board.partial ? 'No tasks loaded. This refresh is incomplete, not an empty repository.' : 'No tasks in ' + board.repo + '.';
-    }
-
-    issuesToRender.forEach(function (issue) {
-      var priority = priorityOf(issue);
-      var badges = el('div', { class: 'badges' }, [
-        badge(issue.state === 'closed' ? 'closed' : 'open', 'state-' + (issue.state === 'closed' ? 'closed' : 'open')),
-        issue.offline ? badge('(offline)', 'badge-offline') : null,
-        issue.repository ? badge(issue.repository.full, 'repo-badge') : null,
-        issue.statusLabel ? badge(statusText(issue.statusLabel), 'status') : null,
-        priority ? badge(priority, 'badge-priority badge-priority-' + priority) : null,
-        issue.phase ? badge('phase: ' + issue.phase.replace(/_/g, ' '), 'phase') : null,
-        issue.attention && issue.attention !== 'none'
-          ? badge('needs ' + issue.attention.replace('needs-', ''), 'attention')
-          : null,
-      ]);
-
-      var meta = el('div', { class: 'task-meta' }, [
-        el('span', { text: issue.offline ? '(offline draft)' : (issue.repository ? issue.repository.full + ' ' : '') + '#' + issue.number }),
-        issue.repository && issue.repository.archived ? badge('archived') : null,
-        el('span', { text: 'updated ' + relative(issue.updatedAt) }),
-        issue.counts && issue.counts.openQuestions && issue.counts.openQuestions.open > 0
-          ? el('span', {
-              text:
-                issue.counts.openQuestions.open +
-                (issue.counts.openQuestions.open === 1 ? ' open question' : ' open questions'),
-            })
-          : null,
-        issue.counts && issue.counts.humanTasks && issue.counts.humanTasks.open > 0
-          ? el('span', {
-              text:
-                issue.counts.humanTasks.open +
-                (issue.counts.humanTasks.open === 1 ? ' human task' : ' human tasks'),
-            })
-          : null,
-      ]);
-
-      var titleInfo = resolveFriendlyTitle(issue);
-      var titleChildren = [
-        el('span', { class: 'task-title', text: titleInfo.title }),
-      ];
-      if (titleInfo.subtitle) {
-        titleChildren.push(el('span', { class: 'task-subtitle muted small', text: titleInfo.subtitle }));
+    var list = $('task-list'); list.textContent = ''; list.className = 'task-list view-' + state.viewState.view;
+    var empty = $('empty-state'); empty.hidden = issues.length !== 0;
+    var emptyText = empty.querySelector && empty.querySelector('p');
+    if (emptyText) emptyText.textContent = board.partial ? 'No tasks loaded. Refresh incomplete, not an empty project.' : pending ? 'Nothing is waiting on you.' :
+      state.viewState.filters.length ? 'No tasks match these filters.' : 'No tasks yet in ' + name + '.';
+    var hint = $('view-hint'); hint.textContent = state.viewState.view === 'graph' ? 'Dependency list-tree · “Depends on”, “Blocked by” and “Requires” issue links. Cycles and missing issues stay visible.' :
+      quickCapture() && state.viewState.sort !== 'manual' ? 'Choose Sort: Manual order to rearrange drafts.' : '';
+    if (state.viewState.view === 'kanban') {
+      STAGES.forEach(function (stage) {
+        var group = issues.filter(function (issue) { return stageOf(issue) === stage; });
+        var column = el('ul', { class: 'kanban-tasks', 'aria-label': statusText(stage) });
+        group.forEach(function (issue) { column.appendChild(el('li', {}, [taskCard(issue, false)])); });
+        list.appendChild(el('li', { class: 'kanban-column' }, [el('h2', { text: statusText(stage) + ' · ' + group.length }), column,
+          !group.length ? el('p', { class: 'muted small', text: 'No tasks' }) : null]));
+      });
+    } else if (state.viewState.view === 'graph') {
+      var seen = new Set();
+      function node(issue, depth, path) {
+        var key = identity(issue); if (seen.has(key) || path.has(key)) return;
+        seen.add(key); var nextPath = new Set(path); nextPath.add(key);
+        var item = el('li', { class: 'graph-item' }, [taskCard(issue, true)]);
+        var references = (issue.dependencies || []).map(function (number) { return '#' + number; });
+        if (references.length) item.appendChild(el('p', { class: 'muted small', text: 'Depends on ' + references.join(', ') }));
+        list.appendChild(item);
+        if (depth > 12) return;
+        var children = issues.filter(function (candidate) { return candidate.repository && issue.repository && candidate.repository.full === issue.repository.full && (candidate.dependencies || []).includes(issue.number); });
+        children.forEach(function (child) { node(child, depth + 1, nextPath); });
+        if (depth) item.className += ' graph-child';
       }
-      titleChildren.push(el('span', { class: 'task-number', text: issue.offline ? 'offline' : '#' + issue.number }));
-
-      var title = el('div', { class: 'task-top' }, titleChildren);
-
-      var row = el(
-        'button',
-        {
-          class: 'task-row' + (issue.offline ? ' task-row-offline' : ''),
-          type: 'button',
-          'aria-label': 'Open task ' + (issue.repository ? issue.repository.full + ' ' : '') + (issue.offline ? 'offline draft: ' : '#' + issue.number + ': ') + titleInfo.title,
-          onclick: function () {
-            if (issue.offline) {
-              setNotice('This draft is saved offline. It will sync automatically when back online.', false);
-              return;
-            }
-            openIssueView(issue);
-          },
-        },
-        [title, badges, meta],
-      );
-
-      list.appendChild(el('li', {}, [row]));
-    });
+      issues.filter(function (issue) { return !(issue.dependencies || []).some(function (number) { return issues.some(function (parent) { return parent.repository && issue.repository && parent.repository.full === issue.repository.full && parent.number === number; }); }); }).forEach(function (issue) { node(issue, 0, new Set()); });
+      issues.forEach(function (issue) { node(issue, 0, new Set()); });
+    } else if (pending) {
+      [true, false].forEach(function (open) {
+        var group = issues.filter(function (issue) { return Boolean(needsMe(issue)) === open; });
+        if (!group.length) return;
+        list.appendChild(el('li', { class: 'pending-heading' }, [el('h2', { text: open ? 'Waiting on you' : 'All completed' })]));
+        group.forEach(function (issue) {
+          var todos = el('ul', { class: 'pending-todos' });
+          (issue.pendingItems || []).filter(function (item) { return item.completed !== open; }).forEach(function (item) { todos.appendChild(el('li', { text: (item.completed ? '✓ ' : '○ ') + item.text })); });
+          list.appendChild(el('li', { class: 'pending-task' }, [taskCard(issue, true), todos]));
+        });
+      });
+    } else {
+      issues.forEach(function (issue, index) {
+        list.appendChild(quickCapture() && stageOf(issue) === 'draft' ? draftRow(issue, issues, index) : el('li', {}, [taskCard(issue, state.viewState.view === 'simple')]));
+      });
+    }
+    if (list.querySelectorAll) {
+      list.querySelectorAll('.draft-description').forEach(autoSizeTextarea);
+    }
   }
 
   function renderPicker() {
@@ -920,7 +1455,7 @@
       select.textContent = '';
       select.appendChild(el('option', { value: 'all', text: 'All Projects' }));
       view.repositories.forEach(function (repository) {
-        select.appendChild(el('option', { value: repository.full, text: repository.full +
+        select.appendChild(el('option', { value: repository.full, title: repository.full, text: shortName(repository.full) +
           (repository.archived ? ' · archived' : '') + (!repository.available ? ' · unavailable' : '') +
           (!repository.hasIssues ? ' · issues disabled' : '') }));
       });
@@ -933,7 +1468,8 @@
         btnText.textContent = 'All Projects';
       } else {
         var cur = view.repositories.find(function (r) { return r.full === state.selected; });
-        btnText.textContent = cur ? cur.full : state.selected;
+        btnText.textContent = shortName(cur ? cur.full : state.selected);
+        btnText.setAttribute('title', state.selected);
       }
     }
 
@@ -977,7 +1513,7 @@
 
     var filtered = view.repositories.filter(function (repo) {
       if (!query) return true;
-      return repo.full.toLowerCase().includes(query);
+      return repo.full.toLowerCase().includes(query) || shortName(repo.full).toLowerCase().includes(query);
     });
 
     filtered.forEach(function (repo) {
@@ -995,7 +1531,8 @@
           selectProject(repo.full);
         }
       }, [
-        el('span', { class: 'repo-option-name', text: repo.full }),
+        el('span', { class: 'repo-option-name', text: shortName(repo.full), title: repo.full }),
+        el('span', { class: 'repo-option-full muted small', text: repo.full }),
         tags.length ? el('span', { class: 'badge', text: tags.join(' · ') }) : null
       ]);
       list.appendChild(item);
@@ -1069,6 +1606,7 @@
       var view = await api('/api/repos');
       if (generation !== state.boardGeneration) return;
       state.repositories = view;
+      if (view.projectNames) state.projectNames = view.projectNames;
       await rememberedChoice(view);
       renderPicker();
       state.boardLoad = { generation: generation, scope: state.selected };
@@ -1078,7 +1616,7 @@
         state.board = null;
         $('task-list').textContent = '';
         $('board-count').textContent = '';
-        $('repo-label').textContent = state.selected === 'all' ? 'All repositories' : state.selected;
+        $('repo-label').textContent = state.selected === 'all' ? 'All Projects' : shortName(state.selected);
         $('empty-state').hidden = false;
         $('empty-state').querySelector('p').textContent = message;
         $('scope-status').textContent = message;
@@ -1090,6 +1628,7 @@
       var board = await api(path);
       if (generation !== state.boardGeneration) return;
       state.board = board;
+      state.uncertain.clear();
       state.loadedAt = Date.now();
       state.stale = false;
       renderBoard();
@@ -1105,7 +1644,7 @@
         state.board = null;
         $('task-list').textContent = '';
         $('board-count').textContent = '';
-        $('repo-label').textContent = state.selected === 'all' ? 'All repositories' : state.selected;
+        $('repo-label').textContent = state.selected === 'all' ? 'All Projects' : shortName(state.selected);
         $('empty-state').hidden = false;
         $('empty-state').querySelector('p').textContent = 'The board could not be loaded — unavailable, not empty.';
         setNotice(error.message + '. Use Refresh to try again.', true);
@@ -1124,7 +1663,7 @@
     container.appendChild(badge(issue.state === 'closed' ? 'closed' : 'open', 'state-' + (issue.state === 'closed' ? 'closed' : 'open')));
     container.appendChild(badge(statusText(issue.statusLabel), 'status'));
     if (issue.repository) {
-      container.appendChild(badge(issue.repository.full));
+      container.appendChild(projectBadge(issue.repository));
       if (issue.repository.archived) container.appendChild(badge('archived'));
     }
     if (issue.phase) container.appendChild(badge('phase: ' + String(issue.phase).replace(/_/g, ' '), 'phase'));
@@ -1132,7 +1671,18 @@
       container.appendChild(badge('needs ' + String(issue.attention).replace('needs-', ''), 'attention'));
     }
     if (issue.number !== undefined && issue.number !== null) {
-      container.appendChild(badge('#' + issue.number));
+      if (issue.htmlUrl) {
+        container.appendChild(el('a', {
+          class: 'badge github-link',
+          href: issue.htmlUrl,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          text: '#' + issue.number + ' on GitHub \u2197',
+          'aria-label': 'Open issue #' + issue.number + ' on GitHub',
+        }));
+      } else {
+        container.appendChild(badge('#' + issue.number));
+      }
     }
   }
 
@@ -1231,18 +1781,7 @@
   }
 
   function renderHumanTasks(issue) {
-    var list = $('human-list');
-    list.textContent = '';
-    var tasks = Array.isArray(issue.humanTasks) ? issue.humanTasks : [];
-    $('no-human').hidden = tasks.length > 0;
-    tasks.forEach(function (task) {
-      if (!task) return;
-      list.appendChild(
-        el('li', {}, [
-          el('span', { text: (task.completed ? '✓ ' : '○ ') + (task.text || '') }),
-        ]),
-      );
-    });
+    renderChecklist('human-list', 'no-human', issue.humanTasks || [], false);
   }
 
   function renderDetail(focusHeading) {
@@ -1340,6 +1879,11 @@
 
   function route() {
     var match = /^#\/issue\/(\d+)$/.exec(window.location.hash || '');
+    if (!match && state.closingHash) {
+      state.closingHash = false;
+      return;
+    }
+    state.closingHash = false;
     if (match && state.pending && state.pending.number === Number(match[1])) {
       // The click already carries the exact qualified identity; never infer a
       // repository from a bare number in a combined view.
@@ -1523,6 +2067,8 @@
   }
 
   function bind() {
+    if (state.bound) return;
+    state.bound = true;
     $('login-form').addEventListener('submit', async function (event) {
       event.preventDefault();
       var button = $('login-btn');
@@ -1556,79 +2102,65 @@
       }
     });
 
-    var quickAddForm = $('quick-add-form');
-    if (quickAddForm) {
-      quickAddForm.addEventListener('submit', async function (event) {
-        event.preventDefault();
-        var input = $('quick-add-input');
-        if (!input) return;
-        var title = input.value.trim();
-        if (!title) return;
+    $('quick-add-form').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      var input = $('quick-add-input'), description = $('quick-add-description');
+      var title = input.value.trim(), target = $('quick-add-project').value;
+      if (!title || input.disabled) return;
+      if (!target) { setNotice('Select a writable project before adding a draft.', true); return; }
+      var all = (state.board ? state.board.issues : []).concat(offlineRows());
+      var max = all.reduce(function (current, issue) { return Number.isFinite(issue.order) ? Math.max(current, issue.order) : current; }, 0);
+      var order = max + 1000;
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        saveToOfflineQueue(title, target, description.value, order); input.value = ''; description.value = '';
+        setNotice('Offline: draft saved locally. It will sync when connected.'); input.focus(); return;
+      }
+      input.disabled = true;
+      try {
+        var parts = target.split('/');
+        var response = await api('/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues', {
+          method: 'POST', body: { title: title, body: description.value + '\n\n<!-- board-order: ' + order + ' -->', labels: ['status:draft'] },
+        });
+        if (!response || !response.issue || typeof response.issue.number !== 'number') throw new ApiError('write_outcome_unknown', 502, { message: 'Creation outcome unknown; refresh before retrying.' });
+        input.value = ''; description.value = '';
+        if (state.board) { state.board.issues.push(response.issue); renderBoard(); }
+        announce('Draft added. No agent started.'); setNotice('');
+      } catch (error) { setNotice(error.message + ' Your text is retained. Refresh before retrying an unknown outcome.', true); }
+      finally { input.disabled = false; input.focus(); }
+    });
 
-        var targetRepo = null;
-        if (state.selected && state.selected !== 'all') {
-          targetRepo = state.selected;
-        } else if (state.board && state.board.repository) {
-          targetRepo = state.board.repository.full;
-        } else if (state.repositories && Array.isArray(state.repositories.repositories) && state.repositories.repositories.length > 0) {
-          var preferred = state.repositories.repositories.find(function (r) {
-            return r.name === 'openchamber-github-task-board' || r.full.includes('openchamber-github-task-board');
-          });
-          targetRepo = preferred ? preferred.full : state.repositories.repositories[0].full;
-        }
+    ['view', 'filter', 'sort', 'settings'].forEach(function (kind) {
+      var button = $(kind + '-btn');
+      if (button) button.addEventListener('click', function () { openSheet(kind, button); });
+    });
+    if ($('sheet-close')) $('sheet-close').addEventListener('click', closeSheet);
+    if ($('board-sheet')) $('board-sheet').addEventListener('cancel', function () { if (sheetOpener) sheetOpener.focus(); });
 
-        if (!targetRepo) {
-          setNotice('Select a specific repository before adding a draft.', true);
-          return;
-        }
-
-        var parts = targetRepo.split('/');
-        if (parts.length !== 2) {
-          setNotice('Repository format is invalid.', true);
-          return;
-        }
-
+    $('refresh-btn').addEventListener('click', async function () {
+      if (!state.csrf) {
         if (typeof navigator !== 'undefined' && !navigator.onLine) {
-          saveToOfflineQueue(title, targetRepo);
-          input.value = '';
-          setNotice('Offline: draft saved locally. It will sync when connected.', false);
-          announce('Draft issue saved offline: ' + title);
+          showOfflineShell();
           return;
         }
-
-        var endpoint = '/api/repos/' + encodeURIComponent(parts[0]) + '/' + encodeURIComponent(parts[1]) + '/issues';
-        input.disabled = true;
         try {
-          var response = await api(endpoint, {
-            method: 'POST',
-            body: { title: title, labels: ['status:draft'] }
-          });
-          input.value = '';
-          setNotice('');
-          if (response && response.issue && state.board) {
-            state.board.issues.unshift(response.issue);
-            renderBoard();
-          } else {
+          var session = await api('/api/session');
+          if (session && session.authenticated) {
+            state.csrf = session.csrfToken;
             await loadBoard();
+            syncOfflineDrafts();
+            return;
           }
-          announce('Draft issue added: ' + title);
-        } catch (error) {
-          if (error.kind === 'network' || /network|failed to fetch|offline/i.test(error.message || '')) {
-            saveToOfflineQueue(title, targetRepo);
-            input.value = '';
-            setNotice('Offline: draft saved locally. It will sync when connected.', false);
-            announce('Draft issue saved offline: ' + title);
-          } else {
-            setNotice(error.message || 'Failed to create draft issue.', true);
+        } catch (e) {
+          if (getOfflineDrafts().length > 0) {
+            showOfflineShell();
+            return;
           }
-        } finally {
-          input.disabled = false;
-          input.focus();
+          showLogin('The board could not be reached. Reload to try again.');
+          return;
         }
-      });
-    }
-
-    $('refresh-btn').addEventListener('click', function () {
+        showLogin();
+        return;
+      }
       if (state.detail && /^#\/issue\//.test(window.location.hash)) {
         openIssue(state.detail);
       } else {
@@ -1689,12 +2221,7 @@
             return;
           }
           if (state.detail && !$('detail-view').hidden) {
-            rememberDraft();
-            state.readGeneration++;
-            state.detail = null;
-            state.pending = null;
-            setHash('#/');
-            showBoard();
+            closeDrawer();
           }
         }
       });
@@ -1703,12 +2230,7 @@
     var backdrop = $('drawer-backdrop');
     if (backdrop) {
       backdrop.addEventListener('click', function () {
-        rememberDraft();
-        state.readGeneration++;
-        state.detail = null;
-        state.pending = null;
-        setHash('#/');
-        showBoard();
+        closeDrawer();
       });
     }
 
@@ -1718,35 +2240,28 @@
     }
 
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
-      window.addEventListener('online', function () {
+      window.addEventListener('online', async function () {
+        if (!state.csrf) {
+          try {
+            var session = await api('/api/session');
+            if (session && session.authenticated) {
+              state.csrf = session.csrfToken;
+              await loadBoard();
+            }
+          } catch (e) {}
+        }
         syncOfflineDrafts();
       });
-    }
-
-    if (typeof document !== 'undefined' && typeof document.querySelectorAll === 'function') {
-      var viewTabs = document.querySelectorAll('.view-tab');
-      viewTabs.forEach(function (tab) {
-        tab.addEventListener('click', function () {
-          var filter = tab.getAttribute('data-filter') || 'all';
-          state.mobileViewFilter = filter;
-          viewTabs.forEach(function (t) {
-            var isCurrent = t === tab;
-            t.classList.toggle('active', isCurrent);
-            t.setAttribute('aria-selected', isCurrent ? 'true' : 'false');
-          });
-          if (state.board) renderBoard();
-        });
+      window.addEventListener('resize', function () {
+        if (typeof document !== 'undefined' && document.querySelectorAll) {
+          document.querySelectorAll('.draft-description').forEach(autoSizeTextarea);
+        }
       });
     }
 
     $('signout-btn').addEventListener('click', signOut);
     $('back-btn').addEventListener('click', function () {
-      rememberDraft();
-      state.readGeneration++;
-      state.detail = null;
-      state.pending = null;
-      setHash('#/');
-      showBoard();
+      closeDrawer();
     });
     $('save-overview').addEventListener('click', saveOverview);
     $('apply-status').addEventListener('click', saveStatus);
@@ -1762,12 +2277,58 @@
     }
   }
 
-  async function boot() {
-    if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('/sw.js').catch(function () {});
-      });
+  function initServiceWorker() {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+
+    var hadController = Boolean(navigator.serviceWorker.controller);
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (!hadController) {
+        hadController = true;
+        return;
+      }
+      try {
+        if (sessionStorage.getItem('sw_reloaded')) {
+          setNotice('Updated - reload');
+          return;
+        }
+        sessionStorage.setItem('sw_reloaded', '1');
+      } catch (e) {}
+      window.location.reload();
+    });
+
+    if (typeof window !== 'undefined') {
+      window.setTimeout(function () {
+        try {
+          sessionStorage.removeItem('sw_reloaded');
+        } catch (e) {}
+      }, 5000);
     }
+
+    var doRegister = function () {
+      navigator.serviceWorker
+        .register('/sw.js', { updateViaCache: 'none' })
+        .then(function (registration) {
+          registration.update().catch(function () {});
+          if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', function () {
+              if (document.visibilityState === 'visible') {
+                registration.update().catch(function () {});
+              }
+            });
+          }
+        })
+        .catch(function () {});
+    };
+
+    if (typeof document !== 'undefined' && document.readyState === 'complete') {
+      doRegister();
+    } else if (typeof window !== 'undefined') {
+      window.addEventListener('load', doRegister);
+    }
+  }
+
+  async function boot() {
+    initServiceWorker();
     bind();
     try {
       var session = await api('/api/session');
@@ -1779,6 +2340,10 @@
         return;
       }
     } catch (error) {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        showOfflineShell();
+        return;
+      }
       showLogin('The board could not be reached. Reload to try again.');
       return;
     }
@@ -1788,6 +2353,12 @@
   if (typeof window !== 'undefined') {
     window.__taskBoard = {
       state: state,
+      boot: boot,
+      shortName: shortName, filterSort: filterSort, manualCompare: manualCompare,
+      renderBoard: renderBoard, renderDetail: renderDetail,
+      openIssue: openIssue, openIssueView: openIssueView, closeDrawer: closeDrawer,
+      showOfflineShell: showOfflineShell,
+      reorderDraft: reorderDraft, draftMutation: draftMutation,
       parseFriendlyTitle: parseFriendlyTitle,
       resolveFriendlyTitle: resolveFriendlyTitle,
       updateSubtaskInMarkdown: updateSubtaskInMarkdown,

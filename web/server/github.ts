@@ -74,6 +74,28 @@ export interface IssueRead {
   etag: string | null;
 }
 
+export interface TransferredIssueResult {
+  id: string;
+  number: number;
+  url: string;
+  repositoryFullName: string;
+}
+
+const TRANSFER_ISSUE_MUTATION = `
+  mutation TransferIssue($issueId: ID!, $repositoryId: ID!) {
+    transferIssue(input: { issueId: $issueId, repositoryId: $repositoryId }) {
+      issue {
+        id
+        number
+        url
+        repository {
+          nameWithOwner
+        }
+      }
+    }
+  }
+`;
+
 export interface IssueList {
   items: any[];
   pages: number;
@@ -152,6 +174,13 @@ export class GitHubClient {
   private issuesBase(): string {
     if (!this.repo) throw new GitHubError('invalid', 0, 'Repository has not been resolved');
     return `${this.apiBase}/repos/${encodeURIComponent(this.repo.owner)}/${encodeURIComponent(this.repo.name)}`;
+  }
+
+  private graphqlUrl(): string {
+    if (this.apiBase.endsWith('/api/v3')) {
+      return `${this.apiBase.slice(0, -3)}graphql`;
+    }
+    return `${this.apiBase}/graphql`;
   }
 
   private async request(
@@ -396,7 +425,7 @@ export class GitHubClient {
     options: { etag?: string | null } = {},
   ): Promise<IssueRead> {
     const safeNumber = parseIssueNumber(number);
-    const allowed = new Set(['body', 'labels', 'state']);
+    const allowed = new Set(['title', 'body', 'labels', 'state']);
     for (const key of Object.keys(patch)) {
       if (!allowed.has(key)) {
         throw new GitHubError('invalid', 0, `Refusing to write unsupported field ${key}`);
@@ -411,6 +440,59 @@ export class GitHubClient {
       throw new GitHubError('server', 200, 'GitHub issue response was malformed');
     }
     return { item: data, etag: headers.get('etag') };
+  }
+
+  async transferIssue(input: { issueId: string; repositoryId: string }): Promise<TransferredIssueResult> {
+    if (!input.issueId || !input.repositoryId) {
+      throw new GitHubError('invalid', 0, 'Both issueId and repositoryId are required for transferIssue');
+    }
+    const { data } = await this.request(this.graphqlUrl(), {
+      method: 'POST',
+      body: {
+        query: TRANSFER_ISSUE_MUTATION,
+        variables: {
+          issueId: input.issueId,
+          repositoryId: input.repositoryId,
+        },
+      },
+    });
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      throw new GitHubError('server', 200, 'GitHub GraphQL response was malformed');
+    }
+    const transferred = data?.data?.transferIssue?.issue;
+    if (!transferred) {
+      const errors = Array.isArray(data.errors) ? data.errors : [];
+      if (
+        errors.length > 0 &&
+        errors.every((entry: any) => entry && typeof entry === 'object' && typeof entry.type === 'string')
+      ) {
+        const types = errors.map((entry: any) => String(entry.type).toUpperCase());
+        if (types.every((t: string) => ['FORBIDDEN', 'INSUFFICIENT_SCOPES', 'NOT_FOUND', 'UNPROCESSABLE', 'BAD_USER_INPUT'].includes(t))) {
+          const message = typeof errors[0].message === 'string' && errors[0].message.trim()
+            ? errors[0].message
+            : 'GitHub refused to transfer this issue';
+          if (types.some((t: string) => t === 'FORBIDDEN' || t === 'INSUFFICIENT_SCOPES')) {
+            throw new GitHubError('forbidden', 403, message, { jsonParsed: true, data });
+          }
+          throw new GitHubError('invalid', 422, message, { jsonParsed: true, data });
+        }
+      }
+      throw new GitHubError('server', 200, 'GitHub GraphQL transfer outcome was ambiguous', { jsonParsed: true, data });
+    }
+    if (
+      typeof transferred.id !== 'string' || !transferred.id ||
+      !Number.isSafeInteger(transferred.number) || transferred.number <= 0 ||
+      typeof transferred.url !== 'string' || !/^https?:\/\//i.test(transferred.url) ||
+      typeof transferred.repository?.nameWithOwner !== 'string' || !transferred.repository.nameWithOwner.includes('/')
+    ) {
+      throw new GitHubError('server', 200, 'GitHub GraphQL transfer response was incomplete', { jsonParsed: true, data });
+    }
+    return {
+      id: transferred.id,
+      number: transferred.number,
+      url: transferred.url,
+      repositoryFullName: transferred.repository.nameWithOwner,
+    };
   }
 
   async createIssue(payload: {
