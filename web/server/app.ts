@@ -1004,7 +1004,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         }
       }
 
-      let patch: Record<string, unknown>;
+      let patch: Record<string, unknown> = {};
       try {
         if (op.kind === 'section') {
           patch = { body: replaceSectionText(fresh.item.body ?? '', baseSectionId, op.text) };
