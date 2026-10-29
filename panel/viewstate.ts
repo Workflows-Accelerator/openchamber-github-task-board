@@ -70,32 +70,98 @@ export function normalizeProjectNameOverrides(stored: unknown): Record<string, s
 /** Spacing used for first/last positions and for new items appended at the end. */
 export const ORDER_GAP = 1000;
 
-const ORDER_MARKER_LINE_REGEX = /^[ \t]*<!--\s*board-order:\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)\s*-->[ \t]*$/gim;
+const ORDER_MARKER_SINGLE_REGEX = /^[ \t]*<!--\s*board-order:\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)\s*-->[ \t]*$/i;
+const FENCE_OPEN_REGEX = /^[ \t]{0,3}(`{3,}|~{3,})/;
 
-/** Order number from the last `<!-- board-order: N -->` line in a body, or null. */
-export function parseOrderMarker(body: string | null | undefined): number | null {
-  if (!body || typeof body !== 'string') return null;
-  let result: number | null = null;
-  ORDER_MARKER_LINE_REGEX.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = ORDER_MARKER_LINE_REGEX.exec(body)) !== null) {
-    const n = Number(match[1]);
-    if (Number.isFinite(n)) result = n;
-  }
-  return result;
+interface TerminalMarkerScan {
+  order: number;
+  contentEnd: number;
 }
 
-/** Body with every order marker line removed (and trailing blank lines trimmed). */
+function scanTerminalOrderMarker(body: string): TerminalMarkerScan | null {
+  const lines: Array<{ text: string; start: number; end: number; inFence: boolean }> = [];
+  let fenceChar = '';
+  let fenceLen = 0;
+  let pos = 0;
+  while (pos <= body.length) {
+    let lineEnd = body.indexOf('\n', pos);
+    let nextPos: number;
+    if (lineEnd === -1) {
+      lineEnd = body.length;
+      nextPos = body.length + 1;
+    } else {
+      nextPos = lineEnd + 1;
+      if (lineEnd > pos && body.charCodeAt(lineEnd - 1) === 13) {
+        lineEnd -= 1;
+      }
+    }
+    const text = body.slice(pos, lineEnd);
+    let inFence = fenceLen > 0;
+    const fenceMatch = FENCE_OPEN_REGEX.exec(text);
+    if (fenceMatch) {
+      const run = fenceMatch[1];
+      if (!inFence) {
+        fenceChar = run[0];
+        fenceLen = run.length;
+        inFence = true;
+      } else if (run[0] === fenceChar && run.length >= fenceLen && /^[ \t]*$/.test(text.slice(fenceMatch[0].length))) {
+        fenceChar = '';
+        fenceLen = 0;
+      }
+    }
+    lines.push({ text, start: pos, end: lineEnd, inFence });
+    pos = nextPos;
+  }
+
+  let i = lines.length - 1;
+  while (i >= 0 && !/\S/.test(lines[i].text)) i--;
+  if (i < 0 || lines[i].inFence) return null;
+  const lastMatch = ORDER_MARKER_SINGLE_REGEX.exec(lines[i].text);
+  if (!lastMatch) return null;
+  const order = Number(lastMatch[1]);
+  if (!Number.isFinite(order)) return null;
+
+  let firstMarkerLine = i;
+  i--;
+  while (i >= 0) {
+    if (!/\S/.test(lines[i].text)) {
+      i--;
+      continue;
+    }
+    if (!lines[i].inFence) {
+      const m = ORDER_MARKER_SINGLE_REGEX.exec(lines[i].text);
+      if (m && Number.isFinite(Number(m[1]))) {
+        firstMarkerLine = i;
+        i--;
+        continue;
+      }
+    }
+    break;
+  }
+
+  let lastContentLine = firstMarkerLine - 1;
+  while (lastContentLine >= 0 && !/\S/.test(lines[lastContentLine].text)) {
+    lastContentLine--;
+  }
+  return {
+    order,
+    contentEnd: lastContentLine >= 0 ? lines[lastContentLine].end : 0,
+  };
+}
+
+/** Order number from the terminal unfenced `<!-- board-order: N -->` line in a body, or null. */
+export function parseOrderMarker(body: string | null | undefined): number | null {
+  if (!body || typeof body !== 'string') return null;
+  const scan = scanTerminalOrderMarker(body);
+  return scan ? scan.order : null;
+}
+
+/** Body with the terminal unfenced order marker line(s) removed, preserving line endings and trailing spaces. */
 export function stripOrderMarker(body: string | null | undefined): string {
   if (!body || typeof body !== 'string') return '';
-  ORDER_MARKER_LINE_REGEX.lastIndex = 0;
-  if (!ORDER_MARKER_LINE_REGEX.test(body)) return body;
-  ORDER_MARKER_LINE_REGEX.lastIndex = 0;
-  return body
-    .replace(ORDER_MARKER_LINE_REGEX, '')
-    .replace(/\r\n/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
-    .replace(/\s+$/, '');
+  const scan = scanTerminalOrderMarker(body);
+  if (!scan) return body;
+  return body.slice(0, scan.contentEnd);
 }
 
 /** Round-trip the number without rounding away fractional order positions. */
@@ -120,9 +186,12 @@ export function formatOrderNumber(order: number): string {
  * marker is appended on its own line at the end of the body.
  */
 export function setOrderMarker(body: string | null | undefined, order: number): string {
-  const base = stripOrderMarker(body || '');
+  const raw = body || '';
+  const base = stripOrderMarker(raw);
   const marker = `<!-- board-order: ${formatOrderNumber(order)} -->`;
-  return base ? `${base}\n\n${marker}` : marker;
+  if (!base) return marker;
+  const eol = raw.includes('\r\n') ? '\r\n' : '\n';
+  return `${base}${eol}${eol}${marker}`;
 }
 
 /**
@@ -163,6 +232,8 @@ export function compareManualOrder(a: OrderableItem, b: OrderableItem): number {
   const ca = createdTime(a);
   const cb = createdTime(b);
   if (ca !== cb) return ca - cb;
+  const repoCmp = (a.repo || '').localeCompare(b.repo || '');
+  if (repoCmp !== 0) return repoCmp;
   return (a.number || 0) - (b.number || 0);
 }
 
@@ -180,14 +251,14 @@ export function nextAppendOrder(items: OrderableItem[]): number {
   return max === null ? ORDER_GAP : max + ORDER_GAP;
 }
 
-export interface MoveResult {
-  /** Index in `ordered` of the only item whose marker is written. */
+export interface MoveWrite {
+  /** Index in `ordered` of an item whose marker is written. */
   index: number;
   /** New marker value for that item. */
   order: number;
-  /** Successful moves always represent the requested slot exactly. */
-  exact: true;
 }
+
+export type MoveResult = MoveWrite[];
 
 function slotOrder<T extends OrderableItem>(rest: T[], slot: number): number | null {
   const prev: T | null = slot > 0 ? rest[slot - 1] : null;
@@ -202,14 +273,45 @@ function slotOrder<T extends OrderableItem>(rest: T[], slot: number): number | n
   return order;
 }
 
+function buildSpanOrders(low: number | null, high: number | null, count: number): number[] | null {
+  if (count <= 0) return null;
+  if (low !== null && high !== null && !(low < high)) return null;
+  const values: number[] = [];
+  for (let k = 0; k < count; k++) {
+    let v: number;
+    if (low === null && high === null) {
+      v = (k + 1) * ORDER_GAP;
+    } else if (low !== null && high === null) {
+      v = low + (k + 1) * ORDER_GAP;
+    } else if (low === null && high !== null) {
+      v = high - (count - k) * ORDER_GAP;
+    } else {
+      const l = low as number;
+      const h = high as number;
+      const delta = h - l;
+      v = Number.isFinite(delta)
+        ? l + (delta * (k + 1)) / (count + 1)
+        : ((count - k) * l + (k + 1) * h) / (count + 1);
+    }
+    if (!Number.isFinite(v)) return null;
+    if (k === 0 && low !== null && !(v > low)) return null;
+    if (k > 0 && !(v > values[k - 1])) return null;
+    if (k === count - 1 && high !== null && !(v < high)) return null;
+    values.push(v);
+  }
+  return values;
+}
+
 /**
- * Compute the single marker write for a move. `ordered` is the list in its
- * current manual order (see sortByManualOrder); the item at `fromIndex` should
- * end up at `toIndex`. Returns null for a no-op or impossible move.
+ * Compute the minimal ordered list of `{ index, order }` marker writes for a move.
+ * `ordered` is the list in its current manual order (see sortByManualOrder);
+ * the item at `fromIndex` ends up at `toIndex`. Returns null for a no-op or
+ * out-of-range move.
  *
- * Only the moved item's marker may change. A slot after an unmarked item or
- * between equal/exhausted markers is unrepresentable under that contract;
- * refuse it rather than rewriting a neighbour or silently moving elsewhere.
+ * When a single midpoint write suffices, only the moved item is written. When
+ * moving into/past unmarked items or across equal/exhausted markers, lazily
+ * initializes unmarked prefix/neighbours up to `toIndex` with `ORDER_GAP`
+ * spacing or rebalances the minimal contiguous span around `toIndex`.
  */
 export function computeMove<T extends OrderableItem>(ordered: T[], fromIndex: number, toIndex: number): MoveResult | null {
   if (fromIndex < 0 || fromIndex >= ordered.length) return null;
@@ -217,7 +319,70 @@ export function computeMove<T extends OrderableItem>(ordered: T[], fromIndex: nu
   if (to === fromIndex) return null;
   const rest = ordered.filter((_, i) => i !== fromIndex);
   const direct = slotOrder(rest, to);
-  if (direct !== null) return { index: fromIndex, order: direct, exact: true };
+  if (direct !== null) return [{ index: fromIndex, order: direct }];
+
+  const entries = ordered.map((item, index) => ({
+    item,
+    index,
+    order: parseOrderMarker(item.body),
+  }));
+  const [moved] = entries.splice(fromIndex, 1);
+  entries.splice(to, 0, moved);
+
+  let lastMarked = -1;
+  for (let i = 0; i < entries.length; i++) {
+    if (entries[i].order !== null) lastMarked = i;
+  }
+  const markedCount = Math.max(to + 1, lastMarked + 1);
+
+  let firstUnmarked = -1;
+  for (let i = 0; i <= to; i++) {
+    if (entries[i].order === null) {
+      firstUnmarked = i;
+      break;
+    }
+  }
+
+  if (firstUnmarked !== -1 && lastMarked <= to) {
+    const baseOrder = firstUnmarked > 0 ? (entries[firstUnmarked - 1].order as number) : 0;
+    const writes: MoveWrite[] = [];
+    let valid = true;
+    for (let i = firstUnmarked; i <= to; i++) {
+      const nextOrder = baseOrder + (i - firstUnmarked + 1) * ORDER_GAP;
+      if (!Number.isFinite(nextOrder)) {
+        valid = false;
+        break;
+      }
+      if (entries[i].order !== nextOrder) {
+        writes.push({ index: entries[i].index, order: nextOrder });
+      }
+    }
+    if (valid && writes.length > 0) return writes;
+  }
+
+  for (let len = 1; len <= markedCount; len++) {
+    const startL = Math.max(0, to - len + 1);
+    const endL = Math.min(to, markedCount - len);
+    let best: MoveWrite[] | null = null;
+    for (let left = startL; left <= endL; left++) {
+      const right = left + len - 1;
+      const low = left > 0 ? entries[left - 1].order : null;
+      const high = right + 1 < markedCount ? entries[right + 1].order : null;
+      if ((left > 0 && low === null) || (right + 1 < markedCount && high === null)) continue;
+      const values = buildSpanOrders(low, high, len);
+      if (!values) continue;
+      const candidate: MoveWrite[] = [];
+      for (let k = 0; k < len; k++) {
+        if (entries[left + k].order !== values[k]) {
+          candidate.push({ index: entries[left + k].index, order: values[k] });
+        }
+      }
+      if (candidate.length > 0 && (!best || candidate.length < best.length)) {
+        best = candidate;
+      }
+    }
+    if (best) return best;
+  }
 
   return null;
 }
@@ -362,7 +527,11 @@ function timeOf(value: string | null | undefined): number {
  */
 export function applySort<T extends SortableItem>(items: T[], sort: SortId, priorityWeight: (item: T) => number): T[] {
   const copy = [...items];
-  const byNumberDesc = (a: T, b: T) => (b.number || 0) - (a.number || 0);
+  const byNumberDesc = (a: T, b: T) => {
+    const repoCmp = (a.repo || '').localeCompare(b.repo || '');
+    if (repoCmp !== 0) return repoCmp;
+    return (b.number || 0) - (a.number || 0);
+  };
   switch (sort) {
     case 'manual':
       return copy.sort(compareManualOrder);

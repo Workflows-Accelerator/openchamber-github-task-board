@@ -86,8 +86,31 @@ test('stripOrderMarker: removes marker lines and keeps the rest of the body', ()
   assert.equal(stripOrderMarker('Hello\n\n<!-- board-order: 1000 -->'), 'Hello');
   assert.equal(stripOrderMarker('<!-- board-order: 1000 -->'), '');
   assert.equal(stripOrderMarker('Plain body\n'), 'Plain body\n', 'body without marker is untouched');
-  assert.equal(stripOrderMarker('A\n<!-- board-order: 1 -->\nB'), 'A\n\nB');
+  assert.equal(stripOrderMarker('A\n<!-- board-order: 1 -->\nB'), 'A\n<!-- board-order: 1 -->\nB', 'non-terminal marker inside body is untouched');
   assert.equal(stripOrderMarker(null), '');
+});
+
+test('H2: order marker helpers ignore fenced code blocks and preserve CRLF, blank lines, and hard-break spaces', () => {
+  const fencedOnly = 'Sample:\r\n```html\r\n<!-- board-order: 777 -->\r\n```\r\n';
+  assert.equal(parseOrderMarker(fencedOnly), null);
+  assert.equal(stripOrderMarker(fencedOnly), fencedOnly);
+
+  const fencedWithTrailing = 'Sample:\r\n```html\r\n<!-- board-order: 777 -->\r\n```\r\n\r\n\r\n### Human Tasks:\r\n- [ ] Keep this\r\n\r\n<!-- board-order: 1000 -->';
+  const expectedStripped = 'Sample:\r\n```html\r\n<!-- board-order: 777 -->\r\n```\r\n\r\n\r\n### Human Tasks:\r\n- [ ] Keep this';
+  assert.equal(parseOrderMarker(fencedWithTrailing), 1000);
+  assert.equal(stripOrderMarker(fencedWithTrailing), expectedStripped);
+  assert.equal(
+    setOrderMarker(fencedWithTrailing, 2000),
+    `${expectedStripped}\r\n\r\n<!-- board-order: 2000 -->`
+  );
+
+  const tildeFence = '~~~\n<!-- board-order: 555 -->\n~~~';
+  assert.equal(parseOrderMarker(tildeFence), null);
+  assert.equal(stripOrderMarker(tildeFence), tildeFence);
+
+  const hardBreak = 'Line one  \nLine two  \n\n<!-- board-order: 1000 -->';
+  assert.equal(stripOrderMarker(hardBreak), 'Line one  \nLine two  ');
+  assert.equal(setOrderMarker(hardBreak, 2500), 'Line one  \nLine two  \n\n<!-- board-order: 2500 -->');
 });
 
 test('setOrderMarker: appends one marker on its own line at the end, replacing any old one', () => {
@@ -127,47 +150,98 @@ test('manual order: marked first by number, then unmarked oldest created first',
   assert.equal(nextAppendOrder([draft(9, null, '')]), 1000);
 });
 
-test('computeMove: rewrites only the moved item with the neighbour midpoint', () => {
+const applyMoveWrites = (list, writes) => {
+  assert.ok(Array.isArray(writes) && writes.length > 0, 'expected non-empty write plan');
+  const next = list.map((item) => ({ ...item }));
+  for (const write of writes) {
+    next[write.index].body = setOrderMarker(next[write.index].body, write.order);
+  }
+  return sortByManualOrder(next);
+};
+
+test('computeMove: rewrites only the moved item with the neighbour midpoint when neighbours are marked', () => {
   const ordered = [draft(1, 1000, 'a'), draft(2, 2000, 'b'), draft(3, 3000, 'c')];
-  assert.deepEqual(computeMove(ordered, 2, 0), { index: 2, order: 0, exact: true }, 'to first: next - 1000');
-  assert.deepEqual(computeMove(ordered, 0, 2), { index: 0, order: 4000, exact: true }, 'to last: prev + 1000');
-  assert.deepEqual(computeMove(ordered, 0, 1), { index: 0, order: 2500, exact: true }, 'one step down');
-  assert.deepEqual(computeMove(ordered, 2, 1), { index: 2, order: 1500, exact: true }, 'one step up');
+  assert.deepEqual(computeMove(ordered, 2, 0), [{ index: 2, order: 0 }], 'to first: next - 1000');
+  assert.deepEqual(computeMove(ordered, 0, 2), [{ index: 0, order: 4000 }], 'to last: prev + 1000');
+  assert.deepEqual(computeMove(ordered, 0, 1), [{ index: 0, order: 2500 }], 'one step down');
+  assert.deepEqual(computeMove(ordered, 2, 1), [{ index: 2, order: 1500 }], 'one step up');
   assert.equal(computeMove(ordered, 1, 1), null, 'no-op');
   assert.equal(computeMove(ordered, 5, 0), null, 'out of range');
 });
 
-test('computeMove: moving down past an unmarked item refuses instead of writing another item', () => {
+test('computeMove: moving down past unmarked items lazily assigns ORDER_GAP markers up to target slot', () => {
   const ordered = [draft(1, 1000, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03')];
   const original = structuredClone(ordered);
-  assert.equal(computeMove(ordered, 0, 1), null);
-  assert.deepEqual(ordered, original, 'no neighbour marker may change');
+  const moveOne = computeMove(ordered, 0, 1);
+  assert.deepEqual(moveOne, [{ index: 1, order: 1000 }, { index: 0, order: 2000 }]);
+  assert.deepEqual(ordered, original, 'input array is not mutated');
+  assert.deepEqual(applyMoveWrites(ordered, moveOne).map((i) => i.number), [2, 1, 3]);
+
+  const moveTwo = computeMove(ordered, 0, 2);
+  assert.deepEqual(moveTwo, [{ index: 1, order: 1000 }, { index: 2, order: 2000 }, { index: 0, order: 3000 }]);
+  assert.deepEqual(applyMoveWrites(ordered, moveTwo).map((i) => i.number), [2, 3, 1]);
 });
 
-test('computeMove: moving an unmarked item up lands it right after the marked items', () => {
+test('computeMove: unmarked lists lazily initialize only prefix up to toIndex for any upward or downward move', () => {
   const ordered = [draft(1, 1000, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03')];
   const move = computeMove(ordered, 2, 1);
-  assert.deepEqual(move, { index: 2, order: 2000, exact: true });
+  assert.deepEqual(move, [{ index: 2, order: 2000 }]);
+  assert.deepEqual(applyMoveWrites(ordered, move).map((i) => i.number), [1, 3, 2]);
+
   const allUnmarked = [draft(1, null, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03')];
   const top = computeMove(allUnmarked, 2, 0);
-  assert.deepEqual(top, { index: 2, order: 1000, exact: true });
-  const mid = computeMove(allUnmarked, 2, 1);
-  assert.equal(mid, null, 'slot between two unmarked items is unreachable with only the moved marker');
-});
+  assert.deepEqual(top, [{ index: 2, order: 1000 }]);
+  assert.deepEqual(applyMoveWrites(allUnmarked, top).map((i) => i.number), [3, 1, 2]);
 
-test('computeMove: unreachable slot after unmarked items is reported, never silently wrong', () => {
-  const ordered = [draft(1, 1000, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03')];
-  assert.equal(computeMove(ordered, 0, 2), null, 'marked item cannot move after unmarked ones with one write');
+  const down = computeMove(allUnmarked, 0, 1);
+  assert.deepEqual(down, [{ index: 1, order: 1000 }, { index: 0, order: 2000 }]);
+  assert.deepEqual(applyMoveWrites(allUnmarked, down).map((i) => i.number), [2, 1, 3]);
+
+  const mid = computeMove(allUnmarked, 2, 1);
+  assert.deepEqual(mid, [{ index: 0, order: 1000 }, { index: 2, order: 2000 }]);
+  assert.deepEqual(applyMoveWrites(allUnmarked, mid).map((i) => i.number), [1, 3, 2]);
+
   const four = [draft(1, null, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03'), draft(4, null, '2026-01-04')];
   const m = computeMove(four, 3, 1);
-  assert.equal(m, null, 'never silently falls back to another slot');
+  assert.deepEqual(m, [{ index: 0, order: 1000 }, { index: 3, order: 2000 }]);
+  assert.deepEqual(applyMoveWrites(four, m).map((i) => i.number), [1, 4, 2, 3]);
 });
 
-test('computeMove: precision exhaustion between equal markers returns null', () => {
-  const ordered = [draft(1, 1000, 'a'), draft(2, 1000, 'b'), draft(3, 1000, 'c'), draft(4, 1000, 'd')];
-  assert.equal(computeMove(ordered, 3, 1), null);
+test('computeMove: rebalances minimal contiguous span when markers are equal or precision is exhausted', () => {
+  const ordered = [draft(1, 1000, '2026-01-01'), draft(2, 1000, '2026-01-02'), draft(3, 1000, '2026-01-03'), draft(4, 1000, '2026-01-04')];
+  const move = computeMove(ordered, 3, 1);
+  assert.ok(move && move.length >= 2);
+  assert.deepEqual(applyMoveWrites(ordered, move).map((i) => i.number), [1, 4, 2, 3]);
+
   const swap = computeMove(ordered.slice(0, 3), 2, 1);
-  assert.equal(swap, null, 'equal-marker swap must not rewrite the other item');
+  assert.ok(swap && swap.length >= 2);
+  assert.deepEqual(applyMoveWrites(ordered.slice(0, 3), swap).map((i) => i.number), [1, 3, 2]);
+
+  const exhausted = [draft(1, 1000, '2026-01-01'), draft(2, 1000 + Number.EPSILON * 1000, '2026-01-02'), draft(3, 2000, '2026-01-03')];
+  const tightMove = computeMove(exhausted, 2, 1);
+  assert.ok(tightMove && tightMove.length >= 1);
+  assert.deepEqual(applyMoveWrites(exhausted, tightMove).map((i) => i.number), [1, 3, 2]);
+
+  const scenarios = [
+    [draft(1, null, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03'), draft(4, null, '2026-01-04')],
+    [draft(1, 1000, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03'), draft(4, null, '2026-01-04')],
+    [draft(1, 1000, '2026-01-01'), draft(2, 1000, '2026-01-02'), draft(3, null, '2026-01-03'), draft(4, null, '2026-01-04')],
+    [draft(1, 1000, '2026-01-01'), draft(2, 1000, '2026-01-02'), draft(3, 1000, '2026-01-03'), draft(4, 1000, '2026-01-04')],
+    [draft(1, 0, '2026-01-01'), draft(2, Number.MIN_VALUE, '2026-01-02'), draft(3, 1000, '2026-01-03')],
+  ];
+  for (const list of scenarios) {
+    for (let from = 0; from < list.length; from++) {
+      for (let to = 0; to < list.length; to++) {
+        if (from === to) continue;
+        const writes = computeMove(list, from, to);
+        assert.ok(writes && writes.length > 0, `expected writes for from=${from} to=${to}`);
+        const expected = list.map((i) => i.number);
+        const [movedNum] = expected.splice(from, 1);
+        expected.splice(to, 0, movedNum);
+        assert.deepEqual(applyMoveWrites(list, writes).map((i) => i.number), expected, `from=${from} to=${to}`);
+      }
+    }
+  }
 });
 
 // ==========================================
@@ -259,7 +333,18 @@ test('order markers round-trip tiny and huge positions without rounding a midpoi
   }
   const ordered = [draft(1, 1e-15, ''), draft(2, 2e-15, ''), draft(3, 1000, '')];
   const move = computeMove(ordered, 2, 1);
-  assert.equal(move.index, 2);
-  const persisted = parseOrderMarker(setOrderMarker('', move.order));
+  assert.equal(move[0].index, 2);
+  const persisted = parseOrderMarker(setOrderMarker('', move[0].order));
   assert.ok(persisted > 1e-15 && persisted < 2e-15);
+});
+
+test('M3: compareManualOrder and applySort break ties by repo before issue number', () => {
+  const crossRepo = [
+    { number: 1, repo: 'b/two', prio: 2, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z', body: '<!-- board-order: 1000 -->' },
+    { number: 1, repo: 'a/one', prio: 2, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z', body: '<!-- board-order: 1000 -->' },
+  ];
+  assert.deepEqual(sortByManualOrder(crossRepo).map((i) => i.repo), ['a/one', 'b/two']);
+  for (const sort of ['priority', 'updated', 'created', 'manual']) {
+    assert.deepEqual(applySort(crossRepo, sort, (i) => i.prio).map((i) => i.repo), ['a/one', 'b/two']);
+  }
 });
