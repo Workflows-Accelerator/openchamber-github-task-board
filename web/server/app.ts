@@ -1136,7 +1136,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             try { await github.addComment(number, `Moved to ${movedTo}`); }
             catch { throw new HttpError(409, 'partial_move', 'Target created, source remains open. Do not repeat move; inspect both issues.', { targetUrl: movedTo }); }
             // Comment creation may change GitHub's ETag; re-read and compare content.
-            const afterComment = await github.getIssue(number).catch(mapGitHubError);
+            const afterComment = await github.getIssue(number).catch(() => {
+              throw new HttpError(409, 'partial_move', 'Target created; source refresh failed, so source was not closed. Do not repeat move.', { targetUrl: movedTo });
+            });
             if (issueFingerprint(afterComment.item, repository) !== supplied) {
               throw new HttpError(409, 'partial_move', 'Target created, source changed and was not closed. Do not repeat move.', { targetUrl: movedTo });
             }
@@ -1264,6 +1266,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         };
       }
 
+      if (movedTo) throw new HttpError(409, 'partial_move', 'Target created; source close could not be verified. Do not repeat move.', { targetUrl: movedTo });
       throw new HttpError(
         502,
         'write_outcome_unknown',

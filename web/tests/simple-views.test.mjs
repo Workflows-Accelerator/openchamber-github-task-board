@@ -152,3 +152,23 @@ test('project rename is signed-in, CSRF protected, validated, stored beside data
   assert.equal((await client.request('/api/project-names', { method: 'PUT', body: { repository: 'owner/alpha', name: '' } })).status, 200);
   assert.deepEqual((await client.request('/api/project-names')).json.projectNames, {});
 });
+
+test('GitHub ETag rejection during reorder is a conflict, never a successful order', async (t) => {
+  const { client, fake } = await fixture(t, { patchHook: () => ({ status: 412, payload: { message: 'Precondition Failed' } }) });
+  const result = await client.request(endpoint + '/order', { method: 'PUT', body: { fingerprint: await fingerprint(client), previous: null, next: 1000 } });
+  assert.equal(result.status, 409); assert.equal(result.json.error, 'conflict');
+  assert.equal(parseOrderMarker(fake.findIssue(1).body), 1000);
+});
+test('failed link comment leaves source open with target link and no blind move retry', async (t) => {
+  const { client, fake } = await fixture(t, { commentHook: () => ({ status: 500 }) });
+  const result = await client.request(endpoint + '/move', { method: 'PUT', body: { fingerprint: await fingerprint(client), target: 'owner/beta' } });
+  assert.equal(result.status, 409); assert.equal(result.json.error, 'partial_move');
+  assert.match(result.json.targetUrl, /owner\/beta\/issues\/1/);
+  assert.equal(fake.findIssue(1).state, 'open'); assert.equal(fake.patchCalls.length, 0);
+});
+
+test('an empty friendly-title heading cannot expose hidden order marker as title', () => {
+  const raw = makeIssue({ number: 1, title: 'Technical title', body: '### Friendly Title:\n<!-- board-order: 5 -->' });
+  assert.doesNotMatch(JSON.stringify(buildIssueDetail(raw)), /<!-- board-order/);
+  assert.doesNotMatch(JSON.stringify(buildBoardListItem(raw)), /<!-- board-order/);
+});

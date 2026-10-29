@@ -345,7 +345,7 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
   const metadata = resolveV2Metadata(issue);
   const labels = labelNames(issue);
   const questions = parseWebOpenQuestions(issue.body ?? '');
-  const friendly = parseFriendlyTitle(issue.body, issue.title);
+  const friendly = parseFriendlyTitle(stripOrderMarker(issue.body), issue.title);
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
   return {
     ...listFields(rawItem, repository),
@@ -399,7 +399,7 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     return view;
   });
   const testPlan = parseTestPlan(issue.body);
-  const friendly = parseFriendlyTitle(issue.body, issue.title);
+  const friendly = parseFriendlyTitle(stripOrderMarker(issue.body), issue.title);
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
 
   return {

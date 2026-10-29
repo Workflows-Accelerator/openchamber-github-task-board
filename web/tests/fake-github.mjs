@@ -116,6 +116,7 @@ export async function startFakeGitHub(options = {}) {
     requests: [],
     patchCalls: [],
     commentCalls: [],
+    commentHook: options.commentHook ?? null,
     unknownRepoHits: [],
     failAll: false,
     failDiscovery: false,
@@ -268,6 +269,10 @@ export async function startFakeGitHub(options = {}) {
 
       if (parts[3] === 'issues' && parts[5] === 'comments' && req.method === 'POST') {
         const payload = await readBody(req);
+        if (state.commentHook) {
+          const result = await state.commentHook(payload, spec);
+          if (result) return send(result.status, result.payload ?? {});
+        }
         state.commentCalls.push({ repo: spec.repo, number: Number(parts[4]), payload });
         return send(201, { id: state.commentCalls.length, ...payload });
       }

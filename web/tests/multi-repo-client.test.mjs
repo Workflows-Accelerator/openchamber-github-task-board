@@ -153,7 +153,8 @@ test('F2: a write for the previous repository cannot discard the newly selected 
   app.state.selected = 'owner/alpha';
   app.state.board = boardFor(alpha);
   app.renderBoard();
-  assert.match(get('repo-label').textContent, /owner\/alpha/);
+  assert.equal(get('repo-label').textContent, 'Alpha');
+  assert.equal(get('repo-label').title, 'owner/alpha');
 
   const saving = app.saveOverview();
   app.state.selected = 'owner/beta';
@@ -166,7 +167,8 @@ test('F2: a write for the previous repository cannot discard the newly selected 
   await loading;
 
   assert.equal(app.state.board.repository.full, 'owner/beta');
-  assert.match(get('repo-label').textContent, /owner\/beta/);
+  assert.equal(get('repo-label').textContent, 'Beta');
+  assert.equal(get('repo-label').title, 'owner/beta');
   assert.equal(get('refresh-btn').disabled, false, 'new board re-enables Refresh');
 });
 
