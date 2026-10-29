@@ -74,6 +74,13 @@ try {
   await page.locator('#sheet-close').click();
   await chooseSort('Manual order');
   await capture('360-800-long-project-drafts');
+  await page.locator('#quick-add-form').scrollIntoViewIfNeeded();
+  const addRowShot = path.join(output, 'issue-48-web-360-800-add-row-bottom.png');
+  await page.screenshot({ path: addRowShot }); screenshots.push(addRowShot);
+  await page.locator('#view-btn').click();
+  const sheetShot = path.join(output, 'issue-48-web-360-800-view-sheet.png');
+  await page.screenshot({ path: sheetShot }); screenshots.push(sheetShot);
+  await page.locator('#sheet-close').click();
   const targets = await page.locator('#board-view button:visible, #board-view select:visible, #board-view input:visible, #board-view textarea:visible').evaluateAll((nodes) => nodes.map((node) => ({ name: node.getAttribute('aria-label') || node.textContent, height: node.getBoundingClientRect().height })).filter((node) => node.height < 44));
   assert.deepEqual(targets, [], 'Every visible board target is at least 44px tall');
   checks.push('360px long project names do not overflow; all visible board targets at least 44px');

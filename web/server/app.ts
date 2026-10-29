@@ -1131,7 +1131,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             }
             const created = await clientFor(target).createIssue({ title: fresh.item.title,
               body: fresh.item.body ?? '', labels: labelNames(fresh.item) }).catch(mapGitHubError);
-            movedTo = created.item.html_url;
+            if (!Number.isSafeInteger(created.item.number) || created.item.number <= 0) {
+              throw new HttpError(502, 'write_outcome_unknown', 'Target creation outcome unknown; source was not closed. Inspect target project before retrying.');
+            }
+            movedTo = `https://github.com/${target.full}/issues/${created.item.number}`;
+            if (created.item.title !== fresh.item.title || (created.item.body ?? '') !== (fresh.item.body ?? '') || created.item.state !== 'open') {
+              throw new HttpError(409, 'partial_move', 'Target creation response did not match the draft; source was not closed. Do not repeat move.', { targetUrl: movedTo });
+            }
             // Never close source unless creation and its link comment both succeeded.
             try { await github.addComment(number, `Moved to ${movedTo}`); }
             catch { throw new HttpError(409, 'partial_move', 'Target created, source remains open. Do not repeat move; inspect both issues.', { targetUrl: movedTo }); }
