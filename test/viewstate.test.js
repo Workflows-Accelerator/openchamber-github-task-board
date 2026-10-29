@@ -137,12 +137,11 @@ test('computeMove: rewrites only the moved item with the neighbour midpoint', ()
   assert.equal(computeMove(ordered, 5, 0), null, 'out of range');
 });
 
-test('computeMove: moving down past an unmarked item becomes a one-write swap', () => {
+test('computeMove: moving down past an unmarked item refuses instead of writing another item', () => {
   const ordered = [draft(1, 1000, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03')];
-  const move = computeMove(ordered, 0, 1);
-  assert.deepEqual(move, { index: 1, order: 0, exact: true });
-  const after = ordered.map((it, i) => (i === move.index ? { ...it, body: setOrderMarker(it.body, move.order) } : it));
-  assert.deepEqual(sortByManualOrder(after).map((i) => i.number), [2, 1, 3]);
+  const original = structuredClone(ordered);
+  assert.equal(computeMove(ordered, 0, 1), null);
+  assert.deepEqual(ordered, original, 'no neighbour marker may change');
 });
 
 test('computeMove: moving an unmarked item up lands it right after the marked items', () => {
@@ -153,7 +152,7 @@ test('computeMove: moving an unmarked item up lands it right after the marked it
   const top = computeMove(allUnmarked, 2, 0);
   assert.deepEqual(top, { index: 2, order: 1000, exact: true });
   const mid = computeMove(allUnmarked, 2, 1);
-  assert.deepEqual(mid, { index: 2, order: 1000, exact: false }, 'slot between two unmarked items is unreachable: nearest reachable slot is the top');
+  assert.equal(mid, null, 'slot between two unmarked items is unreachable with only the moved marker');
 });
 
 test('computeMove: unreachable slot after unmarked items is reported, never silently wrong', () => {
@@ -161,16 +160,14 @@ test('computeMove: unreachable slot after unmarked items is reported, never sile
   assert.equal(computeMove(ordered, 0, 2), null, 'marked item cannot move after unmarked ones with one write');
   const four = [draft(1, null, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03'), draft(4, null, '2026-01-04')];
   const m = computeMove(four, 3, 1);
-  assert.equal(m.exact, false);
-  assert.equal(m.index, 3);
-  assert.equal(m.order, 1000, 'falls back to the top of the list');
+  assert.equal(m, null, 'never silently falls back to another slot');
 });
 
 test('computeMove: precision exhaustion between equal markers returns null', () => {
   const ordered = [draft(1, 1000, 'a'), draft(2, 1000, 'b'), draft(3, 1000, 'c'), draft(4, 1000, 'd')];
   assert.equal(computeMove(ordered, 3, 1), null);
   const swap = computeMove(ordered.slice(0, 3), 2, 1);
-  assert.deepEqual(swap, { index: 1, order: 2000, exact: true }, 'adjacent swap between equal markers moves the other item down');
+  assert.equal(swap, null, 'equal-marker swap must not rewrite the other item');
 });
 
 // ==========================================
@@ -253,4 +250,16 @@ test('board-order marker never renders in issue body views', async () => {
   assert.equal(getIssueDescriptionPreview(body), 'Short idea');
   assert.equal(getIssueDescriptionPreview('<!-- board-order: 1500 -->'), '', 'draft with no description has no preview');
   assert.ok(!renderMarkdown('<!-- board-order: 1500 -->').includes('board-order'));
+});
+
+test('order markers round-trip tiny and huge positions without rounding a midpoint into its neighbour', () => {
+  for (const value of [1e-20, -1e-30, 1e22, Number.MAX_VALUE]) {
+    assert.equal(parseOrderMarker(setOrderMarker('', value)), value);
+    assert.equal(/[eE][+-]?\d+/.test(setOrderMarker('', value)), false);
+  }
+  const ordered = [draft(1, 1e-15, ''), draft(2, 2e-15, ''), draft(3, 1000, '')];
+  const move = computeMove(ordered, 2, 1);
+  assert.equal(move.index, 2);
+  const persisted = parseOrderMarker(setOrderMarker('', move.order));
+  assert.ok(persisted > 1e-15 && persisted < 2e-15);
 });

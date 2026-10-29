@@ -98,12 +98,21 @@ export function stripOrderMarker(body: string | null | undefined): string {
     .replace(/\s+$/, '');
 }
 
-/** Number formatted for the marker (plain decimal, no exponent). */
+/** Round-trip the number without rounding away fractional order positions. */
 export function formatOrderNumber(order: number): string {
-  if (!Number.isFinite(order)) return '0';
-  if (Number.isInteger(order)) return String(order);
-  const fixed = order.toFixed(10).replace(/0+$/, '').replace(/\.$/, '');
-  return fixed === '-0' ? '0' : fixed;
+  if (!Number.isFinite(order)) throw new Error('Order must be finite');
+  const text = String(order);
+  if (!/[eE]/.test(text)) return text;
+  const [coefficient, exponent] = text.toLowerCase().split('e');
+  const negative = coefficient.startsWith('-');
+  const unsigned = negative ? coefficient.slice(1) : coefficient;
+  const [whole, fraction = ''] = unsigned.split('.');
+  const digits = whole + fraction;
+  const point = whole.length + Number(exponent);
+  const decimal = point <= 0 ? `0.${'0'.repeat(-point)}${digits}`
+    : point >= digits.length ? digits + '0'.repeat(point - digits.length)
+    : `${digits.slice(0, point)}.${digits.slice(point)}`;
+  return negative ? `-${decimal}` : decimal;
 }
 
 /**
@@ -176,13 +185,8 @@ export interface MoveResult {
   index: number;
   /** New marker value for that item. */
   order: number;
-  /**
-   * False when the requested slot cannot be expressed with one marker write
-   * (it sits after an item without a marker, and marked items always sort
-   * before unmarked ones). The item then lands at the nearest reachable slot:
-   * right after the last marked item.
-   */
-  exact: boolean;
+  /** Successful moves always represent the requested slot exactly. */
+  exact: true;
 }
 
 function slotOrder<T extends OrderableItem>(rest: T[], slot: number): number | null {
@@ -192,7 +196,9 @@ function slotOrder<T extends OrderableItem>(rest: T[], slot: number): number | n
   if (prev && prevOrder === null) return null;
   const nextOrder = next ? parseOrderMarker(next.body) : null;
   const order = midpointOrder(prevOrder, nextOrder);
-  if (prevOrder !== null && nextOrder !== null && !(order > prevOrder && order < nextOrder)) return null;
+  if (!Number.isFinite(order)) return null;
+  if (prevOrder !== null && order <= prevOrder) return null;
+  if (nextOrder !== null && order >= nextOrder) return null;
   return order;
 }
 
@@ -201,10 +207,9 @@ function slotOrder<T extends OrderableItem>(rest: T[], slot: number): number | n
  * current manual order (see sortByManualOrder); the item at `fromIndex` should
  * end up at `toIndex`. Returns null for a no-op or impossible move.
  *
- * Normally the moved item's marker is set to the midpoint of its new
- * neighbours (first/last: neighbour -/+ 1000). An adjacent swap that cannot be
- * expressed that way (moving down past an unmarked item) is written as the
- * equivalent move of the other item up by one: still exactly one write.
+ * Only the moved item's marker may change. A slot after an unmarked item or
+ * between equal/exhausted markers is unrepresentable under that contract;
+ * refuse it rather than rewriting a neighbour or silently moving elsewhere.
  */
 export function computeMove<T extends OrderableItem>(ordered: T[], fromIndex: number, toIndex: number): MoveResult | null {
   if (fromIndex < 0 || fromIndex >= ordered.length) return null;
@@ -214,19 +219,7 @@ export function computeMove<T extends OrderableItem>(ordered: T[], fromIndex: nu
   const direct = slotOrder(rest, to);
   if (direct !== null) return { index: fromIndex, order: direct, exact: true };
 
-  if (Math.abs(to - fromIndex) === 1) {
-    const restSwap = ordered.filter((_, i) => i !== to);
-    const swapped = slotOrder(restSwap, fromIndex);
-    if (swapped !== null) return { index: to, order: swapped, exact: true };
-  }
-
-  const firstUnmarked = rest.findIndex((it) => parseOrderMarker(it.body) === null);
-  if (firstUnmarked < 0) return null; // precision exhausted between two markers
-  // Only fall back when it still moves the item in the requested direction.
-  if (to > fromIndex ? firstUnmarked <= fromIndex : firstUnmarked >= fromIndex) return null;
-  const fallback = slotOrder(rest, firstUnmarked);
-  if (fallback === null) return null;
-  return { index: fromIndex, order: fallback, exact: false };
+  return null;
 }
 
 // ------------------------------------------
