@@ -30,6 +30,36 @@ test('order marker parse, last marker, finite, stripping and midpoint contract',
   assert.equal(parseOrderMarker(rewritten), 1500);
   assert.doesNotMatch(stripOrderMarker(rewritten), /board-order/);
   assert.throws(() => setOrderMarker('', NaN));
+
+  // F3: fenced/indented markers ignored, CRLF and Markdown trailing hard-break spaces preserved
+  const fencedOnly = '## Notes\r\n```md\r\n<!-- board-order: 42 -->\r\n```\r\n';
+  assert.equal(parseOrderMarker(fencedOnly), null);
+  assert.equal(stripOrderMarker(fencedOnly), fencedOnly);
+  const indentedOnly = '    <!-- board-order: 42 -->\n';
+  assert.equal(parseOrderMarker(indentedOnly), null);
+  assert.equal(stripOrderMarker(indentedOnly), indentedOnly);
+  const hardBreak = 'Keep this hard break  \r\n\r\n';
+  const withMarker = setOrderMarker(hardBreak, 1000);
+  assert.equal(withMarker, 'Keep this hard break  \r\n\r\n<!-- board-order: 1000 -->');
+  assert.equal(stripOrderMarker(withMarker), 'Keep this hard break  \r\n\r\n');
+  const complexRaw = '## Overview\r\nOriginal\r\n\r\n## Notes\r\n```md\r\n<!-- board-order: 42 -->\r\n```\r\n\r\n## Overview\r\nKeep second heading  \r\n<!-- board-ordering: 7 -->\r\n\r\n<!-- board-order: 1000 -->';
+  assert.equal(parseOrderMarker(complexRaw), 1000);
+  const complexUpdated = setOrderMarker(complexRaw, 1500);
+  assert.equal(
+    complexUpdated,
+    '## Overview\r\nOriginal\r\n\r\n## Notes\r\n```md\r\n<!-- board-order: 42 -->\r\n```\r\n\r\n## Overview\r\nKeep second heading  \r\n<!-- board-ordering: 7 -->\r\n\r\n<!-- board-order: 1500 -->',
+  );
+});
+
+test('F7: dependency parser supports checklist and numbered prefixes and ignores fenced/indented code', () => {
+  assert.deepEqual(
+    buildBoardListItem(makeIssue({ number: 1, body: '- [ ] Blocked by #2\n- [x] Depends on #3\n1. Requires #4 and #5' })).dependencies,
+    [2, 3, 4, 5],
+  );
+  assert.deepEqual(
+    buildBoardListItem(makeIssue({ number: 1, body: '```md\nDepends on #2\n- [ ] Blocked by #3\n```\n    Requires #4\n' })).dependencies,
+    [],
+  );
 });
 test('marker hidden from body, overview, description and pending items; raw fingerprint retained', () => {
   const raw = makeIssue({ number: 1, body: '## Overview\nIdea\n\n<!-- board-order: 2000 -->', labels: ['status:draft'] });
@@ -136,6 +166,33 @@ test('drawer overview and checklist body saves retain hidden marker', async (t) 
   assert.doesNotMatch(section.json.issue.editableSections[0].text, /board-order/);
   const patch = await client.request(endpoint, { method: 'PATCH', body: { fingerprint: await fingerprint(client), body: 'Changed again' } });
   assert.equal(patch.status, 200, patch.text); assert.equal(parseOrderMarker(fake.findIssue(1).body), 1000);
+});
+
+test('F3: section edit and reorder preserve fenced board-order markers, CRLF and hard-break spaces', async (t) => {
+  const raw = '## Overview\r\nOriginal\r\n\r\n## Notes\r\n```md\r\n<!-- board-order: 42 -->\r\n```\r\n\r\n## Overview\r\nKeep second heading  \r\n<!-- board-ordering: 7 -->\r\n\r\n<!-- board-order: 2000 -->';
+  const { client, fake } = await fixture(t, {
+    repositories: [
+      { repo: 'owner/alpha', issues: [makeIssue({ number: 1, title: 'Fenced', body: raw, labels: ['status:draft'], repo: 'owner/alpha' })] },
+    ],
+  });
+  const section = await client.request(endpoint + '/section', {
+    method: 'PUT',
+    body: { fingerprint: await fingerprint(client), sectionId: 'overview', text: 'Changed overview' },
+  });
+  assert.equal(section.status, 200, section.text);
+  assert.equal(
+    fake.findIssue(1).body,
+    '## Overview\r\nChanged overview\r\n\r\n## Notes\r\n```md\r\n<!-- board-order: 42 -->\r\n```\r\n\r\n## Overview\r\nKeep second heading  \r\n<!-- board-ordering: 7 -->\r\n\r\n<!-- board-order: 2000 -->',
+  );
+  const reordered = await client.request(endpoint + '/order', {
+    method: 'PUT',
+    body: { fingerprint: await fingerprint(client), previous: 1000, next: 2000 },
+  });
+  assert.equal(reordered.status, 200, reordered.text);
+  assert.equal(
+    fake.findIssue(1).body,
+    '## Overview\r\nChanged overview\r\n\r\n## Notes\r\n```md\r\n<!-- board-order: 42 -->\r\n```\r\n\r\n## Overview\r\nKeep second heading  \r\n<!-- board-ordering: 7 -->\r\n\r\n<!-- board-order: 1500 -->',
+  );
 });
 test('project rename is signed-in, CSRF protected, validated, stored beside data, persistent and resettable', async (t) => {
   const { client, directory, restart } = await fixture(t);

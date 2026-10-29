@@ -32,7 +32,7 @@ import { STATUS_METADATA } from '../../panel/labels.ts';
 import { findSections, replaceSectionText, SectionError } from './sections.ts';
 import {
   BoardError,
-  parseOrderMarker, stripOrderMarker, setOrderMarker, midpointOrder,
+  hasUnfencedOrderMarkerComment, parseOrderMarker, stripOrderMarker, setOrderMarker, midpointOrder,
   applyQuestionAnswer,
   applySectionEdit,
   applyStatusChange,
@@ -1072,7 +1072,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           }
           if (op.kind === 'draft') {
             if (typeof op.data.title !== 'string' || !op.data.title.trim() || op.data.title.trim().length > 256 ||
-                typeof op.data.description !== 'string' || op.data.description.length > 50000 || /<!--\s*board-order:/i.test(op.data.description)) {
+                typeof op.data.description !== 'string' || op.data.description.length > 50000 || hasUnfencedOrderMarkerComment(op.data.description)) {
               throw new HttpError(400, 'invalid_draft', 'Use a title of 1–256 characters and a description up to 50,000 characters');
             }
             const order = parseOrderMarker(fresh.item.body ?? '');
@@ -1143,7 +1143,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             patch.state = op.state;
           }
           const currentBodyNorm = (fresh.item.body ?? '').replace(/\r\n/g, '\n');
-          const targetBodyNorm = typeof op.body === 'string' ? op.body.replace(/\r\n/g, '\n') : currentBodyNorm;
+          const targetBodyNorm = typeof op.body === 'string' ? (patch.body as string).replace(/\r\n/g, '\n') : currentBodyNorm;
           const bodyChanged = typeof op.body === 'string' && currentBodyNorm !== targetBodyNorm;
           const statusChanged = typeof op.status === 'string' && targetStatus !== baseStatus;
           const stateChanged = typeof op.state === 'string' && op.state !== fresh.item.state;

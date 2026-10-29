@@ -33,32 +33,152 @@ export function shortName(full: string, overrides: Record<string, string> = {}):
   return tokens.length ? tokens.map(title).join(' ') : title(part);
 }
 
-const orderLine = /^[ \t]*<!--\s*board-order:\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)\s*-->[ \t]*\r?$/gim;
+const statusSet = new Set<string>(STATUS_LABELS as readonly string[]);
+const fencePattern = /^ {0,3}(`{3,}|~{3,})/;
+const closeFencePattern = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
+// A tab after zero to three spaces advances to Markdown column four;
+// four leading spaces already reach code indentation, regardless of what follows.
+const indentedCodeLinePattern = /^(?: {4}| {0,3}\t)/;
+const orderMarkerSingleLine = /^ {0,3}<!--\s*board-order:\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)\s*-->[ \t]*$/i;
+
+interface ScannedLine {
+  start: number;
+  contentEnd: number;
+  fullEnd: number;
+  text: string;
+  fenced: boolean;
+  indentedCode: boolean;
+}
+
+function scanBodyLines(body: string): ScannedLine[] {
+  const lines: ScannedLine[] = [];
+  let inCodeFence = false;
+  let fenceChar = '';
+  let fenceLen = 0;
+  let i = 0;
+  while (i < body.length) {
+    const start = i;
+    while (i < body.length && body.charCodeAt(i) !== 10 && body.charCodeAt(i) !== 13) {
+      i += 1;
+    }
+    const contentEnd = i;
+    if (i < body.length) {
+      if (body.charCodeAt(i) === 13 && i + 1 < body.length && body.charCodeAt(i + 1) === 10) {
+        i += 2;
+      } else {
+        i += 1;
+      }
+    }
+    const fullEnd = i;
+    const rawText = body.slice(start, contentEnd);
+    const cleanText = start === 0 && rawText.startsWith('\uFEFF') ? rawText.slice(1) : rawText;
+    let fenced = inCodeFence;
+    if (!inCodeFence) {
+      const m = fencePattern.exec(cleanText);
+      if (m) {
+        inCodeFence = true;
+        fenced = true;
+        fenceChar = m[1][0];
+        fenceLen = m[1].length;
+      }
+    } else {
+      const m = closeFencePattern.exec(cleanText);
+      if (m && m[1][0] === fenceChar && m[1].length >= fenceLen) {
+        inCodeFence = false;
+      }
+    }
+    const indentedCode = !fenced && indentedCodeLinePattern.test(cleanText);
+    lines.push({ start, contentEnd, fullEnd, text: cleanText, fenced, indentedCode });
+  }
+  return lines;
+}
+
+function parseMarkerLineValue(line: ScannedLine): number | null {
+  if (line.fenced || line.indentedCode) return null;
+  const match = orderMarkerSingleLine.exec(line.text);
+  if (!match) return null;
+  const num = Number(match[1]);
+  return Number.isFinite(num) ? num : null;
+}
+
+function locateTerminalOrderMarker(body: string): { order: number; cutOffset: number } | null {
+  if (!body) return null;
+  const lines = scanBodyLines(body);
+  let idx = lines.length - 1;
+  while (idx >= 0 && !lines[idx].fenced && /^[ \t]*$/.test(lines[idx].text)) {
+    idx -= 1;
+  }
+  if (idx < 0) return null;
+  const order = parseMarkerLineValue(lines[idx]);
+  if (order === null) return null;
+  let firstMarkerIdx = idx;
+  let probe = idx - 1;
+  while (probe >= 0) {
+    let blankProbe = probe;
+    while (blankProbe >= 0 && !lines[blankProbe].fenced && /^[ \t]*$/.test(lines[blankProbe].text)) {
+      blankProbe -= 1;
+    }
+    if (blankProbe >= 0 && parseMarkerLineValue(lines[blankProbe]) !== null) {
+      firstMarkerIdx = blankProbe;
+      probe = blankProbe - 1;
+    } else {
+      break;
+    }
+  }
+  return { order, cutOffset: lines[firstMarkerIdx].start };
+}
+
+function trimTrailingBlankLines(value: string): string {
+  const lines = scanBodyLines(value);
+  let idx = lines.length - 1;
+  while (idx >= 0 && !/\S/.test(lines[idx].text)) {
+    idx -= 1;
+  }
+  return idx >= 0 ? value.slice(0, lines[idx].contentEnd) : '';
+}
+
+export function hasUnfencedOrderMarkerComment(body: string = ''): boolean {
+  return scanBodyLines(body).some(
+    (line) => !line.fenced && !line.indentedCode && /^ {0,3}<!--\s*board-order:/i.test(line.text),
+  );
+}
+
 export function parseOrderMarker(body: string = ''): number | null {
-  const matches = [...body.matchAll(orderLine)].map((m) => Number(m[1])).filter(Number.isFinite);
-  return matches.length ? matches[matches.length - 1] : null;
+  const located = locateTerminalOrderMarker(body);
+  return located ? located.order : null;
 }
+
 export function stripOrderMarker(body: string = ''): string {
-  // Leave every non-marker byte alone, including CRLF and checklist line numbers.
-  return body.replace(orderLine, '');
+  // Strip only the terminal unfenced marker line(s), leaving every non-marker byte untouched.
+  const located = locateTerminalOrderMarker(body);
+  return located ? body.slice(0, located.cutOffset) : body;
 }
+
 export function setOrderMarker(body: string, order: number): string {
   if (!Number.isFinite(order)) throw new BoardError('invalid', 'Order must be finite');
-  const base = stripOrderMarker(body).replace(/\s+$/, '');
+  const base = trimTrailingBlankLines(stripOrderMarker(body));
   const eol = body.includes('\r\n') ? '\r\n' : '\n';
   return (base ? base + eol + eol : '') + `<!-- board-order: ${order} -->`;
 }
+
 export function midpointOrder(previous: number | null, next: number | null): number {
   return previous === null ? (next === null ? 1000 : next - 1000) :
     next === null ? previous + 1000 : previous / 2 + next / 2;
 }
+
 function listFields(raw: any, repository: BoardRepository | null) {
   const body = typeof raw.body === 'string' ? raw.body : '';
-  const description = stripOrderMarker(body).trimEnd();
+  const description = trimTrailingBlankLines(stripOrderMarker(body));
   const dependencies: number[] = [];
-  for (const line of description.split(/\r?\n/)) {
-    if (/^\s*(?:[-*+]\s*)?(?:blocked by|depends on|requires)\b/i.test(line)) {
-      for (const match of line.matchAll(/#(\d+)/g)) dependencies.push(Number(match[1]));
+  for (const line of scanBodyLines(description)) {
+    if (line.fenced || line.indentedCode) continue;
+    if (/^\s*(?:(?:[-*+]|\d+[.)])\s*(?:\[[ xX]\]\s*)?)?(?:blocked by|depends on|requires)\b/i.test(line.text)) {
+      for (const match of line.text.matchAll(/#(\d+)/g)) {
+        const dep = Number(match[1]);
+        if (Number.isInteger(dep) && dep > 0 && !dependencies.includes(dep)) {
+          dependencies.push(dep);
+        }
+      }
     }
   }
   return { createdAt: raw.created_at ?? null, description, order: parseOrderMarker(body),
@@ -78,13 +198,6 @@ export class BoardError extends Error {
     this.code = code;
   }
 }
-
-const statusSet = new Set<string>(STATUS_LABELS as readonly string[]);
-const fencePattern = /^ {0,3}(`{3,}|~{3,})/;
-const closeFencePattern = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
-// A tab after zero to three spaces advances to Markdown column four;
-// four leading spaces already reach code indentation, regardless of what follows.
-const indentedCodeLinePattern = /^(?: {4}| {0,3}\t)/;
 const checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
 const questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
 const humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
