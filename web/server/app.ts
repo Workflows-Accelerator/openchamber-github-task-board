@@ -29,7 +29,6 @@ import {
 import { GitHubClient, GitHubError, parseIssueNumber, type IssueRead } from './github.ts';
 import { RepositoryRegistry, RepositoryNotAllowedError, DiscoveryUnavailableError, type RepositoryEntry } from './repositories.ts';
 import { STATUS_METADATA } from '../../panel/labels.ts';
-import { alignDraftIssue } from '../../panel/core.ts';
 import { findSections, replaceSectionText, SectionError } from './sections.ts';
 import {
   BoardError,
@@ -688,39 +687,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
 
     if (route === '/api/issues/batch-align') {
-      if (method !== 'POST') return methodNotAllowed('POST');
-      requireCsrf(req, record);
-
-      const listed = repository!.hasIssues
-        ? await clientFor(repository!).listIssues().catch(mapGitHubError)
-        : { items: [], truncated: false };
-
-      const openIssues = (listed.items || []).filter((item: any) => !item.pull_request && item.state !== 'closed');
-      const draftIssues = openIssues.filter((item: any) => {
-        const itemLabels = labelNames(item).map((l: string) => l.toLowerCase());
-        return itemLabels.includes('status:draft');
-      });
-
-      let alignedCount = 0;
-      for (const draft of draftIssues) {
-        const { body: newBody, labels: newLabels } = alignDraftIssue(draft);
-        await scopedGithub!.updateIssue(draft.number, {
-          body: newBody,
-          labels: newLabels,
-        }).catch(mapGitHubError);
-        alignedCount += 1;
-      }
-
-      // Refresh repository board issues
-      const refreshedBoard = await repositoryBoard(repository!);
-      return {
-        status: 200,
-        body: {
-          ok: true,
-          alignedCount,
-          issues: refreshedBoard.issues,
-        },
-      };
+      throw new HttpError(404, 'not_found', 'Not found');
     }
 
     const draftMatch = /^\/api\/issues\/([^/]+)\/(draft|order|move)$/.exec(route);
