@@ -171,28 +171,104 @@ test('reorder: remote marker race aborts, failed PATCH rolls back and toasts', a
   assert.ok(toasts(hostCalls).some((message) => message.includes('Failed to update')));
 });
 
-test('reorder: nonmanual sort switches first without a write; impossible unmarked slot never rewrites neighbour', async () => {
-  const { app, hostCalls } = await setup();
-  const items = [draft(1), draft(2, null)];
+test('C1: reorder switches non-manual sort to Manual order on the first gesture and lazily initializes unmarked neighbours', async () => {
+  const items = [draft(1, null), draft(2, null), draft(3, null)];
+  const remoteBodies = new Map(items.map((item) => [item.number, item.body]));
+  let failSecondPatch = false;
+  let patchCount = 0;
+  const { app, hostCalls } = await setup({ onRequest: async (request) => {
+    const number = Number((request.path || '').split('/').at(-1));
+    if (request.method === 'GET' && Number.isFinite(number)) {
+      return response({ body: remoteBodies.get(number) ?? '' });
+    }
+    if (request.method === 'PATCH') {
+      patchCount++;
+      if (failSecondPatch && patchCount === 2) return response({ message: 'Unprocessable' }, 422);
+      const nextBody = JSON.parse(request.body).body;
+      remoteBodies.set(number, nextBody);
+      return response({ body: nextBody });
+    }
+    return response({});
+  } });
   app.setState({ issues: items, viewState: { view: 'simple', filters: ['stage:draft'], sort: 'priority' } });
   await app.reorderDraft(items[0], items, 1);
-  assert.equal(app.getState().viewState.sort, 'manual');
-  assert.equal(writes(hostCalls).length, 0);
-  await app.reorderDraft(items[0], items, 1);
-  assert.equal(writes(hostCalls).length, 0);
-  assert.equal(parseOrderMarker(items[1].body), null);
-  assert.ok(toasts(hostCalls).some((message) => message.includes('more than one marker')));
+  assert.equal(app.getState().viewState.sort, 'manual', 'switches sort to manual');
+  assert.equal(writes(hostCalls).length, 2, 'lazily initializes #2 and moves #1 on the first gesture');
+  assert.equal(parseOrderMarker(items[1].body), 1000);
+  assert.equal(parseOrderMarker(items[0].body), 2000);
+  assert.equal(parseOrderMarker(items[2].body), null, 'untouched trailing unmarked item stays unmarked');
+
+  // Partial failure in multi-write reorder keeps committed first write and rolls back failed write
+  const freshItems = [draft(1, null), draft(2, null), draft(3, null)];
+  remoteBodies.set(1, '');
+  remoteBodies.set(2, '');
+  remoteBodies.set(3, '');
+  patchCount = 0;
+  failSecondPatch = true;
+  app.setState({ issues: freshItems, viewState: { view: 'simple', filters: ['stage:draft'], sort: 'manual' } });
+  await app.reorderDraft(freshItems[0], freshItems, 1);
+  assert.equal(patchCount, 2, 'attempts second write once without blind retry');
+  assert.equal(parseOrderMarker(freshItems[1].body), 1000, 'first committed write remains intact');
+  assert.equal(parseOrderMarker(freshItems[0].body), null, 'failed second write is rolled back to remote state');
+  assert.ok(toasts(hostCalls).some((message) => message.includes('Failed to update')));
 });
 
-test('All Projects transfer uses repo-aware IDs and real transfer, never copy/delete; failure keeps identity', async () => {
+test('C2 (D55): All Projects transfer requires confirmation before network, Cancel does 0 writes, validates allowlist, and locks unconfirmed on ambiguous GraphQL error', async () => {
   let reject = false;
-  const { app, hostCalls } = await setup({ onRequest: async (request) => {
-    if (request.path === '/graphql') return response(reject ? { errors: [{ message: 'Transfer denied' }] } : { data: { transferIssue: { issue: { number: 19, url: 'https://github.com/acme/other/issues/19', repository: { nameWithOwner: 'acme/other' } } } } });
-    return response({ node_id: request.path?.endsWith('/issues/1') ? 'ISSUE_A' : 'REPO_B' });
-  } });
+  let graphqlError = null;
+  let confirmResult = true;
+  let requestsAtConfirm = -1;
+  const { app, elements, hostCalls } = await setup({
+    onConfirm: () => {
+      requestsAtConfirm = hostCalls.filter((call) => call.type === 'request').length;
+      return confirmResult;
+    },
+    onRequest: async (request) => {
+      if (request.path === '/graphql') {
+        if (graphqlError) throw new Error(graphqlError);
+        return response(
+          reject
+            ? { errors: [{ message: 'Transfer denied' }] }
+            : { data: { transferIssue: { issue: { number: 19, url: 'https://github.com/acme/other/issues/19', repository: { nameWithOwner: 'acme/other' } } } } }
+        );
+      }
+      return response({ node_id: request.path?.endsWith('/issues/1') ? 'ISSUE_A' : 'REPO_B' });
+    },
+  });
   const one = draft(1), unrelated = draft(1, 1000, 'other/same-number');
-  app.setState({ issues: [one, unrelated], isAllProjectsMode: true });
+  const refs = [
+    { projectId: 'p1', projectName: 'Task Board', repo: 'acme/task-board' },
+    { projectId: 'p2', projectName: 'Other', repo: 'acme/other' },
+    { projectId: 'p3', projectName: 'Same Number', repo: 'other/same-number' },
+  ];
+  app.setState({ issues: [one, unrelated], isAllProjectsMode: true, allProjectsRepoRefs: refs });
+  app.renderViews();
+
+  // 1. Cancel confirmation -> 0 network requests, select resets to source repo
+  const callsBeforeCancel = hostCalls.filter((call) => call.type === 'request').length;
+  confirmResult = false;
+  const select = elements.get('simpleListViewContainer').querySelector('.simple-project');
+  assert.ok(select);
+  select.value = 'acme/other';
+  select.dispatchEvent({ type: 'change', target: select, stopPropagation: () => {} });
+  await wait();
+  assert.equal(hostCalls.filter((call) => call.type === 'request').length, callsBeforeCancel, 'Cancel must make 0 network requests');
+  assert.equal(select.value, 'acme/task-board');
+  assert.equal(select.title, 'acme/task-board');
+  const confirmCall = hostCalls.findLast((call) => call.type === 'confirm');
+  assert.ok(confirmCall, 'must invoke confirm dialog');
+  assert.match(confirmCall.payload.message, /Other|acme\/other/);
+  assert.match(confirmCall.payload.message, /number|URL|link/i);
+
+  // 2. Unlisted target repo -> refused with 0 network requests
+  confirmResult = true;
+  await app.transferDraftProject(one, 'unlisted/repo');
+  assert.equal(hostCalls.filter((call) => call.type === 'request').length, callsBeforeCancel, 'unlisted target repo must make 0 network calls');
+  assert.equal(one.repo, 'acme/task-board');
+
+  // 3. Confirmed transfer -> confirm runs before any network request, then transfers
   await app.transferDraftProject(one, 'acme/other');
+  assert.equal(requestsAtConfirm, callsBeforeCancel, 'confirmation must happen before any GET/POST request');
   assert.equal(one.repo, 'acme/other');
   assert.equal(one.number, 19);
   assert.equal(unrelated.repo, 'other/same-number');
@@ -200,11 +276,130 @@ test('All Projects transfer uses repo-aware IDs and real transfer, never copy/de
   const mutation = hostCalls.find((call) => call.type === 'request' && call.payload.path === '/graphql');
   assert.deepEqual(JSON.parse(mutation.payload.body).variables, { issue: 'ISSUE_A', repository: 'REPO_B' });
   assert.equal(hostCalls.some((call) => call.type === 'request' && call.payload.method === 'DELETE'), false);
+
+  // 4. Explicit GraphQL errors array -> keeps source identity, not unconfirmed
   reject = true;
   await app.transferDraftProject(unrelated, 'acme/other');
   assert.equal(unrelated.repo, 'other/same-number');
   assert.equal(unrelated.number, 1);
+  assert.equal(Boolean(unrelated.unconfirmed), false);
   assert.ok(toasts(hostCalls).some((message) => message.includes('Transfer denied')));
+
+  // 5. Ambiguous POST /graphql failure (timeout / fetch failed) -> marks unconfirmed, no auto-retry, blocks mutations
+  reject = false;
+  graphqlError = 'fetch failed: network timeout';
+  const graphqlBefore = hostCalls.filter((call) => call.type === 'request' && call.payload.path === '/graphql').length;
+  await app.transferDraftProject(unrelated, 'acme/other');
+  const graphqlAfter = hostCalls.filter((call) => call.type === 'request' && call.payload.path === '/graphql').length;
+  assert.equal(graphqlAfter - graphqlBefore, 1, 'never auto-retries transferIssue');
+  assert.equal(unrelated.unconfirmed, true, 'marks issue unconfirmed on ambiguous GraphQL failure');
+  const requestsBeforeBlocked = hostCalls.filter((call) => call.type === 'request').length;
+  await app.editDraftTitle(unrelated, 'Blocked while unconfirmed');
+  await app.transferDraftProject(unrelated, 'acme/other');
+  assert.equal(hostCalls.filter((call) => call.type === 'request').length, requestsBeforeBlocked, 'unconfirmed issue blocks further mutations');
+});
+
+test('H1: filter popover clamps within a 360px viewport when opened', async () => {
+  const { elements, mockWindow } = await setup({ innerWidth: 360 });
+  mockWindow.innerWidth = 360;
+  const popover = elements.get('filterPopover');
+  popover.getBoundingClientRect = () => ({ left: -147, right: 189, top: 32, bottom: 200, width: 336, height: 168 });
+  elements.get('btnFilterToggle').click();
+  assert.equal(popover.style.display, 'flex');
+  assert.ok(popover.style.left && !popover.style.left.startsWith('-'), 'filterPopover clamps negative left offset into viewport');
+});
+
+test('H2: editDraftDescription preserves CRLF, fenced board-order examples, and skips CRLF-normalized no-op', async () => {
+  const fencedCrlfBody = 'Example:\r\n```html\r\n<!-- board-order: 777 -->\r\n```\r\n\r\nLine two  \r\n\r\n<!-- board-order: 1000 -->';
+  let remoteBody = fencedCrlfBody;
+  const { app, hostCalls } = await setup({
+    onRequest: async (request) => {
+      if (request.method === 'GET') return response({ body: remoteBody });
+      if (request.method === 'PATCH') {
+        remoteBody = JSON.parse(request.body).body;
+        return response({ body: remoteBody });
+      }
+      return response({});
+    },
+  });
+  const issue = draft(1);
+  issue.body = fencedCrlfBody;
+  app.setState({ issues: [issue] });
+  const strippedCrlf = stripOrderMarker(fencedCrlfBody);
+  const browserNormalizedLf = strippedCrlf.replace(/\r\n/g, '\n');
+
+  await app.editDraftDescription(issue, browserNormalizedLf, strippedCrlf);
+  assert.equal(writes(hostCalls).length, 0, 'textarea CRLF->LF normalization alone must not trigger a PATCH');
+
+  const editedLf = browserNormalizedLf.replace('Line two  ', 'Line two updated  ');
+  await app.editDraftDescription(issue, editedLf, strippedCrlf);
+  assert.equal(writes(hostCalls).length, 1);
+  assert.ok(remoteBody.includes('<!-- board-order: 777 -->'), 'fenced marker example is preserved');
+  assert.ok(remoteBody.includes('\r\n'), 'CRLF line endings are preserved');
+  assert.equal(parseOrderMarker(remoteBody), 1000);
+});
+
+test('M1 & M2: draft rows provide Move Up/Down buttons and preserve unsaved edits, selection, and focus across renderViews and failed PATCH', async () => {
+  let failPatch = false;
+  const items = [draft(1, 1000), draft(2, 2000)];
+  const { app, elements, mockDoc, hostCalls } = await setup({
+    onRequest: async (request) => {
+      if (request.method === 'GET') {
+        const number = Number((request.path || '').split('/').at(-1));
+        const found = items.find((i) => i.number === number);
+        return response({ body: found ? found.body : '' });
+      }
+      if (request.method === 'PATCH') {
+        if (failPatch) return response({ message: 'Validation Failed' }, 422);
+        return response({});
+      }
+      return response({});
+    },
+  });
+  app.setState({ issues: items, viewState: { view: 'simple', filters: ['stage:draft'], sort: 'manual' } });
+  app.renderViews();
+
+  const container = elements.get('simpleListViewContainer');
+  const rows = container.querySelectorAll('.simple-row');
+  assert.equal(rows.length, 2);
+  const moveUp0 = rows[0].querySelector('.simple-move-up');
+  const moveDown0 = rows[0].querySelector('.simple-move-down');
+  assert.ok(moveUp0 && moveDown0, 'editable draft rows render Move Up and Move Down buttons');
+  assert.equal(moveUp0.disabled, true, 'first row Move Up is disabled');
+  assert.equal(moveDown0.disabled, false, 'first row Move Down is enabled');
+
+  // M2: unsaved title edit + selection survives renderViews()
+  const titleInput = rows[0].querySelector('.simple-title');
+  titleInput.focus();
+  titleInput.value = 'In-progress title';
+  titleInput.setSelectionRange(3, 11);
+  titleInput.dispatchEvent({ type: 'input', target: titleInput });
+  app.renderViews();
+
+  const rerenderedRow = container.querySelectorAll('.simple-row')[0];
+  const rerenderedTitle = rerenderedRow.querySelector('.simple-title');
+  assert.equal(rerenderedTitle.value, 'In-progress title', 'unsaved title text survives renderViews');
+  assert.equal(mockDoc.activeElement, rerenderedTitle, 'active input focus survives renderViews');
+  assert.equal(rerenderedTitle.selectionStart, 3);
+  assert.equal(rerenderedTitle.selectionEnd, 11);
+
+  // M2: failed description PATCH keeps unsaved description text in textarea
+  const descInput = rerenderedRow.querySelector('.simple-description');
+  descInput.focus();
+  descInput.value = 'Unsaved inspiration that failed to save';
+  descInput.dispatchEvent({ type: 'input', target: descInput });
+  failPatch = true;
+  await app.editDraftDescription(items[0], descInput.value, 'Inspiration 1');
+  const rowAfterFail = container.querySelectorAll('.simple-row')[0];
+  const descAfterFail = rowAfterFail.querySelector('.simple-description');
+  assert.equal(descAfterFail.value, 'Unsaved inspiration that failed to save', 'failed PATCH must not wipe unsaved textarea value');
+
+  // M1: clicking Move Down reorders draft #1 after #2
+  failPatch = false;
+  const moveDownBtn = rowAfterFail.querySelector('.simple-move-down');
+  moveDownBtn.click();
+  await wait(80);
+  assert.equal(parseOrderMarker(items[0].body), 3000);
 });
 
 test('View/Filter/Sort persists with device scope per workspace; stale loads do not undo user choices', async () => {

@@ -3370,7 +3370,11 @@ async function loadViewState(): Promise<void> {
 }
 
 function availableProjectRepos(): string[] {
-  const repos = [...buildProjectRepoRefs().map((ref) => ref.repo), ...issues.map(repoForIssue)];
+  const repos = [
+    ...buildProjectRepoRefs().map((ref) => ref.repo),
+    ...allProjectsRepoRefs.map((ref) => ref.repo),
+    ...issues.map(repoForIssue),
+  ];
   if (currentRepo && currentRepo !== ALL_PROJECTS_CACHE_KEY) repos.push(currentRepo);
   return [...new Map(repos.filter(Boolean).map((repo) => [repo.toLowerCase(), repo])).values()];
 }
@@ -3523,8 +3527,110 @@ function projectPicker(repo: string, label: string): HTMLSelectElement {
   return select;
 }
 
+interface PendingDraftEditState {
+  title?: string;
+  description?: string;
+}
+
+type DraftFocusField = 'title' | 'description' | 'project' | 'move-up' | 'move-down' | 'row';
+
+interface DraftFocusSnapshot {
+  key: string;
+  field: DraftFocusField;
+  selectionStart: number | null;
+  selectionEnd: number | null;
+}
+
+const pendingDraftEdits = new Map<string, PendingDraftEditState>();
+const draftTitleMutations = new Set<string>();
+let pendingDraftFocusTarget: DraftFocusSnapshot | null = null;
+let isRenderingSimpleListView = false;
+
+function setPendingDraftField(key: string, field: keyof PendingDraftEditState, value: string): void {
+  const existing = pendingDraftEdits.get(key) || {};
+  existing[field] = value;
+  pendingDraftEdits.set(key, existing);
+}
+
+function clearPendingDraftField(key: string, field: keyof PendingDraftEditState): void {
+  const existing = pendingDraftEdits.get(key);
+  if (!existing) return;
+  delete existing[field];
+  if (existing.title === undefined && existing.description === undefined) {
+    pendingDraftEdits.delete(key);
+  }
+}
+
+function findEnclosingDraftRow(el: HTMLElement | null): HTMLElement | null {
+  let cur: HTMLElement | null = el;
+  while (cur) {
+    if (typeof cur.getAttribute === 'function' && cur.getAttribute('data-draft-key')) return cur;
+    cur = (cur as any).parentElement || null;
+  }
+  return null;
+}
+
+function snapshotDraftElementFocus(el: HTMLElement | null): DraftFocusSnapshot | null {
+  if (!el) return null;
+  const row = findEnclosingDraftRow(el);
+  if (!row) return null;
+  const key = row.getAttribute('data-draft-key') || '';
+  if (!key) return null;
+  let field: DraftFocusField | null = null;
+  if (el === row) field = 'row';
+  else if (el.classList?.contains('simple-title')) field = 'title';
+  else if (el.classList?.contains('simple-description')) field = 'description';
+  else if (el.classList?.contains('simple-project')) field = 'project';
+  else if (el.classList?.contains('simple-move-up')) field = 'move-up';
+  else if (el.classList?.contains('simple-move-down')) field = 'move-down';
+  if (!field) return null;
+  const anyInput = el as HTMLInputElement;
+  return {
+    key,
+    field,
+    selectionStart: typeof anyInput.selectionStart === 'number' ? anyInput.selectionStart : null,
+    selectionEnd: typeof anyInput.selectionEnd === 'number' ? anyInput.selectionEnd : null,
+  };
+}
+
+function restoreDraftElementFocus(snapshot: DraftFocusSnapshot | null): void {
+  if (!snapshot) return;
+  const row = Array.from(elSimpleListViewContainer.querySelectorAll<HTMLElement>('[data-draft-key]'))
+    .find((candidate) => candidate.getAttribute('data-draft-key') === snapshot.key);
+  if (!row) return;
+  let target: HTMLElement | null = null;
+  if (snapshot.field === 'row') target = row;
+  else if (snapshot.field === 'title') target = row.querySelector<HTMLElement>('.simple-title');
+  else if (snapshot.field === 'description') target = row.querySelector<HTMLElement>('.simple-description');
+  else if (snapshot.field === 'project') target = row.querySelector<HTMLElement>('.simple-project');
+  else if (snapshot.field === 'move-up') target = row.querySelector<HTMLElement>('.simple-move-up');
+  else if (snapshot.field === 'move-down') target = row.querySelector<HTMLElement>('.simple-move-down');
+  if (!target || (target as HTMLInputElement).disabled) return;
+  target.focus();
+  if (
+    snapshot.selectionStart !== null &&
+    snapshot.selectionEnd !== null &&
+    typeof (target as HTMLInputElement).setSelectionRange === 'function'
+  ) {
+    try {
+      (target as HTMLInputElement).setSelectionRange(snapshot.selectionStart, snapshot.selectionEnd);
+    } catch {
+      // Ignore selection errors on non-text inputs
+    }
+  }
+}
+
 function renderSimpleListView(sorted: Issue[]): void {
-  elSimpleListViewContainer.innerHTML = '';
+  const activeFocus = snapshotDraftElementFocus(document.activeElement as HTMLElement | null);
+  const focusToRestore = activeFocus || pendingDraftFocusTarget;
+  pendingDraftFocusTarget = null;
+
+  isRenderingSimpleListView = true;
+  try {
+    elSimpleListViewContainer.innerHTML = '';
+  } finally {
+    isRenderingSimpleListView = false;
+  }
   const quickCapture = isQuickCaptureMode(viewState);
   if (!sorted.length) {
     const empty = document.createElement('div');
@@ -3535,22 +3641,26 @@ function renderSimpleListView(sorted: Issue[]): void {
   if (quickCapture) {
     const tools = document.createElement('div');
     tools.className = 'simple-tools';
-    tools.innerHTML = `<span>Alt+Up / Down to reorder${viewState.sort === 'manual' ? '' : ' (switches to Manual order)'}</span><button class="btn btn-xs" id="btnAlignDrafts" type="button"${isAligningDrafts ? ' disabled' : ''}>${isAligningDrafts ? `<span class="btn-spinner"></span>Aligning (${aligningDraftsCount} drafts)...` : 'Align Drafts'}</button>`;
+    tools.innerHTML = `<span>↑/↓ or Alt+Up / Down to reorder${viewState.sort === 'manual' ? '' : ' (switches to Manual order)'}</span><button class="btn btn-xs" id="btnAlignDrafts" type="button"${isAligningDrafts ? ' disabled' : ''}>${isAligningDrafts ? `<span class="btn-spinner"></span>Aligning (${aligningDraftsCount} drafts)...` : 'Align Drafts'}</button>`;
     tools.querySelector('#btnAlignDrafts')?.addEventListener('click', () => { void batchAlignDrafts(); });
     elSimpleListViewContainer.appendChild(tools);
   }
-  for (const issue of sorted) {
+  for (let rowIndex = 0; rowIndex < sorted.length; rowIndex++) {
+    const issue = sorted[rowIndex];
     const repo = repoForIssue(issue);
     const key = issueWriteKey(repo, issue);
     const stage = resolveIssueColumn(issue) || 'todo';
     const editable = quickCapture && stage === 'draft' && issue.number > 0;
-    const busy = draftMutations.has(key) || issue.number < 0;
+    const unconfirmed = Boolean((issue as any).unconfirmed);
+    const bodyBusy = draftMutations.has(key) || issue.number < 0 || unconfirmed;
+    const titleBusy = bodyBusy || draftTitleMutations.has(key);
     const row = document.createElement('div');
     row.className = 'simple-row';
+    if (unconfirmed) row.classList.add('simple-row-unconfirmed');
     row.setAttribute('tabindex', '0');
     row.setAttribute('data-draft-key', key);
-    row.setAttribute('aria-label', `${issue.title}. ${STATUS_METADATA[stage].label}${editable ? '. Alt+Up or Alt+Down to reorder.' : ''}`);
-    row.setAttribute('aria-busy', String(busy));
+    row.setAttribute('aria-label', `${issue.title}. ${STATUS_METADATA[stage].label}${unconfirmed ? '. Outcome unconfirmed; refresh required.' : editable ? '. Alt+Up or Alt+Down to reorder.' : ''}`);
+    row.setAttribute('aria-busy', String(draftMutations.has(key) || draftTitleMutations.has(key) || issue.number < 0));
     const dot = document.createElement('span');
     dot.className = 'simple-status-dot';
     dot.style.background = STATUS_METADATA[stage].color;
@@ -3559,39 +3669,93 @@ function renderSimpleListView(sorted: Issue[]): void {
     const content = document.createElement('div');
     content.className = 'simple-content';
     if (editable) {
+      const savedEdit = pendingDraftEdits.get(key);
       const title = document.createElement('input');
       title.className = 'form-ctrl simple-title';
-      title.value = issue.title;
-      title.disabled = busy;
+      title.value = savedEdit?.title !== undefined ? savedEdit.title : issue.title;
+      title.disabled = titleBusy;
       title.setAttribute('aria-label', `Title for draft #${issue.number}`);
-      title.addEventListener('blur', () => {
-        if (!title.value.trim()) title.value = issue.title;
+      title.addEventListener('input', () => {
+        if (title.value === issue.title) clearPendingDraftField(key, 'title');
+        else setPendingDraftField(key, 'title', title.value);
+      });
+      title.addEventListener('blur', (event) => {
+        if (isRenderingSimpleListView || (title as any).isConnected === false) return;
+        const relatedEl = (event as FocusEvent)?.relatedTarget as HTMLElement | null;
+        if (relatedEl && (relatedEl === elBtnRefresh || elBtnRefresh?.contains(relatedEl))) {
+          pendingDraftFocusTarget = {
+            key,
+            field: 'title',
+            selectionStart: typeof title.selectionStart === 'number' ? title.selectionStart : null,
+            selectionEnd: typeof title.selectionEnd === 'number' ? title.selectionEnd : null,
+          };
+          return;
+        }
+        const related = snapshotDraftElementFocus(relatedEl);
+        if (related) pendingDraftFocusTarget = related;
+        if (!title.value.trim()) {
+          title.value = issue.title;
+          clearPendingDraftField(key, 'title');
+        }
         void editDraftTitle(issue, title.value);
       });
       title.addEventListener('keydown', (event) => {
+        if (event.key === 'Tab' && !event.shiftKey) {
+          pendingDraftFocusTarget = { key, field: 'description', selectionStart: null, selectionEnd: null };
+        }
         if (event.key === 'Enter') { event.preventDefault(); title.blur(); }
-        if (event.key === 'Escape') { title.value = issue.title; title.blur(); }
+        if (event.key === 'Escape') {
+          title.value = issue.title;
+          clearPendingDraftField(key, 'title');
+          title.blur();
+        }
       });
       content.appendChild(title);
       const description = document.createElement('textarea');
       description.className = 'form-ctrl simple-description';
       description.rows = 1;
-      description.value = stripOrderMarker(issue.body || '');
-      const originalDescription = description.value;
+      const originalDescription = stripOrderMarker(issue.body || '');
+      description.value = savedEdit?.description !== undefined ? savedEdit.description : originalDescription;
       description.placeholder = 'Add description…';
-      description.disabled = busy;
+      description.disabled = bodyBusy;
       description.setAttribute('aria-label', `Description for draft #${issue.number}`);
-      description.addEventListener('blur', () => { void editDraftDescription(issue, description.value, originalDescription); });
+      description.addEventListener('input', () => {
+        if (description.value.replace(/\r\n/g, '\n') === originalDescription.replace(/\r\n/g, '\n')) {
+          clearPendingDraftField(key, 'description');
+        } else {
+          setPendingDraftField(key, 'description', description.value);
+        }
+      });
+      description.addEventListener('blur', (event) => {
+        if (isRenderingSimpleListView || (description as any).isConnected === false) return;
+        const relatedEl = (event as FocusEvent)?.relatedTarget as HTMLElement | null;
+        if (relatedEl && (relatedEl === elBtnRefresh || elBtnRefresh?.contains(relatedEl))) {
+          pendingDraftFocusTarget = {
+            key,
+            field: 'description',
+            selectionStart: typeof description.selectionStart === 'number' ? description.selectionStart : null,
+            selectionEnd: typeof description.selectionEnd === 'number' ? description.selectionEnd : null,
+          };
+          return;
+        }
+        const related = snapshotDraftElementFocus(relatedEl);
+        if (related) pendingDraftFocusTarget = related;
+        void editDraftDescription(issue, description.value, originalDescription);
+      });
       description.addEventListener('keydown', (event) => {
         if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); description.blur(); }
-        if (event.key === 'Escape') { description.value = originalDescription; description.blur(); }
+        if (event.key === 'Escape') {
+          description.value = originalDescription;
+          clearPendingDraftField(key, 'description');
+          description.blur();
+        }
       });
       content.appendChild(description);
     } else {
       const title = document.createElement('button');
       title.className = 'simple-title';
       title.textContent = issue.title || `Issue #${issue.number}`;
-      title.disabled = busy;
+      title.disabled = bodyBusy;
       title.addEventListener('click', () => openDrawer(issue));
       content.appendChild(title);
       const preview = getIssueDescriptionPreview(issue.body);
@@ -3603,11 +3767,18 @@ function renderSimpleListView(sorted: Issue[]): void {
       }
     }
     row.appendChild(content);
+    if (unconfirmed) {
+      const badge = document.createElement('span');
+      badge.className = 'badge-unconfirmed';
+      badge.title = 'Outcome unknown — refresh to reconcile before modifying';
+      badge.textContent = 'unconfirmed';
+      row.appendChild(badge);
+    }
     if (isAllProjectsMode && repo) {
       if (editable) {
         const select = projectPicker(repo, `Project for draft #${issue.number}`);
-        select.disabled = busy;
-        select.addEventListener('change', () => { void transferDraftProject(issue, select.value); });
+        select.disabled = titleBusy;
+        select.addEventListener('change', () => { void transferDraftProject(issue, select.value, select); });
         row.appendChild(select);
       } else {
         const pill = document.createElement('span');
@@ -3616,6 +3787,35 @@ function renderSimpleListView(sorted: Issue[]): void {
         pill.title = repo;
         row.appendChild(pill);
       }
+    }
+    if (editable) {
+      const moveControls = document.createElement('div');
+      moveControls.className = 'simple-move-controls';
+      const moveUp = document.createElement('button');
+      moveUp.type = 'button';
+      moveUp.className = 'simple-move-btn simple-move-up';
+      moveUp.textContent = '↑';
+      moveUp.title = `Move draft #${issue.number} up`;
+      moveUp.setAttribute('aria-label', `Move draft #${issue.number} up`);
+      moveUp.disabled = titleBusy || rowIndex <= 0;
+      moveUp.addEventListener('click', (event) => {
+        event.stopPropagation();
+        void reorderDraft(issue, sorted, rowIndex - 1);
+      });
+      const moveDown = document.createElement('button');
+      moveDown.type = 'button';
+      moveDown.className = 'simple-move-btn simple-move-down';
+      moveDown.textContent = '↓';
+      moveDown.title = `Move draft #${issue.number} down`;
+      moveDown.setAttribute('aria-label', `Move draft #${issue.number} down`);
+      moveDown.disabled = titleBusy || rowIndex >= sorted.length - 1;
+      moveDown.addEventListener('click', (event) => {
+        event.stopPropagation();
+        void reorderDraft(issue, sorted, rowIndex + 1);
+      });
+      moveControls.appendChild(moveUp);
+      moveControls.appendChild(moveDown);
+      row.appendChild(moveControls);
     }
     // Opening the existing drawer keeps questions, permissions and review
     // actions reachable in every view, including the minimalist list.
@@ -3628,7 +3828,7 @@ function renderSimpleListView(sorted: Issue[]): void {
         openDrawer(issue);
       }
     });
-    if (editable && !busy) {
+    if (editable && !titleBusy) {
       row.draggable = true;
       row.addEventListener('dragstart', (event) => {
         draggedDraftKey = key;
@@ -3647,6 +3847,7 @@ function renderSimpleListView(sorted: Issue[]): void {
     elSimpleListViewContainer.appendChild(row);
   }
   if (quickCapture) renderDraftAddRow();
+  restoreDraftElementFocus(focusToRestore);
 }
 
 function renderDraftAddRow(): void {
@@ -3729,14 +3930,18 @@ async function createQuickCaptureDraft(): Promise<void> {
 }
 
 async function editDraftTitle(issue: Issue, value: string): Promise<void> {
-  const title = value.trim();
-  if (!title || title === issue.title) return;
   const repo = repoForIssue(issue);
   const key = issueWriteKey(repo, issue);
-  if (draftMutations.has(key) || (issue as any).unconfirmed) return;
-  draftMutations.add(key);
+  const title = value.trim();
+  if (!title || title === issue.title) {
+    clearPendingDraftField(key, 'title');
+    return;
+  }
+  if (draftMutations.has(key) || draftTitleMutations.has(key) || (issue as any).unconfirmed) return;
+  draftTitleMutations.add(key);
   const previous = issue.title;
   const finish = trackIssueWrite(repo, issue, ['record']);
+  clearPendingDraftField(key, 'title');
   issue.title = title;
   renderViews();
   try {
@@ -3750,23 +3955,41 @@ async function editDraftTitle(issue: Issue, value: string): Promise<void> {
     findIssueRecord(repo, issue).title = previous;
     void host.toast({ kind: 'error', message: `Could not rename draft: ${err.message}` });
   } finally {
-    draftMutations.delete(key);
+    draftTitleMutations.delete(key);
     issueCache.delete(repo);
     renderViews();
   }
 }
 
 async function editDraftDescription(issue: Issue, value: string, original: string): Promise<void> {
-  if (value === original) return;
+  const normalizeEol = (s: string): string => (s || '').replace(/\r\n/g, '\n');
   const key = issueWriteKey(repoForIssue(issue), issue);
-  if (draftMutations.has(key)) return;
+  if (normalizeEol(value) === normalizeEol(original)) {
+    clearPendingDraftField(key, 'description');
+    return;
+  }
+  if (draftMutations.has(key) || (issue as any).unconfirmed) return;
   draftMutations.add(key);
+  setPendingDraftField(key, 'description', value);
   try {
     const fresh = await reloadIssueBeforeMutation(issue);
     if (!fresh) throw new Error('Could not refresh draft; nothing was overwritten');
-    if (stripOrderMarker(fresh.body) !== original) throw new Error('Description changed remotely; review the refreshed draft before editing again');
+    if (normalizeEol(stripOrderMarker(fresh.body)) !== normalizeEol(original)) {
+      clearPendingDraftField(key, 'description');
+      throw new Error('Description changed remotely; review the refreshed draft before editing again');
+    }
     const order = parseOrderMarker(fresh.body);
-    await updateIssueBody(issue, order === null ? stripOrderMarker(value) : setOrderMarker(value, order), { suppressToast: true });
+    const eolValue = fresh.body.includes('\r\n') ? normalizeEol(value).replace(/\n/g, '\r\n') : value;
+    const ok = await updateIssueBody(
+      issue,
+      order === null ? stripOrderMarker(eolValue) : setOrderMarker(eolValue, order),
+      { suppressToast: true }
+    );
+    if (ok) {
+      clearPendingDraftField(key, 'description');
+    } else {
+      setPendingDraftField(key, 'description', value);
+    }
   } catch (err: any) {
     void host.toast({ kind: 'error', message: err.message });
   } finally {
@@ -3776,41 +3999,66 @@ async function editDraftDescription(issue: Issue, value: string, original: strin
 }
 
 async function reorderDraft(issue: Issue, displayed: Issue[], targetIndex: number): Promise<void> {
-  if (draftReorderBusy || targetIndex < 0 || targetIndex >= displayed.length) return;
-  if (viewState.sort !== 'manual') {
+  if (draftReorderBusy || (issue as any).unconfirmed || targetIndex < 0 || targetIndex >= displayed.length) return;
+  const switchedToManual = viewState.sort !== 'manual';
+  if (switchedToManual) {
     viewState.sort = 'manual';
     rememberViewState();
-    renderViews();
-    void host.toast({ kind: 'info', message: 'Switched to Manual order. Move the draft again in this order.' });
-    return;
+    void host.toast({ kind: 'info', message: 'Switched to Manual order.' });
   }
+  const displayedFrom = displayed.indexOf(issue);
   const target = displayed[targetIndex];
   const ordered = sortByManualOrder(displayed.filter((entry) => resolveIssueColumn(entry) === 'draft' && entry.number > 0));
   const from = ordered.indexOf(issue);
   const to = ordered.indexOf(target);
-  if (from < 0 || to < 0 || from === to) return;
+  const directionMismatch =
+    switchedToManual &&
+    displayedFrom >= 0 &&
+    ((targetIndex < displayedFrom && to > from) || (targetIndex > displayedFrom && to < from));
+  if (from < 0 || to < 0 || from === to || directionMismatch) {
+    renderViews();
+    return;
+  }
   const move = computeMove(ordered, from, to);
-  if (!move) {
-    void host.toast({ kind: 'info', message: 'That slot needs more than one marker write, or its order gap is full. Move an unordered draft to the top first.' });
+  if (!move || move.length === 0) {
+    void host.toast({ kind: 'info', message: 'Order gap is full; move cancelled.' });
+    renderViews();
     return;
   }
   const rest = ordered.filter((entry) => entry !== issue);
   const neighbours = [rest[to - 1], rest[to]].filter((entry): entry is Issue => !!entry);
-  const participants = [issue, ...neighbours];
+  const writtenIssues = move.map((step) => ordered[step.index]).filter((entry): entry is Issue => !!entry);
+  const participants = Array.from(new Set([issue, ...writtenIssues, ...neighbours]));
+  if (participants.some((entry) => Boolean((entry as any).unconfirmed))) return;
   const keys = participants.map((entry) => issueWriteKey(repoForIssue(entry), entry));
-  if (keys.some((key) => draftMutations.has(key) || Array.from(issueWriteTrackers.get(key)?.values() || []).some((write) => write.pending > 0))) return;
+  if (
+    keys.some(
+      (key) =>
+        draftMutations.has(key) ||
+        draftTitleMutations.has(key) ||
+        Array.from(issueWriteTrackers.get(key)?.values() || []).some((write) => write.pending > 0)
+    )
+  ) {
+    return;
+  }
   draftReorderBusy = true;
   keys.forEach((key) => draftMutations.add(key));
   try {
-    // Reload moved body and destination neighbours. Abort if their markers
-    // changed since the gesture rather than writing into a stale order gap.
+    // Reload all participating issues (written items and destination neighbours).
+    // Abort if any marker changed since the gesture rather than writing into a stale order gap.
     const before = participants.map((entry) => parseOrderMarker(entry.body));
     const fresh = await Promise.all(participants.map(reloadIssueBeforeMutation));
     if (fresh.some((entry) => !entry)) throw new Error('Could not refresh draft order; move cancelled');
-    if (participants.some((entry, index) => parseOrderMarker(entry.body) !== before[index])) throw new Error('Order changed while moving; try again');
+    if (participants.some((entry, index) => parseOrderMarker(entry.body) !== before[index])) {
+      throw new Error('Order changed while moving; try again');
+    }
     const freshMove = computeMove(ordered, from, to);
-    if (!freshMove) throw new Error('Order gap is full; move cancelled');
-    await updateIssueBody(issue, setOrderMarker(fresh[0]!.body, freshMove.order), { suppressToast: true });
+    if (!freshMove || freshMove.length === 0) throw new Error('Order gap is full; move cancelled');
+    for (const step of freshMove) {
+      const targetIssue = ordered[step.index];
+      const ok = await updateIssueBody(targetIssue, setOrderMarker(targetIssue.body, step.order), { suppressToast: true });
+      if (!ok) break;
+    }
   } catch (err: any) {
     void host.toast({ kind: 'error', message: `Could not reorder draft: ${err.message}` });
   } finally {
@@ -3822,10 +4070,49 @@ async function reorderDraft(issue: Issue, displayed: Issue[], targetIndex: numbe
   }
 }
 
-async function transferDraftProject(issue: Issue, targetRepo: string): Promise<void> {
+async function transferDraftProject(issue: Issue, targetRepo: string, selectEl?: HTMLSelectElement | null): Promise<void> {
   const repo = repoForIssue(issue);
   const key = issueWriteKey(repo, issue);
-  if (repo.toLowerCase() === targetRepo.toLowerCase() || draftMutations.has(key)) return;
+  const resetSelect = () => {
+    if (selectEl) {
+      selectEl.value = repo;
+      selectEl.title = repo;
+    }
+    const rowSelect = Array.from(elSimpleListViewContainer.querySelectorAll<HTMLElement>('[data-draft-key]'))
+      .find((r) => r.getAttribute('data-draft-key') === key)
+      ?.querySelector<HTMLSelectElement>('.simple-project');
+    if (rowSelect) {
+      rowSelect.value = repo;
+      rowSelect.title = repo;
+    }
+  };
+  if (
+    !repo ||
+    !targetRepo ||
+    repo.toLowerCase() === targetRepo.toLowerCase() ||
+    draftMutations.has(key) ||
+    draftTitleMutations.has(key) ||
+    draftReorderBusy ||
+    Array.from(issueWriteTrackers.get(key)?.values() || []).some((write) => write.pending > 0) ||
+    (issue as any).unconfirmed
+  ) {
+    resetSelect();
+    return;
+  }
+  const allowedTarget = availableProjectRepos().find((candidate) => candidate.toLowerCase() === targetRepo.toLowerCase());
+  if (!allowedTarget) {
+    resetSelect();
+    void host.toast({ kind: 'error', message: `Could not move draft: unknown target project ${targetRepo}` });
+    return;
+  }
+  const sourceLabel = displayProjectName(repo) || repo;
+  const targetLabel = displayProjectName(allowedTarget) || allowedTarget;
+  const confirmMessage = `Move draft #${issue.number} from ${sourceLabel} (${repo}) to ${targetLabel} (${allowedTarget})? Its issue number and URL may change, and GitHub repository transfer permissions apply.`;
+  const confirmFn = typeof window.confirm === 'function' ? window.confirm.bind(window) : null;
+  if (confirmFn && !confirmFn(confirmMessage)) {
+    resetSelect();
+    return;
+  }
   const oldNumber = issue.number;
   // Discard pre-transfer refreshes; their old identity must never reappear.
   activeStreamEpoch++;
@@ -3833,41 +4120,69 @@ async function transferDraftProject(issue: Issue, targetRepo: string): Promise<v
   if (elIconRefresh) elIconRefresh.style.animation = '';
   draftMutations.add(key);
   renderViews();
+  let graphqlStarted = false;
   try {
     const [rawIssue, rawRepo] = await Promise.all([
       githubRequestWithRetry('GET', `/repos/${repo}/issues/${issue.number}`),
-      githubRequestWithRetry('GET', `/repos/${targetRepo}`),
+      githubRequestWithRetry('GET', `/repos/${allowedTarget}`),
     ]);
     if (!rawIssue?.node_id || !rawRepo?.node_id) throw new Error('GitHub did not return transfer IDs');
     // A transfer is not a copy: GitHub retains the issue history and redirects
     // its old URL. Permissions/organization restrictions surface as errors.
+    graphqlStarted = true;
     const result = await githubRequest('POST', '/graphql', {
       query: 'mutation($issue:ID!,$repository:ID!){transferIssue(input:{issueId:$issue,repositoryId:$repository}){issue{number url repository{nameWithOwner}}}}',
       variables: { issue: rawIssue.node_id, repository: rawRepo.node_id },
     });
     const moved = result?.data?.transferIssue?.issue;
-    if (!moved) throw new Error(result?.errors?.[0]?.message || 'Transfer outcome unknown; check GitHub before retrying');
+    if (!moved) {
+      if (Array.isArray(result?.errors) && result.errors.length > 0) {
+        graphqlStarted = false;
+        throw new Error(result.errors[0]?.message || 'Transfer denied');
+      }
+      throw new Error('Transfer outcome unknown; check GitHub before retrying');
+    }
     activeStreamEpoch++;
     isLoading = false;
     if (elIconRefresh) elIconRefresh.style.animation = '';
     const published = findIssueRecord(repo, issue);
+    const oldEdit = pendingDraftEdits.get(key);
+    pendingDraftEdits.delete(key);
     for (const record of new Set([issue, published])) {
+      delete (record as any).unconfirmed;
       record.repo = moved.repository.nameWithOwner;
       record.number = moved.number;
       record.html_url = moved.url;
-      record.projectId = allProjects.find((project) => getProjectRepoFullName(project)?.toLowerCase() === targetRepo.toLowerCase())?.id;
+      record.projectId = allProjects.find((project) => getProjectRepoFullName(project)?.toLowerCase() === allowedTarget.toLowerCase())?.id;
+    }
+    if (oldEdit) {
+      pendingDraftEdits.set(issueWriteKey(moved.repository.nameWithOwner, moved.number), oldEdit);
     }
     selectedIssueNumbers.delete(oldNumber);
     commentsCache.clear();
     drawerGeneration++;
-    admitIssueRecord(targetRepo, published);
+    issueWriteTrackers.delete(key);
+    admitIssueRecord(moved.repository.nameWithOwner, published);
     if (activeIssue === issue || activeIssue === published) renderDrawer(published, true);
     issueCache.delete(repo);
-    issueCache.delete(targetRepo);
+    issueCache.delete(allowedTarget);
     issueCache.delete(ALL_PROJECTS_CACHE_KEY);
-    void host.toast({ kind: 'success', message: `Draft moved to ${displayProjectName(targetRepo)}` });
+    void host.toast({ kind: 'success', message: `Draft moved to ${displayProjectName(moved.repository.nameWithOwner)}` });
   } catch (err: any) {
-    void host.toast({ kind: 'error', message: `Could not move draft: ${err.message}` });
+    if (graphqlStarted && !isDefinitivePreCommitRejection(err)) {
+      const published = findIssueRecord(repo, issue);
+      (issue as any).unconfirmed = true;
+      (published as any).unconfirmed = true;
+      issueCache.delete(repo);
+      issueCache.delete(allowedTarget);
+      issueCache.delete(ALL_PROJECTS_CACHE_KEY);
+      void host.toast({
+        kind: 'error',
+        message: `Transfer outcome unknown for #${issue.number} — refresh to reconcile ${sourceLabel} and ${targetLabel} before modifying.`,
+      });
+    } else {
+      void host.toast({ kind: 'error', message: `Could not move draft: ${err.message}` });
+    }
   } finally {
     draftMutations.delete(key);
     renderViews();
@@ -5872,6 +6187,7 @@ function createGraphCardElement(node: DependencyNode): HTMLElement {
   const card = document.createElement('div');
   card.className = 'graph-card';
   card.dataset.issueNumber = String(node.issue.number);
+  card.dataset.issueKey = node.key || `${getIssueRepoFullName(node.issue) || ''}#${node.issue.number}`;
   card.setAttribute('tabindex', '0');
   card.setAttribute('role', 'button');
   card.setAttribute('aria-label', `Issue #${node.issue.number}: ${node.issue.title}`);
@@ -6011,23 +6327,22 @@ function drawGraphEdges(graph: DependencyGraph): void {
 
   // 1. Batch READ phase: Read canvas and all card positions in a single layout pass
   const canvasRect = elGraphCanvas.getBoundingClientRect();
-  const cardElements = new Map<number, HTMLElement>();
-  elGraphCanvas.querySelectorAll<HTMLElement>('.graph-card').forEach((card) => {
-    const num = parseInt(card.dataset.issueNumber || '0', 10);
-    if (num > 0) cardElements.set(num, card);
-  });
-
   const cardRects = new Map<number, DOMRect>();
-  cardElements.forEach((card, num) => {
-    cardRects.set(num, card.getBoundingClientRect());
+  const cardRectsByKey = new Map<string, DOMRect>();
+  elGraphCanvas.querySelectorAll<HTMLElement>('.graph-card').forEach((card) => {
+    const rect = card.getBoundingClientRect();
+    const key = card.dataset.issueKey || '';
+    if (key) cardRectsByKey.set(key.toLowerCase(), rect);
+    const num = parseInt(card.dataset.issueNumber || '0', 10);
+    if (num > 0 && !cardRects.has(num)) cardRects.set(num, rect);
   });
 
   // 2. Batch WRITE phase: Build SVG paths in fragment to prevent layout thrashing
   const edgeFragment = document.createDocumentFragment();
 
   for (const edge of graph.edges) {
-    const sourceRect = cardRects.get(edge.from);
-    const targetRect = cardRects.get(edge.to);
+    const sourceRect = (edge.fromKey ? cardRectsByKey.get(edge.fromKey.toLowerCase()) : undefined) || cardRects.get(edge.from);
+    const targetRect = (edge.toKey ? cardRectsByKey.get(edge.toKey.toLowerCase()) : undefined) || cardRects.get(edge.to);
     if (!sourceRect || !targetRect) continue;
 
     const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
@@ -6155,7 +6470,9 @@ function renderGraphView(filteredIssues: Issue[]): void {
     txtGraphStatDone.textContent = `${doneCount} Done`;
   }
 
-  const visibleNumbers = new Set(Array.from(graph.nodes.values()).map((node) => node.issue.number));
+  const visibleNumbers = new Set(
+    Array.from(graph.nodes.values()).map((node) => `${getIssueRepoFullName(node.issue) || ''}#${node.issue.number}`)
+  );
 
   elGraphLayers.innerHTML = '';
 
@@ -6170,7 +6487,8 @@ function renderGraphView(filteredIssues: Issue[]): void {
   }
 
   graph.layers.forEach((layerNodes, layerIdx) => {
-    const layerVisible = layerNodes.filter((n) => visibleNumbers.has(n.issue.number))
+    const layerVisible = layerNodes
+      .filter((n) => visibleNumbers.has(`${getIssueRepoFullName(n.issue) || ''}#${n.issue.number}`))
       .sort((a, b) => filteredIssues.indexOf(a.issue) - filteredIssues.indexOf(b.issue));
     if (layerVisible.length === 0) return;
 
@@ -8740,7 +9058,21 @@ function initEvents(): void {
     closeViewPicker();
     elFilterPopover.style.display = opening ? 'flex' : 'none';
     elBtnFilterToggle.setAttribute('aria-expanded', String(opening));
-    if (opening) elFilterPopover.querySelector<HTMLElement>('button')?.focus();
+    if (opening) {
+      elFilterPopover.style.left = '0px';
+      elFilterPopover.style.right = 'auto';
+      const rect = elFilterPopover.getBoundingClientRect();
+      const viewportW = window.innerWidth || document.documentElement?.clientWidth || 360;
+      if (rect.width > 0) {
+        if (rect.left < 8) {
+          elFilterPopover.style.left = `${Math.round(8 - rect.left)}px`;
+        } else if (rect.right > viewportW - 8) {
+          const shift = Math.min(rect.left - 8, rect.right - (viewportW - 8));
+          if (shift > 0) elFilterPopover.style.left = `${Math.round(-shift)}px`;
+        }
+      }
+      elFilterPopover.querySelector<HTMLElement>('button')?.focus();
+    }
   });
   elFilterPopover.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') { event.stopPropagation(); closeFilterPicker(); elBtnFilterToggle?.focus(); }
@@ -9380,8 +9712,9 @@ function initEvents(): void {
   // Description Edit & Collapse events
   elBtnEditDescription.addEventListener('click', () => {
     if (!activeIssue) return;
-    elDrawerDescriptionTextarea.value = stripOrderMarker(activeIssue.body || '');
-    elDrawerDescriptionTextarea.dataset.originalDescription = elDrawerDescriptionTextarea.value;
+    const rawWithoutMarker = stripOrderMarker(activeIssue.body || '');
+    elDrawerDescriptionTextarea.value = rawWithoutMarker;
+    elDrawerDescriptionTextarea.dataset.originalDescription = rawWithoutMarker;
     elDrawerDescriptionViewBox.style.display = 'none';
     elDrawerDescriptionEditBox.style.display = 'flex';
     elDrawerDescriptionTextarea.focus();

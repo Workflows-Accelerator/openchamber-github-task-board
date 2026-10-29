@@ -3764,24 +3764,85 @@ ${GUEST_UI_LOOK_CSS}`;
     return out;
   }
   var ORDER_GAP = 1e3;
-  var ORDER_MARKER_LINE_REGEX = /^[ \t]*<!--\s*board-order:\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)\s*-->[ \t]*$/gim;
+  var ORDER_MARKER_SINGLE_REGEX = /^[ \t]*<!--\s*board-order:\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)\s*-->[ \t]*$/i;
+  var FENCE_OPEN_REGEX = /^[ \t]{0,3}(`{3,}|~{3,})/;
+  function scanTerminalOrderMarker(body) {
+    const lines = [];
+    let fenceChar = "";
+    let fenceLen = 0;
+    let pos = 0;
+    while (pos <= body.length) {
+      let lineEnd = body.indexOf("\n", pos);
+      let nextPos;
+      if (lineEnd === -1) {
+        lineEnd = body.length;
+        nextPos = body.length + 1;
+      } else {
+        nextPos = lineEnd + 1;
+        if (lineEnd > pos && body.charCodeAt(lineEnd - 1) === 13) {
+          lineEnd -= 1;
+        }
+      }
+      const text = body.slice(pos, lineEnd);
+      let inFence = fenceLen > 0;
+      const fenceMatch = FENCE_OPEN_REGEX.exec(text);
+      if (fenceMatch) {
+        const run = fenceMatch[1];
+        if (!inFence) {
+          fenceChar = run[0];
+          fenceLen = run.length;
+          inFence = true;
+        } else if (run[0] === fenceChar && run.length >= fenceLen && /^[ \t]*$/.test(text.slice(fenceMatch[0].length))) {
+          fenceChar = "";
+          fenceLen = 0;
+        }
+      }
+      lines.push({ text, start: pos, end: lineEnd, inFence });
+      pos = nextPos;
+    }
+    let i = lines.length - 1;
+    while (i >= 0 && !/\S/.test(lines[i].text)) i--;
+    if (i < 0 || lines[i].inFence) return null;
+    const lastMatch = ORDER_MARKER_SINGLE_REGEX.exec(lines[i].text);
+    if (!lastMatch) return null;
+    const order = Number(lastMatch[1]);
+    if (!Number.isFinite(order)) return null;
+    let firstMarkerLine = i;
+    i--;
+    while (i >= 0) {
+      if (!/\S/.test(lines[i].text)) {
+        i--;
+        continue;
+      }
+      if (!lines[i].inFence) {
+        const m = ORDER_MARKER_SINGLE_REGEX.exec(lines[i].text);
+        if (m && Number.isFinite(Number(m[1]))) {
+          firstMarkerLine = i;
+          i--;
+          continue;
+        }
+      }
+      break;
+    }
+    let lastContentLine = firstMarkerLine - 1;
+    while (lastContentLine >= 0 && !/\S/.test(lines[lastContentLine].text)) {
+      lastContentLine--;
+    }
+    return {
+      order,
+      contentEnd: lastContentLine >= 0 ? lines[lastContentLine].end : 0
+    };
+  }
   function parseOrderMarker(body) {
     if (!body || typeof body !== "string") return null;
-    let result = null;
-    ORDER_MARKER_LINE_REGEX.lastIndex = 0;
-    let match;
-    while ((match = ORDER_MARKER_LINE_REGEX.exec(body)) !== null) {
-      const n = Number(match[1]);
-      if (Number.isFinite(n)) result = n;
-    }
-    return result;
+    const scan = scanTerminalOrderMarker(body);
+    return scan ? scan.order : null;
   }
   function stripOrderMarker(body) {
     if (!body || typeof body !== "string") return "";
-    ORDER_MARKER_LINE_REGEX.lastIndex = 0;
-    if (!ORDER_MARKER_LINE_REGEX.test(body)) return body;
-    ORDER_MARKER_LINE_REGEX.lastIndex = 0;
-    return body.replace(ORDER_MARKER_LINE_REGEX, "").replace(/\r\n/g, "\n").replace(/\n{3,}/g, "\n\n").replace(/\s+$/, "");
+    const scan = scanTerminalOrderMarker(body);
+    if (!scan) return body;
+    return body.slice(0, scan.contentEnd);
   }
   function formatOrderNumber(order) {
     if (!Number.isFinite(order)) throw new Error("Order must be finite");
@@ -3797,11 +3858,12 @@ ${GUEST_UI_LOOK_CSS}`;
     return negative ? `-${decimal}` : decimal;
   }
   function setOrderMarker(body, order) {
-    const base = stripOrderMarker(body || "");
+    const raw = body || "";
+    const base = stripOrderMarker(raw);
     const marker = `<!-- board-order: ${formatOrderNumber(order)} -->`;
-    return base ? `${base}
-
-${marker}` : marker;
+    if (!base) return marker;
+    const eol = raw.includes("\r\n") ? "\r\n" : "\n";
+    return `${base}${eol}${eol}${marker}`;
   }
   function midpointOrder(prev, next) {
     if (prev === null && next === null) return ORDER_GAP;
@@ -3822,6 +3884,8 @@ ${marker}` : marker;
     const ca = createdTime(a);
     const cb = createdTime(b);
     if (ca !== cb) return ca - cb;
+    const repoCmp = (a.repo || "").localeCompare(b.repo || "");
+    if (repoCmp !== 0) return repoCmp;
     return (a.number || 0) - (b.number || 0);
   }
   function sortByManualOrder(items) {
@@ -3847,13 +3911,97 @@ ${marker}` : marker;
     if (nextOrder !== null && order >= nextOrder) return null;
     return order;
   }
+  function buildSpanOrders(low, high, count) {
+    if (count <= 0) return null;
+    if (low !== null && high !== null && !(low < high)) return null;
+    const values = [];
+    for (let k = 0; k < count; k++) {
+      let v2;
+      if (low === null && high === null) {
+        v2 = (k + 1) * ORDER_GAP;
+      } else if (low !== null && high === null) {
+        v2 = low + (k + 1) * ORDER_GAP;
+      } else if (low === null && high !== null) {
+        v2 = high - (count - k) * ORDER_GAP;
+      } else {
+        const l = low;
+        const h = high;
+        const delta = h - l;
+        v2 = Number.isFinite(delta) ? l + delta * (k + 1) / (count + 1) : ((count - k) * l + (k + 1) * h) / (count + 1);
+      }
+      if (!Number.isFinite(v2)) return null;
+      if (k === 0 && low !== null && !(v2 > low)) return null;
+      if (k > 0 && !(v2 > values[k - 1])) return null;
+      if (k === count - 1 && high !== null && !(v2 < high)) return null;
+      values.push(v2);
+    }
+    return values;
+  }
   function computeMove(ordered, fromIndex, toIndex) {
     if (fromIndex < 0 || fromIndex >= ordered.length) return null;
     const to = Math.max(0, Math.min(ordered.length - 1, toIndex));
     if (to === fromIndex) return null;
     const rest = ordered.filter((_, i) => i !== fromIndex);
     const direct = slotOrder(rest, to);
-    if (direct !== null) return { index: fromIndex, order: direct, exact: true };
+    if (direct !== null) return [{ index: fromIndex, order: direct }];
+    const entries = ordered.map((item, index) => ({
+      item,
+      index,
+      order: parseOrderMarker(item.body)
+    }));
+    const [moved] = entries.splice(fromIndex, 1);
+    entries.splice(to, 0, moved);
+    let lastMarked = -1;
+    for (let i = 0; i < entries.length; i++) {
+      if (entries[i].order !== null) lastMarked = i;
+    }
+    const markedCount = Math.max(to + 1, lastMarked + 1);
+    let firstUnmarked = -1;
+    for (let i = 0; i <= to; i++) {
+      if (entries[i].order === null) {
+        firstUnmarked = i;
+        break;
+      }
+    }
+    if (firstUnmarked !== -1 && lastMarked <= to) {
+      const baseOrder = firstUnmarked > 0 ? entries[firstUnmarked - 1].order : 0;
+      const writes = [];
+      let valid = true;
+      for (let i = firstUnmarked; i <= to; i++) {
+        const nextOrder = baseOrder + (i - firstUnmarked + 1) * ORDER_GAP;
+        if (!Number.isFinite(nextOrder)) {
+          valid = false;
+          break;
+        }
+        if (entries[i].order !== nextOrder) {
+          writes.push({ index: entries[i].index, order: nextOrder });
+        }
+      }
+      if (valid && writes.length > 0) return writes;
+    }
+    for (let len = 1; len <= markedCount; len++) {
+      const startL = Math.max(0, to - len + 1);
+      const endL = Math.min(to, markedCount - len);
+      let best = null;
+      for (let left = startL; left <= endL; left++) {
+        const right = left + len - 1;
+        const low = left > 0 ? entries[left - 1].order : null;
+        const high = right + 1 < markedCount ? entries[right + 1].order : null;
+        if (left > 0 && low === null || right + 1 < markedCount && high === null) continue;
+        const values = buildSpanOrders(low, high, len);
+        if (!values) continue;
+        const candidate = [];
+        for (let k = 0; k < len; k++) {
+          if (entries[left + k].order !== values[k]) {
+            candidate.push({ index: entries[left + k].index, order: values[k] });
+          }
+        }
+        if (candidate.length > 0 && (!best || candidate.length < best.length)) {
+          best = candidate;
+        }
+      }
+      if (best) return best;
+    }
     return null;
   }
   var VIEW_IDS = ["simple", "cards", "kanban", "graph", "pending"];
@@ -3942,7 +4090,11 @@ ${marker}` : marker;
   }
   function applySort(items, sort, priorityWeight) {
     const copy = [...items];
-    const byNumberDesc = (a, b) => (b.number || 0) - (a.number || 0);
+    const byNumberDesc = (a, b) => {
+      const repoCmp = (a.repo || "").localeCompare(b.repo || "");
+      if (repoCmp !== 0) return repoCmp;
+      return (b.number || 0) - (a.number || 0);
+    };
     switch (sort) {
       case "manual":
         return copy.sort(compareManualOrder);
@@ -7051,19 +7203,81 @@ Blocked by ${blockerRef}`;
     return Array.from(numbers).sort((a, b) => a - b);
   }
   function buildDependencyGraph(issues2) {
-    const nodes = /* @__PURE__ */ new Map();
-    const byNumber = /* @__PURE__ */ new Map();
+    const parseRepo = (raw) => {
+      if (!raw || typeof raw !== "string") return "";
+      const trimmed = raw.trim();
+      const urlMatch = trimmed.match(/github\.com[/:]([^/\s#?]+)\/([^/\s#?.]+?)(?:\.git)?(?:[/?#]|$)/i);
+      if (urlMatch) return `${urlMatch[1]}/${urlMatch[2]}`;
+      const directMatch = trimmed.match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
+      return directMatch ? `${directMatch[1]}/${directMatch[2]}` : "";
+    };
+    const issueRepoOf = (issue) => {
+      if (!issue) return "";
+      return parseRepo(issue.repo) || parseRepo(issue.html_url) || "";
+    };
+    class DependencyNodeMap extends Map {
+      byLowerKey = /* @__PURE__ */ new Map();
+      byNumber = /* @__PURE__ */ new Map();
+      set(key, value) {
+        const strKey = typeof key === "number" ? `${issueRepoOf(value?.issue)}#${key}` : key;
+        super.set(strKey, value);
+        this.byLowerKey.set(strKey.toLowerCase(), value);
+        if (value?.issue && !this.byNumber.has(value.issue.number)) {
+          this.byNumber.set(value.issue.number, value);
+        }
+        return this;
+      }
+      get(key) {
+        if (typeof key === "number") {
+          return super.get(`#${key}`) ?? this.byNumber.get(key);
+        }
+        return super.get(key) ?? this.byLowerKey.get(key.toLowerCase());
+      }
+      has(key) {
+        return this.get(key) !== void 0;
+      }
+    }
+    const parseScopedIssueDependencies = (body, defaultRepo) => {
+      if (!body || typeof body !== "string") return [];
+      const byKey2 = /* @__PURE__ */ new Map();
+      const matches = body.matchAll(DEPENDENCY_LINE_REGEX);
+      for (const match of matches) {
+        const text = match[1] || "";
+        const refMatches = text.matchAll(/(?:([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(\d+)/g);
+        for (const rm of refMatches) {
+          const n = parseInt(rm[2], 10);
+          if (!Number.isFinite(n) || n <= 0) continue;
+          const repoPart = parseRepo(rm[1]) || defaultRepo;
+          const key = `${repoPart}#${n}`;
+          const lower = key.toLowerCase();
+          if (!byKey2.has(lower)) {
+            byKey2.set(lower, { key, number: n });
+          }
+        }
+      }
+      return Array.from(byKey2.values()).sort((a, b) => a.number - b.number || a.key.localeCompare(b.key));
+    };
+    const nodes = new DependencyNodeMap();
+    const byKey = /* @__PURE__ */ new Map();
+    const openDependentKeys = /* @__PURE__ */ new Map();
     for (const issue of issues2) {
-      byNumber.set(issue.number, issue);
+      const issueKey = `${issueRepoOf(issue)}#${issue.number}`;
+      byKey.set(issueKey.toLowerCase(), issue);
     }
     for (const issue of issues2) {
+      const issueRepo = issueRepoOf(issue);
+      const issueKey = `${issueRepo}#${issue.number}`;
       const isDone = issue.state === "closed" || (issue.labels || []).some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase() === "status:done");
-      const blockers = parseIssueDependencies(issue.body);
-      const openBlockers = blockers.filter((num) => {
-        const target = byNumber.get(num);
+      const blockerRefs = parseScopedIssueDependencies(issue.body, issueRepo);
+      const openBlockerRefs = blockerRefs.filter((ref) => {
+        const target = byKey.get(ref.key.toLowerCase());
         if (!target) return true;
         return target.state !== "closed" && !(target.labels || []).some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase() === "status:done");
       });
+      const blockers = blockerRefs.map((ref) => ref.number);
+      const openBlockers = openBlockerRefs.map((ref) => ref.number);
+      const blockerKeys = blockerRefs.map((ref) => ref.key);
+      const openBlockerKeys = openBlockerRefs.map((ref) => ref.key);
       const isFrontier = !isDone && openBlockers.length === 0;
       const isBlocked = !isDone && openBlockers.length > 0;
       let priority = "normal";
@@ -7074,10 +7288,14 @@ Blocked by ${blockerRef}`;
           break;
         }
       }
-      nodes.set(issue.number, {
+      openDependentKeys.set(issueKey, []);
+      nodes.set(issueKey, {
+        key: issueKey,
         issue,
         blockers,
         openBlockers,
+        blockerKeys,
+        openBlockerKeys,
         dependents: [],
         openDependents: [],
         downstreamImpact: 0,
@@ -7089,13 +7307,17 @@ Blocked by ${blockerRef}`;
         priority
       });
     }
+    const nodeKeyOf = (n) => n.key || `${issueRepoOf(n.issue)}#${n.issue.number}`;
     for (const node of nodes.values()) {
-      for (const blockerNum of node.blockers) {
-        const blockerNode = nodes.get(blockerNum);
+      const nodeKey = nodeKeyOf(node);
+      for (const blockerKey of node.blockerKeys || []) {
+        const blockerNode = nodes.get(blockerKey);
         if (blockerNode) {
+          const blockerCanonicalKey = nodeKeyOf(blockerNode);
           blockerNode.dependents.push(node.issue.number);
           if (!node.isDone) {
             blockerNode.openDependents.push(node.issue.number);
+            openDependentKeys.get(blockerCanonicalKey)?.push(nodeKey);
           }
         }
       }
@@ -7105,20 +7327,21 @@ Blocked by ${blockerRef}`;
         node.downstreamImpact = 0;
         continue;
       }
-      const seen = /* @__PURE__ */ new Set([node.issue.number]);
-      const queue = [...node.openDependents];
+      const nodeKey = nodeKeyOf(node);
+      const seen = /* @__PURE__ */ new Set([nodeKey]);
+      const queue = [...openDependentKeys.get(nodeKey) || []];
       while (queue.length > 0) {
         const curr = queue.shift();
         if (seen.has(curr)) continue;
         seen.add(curr);
-        const currNode = nodes.get(curr);
-        if (currNode) {
-          queue.push(...currNode.openDependents);
+        const nextDeps = openDependentKeys.get(curr);
+        if (nextDeps) {
+          queue.push(...nextDeps);
         }
       }
       node.downstreamImpact = seen.size - 1;
     }
-    const openNodeNumbers = Array.from(nodes.values()).filter((n) => !n.isDone).map((n) => n.issue.number);
+    const openNodeKeys = Array.from(nodes.values()).filter((n) => !n.isDone).map((n) => nodeKeyOf(n));
     const indices = /* @__PURE__ */ new Map();
     const lowLinks = /* @__PURE__ */ new Map();
     const stack = [];
@@ -7126,37 +7349,37 @@ Blocked by ${blockerRef}`;
     const componentOf = /* @__PURE__ */ new Map();
     const components = [];
     let nextIndex = 0;
-    const visit = (num) => {
+    const visit = (nodeKey) => {
       const idx = nextIndex++;
-      indices.set(num, idx);
-      lowLinks.set(num, idx);
-      stack.push(num);
-      onStack.add(num);
-      const node = nodes.get(num);
-      const activeBlockers = (node?.openBlockers || []).filter((b) => nodes.has(b) && !nodes.get(b).isDone);
+      indices.set(nodeKey, idx);
+      lowLinks.set(nodeKey, idx);
+      stack.push(nodeKey);
+      onStack.add(nodeKey);
+      const node = nodes.get(nodeKey);
+      const activeBlockers = (node?.openBlockerKeys || []).map((bk) => nodes.get(bk)).filter((bn) => Boolean(bn && !bn.isDone)).map((bn) => nodeKeyOf(bn));
       for (const blocker of activeBlockers) {
         if (!indices.has(blocker)) {
           visit(blocker);
-          lowLinks.set(num, Math.min(lowLinks.get(num), lowLinks.get(blocker)));
+          lowLinks.set(nodeKey, Math.min(lowLinks.get(nodeKey), lowLinks.get(blocker)));
         } else if (onStack.has(blocker)) {
-          lowLinks.set(num, Math.min(lowLinks.get(num), indices.get(blocker)));
+          lowLinks.set(nodeKey, Math.min(lowLinks.get(nodeKey), indices.get(blocker)));
         }
       }
-      if (lowLinks.get(num) === idx) {
+      if (lowLinks.get(nodeKey) === idx) {
         const component = [];
         while (stack.length > 0) {
           const member = stack.pop();
           onStack.delete(member);
           componentOf.set(member, components.length);
           component.push(member);
-          if (member === num) break;
+          if (member === nodeKey) break;
         }
         components.push(component);
       }
     };
-    for (const num of openNodeNumbers) {
-      if (!indices.has(num)) {
-        visit(num);
+    for (const nodeKey of openNodeKeys) {
+      if (!indices.has(nodeKey)) {
+        visit(nodeKey);
       }
     }
     const memoLayer = /* @__PURE__ */ new Map();
@@ -7167,8 +7390,10 @@ Blocked by ${blockerRef}`;
       for (const member of components[compIdx]) {
         const memberNode = nodes.get(member);
         if (!memberNode) continue;
-        for (const blocker of memberNode.openBlockers) {
-          const blockerComp = componentOf.get(blocker);
+        for (const blockerKey of memberNode.openBlockerKeys || []) {
+          const blockerNode = nodes.get(blockerKey);
+          const canonicalBlockerKey = blockerNode ? nodeKeyOf(blockerNode) : blockerKey;
+          const blockerComp = componentOf.get(canonicalBlockerKey);
           if (blockerComp !== void 0 && blockerComp !== compIdx) {
             maxBlockerLayer = Math.max(maxBlockerLayer, layerOfComponent(blockerComp));
           }
@@ -7179,10 +7404,11 @@ Blocked by ${blockerRef}`;
       return layer;
     };
     for (const node of nodes.values()) {
+      const nodeKey = nodeKeyOf(node);
       if (node.isDone) {
         node.layer = 0;
       } else {
-        const comp = componentOf.get(node.issue.number);
+        const comp = componentOf.get(nodeKey);
         node.layer = comp !== void 0 ? layerOfComponent(comp) : 0;
       }
     }
@@ -7198,22 +7424,28 @@ Blocked by ${blockerRef}`;
     layers[0].sort((a, b) => {
       if (a.isDone !== b.isDone) return a.isDone ? 1 : -1;
       if (a.isFrontier !== b.isFrontier) return a.isFrontier ? -1 : 1;
-      return b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number;
+      return b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number || issueRepoOf(a.issue).localeCompare(issueRepoOf(b.issue));
     });
-    layers[0].forEach((n, idx) => pos.set(n.issue.number, idx));
+    layers[0].forEach((n, idx) => pos.set(nodeKeyOf(n), idx));
     for (let l = 1; l < layers.length; l++) {
       const layer = layers[l];
       const key = (n) => {
-        const blockerPositions = n.blockers.map((b) => pos.get(b)).filter((p) => p !== void 0);
+        const blockerPositions = (n.blockerKeys || []).map((bk) => {
+          const bn = nodes.get(bk);
+          return pos.get(bn ? nodeKeyOf(bn) : bk);
+        }).filter((p) => p !== void 0);
         return blockerPositions.length > 0 ? blockerPositions.reduce((acc, p) => acc + p, 0) / blockerPositions.length : n.issue.number;
       };
-      layer.sort((a, b) => key(a) - key(b) || b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number);
-      layer.forEach((n, idx) => pos.set(n.issue.number, idx));
+      layer.sort(
+        (a, b) => key(a) - key(b) || b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number || issueRepoOf(a.issue).localeCompare(issueRepoOf(b.issue))
+      );
+      layer.forEach((n, idx) => pos.set(nodeKeyOf(n), idx));
     }
     const edges = [];
     const themeNodes = /* @__PURE__ */ new Map();
     const frontierNodes = [];
     for (const node of nodes.values()) {
+      const toKey = nodeKeyOf(node);
       if (node.isFrontier) {
         frontierNodes.push(node);
       }
@@ -7223,13 +7455,18 @@ Blocked by ${blockerRef}`;
         themeNodes.set(node.theme, list);
       }
       list.push(node);
-      for (const blockerNum of node.blockers) {
-        const blockerNode = nodes.get(blockerNum);
+      const blockerKeys = node.blockerKeys || [];
+      for (let i = 0; i < node.blockers.length; i++) {
+        const blockerNum = node.blockers[i];
+        const blockerKey = blockerKeys[i] || `${issueRepoOf(node.issue)}#${blockerNum}`;
+        const blockerNode = nodes.get(blockerKey);
         const isCrossTheme = blockerNode ? blockerNode.theme !== node.theme : false;
         const isClosed = node.isDone || (blockerNode?.isDone ?? false);
         edges.push({
           from: blockerNum,
           to: node.issue.number,
+          fromKey: blockerNode ? nodeKeyOf(blockerNode) : blockerKey,
+          toKey,
           isCrossTheme,
           isClosed,
           isFrontier: node.isFrontier
@@ -10844,7 +11081,11 @@ Blocked by ${blockerRef}`;
     if (generation === viewStateLoadGeneration) renderViews();
   }
   function availableProjectRepos() {
-    const repos = [...buildProjectRepoRefs().map((ref) => ref.repo), ...issues.map(repoForIssue)];
+    const repos = [
+      ...buildProjectRepoRefs().map((ref) => ref.repo),
+      ...allProjectsRepoRefs.map((ref) => ref.repo),
+      ...issues.map(repoForIssue)
+    ];
     if (currentRepo && currentRepo !== ALL_PROJECTS_CACHE_KEY) repos.push(currentRepo);
     return [...new Map(repos.filter(Boolean).map((repo) => [repo.toLowerCase(), repo])).values()];
   }
@@ -10993,8 +11234,83 @@ Blocked by ${blockerRef}`;
     select.title = select.value;
     return select;
   }
+  var pendingDraftEdits = /* @__PURE__ */ new Map();
+  var draftTitleMutations = /* @__PURE__ */ new Set();
+  var pendingDraftFocusTarget = null;
+  var isRenderingSimpleListView = false;
+  function setPendingDraftField(key, field2, value) {
+    const existing = pendingDraftEdits.get(key) || {};
+    existing[field2] = value;
+    pendingDraftEdits.set(key, existing);
+  }
+  function clearPendingDraftField(key, field2) {
+    const existing = pendingDraftEdits.get(key);
+    if (!existing) return;
+    delete existing[field2];
+    if (existing.title === void 0 && existing.description === void 0) {
+      pendingDraftEdits.delete(key);
+    }
+  }
+  function findEnclosingDraftRow(el2) {
+    let cur = el2;
+    while (cur) {
+      if (typeof cur.getAttribute === "function" && cur.getAttribute("data-draft-key")) return cur;
+      cur = cur.parentElement || null;
+    }
+    return null;
+  }
+  function snapshotDraftElementFocus(el2) {
+    if (!el2) return null;
+    const row = findEnclosingDraftRow(el2);
+    if (!row) return null;
+    const key = row.getAttribute("data-draft-key") || "";
+    if (!key) return null;
+    let field2 = null;
+    if (el2 === row) field2 = "row";
+    else if (el2.classList?.contains("simple-title")) field2 = "title";
+    else if (el2.classList?.contains("simple-description")) field2 = "description";
+    else if (el2.classList?.contains("simple-project")) field2 = "project";
+    else if (el2.classList?.contains("simple-move-up")) field2 = "move-up";
+    else if (el2.classList?.contains("simple-move-down")) field2 = "move-down";
+    if (!field2) return null;
+    const anyInput = el2;
+    return {
+      key,
+      field: field2,
+      selectionStart: typeof anyInput.selectionStart === "number" ? anyInput.selectionStart : null,
+      selectionEnd: typeof anyInput.selectionEnd === "number" ? anyInput.selectionEnd : null
+    };
+  }
+  function restoreDraftElementFocus(snapshot) {
+    if (!snapshot) return;
+    const row = Array.from(elSimpleListViewContainer.querySelectorAll("[data-draft-key]")).find((candidate) => candidate.getAttribute("data-draft-key") === snapshot.key);
+    if (!row) return;
+    let target = null;
+    if (snapshot.field === "row") target = row;
+    else if (snapshot.field === "title") target = row.querySelector(".simple-title");
+    else if (snapshot.field === "description") target = row.querySelector(".simple-description");
+    else if (snapshot.field === "project") target = row.querySelector(".simple-project");
+    else if (snapshot.field === "move-up") target = row.querySelector(".simple-move-up");
+    else if (snapshot.field === "move-down") target = row.querySelector(".simple-move-down");
+    if (!target || target.disabled) return;
+    target.focus();
+    if (snapshot.selectionStart !== null && snapshot.selectionEnd !== null && typeof target.setSelectionRange === "function") {
+      try {
+        target.setSelectionRange(snapshot.selectionStart, snapshot.selectionEnd);
+      } catch {
+      }
+    }
+  }
   function renderSimpleListView(sorted) {
-    elSimpleListViewContainer.innerHTML = "";
+    const activeFocus = snapshotDraftElementFocus(document.activeElement);
+    const focusToRestore = activeFocus || pendingDraftFocusTarget;
+    pendingDraftFocusTarget = null;
+    isRenderingSimpleListView = true;
+    try {
+      elSimpleListViewContainer.innerHTML = "";
+    } finally {
+      isRenderingSimpleListView = false;
+    }
     const quickCapture = isQuickCaptureMode(viewState);
     if (!sorted.length) {
       const empty = document.createElement("div");
@@ -11005,24 +11321,28 @@ Blocked by ${blockerRef}`;
     if (quickCapture) {
       const tools = document.createElement("div");
       tools.className = "simple-tools";
-      tools.innerHTML = `<span>Alt+Up / Down to reorder${viewState.sort === "manual" ? "" : " (switches to Manual order)"}</span><button class="btn btn-xs" id="btnAlignDrafts" type="button"${isAligningDrafts ? " disabled" : ""}>${isAligningDrafts ? `<span class="btn-spinner"></span>Aligning (${aligningDraftsCount} drafts)...` : "Align Drafts"}</button>`;
+      tools.innerHTML = `<span>\u2191/\u2193 or Alt+Up / Down to reorder${viewState.sort === "manual" ? "" : " (switches to Manual order)"}</span><button class="btn btn-xs" id="btnAlignDrafts" type="button"${isAligningDrafts ? " disabled" : ""}>${isAligningDrafts ? `<span class="btn-spinner"></span>Aligning (${aligningDraftsCount} drafts)...` : "Align Drafts"}</button>`;
       tools.querySelector("#btnAlignDrafts")?.addEventListener("click", () => {
         void batchAlignDrafts();
       });
       elSimpleListViewContainer.appendChild(tools);
     }
-    for (const issue of sorted) {
+    for (let rowIndex = 0; rowIndex < sorted.length; rowIndex++) {
+      const issue = sorted[rowIndex];
       const repo = repoForIssue(issue);
       const key = issueWriteKey(repo, issue);
       const stage = resolveIssueColumn3(issue) || "todo";
       const editable = quickCapture && stage === "draft" && issue.number > 0;
-      const busy = draftMutations.has(key) || issue.number < 0;
+      const unconfirmed = Boolean(issue.unconfirmed);
+      const bodyBusy = draftMutations.has(key) || issue.number < 0 || unconfirmed;
+      const titleBusy = bodyBusy || draftTitleMutations.has(key);
       const row = document.createElement("div");
       row.className = "simple-row";
+      if (unconfirmed) row.classList.add("simple-row-unconfirmed");
       row.setAttribute("tabindex", "0");
       row.setAttribute("data-draft-key", key);
-      row.setAttribute("aria-label", `${issue.title}. ${STATUS_METADATA[stage].label}${editable ? ". Alt+Up or Alt+Down to reorder." : ""}`);
-      row.setAttribute("aria-busy", String(busy));
+      row.setAttribute("aria-label", `${issue.title}. ${STATUS_METADATA[stage].label}${unconfirmed ? ". Outcome unconfirmed; refresh required." : editable ? ". Alt+Up or Alt+Down to reorder." : ""}`);
+      row.setAttribute("aria-busy", String(draftMutations.has(key) || draftTitleMutations.has(key) || issue.number < 0));
       const dot = document.createElement("span");
       dot.className = "simple-status-dot";
       dot.style.background = STATUS_METADATA[stage].color;
@@ -11031,22 +11351,47 @@ Blocked by ${blockerRef}`;
       const content = document.createElement("div");
       content.className = "simple-content";
       if (editable) {
+        const savedEdit = pendingDraftEdits.get(key);
         const title = document.createElement("input");
         title.className = "form-ctrl simple-title";
-        title.value = issue.title;
-        title.disabled = busy;
+        title.value = savedEdit?.title !== void 0 ? savedEdit.title : issue.title;
+        title.disabled = titleBusy;
         title.setAttribute("aria-label", `Title for draft #${issue.number}`);
-        title.addEventListener("blur", () => {
-          if (!title.value.trim()) title.value = issue.title;
+        title.addEventListener("input", () => {
+          if (title.value === issue.title) clearPendingDraftField(key, "title");
+          else setPendingDraftField(key, "title", title.value);
+        });
+        title.addEventListener("blur", (event) => {
+          if (isRenderingSimpleListView || title.isConnected === false) return;
+          const relatedEl = event?.relatedTarget;
+          if (relatedEl && (relatedEl === elBtnRefresh || elBtnRefresh?.contains(relatedEl))) {
+            pendingDraftFocusTarget = {
+              key,
+              field: "title",
+              selectionStart: typeof title.selectionStart === "number" ? title.selectionStart : null,
+              selectionEnd: typeof title.selectionEnd === "number" ? title.selectionEnd : null
+            };
+            return;
+          }
+          const related = snapshotDraftElementFocus(relatedEl);
+          if (related) pendingDraftFocusTarget = related;
+          if (!title.value.trim()) {
+            title.value = issue.title;
+            clearPendingDraftField(key, "title");
+          }
           void editDraftTitle(issue, title.value);
         });
         title.addEventListener("keydown", (event) => {
+          if (event.key === "Tab" && !event.shiftKey) {
+            pendingDraftFocusTarget = { key, field: "description", selectionStart: null, selectionEnd: null };
+          }
           if (event.key === "Enter") {
             event.preventDefault();
             title.blur();
           }
           if (event.key === "Escape") {
             title.value = issue.title;
+            clearPendingDraftField(key, "title");
             title.blur();
           }
         });
@@ -11054,12 +11399,32 @@ Blocked by ${blockerRef}`;
         const description = document.createElement("textarea");
         description.className = "form-ctrl simple-description";
         description.rows = 1;
-        description.value = stripOrderMarker(issue.body || "");
-        const originalDescription = description.value;
+        const originalDescription = stripOrderMarker(issue.body || "");
+        description.value = savedEdit?.description !== void 0 ? savedEdit.description : originalDescription;
         description.placeholder = "Add description\u2026";
-        description.disabled = busy;
+        description.disabled = bodyBusy;
         description.setAttribute("aria-label", `Description for draft #${issue.number}`);
-        description.addEventListener("blur", () => {
+        description.addEventListener("input", () => {
+          if (description.value.replace(/\r\n/g, "\n") === originalDescription.replace(/\r\n/g, "\n")) {
+            clearPendingDraftField(key, "description");
+          } else {
+            setPendingDraftField(key, "description", description.value);
+          }
+        });
+        description.addEventListener("blur", (event) => {
+          if (isRenderingSimpleListView || description.isConnected === false) return;
+          const relatedEl = event?.relatedTarget;
+          if (relatedEl && (relatedEl === elBtnRefresh || elBtnRefresh?.contains(relatedEl))) {
+            pendingDraftFocusTarget = {
+              key,
+              field: "description",
+              selectionStart: typeof description.selectionStart === "number" ? description.selectionStart : null,
+              selectionEnd: typeof description.selectionEnd === "number" ? description.selectionEnd : null
+            };
+            return;
+          }
+          const related = snapshotDraftElementFocus(relatedEl);
+          if (related) pendingDraftFocusTarget = related;
           void editDraftDescription(issue, description.value, originalDescription);
         });
         description.addEventListener("keydown", (event) => {
@@ -11069,6 +11434,7 @@ Blocked by ${blockerRef}`;
           }
           if (event.key === "Escape") {
             description.value = originalDescription;
+            clearPendingDraftField(key, "description");
             description.blur();
           }
         });
@@ -11077,7 +11443,7 @@ Blocked by ${blockerRef}`;
         const title = document.createElement("button");
         title.className = "simple-title";
         title.textContent = issue.title || `Issue #${issue.number}`;
-        title.disabled = busy;
+        title.disabled = bodyBusy;
         title.addEventListener("click", () => openDrawer(issue));
         content.appendChild(title);
         const preview = getIssueDescriptionPreview(issue.body);
@@ -11089,12 +11455,19 @@ Blocked by ${blockerRef}`;
         }
       }
       row.appendChild(content);
+      if (unconfirmed) {
+        const badge = document.createElement("span");
+        badge.className = "badge-unconfirmed";
+        badge.title = "Outcome unknown \u2014 refresh to reconcile before modifying";
+        badge.textContent = "unconfirmed";
+        row.appendChild(badge);
+      }
       if (isAllProjectsMode && repo) {
         if (editable) {
           const select = projectPicker(repo, `Project for draft #${issue.number}`);
-          select.disabled = busy;
+          select.disabled = titleBusy;
           select.addEventListener("change", () => {
-            void transferDraftProject(issue, select.value);
+            void transferDraftProject(issue, select.value, select);
           });
           row.appendChild(select);
         } else {
@@ -11105,6 +11478,35 @@ Blocked by ${blockerRef}`;
           row.appendChild(pill);
         }
       }
+      if (editable) {
+        const moveControls = document.createElement("div");
+        moveControls.className = "simple-move-controls";
+        const moveUp = document.createElement("button");
+        moveUp.type = "button";
+        moveUp.className = "simple-move-btn simple-move-up";
+        moveUp.textContent = "\u2191";
+        moveUp.title = `Move draft #${issue.number} up`;
+        moveUp.setAttribute("aria-label", `Move draft #${issue.number} up`);
+        moveUp.disabled = titleBusy || rowIndex <= 0;
+        moveUp.addEventListener("click", (event) => {
+          event.stopPropagation();
+          void reorderDraft(issue, sorted, rowIndex - 1);
+        });
+        const moveDown = document.createElement("button");
+        moveDown.type = "button";
+        moveDown.className = "simple-move-btn simple-move-down";
+        moveDown.textContent = "\u2193";
+        moveDown.title = `Move draft #${issue.number} down`;
+        moveDown.setAttribute("aria-label", `Move draft #${issue.number} down`);
+        moveDown.disabled = titleBusy || rowIndex >= sorted.length - 1;
+        moveDown.addEventListener("click", (event) => {
+          event.stopPropagation();
+          void reorderDraft(issue, sorted, rowIndex + 1);
+        });
+        moveControls.appendChild(moveUp);
+        moveControls.appendChild(moveDown);
+        row.appendChild(moveControls);
+      }
       row.addEventListener("keydown", (event) => {
         if (editable && event.altKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
           event.preventDefault();
@@ -11114,7 +11516,7 @@ Blocked by ${blockerRef}`;
           openDrawer(issue);
         }
       });
-      if (editable && !busy) {
+      if (editable && !titleBusy) {
         row.draggable = true;
         row.addEventListener("dragstart", (event) => {
           draggedDraftKey = key;
@@ -11137,6 +11539,7 @@ Blocked by ${blockerRef}`;
       elSimpleListViewContainer.appendChild(row);
     }
     if (quickCapture) renderDraftAddRow();
+    restoreDraftElementFocus(focusToRestore);
   }
   function renderDraftAddRow() {
     const add = document.createElement("div");
@@ -11234,14 +11637,18 @@ Blocked by ${blockerRef}`;
     }
   }
   async function editDraftTitle(issue, value) {
-    const title = value.trim();
-    if (!title || title === issue.title) return;
     const repo = repoForIssue(issue);
     const key = issueWriteKey(repo, issue);
-    if (draftMutations.has(key) || issue.unconfirmed) return;
-    draftMutations.add(key);
+    const title = value.trim();
+    if (!title || title === issue.title) {
+      clearPendingDraftField(key, "title");
+      return;
+    }
+    if (draftMutations.has(key) || draftTitleMutations.has(key) || issue.unconfirmed) return;
+    draftTitleMutations.add(key);
     const previous = issue.title;
     const finish = trackIssueWrite(repo, issue, ["record"]);
+    clearPendingDraftField(key, "title");
     issue.title = title;
     renderViews();
     try {
@@ -11255,22 +11662,40 @@ Blocked by ${blockerRef}`;
       findIssueRecord(repo, issue).title = previous;
       void host.toast({ kind: "error", message: `Could not rename draft: ${err.message}` });
     } finally {
-      draftMutations.delete(key);
+      draftTitleMutations.delete(key);
       issueCache.delete(repo);
       renderViews();
     }
   }
   async function editDraftDescription(issue, value, original) {
-    if (value === original) return;
+    const normalizeEol = (s) => (s || "").replace(/\r\n/g, "\n");
     const key = issueWriteKey(repoForIssue(issue), issue);
-    if (draftMutations.has(key)) return;
+    if (normalizeEol(value) === normalizeEol(original)) {
+      clearPendingDraftField(key, "description");
+      return;
+    }
+    if (draftMutations.has(key) || issue.unconfirmed) return;
     draftMutations.add(key);
+    setPendingDraftField(key, "description", value);
     try {
       const fresh = await reloadIssueBeforeMutation(issue);
       if (!fresh) throw new Error("Could not refresh draft; nothing was overwritten");
-      if (stripOrderMarker(fresh.body) !== original) throw new Error("Description changed remotely; review the refreshed draft before editing again");
+      if (normalizeEol(stripOrderMarker(fresh.body)) !== normalizeEol(original)) {
+        clearPendingDraftField(key, "description");
+        throw new Error("Description changed remotely; review the refreshed draft before editing again");
+      }
       const order = parseOrderMarker(fresh.body);
-      await updateIssueBody(issue, order === null ? stripOrderMarker(value) : setOrderMarker(value, order), { suppressToast: true });
+      const eolValue = fresh.body.includes("\r\n") ? normalizeEol(value).replace(/\n/g, "\r\n") : value;
+      const ok = await updateIssueBody(
+        issue,
+        order === null ? stripOrderMarker(eolValue) : setOrderMarker(eolValue, order),
+        { suppressToast: true }
+      );
+      if (ok) {
+        clearPendingDraftField(key, "description");
+      } else {
+        setPendingDraftField(key, "description", value);
+      }
     } catch (err) {
       void host.toast({ kind: "error", message: err.message });
     } finally {
@@ -11279,39 +11704,56 @@ Blocked by ${blockerRef}`;
     }
   }
   async function reorderDraft(issue, displayed, targetIndex) {
-    if (draftReorderBusy || targetIndex < 0 || targetIndex >= displayed.length) return;
-    if (viewState.sort !== "manual") {
+    if (draftReorderBusy || issue.unconfirmed || targetIndex < 0 || targetIndex >= displayed.length) return;
+    const switchedToManual = viewState.sort !== "manual";
+    if (switchedToManual) {
       viewState.sort = "manual";
       rememberViewState();
-      renderViews();
-      void host.toast({ kind: "info", message: "Switched to Manual order. Move the draft again in this order." });
-      return;
+      void host.toast({ kind: "info", message: "Switched to Manual order." });
     }
+    const displayedFrom = displayed.indexOf(issue);
     const target = displayed[targetIndex];
     const ordered = sortByManualOrder(displayed.filter((entry) => resolveIssueColumn3(entry) === "draft" && entry.number > 0));
     const from = ordered.indexOf(issue);
     const to = ordered.indexOf(target);
-    if (from < 0 || to < 0 || from === to) return;
+    const directionMismatch = switchedToManual && displayedFrom >= 0 && (targetIndex < displayedFrom && to > from || targetIndex > displayedFrom && to < from);
+    if (from < 0 || to < 0 || from === to || directionMismatch) {
+      renderViews();
+      return;
+    }
     const move = computeMove(ordered, from, to);
-    if (!move) {
-      void host.toast({ kind: "info", message: "That slot needs more than one marker write, or its order gap is full. Move an unordered draft to the top first." });
+    if (!move || move.length === 0) {
+      void host.toast({ kind: "info", message: "Order gap is full; move cancelled." });
+      renderViews();
       return;
     }
     const rest = ordered.filter((entry) => entry !== issue);
     const neighbours = [rest[to - 1], rest[to]].filter((entry) => !!entry);
-    const participants = [issue, ...neighbours];
+    const writtenIssues = move.map((step) => ordered[step.index]).filter((entry) => !!entry);
+    const participants = Array.from(/* @__PURE__ */ new Set([issue, ...writtenIssues, ...neighbours]));
+    if (participants.some((entry) => Boolean(entry.unconfirmed))) return;
     const keys = participants.map((entry) => issueWriteKey(repoForIssue(entry), entry));
-    if (keys.some((key) => draftMutations.has(key) || Array.from(issueWriteTrackers.get(key)?.values() || []).some((write) => write.pending > 0))) return;
+    if (keys.some(
+      (key) => draftMutations.has(key) || draftTitleMutations.has(key) || Array.from(issueWriteTrackers.get(key)?.values() || []).some((write) => write.pending > 0)
+    )) {
+      return;
+    }
     draftReorderBusy = true;
     keys.forEach((key) => draftMutations.add(key));
     try {
       const before = participants.map((entry) => parseOrderMarker(entry.body));
       const fresh = await Promise.all(participants.map(reloadIssueBeforeMutation));
       if (fresh.some((entry) => !entry)) throw new Error("Could not refresh draft order; move cancelled");
-      if (participants.some((entry, index) => parseOrderMarker(entry.body) !== before[index])) throw new Error("Order changed while moving; try again");
+      if (participants.some((entry, index) => parseOrderMarker(entry.body) !== before[index])) {
+        throw new Error("Order changed while moving; try again");
+      }
       const freshMove = computeMove(ordered, from, to);
-      if (!freshMove) throw new Error("Order gap is full; move cancelled");
-      await updateIssueBody(issue, setOrderMarker(fresh[0].body, freshMove.order), { suppressToast: true });
+      if (!freshMove || freshMove.length === 0) throw new Error("Order gap is full; move cancelled");
+      for (const step of freshMove) {
+        const targetIssue = ordered[step.index];
+        const ok = await updateIssueBody(targetIssue, setOrderMarker(targetIssue.body, step.order), { suppressToast: true });
+        if (!ok) break;
+      }
     } catch (err) {
       void host.toast({ kind: "error", message: `Could not reorder draft: ${err.message}` });
     } finally {
@@ -11321,49 +11763,105 @@ Blocked by ${blockerRef}`;
       Array.from(elSimpleListViewContainer.querySelectorAll("[data-draft-key]")).find((row) => row.getAttribute("data-draft-key") === issueWriteKey(repoForIssue(issue), issue))?.focus();
     }
   }
-  async function transferDraftProject(issue, targetRepo) {
+  async function transferDraftProject(issue, targetRepo, selectEl) {
     const repo = repoForIssue(issue);
     const key = issueWriteKey(repo, issue);
-    if (repo.toLowerCase() === targetRepo.toLowerCase() || draftMutations.has(key)) return;
+    const resetSelect = () => {
+      if (selectEl) {
+        selectEl.value = repo;
+        selectEl.title = repo;
+      }
+      const rowSelect = Array.from(elSimpleListViewContainer.querySelectorAll("[data-draft-key]")).find((r) => r.getAttribute("data-draft-key") === key)?.querySelector(".simple-project");
+      if (rowSelect) {
+        rowSelect.value = repo;
+        rowSelect.title = repo;
+      }
+    };
+    if (!repo || !targetRepo || repo.toLowerCase() === targetRepo.toLowerCase() || draftMutations.has(key) || draftTitleMutations.has(key) || draftReorderBusy || Array.from(issueWriteTrackers.get(key)?.values() || []).some((write) => write.pending > 0) || issue.unconfirmed) {
+      resetSelect();
+      return;
+    }
+    const allowedTarget = availableProjectRepos().find((candidate) => candidate.toLowerCase() === targetRepo.toLowerCase());
+    if (!allowedTarget) {
+      resetSelect();
+      void host.toast({ kind: "error", message: `Could not move draft: unknown target project ${targetRepo}` });
+      return;
+    }
+    const sourceLabel = displayProjectName(repo) || repo;
+    const targetLabel = displayProjectName(allowedTarget) || allowedTarget;
+    const confirmMessage = `Move draft #${issue.number} from ${sourceLabel} (${repo}) to ${targetLabel} (${allowedTarget})? Its issue number and URL may change, and GitHub repository transfer permissions apply.`;
+    const confirmFn = typeof window.confirm === "function" ? window.confirm.bind(window) : null;
+    if (confirmFn && !confirmFn(confirmMessage)) {
+      resetSelect();
+      return;
+    }
     const oldNumber = issue.number;
     activeStreamEpoch++;
     isLoading = false;
     if (elIconRefresh) elIconRefresh.style.animation = "";
     draftMutations.add(key);
     renderViews();
+    let graphqlStarted = false;
     try {
       const [rawIssue, rawRepo] = await Promise.all([
         githubRequestWithRetry("GET", `/repos/${repo}/issues/${issue.number}`),
-        githubRequestWithRetry("GET", `/repos/${targetRepo}`)
+        githubRequestWithRetry("GET", `/repos/${allowedTarget}`)
       ]);
       if (!rawIssue?.node_id || !rawRepo?.node_id) throw new Error("GitHub did not return transfer IDs");
+      graphqlStarted = true;
       const result = await githubRequest("POST", "/graphql", {
         query: "mutation($issue:ID!,$repository:ID!){transferIssue(input:{issueId:$issue,repositoryId:$repository}){issue{number url repository{nameWithOwner}}}}",
         variables: { issue: rawIssue.node_id, repository: rawRepo.node_id }
       });
       const moved = result?.data?.transferIssue?.issue;
-      if (!moved) throw new Error(result?.errors?.[0]?.message || "Transfer outcome unknown; check GitHub before retrying");
+      if (!moved) {
+        if (Array.isArray(result?.errors) && result.errors.length > 0) {
+          graphqlStarted = false;
+          throw new Error(result.errors[0]?.message || "Transfer denied");
+        }
+        throw new Error("Transfer outcome unknown; check GitHub before retrying");
+      }
       activeStreamEpoch++;
       isLoading = false;
       if (elIconRefresh) elIconRefresh.style.animation = "";
       const published = findIssueRecord(repo, issue);
+      const oldEdit = pendingDraftEdits.get(key);
+      pendingDraftEdits.delete(key);
       for (const record of /* @__PURE__ */ new Set([issue, published])) {
+        delete record.unconfirmed;
         record.repo = moved.repository.nameWithOwner;
         record.number = moved.number;
         record.html_url = moved.url;
-        record.projectId = allProjects.find((project) => getProjectRepoFullName(project)?.toLowerCase() === targetRepo.toLowerCase())?.id;
+        record.projectId = allProjects.find((project) => getProjectRepoFullName(project)?.toLowerCase() === allowedTarget.toLowerCase())?.id;
+      }
+      if (oldEdit) {
+        pendingDraftEdits.set(issueWriteKey(moved.repository.nameWithOwner, moved.number), oldEdit);
       }
       selectedIssueNumbers.delete(oldNumber);
       commentsCache.clear();
       drawerGeneration++;
-      admitIssueRecord(targetRepo, published);
+      issueWriteTrackers.delete(key);
+      admitIssueRecord(moved.repository.nameWithOwner, published);
       if (activeIssue === issue || activeIssue === published) renderDrawer(published, true);
       issueCache.delete(repo);
-      issueCache.delete(targetRepo);
+      issueCache.delete(allowedTarget);
       issueCache.delete(ALL_PROJECTS_CACHE_KEY);
-      void host.toast({ kind: "success", message: `Draft moved to ${displayProjectName(targetRepo)}` });
+      void host.toast({ kind: "success", message: `Draft moved to ${displayProjectName(moved.repository.nameWithOwner)}` });
     } catch (err) {
-      void host.toast({ kind: "error", message: `Could not move draft: ${err.message}` });
+      if (graphqlStarted && !isDefinitivePreCommitRejection(err)) {
+        const published = findIssueRecord(repo, issue);
+        issue.unconfirmed = true;
+        published.unconfirmed = true;
+        issueCache.delete(repo);
+        issueCache.delete(allowedTarget);
+        issueCache.delete(ALL_PROJECTS_CACHE_KEY);
+        void host.toast({
+          kind: "error",
+          message: `Transfer outcome unknown for #${issue.number} \u2014 refresh to reconcile ${sourceLabel} and ${targetLabel} before modifying.`
+        });
+      } else {
+        void host.toast({ kind: "error", message: `Could not move draft: ${err.message}` });
+      }
     } finally {
       draftMutations.delete(key);
       renderViews();
@@ -13027,6 +13525,7 @@ Blocked by ${blockerRef}`;
     const card = document.createElement("div");
     card.className = "graph-card";
     card.dataset.issueNumber = String(node.issue.number);
+    card.dataset.issueKey = node.key || `${getIssueRepoFullName(node.issue) || ""}#${node.issue.number}`;
     card.setAttribute("tabindex", "0");
     card.setAttribute("role", "button");
     card.setAttribute("aria-label", `Issue #${node.issue.number}: ${node.issue.title}`);
@@ -13146,19 +13645,19 @@ Blocked by ${blockerRef}`;
     elGraphSvgOverlay.setAttribute("height", String(canvasH));
     elGraphSvgOverlay.setAttribute("viewBox", `0 0 ${canvasW} ${canvasH}`);
     const canvasRect = elGraphCanvas.getBoundingClientRect();
-    const cardElements = /* @__PURE__ */ new Map();
-    elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
-      const num = parseInt(card.dataset.issueNumber || "0", 10);
-      if (num > 0) cardElements.set(num, card);
-    });
     const cardRects = /* @__PURE__ */ new Map();
-    cardElements.forEach((card, num) => {
-      cardRects.set(num, card.getBoundingClientRect());
+    const cardRectsByKey = /* @__PURE__ */ new Map();
+    elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
+      const rect = card.getBoundingClientRect();
+      const key = card.dataset.issueKey || "";
+      if (key) cardRectsByKey.set(key.toLowerCase(), rect);
+      const num = parseInt(card.dataset.issueNumber || "0", 10);
+      if (num > 0 && !cardRects.has(num)) cardRects.set(num, rect);
     });
     const edgeFragment = document.createDocumentFragment();
     for (const edge of graph.edges) {
-      const sourceRect = cardRects.get(edge.from);
-      const targetRect = cardRects.get(edge.to);
+      const sourceRect = (edge.fromKey ? cardRectsByKey.get(edge.fromKey.toLowerCase()) : void 0) || cardRects.get(edge.from);
+      const targetRect = (edge.toKey ? cardRectsByKey.get(edge.toKey.toLowerCase()) : void 0) || cardRects.get(edge.to);
       if (!sourceRect || !targetRect) continue;
       const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
       const edgeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -13258,7 +13757,9 @@ Blocked by ${blockerRef}`;
       const doneCount = Array.from(graph.nodes.values()).filter((n) => n.isDone).length;
       txtGraphStatDone.textContent = `${doneCount} Done`;
     }
-    const visibleNumbers = new Set(Array.from(graph.nodes.values()).map((node) => node.issue.number));
+    const visibleNumbers = new Set(
+      Array.from(graph.nodes.values()).map((node) => `${getIssueRepoFullName(node.issue) || ""}#${node.issue.number}`)
+    );
     elGraphLayers.innerHTML = "";
     if (visibleNumbers.size === 0) {
       elGraphLayers.innerHTML = `
@@ -13270,7 +13771,7 @@ Blocked by ${blockerRef}`;
       return;
     }
     graph.layers.forEach((layerNodes, layerIdx) => {
-      const layerVisible = layerNodes.filter((n) => visibleNumbers.has(n.issue.number)).sort((a, b) => filteredIssues.indexOf(a.issue) - filteredIssues.indexOf(b.issue));
+      const layerVisible = layerNodes.filter((n) => visibleNumbers.has(`${getIssueRepoFullName(n.issue) || ""}#${n.issue.number}`)).sort((a, b) => filteredIssues.indexOf(a.issue) - filteredIssues.indexOf(b.issue));
       if (layerVisible.length === 0) return;
       const rowEl = document.createElement("div");
       rowEl.className = "graph-layer-row";
@@ -15418,7 +15919,21 @@ Blocked by ${blockerRef}`;
       closeViewPicker();
       elFilterPopover.style.display = opening ? "flex" : "none";
       elBtnFilterToggle.setAttribute("aria-expanded", String(opening));
-      if (opening) elFilterPopover.querySelector("button")?.focus();
+      if (opening) {
+        elFilterPopover.style.left = "0px";
+        elFilterPopover.style.right = "auto";
+        const rect = elFilterPopover.getBoundingClientRect();
+        const viewportW = window.innerWidth || document.documentElement?.clientWidth || 360;
+        if (rect.width > 0) {
+          if (rect.left < 8) {
+            elFilterPopover.style.left = `${Math.round(8 - rect.left)}px`;
+          } else if (rect.right > viewportW - 8) {
+            const shift = Math.min(rect.left - 8, rect.right - (viewportW - 8));
+            if (shift > 0) elFilterPopover.style.left = `${Math.round(-shift)}px`;
+          }
+        }
+        elFilterPopover.querySelector("button")?.focus();
+      }
     });
     elFilterPopover.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
@@ -16012,8 +16527,9 @@ Blocked by ${blockerRef}`;
     }
     elBtnEditDescription.addEventListener("click", () => {
       if (!activeIssue) return;
-      elDrawerDescriptionTextarea.value = stripOrderMarker(activeIssue.body || "");
-      elDrawerDescriptionTextarea.dataset.originalDescription = elDrawerDescriptionTextarea.value;
+      const rawWithoutMarker = stripOrderMarker(activeIssue.body || "");
+      elDrawerDescriptionTextarea.value = rawWithoutMarker;
+      elDrawerDescriptionTextarea.dataset.originalDescription = rawWithoutMarker;
       elDrawerDescriptionViewBox.style.display = "none";
       elDrawerDescriptionEditBox.style.display = "flex";
       elDrawerDescriptionTextarea.focus();

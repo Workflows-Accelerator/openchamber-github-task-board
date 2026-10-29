@@ -227,6 +227,10 @@ export function createTestApp(options = {}) {
         if (name === 'id') {
           el.id = strVal;
         }
+        if (name.startsWith('data-')) {
+          const prop = name.slice(5).replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+          el.dataset[prop] = strVal;
+        }
       },
       getAttribute: function (name) {
         if (name === 'class') {
@@ -348,6 +352,12 @@ export function createTestApp(options = {}) {
         el.children = [];
       },
       value: '',
+      selectionStart: null,
+      selectionEnd: null,
+      setSelectionRange: function (start, end) {
+        el.selectionStart = start;
+        el.selectionEnd = end;
+      },
       checked: false,
       disabled: false,
       focus: () => { mockDoc.activeElement = el; },
@@ -458,6 +468,12 @@ export function createTestApp(options = {}) {
 
   const mockWindow = {
     document: mockDoc,
+    innerWidth: options.innerWidth || 980,
+    confirm: (message) => {
+      hostCalls.push({ type: 'confirm', payload: { message } });
+      if (typeof options.onConfirm === 'function') return Boolean(options.onConfirm(message));
+      return true;
+    },
     addEventListener: (type, listener) => {
       if (type === 'message') messageListener = listener;
     },

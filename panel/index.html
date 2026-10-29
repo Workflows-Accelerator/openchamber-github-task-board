@@ -3426,7 +3426,7 @@
     .view-opt-item { width: 100%; background: transparent; color: var(--fg); border: 0; text-align: left; font: inherit; }
     .sort-control { display: flex; align-items: center; gap: 4px; font-size: 11px; }
     .sort-control select { max-width: 150px; }
-    .filter-popover { top: 32px; left: auto; right: 0; width: min(320px, calc(100vw - 24px)); padding: 10px; gap: 10px; max-height: 60vh; overflow-y: auto; }
+    .filter-popover { top: 32px; left: 0; right: auto; width: min(320px, calc(100vw - 16px)); max-width: calc(100vw - 16px); padding: 10px; gap: 10px; max-height: 60vh; overflow-y: auto; }
     .filter-group { display: flex; flex-wrap: wrap; gap: 6px; }
     .filter-group-title { width: 100%; color: var(--fg-muted); font-size: 11px; }
     .filter-chip { background: var(--surf); color: var(--fg); border: 1px solid var(--border); border-radius: 12px; padding: 3px 8px; cursor: pointer; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3443,6 +3443,10 @@
     .simple-row input { background: transparent; border-color: transparent; }
     .simple-row textarea { background: transparent; border-color: transparent; min-height: 25px; resize: vertical; }
     .simple-project { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
+    .simple-move-controls { display: inline-flex; flex-direction: column; gap: 2px; flex-shrink: 0; align-self: center; }
+    .simple-move-btn { background: transparent; color: var(--fg-muted); border: 1px solid var(--border-subtle); border-radius: 4px; width: 22px; height: 20px; padding: 0; font-size: 10px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+    .simple-move-btn:hover:not(:disabled) { color: var(--fg); border-color: var(--prim); background: var(--surf); }
+    .simple-move-btn:disabled { opacity: 0.35; cursor: default; }
     .simple-add { position: sticky; bottom: 0; margin-top: auto; background: var(--bg); padding: 10px 4px; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--border); }
     .simple-add-top { display: flex; align-items: center; gap: 6px; }
     .simple-add-top input { flex: 1; }
