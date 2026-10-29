@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
+import os from 'node:os';
+import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import { startFakeGitHub, makeIssue } from './fake-github.mjs';
 import { loadConfig, describeConfig } from '../server/config.ts';
@@ -54,12 +56,19 @@ globalThis.fetch = (url, opts) => {
 const PRELOAD_FETCH_DATA_URI = `data:text/javascript;base64,${Buffer.from(PRELOAD_FETCH).toString('base64')}`;
 
 function runServerEntry(env) {
-  return spawnSync(process.execPath, ['web/server.ts'], {
-    cwd: ROOT,
-    env: { PATH: process.env.PATH, ...env },
-    encoding: 'utf8',
-    timeout: 10_000,
-  });
+  const sessionFile = env.BOARD_SESSION_FILE ?? path.join(os.tmpdir(), `test-board-sessions-${randomBytes(8).toString('hex')}.json`);
+  try {
+    return spawnSync(process.execPath, ['web/server.ts'], {
+      cwd: ROOT,
+      env: { PATH: process.env.PATH, BOARD_SESSION_FILE: sessionFile, ...env },
+      encoding: 'utf8',
+      timeout: 10_000,
+    });
+  } finally {
+    try {
+      if (!env.BOARD_SESSION_FILE && fs.existsSync(sessionFile)) fs.unlinkSync(sessionFile);
+    } catch {}
+  }
 }
 
 test('default bind host is loopback (127.0.0.1)', async () => {
@@ -175,12 +184,14 @@ test('/health returns version "unknown" when package.json cannot be read', async
 });
 
 test('BOARD_GITHUB_API_BASE in environment is ignored and upstream defaults to api.github.com', async () => {
+  const sessionFile = path.join(os.tmpdir(), `test-board-sessions-${randomBytes(8).toString('hex')}.json`);
   const env = {
     BOARD_GITHUB_TOKEN: SYNTHETIC_TOKEN,
     BOARD_GITHUB_LOGIN: 'board-owner',
     BOARD_REPO: 'owner/repo',
     BOARD_PASSWORD: BOARD_PASSWORD,
     BOARD_SESSION_SECRET: SESSION_SECRET,
+    BOARD_SESSION_FILE: sessionFile,
     BOARD_GITHUB_API_BASE: 'http://attacker-controlled.invalid:8888',
   };
   const config = loadConfig(env);
@@ -210,6 +221,7 @@ test('BOARD_GITHUB_API_BASE in environment is ignored and upstream defaults to a
   const app = await createBoardServer({
     config,
     fetchImpl: spyFetch,
+    sessionFilePath: sessionFile,
   });
   try {
     assert.ok(requestedUrls.length >= 2, 'expected GitHubClient to make startup verification requests');
@@ -222,6 +234,9 @@ test('BOARD_GITHUB_API_BASE in environment is ignored and upstream defaults to a
     }
   } finally {
     await app.close();
+    try {
+      if (fs.existsSync(sessionFile)) fs.unlinkSync(sessionFile);
+    } catch {}
   }
 });
 
@@ -291,6 +306,7 @@ test('existing authenticated routes still require the password', async () => {
 test('the start command serves /health', async () => {
   ensureBundleBuilt();
   const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
+  const sessionFile = path.join(os.tmpdir(), `test-board-sessions-${randomBytes(8).toString('hex')}.json`);
   let child = null;
   try {
     // Choose an available port
@@ -304,6 +320,7 @@ test('the start command serves /health', async () => {
       BOARD_REPO: fake.repo,
       BOARD_PASSWORD: BOARD_PASSWORD,
       BOARD_SESSION_SECRET: SESSION_SECRET,
+      BOARD_SESSION_FILE: sessionFile,
       BOARD_PORT: String(testPort),
       BOARD_HOST: '127.0.0.1',
     };
@@ -344,6 +361,9 @@ test('the start command serves /health', async () => {
     if (child && child.pid) {
       child.kill('SIGTERM');
     }
+    try {
+      if (fs.existsSync(sessionFile)) fs.unlinkSync(sessionFile);
+    } catch {}
     await fake.close();
   }
 });
@@ -351,6 +371,7 @@ test('the start command serves /health', async () => {
 test('npm run start:web package script serves /health', async () => {
   ensureBundleBuilt();
   const fake = await startFakeGitHub({ token: SYNTHETIC_TOKEN });
+  const sessionFile = path.join(os.tmpdir(), `test-board-sessions-${randomBytes(8).toString('hex')}.json`);
   let child = null;
   try {
     const testPort = 18789;
@@ -363,6 +384,7 @@ test('npm run start:web package script serves /health', async () => {
       BOARD_REPO: fake.repo,
       BOARD_PASSWORD: BOARD_PASSWORD,
       BOARD_SESSION_SECRET: SESSION_SECRET,
+      BOARD_SESSION_FILE: sessionFile,
       BOARD_PORT: String(testPort),
       BOARD_HOST: '127.0.0.1',
     };
@@ -404,6 +426,157 @@ test('npm run start:web package script serves /health', async () => {
         process.kill(-child.pid, 'SIGTERM');
       } catch {}
     }
+    try {
+      if (fs.existsSync(sessionFile)) fs.unlinkSync(sessionFile);
+    } catch {}
     await fake.close();
+  }
+});
+
+test('finding E behavioural regression: hosting server constructor isolates session store from default path', async () => {
+  const standInDir = fs.mkdtempSync(path.join(os.tmpdir(), 'standin-data-'));
+  const standInBoardDir = path.join(standInDir, 'board');
+  fs.mkdirSync(standInBoardDir, { recursive: true });
+  const standInSessionFile = path.join(standInBoardDir, 'sessions.json');
+
+  const isolatedDir = fs.mkdtempSync(path.join(os.tmpdir(), 'isolated-sessions-'));
+  const isolatedSessionFile = path.join(isolatedDir, 'sessions.json');
+
+  // Sentinel data placed into the private stand-in default store
+  const sentinelIdHash = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+  const sentinelPayload = {
+    version: 1,
+    sessions: {
+      [sentinelIdHash]: {
+        passwordFingerprint: 'sentinel-password-fingerprint-original',
+        createdAt: 1000000,
+        lastSeenAt: 1000000,
+        expiresAt: Date.now() + 86400000,
+        ip: '10.0.0.1',
+      },
+    },
+  };
+  const sentinelRaw = JSON.stringify(sentinelPayload, null, 2);
+  fs.writeFileSync(standInSessionFile, sentinelRaw, { mode: 0o600 });
+
+  const spyFetch = async (input) => {
+    const url = typeof input === 'string' ? input : input.url;
+    if (url.endsWith('/user')) {
+      return new Response(JSON.stringify({ login: 'board-owner' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    if (url.includes('/repos/')) {
+      return new Response(JSON.stringify({ full_name: 'owner/repo' }), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      });
+    }
+    return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+  };
+
+  try {
+    // 1. BEHAVIOURAL DISCRIMINATION: Demonstrate the previous buggy setup
+    // When BOARD_SESSION_FILE is omitted, loadConfig resolves sessionFilePath to the default store path
+    const buggyEnv = {
+      BOARD_GITHUB_TOKEN: SYNTHETIC_TOKEN,
+      BOARD_GITHUB_LOGIN: 'board-owner',
+      BOARD_REPO: 'owner/repo',
+      BOARD_PASSWORD: BOARD_PASSWORD,
+      BOARD_SESSION_SECRET: SESSION_SECRET,
+      OPENCHAMBER_DATA_DIR: standInDir, // defaults to stand-in store
+    };
+    const buggyConfig = loadConfig(buggyEnv);
+    assert.equal(buggyConfig.sessionFilePath, standInSessionFile);
+
+    // Buggy constructor flow: createBoardServer without explicit sessionFilePath
+    // loads and touches the stand-in default store
+    const buggyApp = await createBoardServer({
+      config: buggyConfig,
+      fetchImpl: spyFetch,
+    });
+    try {
+      const { port: buggyPort, host: buggyHost } = await buggyApp.listen(0, '127.0.0.1');
+      // With buggy setup, login mutates the stand-in default store
+      const buggyLoginRes = await fetch(`http://${buggyHost}:${buggyPort}/api/session`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: BOARD_PASSWORD }),
+      });
+      assert.equal(buggyLoginRes.status, 200);
+
+      // Verify buggy setup DID leak to and alter the stand-in default store
+      const buggyContent = fs.readFileSync(standInSessionFile, 'utf8');
+      assert.notEqual(
+        buggyContent,
+        sentinelRaw,
+        'buggy setup must leak and alter the default store (discriminating old buggy behavior)',
+      );
+      const parsedBuggy = JSON.parse(buggyContent);
+      assert.equal(
+        sentinelIdHash in parsedBuggy.sessions,
+        false,
+        'sentinel session was pruned/overwritten by buggy setup',
+      );
+    } finally {
+      await buggyApp.close();
+    }
+
+    // Reset sentinel back to original state
+    fs.writeFileSync(standInSessionFile, sentinelRaw, { mode: 0o600 });
+    assert.equal(fs.readFileSync(standInSessionFile, 'utf8'), sentinelRaw);
+
+    // 2. BEHAVIOURAL PROOF: Repaired setup isolates the session store
+    const repairedEnv = {
+      BOARD_GITHUB_TOKEN: SYNTHETIC_TOKEN,
+      BOARD_GITHUB_LOGIN: 'board-owner',
+      BOARD_REPO: 'owner/repo',
+      BOARD_PASSWORD: BOARD_PASSWORD,
+      BOARD_SESSION_SECRET: SESSION_SECRET,
+      BOARD_SESSION_FILE: isolatedSessionFile,
+      OPENCHAMBER_DATA_DIR: standInDir, // stand-in default store still present
+    };
+    const repairedConfig = loadConfig(repairedEnv);
+    assert.equal(repairedConfig.sessionFilePath, isolatedSessionFile);
+
+    const repairedApp = await createBoardServer({
+      config: repairedConfig,
+      fetchImpl: spyFetch,
+      sessionFilePath: isolatedSessionFile,
+    });
+    try {
+      const { port: repairedPort, host: repairedHost } = await repairedApp.listen(0, '127.0.0.1');
+      const loginRes = await fetch(`http://${repairedHost}:${repairedPort}/api/session`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: BOARD_PASSWORD }),
+      });
+      assert.equal(loginRes.status, 200);
+
+      // Verify the sentinel in the stand-in default store remains 100% UNTOUCHED
+      const standInContentAfter = fs.readFileSync(standInSessionFile, 'utf8');
+      assert.equal(
+        standInContentAfter,
+        sentinelRaw,
+        'sentinel in stand-in default store must remain completely unchanged',
+      );
+
+      // Verify the isolated store was created and used
+      assert.ok(fs.existsSync(isolatedSessionFile), 'isolated session store file must exist');
+      const isolatedContent = JSON.parse(fs.readFileSync(isolatedSessionFile, 'utf8'));
+      assert.equal(isolatedContent.version, 1);
+      assert.equal(Object.keys(isolatedContent.sessions).length, 1);
+      assert.equal(
+        sentinelIdHash in isolatedContent.sessions,
+        false,
+        'isolated store must contain only the newly created session',
+      );
+    } finally {
+      await repairedApp.close();
+    }
+  } finally {
+    fs.rmSync(standInDir, { recursive: true, force: true });
+    fs.rmSync(isolatedDir, { recursive: true, force: true });
   }
 });

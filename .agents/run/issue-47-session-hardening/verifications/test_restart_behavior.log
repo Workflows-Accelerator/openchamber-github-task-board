@@ -1,0 +1,25 @@
+=== INVARIANT 1: Deterministic scrypt salt from sessionSecret across loadConfig ===
+PASS: Independent loadConfig calls produce identical passwordHash across restarts
+=== INVARIANT 2: sessions.json enforced mode 0600 ===
+PASS: sessions.json enforces mode 0600
+=== INVARIANT 3: Zero plaintext secrets stored on disk ===
+PASS: Zero plaintext secrets, cookie values, or raw tokens present in sessions.json
+=== INVARIANT 4: Keyed by sha256(sessionId) and bound to passwordFingerprint ===
+PASS: Disk record is sha256 keyed and carries HMAC passwordFingerprint
+=== INVARIANT 5: Survives simulated restart and derives identical CSRF token ===
+PASS: Session restored across restart with identical derived CSRF token
+=== INVARIANT 6: Changing BOARD_PASSWORD or BOARD_SESSION_SECRET invalidates sessions ===
+PASS: Password or sessionSecret rotation invalidates old sessions immediately
+=== INVARIANT 7: BOARD_PASSWORD_HASH configuration determinism and rotation ===
+PASS: BOARD_PASSWORD_HASH supported deterministically across restarts
+=== INVARIANT 8: CSRF validation and replay resistance ===
+PASS: CSRF token derivation validates correctly and rejects mismatch/replay
+=== INVARIANT 9: Destroy/logout immediately purges entry from disk ===
+PASS: Destroy immediately purges disk entry and prevents resurrection
+=== INVARIANT 10: Legacy af9b39c session format dropped safely on load ===
+PASS: Legacy session schema dropped cleanly without crash
+=== INVARIANT 11: Corrupted files, bad JSON, truncated writes handled gracefully ===
+PASS: Corrupted JSON handled safely and self-heals on write
+=== INVARIANT 12: lastSeen throttling and maxSessions eviction ===
+PASS: Max sessions limit and eviction operate properly
+ALL L2 INVARIANTS VERIFIED SUCCESSFULLY (exit 0)
