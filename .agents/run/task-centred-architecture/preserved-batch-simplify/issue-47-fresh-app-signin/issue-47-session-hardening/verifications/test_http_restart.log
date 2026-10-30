@@ -1,0 +1,19 @@
+=== STEP 1: Start Server 1 with real loadConfig & POST /api/session login ===
+PASS: Login issued 30-day cookie and derived CSRF token
+=== STEP 2: Authenticated GET /api/session on Server 1 ===
+PASS: GET /api/session authenticated on Server 1
+=== STEP 3: Stop Server 1 and verify sessions.json mode 0600 & no secrets ===
+PASS: Server 1 shutdown cleanly, session file safe on disk (mode 0600)
+=== STEP 4: Start Server 2 with independent loadConfig and restore session ===
+PASS: Server 2 restored authenticated session and identical CSRF token
+=== STEP 5: CSRF validation & rejection on write endpoints ===
+PASS: Request without CSRF token received HTTP 403 csrf_rejected
+=== STEP 6: Successful logout with CSRF token (HTTP 204) and purge ===
+PASS: Logout destroyed session immediately
+=== STEP 7: Password rotation rejects old session across restart ===
+PASS: Rotated password invalidates sessions on next startup
+=== STEP 8: BOARD_PASSWORD_HASH lifecycle across restart & rotation ===
+PASS: BOARD_PASSWORD_HASH valid across restart and rejected after rotation
+=== STEP 9: Finding A audit (form-urlencoded POST receives HTTP 400 invalid_json) ===
+PASS: Finding A confirmed (native form POST returns HTTP 400 invalid_json)
+ALL L3 HTTP SERVER LIFECYCLE INVARIANTS VERIFIED SUCCESSFULLY (exit 0)

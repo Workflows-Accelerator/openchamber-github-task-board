@@ -1,0 +1,9 @@
+{"name":"offline reload hides persisted queue","serviceWorkerControlled":true,"loginError":"The board could not be reached. Reload to try again.","offlineRows":0,"persisted":[{"title":"Cold offline idea","description":"Saved before reload","order":1000}],"screenshot":"/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-hostile/verifications/screenshots/cold-offline-reload.png"}
+{"name":"late Mark Done completion replaces Beta drawer","visibleTitle":"Alpha","detailRepository":"owner/alpha","urlHash":"#/issue/1"}
+{"name":"real checkbox erases typed overview","overview":"Original","checkboxChecked":false,"serverBody":"## Overview\nOriginal\n\n## Acceptance Criteria\n- [ ] Toggle this\n\n## Open Questions\n- [ ] Pick [a] First or [b] Second?\n"}
+{"name":"drawer touch targets","smallTargets":[{"label":"First","width":51,"height":36},{"label":"Second?","width":77,"height":36}]}
+{"name":"drawer close focus","focus":{"tag":"BODY","id":"","hidden":false}}
+{"name":"partial refresh keeps successful repository rows","titles":["Alpha"],"emptyVisible":false}
+{"name":"partial refresh state","partial":true,"scopeText":"Partial refresh — results are NOT complete. Beta: Unavailable or refresh failed","emptyText":"No tasks loaded. Refresh incomplete, not an empty project.\n\nOpen issues appear here when they are created on GitHub.","addVisible":true}
+{"name":"all repo requests fail","partial":true,"emptyText":"No tasks loaded. Refresh incomplete, not an empty project.\n\nOpen issues appear here when they are created on GitHub."}
+{"name":"browser health","pageErrors":[]}

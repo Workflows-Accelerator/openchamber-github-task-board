@@ -1,0 +1,4 @@
+{"case":"repeat midpoint","successfulInsertions":53,"previous":1000,"next":1000.0000000000001,"midpoint":1000}
+{"case":"parse and rewrite","before":"```md\n<!-- board-order: 42 -->\n```","parsed":42,"after":"```md\n\n```\n\n<!-- board-order: 1500 -->"}
+{"case":"parse and rewrite","before":"<!-- board-order: 1000 -->\n\n<!-- board-order: 2000 -->","parsed":2000,"after":"<!-- board-order: 1500 -->"}
+{"case":"parse and rewrite","before":"<!-- board-ordering: 7 -->","parsed":null,"after":"<!-- board-ordering: 7 -->\n\n<!-- board-order: 1500 -->"}

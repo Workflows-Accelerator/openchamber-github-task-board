@@ -1,0 +1,3 @@
+e630a9ddd044389787a66f458b1ee49c944db250 fix(web): validate move target before source closure; verify phone sheets (#48)
+cc9ce3462aaf6039e0f09cf45afbb365771d1e44 feat(web): replace preset tabs with phone-first views, filters and draft capture (#48)
+42de557fb4341f432d80b3046b4c2dd813f51a5a feat(web): add conflict-safe draft edits, ordering, moves and project names (#48)

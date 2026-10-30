@@ -1,0 +1,16756 @@
+"use strict";
+(() => {
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/api-version.js
+  var OPENCHAMBER_SDK_CHANNEL = "openchamber.sdk";
+  var OPENCHAMBER_SDK_API_VERSION = 1;
+  var OPENCHAMBER_SDK_MANIFEST_API_VERSIONS = [1];
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/scrollbar-style.js
+  var GUEST_SCROLLING_ATTRIBUTE = "data-oc-scrolling";
+  var GUEST_SCROLLBAR_CSS = `
+:root {
+  /* Quiet at rest like the app's own thumbs; hover gives a clear grab target. */
+  --oc-scrollbar-thumb: color-mix(in srgb, var(--oc-muted, currentColor) 18%, transparent);
+  --oc-scrollbar-thumb-hover: color-mix(in srgb, var(--oc-muted, currentColor) 36%, transparent);
+  scrollbar-gutter: stable;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+:hover, [${GUEST_SCROLLING_ATTRIBUTE}] {
+  scrollbar-color: var(--oc-scrollbar-thumb) transparent;
+}
+/* Chromium's standard scrollbar properties otherwise override its pseudo-elements. */
+@supports selector(::-webkit-scrollbar) {
+  *, :hover, [${GUEST_SCROLLING_ATTRIBUTE}] { scrollbar-width: auto; scrollbar-color: auto; }
+  ::-webkit-scrollbar { width: 6px; height: 6px; background: transparent; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 999px;
+    min-width: 24px;
+    min-height: 24px;
+  }
+  :hover::-webkit-scrollbar-thumb, [${GUEST_SCROLLING_ATTRIBUTE}]::-webkit-scrollbar-thumb { background: var(--oc-scrollbar-thumb); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--oc-scrollbar-thumb-hover); }
+  ::-webkit-scrollbar-corner { background: transparent; }
+  ::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
+}
+@media (forced-colors: active) {
+  *, :hover, [${GUEST_SCROLLING_ATTRIBUTE}] { scrollbar-color: auto; }
+  ::-webkit-scrollbar-thumb, ::-webkit-scrollbar-thumb:hover { background: CanvasText; }
+}
+`;
+  function installGuestScrollbarActivity(doc) {
+    const root = doc.documentElement;
+    if (root.hasAttribute("data-oc-scrollbar-activity"))
+      return;
+    root.setAttribute("data-oc-scrollbar-activity", "");
+    const timers = /* @__PURE__ */ new WeakMap();
+    doc.addEventListener("scroll", (event) => {
+      const target = event.target === doc ? root : event.target;
+      if (!(target instanceof Element))
+        return;
+      if (!target.hasAttribute("data-oc-scrolling"))
+        target.setAttribute("data-oc-scrolling", "");
+      const pending = timers.get(target);
+      if (pending !== void 0)
+        clearTimeout(pending);
+      timers.set(target, setTimeout(() => {
+        timers.delete(target);
+        target.removeAttribute("data-oc-scrolling");
+      }, 1e3));
+    }, { capture: true, passive: true });
+  }
+  var GUEST_SCROLLBAR_SCRIPT = `(${installGuestScrollbarActivity.toString()})(document);`;
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/workspace.js
+  var GUEST_STORAGE_KEY_MAX = 128;
+  var GUEST_STORAGE_VALUE_BYTES = 65536;
+  var GUEST_STORAGE_TOTAL_BYTES = 2097152;
+  var GUEST_DEVICE_STORAGE_TOTAL_BYTES = 16777216;
+  var GUEST_STORAGE_KEYS_MAX = 2e3;
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/shells.js
+  var GUEST_SHELL_ID_MAX = 128;
+  var GUEST_SHELLS_MAX = 200;
+  var GUEST_SHELL_OUTPUT_TAIL_MAX = 65536;
+  var GUEST_SHELL_END_STATUSES = ["exited", "timeout", "killed", "stopped", "unknown"];
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-controls.js
+  var GUEST_STATUS_CONTROLS_MAX = 4;
+  var GUEST_STATUS_CONTROL_ID = /^[a-z][a-z0-9-]{0,39}$/;
+  var GUEST_STATUS_CONTROL_LABEL_MAX = 60;
+  var GUEST_STATUS_CONTROL_OPTIONS_MAX = 16;
+  var GUEST_STATUS_CONTROL_VALUE_MAX = 80;
+  var isControlObject = (value) => Object(value) === value && !Array.isArray(value);
+  var hasOnlyKeys = (value, keys) => Object.keys(value).every((key) => keys.includes(key));
+  var isLabel = (value) => String(value) === value && value.length >= 1 && value.length <= GUEST_STATUS_CONTROL_LABEL_MAX;
+  var isValue = (value) => String(value) === value && value.length >= 1 && value.length <= GUEST_STATUS_CONTROL_VALUE_MAX;
+  var isGuestStatusControls = (controls) => {
+    if (!Array.isArray(controls) || controls.length > GUEST_STATUS_CONTROLS_MAX)
+      return false;
+    const ids = /* @__PURE__ */ new Set();
+    for (const control of controls) {
+      if (!isControlObject(control) || !GUEST_STATUS_CONTROL_ID.test(control.id) || !isLabel(control.label))
+        return false;
+      if (control.disabled !== void 0 && control.disabled !== true && control.disabled !== false)
+        return false;
+      if (ids.has(control.id))
+        return false;
+      ids.add(control.id);
+      if (control.kind === "button") {
+        if (!hasOnlyKeys(control, ["kind", "id", "label", "disabled"]))
+          return false;
+        continue;
+      }
+      if (control.kind !== "select" || !hasOnlyKeys(control, ["kind", "id", "label", "value", "options", "disabled"]))
+        return false;
+      if (!isValue(control.value) || !Array.isArray(control.options) || control.options.length < 1 || control.options.length > GUEST_STATUS_CONTROL_OPTIONS_MAX)
+        return false;
+      const values = /* @__PURE__ */ new Set();
+      for (const option of control.options) {
+        if (!isControlObject(option) || !hasOnlyKeys(option, ["value", "label"]) || !isValue(option.value) || !isLabel(option.label) || values.has(option.value))
+          return false;
+        values.add(option.value);
+      }
+      if (!values.has(control.value))
+        return false;
+    }
+    return true;
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/status-view.js
+  var GUEST_STATUS_SOURCE_INTERVAL_MIN = 1e3;
+  var GUEST_STATUS_SOURCE_INTERVAL_MAX = 6e4;
+  var GUEST_STATUS_SOURCE_INTERVAL_DEFAULT = 2e3;
+  var GUEST_STATUS_VIEW_ROWS_MAX = 16;
+  var GUEST_STATUS_VIEW_ACTIONS_MAX = 2;
+  var GUEST_STATUS_VIEW_CHIPS_MAX = 6;
+  var GUEST_STATUS_VIEW_CHART_POINTS_MAX = 120;
+  var GUEST_STATUS_VIEW_SEGMENTS_MIN = 2;
+  var GUEST_STATUS_VIEW_SEGMENTS_MAX = 4;
+  var GUEST_STATUS_VIEW_TEXT_MAX = 200;
+  var GUEST_STATUS_VIEW_NOTE_MAX = 300;
+  var GUEST_STATUS_VIEW_ICON = /^[a-z0-9][a-z0-9-]{0,39}$/;
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/manifest.js
+  var PANEL_ID = /^[a-z][a-z0-9-]*$/;
+  var GUEST_SURFACE_DOCKS = ["top", "bottom", "left", "right"];
+  var GUEST_SURFACE_DOCK_DEFAULT = "top";
+  var GUEST_SURFACE_DOCK_SIZE_DEFAULT = 40;
+  var GUEST_SURFACE_DOCK_SIZE_MIN = 24;
+  var GUEST_SURFACE_DOCK_SIZE_MAX = 480;
+  var GUEST_STATUS_SECTION_TITLE_MAX = 60;
+  var GUEST_STATUS_SECTION_HEIGHT_MIN = 24;
+  var GUEST_STATUS_SECTION_HEIGHT_MAX = 320;
+  var GUEST_STATUS_SECTION_HEIGHT_DEFAULT = 120;
+  var GUEST_ACTIONS_MAX = 8;
+  var GUEST_ACTION_LABEL_MAX = 40;
+  var GUEST_COMMANDS_MAX = 8;
+  var GUEST_COMMAND_DESCRIPTION_MAX = 80;
+  var GUEST_COMMAND_NAME = /^[a-z][a-z0-9-]{0,23}$/;
+  var GUEST_TOOLS_MAX = 16;
+  var GUEST_TOOL_MATCH_MAX = 128;
+  var GUEST_TOOL_MATCH = /^[A-Za-z0-9_.:-]+\*?$/;
+  var GUEST_TOOL_NAME_MAX = 40;
+  var GUEST_TOOL_TEMPLATE_MAX = 200;
+  var GUEST_TOOL_TEMPLATE_VALUE_MAX = 200;
+  var GUEST_TOOL_LANGUAGE_MAX = 32;
+  var GUEST_TOOL_COLUMNS_MAX = 16;
+  var GUEST_TOOL_COLUMN_MAX = 64;
+  var GUEST_TOOL_OUTPUTS = ["auto", "text", "json", "markdown", "code", "table"];
+  var HOST_LINEAR_API_ORIGIN = "https://api.linear.app";
+  var resolveIntegrationAuth = (integration) => {
+    const kinds = [Boolean(integration.oauth), Boolean(integration.token), Boolean(integration.host)].filter(Boolean).length;
+    if (kinds !== 1) {
+      return null;
+    }
+    if (integration.host)
+      return "host";
+    return integration.oauth ? "oauth" : "token";
+  };
+  var resolveTokenAuthorization = (scheme) => {
+    if (scheme === "bearer" || scheme === "basic") {
+      return scheme;
+    }
+    return "header";
+  };
+  var resolveIntegrationApi = (integration) => {
+    if (integration.oauth) {
+      return {
+        apiOrigin: integration.oauth.apiOrigin,
+        account: integration.oauth.account,
+        authorization: "bearer"
+      };
+    }
+    if (integration.token) {
+      return {
+        apiOrigin: integration.token.apiOrigin,
+        account: integration.token.account,
+        authorization: resolveTokenAuthorization(integration.token.scheme)
+      };
+    }
+    if (integration.host?.provider === "linear") {
+      return {
+        apiOrigin: HOST_LINEAR_API_ORIGIN,
+        authorization: "bearer"
+      };
+    }
+    return null;
+  };
+  var GUEST_SERVICE_PROVIDES = ["browser", "source-control"];
+  var SOURCE_CONTROL_GUEST_ID_MAX = 28;
+  var sourceControlProviderIdOf = (guestId) => `ext-${guestId}`;
+  var SOURCE_CONTROL_DEFAULT_INSTANCES_MAX = 4;
+  var SOURCE_CONTROL_URL_TEMPLATES_MAX = 8;
+  var SOURCE_CONTROL_URL_TEMPLATE_MAX = 256;
+  var SOURCE_CONTROL_URL_TOKENS = ["{owner}", "{namespace+}", "{repo}", "{number}"];
+  var toPublicSourceControl = (contribution) => ({
+    label: contribution.label,
+    defaultInstances: [...contribution.instances.defaultInstances],
+    custom: contribution.instances.custom
+  });
+  var serviceProvides = (service, role) => Boolean(service?.provides?.includes(role));
+  var GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells", "conversation", "service", "network", "filesystem", "origins"];
+  var DECLARED_GUEST_CAPABILITIES = ["prompt", "sessions", "files", "model", "shells"];
+  var GUEST_ORIGINS_MAX = 8;
+  var GUEST_FILESYSTEM_PATTERNS_MAX = 16;
+  var GUEST_FILESYSTEM_PATTERN_MAX = 256;
+  var isGuestFilesystemPattern = (value) => {
+    if (value.length === 0 || value.length > GUEST_FILESYSTEM_PATTERN_MAX) {
+      return false;
+    }
+    if (value.includes("\0") || value.includes("\\")) {
+      return false;
+    }
+    if (!value.startsWith("/") && !value.startsWith("~/")) {
+      return false;
+    }
+    const segments = value.split("/").slice(1);
+    return !segments.some((segment) => segment === "" || segment === "..");
+  };
+  var guestActionsNeedConversation = (actions2) => Boolean(actions2?.some((action) => action.payload?.includes("messages")));
+  var requestedGuestCapabilities = (contributes) => {
+    const declared = new Set(contributes.capabilities ?? []);
+    if (guestActionsNeedConversation(contributes.actions))
+      declared.add("conversation");
+    if (contributes.service)
+      declared.add("service");
+    if (contributes.integration)
+      declared.add("network");
+    if (contributes.filesystem && contributes.filesystem.length > 0)
+      declared.add("filesystem");
+    if (contributes.origins && contributes.origins.length > 0)
+      declared.add("origins");
+    return GUEST_CAPABILITIES.filter((capability) => declared.has(capability));
+  };
+  var hasGuestPage = (contributes) => Boolean(contributes.panel.entry);
+  var isGuestApproved = (capabilities) => capabilities.requested.every((capability) => capabilities.granted.includes(capability));
+  var hasGuestCapability = (capabilities, capability) => capabilities.granted.includes(capability);
+  var isAttachObject = (attach) => attach !== void 0 && attach !== true && attach !== false && attach !== "panel" && attach !== "dialog";
+  var resolveAttachMode = (attach) => {
+    if (attach === true || attach === "panel")
+      return "panel";
+    if (attach === "dialog")
+      return "dialog";
+    if (isAttachObject(attach))
+      return attach.mode;
+    return null;
+  };
+  var resolveAttachEntry = (contributes) => {
+    const attach = contributes.attach;
+    if (!isAttachObject(attach) || attach.mode !== "dialog")
+      return null;
+    return attach.entry ?? null;
+  };
+  var resolvePageEntry = (contributes) => {
+    if (!contributes.page || !contributes.panel.entry)
+      return null;
+    return contributes.page === true ? contributes.panel.entry : contributes.page.entry;
+  };
+  var resolveStatusSectionEntry = (contributes) => {
+    const section = contributes.statusSection;
+    if (!section)
+      return null;
+    return section === true ? contributes.panel.entry ?? null : section.entry ?? null;
+  };
+  var resolveStatusSectionSource = (contributes) => {
+    const section = contributes.statusSection;
+    if (!section || section === true || !section.source)
+      return null;
+    return { path: section.source.path, interval: section.source.interval ?? GUEST_STATUS_SOURCE_INTERVAL_DEFAULT };
+  };
+  var clampStatusSectionHeight = (height) => {
+    if (!Number.isFinite(height))
+      return GUEST_STATUS_SECTION_HEIGHT_DEFAULT;
+    return Math.min(GUEST_STATUS_SECTION_HEIGHT_MAX, Math.max(GUEST_STATUS_SECTION_HEIGHT_MIN, Math.round(height)));
+  };
+  var isSafeAssetPath = (value) => {
+    if (value.includes("\0") || value.includes("\\") || value.startsWith("/") || value.includes("://")) {
+      return false;
+    }
+    const segments = value.split("/");
+    if (segments.some((segment) => segment === "" || segment === "." || segment === "..")) {
+      return false;
+    }
+    return /^[a-zA-Z0-9][a-zA-Z0-9._/-]*$/.test(value);
+  };
+  var isGuestPackageSvgIcon = (value) => isSafeAssetPath(value) && value.toLowerCase().endsWith(".svg");
+  var toPublicIntegration = (integration) => {
+    const auth = resolveIntegrationAuth(integration) ?? "oauth";
+    const next = {
+      name: integration.name,
+      description: integration.description,
+      auth
+    };
+    const api = resolveIntegrationApi(integration);
+    if (api?.apiOrigin) {
+      next.apiOrigin = api.apiOrigin;
+    }
+    if (auth === "token" && integration.token) {
+      next.token = { scheme: integration.token.scheme ?? "raw" };
+      if (integration.token.usernameLabel) {
+        next.token.usernameLabel = integration.token.usernameLabel;
+      }
+    }
+    if (integration.settings && integration.settings.length > 0) {
+      next.settings = integration.settings.map((field2) => ({
+        id: field2.id,
+        label: field2.label
+      }));
+    }
+    return next;
+  };
+  var toPublicService = (service, granted, socketBindings) => {
+    if (!service) {
+      return void 0;
+    }
+    const next = {
+      runtime: service.runtime,
+      granted
+    };
+    if (service.permissions) {
+      const permissions = {};
+      if (service.permissions.sockets && service.permissions.sockets.length > 0) {
+        permissions.sockets = service.permissions.sockets.map((binding) => binding.id);
+      }
+      if (service.permissions.exec && service.permissions.exec.length > 0) {
+        permissions.exec = [...service.permissions.exec];
+      }
+      if (permissions.sockets || permissions.exec) {
+        next.permissions = permissions;
+      }
+    }
+    if (socketBindings && socketBindings.length > 0) {
+      next.socketBindings = socketBindings.map((binding) => ({
+        id: binding.id,
+        candidates: [...binding.candidates],
+        resolved: binding.resolved,
+        override: binding.override
+      }));
+    }
+    if (service.provides && service.provides.length > 0) {
+      next.provides = [...service.provides];
+    }
+    if (service.surface) {
+      next.surface = true;
+    }
+    return next;
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/file-editor.js
+  var GUEST_FILE_EDITORS_MAX = 8;
+  var GUEST_FILE_EDITOR_TITLE_MAX = 60;
+  var GUEST_FILE_EDITOR_PATTERNS_MAX = 16;
+  var GUEST_FILE_EDITOR_PATTERN_MAX = 128;
+  var GUEST_FILE_EDITOR_CONTENT_MAX = 2e7;
+  var GUEST_FILE_EDITOR_VERSION_MAX = 256;
+  var isFileEditorPattern = (value) => value.length > 0 && value.length <= GUEST_FILE_EDITOR_PATTERN_MAX && !/[/\\\0]/.test(value) && /[^*?]/.test(value);
+  var patternExpressions = /* @__PURE__ */ new Map();
+  var patternExpression = (pattern) => {
+    const cached = patternExpressions.get(pattern);
+    if (cached)
+      return cached;
+    const source = pattern.split("").map((character) => {
+      if (character === "*")
+        return ".*";
+      if (character === "?")
+        return ".";
+      return character.replace(/[\\^$.|+()[\]{}]/g, "\\$&");
+    }).join("");
+    const expression = new RegExp(`^${source}$`, "is");
+    patternExpressions.set(pattern, expression);
+    return expression;
+  };
+  var matchesFileEditorPattern = (fileName, pattern) => isFileEditorPattern(pattern) && patternExpression(pattern).test(fileName);
+  var fileEditorPayloadSize = (value) => "bytes" in value ? value.bytes.byteLength : value.content.length;
+  var sameFileEditorDocument = (left, right) => {
+    if (left.path !== right.path || left.readOnly !== right.readOnly)
+      return false;
+    if (left.encoding === "text" || right.encoding === "text") {
+      return left.encoding === "text" && right.encoding === "text" && left.content === right.content;
+    }
+    if (left.bytes.byteLength !== right.bytes.byteLength)
+      return false;
+    for (let index = 0; index < left.bytes.byteLength; index += 1) {
+      if (left.bytes[index] !== right.bytes[index])
+        return false;
+    }
+    return true;
+  };
+  var createFileSaveTracker = (initialVersion) => {
+    let saved = initialVersion;
+    let live = initialVersion;
+    return {
+      /** A new live version; `edited` is true when it differs from the previous one. */
+      observe: (version) => {
+        const edited = version !== live;
+        live = version;
+        return { edited, dirty: version !== saved };
+      },
+      /** Records a written version; returns whether the live state is still dirty. */
+      markSaved: (version) => {
+        saved = version;
+        return live !== version;
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/popover.js
+  var GUEST_POPOVER_ID = /^[A-Za-z0-9_-]{1,80}$/;
+  var GUEST_POPOVER_COORDINATE_MAX = 1e5;
+  var GUEST_POPOVER_WIDTH_MIN = 160;
+  var GUEST_POPOVER_WIDTH_MAX = 640;
+  var GUEST_POPOVER_HEIGHT_MIN = 48;
+  var GUEST_POPOVER_HEIGHT_MAX = 480;
+  var GUEST_POPOVER_DATA_MAX = 16e3;
+  var GUEST_POPOVER_DATA_DEPTH_MAX = 32;
+  var GUEST_POPOVER_SIDES = ["left", "right", "top", "bottom"];
+  var GUEST_POPOVER_CLOSE_REASONS = ["escape", "outside", "anchor", "owner", "closed", "replaced"];
+  var hasBoundedJsonTree = (value, depth = 0, budget = { remaining: GUEST_POPOVER_DATA_MAX }) => {
+    if (--budget.remaining < 0 || depth >= GUEST_POPOVER_DATA_DEPTH_MAX)
+      return false;
+    if (value === null)
+      return true;
+    const children = Array.isArray(value) ? value : Object(value) === value ? Object.values(value) : [];
+    for (const item of children) {
+      if (!hasBoundedJsonTree(item, depth + 1, budget))
+        return false;
+    }
+    return true;
+  };
+  var isFiniteJson = (value) => {
+    if (value === null || value === true || value === false)
+      return true;
+    if (Array.isArray(value))
+      return Object.keys(value).every((key) => /^(0|[1-9]\d*)$/.test(key) && Number(key) < value.length) && value.every(isFiniteJson);
+    if (Object(value) === value) {
+      const prototype = Object.getPrototypeOf(value);
+      return (prototype === null || prototype === Object.prototype) && Object.values(value).every(isFiniteJson);
+    }
+    return String(value) === value || Number.isFinite(value);
+  };
+  var isGuestPopoverRequest = (request) => {
+    try {
+      if (String(request.id) !== request.id || !GUEST_POPOVER_ID.test(request.id) || !Number.isFinite(request.anchor.x) || Math.abs(request.anchor.x) > GUEST_POPOVER_COORDINATE_MAX || !Number.isFinite(request.anchor.y) || Math.abs(request.anchor.y) > GUEST_POPOVER_COORDINATE_MAX || !Number.isFinite(request.anchor.width) || !Number.isFinite(request.anchor.height) || request.anchor.width <= 0 || request.anchor.height <= 0 || request.anchor.width > GUEST_POPOVER_COORDINATE_MAX || request.anchor.height > GUEST_POPOVER_COORDINATE_MAX || !Number.isInteger(request.width) || request.width < GUEST_POPOVER_WIDTH_MIN || request.width > GUEST_POPOVER_WIDTH_MAX || !Number.isInteger(request.height) || request.height < GUEST_POPOVER_HEIGHT_MIN || request.height > GUEST_POPOVER_HEIGHT_MAX || request.side !== void 0 && !GUEST_POPOVER_SIDES.includes(request.side) || request.focus !== void 0 && request.focus !== true && request.focus !== false || !hasBoundedJsonTree(request.data) || !isFiniteJson(request.data))
+        return false;
+      return JSON.stringify(request.data).length <= GUEST_POPOVER_DATA_MAX;
+    } catch {
+      return false;
+    }
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/contract.js
+  var START_SESSION_SENT = ["sent", "no-model", "skipped", "failed"];
+  var SESSION_LIFECYCLE_PHASES = ["started", "completed", "failure"];
+  var GUEST_FILE_ENTRY_KINDS = ["file", "directory", "other"];
+  var GUEST_FILE_STAT_KINDS = ["file", "directory", "other", "missing"];
+  var isStartSessionResult = (value) => Boolean(value && "sessionId" in value);
+  var isPromptResult = (value) => Boolean(value && "sent" in value && !("sessionId" in value));
+  var EMPTY_GUEST_CONNECTION = {
+    connected: false,
+    account: ""
+  };
+  var isGuestMessageItem = (item) => item !== null && item.kind === "message";
+  var isGuestSessionItem = (item) => item !== null && item.kind === "session";
+  var isGuestAttachItem = (item) => item !== null && item.kind !== "message" && item.kind !== "session";
+  var GUEST_COMMIT_SHA = /^[0-9a-f]{7,64}$/i;
+  var isGuestCommitSha = (value) => GUEST_COMMIT_SHA.test(value);
+  var GUEST_TOAST_MAX = 500;
+  var GUEST_CLIPBOARD_TEXT_MAX = 32e3;
+  var GUEST_COMPOSE_TEXT_MAX = 16e3;
+  var GUEST_ATTACH_ID_MAX = 128;
+  var GUEST_ATTACH_TITLE_MAX = 200;
+  var GUEST_ATTACH_URL_MAX = 2e3;
+  var GUEST_ATTACH_TEXT_MAX = 16e3;
+  var GUEST_ATTACH_AUTHOR_MAX = 80;
+  var GUEST_ATTACH_BRANCH_MAX = 200;
+  var GUEST_ATTACH_DATA_MAX = 16e3;
+  var GUEST_ACCOUNT_MAX = 200;
+  var GUEST_SESSION_MODEL_MAX = 200;
+  var GUEST_SESSION_AGENT_MAX = 80;
+  var GUEST_SETTING_VALUE_MAX = 2e3;
+  var GUEST_REQUEST_PATH_MAX = 2e3;
+  var GUEST_REQUEST_BODY_MAX = 64e3;
+  var GUEST_REQUEST_RESPONSE_MAX = 8e6;
+  var GUEST_REQUEST_TIMEOUT_MS = 2e4;
+  var GUEST_FILE_PATH_MAX = 1024;
+  var GUEST_FILE_CONTENT_MAX = 2e6;
+  var GUEST_FILE_LIST_MAX = 2e3;
+  var GUEST_GENERATE_PROMPT_MAX = 64e3;
+  var GUEST_GENERATE_SYSTEM_MAX = 8e3;
+  var GUEST_GENERATE_OUTPUT_TOKENS_MAX = 4e3;
+  var GUEST_GENERATE_TEXT_MAX = 256e3;
+  var GUEST_GENERATE_TIMEOUT_MS = 96e4;
+  var GUEST_GENERATE_LATE_KEEP_MS = 60 * 6e4;
+  var GUEST_GENERATE_LATE_MAX = 8;
+  var GUEST_ITEM_MESSAGE_TEXT_MAX = 2e5;
+  var GUEST_ITEM_SESSION_MAX = 2e6;
+  var GUEST_BADGE_MAX = 999;
+  var GUEST_FRAME_HEIGHT_MAX = 1e4;
+  var GUEST_RESOLVE_ERROR_MAX = 500;
+  var HOST_REQUEST_ERROR_CODES = [
+    "HOST_UNAVAILABLE",
+    "HOST_TIMEOUT",
+    "HOST_REJECTED",
+    "DISCONNECTED",
+    "DISABLED",
+    "BAD_PATH",
+    "NO_INTEGRATION",
+    "NO_SERVICE",
+    "SERVICE_FAILED",
+    "REQUEST_FAILED",
+    "RESPONSE_TOO_LARGE",
+    "NO_SESSION",
+    "SESSION_BUSY",
+    "NOT_GRANTED",
+    "NO_DIRECTORY",
+    "NOT_FOUND",
+    "FILE_TOO_LARGE",
+    "DENIED",
+    "NO_MODEL",
+    "MODEL_FAILED",
+    "UNSUPPORTED"
+  ];
+  var SERVICE_STATUS_VALUES = ["stopped", "starting", "ready", "failed"];
+  var hostRequestErrorCodeSet = new Set(HOST_REQUEST_ERROR_CODES);
+  var isHostRequestErrorCode = (value) => hostRequestErrorCodeSet.has(value);
+  var resolveHostRequestErrorCode = (value) => value && isHostRequestErrorCode(value) ? value : "HOST_REJECTED";
+  var isJsonValue = (value) => {
+    if (value === void 0)
+      return false;
+    if (value === null || value === true || value === false)
+      return true;
+    if (String(value) === value)
+      return true;
+    if (Number(value) === value)
+      return Number.isFinite(value);
+    if (Array.isArray(value))
+      return value.every(isJsonValue);
+    if (Object(value) === value)
+      return Object.values(value).every(isJsonValue);
+    return false;
+  };
+  var isAttachData = (value) => isJsonValue(value) && JSON.stringify(value).length <= GUEST_ATTACH_DATA_MAX;
+  var clampBranch = (value) => value?.trim().slice(0, GUEST_ATTACH_BRANCH_MAX) ?? "";
+  var clampAttachRequest = (request) => {
+    const id = request.id.trim().slice(0, GUEST_ATTACH_ID_MAX);
+    const title = request.title.trim().slice(0, GUEST_ATTACH_TITLE_MAX);
+    const url = request.url.trim().slice(0, GUEST_ATTACH_URL_MAX);
+    const text = request.text?.trim().slice(0, GUEST_ATTACH_TEXT_MAX);
+    const author = request.author?.trim().slice(0, GUEST_ATTACH_AUTHOR_MAX);
+    const kind = request.kind === "pull" ? "pull" : "issue";
+    const next = {
+      providerId: request.providerId.trim(),
+      id,
+      title: title || id,
+      url,
+      kind
+    };
+    if (text) {
+      next.text = text;
+    }
+    if (author) {
+      next.author = author;
+    }
+    if (kind === "pull") {
+      const head = clampBranch(request.branches?.head);
+      const base = clampBranch(request.branches?.base);
+      if (head && base) {
+        next.branches = { head, base };
+      }
+    }
+    if (isAttachData(request.data)) {
+      next.data = request.data;
+    }
+    return next;
+  };
+  var clampStartSessionRequest = (request) => {
+    const next = clampAttachRequest(request);
+    if (request.projectId)
+      next.projectId = request.projectId;
+    if (request.navigation)
+      next.navigation = request.navigation;
+    if (request.worktree) {
+      next.worktree = request.worktree;
+    }
+    return next;
+  };
+  var clampPromptRequest = (request) => {
+    const next = {
+      text: request.text.trim().slice(0, GUEST_COMPOSE_TEXT_MAX)
+    };
+    if (request.send) {
+      next.send = true;
+    }
+    return next;
+  };
+  var clampBadgeCount = (count) => {
+    if (count === null || !Number.isFinite(count))
+      return null;
+    return Math.min(GUEST_BADGE_MAX, Math.max(0, Math.round(count)));
+  };
+  var clampFrameHeight = (height) => {
+    if (!Number.isFinite(height))
+      return 0;
+    return Math.min(GUEST_FRAME_HEIGHT_MAX, Math.max(0, Math.ceil(height)));
+  };
+  var guestFileScope = (path) => path.startsWith("/") || path === "~" || path.startsWith("~/") ? "filesystem" : "project";
+  var isGuestFilePath = (value) => value.length > 0 && value.length <= GUEST_FILE_PATH_MAX && !value.includes("\0") && !value.includes("\\");
+  var ATTACH_PROVIDER_ID = /^[a-z][a-z0-9-]*$/;
+  var SETTING_KEY = /^[a-z][a-z0-9-]*$/;
+  var isGuestRequestPath = (value) => {
+    if (!value.startsWith("/") || value.includes("\0") || value.includes("\\") || value.includes("://")) {
+      return false;
+    }
+    if (value.length > GUEST_REQUEST_PATH_MAX) {
+      return false;
+    }
+    const segments = value.split("/");
+    return !segments.some((segment) => segment === "." || segment === "..");
+  };
+  var serviceStatusSet = new Set(SERVICE_STATUS_VALUES);
+  var isServiceStatusResult = (value) => Boolean(value && "status" in value && serviceStatusSet.has(String(value.status)) && !("body" in value));
+  var isGuestRequestResult = (value) => Boolean(value && "status" in value && "body" in value && Number.isInteger(value.status));
+  var isFileReadResult = (value) => Boolean(value && "content" in value && String(value.content) === value.content);
+  var isFileWriteResult = (value) => Boolean(value && "written" in value && value.written === true);
+  var isFileListResult = (value) => Boolean(value && "entries" in value && Array.isArray(value.entries));
+  var fileStatKindSet = new Set(GUEST_FILE_STAT_KINDS);
+  var isFileStatResult = (value) => Boolean(value && "kind" in value && "size" in value && fileStatKindSet.has(String(value.kind)) && Number.isFinite(value.size));
+  var isGenerateResult = (value) => Boolean(value && "text" in value && String(value.text) === value.text && !("status" in value));
+  var HOST_PUSH_TYPES = /* @__PURE__ */ new Set([
+    "workspace",
+    "shells",
+    "ready",
+    "directory",
+    "session",
+    "connection",
+    "settings",
+    "session-lifecycle",
+    "item",
+    "resolve",
+    "action",
+    "status-control-event",
+    "popover-closed",
+    "file-open",
+    "file-snapshot",
+    "file-saved",
+    "generate-late"
+  ]);
+  var asWireRecord = (data) => Object(data) === data ? data : null;
+  var isNonEmptyString = (value) => String(value) === value && value.length > 0;
+  var readResultMessage = (wire) => {
+    if (!isNonEmptyString(wire.id))
+      return null;
+    if (wire.ok === true) {
+      const message = {
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "result",
+        id: wire.id,
+        ok: true
+      };
+      if (Object(wire.payload) === wire.payload) {
+        message.payload = wire.payload;
+      }
+      return message;
+    }
+    if (wire.ok === false && isNonEmptyString(wire.error)) {
+      return {
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "result",
+        id: wire.id,
+        ok: false,
+        error: wire.error,
+        code: resolveHostRequestErrorCode(isNonEmptyString(wire.code) ? wire.code : void 0)
+      };
+    }
+    return null;
+  };
+  var readHostMessage = (data) => {
+    const wire = asWireRecord(data);
+    if (!wire || wire.channel !== OPENCHAMBER_SDK_CHANNEL || wire.v !== OPENCHAMBER_SDK_API_VERSION)
+      return null;
+    if (wire.type === "result")
+      return readResultMessage(wire);
+    if (!HOST_PUSH_TYPES.has(String(wire.type)) || Object(wire.payload) !== wire.payload)
+      return null;
+    return wire;
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/host.js
+  var isKeyEvent = (event) => "key" in event && "metaKey" in event && "ctrlKey" in event;
+  var isSaveShortcut = (event) => (event.metaKey || event.ctrlKey) && !event.altKey && !event.shiftKey && event.key.toLowerCase() === "s";
+  var HostRequestError = class extends Error {
+    code;
+    constructor(code, message) {
+      super(message);
+      this.name = "HostRequestError";
+      this.code = code;
+    }
+  };
+  var rejectBadPath = () => Promise.reject(new HostRequestError("BAD_PATH", 'Request path must start with "/" and stay on the declared origin.'));
+  var rejectBadFilePath = () => Promise.reject(new HostRequestError("BAD_PATH", `File path must be 1 to ${GUEST_FILE_PATH_MAX} characters without NUL or backslash.`));
+  var deviceStorageScope = (options) => {
+    if (options === void 0)
+      return void 0;
+    if (Object(options) !== options || Array.isArray(options) || options.scope !== void 0 && options.scope !== "instance" && options.scope !== "device") {
+      throw new HostRequestError("HOST_REJECTED", 'Storage scope must be "instance" or "device".');
+    }
+    return options.scope === "device" ? "device" : void 0;
+  };
+  var nextId = (n) => {
+    n.value += 1;
+    return `oc-${n.value}`;
+  };
+  var connectHost = (options = {}) => {
+    const target = options.target ?? ("window" in globalThis ? window : null);
+    if (!target) {
+      throw new HostRequestError("HOST_UNAVAILABLE", "No window. connectHost runs in a browser frame.");
+    }
+    const acceptSource = options.acceptSource ?? ((source) => source === target.parent);
+    const requestTimeoutMs = options.requestTimeoutMs ?? GUEST_REQUEST_TIMEOUT_MS;
+    const readyListeners = /* @__PURE__ */ new Set();
+    const directoryListeners = /* @__PURE__ */ new Set();
+    const sessionListeners = /* @__PURE__ */ new Set();
+    const lifecycleListeners = /* @__PURE__ */ new Set();
+    const connectionListeners = /* @__PURE__ */ new Set();
+    const settingsListeners = /* @__PURE__ */ new Set();
+    const itemListeners = /* @__PURE__ */ new Set();
+    const statusControlListeners = /* @__PURE__ */ new Set();
+    const popoverClosedListeners = /* @__PURE__ */ new Set();
+    const lateGenerateListeners = /* @__PURE__ */ new Set();
+    const unclaimedLateGenerate = [];
+    let resolveHandler = null;
+    let actionHandler = null;
+    const fileOpenListeners = /* @__PURE__ */ new Set();
+    const fileSavedListeners = /* @__PURE__ */ new Set();
+    let fileSnapshotHandler = null;
+    let lastFile = null;
+    let saveShortcutInstalled = false;
+    const pending = /* @__PURE__ */ new Map();
+    const workspaceListeners = /* @__PURE__ */ new Map();
+    const shellsListeners = /* @__PURE__ */ new Map();
+    let disposed = false;
+    const ids = { value: 0 };
+    let lastReady = null;
+    let lastLifecycle = null;
+    let popoverPointerActive = false;
+    let popoverFocusActive = false;
+    let popoverActivityReported = null;
+    const lifecycleFromSession = (session) => {
+      if (!session)
+        return null;
+      return {
+        sessionId: session.id,
+        phase: session.busy ? "started" : "completed"
+      };
+    };
+    const post = (message) => {
+      target.parent.postMessage(message, "*");
+    };
+    const listenForLateGenerate = () => {
+      if (disposed || target.parent === target || lateGenerateListeners.size === 0 || lastReady?.features?.lateGenerateResults !== true)
+        return;
+      post({ channel: OPENCHAMBER_SDK_CHANNEL, v: OPENCHAMBER_SDK_API_VERSION, type: "generate-late-listen" });
+    };
+    const emit = (listeners, value) => {
+      for (const listener of listeners) {
+        try {
+          listener(value);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    };
+    const onMessage = (event) => {
+      if (!(event instanceof MessageEvent))
+        return;
+      if (!acceptSource(event.source))
+        return;
+      const message = readHostMessage(event.data);
+      if (!message)
+        return;
+      if (message.type === "workspace") {
+        const listener = workspaceListeners.get(message.payload.subscriptionId);
+        if (listener)
+          emit([listener], message.payload.snapshot);
+        return;
+      }
+      if (message.type === "shells") {
+        const listener = shellsListeners.get(message.payload.subscriptionId);
+        if (listener)
+          emit([listener], message.payload.snapshot);
+        return;
+      }
+      if (message.type === "ready") {
+        lastReady = message.payload;
+        lastLifecycle = lifecycleFromSession(message.payload.session);
+        emit(readyListeners, message.payload);
+        emit(directoryListeners, message.payload.directory);
+        emit(sessionListeners, message.payload.session);
+        if (lastLifecycle) {
+          emit(lifecycleListeners, lastLifecycle);
+        }
+        emit(connectionListeners, message.payload.connection);
+        emit(settingsListeners, message.payload.settings);
+        emit(itemListeners, message.payload.item);
+        listenForLateGenerate();
+        return;
+      }
+      if (message.type === "generate-late") {
+        if (lateGenerateListeners.size === 0)
+          unclaimedLateGenerate.push(message.payload);
+        else
+          emit(lateGenerateListeners, message.payload);
+        return;
+      }
+      if (message.type === "directory") {
+        if (lastReady) {
+          lastReady = { ...lastReady, directory: message.payload.directory };
+        }
+        emit(directoryListeners, message.payload.directory);
+        return;
+      }
+      if (message.type === "session") {
+        if (lastReady) {
+          lastReady = { ...lastReady, session: message.payload.session };
+        }
+        if (!message.payload.session) {
+          lastLifecycle = null;
+        } else if (lastLifecycle?.sessionId !== message.payload.session.id) {
+          lastLifecycle = lifecycleFromSession(message.payload.session);
+        }
+        emit(sessionListeners, message.payload.session);
+        return;
+      }
+      if (message.type === "session-lifecycle") {
+        lastLifecycle = message.payload;
+        emit(lifecycleListeners, message.payload);
+        return;
+      }
+      if (message.type === "connection") {
+        if (lastReady) {
+          lastReady = { ...lastReady, connection: message.payload.connection };
+        }
+        emit(connectionListeners, message.payload.connection);
+        return;
+      }
+      if (message.type === "settings") {
+        if (lastReady) {
+          lastReady = { ...lastReady, settings: message.payload.settings };
+        }
+        emit(settingsListeners, message.payload.settings);
+        return;
+      }
+      if (message.type === "item") {
+        if (lastReady) {
+          lastReady = { ...lastReady, item: message.payload.item };
+        }
+        emit(itemListeners, message.payload.item);
+        return;
+      }
+      if (message.type === "status-control-event") {
+        emit(statusControlListeners, message.payload);
+        return;
+      }
+      if (message.type === "popover-closed") {
+        emit(popoverClosedListeners, message.payload);
+        return;
+      }
+      if (message.type === "action") {
+        const answer = (payload) => {
+          if (!disposed)
+            post({
+              channel: OPENCHAMBER_SDK_CHANNEL,
+              v: OPENCHAMBER_SDK_API_VERSION,
+              type: "action-result",
+              id: message.id,
+              payload
+            });
+        };
+        const handler = actionHandler;
+        if (!handler) {
+          answer({ ok: false, error: "This extension does not handle background actions." });
+          return;
+        }
+        Promise.resolve().then(() => handler(message.payload)).then(() => answer({ ok: true }), (error) => {
+          const text = (error instanceof Error ? error.message : String(error)).trim();
+          answer({ ok: false, error: (text || "Action failed.").slice(0, GUEST_RESOLVE_ERROR_MAX) });
+        });
+        return;
+      }
+      if (message.type === "file-open") {
+        const next = message.payload;
+        if (lastFile && sameFileEditorDocument(lastFile, next))
+          return;
+        lastFile = next;
+        emit(fileOpenListeners, message.payload);
+        return;
+      }
+      if (message.type === "file-saved") {
+        emit(fileSavedListeners, message.payload.version);
+        return;
+      }
+      if (message.type === "file-snapshot") {
+        const answer = (payload) => {
+          if (!disposed)
+            post({
+              channel: OPENCHAMBER_SDK_CHANNEL,
+              v: OPENCHAMBER_SDK_API_VERSION,
+              type: "file-snapshot-result",
+              id: message.id,
+              payload
+            });
+        };
+        const fail = (text) => answer({ error: (text.trim() || "Could not read the edited file.").slice(0, GUEST_RESOLVE_ERROR_MAX) });
+        const handler = fileSnapshotHandler;
+        if (!handler) {
+          fail("This extension does not edit files.");
+          return;
+        }
+        Promise.resolve().then(() => handler(message.payload.purpose)).then((snapshot) => {
+          if (fileEditorPayloadSize(snapshot) > GUEST_FILE_EDITOR_CONTENT_MAX) {
+            fail(`The file is over ${GUEST_FILE_EDITOR_CONTENT_MAX} ${"bytes" in snapshot ? "bytes" : "characters"}.`);
+            return;
+          }
+          if (snapshot.version.length > GUEST_FILE_EDITOR_VERSION_MAX) {
+            fail(`The snapshot version is over ${GUEST_FILE_EDITOR_VERSION_MAX} characters.`);
+            return;
+          }
+          answer({ snapshot: "bytes" in snapshot ? { bytes: snapshot.bytes, version: snapshot.version } : { content: snapshot.content, version: snapshot.version } });
+        }, (error) => fail(error instanceof Error ? error.message : String(error)));
+        return;
+      }
+      if (message.type === "resolve") {
+        const answer = (payload) => {
+          post({
+            channel: OPENCHAMBER_SDK_CHANNEL,
+            v: OPENCHAMBER_SDK_API_VERSION,
+            type: "resolve-result",
+            id: message.id,
+            payload
+          });
+        };
+        const handler = resolveHandler;
+        if (!handler) {
+          answer({ error: "This extension does not resolve commands." });
+          return;
+        }
+        Promise.resolve().then(() => handler(message.payload)).then((item) => answer({ item: item ? clampAttachRequest(item) : null }), (error) => {
+          const text = (error instanceof Error ? error.message : String(error)).trim();
+          answer({ error: (text || "Command failed.").slice(0, GUEST_RESOLVE_ERROR_MAX) });
+        });
+        return;
+      }
+      const waiter = pending.get(message.id);
+      if (!waiter)
+        return;
+      clearTimeout(waiter.timer);
+      pending.delete(message.id);
+      if (message.ok) {
+        waiter.resolve(message.payload);
+        return;
+      }
+      waiter.reject(new HostRequestError(message.code, message.error));
+    };
+    target.addEventListener("message", onMessage);
+    post({
+      channel: OPENCHAMBER_SDK_CHANNEL,
+      v: OPENCHAMBER_SDK_API_VERSION,
+      type: "hello"
+    });
+    const send = (message, timeoutMs = requestTimeoutMs) => {
+      if (disposed || target.parent === target) {
+        return Promise.reject(new HostRequestError("HOST_UNAVAILABLE", "No host frame. This page is not in an iframe."));
+      }
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          pending.delete(message.id);
+          reject(new HostRequestError("HOST_TIMEOUT", "Host did not answer in time."));
+        }, timeoutMs);
+        pending.set(message.id, { resolve, reject, timer });
+        post(message);
+      });
+    };
+    const request = (message) => send(message).then(() => void 0);
+    const envelope = { channel: OPENCHAMBER_SDK_CHANNEL, v: OPENCHAMBER_SDK_API_VERSION };
+    const notify = (message) => {
+      if (!disposed && target.parent !== target)
+        post(message);
+    };
+    const requestFileSave = () => notify({ ...envelope, type: "file-save" });
+    const onSaveShortcut = (event) => {
+      if (!isKeyEvent(event) || !isSaveShortcut(event))
+        return;
+      event.preventDefault();
+      requestFileSave();
+    };
+    const onPopoverEscape = (event) => {
+      if (!isKeyEvent(event) || event.key !== "Escape" || lastReady?.surface !== "popover" || !lastReady.popover)
+        return;
+      event.preventDefault();
+      void closePopover(lastReady.popover.id, "escape").catch(() => void 0);
+    };
+    const reportPopoverActivity = () => {
+      const popover = lastReady?.surface === "popover" ? lastReady.popover : void 0;
+      if (!popover)
+        return;
+      const active2 = popoverPointerActive || popoverFocusActive;
+      if (popoverActivityReported === active2)
+        return;
+      popoverActivityReported = active2;
+      void setPopoverAnchorActive(popover.id, active2).catch(() => void 0);
+    };
+    const onPopoverPointerOver = () => {
+      if (lastReady?.surface !== "popover" || popoverPointerActive)
+        return;
+      popoverPointerActive = true;
+      reportPopoverActivity();
+    };
+    const onPopoverPointerOut = (event) => {
+      if (lastReady?.surface !== "popover" || event.relatedTarget !== null || !popoverPointerActive)
+        return;
+      popoverPointerActive = false;
+      reportPopoverActivity();
+    };
+    const onPopoverFocus = () => {
+      if (lastReady?.surface !== "popover" || popoverFocusActive)
+        return;
+      popoverFocusActive = true;
+      reportPopoverActivity();
+    };
+    const onPopoverBlur = () => {
+      if (lastReady?.surface !== "popover" || !popoverFocusActive)
+        return;
+      popoverFocusActive = false;
+      reportPopoverActivity();
+    };
+    const requireIdentity = (value, maximum = 1024) => {
+      if (!value.trim() || value.length > maximum)
+        throw new HostRequestError("HOST_REJECTED", `Identity must contain 1 to ${maximum} characters.`);
+    };
+    const readWorkspace = async (query) => {
+      if (query.kind !== "projects")
+        requireIdentity(query.projectId);
+      const result = await send({ ...envelope, type: "workspace-read", id: nextId(ids), payload: query });
+      if (!result || !("kind" in result) || !("state" in result) || result.kind !== query.kind) {
+        throw new HostRequestError("HOST_REJECTED", "Host did not return workspace data.");
+      }
+      return result;
+    };
+    const subscribeWorkspace = async (query, listener) => {
+      if (query.kind !== "projects")
+        requireIdentity(query.projectId);
+      const subscriptionId = nextId(ids);
+      workspaceListeners.set(subscriptionId, listener);
+      try {
+        await request({ ...envelope, type: "workspace-subscribe", id: nextId(ids), payload: { subscriptionId, query } });
+      } catch (error) {
+        workspaceListeners.delete(subscriptionId);
+        if (!disposed)
+          post({ ...envelope, type: "workspace-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
+        throw error;
+      }
+      return () => {
+        if (!workspaceListeners.delete(subscriptionId) || disposed)
+          return;
+        post({ ...envelope, type: "workspace-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
+      };
+    };
+    const subscribeShells = async (scope, listener) => {
+      if (scope.kind === "session")
+        requireIdentity(scope.sessionId);
+      if (scope.kind === "project")
+        requireIdentity(scope.projectId);
+      const subscriptionId = nextId(ids);
+      shellsListeners.set(subscriptionId, listener);
+      try {
+        await request({ ...envelope, type: "shells-subscribe", id: nextId(ids), payload: { subscriptionId, scope } });
+      } catch (error) {
+        shellsListeners.delete(subscriptionId);
+        if (!disposed)
+          post({ ...envelope, type: "shells-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
+        throw error;
+      }
+      return () => {
+        if (!shellsListeners.delete(subscriptionId) || disposed)
+          return;
+        post({ ...envelope, type: "shells-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
+      };
+    };
+    const storage = async (payload) => {
+      if ("key" in payload && (payload.key.length === 0 || payload.key.length > GUEST_STORAGE_KEY_MAX)) {
+        throw new HostRequestError("HOST_REJECTED", "Storage key must contain 1 to 128 characters.");
+      }
+      if (payload.op === "set" && !isJsonValue(payload.value)) {
+        throw new HostRequestError("HOST_REJECTED", "Storage values must be JSON.");
+      }
+      if (payload.op === "set" && new TextEncoder().encode(JSON.stringify(payload.value)).length > GUEST_STORAGE_VALUE_BYTES) {
+        throw new HostRequestError("HOST_REJECTED", "Storage value exceeds 64 KiB.");
+      }
+      if (payload.scope === "device" && lastReady?.features?.deviceStorage !== true) {
+        throw new HostRequestError("UNSUPPORTED", "This host does not support device storage.");
+      }
+      const result = await send({ ...envelope, type: "storage", id: nextId(ids), payload });
+      if (!result || !("storage" in result) || result.op !== payload.op)
+        throw new HostRequestError("HOST_REJECTED", "Host did not return storage data.");
+      return result;
+    };
+    const closePopover = (id, reason) => lastReady?.features?.popovers !== true && !(lastReady?.surface === "popover" && lastReady.popover?.id === id) ? Promise.reject(new HostRequestError("UNSUPPORTED", "This host does not support popovers.")) : request({ ...envelope, type: "popover-close", id: nextId(ids), payload: reason ? { id, reason } : { id } });
+    const setPopoverAnchorActive = (id, active2) => lastReady?.features?.popovers !== true && !(lastReady?.surface === "popover" && lastReady.popover?.id === id) ? Promise.reject(new HostRequestError("UNSUPPORTED", "This host does not support popovers.")) : request({ ...envelope, type: "popover-anchor", id: nextId(ids), payload: { id, active: active2 } });
+    target.addEventListener("keydown", onPopoverEscape, true);
+    target.addEventListener("pointerover", onPopoverPointerOver);
+    target.addEventListener("pointermove", onPopoverPointerOver);
+    target.addEventListener("pointerout", onPopoverPointerOut);
+    target.addEventListener("focus", onPopoverFocus);
+    target.addEventListener("blur", onPopoverBlur);
+    return {
+      onAction: (handler) => {
+        actionHandler = handler;
+        return () => {
+          if (actionHandler === handler)
+            actionHandler = null;
+        };
+      },
+      listProjects: async () => {
+        const result = await readWorkspace({ kind: "projects" });
+        if (result.kind !== "projects")
+          throw new HostRequestError("HOST_REJECTED", "Expected projects.");
+        return result;
+      },
+      listWorktrees: async (projectId) => {
+        const result = await readWorkspace({ kind: "worktrees", projectId });
+        if (result.kind !== "worktrees")
+          throw new HostRequestError("HOST_REJECTED", "Expected worktrees.");
+        return result;
+      },
+      listSessions: async (projectId) => {
+        const result = await readWorkspace({ kind: "sessions", projectId });
+        if (result.kind !== "sessions")
+          throw new HostRequestError("HOST_REJECTED", "Expected sessions.");
+        return result;
+      },
+      onProjects: (listener) => subscribeWorkspace({ kind: "projects" }, (snapshot) => {
+        if (snapshot.kind === "projects")
+          listener(snapshot);
+      }),
+      onWorktrees: (projectId, listener) => subscribeWorkspace({ kind: "worktrees", projectId }, (snapshot) => {
+        if (snapshot.kind === "worktrees")
+          listener(snapshot);
+      }),
+      onSessions: (projectId, listener) => subscribeWorkspace({ kind: "sessions", projectId }, (snapshot) => {
+        if (snapshot.kind === "sessions")
+          listener(snapshot);
+      }),
+      onRunningShells: (scope, listener) => subscribeShells(scope, listener),
+      readShellOutput: async (shellId, options2) => {
+        requireIdentity(shellId, GUEST_SHELL_ID_MAX);
+        const cursor = options2?.cursor;
+        if (cursor !== void 0 && (!Number.isInteger(cursor) || cursor < 0)) {
+          throw new HostRequestError("HOST_REJECTED", "Shell output cursor must be a non-negative integer.");
+        }
+        const tailBytes = options2?.tailBytes;
+        if (tailBytes !== void 0 && (!Number.isInteger(tailBytes) || tailBytes < 1 || tailBytes > GUEST_SHELL_OUTPUT_TAIL_MAX)) {
+          throw new HostRequestError("HOST_REJECTED", `Shell output tailBytes must be an integer between 1 and ${GUEST_SHELL_OUTPUT_TAIL_MAX}.`);
+        }
+        const result = await send({ ...envelope, type: "shell-output", id: nextId(ids), payload: { shellId, cursor, tailBytes } });
+        const output = result;
+        if (!output || typeof output.output !== "string" || !Number.isFinite(output.cursor)) {
+          throw new HostRequestError("HOST_REJECTED", "Host did not return shell output.");
+        }
+        return output;
+      },
+      stopShell: async (shellId) => {
+        requireIdentity(shellId, GUEST_SHELL_ID_MAX);
+        const result = await send({ ...envelope, type: "shell-stop", id: nextId(ids), payload: { shellId } });
+        if (result?.stopped !== true)
+          throw new HostRequestError("HOST_REJECTED", "Host did not stop the shell.");
+        return { stopped: true };
+      },
+      openSession: async (sessionId) => {
+        requireIdentity(sessionId);
+        await request({ ...envelope, type: "open-session", id: nextId(ids), payload: { sessionId } });
+      },
+      storage: {
+        get: async (key, options2) => {
+          const scope = deviceStorageScope(options2);
+          const payload = { op: "get", key };
+          if (scope)
+            payload.scope = scope;
+          const result = await storage(payload);
+          return result.op === "get" && result.found ? result.value : void 0;
+        },
+        set: async (key, value, options2) => {
+          const scope = deviceStorageScope(options2);
+          const payload = { op: "set", key, value };
+          if (scope)
+            payload.scope = scope;
+          await storage(payload);
+        },
+        delete: async (key, options2) => {
+          const scope = deviceStorageScope(options2);
+          const payload = { op: "delete", key };
+          if (scope)
+            payload.scope = scope;
+          await storage(payload);
+        },
+        keys: async (options2) => {
+          const scope = deviceStorageScope(options2);
+          const payload = { op: "keys" };
+          if (scope)
+            payload.scope = scope;
+          const result = await storage(payload);
+          if (result.op !== "keys")
+            throw new HostRequestError("HOST_REJECTED", "Expected storage keys.");
+          return result.keys;
+        }
+      },
+      onReady: (listener) => {
+        readyListeners.add(listener);
+        if (lastReady)
+          listener(lastReady);
+        return () => {
+          readyListeners.delete(listener);
+        };
+      },
+      onDirectory: (listener) => {
+        directoryListeners.add(listener);
+        if (lastReady)
+          listener(lastReady.directory);
+        return () => {
+          directoryListeners.delete(listener);
+        };
+      },
+      onSession: (listener) => {
+        sessionListeners.add(listener);
+        if (lastReady)
+          listener(lastReady.session);
+        return () => {
+          sessionListeners.delete(listener);
+        };
+      },
+      onSessionLifecycle: (listener) => {
+        lifecycleListeners.add(listener);
+        if (lastLifecycle)
+          listener(lastLifecycle);
+        return () => {
+          lifecycleListeners.delete(listener);
+        };
+      },
+      onConnection: (listener) => {
+        connectionListeners.add(listener);
+        if (lastReady)
+          listener(lastReady.connection);
+        return () => {
+          connectionListeners.delete(listener);
+        };
+      },
+      onSettings: (listener) => {
+        settingsListeners.add(listener);
+        if (lastReady)
+          listener(lastReady.settings);
+        return () => {
+          settingsListeners.delete(listener);
+        };
+      },
+      onItem: (listener) => {
+        itemListeners.add(listener);
+        if (lastReady)
+          listener(lastReady.item);
+        return () => {
+          itemListeners.delete(listener);
+        };
+      },
+      onStatusControl: (listener) => {
+        statusControlListeners.add(listener);
+        return () => {
+          statusControlListeners.delete(listener);
+        };
+      },
+      onPopoverClosed: (listener) => {
+        popoverClosedListeners.add(listener);
+        return () => {
+          popoverClosedListeners.delete(listener);
+        };
+      },
+      setStatusControls: (controls) => {
+        if (lastReady?.features?.statusControls !== true) {
+          return Promise.reject(new HostRequestError("UNSUPPORTED", "This host does not support status controls."));
+        }
+        if (!isGuestStatusControls(controls)) {
+          return Promise.reject(new HostRequestError("HOST_REJECTED", "Status controls must have unique bounded ids and valid selected options."));
+        }
+        return request({ ...envelope, type: "status-controls", id: nextId(ids), payload: { controls } });
+      },
+      openPopover: (payload) => {
+        if (lastReady?.features?.popovers !== true) {
+          return Promise.reject(new HostRequestError("UNSUPPORTED", "This host does not support popovers."));
+        }
+        if (!isGuestPopoverRequest(payload)) {
+          return Promise.reject(new HostRequestError("HOST_REJECTED", "Popover requests need bounded geometry and JSON data."));
+        }
+        return request({ ...envelope, type: "popover-open", id: nextId(ids), payload });
+      },
+      closePopover,
+      setPopoverAnchorActive,
+      onResolve: (handler) => {
+        resolveHandler = handler;
+        return () => {
+          if (resolveHandler === handler)
+            resolveHandler = null;
+        };
+      },
+      toast: (payload) => {
+        const message = payload.message.trim();
+        if (!message || message.length > GUEST_TOAST_MAX) {
+          return Promise.reject(new HostRequestError("HOST_REJECTED", `Toast message must contain 1 to ${GUEST_TOAST_MAX} characters.`));
+        }
+        if (payload.copy && payload.copy !== true && (!payload.copy.text.length || payload.copy.text.length > GUEST_CLIPBOARD_TEXT_MAX)) {
+          return Promise.reject(new HostRequestError("HOST_REJECTED", `Toast copy text must contain 1 to ${GUEST_CLIPBOARD_TEXT_MAX} characters.`));
+        }
+        return request({
+          channel: OPENCHAMBER_SDK_CHANNEL,
+          v: OPENCHAMBER_SDK_API_VERSION,
+          type: "toast",
+          id: nextId(ids),
+          payload: { ...payload, message }
+        });
+      },
+      openUrl: (url) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "open-url",
+        id: nextId(ids),
+        payload: { url }
+      }),
+      openCommit: (sha) => isGuestCommitSha(sha) ? request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "open-commit",
+        id: nextId(ids),
+        payload: { sha }
+      }) : Promise.reject(new HostRequestError("HOST_REJECTED", "Commit id must be 7 to 64 hex characters.")),
+      openSurface: (surfaceId) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "open-surface",
+        id: nextId(ids),
+        payload: { surfaceId }
+      }),
+      writeClipboard: (text) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "clipboard-write",
+        id: nextId(ids),
+        payload: { text }
+      }),
+      compose: (payload) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "compose",
+        id: nextId(ids),
+        payload
+      }),
+      attach: (payload) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "attach",
+        id: nextId(ids),
+        payload: clampAttachRequest(payload)
+      }),
+      startSession: async (payload) => {
+        if (payload.projectId !== void 0)
+          requireIdentity(payload.projectId);
+        const worktree = payload.worktree;
+        if (worktree && worktree !== true) {
+          if (worktree.kind === "existing")
+            requireIdentity(worktree.directory);
+          else {
+            if (worktree.name !== void 0)
+              requireIdentity(worktree.name, 200);
+            if (worktree.baseBranch !== void 0)
+              requireIdentity(worktree.baseBranch, 200);
+          }
+        }
+        const result = await send({
+          channel: OPENCHAMBER_SDK_CHANNEL,
+          v: OPENCHAMBER_SDK_API_VERSION,
+          type: "start-session",
+          id: nextId(ids),
+          payload: clampStartSessionRequest(payload)
+        }, options.requestTimeoutMs ?? 18e4);
+        if (!isStartSessionResult(result)) {
+          throw new HostRequestError("HOST_REJECTED", "Host did not return a session.");
+        }
+        return result;
+      },
+      prompt: (payload) => send({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "prompt",
+        id: nextId(ids),
+        payload: clampPromptRequest(payload)
+      }).then((result) => {
+        if (!isPromptResult(result)) {
+          throw new HostRequestError("HOST_REJECTED", "Host did not return a prompt result.");
+        }
+        return result;
+      }),
+      sessionLink: (payload) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "session-link",
+        id: nextId(ids),
+        payload: clampAttachRequest(payload)
+      }),
+      close: () => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "close",
+        id: nextId(ids)
+      }),
+      oauthStart: () => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "oauth-start",
+        id: nextId(ids)
+      }),
+      oauthDisconnect: () => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "oauth-disconnect",
+        id: nextId(ids)
+      }),
+      request: (payload) => (isGuestRequestPath(payload.path) ? send({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "request",
+        id: nextId(ids),
+        payload
+      }) : rejectBadPath()).then((result) => {
+        if (!isGuestRequestResult(result)) {
+          throw new HostRequestError("HOST_REJECTED", "Host request result was empty.");
+        }
+        return result;
+      }),
+      serviceRequest: (payload) => (isGuestRequestPath(payload.path) ? send({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "service-request",
+        id: nextId(ids),
+        payload
+      }) : rejectBadPath()).then((result) => {
+        if (!isGuestRequestResult(result)) {
+          throw new HostRequestError("HOST_REJECTED", "Host service request result was empty.");
+        }
+        return result;
+      }),
+      serviceStatus: () => send({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "service-status",
+        id: nextId(ids)
+      }).then((result) => {
+        if (!isServiceStatusResult(result)) {
+          throw new HostRequestError("HOST_REJECTED", "Host did not return service status.");
+        }
+        return result;
+      }),
+      readFile: (path) => (isGuestFilePath(path) ? send({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "file-read",
+        id: nextId(ids),
+        payload: { path }
+      }) : rejectBadFilePath()).then((result) => {
+        if (!isFileReadResult(result)) {
+          throw new HostRequestError("HOST_REJECTED", "Host did not return file content.");
+        }
+        return result;
+      }),
+      writeFile: (path, content) => {
+        if (!isGuestFilePath(path)) {
+          return rejectBadFilePath();
+        }
+        if (content.length > GUEST_FILE_CONTENT_MAX) {
+          return Promise.reject(new HostRequestError("FILE_TOO_LARGE", `Content is over ${GUEST_FILE_CONTENT_MAX} characters.`));
+        }
+        return send({
+          channel: OPENCHAMBER_SDK_CHANNEL,
+          v: OPENCHAMBER_SDK_API_VERSION,
+          type: "file-write",
+          id: nextId(ids),
+          payload: { path, content }
+        }).then((result) => {
+          if (!isFileWriteResult(result)) {
+            throw new HostRequestError("HOST_REJECTED", "Host did not confirm the write.");
+          }
+          return result;
+        });
+      },
+      listDir: (path) => (isGuestFilePath(path) ? send({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "file-list",
+        id: nextId(ids),
+        payload: { path }
+      }) : rejectBadFilePath()).then((result) => {
+        if (!isFileListResult(result)) {
+          throw new HostRequestError("HOST_REJECTED", "Host did not return directory entries.");
+        }
+        return result;
+      }),
+      stat: (path) => (isGuestFilePath(path) ? send({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "file-stat",
+        id: nextId(ids),
+        payload: { path }
+      }) : rejectBadFilePath()).then((result) => {
+        if (!isFileStatResult(result)) {
+          throw new HostRequestError("HOST_REJECTED", "Host did not return file status.");
+        }
+        return result;
+      }),
+      generate: (input) => {
+        const prompt = input.prompt.trim();
+        const system = input.system?.trim();
+        if (prompt.length === 0 || prompt.length > GUEST_GENERATE_PROMPT_MAX) {
+          return Promise.reject(new HostRequestError("HOST_REJECTED", `Prompt must be 1 to ${GUEST_GENERATE_PROMPT_MAX} characters.`));
+        }
+        if (system !== void 0 && (system.length === 0 || system.length > GUEST_GENERATE_SYSTEM_MAX)) {
+          return Promise.reject(new HostRequestError("HOST_REJECTED", `System prompt must be 1 to ${GUEST_GENERATE_SYSTEM_MAX} characters.`));
+        }
+        const maxOutputTokens = input.maxOutputTokens === void 0 ? void 0 : Math.min(GUEST_GENERATE_OUTPUT_TOKENS_MAX, Math.max(1, Math.floor(input.maxOutputTokens)));
+        if (maxOutputTokens !== void 0 && !Number.isFinite(maxOutputTokens)) {
+          return Promise.reject(new HostRequestError("HOST_REJECTED", "maxOutputTokens must be a number."));
+        }
+        const payload = { prompt };
+        if (system !== void 0)
+          payload.system = system;
+        if (maxOutputTokens !== void 0)
+          payload.maxOutputTokens = maxOutputTokens;
+        return send({
+          channel: OPENCHAMBER_SDK_CHANNEL,
+          v: OPENCHAMBER_SDK_API_VERSION,
+          type: "generate",
+          id: nextId(ids),
+          payload
+        }, options.requestTimeoutMs ?? GUEST_GENERATE_TIMEOUT_MS).then((result) => {
+          if (!isGenerateResult(result)) {
+            throw new HostRequestError("HOST_REJECTED", "Host did not return generated text.");
+          }
+          return result;
+        });
+      },
+      onLateGenerateResult: (listener) => {
+        lateGenerateListeners.add(listener);
+        for (const result of unclaimedLateGenerate.splice(0))
+          emit([listener], result);
+        listenForLateGenerate();
+        return () => {
+          lateGenerateListeners.delete(listener);
+        };
+      },
+      setBadge: (count) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "badge",
+        id: nextId(ids),
+        payload: { count: clampBadgeCount(count) }
+      }),
+      setHeight: (height) => request({
+        channel: OPENCHAMBER_SDK_CHANNEL,
+        v: OPENCHAMBER_SDK_API_VERSION,
+        type: "resize",
+        id: nextId(ids),
+        payload: { height: clampFrameHeight(height) }
+      }),
+      onFileOpen: (listener) => {
+        fileOpenListeners.add(listener);
+        if (!saveShortcutInstalled) {
+          saveShortcutInstalled = true;
+          target.addEventListener("keydown", onSaveShortcut, true);
+        }
+        if (lastFile)
+          listener(lastFile);
+        return () => {
+          fileOpenListeners.delete(listener);
+        };
+      },
+      onFileSnapshot: (handler) => {
+        fileSnapshotHandler = handler;
+        return () => {
+          if (fileSnapshotHandler === handler)
+            fileSnapshotHandler = null;
+        };
+      },
+      onFileSaved: (listener) => {
+        fileSavedListeners.add(listener);
+        return () => {
+          fileSavedListeners.delete(listener);
+        };
+      },
+      reportFileChange: (change) => notify({ ...envelope, type: "file-change", payload: { dirty: change.dirty, edited: change.edited } }),
+      requestFileSave,
+      reportFileUnsupported: () => notify({ ...envelope, type: "file-unsupported" }),
+      dispose: () => {
+        for (const subscriptionId of workspaceListeners.keys()) {
+          post({ ...envelope, type: "workspace-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
+        }
+        workspaceListeners.clear();
+        for (const subscriptionId of shellsListeners.keys()) {
+          post({ ...envelope, type: "shells-unsubscribe", id: nextId(ids), payload: { subscriptionId } });
+        }
+        shellsListeners.clear();
+        disposed = true;
+        resolveHandler = null;
+        actionHandler = null;
+        fileSnapshotHandler = null;
+        fileOpenListeners.clear();
+        fileSavedListeners.clear();
+        if (saveShortcutInstalled)
+          target.removeEventListener("keydown", onSaveShortcut, true);
+        target.removeEventListener("message", onMessage);
+        target.removeEventListener("keydown", onPopoverEscape, true);
+        target.removeEventListener("pointerover", onPopoverPointerOver);
+        target.removeEventListener("pointermove", onPopoverPointerOver);
+        target.removeEventListener("pointerout", onPopoverPointerOut);
+        target.removeEventListener("focus", onPopoverFocus);
+        target.removeEventListener("blur", onPopoverBlur);
+        for (const waiter of pending.values()) {
+          clearTimeout(waiter.timer);
+          waiter.reject(new HostRequestError("HOST_UNAVAILABLE", "Host client was disposed."));
+        }
+        pending.clear();
+        readyListeners.clear();
+        directoryListeners.clear();
+        sessionListeners.clear();
+        lifecycleListeners.clear();
+        connectionListeners.clear();
+        settingsListeners.clear();
+        itemListeners.clear();
+        statusControlListeners.clear();
+        popoverClosedListeners.clear();
+        lateGenerateListeners.clear();
+        unclaimedLateGenerate.length = 0;
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-providers.js
+  var BROWSER_PROVIDER_PATH = "/browser-control";
+  var BROWSER_CONTROL_ACTIONS = [
+    "browser.open",
+    "browser.snapshot",
+    "browser.click",
+    "browser.type",
+    "browser.select",
+    "browser.scroll",
+    "browser.back",
+    "browser.forward",
+    "browser.inspect",
+    "browser.capture",
+    "browser.resize",
+    "browser.close"
+  ];
+  var BROWSER_VIEWPORT_MODES = ["mobile", "tablet", "desktop", "fill"];
+  var BROWSER_SCROLL_DIRECTIONS = ["up", "down", "top", "bottom"];
+  var BROWSER_PROVIDER_OPEN_TIMEOUT_MS = 45e3;
+  var BROWSER_PROVIDER_ACTION_TIMEOUT_MS = 2e4;
+  var BROWSER_PROVIDER_RESPONSE_MAX = 12e6;
+  var BROWSER_PROVIDER_IDLE_MS = 10 * 6e4;
+  var CONTROL_ACTIONS = new Set(BROWSER_CONTROL_ACTIONS);
+  var isBrowserControlAction = (value) => CONTROL_ACTIONS.has(value);
+  var readContext = (wire) => {
+    const directory = wire?.directory;
+    const sessionId = wire?.sessionId;
+    return {
+      directory: String(directory) === directory && directory.length > 0 ? directory : null,
+      sessionId: String(sessionId) === sessionId && sessionId.length > 0 ? sessionId : null
+    };
+  };
+  var readBrowserProviderRequest = (body) => {
+    let wire;
+    try {
+      const parsed = JSON.parse(body);
+      if (Object(parsed) !== parsed || parsed === null)
+        return null;
+      wire = parsed;
+    } catch {
+      return null;
+    }
+    const { requestId, action, parameters, context } = wire;
+    if (String(requestId) !== requestId || requestId.length === 0)
+      return null;
+    if (String(action) !== action || !isBrowserControlAction(action))
+      return null;
+    if (Object(parameters) !== parameters)
+      return null;
+    return { requestId, action, parameters, context: readContext(context) };
+  };
+  var SOURCE_CONTROL_PROVIDER_PATH = "/source-control";
+  var SOURCE_CONTROL_PROVIDER_WIRE_VERSION = 1;
+  var SOURCE_CONTROL_PROVIDER_METHODS = [
+    "auth.verify",
+    "auth.probe",
+    "changeRequestStatus",
+    "listChangeRequests",
+    "changeRequestContext",
+    "listIssues",
+    "getIssue",
+    "issueComments",
+    "projectUpstream",
+    "projectBranches",
+    "listLabels",
+    "listReviewerCandidates",
+    "readChangeRequestPatch",
+    "readChangeRequestFile",
+    "liveSummaries",
+    "readChangeRequestHead",
+    "resolveChangeRequestSource",
+    "mutation.resolveTarget",
+    "mutation.perform",
+    "mutation.reconcile"
+  ];
+  var SOURCE_CONTROL_PROVIDER_STATUS_TIMEOUT_MS = 12e3;
+  var SOURCE_CONTROL_PROVIDER_READ_TIMEOUT_MS = 2e4;
+  var SOURCE_CONTROL_PROVIDER_MUTATION_TIMEOUT_MS = 3e4;
+  var SOURCE_CONTROL_PROVIDER_AUTH_TIMEOUT_MS = 15e3;
+  var SOURCE_CONTROL_PROVIDER_RESPONSE_MAX = 8e6;
+  var SOURCE_CONTROL_PROVIDER_ERROR_MESSAGE_MAX = 2e3;
+  var SOURCE_CONTROL_PROVIDER_IDLE_MS = 10 * 6e4;
+  var SOURCE_CONTROL_PROVIDER_TARGET_MAX = 4096;
+  var sourceControlProviderTimeoutMs = (method) => {
+    if (method === "changeRequestStatus")
+      return SOURCE_CONTROL_PROVIDER_STATUS_TIMEOUT_MS;
+    if (method === "auth.verify" || method === "auth.probe")
+      return SOURCE_CONTROL_PROVIDER_AUTH_TIMEOUT_MS;
+    if (method.startsWith("mutation."))
+      return SOURCE_CONTROL_PROVIDER_MUTATION_TIMEOUT_MS;
+    return SOURCE_CONTROL_PROVIDER_READ_TIMEOUT_MS;
+  };
+  var OPENCHAMBER_HOST_CALLBACK_URL = "OPENCHAMBER_HOST_CALLBACK_URL";
+  var SOURCE_CONTROL_OUTBOUND_PATH = "/source-control/outbound";
+  var SOURCE_CONTROL_OUTBOUND_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+  var SOURCE_CONTROL_OUTBOUND_REQUEST_HEADERS = ["accept", "content-type", "if-none-match", "range"];
+  var SOURCE_CONTROL_OUTBOUND_RESPONSE_HEADERS = ["content-type", "link", "etag", "x-total-count", "x-total", "retry-after"];
+  var SOURCE_CONTROL_OUTBOUND_RESPONSE_HEADER_PREFIX = "x-ratelimit-";
+  var SOURCE_CONTROL_OUTBOUND_BODY_MAX = 1e6;
+  var SOURCE_CONTROL_OUTBOUND_RESPONSE_MAX = 8e6;
+  var SOURCE_CONTROL_OUTBOUND_TIMEOUT_MS = 2e4;
+  var isSourceControlProviderMethod = (value) => SOURCE_CONTROL_PROVIDER_METHODS.some((method) => method === value);
+  var readSessionUser = (user) => {
+    if (user === null)
+      return null;
+    if (Object(user) !== user || user === void 0)
+      return void 0;
+    const { id, login } = user;
+    if (!Number.isSafeInteger(id) || String(login) !== login || login.length === 0)
+      return void 0;
+    return { id: Number(id), login };
+  };
+  var readSession = (session) => {
+    if (session === null)
+      return null;
+    if (Object(session) !== session || session === void 0)
+      return void 0;
+    const { instance, handle } = session;
+    if (String(instance) !== instance || instance.length === 0 || String(handle) !== handle || handle.length === 0)
+      return void 0;
+    const user = readSessionUser(session.user);
+    if (user === void 0)
+      return void 0;
+    return { instance, handle, user };
+  };
+  var readSourceControlProviderRequest = (body) => {
+    let wire;
+    try {
+      const parsed = JSON.parse(body);
+      if (Object(parsed) !== parsed || parsed === null)
+        return null;
+      wire = parsed;
+    } catch {
+      return null;
+    }
+    const { v: v2, requestId, method, provider, input } = wire;
+    if (v2 !== SOURCE_CONTROL_PROVIDER_WIRE_VERSION)
+      return null;
+    if (String(requestId) !== requestId || requestId.length === 0)
+      return null;
+    if (String(provider) !== provider || provider.length === 0)
+      return null;
+    if (String(method) !== method || !isSourceControlProviderMethod(method))
+      return null;
+    if (Object(input) !== input || Array.isArray(input))
+      return null;
+    const session = readSession(wire.session);
+    if (session === void 0)
+      return null;
+    return { v: SOURCE_CONTROL_PROVIDER_WIRE_VERSION, requestId, method, provider, session, input };
+  };
+  var SourceControlForgeError = class extends Error {
+    code;
+    status;
+    constructor(message, code, status) {
+      super(message);
+      this.name = "SourceControlForgeError";
+      this.code = code;
+      this.status = status;
+    }
+  };
+  var createSourceControlForge = ({ env }) => {
+    const base = env[OPENCHAMBER_HOST_CALLBACK_URL];
+    if (!base)
+      throw new Error(`${OPENCHAMBER_HOST_CALLBACK_URL} is not set: only a service that provides "source-control" can reach a forge.`);
+    const url = `${base.replace(/\/+$/, "")}${SOURCE_CONTROL_OUTBOUND_PATH}`;
+    return {
+      async request(handle, request) {
+        let response;
+        try {
+          response = await fetch(url, {
+            method: "POST",
+            headers: { authorization: `Bearer ${handle}`, "content-type": "application/json" },
+            body: JSON.stringify(request),
+            // A little past OpenChamber's own deadline, so its answer wins.
+            signal: AbortSignal.timeout(SOURCE_CONTROL_OUTBOUND_TIMEOUT_MS + 5e3)
+          });
+        } catch (error) {
+          throw new SourceControlForgeError(`OpenChamber did not answer: ${error instanceof Error ? error.message : String(error)}`, "HOST_UNAVAILABLE", 0);
+        }
+        let answer;
+        try {
+          answer = Object(await response.json());
+        } catch {
+          throw new SourceControlForgeError("OpenChamber answered with something other than JSON", "HOST_UNAVAILABLE", response.status);
+        }
+        if (!response.ok) {
+          const message = answer.error?.message;
+          const code = answer.error?.code;
+          throw new SourceControlForgeError(String(message) === message && message.length > 0 ? message : `OpenChamber refused the request (${response.status})`, String(code) === code && code.length > 0 ? code : "OUTBOUND_REFUSED", response.status);
+        }
+        if (!Number.isSafeInteger(answer.status) || String(answer.body) !== answer.body) {
+          throw new SourceControlForgeError("OpenChamber relayed a malformed forge answer", "HOST_UNAVAILABLE", response.status);
+        }
+        const headers = {};
+        for (const [name, text] of Object.entries(Object(answer.headers ?? {}))) {
+          if (String(text) === text)
+            headers[name] = text;
+        }
+        return { status: Number(answer.status), headers, body: answer.body };
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/service-surface.js
+  var SURFACE_FRAME_PATH = "/surface/frame";
+  var SURFACE_INPUT_PATH = "/surface/input";
+  var SURFACE_CONTROL_PATH = "/surface/control";
+  var SURFACE_RESIZE_PATH = "/surface/resize";
+  var SURFACE_CLIPBOARD_PATH = "/surface/clipboard";
+  var SURFACE_SEQ_HEADER = "x-surface-seq";
+  var SURFACE_WIDTH_HEADER = "x-surface-width";
+  var SURFACE_HEIGHT_HEADER = "x-surface-height";
+  var SURFACE_TITLE_HEADER = "x-surface-title";
+  var SURFACE_AGENT_ACTIVE_HEADER = "x-surface-agent-active";
+  var SURFACE_VIEWER_HEADER = "x-surface-viewer";
+  var SURFACE_FRAME_SEQ_HEADER = "x-surface-frame-seq";
+  var SURFACE_VIEWER_CONTROLS_HEADER = "x-surface-viewer-controls";
+  var SURFACE_FRAME_MIMES = ["image/jpeg", "image/png"];
+  var SURFACE_FRAME_WAIT_MS = 25e3;
+  var SURFACE_FRAME_MAX_BYTES = 8e6;
+  var SURFACE_INPUT_BATCH_MAX = 256;
+  var SURFACE_TEXT_MAX = 64e3;
+  var SURFACE_TITLE_MAX = 200;
+  var SURFACE_DIMENSION_MAX = 16384;
+  var SURFACE_AGENT_HOLD_MS = 3e4;
+  var SURFACE_CONTROLLERS = ["none", "agent", "user"];
+  var isFiniteNumber = (value) => Number(value) === value && Number.isFinite(value);
+  var isBool = (value) => value === true || value === false;
+  var isText = (value) => String(value) === value;
+  var readModifiers = (value) => {
+    if (Object(value) !== value || value === null)
+      return null;
+    const wire = value;
+    if (!isBool(wire.alt) || !isBool(wire.ctrl) || !isBool(wire.meta) || !isBool(wire.shift))
+      return null;
+    return { alt: wire.alt, ctrl: wire.ctrl, meta: wire.meta, shift: wire.shift };
+  };
+  var readEvent = (value) => {
+    if (value.type === "text") {
+      if (!isText(value.text) || value.text.length > SURFACE_TEXT_MAX)
+        return null;
+      return { type: "text", text: value.text };
+    }
+    const modifiers = readModifiers(value.modifiers);
+    if (!modifiers)
+      return null;
+    if (value.type === "pointer") {
+      if (value.action !== "down" && value.action !== "up" && value.action !== "move")
+        return null;
+      if (!isFiniteNumber(value.x) || !isFiniteNumber(value.y) || !isFiniteNumber(value.button) || !isFiniteNumber(value.buttons))
+        return null;
+      return { type: "pointer", action: value.action, x: value.x, y: value.y, button: value.button, buttons: value.buttons, modifiers };
+    }
+    if (value.type === "wheel") {
+      if (!isFiniteNumber(value.x) || !isFiniteNumber(value.y) || !isFiniteNumber(value.deltaX) || !isFiniteNumber(value.deltaY))
+        return null;
+      return { type: "wheel", x: value.x, y: value.y, deltaX: value.deltaX, deltaY: value.deltaY, modifiers };
+    }
+    if (value.type === "key") {
+      if (value.action !== "down" && value.action !== "up")
+        return null;
+      if (!isText(value.key) || !isText(value.code) || value.key.length > 64 || value.code.length > 64)
+        return null;
+      return { type: "key", action: value.action, key: value.key, code: value.code, modifiers };
+    }
+    return null;
+  };
+  var readSurfaceInputBatch = (body) => {
+    let parsed;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      return null;
+    }
+    if (Object(parsed) !== parsed || parsed === null || !Array.isArray(parsed.events))
+      return null;
+    if (parsed.events.length > SURFACE_INPUT_BATCH_MAX)
+      return null;
+    const events = [];
+    for (const item of parsed.events) {
+      if (Object(item) !== item || item === null)
+        return null;
+      const event = readEvent(item);
+      if (!event)
+        return null;
+      events.push(event);
+    }
+    return { events };
+  };
+  var CONTROLLERS = new Set(SURFACE_CONTROLLERS);
+  var readSurfaceControlNotice = (body) => {
+    let parsed;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      return null;
+    }
+    if (Object(parsed) !== parsed || parsed === null)
+      return null;
+    const { controller, viewer } = parsed;
+    if (!isText(controller) || !CONTROLLERS.has(controller))
+      return null;
+    const notice = { controller };
+    if (controller === "user" && isText(viewer) && viewer.length > 0)
+      notice.viewer = viewer;
+    return notice;
+  };
+  var readSurfaceResizeRequest = (body) => {
+    let parsed;
+    try {
+      parsed = JSON.parse(body);
+    } catch {
+      return null;
+    }
+    if (Object(parsed) !== parsed || parsed === null)
+      return null;
+    const { width, height } = parsed;
+    if (!isFiniteNumber(width) || !isFiniteNumber(height))
+      return null;
+    if (width < 1 || height < 1 || width > SURFACE_DIMENSION_MAX || height > SURFACE_DIMENSION_MAX)
+      return null;
+    return { width: Math.round(width), height: Math.round(height) };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/theme.js
+  var TOKEN_VARS = [
+    ["--oc-bg", "background"],
+    ["--oc-elevated", "elevated"],
+    ["--oc-fg", "foreground"],
+    ["--oc-muted", "muted"],
+    ["--oc-subtle", "subtle"],
+    ["--oc-border", "border"],
+    ["--oc-hover", "hover"],
+    ["--oc-selection", "selection"],
+    ["--oc-focus", "focus"],
+    ["--oc-primary", "primary"],
+    ["--oc-muted-surface", "mutedSurface"],
+    ["--oc-elevated-fg", "elevatedForeground"],
+    ["--oc-active", "active"],
+    ["--oc-selection-fg", "selectionForeground"],
+    ["--oc-primary-fg", "primaryForeground"],
+    ["--oc-primary-text", "primaryText"],
+    ["--oc-success-text", "successText"],
+    ["--oc-warning-text", "warningText"],
+    ["--oc-error-text", "errorText"],
+    ["--oc-info-text", "infoText"],
+    ["--oc-success", "success"],
+    ["--oc-warning", "warning"],
+    ["--oc-error", "error"],
+    ["--oc-info", "info"],
+    ["--oc-font", "font"],
+    ["--oc-mono", "mono"],
+    ["--oc-radius", "radius"],
+    ["--surface-background", "background"],
+    ["--surface-elevated", "elevated"],
+    ["--surface-foreground", "foreground"],
+    ["--surface-muted-foreground", "muted"],
+    ["--surface-subtle", "subtle"],
+    ["--interactive-border", "border"],
+    ["--interactive-hover", "hover"],
+    ["--interactive-selection", "selection"],
+    ["--interactive-focus-ring", "focus"],
+    ["--primary", "primary"],
+    ["--surface-muted", "mutedSurface"],
+    ["--surface-elevated-foreground", "elevatedForeground"],
+    ["--interactive-active", "active"],
+    ["--interactive-selection-foreground", "selectionForeground"],
+    ["--primary-foreground", "primaryForeground"],
+    ["--primary-text", "primaryText"],
+    ["--success-text", "successText"],
+    ["--warning-text", "warningText"],
+    ["--error-text", "errorText"],
+    ["--info-text", "infoText"],
+    ["--status-success", "success"],
+    ["--status-warning", "warning"],
+    ["--status-error", "error"],
+    ["--status-info", "info"],
+    ["--font-sans", "font"],
+    ["--font-mono", "mono"],
+    ["--radius", "radius"]
+  ];
+  var SYNTAX_TOKEN_VARS = [
+    ["--oc-syntax-keyword", "--syntax-keyword", "syntaxKeyword"],
+    ["--oc-syntax-string", "--syntax-string", "syntaxString"],
+    ["--oc-syntax-number", "--syntax-number", "syntaxNumber"],
+    ["--oc-syntax-function", "--syntax-function", "syntaxFunction"],
+    ["--oc-syntax-type", "--syntax-type", "syntaxType"],
+    ["--oc-syntax-comment", "--syntax-comment", "syntaxComment"],
+    ["--oc-syntax-variable", "--syntax-variable", "syntaxVariable"],
+    ["--oc-syntax-operator", "--syntax-operator", "syntaxOperator"]
+  ];
+  var applyHostTheme = (theme, root) => {
+    root.style.colorScheme = theme.mode;
+    for (const [name, key] of TOKEN_VARS) {
+      root.style.setProperty(name, theme.tokens[key]);
+    }
+    for (const [alias, hostName, key] of SYNTAX_TOKEN_VARS) {
+      const value = theme.tokens[key] ?? "";
+      root.style.setProperty(alias, value);
+      root.style.setProperty(hostName, value);
+    }
+    root.style.setProperty("font-family", theme.tokens.font);
+    root.style.setProperty("font-size", "0.875rem");
+    root.style.setProperty("line-height", "1.45");
+    root.style.setProperty("color", theme.tokens.foreground);
+  };
+  var applyHostReady = (ctx, root) => {
+    applyHostTheme(ctx.theme, root);
+    if (root.dataset) {
+      root.dataset.ocSurface = ctx.surface;
+      root.dataset.ocTheme = ctx.theme.mode;
+    }
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/style.js
+  var OC_ALIAS = {
+    "surface-background": "bg",
+    "surface-elevated": "elevated",
+    "surface-elevated-foreground": "elevated-fg",
+    "surface-foreground": "fg",
+    "surface-muted-foreground": "muted",
+    "surface-muted": "muted-surface",
+    "surface-subtle": "subtle",
+    "interactive-border": "border",
+    "interactive-hover": "hover",
+    "interactive-active": "active",
+    "interactive-selection": "selection",
+    "interactive-selection-foreground": "selection-fg",
+    "interactive-focus-ring": "focus",
+    "primary": "primary",
+    "primary-foreground": "primary-fg",
+    "primary-text": "primary-text",
+    "success-text": "success-text",
+    "warning-text": "warning-text",
+    "error-text": "error-text",
+    "info-text": "info-text",
+    "status-success": "success",
+    "status-warning": "warning",
+    "status-error": "error",
+    "status-info": "info",
+    "font-sans": "font",
+    "font-mono": "mono",
+    "radius": "radius"
+  };
+  var v = (name, fallback) => `var(--${name}, var(--oc-${OC_ALIAS[name]}, ${fallback}))`;
+  var bg = v("surface-background", "transparent");
+  var elevated = v("surface-elevated", "transparent");
+  var elevatedFg = v("surface-elevated-foreground", "inherit");
+  var fg = v("surface-foreground", "inherit");
+  var muted = v("surface-muted-foreground", "gray");
+  var secondary = v("surface-muted", "transparent");
+  var border = v("interactive-border", "currentColor");
+  var hover = v("interactive-hover", "transparent");
+  var active = v("interactive-active", "transparent");
+  var selection = v("interactive-selection", "transparent");
+  var selectionFg = v("interactive-selection-foreground", "inherit");
+  var primary = v("primary", "currentColor");
+  var primaryText = v("primary-text", "inherit");
+  var errorText = v("error-text", "inherit");
+  var font = v("font-sans", "inherit");
+  var mono = v("font-mono", "monospace");
+  var radius = v("radius", "9px");
+  var controlRadius = `calc(${radius} - 2px)`;
+  var smallRadius = `calc(${radius} - 4px)`;
+  var mix = (color, pct, base = "transparent") => `color-mix(in srgb, ${color} ${pct}%, ${base})`;
+  var focusFill = `background-image: linear-gradient(${hover}, ${hover});`;
+  var field = (edge) => `box-shadow: inset 0 0 0 1px ${edge}, var(--oc-sdk-field-lift);`;
+  var raised = "border-color: var(--oc-sdk-edge); box-shadow: var(--oc-sdk-raised-lift);";
+  var litButton = "box-shadow: var(--oc-sdk-lit);";
+  var darkLift = `inset 0 1px 0 0 ${mix(fg, 1.5)}, 0 1px 1px 0 rgb(0 0 0 / 0.28), 0 2px 3px -2px rgb(0 0 0 / 0.2)`;
+  var THEME_VARS = `
+:root {
+  --oc-sdk-edge: ${mix(fg, 10)};
+  --oc-sdk-field-bg: ${elevated};
+  --oc-sdk-raised-bg: ${bg};
+  --oc-sdk-field-lift: inset 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --oc-sdk-raised-lift: 0 1px 2px 0 rgb(0 0 0 / 0.06);
+  --oc-sdk-lit: inset 0 1px 0 0 rgb(255 255 255 / 0.45), 0 1px 2px 0 rgb(0 0 0 / 0.08);
+  --oc-sdk-float-edge: rgb(0 0 0 / 0.1);
+  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.8), inset 0 0 0 1px rgb(0 0 0 / 0.04), 0 1px 2px -0.5px rgb(0 0 0 / 0.08), 0 4px 8px -2px rgb(0 0 0 / 0.08), 0 12px 20px -4px rgb(0 0 0 / 0.08);
+}
+:root[data-oc-theme="dark"] {
+  --oc-sdk-edge: ${mix(fg, 6)};
+  --oc-sdk-field-bg: ${mix(bg, 50, elevated)};
+  --oc-sdk-raised-bg: ${elevated};
+  --oc-sdk-field-lift: ${darkLift};
+  --oc-sdk-raised-lift: ${darkLift};
+  --oc-sdk-lit: inset 0 1px 0 0 ${mix(fg, 1.5)}, 0 1px 1px 0 rgb(0 0 0 / 0.28), 0 2px 3px -2px rgb(0 0 0 / 0.2);
+  --oc-sdk-float-edge: rgb(0 0 0 / 0.36);
+  --oc-sdk-float: inset 0 1px 0 0 rgb(255 255 255 / 0.06), inset 0 0 0 1px rgb(255 255 255 / 0.08), 0 1px 1px -0.5px rgb(0 0 0 / 0.22), 0 3px 3px -1.5px rgb(0 0 0 / 0.2), 0 6px 6px -3px rgb(0 0 0 / 0.16);
+}`;
+  var tone = (name) => {
+    const color = v(`status-${name}`, "currentColor");
+    return `
+.oc-sdk[data-tone="${name}"], .oc-sdk [data-tone="${name}"] { --oc-sdk-tone: ${color}; --oc-sdk-tone-text: ${v(`${name}-text`, "inherit")}; }`;
+  };
+  var UI_SIZE_CSS = `
+.oc-sdk { box-sizing: border-box; font-size: 0.875rem; line-height: 1.45; }
+.oc-sdk *, .oc-sdk *::before, .oc-sdk *::after { box-sizing: border-box; }
+/* :where() keeps the reset at zero specificity so every primitive class below overrides it. */
+:where(.oc-sdk) :where(button, input, textarea), :where(button.oc-sdk, input.oc-sdk, textarea.oc-sdk) { font: inherit; color: inherit; margin: 0; }
+:where(.oc-sdk) :where(button), :where(button.oc-sdk) { cursor: pointer; background: none; border: 0; padding: 0; }
+.oc-sdk button:disabled, button.oc-sdk:disabled, .oc-sdk[aria-disabled="true"], .oc-sdk [aria-disabled="true"] { opacity: .5; pointer-events: none; }
+
+.oc-sdk-btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 32px; padding: 0 12px; border: 1px solid transparent; font-size: 0.875rem; font-weight: 500; line-height: 1; white-space: nowrap; }
+.oc-sdk-btn[data-size="sm"] { gap: 6px; height: 28px; padding: 0 10px; font-size: 0.8125rem; }
+.oc-sdk-btn[data-size="xs"] { gap: 4px; height: 24px; padding: 0 8px; font-size: 0.75rem; }
+.oc-sdk-btn[data-loading="true"] { opacity: .5; pointer-events: none; }
+.oc-sdk-btn > .oc-sdk-spinner-ring { width: 14px; height: 14px; }
+
+.oc-sdk-field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.oc-sdk-field-label { font-size: 0.8125rem; font-weight: 500; }
+.oc-sdk-field-note { font-size: 0.75rem; }
+.oc-sdk-input { display: block; width: 100%; min-width: 0; height: 32px; padding: 0 10px; border: 0; font-size: 0.875rem; line-height: 1.45; appearance: none; }
+textarea.oc-sdk-input { height: auto; padding: 8px 10px; resize: vertical; }
+
+.oc-sdk-search { position: relative; min-width: 0; }
+.oc-sdk-search .oc-sdk-input { padding-left: 34px; padding-right: 34px; }
+.oc-sdk-search-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); pointer-events: none; }
+.oc-sdk-search-clear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%); display: none; align-items: center; justify-content: center; width: 24px; height: 24px; }
+.oc-sdk-search[data-active="true"] .oc-sdk-search-clear { display: inline-flex; }
+
+.oc-sdk-select { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.oc-sdk-trigger { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; width: auto; max-width: 100%; min-width: 0; height: 28px; padding: 0 10px; border: 1px solid transparent; font-size: 0.8125rem; text-align: left; }
+.oc-sdk-trigger-value { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oc-sdk-trigger-chevron { flex: 0 0 auto; }
+.oc-sdk-popup { position: fixed; z-index: 50; display: flex; flex-direction: column; gap: 2px; min-width: 160px; max-width: calc(100vw - 16px); max-height: min(320px, calc(100vh - 16px)); overflow: auto; padding: 4px; border: 1px solid transparent; }
+.oc-sdk-popup-search { flex: 0 0 auto; padding: 2px 2px 4px; }
+.oc-sdk-popup-search .oc-sdk-input { height: 28px; font-size: 0.8125rem; }
+.oc-sdk-option { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; font-size: 0.8125rem; text-align: left; }
+.oc-sdk-option-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oc-sdk-option-hint { flex: 0 0 auto; font-size: 0.75rem; }
+.oc-sdk-option-check { flex: 0 0 auto; display: inline-flex; width: 14px; visibility: hidden; }
+.oc-sdk-option[aria-selected="true"] > .oc-sdk-option-check { visibility: visible; }
+.oc-sdk-popup-empty { padding: 8px; font-size: 0.8125rem; }
+
+.oc-sdk-check { display: inline-flex; align-items: flex-start; gap: 8px; width: 100%; text-align: left; }
+.oc-sdk-check-box { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; margin-top: 3px; border: 1px solid transparent; }
+.oc-sdk-check-box > svg { display: none; }
+.oc-sdk-check[aria-checked="true"] .oc-sdk-check-box > svg { display: block; }
+.oc-sdk-check-thumb { flex: 0 0 auto; position: relative; width: 36px; height: 20px; }
+.oc-sdk-check-thumb::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; }
+.oc-sdk-check-text { display: flex; flex-direction: column; min-width: 0; }
+.oc-sdk-check-label { font-size: 0.875rem; }
+.oc-sdk-check-desc { font-size: 0.75rem; }
+
+.oc-sdk-tabs { display: inline-flex; gap: 2px; padding: 2px; max-width: 100%; overflow: auto; }
+.oc-sdk-tab { display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border: 1px solid transparent; font-size: 0.8125rem; font-weight: 500; white-space: nowrap; }
+.oc-sdk-tab-count { font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+
+.oc-sdk-badge { display: inline-flex; align-items: center; padding: 1px 6px; font-size: 11px; font-weight: 500; line-height: 16px; white-space: nowrap; }
+
+.oc-sdk-list { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.oc-sdk-row { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 8px; text-align: left; }
+.oc-sdk-row-lead { flex: 0 0 auto; width: 64px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
+.oc-sdk-row-main { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.oc-sdk-row-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.oc-sdk-row-sub { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.75rem; }
+.oc-sdk-row-meta { flex: 0 0 auto; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.oc-sdk-list-empty { padding: 16px 8px; text-align: center; font-size: 0.8125rem; }
+
+.oc-sdk-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 40px 16px; text-align: center; }
+.oc-sdk-empty-title { margin: 0; font-size: 0.8125rem; font-weight: 600; }
+.oc-sdk-empty-body { margin: 0; max-width: 32rem; font-size: 0.8125rem; }
+.oc-sdk-empty-action { margin-top: 12px; }
+
+@keyframes oc-sdk-spin { to { transform: rotate(360deg); } }
+.oc-sdk-spinner { display: inline-flex; align-items: center; gap: 8px; font-size: 0.8125rem; }
+.oc-sdk-spinner-ring { width: 16px; height: 16px; border: 2px solid transparent; animation: oc-sdk-spin .8s linear infinite; }
+.oc-sdk-spinner[data-size="sm"] .oc-sdk-spinner-ring { width: 12px; height: 12px; }
+
+.oc-sdk-banner { display: flex; align-items: flex-start; gap: 12px; padding: 8px 12px; border: 1px solid transparent; }
+.oc-sdk-banner-text { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.oc-sdk-banner-title { font-size: 0.8125rem; font-weight: 500; }
+.oc-sdk-banner-body { font-size: 0.8125rem; }
+.oc-sdk-banner-action { flex: 0 0 auto; }
+
+.oc-sdk-separator { display: flex; align-items: center; gap: 8px; width: 100%; margin: 8px 0; font-size: 0.75rem; }
+.oc-sdk-separator::before, .oc-sdk-separator::after { content: ""; flex: 1 1 auto; height: 1px; }
+.oc-sdk-separator[data-labeled="false"]::after { display: none; }
+.oc-sdk-popup > .oc-sdk-separator { margin: 4px 0; }
+
+.oc-sdk-progress { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.oc-sdk-progress-label { display: flex; justify-content: space-between; font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.oc-sdk-progress-track { height: 6px; overflow: hidden; }
+.oc-sdk-progress-fill { height: 100%; transform-origin: left; transition: transform 200ms ease-out; }
+
+.oc-sdk-menu { position: relative; display: inline-flex; }
+
+.oc-sdk-text { white-space: pre-wrap; overflow-wrap: anywhere; }
+.oc-sdk-text img { display: block; max-width: 100%; margin: 8px 0; }
+`;
+  var GUEST_UI_LOOK_CSS = `${THEME_VARS}
+.oc-sdk { color: ${fg}; font-family: ${font}; }
+.oc-sdk :focus-visible, .oc-sdk:focus-visible { outline: none; }
+.oc-sdk :where(button, a[href], [role="button"], [role="tab"], [role="option"]):focus-visible, button.oc-sdk:focus-visible { ${focusFill} }
+.oc-sdk-mono { font-family: ${mono}; }
+.oc-sdk-muted { color: ${muted}; }
+${tone("success")}${tone("warning")}${tone("error")}${tone("info")}
+.oc-sdk[data-tone="primary"], .oc-sdk [data-tone="primary"] { --oc-sdk-tone: ${primary}; --oc-sdk-tone-text: ${primaryText}; }
+
+.oc-sdk-btn { border-radius: ${controlRadius}; transition: background 150ms ease-out, color 150ms ease-out; }
+.oc-sdk-btn[data-size="xs"] { border-radius: ${smallRadius}; }
+.oc-sdk-btn[data-variant="default"] { color: ${primaryText}; background: ${mix(primary, 10, bg)}; border-color: ${mix(primary, 12)}; ${litButton} }
+.oc-sdk-btn[data-variant="default"]:hover { background: ${mix(primary, 16, bg)}; }
+.oc-sdk-btn[data-variant="default"]:active { background: ${mix(primary, 22, bg)}; box-shadow: none; }
+.oc-sdk-btn[data-variant="secondary"] { background: ${secondary}; color: var(--oc-fg); }
+.oc-sdk-btn[data-variant="secondary"]:hover { background-image: linear-gradient(${hover}, ${hover}); }
+.oc-sdk-btn[data-variant="secondary"]:active { background-image: linear-gradient(${active}, ${active}); }
+.oc-sdk-btn[data-variant="outline"] { background: var(--oc-sdk-raised-bg); color: ${elevatedFg}; ${raised} }
+.oc-sdk-btn[data-variant="outline"]:hover { background-image: linear-gradient(${hover}, ${hover}); }
+.oc-sdk-btn[data-variant="outline"]:active { background-image: linear-gradient(${active}, ${active}); box-shadow: none; }
+.oc-sdk-btn[data-variant="ghost"] { background: transparent; }
+.oc-sdk-btn[data-variant="ghost"]:hover { background: ${hover}; }
+.oc-sdk-btn[data-variant="ghost"]:active { background: ${active}; }
+.oc-sdk-btn[data-variant="destructive"] { --oc-sdk-tone: ${v("status-error", "red")}; color: ${errorText}; background: ${mix("var(--oc-sdk-tone)", 7, bg)}; border-color: ${mix("var(--oc-sdk-tone)", 12)}; ${litButton} }
+.oc-sdk-btn[data-variant="destructive"]:hover { background: ${mix("var(--oc-sdk-tone)", 9, bg)}; }
+.oc-sdk-btn[data-variant="destructive"]:active { background: ${mix("var(--oc-sdk-tone)", 11, bg)}; box-shadow: none; }
+
+.oc-sdk-field-note { color: ${muted}; }
+.oc-sdk-field[data-invalid="true"] .oc-sdk-field-note { color: ${errorText}; }
+.oc-sdk-input { border-radius: ${controlRadius}; background: var(--oc-sdk-field-bg); color: ${elevatedFg}; ${field("var(--oc-sdk-edge)")} transition: background 150ms ease-out; }
+.oc-sdk-input::placeholder { color: ${muted}; }
+.oc-sdk-input:hover:not(:focus) { background-image: linear-gradient(${hover}, ${hover}); }
+.oc-sdk-input:focus, .oc-sdk-input:focus-visible { ${field(mix(fg, 26))} }
+.oc-sdk-field[data-invalid="true"] .oc-sdk-input, .oc-sdk-field[data-invalid="true"] .oc-sdk-input:focus { ${field(v("status-error", "red"))} }
+.oc-sdk-input[data-mono="true"] { font-family: ${mono}; }
+
+.oc-sdk-search-icon { color: ${muted}; }
+.oc-sdk-search[data-active="true"] .oc-sdk-search-icon { color: ${primary}; }
+.oc-sdk-search-clear { border-radius: ${smallRadius}; color: ${muted}; }
+.oc-sdk-search-clear:hover { background: ${hover}; color: ${fg}; }
+
+.oc-sdk-trigger { border-radius: ${controlRadius}; background: var(--oc-sdk-raised-bg); color: ${elevatedFg}; ${raised} transition: background 150ms ease-out; }
+.oc-sdk-trigger:hover { background-image: linear-gradient(${hover}, ${hover}); }
+.oc-sdk-trigger[aria-expanded="true"] { background-image: linear-gradient(${active}, ${active}); }
+.oc-sdk-trigger-value[data-empty="true"] { color: ${muted}; }
+.oc-sdk-trigger-chevron { color: ${muted}; }
+/* The app's dropdown light: lit top, hairline rings and a layered shadow. Its outer ring is the border, over the page like the app's. */
+.oc-sdk-popup { --surface-foreground: ${elevatedFg}; border-color: var(--oc-sdk-float-edge); border-radius: 12px; background: ${elevated}; background-clip: padding-box; color: ${elevatedFg}; box-shadow: var(--oc-sdk-float); }
+.oc-sdk-option { border-radius: 8px; }
+.oc-sdk-option[data-active="true"] { background: ${hover}; }
+/* A selected option shows a check mark in the text colour, like the app's own pickers. Options without the mark come
+   from bundles built before it existed and keep the selection fill as their only sign of the choice. */
+.oc-sdk-option[aria-selected="true"]:not([data-mark]) { background: ${selection}; color: ${selectionFg}; }
+.oc-sdk-option-check { color: ${fg}; }
+.oc-sdk-option[data-destructive="true"] { color: ${errorText}; }
+.oc-sdk-option[data-destructive="true"][data-active="true"] { background: ${mix(v("status-error", "red"), 10)}; }
+.oc-sdk-option-hint { color: ${muted}; }
+.oc-sdk-popup-empty { color: ${muted}; }
+
+/* Checked stays neutral: the mark carries the state, and the primary colour stays with primary actions. */
+.oc-sdk-check-box { border-color: ${border}; border-radius: 4px; color: ${fg}; transition: border-color 150ms ease-out; }
+.oc-sdk-check[aria-checked="true"] .oc-sdk-check-box { border-color: ${mix(fg, 60, border)}; }
+.oc-sdk-check-thumb { border-radius: 9999px; background: ${border}; transition: background 150ms ease-out; }
+.oc-sdk-check-thumb::after { border-radius: 9999px; background: ${bg}; transition: transform 150ms ease-out; }
+.oc-sdk-check[aria-checked="true"] .oc-sdk-check-thumb { background: ${primary}; }
+.oc-sdk-check[aria-checked="true"] .oc-sdk-check-thumb::after { transform: translateX(16px); }
+.oc-sdk-check:focus-visible { box-shadow: none; }
+.oc-sdk-check:focus-visible .oc-sdk-check-box, .oc-sdk-check:focus-visible .oc-sdk-check-thumb { ${focusFill} }
+.oc-sdk-check-desc { color: ${muted}; }
+
+.oc-sdk-tabs { border-radius: 10px; }
+.oc-sdk-tabs[data-track="true"] { background: ${mix(fg, 4)}; box-shadow: inset 0 1px 2px 0 rgb(0 0 0 / 0.16); }
+.oc-sdk-tab { border-radius: 8px; color: ${muted}; transition: color 150ms ease-out, background 150ms ease-out; }
+.oc-sdk-tab:hover { color: ${fg}; }
+.oc-sdk-tab[aria-selected="true"] { color: ${selectionFg}; background: ${selection}; border-color: ${border}; }
+.oc-sdk-tabs[data-track="true"] .oc-sdk-tab[aria-selected="true"] { color: ${elevatedFg}; background: var(--oc-sdk-raised-bg); ${raised} }
+.oc-sdk-tab-count { color: ${muted}; }
+
+.oc-sdk-badge { border-radius: 9999px; background: ${hover}; color: ${muted}; }
+.oc-sdk-badge[data-tone] { color: var(--oc-sdk-tone-text, var(--oc-sdk-tone)); background: ${mix("var(--oc-sdk-tone)", 15)}; }
+
+.oc-sdk-row { border-radius: 6px; transition: background 120ms ease-out; }
+.oc-sdk-row:hover, .oc-sdk-row[data-active="true"] { background: ${hover}; }
+.oc-sdk-row[aria-selected="true"] { background: ${selection}; color: ${selectionFg}; }
+.oc-sdk-row-lead { font-family: ${mono}; color: ${muted}; }
+.oc-sdk-row-sub { color: ${muted}; }
+.oc-sdk-row-meta { color: ${muted}; }
+.oc-sdk-row[aria-selected="true"] .oc-sdk-row-lead, .oc-sdk-row[aria-selected="true"] .oc-sdk-row-sub, .oc-sdk-row[aria-selected="true"] .oc-sdk-row-meta { color: inherit; opacity: .75; }
+.oc-sdk-list-empty { color: ${muted}; }
+
+.oc-sdk-empty-body { color: ${muted}; }
+
+.oc-sdk-spinner { color: ${muted}; }
+.oc-sdk-spinner-ring { border-color: ${border}; border-top-color: ${primary}; border-radius: 9999px; }
+
+/* Set apart by its tint alone, like the app's banners. */
+.oc-sdk-banner { border-color: transparent; border-radius: 8px; background: ${mix("var(--oc-sdk-tone)", 10)}; }
+.oc-sdk-banner-title { color: var(--oc-sdk-tone-text, var(--oc-sdk-tone)); }
+.oc-sdk-banner-body { color: ${muted}; }
+
+.oc-sdk-separator { color: ${muted}; }
+.oc-sdk-separator::before, .oc-sdk-separator::after { background: ${mix(border, 40)}; }
+
+.oc-sdk-progress-label { color: ${muted}; }
+.oc-sdk-progress-track { border-radius: 9999px; background: ${border}; }
+.oc-sdk-progress-fill { border-radius: 9999px; background: var(--oc-sdk-tone, ${primary}); }
+
+.oc-sdk-text a { color: ${primaryText}; text-decoration: underline; text-underline-offset: 2px; }
+.oc-sdk-text img { border-radius: 8px; border: 1px solid ${mix(border, 60)}; }
+`;
+  var UI_CSS = `
+${GUEST_SCROLLBAR_CSS}
+${UI_SIZE_CSS}
+${GUEST_UI_LOOK_CSS}`;
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/dom.js
+  var STYLE_ID = "oc-sdk-ui-style";
+  var clearNode = (node) => {
+    while (node.firstChild) {
+      node.removeChild(node.firstChild);
+    }
+  };
+  var ensureStyle = (css) => {
+    const existing = document.getElementById(STYLE_ID);
+    if (existing instanceof HTMLStyleElement) {
+      if (existing.textContent !== css) {
+        existing.textContent = css;
+      }
+      return;
+    }
+    installGuestScrollbarActivity(document);
+    const style = document.createElement("style");
+    style.id = STYLE_ID;
+    style.textContent = css;
+    document.head.appendChild(style);
+  };
+  var el = (tag, className) => {
+    const node = document.createElement(tag);
+    if (className) {
+      node.className = className;
+    }
+    return node;
+  };
+  var button = (className) => {
+    const node = el("button", className);
+    node.type = "button";
+    return node;
+  };
+  var setText = (node, text) => {
+    const next = text ?? "";
+    if (node.textContent !== next) {
+      node.textContent = next;
+    }
+  };
+  var setAttr = (node, name, value) => {
+    if (value === void 0 || value === null || value === "") {
+      node.removeAttribute(name);
+    } else if (node.getAttribute(name) !== value) {
+      node.setAttribute(name, value);
+    }
+  };
+  var onOutsideClick = (node, handler) => {
+    const listener = (event) => {
+      if (event.target instanceof Node && node.contains(event.target)) {
+        return;
+      }
+      handler();
+    };
+    document.addEventListener("pointerdown", listener, true);
+    return () => {
+      document.removeEventListener("pointerdown", listener, true);
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/button.js
+  var ring = () => {
+    const spinner = document.createElement("span");
+    spinner.className = "oc-sdk-spinner-ring";
+    spinner.setAttribute("aria-hidden", "true");
+    return spinner;
+  };
+  var mountButton = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = button("oc-sdk oc-sdk-btn");
+    const spinner = ring();
+    const label = document.createElement("span");
+    node.append(label);
+    root.append(node);
+    const paint = () => {
+      node.dataset.variant = props.variant ?? "default";
+      node.dataset.size = props.size ?? "default";
+      node.disabled = Boolean(props.disabled) || Boolean(props.loading);
+      node.dataset.loading = props.loading ? "true" : "false";
+      node.setAttribute("aria-busy", props.loading ? "true" : "false");
+      if (props.loading && spinner.parentNode !== node) {
+        node.prepend(spinner);
+      } else if (!props.loading && spinner.parentNode === node) {
+        spinner.remove();
+      }
+      setText(label, props.label);
+    };
+    const onClick = () => {
+      if (props.disabled || props.loading) {
+        return;
+      }
+      props.onClick();
+    };
+    node.addEventListener("click", onClick);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.removeEventListener("click", onClick);
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/field.js
+  var mountTextField = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const field2 = el("label", "oc-sdk oc-sdk-field");
+    const caption = el("span", "oc-sdk-field-label");
+    const input = props.multiline ? el("textarea", "oc-sdk-input") : el("input", "oc-sdk-input");
+    const note = el("span", "oc-sdk-field-note");
+    field2.append(caption, input, note);
+    root.append(field2);
+    const paint = () => {
+      setText(caption, props.label);
+      caption.hidden = !props.label;
+      if (input instanceof HTMLInputElement) {
+        input.type = props.password ? "password" : "text";
+      } else {
+        input.rows = props.rows ?? 3;
+      }
+      if (input.value !== props.value) {
+        input.value = props.value;
+      }
+      input.disabled = Boolean(props.disabled);
+      setAttr(input, "placeholder", props.placeholder);
+      input.dataset.mono = props.mono ? "true" : "false";
+      const invalid = Boolean(props.error);
+      field2.dataset.invalid = invalid ? "true" : "false";
+      input.setAttribute("aria-invalid", invalid ? "true" : "false");
+      const text = props.error ?? props.helper ?? "";
+      setText(note, text);
+      note.hidden = text === "";
+    };
+    const onInput = () => {
+      props.onChange(input.value);
+    };
+    input.addEventListener("input", onInput);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        input.removeEventListener("input", onInput);
+        field2.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/icons.js
+  var SVG_NS = "http://www.w3.org/2000/svg";
+  var ICON_PATH = {
+    search: "M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z",
+    chevron: "M12 13.172l4.95-4.95 1.414 1.414L12 16 5.636 9.636 7.05 8.222z",
+    check: "M10 15.172l9.192-9.193 1.415 1.414L10 18l-6.364-6.364 1.414-1.414z",
+    close: "M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"
+  };
+  var icon = (name, size, className) => {
+    const node = document.createElementNS(SVG_NS, "svg");
+    node.setAttribute("viewBox", "0 0 24 24");
+    node.setAttribute("width", String(size));
+    node.setAttribute("height", String(size));
+    node.setAttribute("aria-hidden", "true");
+    node.setAttribute("fill", "currentColor");
+    if (className) {
+      node.setAttribute("class", className);
+    }
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", ICON_PATH[name]);
+    node.append(path);
+    return node;
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/search.js
+  var mountSearchField = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const wrap = el("div", "oc-sdk oc-sdk-search");
+    const input = el("input", "oc-sdk-input");
+    input.type = "text";
+    input.spellcheck = false;
+    input.autocomplete = "off";
+    input.setAttribute("role", "searchbox");
+    const clear = button("oc-sdk-search-clear");
+    clear.append(icon("close", 14));
+    clear.tabIndex = -1;
+    wrap.append(icon("search", 16, "oc-sdk-search-icon"), input, clear);
+    root.append(wrap);
+    const paint = () => {
+      const placeholder = props.placeholder ?? "Search";
+      setAttr(input, "placeholder", placeholder);
+      input.setAttribute("aria-label", props.label ?? placeholder);
+      clear.setAttribute("aria-label", "Clear search");
+      if (input.value !== props.value) {
+        input.value = props.value;
+      }
+      wrap.dataset.active = props.value.trim() === "" ? "false" : "true";
+    };
+    const clearValue = () => {
+      if (props.value !== "") {
+        props.onChange("");
+      }
+      input.focus();
+    };
+    const onInput = () => {
+      props.onChange(input.value);
+    };
+    const onKeyDown = (event) => {
+      if (event.key === "Escape" && input.value !== "") {
+        event.preventDefault();
+        clearValue();
+      }
+    };
+    input.addEventListener("input", onInput);
+    input.addEventListener("keydown", onKeyDown);
+    clear.addEventListener("click", clearValue);
+    paint();
+    if (props.autofocus) {
+      input.focus();
+    }
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        input.removeEventListener("input", onInput);
+        input.removeEventListener("keydown", onKeyDown);
+        clear.removeEventListener("click", clearValue);
+        wrap.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/navigation.js
+  var navigationKey = (event, axis = "vertical") => {
+    const [next, previous] = axis === "vertical" ? ["ArrowDown", "ArrowUp"] : ["ArrowRight", "ArrowLeft"];
+    if (event.key === next || event.ctrlKey && event.key.toLowerCase() === "n")
+      return "next";
+    if (event.key === previous || event.ctrlKey && event.key.toLowerCase() === "p")
+      return "previous";
+    if (event.key === "Home")
+      return "first";
+    if (event.key === "End")
+      return "last";
+    return null;
+  };
+  var moveListSelection = (items, currentId, key) => {
+    const enabled = items.filter((item) => !item.disabled);
+    if (enabled.length === 0) {
+      return null;
+    }
+    const first = enabled[0];
+    const last = enabled[enabled.length - 1];
+    if (key === "first" || !first || !last) {
+      return first?.id ?? null;
+    }
+    if (key === "last") {
+      return last.id;
+    }
+    const index = enabled.findIndex((item) => item.id === currentId);
+    if (index === -1) {
+      return key === "next" ? first.id : last.id;
+    }
+    const target = enabled[Math.min(enabled.length - 1, Math.max(0, index + (key === "next" ? 1 : -1)))];
+    return target?.id ?? null;
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/option.js
+  var optionId = (uid, id) => `${uid}-${id ?? ""}`;
+  var createOption = (uid, role, spec, on) => {
+    const node = button("oc-sdk-option");
+    node.id = optionId(uid, spec.id);
+    node.setAttribute("role", role);
+    node.tabIndex = -1;
+    node.disabled = Boolean(spec.disabled);
+    if (role === "option") {
+      node.setAttribute("aria-selected", spec.selected ? "true" : "false");
+    }
+    node.dataset.destructive = spec.destructive ? "true" : "false";
+    const label = el("span", "oc-sdk-option-label");
+    label.textContent = spec.label;
+    node.append(label);
+    if (spec.hint) {
+      const hint = el("span", "oc-sdk-option-hint");
+      hint.textContent = spec.hint;
+      node.append(hint);
+    }
+    if (role === "option") {
+      node.dataset.mark = "check";
+      const check = el("span", "oc-sdk-option-check");
+      check.append(icon("check", 14));
+      node.append(check);
+    }
+    node.addEventListener("pointerenter", on.hover);
+    node.addEventListener("click", on.pick);
+    return node;
+  };
+  var highlightOption = (container, focusOwner, uid, id) => {
+    const target = optionId(uid, id);
+    for (const child of Array.from(container.children)) {
+      if (child instanceof HTMLElement && child.classList.contains("oc-sdk-option")) {
+        child.dataset.active = child.id === target ? "true" : "false";
+      }
+    }
+    setAttr(focusOwner, "aria-activedescendant", id ? target : null);
+    container.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/popup.js
+  var placePopup = (popup, trigger) => {
+    const rect = trigger.getBoundingClientRect();
+    popup.style.minWidth = `${Math.round(rect.width)}px`;
+    popup.style.left = `${Math.round(rect.left)}px`;
+    popup.style.top = `${Math.round(rect.bottom + 4)}px`;
+    const height = popup.offsetHeight;
+    const roomBelow = window.innerHeight - rect.bottom - 8;
+    if (height > roomBelow && rect.top - 8 > roomBelow) {
+      popup.style.top = `${Math.max(8, Math.round(rect.top - 4 - height))}px`;
+    }
+    const overflow = rect.left + popup.offsetWidth - window.innerWidth + 8;
+    if (overflow > 0) {
+      popup.style.left = `${Math.max(8, Math.round(rect.left - overflow))}px`;
+    }
+  };
+  var openPopup = (host2, trigger, popup, close) => {
+    host2.append(popup);
+    placePopup(popup, trigger);
+    const stopOutside = onOutsideClick(host2, close);
+    const onResize = () => {
+      close();
+    };
+    const onScroll = (event) => {
+      if (event.target instanceof Node && popup.contains(event.target)) {
+        return;
+      }
+      close();
+    };
+    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onScroll, true);
+    return () => {
+      stopOutside();
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onScroll, true);
+      popup.remove();
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/select.js
+  var filterSelectOptions = (options, query) => {
+    const needle = query.trim().toLowerCase();
+    if (!needle) {
+      return [...options];
+    }
+    return options.filter((option) => option.label.toLowerCase().includes(needle) || option.id.toLowerCase().includes(needle));
+  };
+  var selectCount = 0;
+  var mountSelect = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const uid = `oc-sdk-select-${selectCount += 1}`;
+    const wrap = el("div", "oc-sdk oc-sdk-select");
+    const caption = el("span", "oc-sdk-field-label");
+    caption.id = `${uid}-label`;
+    const trigger = button("oc-sdk-trigger");
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-labelledby", caption.id);
+    const value = el("span", "oc-sdk-trigger-value");
+    trigger.append(value, icon("chevron", 14, "oc-sdk-trigger-chevron"));
+    wrap.append(caption, trigger);
+    root.append(wrap);
+    let query = "";
+    let activeId = null;
+    let closePopup = null;
+    const popup = el("div", "oc-sdk oc-sdk-popup");
+    const searchSlot = el("div", "oc-sdk-popup-search");
+    const search = el("input", "oc-sdk-input");
+    search.type = "text";
+    search.autocomplete = "off";
+    searchSlot.append(search);
+    const listbox = el("div");
+    listbox.setAttribute("role", "listbox");
+    listbox.tabIndex = -1;
+    popup.append(listbox);
+    const visible = () => filterSelectOptions(props.options, props.searchable ? query : "");
+    const focusOwner = () => props.searchable ? search : listbox;
+    const setActive = (id) => {
+      activeId = id;
+      highlightOption(listbox, focusOwner(), uid, id);
+    };
+    const paintOptions = () => {
+      clearNode(listbox);
+      const options = visible();
+      if (options.length === 0) {
+        const empty = el("div", "oc-sdk-popup-empty");
+        empty.textContent = "No matches";
+        listbox.append(empty);
+      }
+      for (const option of options) {
+        listbox.append(createOption(uid, "option", { ...option, selected: option.id === props.value }, {
+          hover: () => setActive(option.id),
+          pick: () => pick(option.id)
+        }));
+      }
+      setActive(options.some((option) => option.id === activeId) ? activeId : options[0]?.id ?? null);
+    };
+    const close = () => {
+      const dispose = closePopup;
+      closePopup = null;
+      dispose?.();
+      query = "";
+      search.value = "";
+      trigger.setAttribute("aria-expanded", "false");
+    };
+    const open = () => {
+      if (closePopup || props.disabled) {
+        return;
+      }
+      activeId = props.value;
+      search.placeholder = props.searchPlaceholder ?? "Search";
+      if (props.searchable)
+        popup.prepend(searchSlot);
+      else
+        searchSlot.remove();
+      paintOptions();
+      closePopup = openPopup(wrap, trigger, popup, close);
+      trigger.setAttribute("aria-expanded", "true");
+      focusOwner().focus();
+    };
+    const pick = (id) => {
+      close();
+      trigger.focus();
+      if (id !== props.value)
+        props.onChange(id);
+    };
+    const onTriggerClick = () => {
+      if (closePopup)
+        close();
+      else
+        open();
+    };
+    const onTriggerKey = (event) => {
+      if (!closePopup && navigationKey(event)) {
+        event.preventDefault();
+        open();
+      }
+    };
+    const onPopupKey = (event) => {
+      const step = navigationKey(event);
+      if (step) {
+        event.preventDefault();
+        setActive(moveListSelection(visible(), activeId, step));
+      } else if (event.key === "Enter") {
+        event.preventDefault();
+        if (activeId)
+          pick(activeId);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        trigger.focus();
+      } else if (props.searchable && event.target !== search && event.key.length === 1 && !event.ctrlKey && !event.metaKey) {
+        search.focus();
+      }
+    };
+    const onSearchInput = () => {
+      query = search.value;
+      paintOptions();
+    };
+    const onFocusOut = (event) => {
+      if (closePopup && !(event.relatedTarget instanceof Node && wrap.contains(event.relatedTarget)))
+        close();
+    };
+    const paint = () => {
+      setText(caption, props.label);
+      caption.hidden = !props.label;
+      const current = props.options.find((option) => option.id === props.value);
+      setText(value, current?.label ?? props.placeholder ?? "Select");
+      value.dataset.empty = current ? "false" : "true";
+      trigger.disabled = Boolean(props.disabled);
+      if (closePopup)
+        paintOptions();
+    };
+    trigger.addEventListener("click", onTriggerClick);
+    trigger.addEventListener("keydown", onTriggerKey);
+    popup.addEventListener("keydown", onPopupKey);
+    search.addEventListener("input", onSearchInput);
+    wrap.addEventListener("focusout", onFocusOut);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        close();
+        trigger.removeEventListener("click", onTriggerClick);
+        trigger.removeEventListener("keydown", onTriggerKey);
+        popup.removeEventListener("keydown", onPopupKey);
+        search.removeEventListener("input", onSearchInput);
+        wrap.removeEventListener("focusout", onFocusOut);
+        wrap.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/checkbox.js
+  var mountToggle = (root, initial, role) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = button("oc-sdk oc-sdk-check");
+    node.setAttribute("role", role);
+    const control = el("span", role === "switch" ? "oc-sdk-check-thumb" : "oc-sdk-check-box");
+    if (role === "checkbox") {
+      control.append(icon("check", 12));
+    }
+    const text = el("span", "oc-sdk-check-text");
+    const label = el("span", "oc-sdk-check-label");
+    const description = el("span", "oc-sdk-check-desc");
+    text.append(label, description);
+    node.append(control, text);
+    root.append(node);
+    const paint = () => {
+      node.setAttribute("aria-checked", props.checked ? "true" : "false");
+      node.disabled = Boolean(props.disabled);
+      setText(label, props.label);
+      setText(description, props.description);
+      description.hidden = !props.description;
+    };
+    const onClick = () => {
+      if (!props.disabled) {
+        props.onChange(!props.checked);
+      }
+    };
+    node.addEventListener("click", onClick);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.removeEventListener("click", onClick);
+        node.remove();
+      }
+    };
+  };
+  var mountCheckbox = (root, initial) => mountToggle(root, initial, "checkbox");
+  var mountSwitch = (root, initial) => mountToggle(root, initial, "switch");
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/tabs.js
+  var mountTabs = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const track = el("div", "oc-sdk oc-sdk-tabs");
+    track.setAttribute("role", "tablist");
+    root.append(track);
+    const paint = () => {
+      clearNode(track);
+      track.dataset.track = props.trackBackground ? "true" : "false";
+      for (const item of props.items) {
+        const tab = button("oc-sdk-tab");
+        tab.setAttribute("role", "tab");
+        const active2 = item.id === props.activeId;
+        tab.setAttribute("aria-selected", active2 ? "true" : "false");
+        tab.tabIndex = active2 ? 0 : -1;
+        tab.dataset.id = item.id;
+        const label = el("span");
+        label.textContent = item.label;
+        tab.append(label);
+        if (item.count !== void 0) {
+          const count = el("span", "oc-sdk-tab-count");
+          count.textContent = String(item.count);
+          tab.append(count);
+        }
+        tab.addEventListener("click", () => {
+          if (item.id !== props.activeId)
+            props.onChange(item.id);
+        });
+        track.append(tab);
+      }
+    };
+    const onKeyDown = (event) => {
+      const step = navigationKey(event, "horizontal");
+      if (!step) {
+        return;
+      }
+      const next = moveListSelection(props.items, props.activeId, step);
+      if (next && next !== props.activeId) {
+        event.preventDefault();
+        props.onChange(next);
+        const tab = track.querySelector(`[data-id="${CSS.escape(next)}"]`);
+        if (tab instanceof HTMLElement)
+          tab.focus();
+      }
+    };
+    track.addEventListener("keydown", onKeyDown);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        track.removeEventListener("keydown", onKeyDown);
+        track.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/badge.js
+  var applyTone = (node, tone2) => {
+    setAttr(node, "data-tone", tone2 && tone2 !== "neutral" ? tone2 : null);
+  };
+  var mountBadge = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("span", "oc-sdk oc-sdk-badge");
+    root.append(node);
+    const paint = () => {
+      setText(node, props.label);
+      applyTone(node, props.tone);
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/list.js
+  var listCount = 0;
+  var mountList = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const uid = `oc-sdk-list-${listCount += 1}`;
+    const list = el("div", "oc-sdk oc-sdk-list");
+    list.setAttribute("role", "listbox");
+    list.tabIndex = 0;
+    root.append(list);
+    let activeId = null;
+    const rowId = (id) => `${uid}-${id}`;
+    const setActive = (id) => {
+      activeId = id;
+      for (const row of Array.from(list.children)) {
+        if (row instanceof HTMLElement) {
+          row.dataset.active = row.id === rowId(id ?? "") ? "true" : "false";
+        }
+      }
+      setAttr(list, "aria-activedescendant", id ? rowId(id) : null);
+      list.querySelector('[data-active="true"]')?.scrollIntoView({ block: "nearest" });
+    };
+    const span = (className, text) => {
+      const node = el("span", className);
+      node.textContent = text;
+      return node;
+    };
+    const paint = () => {
+      clearNode(list);
+      setAttr(list, "aria-label", props.ariaLabel);
+      if (props.items.length === 0) {
+        list.append(span("oc-sdk-list-empty", props.emptyText ?? "Nothing here"));
+        setActive(null);
+        return;
+      }
+      for (const item of props.items) {
+        const row = button("oc-sdk-row");
+        row.id = rowId(item.id);
+        row.setAttribute("role", "option");
+        row.setAttribute("aria-selected", item.id === props.selectedId ? "true" : "false");
+        row.disabled = Boolean(item.disabled);
+        row.tabIndex = -1;
+        if (item.leading)
+          row.append(span("oc-sdk-row-lead", item.leading));
+        const main = el("span", "oc-sdk-row-main");
+        main.append(span("oc-sdk-row-title", item.title));
+        if (item.subtitle)
+          main.append(span("oc-sdk-row-sub", item.subtitle));
+        row.append(main);
+        if (item.badge) {
+          const badge = span("oc-sdk-badge", item.badge.label);
+          applyTone(badge, item.badge.tone);
+          row.append(badge);
+        }
+        if (item.meta)
+          row.append(span("oc-sdk-row-meta", item.meta));
+        row.addEventListener("click", () => props.onSelect(item.id));
+        list.append(row);
+      }
+      const stillThere = props.items.some((item) => item.id === activeId && !item.disabled);
+      setActive(stillThere ? activeId : props.selectedId ?? null);
+    };
+    const onKeyDown = (event) => {
+      const step = navigationKey(event);
+      if (step) {
+        event.preventDefault();
+        setActive(moveListSelection(props.items, activeId, step));
+        return;
+      }
+      if ((event.key === "Enter" || event.key === " ") && activeId) {
+        event.preventDefault();
+        props.onSelect(activeId);
+      }
+    };
+    list.addEventListener("keydown", onKeyDown);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        list.removeEventListener("keydown", onKeyDown);
+        list.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/empty.js
+  var mountEmpty = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const shell = el("div", "oc-sdk oc-sdk-empty");
+    const title = el("h2", "oc-sdk-empty-title");
+    const body = el("p", "oc-sdk-empty-body");
+    const slot = el("div", "oc-sdk-empty-action");
+    shell.append(title, body, slot);
+    root.append(shell);
+    let action = null;
+    const paint = () => {
+      setText(title, props.title);
+      setText(body, props.body);
+      body.hidden = !props.body;
+      slot.hidden = !props.action;
+      if (!props.action) {
+        action?.dispose();
+        action = null;
+        return;
+      }
+      const next = { label: props.action.label, onClick: props.action.onClick };
+      if (action) {
+        action.update(next);
+      } else {
+        action = mountButton(slot, { ...next, variant: "outline", size: "sm" });
+      }
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        action?.dispose();
+        action = null;
+        shell.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/spinner.js
+  var mountSpinner = (root, initial = {}) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("span", "oc-sdk oc-sdk-spinner");
+    node.setAttribute("role", "status");
+    const ring2 = el("span", "oc-sdk-spinner-ring");
+    ring2.setAttribute("aria-hidden", "true");
+    const label = el("span");
+    node.append(ring2, label);
+    root.append(node);
+    const paint = () => {
+      node.dataset.size = props.size ?? "default";
+      setText(label, props.label);
+      label.hidden = !props.label;
+      node.setAttribute("aria-label", props.label ?? "Loading");
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/banner.js
+  var mountBanner = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("div", "oc-sdk oc-sdk-banner");
+    const text = el("div", "oc-sdk-banner-text");
+    const title = el("div", "oc-sdk-banner-title");
+    const body = el("div", "oc-sdk-banner-body");
+    const slot = el("div", "oc-sdk-banner-action");
+    text.append(title, body);
+    node.append(text, slot);
+    root.append(node);
+    let action = null;
+    const paint = () => {
+      node.dataset.tone = props.tone;
+      node.setAttribute("role", props.tone === "error" || props.tone === "warning" ? "alert" : "status");
+      setText(title, props.title);
+      setText(body, props.body);
+      body.hidden = !props.body;
+      slot.hidden = !props.action;
+      if (!props.action) {
+        action?.dispose();
+        action = null;
+        return;
+      }
+      const next = { label: props.action.label, onClick: props.action.onClick };
+      if (action) {
+        action.update(next);
+      } else {
+        action = mountButton(slot, { ...next, variant: "outline", size: "xs" });
+      }
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        action?.dispose();
+        action = null;
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/separator.js
+  var mountSeparator = (root, initial = {}) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("div", "oc-sdk oc-sdk-separator");
+    node.setAttribute("role", "separator");
+    const label = el("span");
+    node.append(label);
+    root.append(node);
+    const paint = () => {
+      setText(label, props.label);
+      label.hidden = !props.label;
+      node.dataset.labeled = props.label ? "true" : "false";
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/progress.js
+  var clampProgress = (value) => Number.isFinite(value) ? Math.min(100, Math.max(0, Math.round(value))) : 0;
+  var mountProgress = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("div", "oc-sdk oc-sdk-progress");
+    const caption = el("div", "oc-sdk-progress-label");
+    const label = el("span");
+    const percent = el("span");
+    caption.append(label, percent);
+    const track = el("div", "oc-sdk-progress-track");
+    track.setAttribute("role", "progressbar");
+    track.setAttribute("aria-valuemin", "0");
+    track.setAttribute("aria-valuemax", "100");
+    const fill = el("div", "oc-sdk-progress-fill");
+    track.append(fill);
+    node.append(caption, track);
+    root.append(node);
+    const paint = () => {
+      const value = clampProgress(props.value);
+      applyTone(fill, props.tone);
+      fill.style.transform = `scaleX(${value / 100})`;
+      track.setAttribute("aria-valuenow", String(value));
+      if (props.label)
+        track.setAttribute("aria-label", props.label);
+      else
+        track.removeAttribute("aria-label");
+      setText(label, props.label);
+      setText(percent, `${value}%`);
+      caption.hidden = !props.label;
+    };
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/menu.js
+  var actions = (items) => items.filter((item) => !("separator" in item));
+  var menuCount = 0;
+  var mountMenu = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const uid = `oc-sdk-menu-${menuCount += 1}`;
+    const wrap = el("div", "oc-sdk oc-sdk-menu");
+    root.append(wrap);
+    const popup = el("div", "oc-sdk oc-sdk-popup");
+    popup.setAttribute("role", "menu");
+    popup.tabIndex = -1;
+    let closePopup = null;
+    let activeId = null;
+    const trigger = mountButton(wrap, {
+      label: props.label,
+      variant: props.variant,
+      size: props.size,
+      onClick: () => {
+        if (closePopup)
+          close();
+        else
+          open();
+      }
+    });
+    const triggerNode = wrap.querySelector("button");
+    triggerNode?.setAttribute("aria-haspopup", "menu");
+    const setActive = (id) => {
+      activeId = id;
+      highlightOption(popup, popup, uid, id);
+    };
+    const paintItems = () => {
+      clearNode(popup);
+      for (const item of props.items) {
+        if ("separator" in item) {
+          const line = el("div", "oc-sdk-separator");
+          line.dataset.labeled = "false";
+          popup.append(line);
+          continue;
+        }
+        popup.append(createOption(uid, "menuitem", item, {
+          hover: () => setActive(item.id),
+          pick: () => pick(item.id)
+        }));
+      }
+      setActive(actions(props.items).some((item) => item.id === activeId) ? activeId : null);
+    };
+    const close = () => {
+      const dispose = closePopup;
+      closePopup = null;
+      dispose?.();
+      activeId = null;
+      triggerNode?.setAttribute("aria-expanded", "false");
+    };
+    const open = () => {
+      if (closePopup || !triggerNode) {
+        return;
+      }
+      paintItems();
+      closePopup = openPopup(wrap, triggerNode, popup, close);
+      triggerNode.setAttribute("aria-expanded", "true");
+      popup.focus();
+    };
+    const pick = (id) => {
+      close();
+      triggerNode?.focus();
+      props.onSelect(id);
+    };
+    const onPopupKey = (event) => {
+      const step = navigationKey(event);
+      if (step) {
+        event.preventDefault();
+        setActive(moveListSelection(actions(props.items), activeId, step));
+      } else if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        if (activeId)
+          pick(activeId);
+      } else if (event.key === "Escape") {
+        event.preventDefault();
+        close();
+        triggerNode?.focus();
+      }
+    };
+    const onFocusOut = (event) => {
+      if (closePopup && !(event.relatedTarget instanceof Node && wrap.contains(event.relatedTarget)))
+        close();
+    };
+    popup.addEventListener("keydown", onPopupKey);
+    wrap.addEventListener("focusout", onFocusOut);
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        trigger.update({ label: props.label, variant: props.variant, size: props.size });
+        if (closePopup)
+          paintItems();
+      },
+      dispose: () => {
+        close();
+        popup.removeEventListener("keydown", onPopupKey);
+        wrap.removeEventListener("focusout", onFocusOut);
+        trigger.dispose();
+        wrap.remove();
+      }
+    };
+  };
+
+  // ../../../../../usr/local/lib/node_modules/@openchamber/web/node_modules/@openchamber/sdk/dist/ui/text.js
+  var MARKDOWN_TOKEN = /(!?)\[([^\]]*)\]\((https?:\/\/[^)\s]+)\)/g;
+  var isHttpUrl = (value) => {
+    try {
+      const url = new URL(value);
+      return url.protocol === "http:" || url.protocol === "https:";
+    } catch {
+      return false;
+    }
+  };
+  var splitTextMedia = (text) => {
+    const parts = [];
+    let last = 0;
+    for (const match of text.matchAll(MARKDOWN_TOKEN)) {
+      const index = match.index ?? 0;
+      if (index > last) {
+        parts.push({ kind: "text", text: text.slice(last, index) });
+      }
+      const marker = match[1] ?? "";
+      const label = (match[2] ?? "").trim();
+      const href = match[3] ?? "";
+      if (!isHttpUrl(href)) {
+        parts.push({ kind: "text", text: match[0] });
+      } else if (marker === "!") {
+        parts.push({ kind: "image", src: href, alt: label });
+      } else {
+        parts.push({ kind: "link", href, label: label || href });
+      }
+      last = index + match[0].length;
+    }
+    if (last < text.length) {
+      parts.push({ kind: "text", text: text.slice(last) });
+    }
+    return parts;
+  };
+  var mountText = (root, initial) => {
+    ensureStyle(UI_CSS);
+    let props = initial;
+    const node = el("div", "oc-sdk oc-sdk-text");
+    root.append(node);
+    const onClick = (event) => {
+      if (!(event.target instanceof HTMLAnchorElement) || !props.onOpenUrl) {
+        return;
+      }
+      event.preventDefault();
+      props.onOpenUrl(event.target.href);
+    };
+    const paint = () => {
+      clearNode(node);
+      for (const part of splitTextMedia(props.text)) {
+        if (part.kind === "text") {
+          node.append(document.createTextNode(part.text));
+        } else if (part.kind === "link") {
+          const link = el("a");
+          link.href = part.href;
+          link.rel = "noopener noreferrer";
+          link.target = "_blank";
+          link.textContent = part.label;
+          node.append(link);
+        } else {
+          const img = el("img");
+          img.src = part.src;
+          img.alt = part.alt;
+          img.loading = "lazy";
+          img.referrerPolicy = "no-referrer";
+          node.append(img);
+        }
+      }
+    };
+    node.addEventListener("click", onClick);
+    paint();
+    return {
+      update: (next) => {
+        props = { ...props, ...next };
+        paint();
+      },
+      dispose: () => {
+        node.removeEventListener("click", onClick);
+        node.remove();
+      }
+    };
+  };
+
+  // panel/dropdown.ts
+  function setupCustomDropdown(selectEl) {
+    if (!selectEl || selectEl.dataset.customDropdownInitialized === "true") {
+      return null;
+    }
+    selectEl.dataset.customDropdownInitialized = "true";
+    selectEl.style.display = "none";
+    const wrapper = document.createElement("div");
+    wrapper.className = "custom-dropdown";
+    if (selectEl.classList.contains("select-sm")) {
+      wrapper.classList.add("size-sm");
+    }
+    if (selectEl.style.width === "100%") {
+      wrapper.classList.add("size-full");
+    }
+    if (selectEl.style.flex) {
+      wrapper.style.flex = selectEl.style.flex;
+    }
+    wrapper.dataset.selectId = selectEl.id || "";
+    const trigger = document.createElement("button");
+    trigger.type = "button";
+    trigger.className = "custom-dropdown-trigger";
+    trigger.setAttribute("aria-haspopup", "listbox");
+    trigger.setAttribute("aria-expanded", "false");
+    const labelSpan = document.createElement("span");
+    labelSpan.className = "custom-dropdown-label";
+    const arrowSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    arrowSvg.setAttribute("class", "custom-dropdown-arrow icon icon-sm");
+    arrowSvg.setAttribute("viewBox", "0 0 24 24");
+    const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    path.setAttribute("d", "M7 10l5 5 5-5z");
+    arrowSvg.appendChild(path);
+    trigger.appendChild(labelSpan);
+    trigger.appendChild(arrowSvg);
+    wrapper.appendChild(trigger);
+    const menu = document.createElement("div");
+    menu.className = "custom-dropdown-menu";
+    menu.setAttribute("role", "listbox");
+    let activeIndex = -1;
+    function syncOptions() {
+      menu.innerHTML = "";
+      const options = Array.from(selectEl.options);
+      options.forEach((opt, idx) => {
+        const item = document.createElement("div");
+        item.className = "custom-dropdown-item";
+        item.setAttribute("role", "option");
+        item.setAttribute("data-value", opt.value);
+        item.setAttribute("data-index", String(idx));
+        item.setAttribute("aria-selected", opt.selected ? "true" : "false");
+        if (opt.selected) {
+          item.classList.add("is-selected");
+          activeIndex = idx;
+        }
+        const text = document.createElement("span");
+        text.className = "custom-dropdown-item-text";
+        text.textContent = opt.text;
+        const checkSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        checkSvg.setAttribute("class", "custom-dropdown-check icon icon-sm");
+        checkSvg.setAttribute("viewBox", "0 0 24 24");
+        const checkPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        checkPath.setAttribute("d", "M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z");
+        checkSvg.appendChild(checkPath);
+        item.appendChild(text);
+        item.appendChild(checkSvg);
+        item.addEventListener("click", (e) => {
+          e.stopPropagation();
+          selectOption(opt.value);
+        });
+        menu.appendChild(item);
+      });
+    }
+    function syncLabel() {
+      const selected = selectEl.options[selectEl.selectedIndex];
+      labelSpan.textContent = selected ? selected.text : "";
+      const items = Array.from(menu.children);
+      items.forEach((item, idx) => {
+        const isSel = idx === selectEl.selectedIndex;
+        item.classList.toggle("is-selected", isSel);
+        item.setAttribute("aria-selected", isSel ? "true" : "false");
+      });
+    }
+    function positionMenu() {
+      const rect = trigger.getBoundingClientRect();
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      const minWidth = Math.max(rect.width, 130);
+      menu.style.minWidth = `${minWidth}px`;
+      menu.style.left = `${Math.min(rect.left, window.innerWidth - minWidth - 10)}px`;
+      if (spaceBelow < 180 && spaceAbove > spaceBelow) {
+        menu.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+        menu.style.top = "auto";
+      } else {
+        menu.style.top = `${rect.bottom + 4}px`;
+        menu.style.bottom = "auto";
+      }
+    }
+    function openMenu() {
+      if (menu.classList.contains("is-open")) return;
+      document.querySelectorAll(".custom-dropdown-menu.is-open").forEach((m) => {
+        m.classList.remove("is-open");
+      });
+      document.querySelectorAll(".custom-dropdown-trigger.is-open").forEach((t) => {
+        t.classList.remove("is-open");
+        t.setAttribute("aria-expanded", "false");
+      });
+      if (!document.body.contains(menu)) {
+        document.body.appendChild(menu);
+      }
+      positionMenu();
+      menu.classList.add("is-open");
+      trigger.classList.add("is-open");
+      trigger.setAttribute("aria-expanded", "true");
+      const selectedItem = menu.querySelector(".custom-dropdown-item.is-selected");
+      if (selectedItem) {
+        selectedItem.scrollIntoView({ block: "nearest" });
+      }
+    }
+    function closeMenu() {
+      menu.classList.remove("is-open");
+      trigger.classList.remove("is-open");
+      trigger.setAttribute("aria-expanded", "false");
+    }
+    function selectOption(val) {
+      if (selectEl.value !== val) {
+        selectEl.value = val;
+        selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+      syncLabel();
+      closeMenu();
+      trigger.focus();
+    }
+    trigger.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (menu.classList.contains("is-open")) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
+    });
+    trigger.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        openMenu();
+      } else if (e.key === "Escape") {
+        closeMenu();
+      }
+    });
+    menu.addEventListener("keydown", (e) => {
+      const items = Array.from(menu.querySelectorAll(".custom-dropdown-item"));
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        activeIndex = (activeIndex + 1) % items.length;
+        items[activeIndex]?.focus();
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        activeIndex = (activeIndex - 1 + items.length) % items.length;
+        items[activeIndex]?.focus();
+      } else if (e.key === "Escape") {
+        closeMenu();
+        trigger.focus();
+      }
+    });
+    const proto = HTMLSelectElement.prototype;
+    const originalDescriptor = Object.getOwnPropertyDescriptor(proto, "value");
+    if (originalDescriptor) {
+      Object.defineProperty(selectEl, "value", {
+        get() {
+          return originalDescriptor.get?.call(this);
+        },
+        set(newVal) {
+          originalDescriptor.set?.call(this, newVal);
+          syncLabel();
+        },
+        configurable: true
+      });
+    }
+    selectEl.addEventListener("change", syncLabel);
+    const observer = new MutationObserver(() => {
+      syncOptions();
+      syncLabel();
+    });
+    observer.observe(selectEl, { childList: true, subtree: true, attributes: true });
+    document.addEventListener("click", (e) => {
+      if (!wrapper.contains(e.target) && !menu.contains(e.target)) {
+        closeMenu();
+      }
+    });
+    window.addEventListener("resize", closeMenu);
+    syncOptions();
+    syncLabel();
+    selectEl.parentNode?.insertBefore(wrapper, selectEl.nextSibling);
+    return {
+      wrapper,
+      trigger,
+      menu,
+      sync: () => {
+        syncOptions();
+        syncLabel();
+      },
+      destroy: () => {
+        observer.disconnect();
+        menu.remove();
+        wrapper.remove();
+        selectEl.style.display = "";
+        delete selectEl.dataset.customDropdownInitialized;
+      }
+    };
+  }
+  function initAllCustomDropdowns(root = document) {
+    const selects = root.querySelectorAll("select.form-ctrl, select.select-sm");
+    selects.forEach((s) => {
+      setupCustomDropdown(s);
+    });
+  }
+
+  // panel/utils.ts
+  function escapeHtml(str) {
+    return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function slugify(text, maxLen = 60) {
+    return (text || "").toString().toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, maxLen);
+  }
+  function sanitizeHexColor(color) {
+    if (!color) return null;
+    const clean = color.trim().replace(/^#/, "");
+    if (/^[0-9a-fA-F]{3,8}$/.test(clean)) {
+      return `#${clean}`;
+    }
+    return null;
+  }
+  var logEntries = [];
+  function addLog(msg, level = "info") {
+    const d = /* @__PURE__ */ new Date();
+    const timeStr = d.toTimeString().split(" ")[0] + "." + String(d.getMilliseconds()).padStart(3, "0");
+    logEntries.push({ time: timeStr, msg, level });
+    if (logEntries.length > 200) logEntries.shift();
+    if (level === "error") console.error(`[TaskBoard] ${msg}`);
+    else if (level === "warn") console.warn(`[TaskBoard] ${msg}`);
+    else console.log(`[TaskBoard] ${msg}`);
+    if (typeof document !== "undefined") {
+      const streamEl = document.getElementById("logStream");
+      if (streamEl) {
+        const line = document.createElement("div");
+        line.className = "log-line";
+        line.innerHTML = `
+        <span class="log-time">${timeStr}</span>
+        <span class="log-msg-${level}">${escapeHtml(msg)}</span>
+      `;
+        streamEl.appendChild(line);
+        streamEl.scrollTop = streamEl.scrollHeight;
+      }
+    }
+  }
+
+  // panel/viewstate.ts
+  var SHORT_NAME_DROP_TOKENS = /* @__PURE__ */ new Set(["openchamber", "github", "gh", "repo"]);
+  function titleCaseToken(token) {
+    if (!token) return "";
+    return token.charAt(0).toUpperCase() + token.slice(1).toLowerCase();
+  }
+  function projectNameKey(fullRepo) {
+    return String(fullRepo || "").trim().toLowerCase();
+  }
+  function shortName(fullRepo, overrides) {
+    const raw = String(fullRepo || "").trim();
+    if (!raw) return "";
+    if (overrides) {
+      const override = overrides[projectNameKey(raw)];
+      if (typeof override === "string" && override.trim()) return override.trim();
+    }
+    const slash = raw.lastIndexOf("/");
+    const repoPart = slash >= 0 ? raw.slice(slash + 1) : raw;
+    if (!repoPart) return raw;
+    const tokens = repoPart.split(/[-_.]+/).filter(Boolean);
+    const kept = tokens.filter((t) => !SHORT_NAME_DROP_TOKENS.has(t.toLowerCase()));
+    if (kept.length === 0) return titleCaseToken(repoPart);
+    return kept.map(titleCaseToken).join(" ");
+  }
+  function normalizeProjectNameOverrides(stored) {
+    const out = {};
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) return out;
+    for (const [key, value] of Object.entries(stored)) {
+      if (typeof value !== "string") continue;
+      const name = value.trim();
+      const k = projectNameKey(key);
+      if (!k || !name) continue;
+      out[k] = name;
+    }
+    return out;
+  }
+  var ORDER_GAP = 1e3;
+  var ORDER_MARKER_SINGLE_REGEX = /^[ \t]*<!--\s*board-order:\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)\s*-->[ \t]*$/i;
+  var FENCE_OPEN_REGEX = /^[ \t]{0,3}(`{3,}|~{3,})/;
+  function scanTerminalOrderMarker(body) {
+    const lines = [];
+    let fenceChar = "";
+    let fenceLen = 0;
+    let pos = 0;
+    while (pos <= body.length) {
+      let lineEnd = body.indexOf("\n", pos);
+      let nextPos;
+      if (lineEnd === -1) {
+        lineEnd = body.length;
+        nextPos = body.length + 1;
+      } else {
+        nextPos = lineEnd + 1;
+        if (lineEnd > pos && body.charCodeAt(lineEnd - 1) === 13) {
+          lineEnd -= 1;
+        }
+      }
+      const text = body.slice(pos, lineEnd);
+      let inFence = fenceLen > 0;
+      const fenceMatch = FENCE_OPEN_REGEX.exec(text);
+      if (fenceMatch) {
+        const run = fenceMatch[1];
+        if (!inFence) {
+          fenceChar = run[0];
+          fenceLen = run.length;
+          inFence = true;
+        } else if (run[0] === fenceChar && run.length >= fenceLen && /^[ \t]*$/.test(text.slice(fenceMatch[0].length))) {
+          fenceChar = "";
+          fenceLen = 0;
+        }
+      }
+      lines.push({ text, start: pos, end: lineEnd, inFence });
+      pos = nextPos;
+    }
+    let i = lines.length - 1;
+    while (i >= 0 && !/\S/.test(lines[i].text)) i--;
+    if (i < 0 || lines[i].inFence) return null;
+    const lastMatch = ORDER_MARKER_SINGLE_REGEX.exec(lines[i].text);
+    if (!lastMatch) return null;
+    const order = Number(lastMatch[1]);
+    if (!Number.isFinite(order)) return null;
+    let firstMarkerLine = i;
+    i--;
+    while (i >= 0) {
+      if (!/\S/.test(lines[i].text)) {
+        i--;
+        continue;
+      }
+      if (!lines[i].inFence) {
+        const m = ORDER_MARKER_SINGLE_REGEX.exec(lines[i].text);
+        if (m && Number.isFinite(Number(m[1]))) {
+          firstMarkerLine = i;
+          i--;
+          continue;
+        }
+      }
+      break;
+    }
+    let lastContentLine = firstMarkerLine - 1;
+    while (lastContentLine >= 0 && !/\S/.test(lines[lastContentLine].text)) {
+      lastContentLine--;
+    }
+    return {
+      order,
+      contentEnd: lastContentLine >= 0 ? lines[lastContentLine].end : 0
+    };
+  }
+  function parseOrderMarker(body) {
+    if (!body || typeof body !== "string") return null;
+    const scan = scanTerminalOrderMarker(body);
+    return scan ? scan.order : null;
+  }
+  function stripOrderMarker(body) {
+    if (!body || typeof body !== "string") return "";
+    const scan = scanTerminalOrderMarker(body);
+    if (!scan) return body;
+    return body.slice(0, scan.contentEnd);
+  }
+  function formatOrderNumber(order) {
+    if (!Number.isFinite(order)) throw new Error("Order must be finite");
+    const text = String(order);
+    if (!/[eE]/.test(text)) return text;
+    const [coefficient, exponent] = text.toLowerCase().split("e");
+    const negative = coefficient.startsWith("-");
+    const unsigned = negative ? coefficient.slice(1) : coefficient;
+    const [whole, fraction = ""] = unsigned.split(".");
+    const digits = whole + fraction;
+    const point = whole.length + Number(exponent);
+    const decimal = point <= 0 ? `0.${"0".repeat(-point)}${digits}` : point >= digits.length ? digits + "0".repeat(point - digits.length) : `${digits.slice(0, point)}.${digits.slice(point)}`;
+    return negative ? `-${decimal}` : decimal;
+  }
+  function setOrderMarker(body, order) {
+    const raw = body || "";
+    const base = stripOrderMarker(raw);
+    const marker = `<!-- board-order: ${formatOrderNumber(order)} -->`;
+    if (!base) return marker;
+    const eol = raw.includes("\r\n") ? "\r\n" : "\n";
+    return `${base}${eol}${eol}${marker}`;
+  }
+  function midpointOrder(prev, next) {
+    if (prev === null && next === null) return ORDER_GAP;
+    if (prev === null) return next - ORDER_GAP;
+    if (next === null) return prev + ORDER_GAP;
+    return (prev + next) / 2;
+  }
+  function createdTime(item) {
+    const t = item.created_at ? Date.parse(item.created_at) : NaN;
+    return Number.isFinite(t) ? t : 0;
+  }
+  function compareManualOrder(a, b) {
+    const oa = parseOrderMarker(a.body);
+    const ob = parseOrderMarker(b.body);
+    if (oa !== null && ob === null) return -1;
+    if (oa === null && ob !== null) return 1;
+    if (oa !== null && ob !== null && oa !== ob) return oa - ob;
+    const ca = createdTime(a);
+    const cb = createdTime(b);
+    if (ca !== cb) return ca - cb;
+    const repoCmp = (a.repo || "").localeCompare(b.repo || "");
+    if (repoCmp !== 0) return repoCmp;
+    return (a.number || 0) - (b.number || 0);
+  }
+  function sortByManualOrder(items) {
+    return [...items].sort(compareManualOrder);
+  }
+  function nextAppendOrder(items) {
+    let max = null;
+    for (const item of items) {
+      const o = parseOrderMarker(item.body);
+      if (o !== null && (max === null || o > max)) max = o;
+    }
+    return max === null ? ORDER_GAP : max + ORDER_GAP;
+  }
+  function slotOrder(rest, slot) {
+    const prev = slot > 0 ? rest[slot - 1] : null;
+    const next = slot < rest.length ? rest[slot] : null;
+    const prevOrder = prev ? parseOrderMarker(prev.body) : null;
+    if (prev && prevOrder === null) return null;
+    const nextOrder = next ? parseOrderMarker(next.body) : null;
+    const order = midpointOrder(prevOrder, nextOrder);
+    if (!Number.isFinite(order)) return null;
+    if (prevOrder !== null && order <= prevOrder) return null;
+    if (nextOrder !== null && order >= nextOrder) return null;
+    return order;
+  }
+  function buildSpanOrders(low, high, count) {
+    if (count <= 0) return null;
+    if (low !== null && high !== null && !(low < high)) return null;
+    const values = [];
+    for (let k = 0; k < count; k++) {
+      let v2;
+      if (low === null && high === null) {
+        v2 = (k + 1) * ORDER_GAP;
+      } else if (low !== null && high === null) {
+        v2 = low + (k + 1) * ORDER_GAP;
+      } else if (low === null && high !== null) {
+        v2 = high - (count - k) * ORDER_GAP;
+      } else {
+        const l = low;
+        const h = high;
+        const delta = h - l;
+        v2 = Number.isFinite(delta) ? l + delta * (k + 1) / (count + 1) : ((count - k) * l + (k + 1) * h) / (count + 1);
+      }
+      if (!Number.isFinite(v2)) return null;
+      if (k === 0 && low !== null && !(v2 > low)) return null;
+      if (k > 0 && !(v2 > values[k - 1])) return null;
+      if (k === count - 1 && high !== null && !(v2 < high)) return null;
+      values.push(v2);
+    }
+    return values;
+  }
+  function computeMove(ordered, fromIndex, toIndex) {
+    if (fromIndex < 0 || fromIndex >= ordered.length) return null;
+    const to = Math.max(0, Math.min(ordered.length - 1, toIndex));
+    if (to === fromIndex) return null;
+    const rest = ordered.filter((_, i) => i !== fromIndex);
+    const direct = slotOrder(rest, to);
+    if (direct !== null) return [{ index: fromIndex, order: direct }];
+    const entries = ordered.map((item, index) => ({
+      item,
+      index,
+      order: parseOrderMarker(item.body)
+    }));
+    const [moved] = entries.splice(fromIndex, 1);
+    entries.splice(to, 0, moved);
+    let lastMarked = -1;
+    for (let i = 0; i < entries.length; i++) {
+      if (entries[i].order !== null) lastMarked = i;
+    }
+    const markedCount = Math.max(to + 1, lastMarked + 1);
+    let firstUnmarked = -1;
+    for (let i = 0; i <= to; i++) {
+      if (entries[i].order === null) {
+        firstUnmarked = i;
+        break;
+      }
+    }
+    if (firstUnmarked !== -1 && lastMarked <= to) {
+      const baseOrder = firstUnmarked > 0 ? entries[firstUnmarked - 1].order : 0;
+      const writes = [];
+      let valid = true;
+      for (let i = firstUnmarked; i <= to; i++) {
+        const nextOrder = baseOrder + (i - firstUnmarked + 1) * ORDER_GAP;
+        if (!Number.isFinite(nextOrder)) {
+          valid = false;
+          break;
+        }
+        if (entries[i].order !== nextOrder) {
+          writes.push({ index: entries[i].index, order: nextOrder });
+        }
+      }
+      if (valid && writes.length > 0) return writes;
+    }
+    for (let len = 1; len <= markedCount; len++) {
+      const startL = Math.max(0, to - len + 1);
+      const endL = Math.min(to, markedCount - len);
+      let best = null;
+      for (let left = startL; left <= endL; left++) {
+        const right = left + len - 1;
+        const low = left > 0 ? entries[left - 1].order : null;
+        const high = right + 1 < markedCount ? entries[right + 1].order : null;
+        if (left > 0 && low === null || right + 1 < markedCount && high === null) continue;
+        const values = buildSpanOrders(low, high, len);
+        if (!values) continue;
+        const candidate = [];
+        for (let k = 0; k < len; k++) {
+          if (entries[left + k].order !== values[k]) {
+            candidate.push({ index: entries[left + k].index, order: values[k] });
+          }
+        }
+        if (candidate.length > 0 && (!best || candidate.length < best.length)) {
+          best = candidate;
+        }
+      }
+      if (best) return best;
+    }
+    return null;
+  }
+  var VIEW_IDS = ["simple", "cards", "kanban", "graph", "pending"];
+  var SORT_IDS = ["priority", "updated", "created", "manual"];
+  var STAGE_IDS = ["draft", "backlog", "todo", "planned", "in-progress", "needs-human", "in-review", "done"];
+  var KIND_FILTERS = ["needs-me", "human", "questions"];
+  var VIEW_LABELS = {
+    simple: "Simple list",
+    cards: "Cards",
+    kanban: "Kanban board",
+    graph: "Graph",
+    pending: "Pending items"
+  };
+  var SORT_LABELS = {
+    priority: "Priority",
+    updated: "Recently updated",
+    created: "Recently created",
+    manual: "Manual order"
+  };
+  var KIND_FILTER_LABELS = {
+    "needs-me": "Needs me",
+    human: "Human tasks",
+    questions: "Questions"
+  };
+  var DEFAULT_VIEW_STATE = Object.freeze({ view: "simple", filters: [], sort: "priority" });
+  function defaultViewState() {
+    return { view: DEFAULT_VIEW_STATE.view, filters: [], sort: DEFAULT_VIEW_STATE.sort };
+  }
+  function isValidFilterToken(token) {
+    if (typeof token !== "string" || !token) return false;
+    if (KIND_FILTERS.includes(token)) return true;
+    if (token.startsWith("stage:")) return STAGE_IDS.includes(token.slice(6));
+    if (token.startsWith("project:")) return token.length > "project:".length;
+    return false;
+  }
+  function normalizeViewState(stored) {
+    const state = defaultViewState();
+    if (!stored || typeof stored !== "object" || Array.isArray(stored)) return state;
+    const s = stored;
+    if (typeof s.view === "string" && VIEW_IDS.includes(s.view)) state.view = s.view;
+    if (typeof s.sort === "string" && SORT_IDS.includes(s.sort)) state.sort = s.sort;
+    if (Array.isArray(s.filters)) {
+      const seen = /* @__PURE__ */ new Set();
+      for (const f of s.filters) {
+        if (isValidFilterToken(f) && !seen.has(f)) {
+          seen.add(f);
+          state.filters.push(f);
+        }
+      }
+    }
+    return state;
+  }
+  function toggleFilter(filters, token) {
+    if (!isValidFilterToken(token)) return [...filters];
+    return filters.includes(token) ? filters.filter((f) => f !== token) : [...filters, token];
+  }
+  function stageFilters(filters) {
+    return filters.filter((f) => f.startsWith("stage:")).map((f) => f.slice(6));
+  }
+  function projectFilters(filters) {
+    return filters.filter((f) => f.startsWith("project:")).map((f) => f.slice(8));
+  }
+  function isQuickCaptureMode(state) {
+    return state.view === "simple" && state.filters.includes("stage:draft");
+  }
+  function applyFilters(items, filters, acc) {
+    if (!filters || filters.length === 0) return [...items];
+    const kinds = filters.filter((f) => KIND_FILTERS.includes(f));
+    const stages = new Set(stageFilters(filters));
+    const projects = new Set(projectFilters(filters).map(projectNameKey));
+    return items.filter((item) => {
+      if (stages.size > 0 && !stages.has(acc.stageOf(item))) return false;
+      if (projects.size > 0 && !projects.has(projectNameKey(acc.repoOf(item)))) return false;
+      if (kinds.length > 0) {
+        const ok = kinds.some(
+          (k) => k === "needs-me" ? acc.needsMe(item) : k === "human" ? acc.hasHumanTasks(item) : acc.hasOpenQuestions(item)
+        );
+        if (!ok) return false;
+      }
+      return true;
+    });
+  }
+  function timeOf(value) {
+    const t = value ? Date.parse(value) : NaN;
+    return Number.isFinite(t) ? t : 0;
+  }
+  function applySort(items, sort, priorityWeight) {
+    const copy = [...items];
+    const byNumberDesc = (a, b) => {
+      const repoCmp = (a.repo || "").localeCompare(b.repo || "");
+      if (repoCmp !== 0) return repoCmp;
+      return (b.number || 0) - (a.number || 0);
+    };
+    switch (sort) {
+      case "manual":
+        return copy.sort(compareManualOrder);
+      case "updated":
+        return copy.sort((a, b) => {
+          const d = timeOf(b.updated_at || b.created_at) - timeOf(a.updated_at || a.created_at);
+          return d !== 0 ? d : byNumberDesc(a, b);
+        });
+      case "created":
+        return copy.sort((a, b) => {
+          const d = timeOf(b.created_at) - timeOf(a.created_at);
+          return d !== 0 ? d : byNumberDesc(a, b);
+        });
+      case "priority":
+      default:
+        return copy.sort((a, b) => {
+          const d = (priorityWeight(b) || 0) - (priorityWeight(a) || 0);
+          return d !== 0 ? d : byNumberDesc(a, b);
+        });
+    }
+  }
+
+  // panel/markdown.ts
+  var LIST_ITEM_REGEX = /^(\s*)(?:([-*])|(\d+)\.)\s+(.*)$/;
+  function splitTableRow(row) {
+    let line = row.trim();
+    if (line.startsWith("|")) {
+      line = line.slice(1);
+    }
+    if (line.endsWith("|") && !line.endsWith("\\|")) {
+      line = line.slice(0, -1);
+    }
+    const rawCells = line.split(/(?<!\\)\|/);
+    return rawCells.map((c) => c.replace(/\\\|/g, "|").trim());
+  }
+  function isTableSeparator(line) {
+    const trimmed = line.trim();
+    if (!trimmed.includes("-") || !trimmed.includes("|")) return false;
+    const cells = splitTableRow(trimmed);
+    if (cells.length === 0) return false;
+    return cells.every((cell) => /^:?-{1,}:?$/.test(cell));
+  }
+  function parseTableAlignment(sepCell) {
+    const trimmed = sepCell.trim();
+    const left = trimmed.startsWith(":");
+    const right = trimmed.endsWith(":");
+    if (left && right) return "center";
+    if (right) return "right";
+    if (left) return "left";
+    return "";
+  }
+  function applyInlineMarkdown(text) {
+    let res = text;
+    res = res.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+    res = res.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+    res = res.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="md-link">$1 \u2197</a>');
+    res = res.replace(/(?<![\w/])(\/(?:workspace|config|tmp|usr|home|etc|var)\/[a-zA-Z0-9_./@-]+(?:\/)?|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+\.(?:ts|js|mjs|cjs|json|md|html|css|yaml|yml|sh|py|go|rs|toml|txt)|(?:\.agents|config\/opencode|panel)\/[a-zA-Z0-9_./@-]+(?:\/)?|package\.json|tsconfig\.json|README\.md|LICENSE|\.gitignore)(?=[.,;:)]*(?:$|\s|[<]))/g, (match) => {
+      const clean = match.replace(/[.,;:)]+$/, "");
+      return `<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}">${clean}</a>`;
+    });
+    return res;
+  }
+  function buildTableHtml(headerLine, sepLine, bodyLines) {
+    const headerCells = splitTableRow(headerLine);
+    const sepCells = splitTableRow(sepLine);
+    const colCount = Math.max(headerCells.length, sepCells.length);
+    const alignments = sepCells.map(parseTableAlignment);
+    const ths = [];
+    for (let c = 0; c < colCount; c++) {
+      const rawContent = headerCells[c] || "";
+      const content = applyInlineMarkdown(rawContent);
+      const align = alignments[c] || "";
+      const alignAttr = align ? ` style="text-align: ${align};"` : "";
+      ths.push(`<th${alignAttr}>${content}</th>`);
+    }
+    const thead = `<thead><tr>${ths.join("")}</tr></thead>`;
+    let tbody = "";
+    if (bodyLines.length > 0) {
+      const trs = bodyLines.map((bLine) => {
+        let cells = splitTableRow(bLine);
+        if (cells.length > colCount) {
+          cells = cells.slice(0, colCount);
+        }
+        const tds = [];
+        for (let c = 0; c < colCount; c++) {
+          const rawContent = cells[c] || "";
+          const content = applyInlineMarkdown(rawContent);
+          const align = alignments[c] || "";
+          const alignAttr = align ? ` style="text-align: ${align};"` : "";
+          tds.push(`<td${alignAttr}>${content}</td>`);
+        }
+        return `<tr>${tds.join("")}</tr>`;
+      });
+      tbody = `<tbody>${trs.join("")}</tbody>`;
+    }
+    return `<div class="md-table-wrap"><table class="md-table">${thead}${tbody}</table></div>`;
+  }
+  function buildListHtml(lines) {
+    const stack = [];
+    const out = [];
+    for (const line of lines) {
+      const m = line.match(LIST_ITEM_REGEX);
+      if (!m) continue;
+      const indent = m[1].replace(/\t/g, "  ").length;
+      const type = m[2] ? "ul" : "ol";
+      const rawContent = m[4];
+      const taskMatch = rawContent.match(/^\[([ xX])\]\s+(.*)$/);
+      let content;
+      let liClass = "md-li";
+      if (taskMatch) {
+        const checked = taskMatch[1].toLowerCase() === "x";
+        const checkbox = `<input type="checkbox" disabled ${checked ? "checked " : ""}class="md-task-checkbox"> `;
+        content = `${checkbox}${applyInlineMarkdown(taskMatch[2])}`;
+        liClass = "md-li md-task-item";
+      } else {
+        content = applyInlineMarkdown(rawContent);
+      }
+      if (stack.length === 0) {
+        stack.push({ type, indent });
+        out.push(`<${type} class="md-${type}">
+<li class="${liClass}">${content}`);
+      } else {
+        let top = stack[stack.length - 1];
+        if (indent > top.indent) {
+          stack.push({ type, indent });
+          out.push(`
+<${type} class="md-${type}">
+<li class="${liClass}">${content}`);
+        } else if (indent < top.indent) {
+          while (stack.length > 1 && indent < stack[stack.length - 1].indent) {
+            const popped = stack.pop();
+            out.push(`</li>
+</${popped.type}>`);
+          }
+          top = stack[stack.length - 1];
+          if (top.type !== type) {
+            stack.pop();
+            out.push(`</li>
+</${top.type}>
+<${type} class="md-${type}">
+<li class="${liClass}">${content}`);
+            stack.push({ type, indent });
+          } else {
+            out.push(`</li>
+<li class="${liClass}">${content}`);
+          }
+        } else {
+          if (top.type !== type) {
+            stack.pop();
+            out.push(`</li>
+</${top.type}>
+<${type} class="md-${type}">
+<li class="${liClass}">${content}`);
+            stack.push({ type, indent });
+          } else {
+            out.push(`</li>
+<li class="${liClass}">${content}`);
+          }
+        }
+      }
+    }
+    while (stack.length > 0) {
+      const popped = stack.pop();
+      out.push(`</li>
+</${popped.type}>`);
+    }
+    return out.join("");
+  }
+  function renderMarkdown(input) {
+    const raw = typeof input === "string" ? stripOrderMarker(input) : input;
+    if (!raw || typeof raw !== "string") return '<p style="color: var(--fg-muted); font-style: italic;">No description provided.</p>';
+    let html = raw.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    const codeBlocks = [];
+    html = html.replace(/```([a-zA-Z0-9_-]*)\r?\n([\s\S]*?)```/g, (_, lang, code) => {
+      const placeholder = `%%MD_CODE_BLOCK_${codeBlocks.length}%%`;
+      codeBlocks.push(`<pre class="md-code-block"><code class="language-${lang}">${code.trim()}</code></pre>`);
+      return `
+
+${placeholder}
+
+`;
+    });
+    const inlineCodes = [];
+    html = html.replace(/`([^`\n]+)`/g, (_, code) => {
+      const placeholder = `%%MD_INLINE_CODE_${inlineCodes.length}%%`;
+      const trimmed = code.trim();
+      if (/(?:^\/|\/|\.[a-zA-Z0-9]+$)/.test(trimmed) && !trimmed.includes(" ")) {
+        const clean = trimmed.replace(/[.,;:)]+$/, "");
+        inlineCodes.push(`<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}"><code class="md-inline-code">${code}</code></a>`);
+      } else {
+        inlineCodes.push(`<code class="md-inline-code">${code}</code>`);
+      }
+      return placeholder;
+    });
+    const lines = html.split(/\r?\n/);
+    const blocks = [];
+    let i = 0;
+    while (i < lines.length) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      if (!trimmed) {
+        i++;
+        continue;
+      }
+      if (trimmed.startsWith("%%MD_CODE_BLOCK_") && trimmed.endsWith("%%")) {
+        blocks.push(trimmed);
+        i++;
+        continue;
+      }
+      const headingMatch = line.match(/^(#{1,4})\s+(.*)$/);
+      if (headingMatch) {
+        const level = headingMatch[1].length;
+        const hContent = applyInlineMarkdown(headingMatch[2].trim());
+        blocks.push(`<h${level} class="md-h${level}">${hContent}</h${level}>`);
+        i++;
+        continue;
+      }
+      if (line.match(/^>\s*(.*)$/)) {
+        const quoteLines = [];
+        while (i < lines.length && lines[i].match(/^>\s*(.*)$/)) {
+          const qm = lines[i].match(/^>\s*(.*)$/);
+          quoteLines.push(qm ? qm[1] : "");
+          i++;
+        }
+        const qContent = quoteLines.map((ql) => applyInlineMarkdown(ql.trim())).join("<br/>");
+        blocks.push(`<blockquote class="md-quote">${qContent}</blockquote>`);
+        continue;
+      }
+      if (line.includes("|") && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+        const headerLine = line;
+        const sepLine = lines[i + 1];
+        const bodyLines = [];
+        i += 2;
+        while (i < lines.length) {
+          const cur = lines[i];
+          const curTrimmed = cur.trim();
+          if (!curTrimmed) break;
+          if (!cur.includes("|")) break;
+          if (cur.match(/^#{1,4}\s+/) || cur.startsWith("> ") || cur.startsWith("%%MD_CODE_BLOCK_") || cur.match(LIST_ITEM_REGEX)) break;
+          bodyLines.push(cur);
+          i++;
+        }
+        blocks.push(buildTableHtml(headerLine, sepLine, bodyLines));
+        continue;
+      }
+      if (line.match(LIST_ITEM_REGEX)) {
+        const listLines = [];
+        while (i < lines.length) {
+          const cur = lines[i];
+          const curTrimmed = cur.trim();
+          if (cur.match(LIST_ITEM_REGEX)) {
+            listLines.push(cur);
+            i++;
+          } else if (!curTrimmed) {
+            if (i + 1 < lines.length && lines[i + 1].match(LIST_ITEM_REGEX)) {
+              i++;
+            } else {
+              break;
+            }
+          } else {
+            break;
+          }
+        }
+        blocks.push(buildListHtml(listLines));
+        continue;
+      }
+      const paraLines = [];
+      while (i < lines.length) {
+        const cur = lines[i];
+        const curTrimmed = cur.trim();
+        if (!curTrimmed) break;
+        if (cur.startsWith("%%MD_CODE_BLOCK_")) break;
+        if (cur.match(/^#{1,4}\s+/)) break;
+        if (cur.match(/^>\s*/)) break;
+        if (cur.match(LIST_ITEM_REGEX)) break;
+        if (cur.includes("|") && i + 1 < lines.length && isTableSeparator(lines[i + 1])) break;
+        paraLines.push(cur);
+        i++;
+      }
+      if (paraLines.length > 0) {
+        const paraContent = paraLines.map((pl) => applyInlineMarkdown(pl.trim())).join("<br/>");
+        blocks.push(`<p class="md-p">${paraContent}</p>`);
+      }
+    }
+    let result = blocks.join("\n");
+    result = result.replace(/%%MD_INLINE_CODE_(\d+)%%/g, (_, idx) => inlineCodes[Number(idx)]);
+    result = result.replace(/%%MD_CODE_BLOCK_(\d+)%%/g, (_, idx) => codeBlocks[Number(idx)]);
+    return result;
+  }
+  function getIssueDescriptionPreview(body) {
+    if (!body || typeof body !== "string") return "";
+    const lines = stripOrderMarker(body).split(/\r?\n/);
+    const GENERIC_HEADERS = /^(overview|description|context|summary|details|background|goal|problem|about)$/i;
+    let fallback = "";
+    for (let rawLine of lines) {
+      let line = rawLine.trim();
+      if (!line) continue;
+      if (line.startsWith("```") || line.startsWith("~~~")) continue;
+      const isHeading = line.startsWith("#");
+      line = line.replace(/^#+\s*/, "");
+      line = line.replace(/^>\s*/, "");
+      line = line.replace(/^[-*+]\s*\[[ xX]\]\s*/, "");
+      line = line.replace(/^[-*+]\s+/, "");
+      line = line.replace(/^\d+\.\s+/, "");
+      line = line.replace(/(\*\*|__)(.*?)\1/g, "$2");
+      line = line.replace(/(\*|_)(.*?)\1/g, "$2");
+      line = line.replace(/`([^`]+)`/g, "$1");
+      line = line.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+      line = line.replace(/<[^>]*>/g, "");
+      line = line.trim();
+      if (!line) continue;
+      if (isHeading && GENERIC_HEADERS.test(line)) {
+        if (!fallback) fallback = line;
+        continue;
+      }
+      return line;
+    }
+    return fallback;
+  }
+
+  // panel/labels.ts
+  function extractWorktreeName(wt) {
+    if (!wt) return "";
+    if (typeof wt === "string") return wt;
+    if (typeof wt === "object") {
+      return wt.name || wt.branch || wt.directory || "";
+    }
+    return "";
+  }
+  function checkVague(issue) {
+    if (!issue) return true;
+    const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labels.includes("status:needs-alignment")) {
+      return true;
+    }
+    const openQuestions = issue.openQuestions || [];
+    const hasUnansweredQuestions = openQuestions.some((q) => !q.completed);
+    if (hasUnansweredQuestions) {
+      return true;
+    }
+    const body = issue.body || "";
+    const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+    const subtaskCount = (issue.subtasks || []).length;
+    return subtaskCount === 0 && wordCount < 20;
+  }
+  function extractTheme(issue) {
+    if (!issue || !issue.labels || issue.labels.length === 0) return "No Theme";
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name.toLowerCase().startsWith("theme:")) {
+        const themeName = name.slice(6).trim();
+        if (themeName) return themeName;
+      }
+    }
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      const lower = name.toLowerCase();
+      if (name && !lower.startsWith("status:") && !lower.startsWith("priority:") && !lower.startsWith("complexity:") && !lower.startsWith("theme:") && !["archived", "archive"].includes(lower)) {
+        return name;
+      }
+    }
+    return "No Theme";
+  }
+  var STATUS_DRAFT = "status:draft";
+  var STATUS_BACKLOG = "status:backlog";
+  var STATUS_TODO = "status:todo";
+  var STATUS_PLANNED = "status:planned";
+  var STATUS_IN_PROGRESS = "status:in-progress";
+  var STATUS_NEEDS_HUMAN = "status:needs-human";
+  var STATUS_IN_REVIEW = "status:in-review";
+  var STATUS_DONE = "status:done";
+  var STATUS_LABELS = [
+    STATUS_DRAFT,
+    STATUS_BACKLOG,
+    STATUS_TODO,
+    STATUS_PLANNED,
+    STATUS_IN_PROGRESS,
+    STATUS_NEEDS_HUMAN,
+    STATUS_IN_REVIEW,
+    STATUS_DONE
+  ];
+  var STATUS_COLUMNS = [
+    "draft",
+    "backlog",
+    "todo",
+    "planned",
+    "in-progress",
+    "needs-human",
+    "in-review",
+    "done"
+  ];
+  var STATUS_METADATA = {
+    "draft": {
+      id: "draft",
+      label: STATUS_DRAFT,
+      name: "Draft",
+      displayName: "Draft",
+      color: "#6e7681",
+      description: "Passive ideas or notes; unblocked ideas awaiting drafting or alignment"
+    },
+    "backlog": {
+      id: "backlog",
+      label: STATUS_BACKLOG,
+      name: "Backlog",
+      displayName: "Backlog",
+      color: "#8b949e",
+      description: "Prioritized ideas and incoming work not yet scheduled"
+    },
+    "todo": {
+      id: "todo",
+      label: STATUS_TODO,
+      name: "To Do",
+      displayName: "To Do",
+      color: "#d29922",
+      description: "Well-formed work ready to be picked up"
+    },
+    "planned": {
+      id: "planned",
+      label: STATUS_PLANNED,
+      name: "Planned",
+      displayName: "Planned",
+      color: "#58a6ff",
+      description: "Scheduled or queued for execution"
+    },
+    "in-progress": {
+      id: "in-progress",
+      label: STATUS_IN_PROGRESS,
+      name: "In Progress",
+      displayName: "In Progress",
+      color: "#bc8cff",
+      description: "Actively being worked on by an agent or human"
+    },
+    "needs-human": {
+      id: "needs-human",
+      label: STATUS_NEEDS_HUMAN,
+      name: "Needs Human",
+      displayName: "Needs Human",
+      color: "#f85149",
+      description: "Awaiting a human: permission, answers, alignment, or validation"
+    },
+    "in-review": {
+      id: "in-review",
+      label: STATUS_IN_REVIEW,
+      name: "In Review",
+      displayName: "In Review",
+      color: "#3fb950",
+      description: "AI step: agent reviewing its own finished work (hostile review gate)"
+    },
+    "done": {
+      id: "done",
+      label: STATUS_DONE,
+      name: "Done",
+      displayName: "Done",
+      color: "#238636",
+      description: "Completed and validated by a human (no agent self-close)"
+    }
+  };
+  function isSystemLabel(labelName) {
+    if (!labelName || typeof labelName !== "string") return false;
+    const lower = labelName.trim().toLowerCase();
+    return lower.startsWith("status:") || lower.startsWith("priority:") || lower.startsWith("complexity:") || lower.startsWith("theme:") || lower === "archived" || lower === "archive";
+  }
+  function filterDisplayLabels(labels) {
+    if (!labels || !Array.isArray(labels)) return [];
+    return labels.filter((l) => !isSystemLabel(typeof l === "string" ? l : l.name || ""));
+  }
+  function hasPriorityLabel(issueOrLabels) {
+    if (!issueOrLabels) return false;
+    const rawLabels = Array.isArray(issueOrLabels) ? issueOrLabels : Array.isArray(issueOrLabels.labels) ? issueOrLabels.labels : [];
+    for (const l of rawLabels) {
+      const name = (typeof l === "string" ? l : l?.name || "").trim().toLowerCase();
+      if (name.startsWith("priority:")) {
+        const val = name.slice(9).trim();
+        if (val && val !== "none") {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  function getIssuePriority(issue) {
+    if (!issue || !issue.labels) return null;
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+      if (name === "priority:critical") return "critical";
+      if (name === "priority:urgent") return "urgent";
+      if (name === "priority:important") return "important";
+      if (name === "priority:high") return "high";
+      if (name === "priority:useful") return "useful";
+      if (name === "priority:medium") return "medium";
+      if (name === "priority:optional") return "optional";
+      if (name === "priority:low") return "low";
+      if (name.startsWith("priority:")) {
+        const val = name.slice(9).trim();
+        if (val && val !== "none") return val;
+      }
+    }
+    return null;
+  }
+  function normalizePriority(priorityOrIssue) {
+    if (!priorityOrIssue) return null;
+    let raw = null;
+    if (typeof priorityOrIssue === "string") {
+      raw = priorityOrIssue;
+    } else if (typeof priorityOrIssue === "object") {
+      raw = getIssuePriority(priorityOrIssue);
+    }
+    if (!raw || typeof raw !== "string") return null;
+    let lower = raw.trim().toLowerCase();
+    if (lower.startsWith("priority:")) {
+      lower = lower.slice(9).trim();
+    }
+    if (lower === "urgent" || lower === "critical") return "critical";
+    if (lower === "high" || lower === "important") return "important";
+    if (lower === "medium" || lower === "useful") return "useful";
+    if (lower === "low" || lower === "optional") return "optional";
+    if (lower === "none" || !lower) return null;
+    return lower;
+  }
+  function syncDrawerPrioritySelect(selectEl, priorityOrIssue) {
+    if (!selectEl) return "none";
+    let raw = (typeof priorityOrIssue === "string" ? priorityOrIssue : getIssuePriority(priorityOrIssue) || "").trim().toLowerCase();
+    if (raw.startsWith("priority:")) {
+      raw = raw.slice(9).trim();
+    }
+    const normalized = normalizePriority(raw) || "none";
+    const options = Array.from(selectEl.options || []);
+    if (options.length > 0) {
+      const hasRaw = options.some((opt) => (opt.value || "").toLowerCase() === raw);
+      if (hasRaw && raw && raw !== "none") {
+        const match = options.find((opt) => (opt.value || "").toLowerCase() === raw);
+        selectEl.value = match ? match.value : raw;
+        return selectEl.value;
+      }
+      const hasNormalized = options.some((opt) => (opt.value || "").toLowerCase() === normalized);
+      if (hasNormalized) {
+        const match = options.find((opt) => (opt.value || "").toLowerCase() === normalized);
+        selectEl.value = match ? match.value : normalized;
+        return selectEl.value;
+      }
+      selectEl.value = "none";
+      return "none";
+    }
+    selectEl.value = normalized;
+    return normalized;
+  }
+  function updatePriorityLabels(currentLabels, newPriority) {
+    const cleanExisting = currentLabels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.toLowerCase().startsWith("priority:"));
+    if (newPriority && typeof newPriority === "string" && newPriority.trim().toLowerCase() !== "none") {
+      cleanExisting.push(`priority:${newPriority.trim().toLowerCase()}`);
+    }
+    return cleanExisting;
+  }
+  function getIssueComplexity(issue) {
+    if (!issue || !issue.labels) return null;
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+      if (name === "complexity:xl") return "XL";
+      if (name === "complexity:l") return "L";
+      if (name === "complexity:m") return "M";
+      if (name === "complexity:s") return "S";
+      if (name === "complexity:xs") return "XS";
+    }
+    return null;
+  }
+  function updateComplexityLabel(currentLabels, newComplexity) {
+    const cleanExisting = currentLabels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.toLowerCase().startsWith("complexity:"));
+    if (newComplexity && typeof newComplexity === "string" && newComplexity.trim().toLowerCase() !== "none") {
+      cleanExisting.push(`complexity:${newComplexity.trim().toUpperCase()}`);
+    }
+    return cleanExisting;
+  }
+  var PRIORITY_WEIGHTS = {
+    critical: 4,
+    urgent: 4,
+    important: 3,
+    high: 3,
+    useful: 2,
+    medium: 2,
+    optional: 1,
+    low: 1
+  };
+  var COMPLEXITY_WEIGHTS = { XL: 5, L: 4, M: 3, S: 2, XS: 1 };
+  function sortIssuesList(list, sortKey) {
+    const copy = [...list];
+    switch (sortKey) {
+      case "newest":
+        return copy.sort((a, b) => b.number - a.number);
+      case "oldest":
+        return copy.sort((a, b) => a.number - b.number);
+      case "priority":
+        return copy.sort((a, b) => {
+          const pA = PRIORITY_WEIGHTS[getIssuePriority(a) || ""] || 0;
+          const pB = PRIORITY_WEIGHTS[getIssuePriority(b) || ""] || 0;
+          return pB !== pA ? pB - pA : b.number - a.number;
+        });
+      case "complexity":
+        return copy.sort((a, b) => {
+          const cA = COMPLEXITY_WEIGHTS[getIssueComplexity(a) || ""] || 0;
+          const cB = COMPLEXITY_WEIGHTS[getIssueComplexity(b) || ""] || 0;
+          return cB !== cA ? cB - cA : b.number - a.number;
+        });
+      case "subtasks":
+        return copy.sort((a, b) => {
+          const remA = a.subtasks.filter((s) => !s.completed).length;
+          const remB = b.subtasks.filter((s) => !s.completed).length;
+          return remB !== remA ? remB - remA : b.number - a.number;
+        });
+      case "title":
+        return copy.sort((a, b) => (a.title || "").localeCompare(b.title || ""));
+      default:
+        return copy;
+    }
+  }
+  function findRelatedIssues(targetIssue, allIssues, limit = 4) {
+    if (!targetIssue || !allIssues) return [];
+    const targetNum = targetIssue.number;
+    const targetLabels = new Set(
+      (targetIssue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase()).filter((n) => !n.startsWith("status:") && n !== "archived")
+    );
+    const targetWords = new Set(
+      (targetIssue.title || "").toLowerCase().split(/[^a-z0-9_-]+/).filter((w) => w.length > 3)
+    );
+    const scored = [];
+    for (const other of allIssues) {
+      if (other.number === targetNum) continue;
+      let score = 0;
+      const otherLabels = (other.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+      for (const l of otherLabels) {
+        if (targetLabels.has(l)) score += 3;
+      }
+      const otherText = `${other.title || ""} ${other.body || ""}`;
+      if (otherText.includes(`#${targetNum}`)) score += 5;
+      const targetText = `${targetIssue.title || ""} ${targetIssue.body || ""}`;
+      if (targetText.includes(`#${other.number}`)) score += 5;
+      const otherWords = (other.title || "").toLowerCase().split(/[^a-z0-9_-]+/);
+      for (const w of otherWords) {
+        if (w.length > 3 && targetWords.has(w)) score += 1;
+      }
+      if (score > 0) {
+        scored.push({ issue: other, score });
+      }
+    }
+    return scored.sort((a, b) => b.score - a.score || b.issue.number - a.issue.number).slice(0, limit).map((s) => s.issue);
+  }
+  function isIssueClosed(issue) {
+    if (!issue) return false;
+    if (typeof issue.state === "string" && issue.state.toLowerCase() === "closed") {
+      return true;
+    }
+    if (issue.state_reason === "completed") {
+      return true;
+    }
+    const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labelNames.includes("status:done") || labelNames.includes("status:closed") || labelNames.includes("closed") || labelNames.includes("done")) {
+      return true;
+    }
+    return false;
+  }
+  function resolveIssueColumn(issue, sessionOrList) {
+    if (!issue) return null;
+    if (isIssueClosed(issue)) {
+      return "done";
+    }
+    const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labelNames.includes("status:done")) return "done";
+    if (labelNames.includes("status:in-review")) return "in-review";
+    if (labelNames.includes("status:needs-human")) return "needs-human";
+    let session = null;
+    if (sessionOrList) {
+      if (Array.isArray(sessionOrList)) {
+        const issueNumStr = String(issue.number);
+        session = sessionOrList.find((s) => {
+          if (s.items && s.items.some(
+            (it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number || it.data && Array.isArray(it.data.issueNumbers) && it.data.issueNumbers.includes(issue.number)
+          )) {
+            return true;
+          }
+          if (s.data && (s.data.issueNumber === issue.number || Array.isArray(s.data.issueNumbers) && s.data.issueNumbers.includes(issue.number))) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issue.number}`)) {
+            return true;
+          }
+          const wtStrings = typeof s.worktree === "string" ? [s.worktree] : s.worktree ? [s.worktree.name, s.worktree.branch, s.worktree.directory].filter(Boolean) : [];
+          if (wtStrings.some((str) => String(str).includes(`issue-${issue.number}`))) {
+            return true;
+          }
+          return false;
+        }) || null;
+      } else {
+        session = sessionOrList;
+      }
+    }
+    const isSessionRunning = Boolean(session && session.activity === "running");
+    const isSessionWaiting = Boolean(
+      session && (session.activity === "waiting-permission" || session.activity === "waiting-question" || session.activity.startsWith("waiting"))
+    );
+    const isSessionIdle = Boolean(session && session.activity === "idle");
+    if (labelNames.includes("status:in-progress")) {
+      if (isSessionIdle) {
+        return "needs-human";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "in-progress";
+    }
+    if (isSessionRunning) {
+      return "in-progress";
+    }
+    if (isSessionWaiting || isSessionIdle) {
+      return "needs-human";
+    }
+    if (!hasPriorityLabel(issue)) {
+      return "draft";
+    }
+    if (labelNames.includes("status:planned")) {
+      return "planned";
+    }
+    if (labelNames.includes("status:todo")) {
+      return "todo";
+    }
+    if (labelNames.includes("status:backlog")) {
+      return "backlog";
+    }
+    if (labelNames.includes("status:draft") || checkVague(issue)) {
+      return "draft";
+    }
+    return "todo";
+  }
+  function resolveDefaultTab(issues2, sessionOrList) {
+    if (!issues2 || issues2.length === 0) return "all";
+    const hasNeedsHuman = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "needs-human");
+    if (hasNeedsHuman) return "needs-human";
+    const hasReview = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "in-review");
+    if (hasReview) return "in-review";
+    const hasProgress = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "in-progress");
+    if (hasProgress) return "in-progress";
+    const hasTodo = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "todo");
+    if (hasTodo) return "todo";
+    const hasPlanned = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "planned");
+    if (hasPlanned) return "planned";
+    const hasBacklog = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "backlog");
+    if (hasBacklog) return "backlog";
+    const hasDraft = issues2.some((i) => resolveIssueColumn(i, sessionOrList) === "draft");
+    if (hasDraft) return "draft";
+    return "all";
+  }
+  function groupIssuesBy(issuesList, groupBy, sessionOrList) {
+    if (groupBy === "priority") {
+      const groups2 = [
+        { id: "critical", title: "Critical", issues: [] },
+        { id: "important", title: "Important", issues: [] },
+        { id: "useful", title: "Useful", issues: [] },
+        { id: "optional", title: "Optional", issues: [] },
+        { id: "none", title: "No Priority", issues: [] }
+      ];
+      const map2 = new Map(groups2.map((g) => [g.id, g]));
+      for (const issue of issuesList) {
+        const p = normalizePriority(getIssuePriority(issue)) || "none";
+        (map2.get(p) || map2.get("none"))?.issues.push(issue);
+      }
+      return groups2;
+    }
+    if (groupBy === "theme" || groupBy === "tag") {
+      const map2 = /* @__PURE__ */ new Map();
+      for (const issue of issuesList) {
+        const theme = extractTheme(issue);
+        if (!map2.has(theme)) {
+          map2.set(theme, { id: theme, title: theme, issues: [] });
+        }
+        map2.get(theme).issues.push(issue);
+      }
+      if (map2.size === 0) {
+        map2.set("No Theme", { id: "No Theme", title: "No Theme", issues: [] });
+      }
+      return Array.from(map2.values());
+    }
+    const groups = [
+      { id: "draft", title: "Draft", issues: [] },
+      { id: "backlog", title: "Backlog", issues: [] },
+      { id: "todo", title: "To Do", issues: [] },
+      { id: "planned", title: "Planned", issues: [] },
+      { id: "in-progress", title: "In Progress", issues: [] },
+      { id: "needs-human", title: "Needs Human", issues: [] },
+      { id: "in-review", title: "In Review", issues: [] },
+      { id: "done", title: "Done", issues: [] }
+    ];
+    const map = new Map(groups.map((g) => [g.id, g]));
+    for (const issue of issuesList) {
+      const col = resolveIssueColumn(issue, sessionOrList);
+      if (col && map.has(col)) {
+        map.get(col).issues.push(issue);
+      }
+    }
+    return groups;
+  }
+  var StatusReconciler = class {
+    inFlight = /* @__PURE__ */ new Set();
+    lastReconciled = /* @__PURE__ */ new Map();
+    timer = null;
+    debounceMs;
+    updateStatus;
+    getSession;
+    onReconciled;
+    constructor(options) {
+      this.debounceMs = options.debounceMs ?? 300;
+      this.updateStatus = options.updateStatus;
+      this.getSession = options.getSession;
+      this.onReconciled = options.onReconciled;
+    }
+    // Repo-qualified key so two same-numbered issues in different repositories
+    // are tracked independently and never block or overwrite each other.
+    keyFor(issue) {
+      const repo = issue && typeof issue.repo === "string" ? issue.repo.trim().toLowerCase() : "";
+      if (repo && Number.isFinite(issue?.number)) return `${repo}#${issue.number}`;
+      return `#${issue?.number}`;
+    }
+    schedule(issues2) {
+      if (this.timer) {
+        clearTimeout(this.timer);
+      }
+      this.timer = setTimeout(() => {
+        this.timer = null;
+        void this.reconcile(issues2);
+      }, this.debounceMs);
+    }
+    async reconcile(issues2) {
+      const reconciled = [];
+      if (!issues2 || !Array.isArray(issues2)) return reconciled;
+      for (const issue of issues2) {
+        if (!issue || !issue.number) continue;
+        const session = this.getSession ? this.getSession(issue) : null;
+        if (!session) continue;
+        const targetCol = resolveIssueColumn(issue, session);
+        if (!targetCol) continue;
+        if (targetCol === "done") continue;
+        if (issue.state === "closed") continue;
+        const currentLabels = (issue.labels || []).map(
+          (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
+        );
+        const currentStatus = currentLabels.find((n) => n.startsWith("status:"))?.replace("status:", "").trim();
+        if (currentStatus === targetCol) continue;
+        const key = this.keyFor(issue);
+        if (this.inFlight.has(key)) continue;
+        if (this.lastReconciled.get(key) === targetCol) continue;
+        this.inFlight.add(key);
+        this.lastReconciled.set(key, targetCol);
+        try {
+          await this.updateStatus(issue, targetCol);
+          reconciled.push({ issueNumber: issue.number, target: targetCol });
+          this.onReconciled?.(issue, targetCol);
+        } catch (err) {
+          this.lastReconciled.delete(key);
+        } finally {
+          this.inFlight.delete(key);
+        }
+      }
+      return reconciled;
+    }
+    clear() {
+      if (this.timer) {
+        clearTimeout(this.timer);
+        this.timer = null;
+      }
+      this.inFlight.clear();
+      this.lastReconciled.clear();
+    }
+    isInFlight(issueOrNumber) {
+      const key = typeof issueOrNumber === "number" ? `#${issueOrNumber}` : this.keyFor(issueOrNumber);
+      return this.inFlight.has(key);
+    }
+    getLastReconciled(issueOrNumber) {
+      const key = typeof issueOrNumber === "number" ? `#${issueOrNumber}` : this.keyFor(issueOrNumber);
+      return this.lastReconciled.get(key);
+    }
+  };
+
+  // panel/git.ts
+  function parseGitHubRemoteUrl(raw) {
+    if (!raw || typeof raw !== "string") return null;
+    const val = raw.trim();
+    const scpMatch = val.match(/^(?:git@|ssh:\/\/git@)github\.com[:/]([^\s/]+)\/([^\s/.]+?)(\.git)?$/);
+    if (scpMatch) return { owner: scpMatch[1], repo: scpMatch[2] };
+    try {
+      const url = new URL(val);
+      if (url.hostname === "github.com") {
+        const parts = url.pathname.replace(/^\/+|\.git$/g, "").split("/");
+        if (parts.length >= 2 && parts[0] && parts[1]) {
+          return { owner: parts[0], repo: parts[1] };
+        }
+      }
+    } catch {
+    }
+    return null;
+  }
+  function parseGitRemoteFromConfig(configContent) {
+    if (!configContent || typeof configContent !== "string") return null;
+    const match = configContent.match(/\[remote\s+["\w-]+\][^\[]*?url\s*=\s*([^\r\n]+)/);
+    if (match) {
+      return parseGitHubRemoteUrl(match[1]);
+    }
+    return null;
+  }
+  function extractGitHubTokenFromCredentials(content) {
+    if (!content || typeof content !== "string") return null;
+    const match = content.match(/https:\/\/(?:[^:]+?:)?(gh[pousr]_[A-Za-z0-9_]+)@github\.com/);
+    if (match) return match[1];
+    const generic = content.match(/gh[pousr]_[A-Za-z0-9_]+/);
+    return generic ? generic[0] : null;
+  }
+  function parseGitdirContent(content) {
+    if (!content || typeof content !== "string") return null;
+    const match = content.match(/^gitdir:\s*(.+)$/m);
+    return match ? match[1].trim() : null;
+  }
+  function extractParentRepoRootFromGitdir(gitdirPath) {
+    if (!gitdirPath || typeof gitdirPath !== "string") return null;
+    if (!gitdirPath.includes("/.git/worktrees/")) return null;
+    return gitdirPath.split("/.git/worktrees/")[0];
+  }
+  function resolveParentRemoteFromGitdir(gitdirContent, readConfigFileFn) {
+    const path = parseGitdirContent(gitdirContent);
+    if (!path) return null;
+    const parentRepoRoot = extractParentRepoRootFromGitdir(path);
+    if (!parentRepoRoot) return null;
+    const config = readConfigFileFn(`${parentRepoRoot}/.git/config`);
+    if (!config) return null;
+    return parseGitRemoteFromConfig(config);
+  }
+
+  // panel/types.ts
+  function extractWorktreeName2(wt) {
+    if (!wt) return "";
+    if (typeof wt === "string") return wt;
+    if (typeof wt === "object") {
+      return wt.name || wt.branch || wt.directory || "";
+    }
+    return "";
+  }
+
+  // panel/core.ts
+  function slugify2(text, maxLen = 60) {
+    return (text || "").toString().toLowerCase().trim().replace(/[^\w\s-]/g, "").replace(/[\s_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, maxLen);
+  }
+  var checklistRegex = /^(\s*(?:[-*+]|\d+\.)\s*\[)([ xX])(\]\s+)(.+)$/;
+  var questionsSectionRegex = /^[ \t]*#{1,6}\s*(?:open\s+)?questions(?:\s*:)?/i;
+  var humanTasksSectionRegex = /^[ \t]*#{1,6}\s*human\s+tasks?(?:\s*:)?/i;
+  var testPlanIssueHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*issue\s*\)(?:\s*:)?/i;
+  var testPlanBatchHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan\s*\(\s*batch\s*\)(?:\s*:)?/i;
+  var testPlanHeadingRegex = /^[ \t]*#{1,6}\s*test\s+plan(?:\s*\(.*?\))?(?:\s*:)?/i;
+  var acceptanceCriteriaSectionRegex = /^[ \t]*#{1,6}\s*acceptance\s+criteria(?:\s*:)?/i;
+  var subtasksSectionRegex = /^[ \t]*#{1,6}\s*(?:actionable\s+subtasks(?:\s+checklist)?|subtasks?|tasks?)(?:\s*:)?/im;
+  var headingRegex = /^[ ]{0,3}#{1,6}\s+/;
+  function parseFriendlyTitle(body, defaultTitle) {
+    if (!body || typeof body !== "string") {
+      return { title: defaultTitle || "", subtitle: null };
+    }
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const match = cleanBody.match(/(?:^|\r?\n)[ \t]*(?:#{1,6}[ \t]*Friendly Title:|\*\*Friendly Title:?\*\*:?)[ \t]*([^\r\n]*)/i);
+    if (match) {
+      let extracted = match[1].trim();
+      if (!extracted) {
+        const matchIndex = match.index ?? 0;
+        const remainder = cleanBody.slice(matchIndex + match[0].length);
+        const lines = remainder.split(/\r?\n/);
+        for (const rawLine of lines) {
+          const line = rawLine.trim();
+          if (!line) continue;
+          if (line.startsWith("#") || /^\*\*(?:overview|description|details|context|background|about|tasks?|subtasks?|questions?):?\*\*/i.test(line) || /^[-*+]\s+/.test(line) || /^\d+\.\s+/.test(line)) {
+            break;
+          }
+          extracted = line;
+          break;
+        }
+      }
+      if (extracted) {
+        extracted = extracted.replace(/^<([^>]+)>$/, "$1").replace(/^["'](.*)["']$/, "$1").trim();
+        if (extracted.toLowerCase() === "3-6 words plain english title" || extracted.toLowerCase() === "<3-6 words plain english title>") {
+          return {
+            title: defaultTitle || "",
+            subtitle: null
+          };
+        }
+        return {
+          title: extracted,
+          subtitle: defaultTitle || null
+        };
+      }
+    }
+    return {
+      title: defaultTitle || "",
+      subtitle: null
+    };
+  }
+  function resolveSimplifiedViewTitle(issue) {
+    const titles = parseFriendlyTitle(issue.body, "__DEFAULT_TITLE_SENTINEL__");
+    if (titles.subtitle === "__DEFAULT_TITLE_SENTINEL__" && titles.title.trim()) {
+      const friendly = titles.title.trim();
+      const tech = issue.title?.trim() || null;
+      return {
+        displayTitle: friendly,
+        displaySubtitle: tech && tech !== friendly ? tech : null,
+        isPlaceholder: false
+      };
+    }
+    const fallbackTitle = issue.title?.trim() || `Issue #${issue.number}`;
+    return {
+      displayTitle: fallbackTitle,
+      displaySubtitle: null,
+      isPlaceholder: false
+    };
+  }
+  function escapeHtmlInternal(str) {
+    return (str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+  function formatTaskTextWithLinks(text, currentRepo2) {
+    if (!text || typeof text !== "string") return "";
+    let escaped = escapeHtmlInternal(text);
+    escaped = escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_match, label, url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="task-link">${label}</a>`;
+    });
+    escaped = escaped.replace(/(?<![\w/])(https:\/\/github\.com\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+\/issues\/\d+)(?![^<]*<\/a>)(?![/\w])/g, (_match, url) => {
+      return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">${url}</a>`;
+    });
+    escaped = escaped.replace(/(?<![\w/])([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)#(\d+)\b(?![^<]*<\/a>)/g, (match, repo, num) => {
+      if (currentRepo2 && repo.toLowerCase() === currentRepo2.toLowerCase()) {
+        return match;
+      }
+      const fullUrl = `https://github.com/${repo}/issues/${num}`;
+      return `<a href="${fullUrl}" target="_blank" rel="noopener noreferrer" class="task-link cross-repo-link">${fullUrl}</a>`;
+    });
+    const aTokens = [];
+    let working = escaped.replace(/<a\b[^>]*>[\s\S]*?<\/a>/gi, (match) => {
+      const placeholder = `%%A_TAG_${aTokens.length}%%`;
+      aTokens.push(match);
+      return placeholder;
+    });
+    working = working.replace(/`([^`\n]+)`/g, (_m, code) => {
+      const trimmed = code.trim();
+      if (/(?:^\/|\/|\.[a-zA-Z0-9]+$)/.test(trimmed) && !trimmed.includes(" ")) {
+        const clean = trimmed.replace(/[.,;:)]+$/, "");
+        return `<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}"><code>${trimmed}</code></a>`;
+      }
+      return `<code>${trimmed}</code>`;
+    });
+    const codeTokens = [];
+    working = working.replace(/<code\b[^>]*>[\s\S]*?<\/code>/gi, (match) => {
+      const placeholder = `%%CODE_TAG_${codeTokens.length}%%`;
+      codeTokens.push(match);
+      return placeholder;
+    });
+    working = working.replace(/(?<![\w/])(\/(?:workspace|config|tmp|usr|home|etc|var)\/[a-zA-Z0-9_./@-]+(?:\/)?|[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_./-]+\.(?:ts|js|mjs|cjs|json|md|html|css|yaml|yml|sh|py|go|rs|toml|txt)|(?:\.agents|config\/opencode|panel)\/[a-zA-Z0-9_./@-]+(?:\/)?|package\.json|tsconfig\.json|README\.md|LICENSE|\.gitignore)(?=[.,;:)]*(?:$|\s|[<]))/g, (match) => {
+      const clean = match.replace(/[.,;:)]+$/, "");
+      return `<a href="#" class="task-link task-file-path-link" data-path="${clean}" title="Click to view file: ${clean}">${clean}</a>`;
+    });
+    for (let i = codeTokens.length - 1; i >= 0; i--) {
+      working = working.replace(`%%CODE_TAG_${i}%%`, codeTokens[i]);
+    }
+    for (let i = aTokens.length - 1; i >= 0; i--) {
+      working = working.replace(`%%A_TAG_${i}%%`, aTokens[i]);
+    }
+    return working;
+  }
+  function extractQuestionOptions(questionText, issueBody) {
+    const options = [];
+    const qClean = (questionText || "").trim();
+    if (issueBody) {
+      const tableRegex = /\|\s*\*\*([A-D]\.[^*]+)\*\*\s*\|/gi;
+      let tm;
+      const tableOptions = [];
+      while ((tm = tableRegex.exec(issueBody)) !== null) {
+        tableOptions.push(tm[1].trim());
+      }
+      if (tableOptions.length >= 2) {
+        options.push(...tableOptions);
+        if (/A\s*\+\s*D/i.test(qClean)) {
+          options.push("A + D (Combination)");
+        }
+      }
+    }
+    if (options.length === 0 && qClean) {
+      let clean = qClean.replace(/^\s*[-*?]\s*/, "").trim();
+      const colonIdx = clean.indexOf(":");
+      if (colonIdx >= 0 && colonIdx < clean.length - 2) {
+        clean = clean.slice(colonIdx + 1).trim();
+      }
+      const orMatch = clean.match(/^(.*?)(?:,\s*|\s+)or\s+([^?]+)\??$/i);
+      if (orMatch) {
+        const prefix = orMatch[1];
+        const last = orMatch[2].trim();
+        const strippedPrefix = prefix.replace(/^(?:do you prefer|should we use|which|choose|is this ready for merge \(?)/i, "").trim();
+        const parts = strippedPrefix.split(",").map((s) => s.trim()).filter(Boolean);
+        parts.push(last.replace(/\)$/, "").trim());
+        if (parts.length >= 2 && parts.length <= 6) {
+          options.push(...parts);
+        }
+      }
+    }
+    if (options.length === 0 && qClean) {
+      const parenMatches = [...qClean.matchAll(/\(([A-Za-z0-9]+)\)\s*([^,;()]+)/g)];
+      if (parenMatches.length >= 2) {
+        parenMatches.forEach((m) => options.push(`(${m[1]}) ${m[2].trim()}`));
+      }
+    }
+    return [...new Set(options)];
+  }
+  function extractQuestionContext(issueBody, questionLineIndex) {
+    if (!issueBody) return "";
+    const lines = issueBody.split("\n");
+    if (typeof questionLineIndex === "number" && questionLineIndex > 0) {
+      let precedingHeading = "";
+      for (let i = questionLineIndex - 1; i >= 0; i--) {
+        const line = lines[i].trim();
+        if (/^#{1,3}\s+/.test(line)) {
+          precedingHeading = line.replace(/^#{1,3}\s+/, "");
+          break;
+        }
+      }
+      for (let i = questionLineIndex - 1; i >= Math.max(0, questionLineIndex - 8); i--) {
+        const line = lines[i].trim();
+        if (line && !line.startsWith("#") && !line.startsWith("-") && !line.startsWith("|")) {
+          return (precedingHeading ? `${precedingHeading}: ` : "") + line.slice(0, 260);
+        }
+      }
+      if (precedingHeading) return precedingHeading;
+    }
+    const overviewMatch = issueBody.match(/##\s*Overview\s*\n+([\s\S]*?)(?=\n##|\n###|$)/i);
+    if (overviewMatch) {
+      const snippet = overviewMatch[1].replace(/[#*`_]/g, "").trim().replace(/\s+/g, " ");
+      return snippet.slice(0, 240) + (snippet.length > 240 ? "..." : "");
+    }
+    return "";
+  }
+  function parseOpenQuestions(body) {
+    if (!body || typeof body !== "string" || !body.includes("[")) return [];
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    if (!/question/i.test(cleanBody)) return [];
+    const hasCodeFence = cleanBody.includes("```") || cleanBody.includes("~~~");
+    const hasCR = cleanBody.includes("\r");
+    const lines = cleanBody.split("\n");
+    const questions = [];
+    let inQuestionsSection = false;
+    let inHumanTasksSection = false;
+    let inCodeFence = false;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+      const firstChar = line.charCodeAt(0);
+      if (firstChar !== 45 && firstChar !== 42) {
+        if (hasCodeFence) {
+          if (/^[ \t]*(?:```|~~~)/.test(line)) {
+            inCodeFence = !inCodeFence;
+            continue;
+          }
+          if (inCodeFence) continue;
+        }
+        if (line.includes("#")) {
+          const isQuestions = questionsSectionRegex.test(line);
+          const isHuman = humanTasksSectionRegex.test(line);
+          if (isQuestions || isHuman || headingRegex.test(line)) {
+            inQuestionsSection = isQuestions;
+            inHumanTasksSection = isHuman;
+            continue;
+          }
+        }
+      } else if (inCodeFence) {
+        continue;
+      }
+      if (inQuestionsSection) {
+        let completed = false;
+        let text = "";
+        if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+          completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+          text = line.slice(6).trim();
+        } else {
+          const match = line.match(checklistRegex);
+          if (match) {
+            completed = match[2].toLowerCase() === "x";
+            text = match[4].trim();
+          }
+        }
+        if (text) {
+          questions.push({
+            id: `question-${i}`,
+            lineIndex: i,
+            completed,
+            text,
+            rawLine
+          });
+        }
+      } else if (!inHumanTasksSection) {
+        if (line.includes("?") || line.includes("Q:") || line.includes("q:") || /question/i.test(line)) {
+          let completed = false;
+          let text = "";
+          if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+            completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+            text = line.slice(6).trim();
+          } else {
+            const match = line.match(checklistRegex);
+            if (match) {
+              completed = match[2].toLowerCase() === "x";
+              text = match[4].trim();
+            }
+          }
+          if (text && /^(?:\?|Q:|Question:)/i.test(text)) {
+            const qText = text.replace(/^(?:\?|Q:|Question:)\s*/i, "").trim();
+            if (qText) {
+              questions.push({
+                id: `question-${i}`,
+                lineIndex: i,
+                completed,
+                text: qText,
+                rawLine
+              });
+            }
+          }
+        }
+      }
+    }
+    return questions;
+  }
+  function parseHumanTasks(body) {
+    if (!body || typeof body !== "string" || !body.includes("[")) return [];
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    if (!/human/i.test(cleanBody)) return [];
+    const hasCodeFence = cleanBody.includes("```") || cleanBody.includes("~~~");
+    const hasCR = cleanBody.includes("\r");
+    const lines = cleanBody.split("\n");
+    const tasks = [];
+    let inHumanTasksSection = false;
+    let inCodeFence = false;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+      const firstChar = line.charCodeAt(0);
+      if (firstChar !== 45 && firstChar !== 42) {
+        if (hasCodeFence) {
+          if (/^[ \t]*(?:```|~~~)/.test(line)) {
+            inCodeFence = !inCodeFence;
+            continue;
+          }
+          if (inCodeFence) continue;
+        }
+        if (line.includes("#")) {
+          const isHuman = humanTasksSectionRegex.test(line);
+          if (isHuman || questionsSectionRegex.test(line) || headingRegex.test(line)) {
+            inHumanTasksSection = isHuman;
+            continue;
+          }
+        }
+      } else if (inCodeFence) {
+        continue;
+      }
+      if (inHumanTasksSection) {
+        let completed = false;
+        let text = "";
+        if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+          completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+          text = line.slice(6).trim();
+        } else {
+          const match = line.match(checklistRegex);
+          if (match) {
+            completed = match[2].toLowerCase() === "x";
+            text = match[4].trim();
+          }
+        }
+        if (text) {
+          tasks.push({
+            id: `human-task-${i}`,
+            lineIndex: i,
+            completed,
+            text,
+            rawLine
+          });
+        }
+      }
+    }
+    return tasks;
+  }
+  function buildHumanTaskResumePrompt(issueNumber) {
+    return `All human tasks for issue #${issueNumber} are now complete. Resume work, run your verification suite, and advance the issue to the next step.`;
+  }
+  function shouldNotifyAgentOnHumanTasksComplete(prevTasks, nextTasks) {
+    if (!nextTasks || nextTasks.length === 0) return false;
+    const hadIncomplete = !prevTasks || prevTasks.length === 0 || prevTasks.some((t) => !t.completed);
+    const nowAllComplete = nextTasks.every((t) => t.completed);
+    return hadIncomplete && nowAllComplete;
+  }
+  function parseAcceptanceCriteria(body) {
+    if (!body || typeof body !== "string" || !body.includes("[")) return [];
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    if (!/acceptance/i.test(cleanBody)) return [];
+    const hasCodeFence = cleanBody.includes("```") || cleanBody.includes("~~~");
+    const hasCR = cleanBody.includes("\r");
+    const lines = cleanBody.split("\n");
+    const items = [];
+    let inAcSection = false;
+    let inCodeFence = false;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+      const firstChar = line.charCodeAt(0);
+      if (firstChar !== 45 && firstChar !== 42) {
+        if (hasCodeFence) {
+          if (/^[ \t]*(?:```|~~~)/.test(line)) {
+            inCodeFence = !inCodeFence;
+            continue;
+          }
+          if (inCodeFence) continue;
+        }
+        if (line.includes("#")) {
+          const isAc = acceptanceCriteriaSectionRegex.test(line);
+          if (isAc || headingRegex.test(line)) {
+            inAcSection = isAc;
+            continue;
+          }
+        }
+      } else if (inCodeFence) {
+        continue;
+      }
+      if (inAcSection) {
+        let completed = false;
+        let text = "";
+        if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+          completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+          text = line.slice(6).trim();
+        } else {
+          const match = line.match(checklistRegex);
+          if (match) {
+            completed = match[2].toLowerCase() === "x";
+            text = match[4].trim();
+          }
+        }
+        if (text) {
+          items.push({
+            id: `ac-${i}`,
+            lineIndex: i,
+            completed,
+            text,
+            rawLine
+          });
+        }
+      }
+    }
+    return items;
+  }
+  function parseSubtasks(body) {
+    if (!body || typeof body !== "string" || !body.includes("[")) return [];
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    const hasCodeFence = cleanBody.includes("```") || cleanBody.includes("~~~");
+    const hasCR = cleanBody.includes("\r");
+    const lines = cleanBody.split("\n");
+    const subtasks = [];
+    let hasExplicitSubtasksSection = false;
+    if (/task/i.test(cleanBody)) {
+      if (!hasCodeFence) {
+        hasExplicitSubtasksSection = subtasksSectionRegex.test(cleanBody);
+      } else {
+        let inCode = false;
+        for (let i = 0; i < lines.length; i++) {
+          const rawLine = lines[i];
+          if (/^[ \t]*(?:```|~~~)/.test(rawLine)) {
+            inCode = !inCode;
+            continue;
+          }
+          if (inCode) continue;
+          if (subtasksSectionRegex.test(rawLine)) {
+            hasExplicitSubtasksSection = true;
+            break;
+          }
+        }
+      }
+    }
+    if (hasExplicitSubtasksSection) {
+      let inSubtasksSection = false;
+      let inCodeFence2 = false;
+      for (let i = 0; i < lines.length; i++) {
+        const rawLine = lines[i];
+        const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+        const firstChar = line.charCodeAt(0);
+        if (firstChar !== 45 && firstChar !== 42) {
+          if (hasCodeFence) {
+            if (/^[ \t]*(?:```|~~~)/.test(line)) {
+              inCodeFence2 = !inCodeFence2;
+              continue;
+            }
+            if (inCodeFence2) continue;
+          }
+          if (line.includes("#")) {
+            const isSub = subtasksSectionRegex.test(line);
+            if (isSub || headingRegex.test(line)) {
+              inSubtasksSection = isSub;
+              continue;
+            }
+          }
+        } else if (inCodeFence2) {
+          continue;
+        }
+        if (inSubtasksSection) {
+          let completed = false;
+          let text = "";
+          if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+            completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+            text = line.slice(6).trim();
+          } else {
+            const match = line.match(checklistRegex);
+            if (match) {
+              completed = match[2].toLowerCase() === "x";
+              text = match[4].trim();
+            }
+          }
+          if (text) {
+            if (text.charCodeAt(0) === 63 || text.charCodeAt(0) === 81 && (text.charCodeAt(1) === 58 || text.startsWith("Question:")) || /^(?:\?|Q:|Question:)/i.test(text)) {
+              continue;
+            }
+            subtasks.push({
+              id: `task-${i}`,
+              lineIndex: i,
+              completed,
+              text,
+              rawLine
+            });
+          }
+        }
+      }
+      return subtasks;
+    }
+    let inExcludedSection = false;
+    let inCodeFence = false;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+      const firstChar = line.charCodeAt(0);
+      if (firstChar !== 45 && firstChar !== 42) {
+        if (hasCodeFence) {
+          if (/^[ \t]*(?:```|~~~)/.test(line)) {
+            inCodeFence = !inCodeFence;
+            continue;
+          }
+          if (inCodeFence) continue;
+        }
+        if (line.includes("#")) {
+          const isExcluded = acceptanceCriteriaSectionRegex.test(line) || questionsSectionRegex.test(line) || humanTasksSectionRegex.test(line) || testPlanHeadingRegex.test(line);
+          if (isExcluded || headingRegex.test(line)) {
+            inExcludedSection = isExcluded;
+            continue;
+          }
+        }
+      } else if (inCodeFence) {
+        continue;
+      }
+      if (inExcludedSection) {
+        continue;
+      }
+      let completed = false;
+      let text = "";
+      if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+        completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+        text = line.slice(6).trim();
+      } else {
+        const match = line.match(checklistRegex);
+        if (match) {
+          completed = match[2].toLowerCase() === "x";
+          text = match[4].trim();
+        }
+      }
+      if (text) {
+        if (text.charCodeAt(0) === 63 || text.charCodeAt(0) === 81 && (text.charCodeAt(1) === 58 || text.startsWith("Question:")) || /^(?:\?|Q:|Question:)/i.test(text)) {
+          continue;
+        }
+        subtasks.push({
+          id: `task-${i}`,
+          lineIndex: i,
+          completed,
+          text,
+          rawLine
+        });
+      }
+    }
+    return subtasks;
+  }
+  function collectHumanTodos(issue, session) {
+    let body = "";
+    let preHumanTasks;
+    let preOpenQuestions;
+    let issueObj = null;
+    if (typeof issue === "string") {
+      body = issue;
+    } else if (issue && typeof issue === "object") {
+      issueObj = issue;
+      body = typeof issue.body === "string" ? issue.body : "";
+      if (Array.isArray(issue.humanTasks)) {
+        preHumanTasks = issue.humanTasks;
+      }
+      if (Array.isArray(issue.openQuestions)) {
+        preOpenQuestions = issue.openQuestions;
+      }
+    }
+    const humanTasks = preHumanTasks ?? parseHumanTasks(body);
+    const uncheckedHumanTasks = humanTasks.filter((t) => !t.completed);
+    const seen = /* @__PURE__ */ new Set();
+    const todos = [];
+    for (const t of uncheckedHumanTasks) {
+      const text = t.text.trim();
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      todos.push({
+        text,
+        source: "human-task",
+        done: false
+      });
+    }
+    if (todos.length > 0) {
+      return todos;
+    }
+    const openQuestions = preOpenQuestions ?? parseOpenQuestions(body);
+    const uncheckedQuestions = openQuestions.filter((q) => !q.completed);
+    for (const q of uncheckedQuestions) {
+      const text = q.text.trim();
+      if (!text || seen.has(text)) continue;
+      seen.add(text);
+      todos.push({
+        text,
+        source: "open-question",
+        done: false
+      });
+    }
+    if (todos.length > 0) {
+      return todos;
+    }
+    const isBoundToOther = (s, currentNum) => {
+      if (!s || !currentNum) return false;
+      const currentStr = String(currentNum);
+      if (Array.isArray(s.items)) {
+        for (const it of s.items) {
+          if (!it) continue;
+          if (it.id === currentStr) return false;
+          const otherNum = it.data?.issueNumber || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers[0] || (Number.isFinite(Number(it.id)) ? Number(it.id) : null);
+          if (otherNum && Number(otherNum) !== currentNum) return true;
+        }
+      }
+      if (typeof s.title === "string") {
+        const match = s.title.match(/#(\d+)/);
+        if (match && Number(match[1]) !== currentNum) return true;
+      }
+      const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
+      if (wtName) {
+        const match = wtName.match(/issue-(\d+)/);
+        if (match && Number(match[1]) !== currentNum) return true;
+      }
+      return false;
+    };
+    let activeSession = null;
+    if (Array.isArray(session)) {
+      if (issueObj && Number.isFinite(issueObj.number)) {
+        const issueNumStr = String(issueObj.number);
+        activeSession = session.find((s) => {
+          if (!s) return false;
+          if (s.items && Array.isArray(s.items) && s.items.some((it) => it && (it.id === issueNumStr || it.data?.issueNumber === issueObj.number || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers.includes(issueObj.number)))) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issueObj.number}`)) return true;
+          const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
+          if (wtName && wtName.includes(`issue-${issueObj.number}`)) return true;
+          return false;
+        }) || (session.length === 1 && !isBoundToOther(session[0], issueObj.number) ? session[0] : null);
+      } else {
+        activeSession = session.length === 1 ? session[0] : null;
+      }
+    } else if (session && typeof session === "object") {
+      if (issueObj && Number.isFinite(issueObj.number) && isBoundToOther(session, issueObj.number)) {
+        activeSession = null;
+      } else {
+        activeSession = session;
+      }
+    }
+    if (activeSession) {
+      const act = typeof activeSession.activity === "string" ? activeSession.activity.trim() : "";
+      const isWaiting = act === "waiting-permission" || act === "waiting-question" || act.startsWith("waiting");
+      if (isWaiting) {
+        const rawReason = activeSession.waitingReason || activeSession.reason || activeSession.data?.waitingReason || activeSession.data?.reason || "";
+        const reason = typeof rawReason === "string" ? rawReason.trim() : "";
+        let text = "";
+        if (act === "waiting-permission") {
+          text = reason ? `Agent waiting for permission: ${reason}` : "Agent waiting for permission";
+        } else if (act === "waiting-question") {
+          text = reason ? `Agent waiting for question: ${reason}` : "Agent waiting for question";
+        } else if (act.startsWith("waiting-")) {
+          const kind = act.slice(8);
+          text = reason ? `Agent waiting for ${kind}: ${reason}` : `Agent waiting for ${kind}`;
+        } else {
+          text = reason ? `Agent waiting: ${reason}` : "Agent waiting";
+        }
+        return [{
+          text,
+          source: "session-waiting",
+          done: false
+        }];
+      }
+    }
+    return [];
+  }
+  function updateSubtaskInMarkdown(body, lineIndex, completed) {
+    const lines = body.split("\n");
+    if (lineIndex >= 0 && lineIndex < lines.length) {
+      const rawLine = lines[lineIndex];
+      const hasCr = rawLine.endsWith("\r");
+      const cleanLine = hasCr ? rawLine.slice(0, -1) : rawLine;
+      const match = cleanLine.match(checklistRegex);
+      if (match) {
+        const mark = completed ? "x" : " ";
+        lines[lineIndex] = `${match[1]}${mark}${match[3]}${match[4]}${hasCr ? "\r" : ""}`;
+      }
+    }
+    return lines.join("\n");
+  }
+  function updateOpenQuestionInMarkdown(body, lineIndex, completed) {
+    return updateSubtaskInMarkdown(body, lineIndex, completed);
+  }
+  function answerOpenQuestionInMarkdown(body, questionIndex, answerText) {
+    if (!body) return "";
+    const cleanAnswer = (answerText || "").trim().replace(/\r?\n+/g, " ");
+    const questions = parseOpenQuestions(body);
+    const unresolved = questions.filter((q) => !q.completed);
+    if (questionIndex < 0 || questionIndex >= unresolved.length) {
+      return body;
+    }
+    const target = unresolved[questionIndex];
+    const lines = body.split("\n");
+    const rawLine = lines[target.lineIndex];
+    if (!rawLine) return body;
+    const hasCr = rawLine.endsWith("\r");
+    const cleanLine = hasCr ? rawLine.slice(0, -1) : rawLine;
+    const match = cleanLine.match(checklistRegex);
+    if (!match) return body;
+    const lineEnding = hasCr ? "\r" : "";
+    const questionContent = match[4].replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, "").trimEnd();
+    lines[target.lineIndex] = `${match[1]}x${match[3]}${questionContent} *(Answer: ${cleanAnswer})*${lineEnding}`;
+    return lines.join("\n");
+  }
+  function appendSubtaskToMarkdown(body, text) {
+    const cleanText = text.trim();
+    if (!cleanText) return body;
+    const suffix = `
+- [ ] ${cleanText}`;
+    return body ? `${body.trimEnd()}${suffix}` : `- [ ] ${cleanText}`;
+  }
+  function appendOpenQuestionToMarkdown(body, text) {
+    const cleanText = text.trim();
+    if (!cleanText) return body;
+    if (!body) {
+      return `### Open Questions:
+- [ ] ${cleanText}`;
+    }
+    const lines = body.split("\n");
+    let qHeaderIndex = -1;
+    let nextHeaderIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (questionsSectionRegex.test(lines[i])) {
+        qHeaderIndex = i;
+        for (let j = i + 1; j < lines.length; j++) {
+          if (headingRegex.test(lines[j])) {
+            nextHeaderIndex = j;
+            break;
+          }
+        }
+        break;
+      }
+    }
+    if (qHeaderIndex !== -1) {
+      if (nextHeaderIndex !== -1) {
+        lines.splice(nextHeaderIndex, 0, `- [ ] ${cleanText}`);
+        return lines.join("\n");
+      } else {
+        return `${body.trimEnd()}
+- [ ] ${cleanText}`;
+      }
+    }
+    return `${body.trimEnd()}
+
+### Open Questions:
+- [ ] ${cleanText}`;
+  }
+  function serializeDraftQuestions(body, questionTexts) {
+    const cleanBody = (body || "").trim();
+    const cleanQuestions = (questionTexts || []).map((t) => typeof t === "string" ? t.trim() : "").filter(Boolean);
+    if (cleanQuestions.length === 0) return cleanBody;
+    const questionsBlock = cleanQuestions.map((q) => `- [ ] ${q}`).join("\n");
+    if (!cleanBody) {
+      return `### Open Questions:
+
+${questionsBlock}`;
+    }
+    if (questionsSectionRegex.test(cleanBody)) {
+      return `${cleanBody}
+${questionsBlock}`;
+    }
+    return `${cleanBody}
+
+### Open Questions:
+
+${questionsBlock}`;
+  }
+  function parseTestPlan(body) {
+    const result = {
+      issueTests: [],
+      batchTests: []
+    };
+    if (!body || typeof body !== "string" || !body.includes("[")) return result;
+    const cleanBody = body.startsWith("\uFEFF") ? body.slice(1) : body;
+    if (!/test\s*plan/i.test(cleanBody)) return result;
+    const hasCodeFence = cleanBody.includes("```") || cleanBody.includes("~~~");
+    const hasCR = cleanBody.includes("\r");
+    const lines = cleanBody.split("\n");
+    let currentScope = null;
+    let inCodeFence = false;
+    for (let i = 0; i < lines.length; i++) {
+      const rawLine = lines[i];
+      const line = hasCR && rawLine.includes("\r") ? rawLine.replace(/\r/g, "") : rawLine;
+      const firstChar = line.charCodeAt(0);
+      if (firstChar !== 45 && firstChar !== 42) {
+        if (hasCodeFence) {
+          if (/^[ \t]*(?:```|~~~)/.test(line)) {
+            inCodeFence = !inCodeFence;
+            continue;
+          }
+          if (inCodeFence) continue;
+        }
+        if (line.includes("#")) {
+          if (testPlanIssueHeadingRegex.test(line)) {
+            currentScope = "issue";
+            continue;
+          } else if (testPlanBatchHeadingRegex.test(line)) {
+            currentScope = "batch";
+            continue;
+          } else if (headingRegex.test(line)) {
+            currentScope = null;
+            continue;
+          }
+        }
+      } else if (inCodeFence) {
+        continue;
+      }
+      if (currentScope) {
+        let completed = false;
+        let text = "";
+        if (line.charCodeAt(0) === 45 && line.charCodeAt(1) === 32 && line.charCodeAt(2) === 91 && (line.charCodeAt(3) === 32 || line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88) && line.charCodeAt(4) === 93 && line.charCodeAt(5) === 32) {
+          completed = line.charCodeAt(3) === 120 || line.charCodeAt(3) === 88;
+          text = line.slice(6).trim();
+        } else {
+          const match = line.match(checklistRegex);
+          if (match) {
+            completed = match[2].toLowerCase() === "x";
+            text = match[4].trim();
+          }
+        }
+        if (text) {
+          const testItem = {
+            text,
+            completed,
+            lineIndex: i,
+            scope: currentScope
+          };
+          if (currentScope === "issue") {
+            result.issueTests.push(testItem);
+          } else {
+            result.batchTests.push(testItem);
+          }
+        }
+      }
+    }
+    return result;
+  }
+  function updateTestItemInMarkdown(body, lineIndex, completed) {
+    if (!body) return "";
+    return updateSubtaskInMarkdown(body, lineIndex, completed);
+  }
+  function appendTestItemToMarkdown(body, text, scope) {
+    const cleanText = (text || "").trim();
+    if (!cleanText) return body || "";
+    const header = scope === "issue" ? "## Test Plan (Issue)" : "## Test Plan (Batch)";
+    const targetRegex = scope === "issue" ? testPlanIssueHeadingRegex : testPlanBatchHeadingRegex;
+    const lineEnding = typeof body === "string" && body.includes("\r\n") ? "\r" : "";
+    if (!body || typeof body !== "string") {
+      return `${header}
+- [ ] ${cleanText}`;
+    }
+    const lines = body.split("\n");
+    let targetHeaderIndex = -1;
+    let nextHeaderIndex = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (targetRegex.test(lines[i])) {
+        targetHeaderIndex = i;
+        for (let j = i + 1; j < lines.length; j++) {
+          if (/^#{1,6}\s+/.test(lines[j])) {
+            nextHeaderIndex = j;
+            break;
+          }
+        }
+        break;
+      }
+    }
+    if (targetHeaderIndex !== -1) {
+      const sectionEnd = nextHeaderIndex !== -1 ? nextHeaderIndex : lines.length;
+      let lastChecklistIndex = -1;
+      for (let i = targetHeaderIndex + 1; i < sectionEnd; i++) {
+        if (checklistRegex.test(lines[i])) {
+          lastChecklistIndex = i;
+        }
+      }
+      if (lastChecklistIndex !== -1) {
+        lines.splice(lastChecklistIndex + 1, 0, `- [ ] ${cleanText}${lineEnding}`);
+        return lines.join("\n");
+      }
+      lines.splice(targetHeaderIndex + 1, 0, `- [ ] ${cleanText}${lineEnding}`);
+      return lines.join("\n");
+    }
+    return `${body.trimEnd()}
+
+${header}
+- [ ] ${cleanText}`;
+  }
+  function serializeTestPlan(items, scope) {
+    const header = scope === "issue" ? "## Test Plan (Issue)" : "## Test Plan (Batch)";
+    const cleanItems = (items || []).filter((item) => item && typeof item.text === "string" && item.text.trim());
+    if (cleanItems.length === 0) {
+      return header;
+    }
+    const lines = cleanItems.map((item) => `- [${item.completed ? "x" : " "}] ${item.text.trim()}`);
+    return `${header}
+${lines.join("\n")}`;
+  }
+  function resolveOptimisticSubtaskUpdate(body, taskText, completed) {
+    if (!body || typeof body !== "string") {
+      return { updatedBody: body || "", found: false };
+    }
+    const cleanTarget = taskText.trim();
+    const humanTasks = parseHumanTasks(body);
+    let target = humanTasks.find((t) => t.completed !== completed && t.text.trim() === cleanTarget) || humanTasks.find((t) => t.text.trim() === cleanTarget);
+    if (target) {
+      return {
+        updatedBody: updateSubtaskInMarkdown(body, target.lineIndex, completed),
+        found: true
+      };
+    }
+    const subtasks = parseSubtasks(body);
+    target = subtasks.find((t) => t.completed !== completed && t.text.trim() === cleanTarget) || subtasks.find((t) => t.text.trim() === cleanTarget);
+    if (target) {
+      return {
+        updatedBody: updateSubtaskInMarkdown(body, target.lineIndex, completed),
+        found: true
+      };
+    }
+    return { updatedBody: body, found: false };
+  }
+  function resolveOptimisticQuestionAnswer(body, questionText, answerText) {
+    if (!body || typeof body !== "string") {
+      return { updatedBody: body || "", found: false, reason: "not-found" };
+    }
+    const cleanTarget = (questionText || "").trim();
+    if (!cleanTarget) {
+      return { updatedBody: body, found: false, reason: "not-found" };
+    }
+    const questions = parseOpenQuestions(body);
+    const openQuestions = questions.filter((q) => !q.completed);
+    const matchingIndices = [];
+    openQuestions.forEach((q, idx) => {
+      if (q.text.trim() === cleanTarget) {
+        matchingIndices.push(idx);
+      }
+    });
+    if (matchingIndices.length > 1) {
+      return { updatedBody: body, found: false, reason: "ambiguous" };
+    }
+    if (matchingIndices.length === 1) {
+      const targetIdx = matchingIndices[0];
+      return {
+        updatedBody: answerOpenQuestionInMarkdown(body, targetIdx, answerText),
+        found: true
+      };
+    }
+    const alreadyCompleted = questions.some((q) => {
+      if (!q.completed) return false;
+      const cleanQ = q.text.replace(/\s*\*\s*\(Answer:[\s\S]*?\)\s*\*$/i, "").trim();
+      return cleanQ === cleanTarget;
+    });
+    return {
+      updatedBody: body,
+      found: false,
+      reason: alreadyCompleted ? "already-answered" : "not-found"
+    };
+  }
+  function resolveOptimisticTestItemUpdate(body, itemText, completed) {
+    if (!body || typeof body !== "string") {
+      return { updatedBody: body || "", found: false };
+    }
+    const cleanTarget = itemText.trim();
+    const { issueTests, batchTests } = parseTestPlan(body);
+    const allTests = [...issueTests, ...batchTests];
+    const target = allTests.find((t) => t.completed !== completed && t.text.trim() === cleanTarget) || allTests.find((t) => t.text.trim() === cleanTarget);
+    if (target) {
+      return {
+        updatedBody: updateTestItemInMarkdown(body, target.lineIndex, completed),
+        found: true
+      };
+    }
+    return { updatedBody: body, found: false };
+  }
+  function getIssueBatch(issue) {
+    if (!issue || !issue.labels || !Array.isArray(issue.labels) || issue.labels.length === 0) return null;
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l?.name || "").trim();
+      if (name.toLowerCase().startsWith("batch:")) {
+        const batchName = name.slice(6).trim();
+        if (batchName) return batchName;
+      }
+    }
+    return null;
+  }
+  function isBatchReadyForReview(batchName, allIssues) {
+    const normalizedBatch = (batchName || "").trim().toLowerCase();
+    if (!normalizedBatch || !Array.isArray(allIssues)) {
+      return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
+    }
+    const seenNumbers = /* @__PURE__ */ new Set();
+    const batchIssues = [];
+    for (const issue of allIssues) {
+      if (!issue || typeof issue.number !== "number") continue;
+      if (seenNumbers.has(issue.number)) continue;
+      let belongsToBatch = false;
+      if (Array.isArray(issue.labels)) {
+        for (const l of issue.labels) {
+          const name = (typeof l === "string" ? l : l?.name || "").trim();
+          if (name.toLowerCase().startsWith("batch:")) {
+            if (name.slice(6).trim().toLowerCase() === normalizedBatch) {
+              belongsToBatch = true;
+              break;
+            }
+          }
+        }
+      }
+      if (belongsToBatch) {
+        seenNumbers.add(issue.number);
+        batchIssues.push(issue);
+      }
+    }
+    const total = batchIssues.length;
+    if (total === 0) {
+      return { ready: false, total: 0, inReview: 0, outstandingIssues: [] };
+    }
+    let inReviewCount = 0;
+    const outstandingIssues = [];
+    for (const issue of batchIssues) {
+      const isClosed = typeof issue.state === "string" && issue.state.toLowerCase() === "closed" || issue.state_reason === "completed" || issue.state_reason === "not_planned";
+      const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l?.name || "").toLowerCase());
+      const isDone = isClosed || labelNames.includes("status:done") || labelNames.includes("status:closed") || labelNames.includes("done") || labelNames.includes("closed") || issue.column === "done" || issue.status === "done";
+      const isInReview = !isDone && (labelNames.includes("status:in-review") || labelNames.includes("in-review") || issue.column === "in-review" || issue.status === "in-review");
+      if (isInReview) {
+        inReviewCount++;
+      } else if (!isDone) {
+        outstandingIssues.push(issue.number);
+      }
+    }
+    const ready = total > 0 && outstandingIssues.length === 0;
+    return {
+      ready,
+      total,
+      inReview: inReviewCount,
+      outstandingIssues
+    };
+  }
+  function isVagueIdea(issue) {
+    if (!issue) return true;
+    const labels = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labels.includes("status:needs-alignment")) {
+      return true;
+    }
+    const openQuestions = issue.openQuestions || [];
+    if (openQuestions.some((q) => !q.completed)) {
+      return true;
+    }
+    const subtaskCount = (issue.subtasks || []).length;
+    const bodyText = (issue.body || "").trim();
+    const wordCount = bodyText ? bodyText.split(/\s+/).length : 0;
+    return subtaskCount === 0 && wordCount < 20;
+  }
+  function formatQuestionBadge(openQuestions) {
+    const list = openQuestions || [];
+    const total = list.length;
+    if (total === 0) {
+      return { total: 0, resolved: 0, open: 0, label: "", className: "", html: "" };
+    }
+    const resolved = list.filter((q) => q.completed).length;
+    const open = total - resolved;
+    const isOpen = open > 0;
+    const label = isOpen ? `${open} open` : `${total} Qs resolved`;
+    const className = isOpen ? "questions-prog is-open" : "questions-prog is-resolved";
+    const icon2 = isOpen ? `<svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>` : `<svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 10px; height: 10px; fill: currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>`;
+    const html = `<div class="${className}" title="${open} open, ${resolved} resolved">${icon2}<span>${label}</span></div>`;
+    return { total, resolved, open, label, className, html };
+  }
+  function getIssueTheme(issue) {
+    if (!issue || !issue.labels || issue.labels.length === 0) return "No Theme";
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name.toLowerCase().startsWith("theme:")) {
+        const themeName = name.slice(6).trim();
+        if (themeName) return themeName;
+      }
+    }
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      const lower = name.toLowerCase();
+      if (name && !lower.startsWith("status:") && !lower.startsWith("priority:") && !lower.startsWith("complexity:") && !lower.startsWith("theme:") && !["archived", "archive"].includes(lower)) {
+        return name;
+      }
+    }
+    return "No Theme";
+  }
+  function extractTaskThemes(issuesList) {
+    if (!issuesList || !Array.isArray(issuesList)) return [];
+    const counts = /* @__PURE__ */ new Map();
+    for (const issue of issuesList) {
+      const theme = getIssueTheme(issue);
+      if (theme && theme !== "No Theme") {
+        counts.set(theme, (counts.get(theme) || 0) + 1);
+      }
+    }
+    return Array.from(counts.entries()).map(([theme, count]) => ({ theme, count })).sort((a, b) => b.count - a.count || a.theme.localeCompare(b.theme));
+  }
+  function parseScratchPadThemes(text) {
+    if (!text || typeof text !== "string") {
+      return { themes: [], totalIdeas: 0, totalQuestions: 0 };
+    }
+    const lines = text.split("\n");
+    const themes = [];
+    let currentTheme = { name: "General Ideas", lines: [] };
+    let hasExplicitHeader = false;
+    for (const line of lines) {
+      const trimmed = line.trim();
+      const headingMatch = trimmed.match(/^#{1,3}\s+(?:\[Theme:\s*)?([^\]\n]+)\]?/i);
+      if (headingMatch) {
+        if (currentTheme.lines.length > 0 || hasExplicitHeader) {
+          themes.push(currentTheme);
+        }
+        hasExplicitHeader = true;
+        currentTheme = {
+          name: headingMatch[1].trim(),
+          lines: []
+        };
+        continue;
+      }
+      currentTheme.lines.push(line);
+    }
+    if (currentTheme.lines.length > 0 || hasExplicitHeader) {
+      themes.push(currentTheme);
+    }
+    const activeThemes = themes.filter((t) => t.lines.some((l) => l.trim().length > 0) || t.name !== "General Ideas");
+    let totalIdeas = 0;
+    let totalQuestions = 0;
+    const analyzed = activeThemes.map((t) => {
+      const content = t.lines.join("\n").trim();
+      const ideaLines = t.lines.filter((l) => /^\s*(?:[-*+]|\d+\.)(?:\s*\[[ xX]?\])?\s+(?!\?|Q:|Question:)/i.test(l));
+      const questionLines = t.lines.filter((l) => /(?:\?|\bQ:|\bQuestion:|\?\s*\[)/i.test(l));
+      const ideasCount = ideaLines.length || (content ? 1 : 0);
+      const questionsCount = questionLines.length;
+      totalIdeas += ideasCount;
+      totalQuestions += questionsCount;
+      return {
+        name: t.name,
+        content,
+        ideasCount,
+        questionsCount
+      };
+    });
+    return {
+      themes: analyzed,
+      totalIdeas,
+      totalQuestions
+    };
+  }
+  function getIssuePrimaryTag(issue) {
+    if (!issue || !issue.labels) return "task";
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name && !name.startsWith("status:") && !name.startsWith("priority:") && !name.startsWith("complexity:") && !name.startsWith("theme:") && !["archived", "archive"].includes(name.toLowerCase())) {
+        return name;
+      }
+    }
+    for (const l of issue.labels) {
+      const name = (typeof l === "string" ? l : l.name || "").trim();
+      if (name.startsWith("theme:")) {
+        return name.replace("theme:", "");
+      }
+    }
+    return "task";
+  }
+  function buildWorktreeBranchName(options) {
+    const mode = options.mode || "issue";
+    if (mode === "tag") {
+      const tag = options.customTag || getIssuePrimaryTag(options.issue);
+      return `worktree-tag-${slugify2(tag || "task")}`.slice(0, 80);
+    }
+    if (mode === "theme") {
+      const rawTheme = options.theme || getIssueTheme(options.issue);
+      const theme = rawTheme && rawTheme !== "No Theme" ? rawTheme : "task";
+      const batch = options.batch || getIssueBatch(options.issue);
+      const themeSlug = slugify2(theme, 30);
+      if (batch) {
+        return `${themeSlug}-${slugify2(batch, 30)}`.slice(0, 80);
+      }
+      const issueToken = `issue-${options.issue?.number}`;
+      const prefix = `${themeSlug}-${issueToken}-`;
+      const remaining = Math.max(10, 80 - prefix.length);
+      const branchSlug2 = slugify2(options.issue?.title || "task", remaining);
+      return `${prefix}${branchSlug2}`.slice(0, 80);
+    }
+    const branchSlug = slugify2(options.issue?.title || "task");
+    return `issue-${options.issue?.number}-${branchSlug}`.slice(0, 80);
+  }
+  function findThemeWorktree(worktrees2, themeOrIssue, batch, projectId) {
+    if (!Array.isArray(worktrees2) || worktrees2.length === 0) return null;
+    let theme = null;
+    let issueBatch = batch || null;
+    if (typeof themeOrIssue === "string") {
+      theme = themeOrIssue.trim();
+    } else if (themeOrIssue && typeof themeOrIssue === "object") {
+      theme = getIssueTheme(themeOrIssue);
+      if (!issueBatch) {
+        issueBatch = getIssueBatch(themeOrIssue);
+      }
+    }
+    if (!theme || theme === "No Theme") return null;
+    const themeSlug = slugify2(theme);
+    const themeLower = theme.toLowerCase();
+    const batchSlug = issueBatch ? slugify2(issueBatch) : null;
+    const batchLower = issueBatch ? issueBatch.toLowerCase() : null;
+    const themeBatchSlug = batchSlug ? `${themeSlug}-${batchSlug}` : null;
+    const themeBatchLower = batchLower ? `${themeLower}-${batchLower}` : null;
+    const getCandidateNames = (wt) => {
+      if (!wt) return [];
+      if (typeof wt === "string") return [wt];
+      const dirBasename = typeof wt.directory === "string" ? wt.directory.split("/").filter(Boolean).pop() || "" : "";
+      const cleanBranch = typeof wt.branch === "string" ? wt.branch.replace(/^refs\/heads\//, "").replace(/^heads\//, "").replace(/^origin\//, "") : "";
+      return [
+        wt.name,
+        wt.branch,
+        cleanBranch,
+        dirBasename
+      ].filter(Boolean);
+    };
+    if (themeBatchSlug || themeBatchLower) {
+      for (const wt of worktrees2) {
+        if (!wt) continue;
+        if (projectId && wt.projectId && wt.projectId !== projectId) continue;
+        const names = getCandidateNames(wt);
+        for (const n of names) {
+          const nStr = String(n).trim();
+          const nSlug = slugify2(nStr);
+          const nLower = nStr.toLowerCase();
+          if (themeBatchSlug && nSlug === themeBatchSlug || themeBatchLower && nLower === themeBatchLower || themeBatchSlug && (nSlug === `worktree-tag-${themeBatchSlug}` || nSlug === `theme-${themeBatchSlug}`) || themeBatchLower && (nLower === `worktree-tag-${themeBatchLower}` || nLower === `theme-${themeBatchLower}`)) {
+            return wt;
+          }
+        }
+      }
+    }
+    for (const wt of worktrees2) {
+      if (!wt) continue;
+      if (projectId && wt.projectId && wt.projectId !== projectId) continue;
+      const names = getCandidateNames(wt);
+      for (const n of names) {
+        const nStr = String(n).trim();
+        const nSlug = slugify2(nStr);
+        const nLower = nStr.toLowerCase();
+        if (nSlug === themeSlug || nLower === themeLower || nSlug === `worktree-tag-${themeSlug}` || nSlug === `theme-${themeSlug}` || nLower === `theme:${themeLower}` || nLower === `worktree-tag-${themeLower}`) {
+          return wt;
+        }
+      }
+    }
+    return null;
+  }
+  function resolveIssueSkills(issues2) {
+    if (!issues2) {
+      return { skillNames: [], transclusions: [] };
+    }
+    const list = Array.isArray(issues2) ? issues2 : [issues2];
+    const skillNames = [];
+    const transclusions = [];
+    for (const issue of list) {
+      if (!issue) continue;
+      if (Array.isArray(issue.skills)) {
+        for (const s of issue.skills) {
+          if (typeof s === "string" && s.trim()) {
+            skillNames.push(s.trim());
+          }
+        }
+      }
+      const labelNames = (issue.labels || []).map(
+        (l) => (typeof l === "string" ? l : l.name || "").toLowerCase()
+      );
+      if (labelNames.some((l) => l === "bug" || l === "kind:bug" || l === "type:bug" || l === "theme:bug")) {
+        skillNames.push("surgical-patch", "debugging-and-error-recovery");
+        transclusions.push("[@.agents/skills/build/refactoring/surgical-patch/SKILL.md]");
+        transclusions.push("[@.agents/skills/build/domain/debugging-and-error-recovery/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "enhancement" || l === "kind:enhancement" || l === "type:enhancement" || l === "feature" || l === "theme:enhancement" || l === "theme:feature")) {
+        skillNames.push("test-driven-development", "lean-build");
+        transclusions.push("[@.agents/skills/build/methodology/test-driven-development/SKILL.md]");
+        transclusions.push("[@.agents/skills/build/methodology/lean-build/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "documentation" || l === "kind:documentation" || l === "docs" || l === "theme:documentation" || l === "theme:docs")) {
+        skillNames.push("documentation-and-adrs");
+        transclusions.push("[@.agents/skills/ship/docs/documentation-and-adrs/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "ui" || l === "frontend" || l === "css" || l === "design" || l === "theme:ui" || l === "theme:frontend")) {
+        skillNames.push("frontend-ui-engineering");
+        transclusions.push("[@.agents/skills/build/domain/frontend-ui-engineering/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "api" || l === "backend" || l === "schema" || l === "contract" || l === "theme:api" || l === "theme:backend")) {
+        skillNames.push("api-and-interface-design");
+        transclusions.push("[@.agents/skills/build/domain/api-and-interface-design/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "performance" || l === "perf" || l === "optimization" || l === "theme:performance" || l === "theme:perf")) {
+        skillNames.push("performance-optimization");
+        transclusions.push("[@.agents/skills/build/domain/performance-optimization/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "security" || l === "auth" || l === "hardening" || l === "theme:security")) {
+        skillNames.push("security-and-hardening");
+        transclusions.push("[@.agents/skills/review/security/security-and-hardening/SKILL.md]");
+      }
+      if (labelNames.some((l) => l === "refactor" || l === "cleanup" || l === "tech-debt" || l === "theme:refactor")) {
+        skillNames.push("code-simplification", "safe-refactor");
+        transclusions.push("[@.agents/skills/build/refactoring/code-simplification/SKILL.md]");
+        transclusions.push("[@.agents/skills/build/refactoring/safe-refactor/SKILL.md]");
+      }
+    }
+    const uniqueSkillNames = [];
+    for (const s of skillNames) {
+      if (!uniqueSkillNames.includes(s)) {
+        uniqueSkillNames.push(s);
+      }
+    }
+    const uniqueTransclusions = [];
+    for (const t of transclusions) {
+      if (!uniqueTransclusions.includes(t)) {
+        uniqueTransclusions.push(t);
+      }
+    }
+    return { skillNames: uniqueSkillNames, transclusions: uniqueTransclusions };
+  }
+  function buildLaunchSessionPayload(options) {
+    const { issue, projectId, useWorktree = false, branchName, baseBranch, prompt } = options;
+    let existingWorktree = options.existingWorktree;
+    if (!existingWorktree && options.worktrees && options.worktrees.length > 0) {
+      existingWorktree = findThemeWorktree(options.worktrees, issue, void 0, projectId);
+    }
+    let worktreePayload = false;
+    let directory = void 0;
+    if (existingWorktree) {
+      worktreePayload = {
+        kind: "existing",
+        name: existingWorktree.name || existingWorktree.branch || "",
+        directory: existingWorktree.directory || ""
+      };
+      if (existingWorktree.directory) {
+        directory = existingWorktree.directory;
+      }
+    } else if (useWorktree) {
+      const cleanBranch2 = branchName ? branchName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
+      if (cleanBranch2) {
+        worktreePayload = { kind: "new", name: cleanBranch2, baseBranch };
+      }
+    }
+    const cleanBranch = branchName ? branchName.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
+    const branchForData = existingWorktree ? existingWorktree.branch || existingWorktree.name : useWorktree && cleanBranch ? cleanBranch : void 0;
+    const declaredSkills = options.skills !== void 0 ? options.skills : resolveIssueSkills(issue).skillNames;
+    return {
+      projectId,
+      worktree: worktreePayload,
+      ...directory ? { directory } : {},
+      providerId: "github-task-board",
+      id: String(issue.number),
+      title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
+      url: (issue.html_url || "").slice(0, 1e3),
+      text: prompt || "",
+      ...declaredSkills && declaredSkills.length > 0 ? { skills: declaredSkills } : {},
+      data: {
+        issueNumber: issue.number,
+        ...branchForData ? { branch: branchForData } : {},
+        ...declaredSkills && declaredSkills.length > 0 ? { skills: declaredSkills } : {}
+      }
+    };
+  }
+  function resolveIssueWorkType(issue) {
+    if (!issue || !Array.isArray(issue.labels)) return "undecided";
+    const labelNames = issue.labels.map(
+      (l) => (typeof l === "string" ? l : l?.name || "").toLowerCase().trim()
+    );
+    const hasBug = labelNames.includes("bug");
+    const hasEnhancement = labelNames.includes("enhancement");
+    if (hasBug && !hasEnhancement) return "bug";
+    if (hasEnhancement && !hasBug) return "feature";
+    return "undecided";
+  }
+  var WORK_LOG_SENTENCE_RULE = `The \`### Work Log:\` section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason for it`;
+  var BUG_PATH_RULE = `Bug path: observed versus expected behaviour, reproduction evidence, cause, minimal regression-tested fix, hostile review.`;
+  var FEATURE_PATH_RULE = `Feature path: desired outcome, research and alternatives, user decisions, then implementation.`;
+  var EVIDENCE_AUTHORITY_RULE = `Both paths keep existing evidence rules and existing human authority over release and closure.`;
+  function buildWorkTypeInstructions(target) {
+    const workType = typeof target === "string" ? target : resolveIssueWorkType(target);
+    if (workType === "bug") {
+      return `### Work Type & Proportionate Paths:
+- Labels \`bug\` and \`enhancement\` are the only work-type source. This issue is resolved as \`bug\`.
+- Proportionate path:
+  - ${BUG_PATH_RULE}
+  - Retain existing evidence rules and existing human authority over release and closure.
+- Work Log: ${WORK_LOG_SENTENCE_RULE} (for example the observed behaviour that contradicts a stated expectation). Keep it one line; do not add fields, counters or machine state to the issue body.`;
+    }
+    if (workType === "feature") {
+      return `### Work Type & Proportionate Paths:
+- Labels \`bug\` and \`enhancement\` are the only work-type source. This issue is resolved as \`feature\`.
+- Proportionate path:
+  - ${FEATURE_PATH_RULE}
+  - Retain existing evidence rules and existing human authority over release and closure.
+- Work Log: ${WORK_LOG_SENTENCE_RULE} (for example the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.`;
+    }
+    return `### Work Type & Proportionate Paths:
+- Labels \`bug\` and \`enhancement\` are the only work-type source.
+- When both or neither are present, the work type is undecided and must be asked about, not guessed. Never infer a type from the title, the mood of the report, or the area of the code.
+- Explicit alignment question: Which label (\`bug\` or \`enhancement\`) applies to this issue and what is the concrete reason based strictly on the labels? Ask the user for alignment before proceeding with work that depends on the work type.
+- Undecided work type is an alignment question to the user, not a default. Undecided items must be asked about individually. Only block work that depends on the unanswered question; independent authorised work continues.
+- Work Log: ${WORK_LOG_SENTENCE_RULE} (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+- Proportionate paths (once resolved):
+  - ${BUG_PATH_RULE}
+  - ${FEATURE_PATH_RULE}
+  - ${EVIDENCE_AUTHORITY_RULE}`;
+  }
+  var DEFAULT_WORK_INSTRUCTIONS = buildWorkTypeInstructions("undecided");
+  function renderSingleIssueBrief(issue, options) {
+    let brief = `You are assigned to work on GitHub Issue #${issue?.number ?? ""}: ${issue?.title || ""}
+
+`;
+    if (issue?.body) {
+      brief += `### Description:
+${issue.body}
+
+`;
+    }
+    if (issue?.subtasks && issue.subtasks.length > 0) {
+      brief += `### Subtasks Checklist:
+`;
+      issue.subtasks.forEach((s) => {
+        brief += `- [${s.completed ? "x" : " "}] ${s.text}
+`;
+      });
+      brief += "\n";
+    }
+    const { skillNames, transclusions } = resolveIssueSkills(issue);
+    if (skillNames.length > 0) {
+      brief += `### Recommended Skills:
+`;
+      brief += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillNames.map((s) => `\`skill({ id: '${s}' })\``).join(", ")}).
+`;
+      brief += `Transclusion references for worker sessions:
+${transclusions.join("\n")}
+
+`;
+    }
+    brief += `### Autonomous & AFK Protocol:
+`;
+    brief += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.
+`;
+    brief += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.
+`;
+    brief += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.
+
+`;
+    brief += `${buildWorkTypeInstructions(issue)}
+
+`;
+    if (options?.useWorktree) {
+      brief += `Please inspect the codebase in this worktree, implement the solution, verify with tests, and report back.`;
+    } else {
+      brief += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
+    }
+    return brief;
+  }
+  function renderBatchLaunchPrompt(issue) {
+    const { skillNames, transclusions } = resolveIssueSkills(issue);
+    let prompt = `You are assigned to work on GitHub Issue #${issue?.number ?? ""}: ${issue?.title || ""}
+
+`;
+    if (issue?.body) {
+      prompt += `### Description:
+${issue.body}
+
+`;
+    }
+    if (skillNames.length > 0) {
+      prompt += `### Recommended Skills:
+`;
+      prompt += `Load with skill tool: ${skillNames.map((s) => `\`${s}\``).join(", ")}
+`;
+      prompt += `Transclusion fallback:
+${transclusions.join("\n")}
+
+`;
+    }
+    prompt += `### Autonomous & AFK Protocol:
+`;
+    prompt += `- Continue building autonomously until all subtasks and acceptance criteria are verified green.
+`;
+    prompt += `- If blocked on human decisions, permissions, or physical validation while the human is away, record explicit items under "### Human Tasks:" in the issue body, transition status to "status:needs-human", and halt cleanly.
+`;
+    prompt += `- When implementation and tests are complete, move status to "status:in-review" for verification or "status:needs-human" for final sign-off.
+
+`;
+    prompt += `${buildWorkTypeInstructions(issue)}
+
+`;
+    prompt += `Please inspect the codebase in this workspace, implement the solution, verify with tests, and report back.`;
+    return prompt;
+  }
+  var DEFAULT_AI_ISSUE_PROMPT = `You are an expert software engineer creating GitHub issues for repository "{repo}".
+
+Input Objective / User Mind-Dump:
+{userInput}
+
+Instructions for the Agent:
+1. Analyze the user's input. If the user described multiple independent tasks, bugs, or features, decompose them into distinct, well-scoped GitHub issues. If it describes a single topic, create one focused issue.
+2. Ground all details in the actual codebase by inspecting relevant project files, function names, and architecture. Load the \`issue-lifecycle\` skill to adhere to Issue Body Contract v1.
+3. Every generated issue must follow this exact structure tailored for the OpenChamber Task Board:
+   - Title: Conventional commit format (e.g. "feat(auth): add remember-me token refresh" or "fix(ui): prevent horizontal overflow in mobile table").
+   - Friendly Title: Start the issue body with "### Friendly Title: <3-6 words plain English title>" before the Overview.
+   - Overview: Clear description of the problem, motivation, or user value.
+   - Files Impacted: List candidate file paths grounded in the codebase.
+   - Acceptance Criteria: Add a "### Acceptance Criteria:" section with interactive Markdown checkboxes (- [ ]) defining testable conditions of done for human validation.
+   - Actionable Subtasks Checklist: Mandatory "### Actionable Subtasks Checklist:" with interactive Markdown checkboxes (- [ ]) for each discrete implementation and verification step:
+     - [ ] Reproduce with test / define contract
+     - [ ] Implement core changes
+     - [ ] Run test suite and verify green
+   - Open Questions: Add a "### Open Questions:" section with interactive Markdown checkboxes (- [ ]) for every unresolved decision, assumption, or ambiguity that needs human alignment before implementation. Only omit this section when there is genuinely nothing to clarify.
+   - Human Tasks: Add a "### Human Tasks:" section with interactive Markdown checkboxes (- [ ]) with verb-first items (e.g. "Approve ...", "Review PR #N", "Grant access to ...", "Deploy ...") written at the moment the agent blocks on a human or hands off for validation.
+   - Test Plan: Add a "## Test Plan (Issue):" section with interactive Markdown checkboxes (- [ ]) listing exact automated verification commands.
+   - Recommended Worktree Branch: Suggest an isolated git branch name following "issue-<number>-<slug>".
+   - Labels: Recommend labels (e.g. "bug", "enhancement", "documentation"). Existing labels "bug" and "enhancement" are the single source of work type. When both or neither are present, the work type is undecided and must be asked about, not guessed; never infer a type from the title, the mood of the report, or the area of the code. Never introduce a "type:*" label or body work-type field.
+   - Work Log: The "### Work Log:" section is optional at issue creation; once work starts, the Work Log must contain exactly one sentence stating the work type and the concrete reason for it (for example the observed behaviour that contradicts a stated expectation, or the desired outcome that does not exist yet). Keep it one line; do not add fields, counters or machine state to the issue body.
+4. Autonomous & AFK Protocol: If you encounter blocking decisions or credentials while the user is away, append explicit items to "### Human Tasks:" and set label "status:needs-human". If unaligned questions remain, set label "status:draft". When completely ready for execution, set "status:todo". An agent never sets phase:done, phase:archive or status:done and never closes an issue. Undecided work type is an alignment question to the user, not a default; only block work that depends on the unanswered question while independent authorised work continues.
+5. Creation: If a GitHub token is configured or available in ~/.git-credentials, create issues directly via curl:
+   curl -s -X POST -H "Authorization: Bearer <token>" -H "Accept: application/vnd.github.v3+json" https://api.github.com/repos/{repo}/issues -d '{"title":"...","body":"...","labels":["status:todo",...]}'
+   Otherwise, present the complete, ready-to-copy issue titles and bodies for user review.`;
+  function resolveAiIssuePrompt({
+    repo,
+    userInput,
+    storedRepoPrompt,
+    storedGlobalPrompt
+  }) {
+    const template = storedRepoPrompt?.trim() || storedGlobalPrompt?.trim() || DEFAULT_AI_ISSUE_PROMPT;
+    return template.replace(/\{repo\}/g, repo).replace(/\{userInput\}/g, userInput.trim());
+  }
+  var DEFAULT_AI_ALIGNMENT_PROMPT = `You are a principal engineer and architect conducting a deep technical alignment session for repository "{repo}".
+
+User Scratch Pad / Multi-Theme Mind-Dump:
+{userInput}
+
+Instructions for the Alignment Session:
+1. Review every theme, idea, feature, and bug in the user's scratch pad.
+2. Ground yourself by inspecting project architecture, existing modules, conventions, and configuration files in this workspace. Load the \`issue-lifecycle\` skill to govern lifecycle states and Issue Body Contract v1.
+3. Your primary goal is ALIGNMENT before issue creation:
+   - For each distinct theme, identify unstated assumptions, ambiguities, technical tradeoffs, and potential edge cases.
+   - Formulate probing, concise questions that need clarification (e.g. data modeling decisions, auth boundaries, UX state handling, error recovery).
+   - Propose 2-3 architectural approaches or solutions for tricky decisions with pros/cons and a clear recommendation.
+4. Interact directly with the user to align on answers. When human is away, record unresolved questions in the issue body.
+5. Once aligned on each theme, synthesize the finalized decisions into clean, well-scoped GitHub issues adhering to Issue Body Contract v1:
+   - Title in Conventional Commit format
+   - Friendly Title: "### Friendly Title: <3-6 words plain English title>"
+   - Overview: "## Overview" with problem description and user value
+   - Acceptance Criteria: "### Acceptance Criteria:" with testable checkboxes (- [ ])
+   - Actionable Subtasks Checklist: "### Actionable Subtasks Checklist:" with discrete implementation steps (- [ ])
+   - Open Questions: "### Open Questions:" (- [ ] unresolved, - [x] answered)
+   - Human Tasks: "### Human Tasks:" with verb-first items for verification
+   - Test Plan: "## Test Plan (Issue):" with verification commands (- [ ])
+   - Suggested worktree branch slug ("issue-<number>-<slug>")`;
+  function resolveAiAlignmentPrompt({
+    repo,
+    userInput,
+    storedPrompt
+  }) {
+    const template = storedPrompt?.trim() || DEFAULT_AI_ALIGNMENT_PROMPT;
+    return template.replace(/\{repo\}/g, repo || "").replace(/\{userInput\}/g, (userInput || "").trim());
+  }
+  function parseDraftIssueFromMarkdown(text) {
+    if (!text || typeof text !== "string") return null;
+    const clean = text.trim();
+    if (!clean) return null;
+    const lines = clean.split("\n");
+    let title = "";
+    let labels = [];
+    const bodyLines = [];
+    let titleFound = false;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmed = line.trim();
+      const titleMatch = /^title:\s*(.+)$/i.exec(trimmed) || /^issue title:\s*(.+)$/i.exec(trimmed);
+      if (!titleFound && titleMatch) {
+        title = titleMatch[1].trim();
+        titleFound = true;
+        continue;
+      }
+      const h1Match = /^#\s+(.+)$/.exec(trimmed);
+      if (!titleFound && h1Match) {
+        title = h1Match[1].trim();
+        titleFound = true;
+        continue;
+      }
+      const labelsMatch = /^(?:labels|tags):\s*(.+)$/i.exec(trimmed);
+      if (labelsMatch) {
+        const extracted = labelsMatch[1].split(/[,;\s]+/).map((l) => l.trim().toLowerCase()).filter(Boolean);
+        labels.push(...extracted);
+        continue;
+      }
+      bodyLines.push(line);
+    }
+    if (!titleFound) {
+      let firstNonEmptyIdx = -1;
+      for (let i = 0; i < bodyLines.length; i++) {
+        if (bodyLines[i].trim()) {
+          firstNonEmptyIdx = i;
+          break;
+        }
+      }
+      if (firstNonEmptyIdx >= 0) {
+        title = bodyLines[firstNonEmptyIdx].trim();
+        bodyLines.splice(firstNonEmptyIdx, 1);
+      }
+    }
+    title = title.replace(/^[*_"`#]+|[*_"`#]+$/g, "").trim();
+    if (!title) return null;
+    const body = bodyLines.join("\n").trim();
+    const subtasks = parseSubtasks(body).map((s) => s.text);
+    const openQuestions = parseOpenQuestions(body).map((q) => q.text);
+    if (!labels.some((l) => l.startsWith("status:"))) {
+      labels.push("status:todo");
+    }
+    return {
+      title,
+      body,
+      subtasks,
+      openQuestions,
+      labels: Array.from(new Set(labels)),
+      status: "ready"
+    };
+  }
+  function formatDraftReviewMeta(subtaskCount, questionCount) {
+    const subtaskLabel = subtaskCount === 1 ? "1 subtask" : `${subtaskCount} subtasks`;
+    const questionLabel = questionCount === 1 ? "1 question" : `${questionCount} questions`;
+    return `${subtaskLabel} \xB7 ${questionLabel}`;
+  }
+  function detectDraftAmbiguity(title, body) {
+    const cleanTitle = (title || "").trim();
+    const cleanBody = (body || "").trim();
+    const text = `${cleanTitle}
+
+${cleanBody}`;
+    const questions = [];
+    const segments = text.split(/(?:\r?\n|(?<=[.?!])\s+)/);
+    for (const segment of segments) {
+      const trimmed = segment.trim();
+      if (!trimmed) continue;
+      if (trimmed.includes("?") || /\b(?:tbd|todo|unclear|undecided|investigate|needs clarification)\b/i.test(trimmed)) {
+        const cleanQ = trimmed.replace(/^[-*+]\s*(\[[ xX]\]\s*)?/, "").trim();
+        if (cleanQ && !questions.includes(cleanQ)) {
+          questions.push(cleanQ);
+        }
+      }
+    }
+    if (cleanTitle.endsWith("?") && !questions.includes(cleanTitle)) {
+      questions.push(cleanTitle);
+    }
+    return {
+      hasAmbiguity: questions.length > 0,
+      questions
+    };
+  }
+  function alignDraftBody(title, body) {
+    const rawBody = (body || "").trim();
+    const cleanTitle = (title || "").trim();
+    const ambiguity = detectDraftAmbiguity(cleanTitle, rawBody);
+    const hasOverview = /##\s*Overview/i.test(rawBody);
+    const hasScope = /##\s*Scope/i.test(rawBody);
+    const hasAc = /##\s*Acceptance Criteria/i.test(rawBody);
+    const hasQuestions = /##\s*Open Questions/i.test(rawBody);
+    let overviewContent = "";
+    let scopeContent = "";
+    let acContent = "";
+    let questionsContent = "";
+    if (hasOverview || hasScope || hasAc || hasQuestions) {
+      const overviewMatch = rawBody.match(/##\s*Overview\s*\n+([\s\S]*?)(?=\n##|$)/i);
+      const scopeMatch = rawBody.match(/##\s*Scope\s*\n+([\s\S]*?)(?=\n##|$)/i);
+      const acMatch = rawBody.match(/##\s*Acceptance Criteria\s*\n+([\s\S]*?)(?=\n##|$)/i);
+      const qMatch = rawBody.match(/##\s*Open Questions\s*\n+([\s\S]*?)(?=\n##|$)/i);
+      overviewContent = (overviewMatch ? overviewMatch[1] : "").trim();
+      scopeContent = (scopeMatch ? scopeMatch[1] : "").trim();
+      acContent = (acMatch ? acMatch[1] : "").trim();
+      questionsContent = (qMatch ? qMatch[1] : "").trim();
+      if (!overviewContent) {
+        const preHeading = rawBody.split(/\n##\s+/i)[0].trim();
+        if (preHeading && !/^##\s+/i.test(rawBody)) {
+          overviewContent = preHeading;
+        }
+      }
+    } else {
+      overviewContent = rawBody;
+    }
+    if (!overviewContent) {
+      overviewContent = cleanTitle || "No overview provided.";
+    }
+    if (!scopeContent) {
+      scopeContent = `- Implement changes for ${cleanTitle || "task"}.`;
+    }
+    if (!acContent) {
+      acContent = `- [ ] Implementation completed and verified.`;
+    }
+    let result = `## Overview
+${overviewContent}
+
+## Scope
+${scopeContent}
+
+## Acceptance Criteria
+${acContent}`;
+    if (ambiguity.hasAmbiguity || questionsContent) {
+      let qBlock = questionsContent;
+      if (!qBlock) {
+        qBlock = ambiguity.questions.map((q) => `- [ ] ${q}`).join("\n");
+      }
+      result += `
+
+## Open Questions
+${qBlock}`;
+    }
+    return {
+      body: result,
+      hasAmbiguity: ambiguity.hasAmbiguity,
+      questions: ambiguity.questions
+    };
+  }
+  function alignDraftIssue(issue) {
+    const title = issue.title || "";
+    const body = issue.body || "";
+    const { body: structuredBody, hasAmbiguity } = alignDraftBody(title, body);
+    const existingLabels = (issue.labels || []).map(
+      (l) => typeof l === "string" ? l : l.name || ""
+    );
+    let newLabels = existingLabels.filter((l) => l.toLowerCase() !== "status:draft");
+    if (!newLabels.some((l) => l.toLowerCase().startsWith("status:"))) {
+      newLabels.push("status:backlog");
+    } else {
+      newLabels = newLabels.filter((l) => !l.toLowerCase().startsWith("status:"));
+      newLabels.push("status:backlog");
+    }
+    const hasPriority = newLabels.some((l) => l.toLowerCase().startsWith("priority:"));
+    if (!hasPriority) {
+      newLabels.push("priority:medium");
+    }
+    if (hasAmbiguity) {
+      if (!newLabels.some((l) => l.toLowerCase() === "needs:human")) {
+        newLabels.push("needs:human");
+      }
+    }
+    return {
+      body: structuredBody,
+      labels: Array.from(new Set(newLabels)),
+      hasAmbiguity
+    };
+  }
+  function createDraftIssuePayload(draft) {
+    const cleanTitle = (draft?.title || "").trim();
+    if (!cleanTitle) {
+      throw new Error("Draft issue must have a non-empty title");
+    }
+    const cleanBody = (draft?.body || "").trim();
+    let labels = Array.isArray(draft?.labels) ? [...draft.labels] : [];
+    if (!labels.some((l) => l.startsWith("status:"))) {
+      labels.push("status:todo");
+    }
+    return {
+      title: cleanTitle,
+      body: cleanBody,
+      labels: Array.from(new Set(labels))
+    };
+  }
+  function buildIssueAttachPayload(issue, repoOverride) {
+    const numStr = String(issue.number);
+    const title = `#${issue.number} ${issue.title || ""}`.slice(0, 150);
+    const url = (issue.html_url || "").slice(0, 1e3);
+    const text = `Context from GitHub Issue #${issue.number}: ${issue.title || ""}
+
+${issue.body || ""}`.slice(0, 15e3);
+    const extractRepo = (val) => {
+      if (!val || typeof val !== "string") return null;
+      const apiMatch = /api\.github\.com\/repos\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (apiMatch) return `${apiMatch[1]}/${apiMatch[2].replace(/\.git$/, "")}`;
+      const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, "")}`;
+      const cleaned = val.trim().replace(/\.git$/, "");
+      if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+      return null;
+    };
+    const repo = extractRepo(repoOverride) || extractRepo(issue.repo) || extractRepo(issue?.repository_url) || extractRepo(issue.html_url);
+    return {
+      providerId: "github-task-board",
+      id: numStr,
+      title,
+      url,
+      text,
+      ...issue.user?.login ? { author: String(issue.user.login) } : {},
+      data: {
+        issueNumber: issue.number,
+        ...repo ? { repo } : {}
+      }
+    };
+  }
+  function buildMultiIssueAttachPayload(issues2, repo = "") {
+    const extractRepo = (val) => {
+      if (!val || typeof val !== "string") return null;
+      const apiMatch = /api\.github\.com\/repos\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (apiMatch) return `${apiMatch[1]}/${apiMatch[2].replace(/\.git$/, "")}`;
+      const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, "")}`;
+      const cleaned = val.trim().replace(/\.git$/, "");
+      if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+      return null;
+    };
+    if (!issues2 || issues2.length === 0) {
+      const resolvedEmptyRepo = extractRepo(repo);
+      return {
+        providerId: "github-task-board",
+        id: "bundle-empty",
+        title: "No Issues Selected",
+        url: repo ? `https://github.com/${repo}/issues` : "",
+        text: "No issues attached.",
+        data: {
+          issueNumbers: [],
+          count: 0,
+          isMulti: true,
+          ...resolvedEmptyRepo ? { repo: resolvedEmptyRepo } : {}
+        }
+      };
+    }
+    if (issues2.length === 1) {
+      return buildIssueAttachPayload(issues2[0], repo);
+    }
+    const numbers = issues2.map((i) => i.number);
+    const id = `bundle-${numbers.join("-")}`.slice(0, 120);
+    const titlesPreview = issues2.map((i) => `#${i.number}`).join(", ");
+    const title = `[${issues2.length} Issues] ${titlesPreview}`.slice(0, 150);
+    const primaryUrl = (issues2[0]?.html_url || (repo ? `https://github.com/${repo}/issues` : "")).slice(0, 1e3);
+    const issueEntries = issues2.map((i) => {
+      const itemRepo = extractRepo(i.repo) || extractRepo(i?.repository_url) || extractRepo(i.html_url) || extractRepo(repo);
+      return {
+        number: i.number,
+        ...itemRepo ? { repo: itemRepo } : {}
+      };
+    });
+    const distinctRepos = new Set(issueEntries.map((e) => e.repo).filter(Boolean));
+    const uniformRepo = distinctRepos.size === 1 ? Array.from(distinctRepos)[0] : extractRepo(repo) || null;
+    let text = `## Attached GitHub Issues (${issues2.length} items)
+`;
+    if (repo) text += `Repository: ${repo}
+
+`;
+    issues2.forEach((issue) => {
+      text += `### Issue #${issue.number}: ${issue.title || "Untitled"}
+`;
+      if (issue.html_url) text += `Link: ${issue.html_url}
+`;
+      const labelNames = (issue.labels || []).map((l) => typeof l === "string" ? l : l.name || "").filter(Boolean);
+      if (labelNames.length > 0) text += `Labels: ${labelNames.join(", ")}
+`;
+      if (issue.subtasks && issue.subtasks.length > 0) {
+        text += `Subtasks:
+`;
+        issue.subtasks.forEach((s) => {
+          text += `- [${s.completed ? "x" : " "}] ${s.text}
+`;
+        });
+      }
+      if (issue.body) {
+        text += `
+Description:
+${issue.body.trim()}
+`;
+      }
+      text += `
+---
+
+`;
+    });
+    return {
+      providerId: "github-task-board",
+      id,
+      title,
+      url: primaryUrl,
+      text: text.slice(0, 15e3),
+      data: {
+        issueNumbers: numbers,
+        count: issues2.length,
+        isMulti: true,
+        issues: issueEntries,
+        ...uniformRepo ? { repo: uniformRepo } : {}
+      }
+    };
+  }
+  function mergeSessionItems(existingItems, newItems) {
+    const result = Array.isArray(existingItems) ? [...existingItems] : [];
+    const incoming = Array.isArray(newItems) ? newItems : newItems ? [newItems] : [];
+    for (const item of incoming) {
+      if (!item) continue;
+      const itemId = item.id ? String(item.id) : null;
+      const itemNum = item.data?.issueNumber != null ? Number(item.data.issueNumber) : itemId && /^\d+$/.test(itemId) ? parseInt(itemId, 10) : null;
+      const existingIdx = result.findIndex((existing) => {
+        if (!existing) return false;
+        if (itemId && existing.id && String(existing.id) === itemId) return true;
+        if (itemNum != null && (existing.data?.issueNumber != null && Number(existing.data.issueNumber) === itemNum || existing.id && String(existing.id) === String(itemNum))) {
+          return true;
+        }
+        return false;
+      });
+      if (existingIdx >= 0) {
+        const existing = result[existingIdx];
+        const mergedData = { ...existing.data || {}, ...item.data || {} };
+        if (Array.isArray(existing.data?.issueNumbers) || Array.isArray(item.data?.issueNumbers)) {
+          const combined = /* @__PURE__ */ new Set([
+            ...Array.isArray(existing.data?.issueNumbers) ? existing.data.issueNumbers : [],
+            ...Array.isArray(item.data?.issueNumbers) ? item.data.issueNumbers : []
+          ]);
+          mergedData.issueNumbers = Array.from(combined);
+        }
+        result[existingIdx] = { ...existing, ...item, data: mergedData };
+      } else {
+        result.push(item);
+      }
+    }
+    return result;
+  }
+  function attachIssueToSession(session, issueOrPayload) {
+    if (!session) return session;
+    const payload = issueOrPayload && typeof issueOrPayload === "object" && "providerId" in issueOrPayload ? issueOrPayload : issueOrPayload && typeof issueOrPayload === "object" && "number" in issueOrPayload ? buildIssueAttachPayload(issueOrPayload) : issueOrPayload;
+    session.items = mergeSessionItems(session.items, payload);
+    return session;
+  }
+  function buildConsolidatedIssuePrompt(selectedIssues) {
+    if (!selectedIssues || selectedIssues.length === 0) return "";
+    const issueNumbers = selectedIssues.map((i) => `#${i.number}`).join(", ");
+    let prompt = `You are assigned to work on multiple packaged GitHub Issues: ${issueNumbers}
+
+`;
+    prompt += `### Packaged Tasks Summary (${selectedIssues.length} items):
+`;
+    selectedIssues.forEach((issue) => {
+      prompt += `- Issue #${issue.number}: ${issue.title}
+`;
+    });
+    prompt += "\n---\n\n";
+    selectedIssues.forEach((issue, idx) => {
+      prompt += `## Task ${idx + 1} of ${selectedIssues.length}: #${issue.number} ${issue.title}
+
+`;
+      if (issue.body) {
+        prompt += `### Overview & Context:
+${issue.body.trim()}
+
+`;
+      }
+      const hasChecklistInBody = typeof issue.body === "string" && issue.body.includes("### Actionable Subtasks Checklist:");
+      if (!hasChecklistInBody && issue.subtasks && issue.subtasks.length > 0) {
+        prompt += `### Actionable Subtasks Checklist:
+`;
+        issue.subtasks.forEach((s) => {
+          prompt += `- [${s.completed ? "x" : " "}] ${s.text}
+`;
+        });
+        prompt += "\n";
+      }
+      prompt += "---\n\n";
+    });
+    const { skillNames, transclusions } = resolveIssueSkills(selectedIssues);
+    if (skillNames.length > 0) {
+      const skillList = skillNames.map((s) => "`skill({ id: '" + s + "' })`").join(", ");
+      prompt += `### Recommended Skills:
+`;
+      prompt += `Load relevant skills with the \`skill\` tool before starting (e.g. ${skillList}).
+`;
+      prompt += `Transclusion references for worker sessions:
+${transclusions.join("\n")}
+
+`;
+    }
+    prompt += `### Autonomous & AFK Protocol:
+`;
+    prompt += `- Work through the packaged issues sequentially or in coordination, verifying each step with tests.
+`;
+    prompt += `- If blocked on human decisions, permissions, or secrets while the human is away, record explicit items under "### Human Tasks:" in the issue body, mark "status:needs-human", and continue with any unblocked tasks.
+
+`;
+    prompt += `${DEFAULT_WORK_INSTRUCTIONS}
+
+`;
+    prompt += `Please inspect the codebase, address all packaged issues sequentially or in coordination, verify each with tests, and report back.`;
+    return prompt;
+  }
+  var DEFAULT_TEMPLATES = {
+    bug: {
+      id: "bug",
+      name: "Bug Report",
+      description: "Investigate unexpected behavior, identify root cause, and draft fix subtasks",
+      promptInstructions: `### Problem Description
+[Detailed explanation of observed versus expected behaviour, including error messages]
+
+### Steps to Reproduce
+1. [First step]
+2. [Second step]
+
+### Root Cause Analysis
+[Inspect the relevant codebase files and explain the underlying mechanism]
+
+### Actionable Fix Subtasks
+- [ ] Reproduce with an isolated test
+- [ ] Implement narrow surgical fix
+- [ ] Verify test suite passes
+- [ ] Verify regression resistance`
+    },
+    feature: {
+      id: "feature",
+      name: "Feature / Enhancement",
+      description: "Design and specify new functionality with architectural plan and subtasks",
+      promptInstructions: `### Goal & User Value
+[Desired outcome: why this feature is needed and what problem it solves]
+
+### Architectural & UI Design
+[Proposed technical architecture, component structure, or API changes]
+
+### Actionable Implementation Subtasks
+- [ ] Define interfaces and types
+- [ ] Implement core logic / components
+- [ ] Add unit and integration tests
+- [ ] Verify end-to-end user flow`
+    },
+    task: {
+      id: "task",
+      name: "Technical Debt / Refactor",
+      description: "Code cleanup, performance optimization, or architecture simplification",
+      promptInstructions: `### Motivation
+[Identify dead code, performance bottlenecks, or architectural complexity]
+
+### Scope of Refactoring
+[Specific files and modules to touch, and what must remain unchanged]
+
+### Actionable Checklist
+- [ ] Establish baseline test coverage
+- [ ] Perform behavior-preserving refactoring
+- [ ] Verify existing tests continue to pass without regressions`
+    }
+  };
+  function mergeTemplates(defaults, userCustomTemplates) {
+    if (!userCustomTemplates || typeof userCustomTemplates !== "object") {
+      return { ...defaults };
+    }
+    const result = { ...defaults };
+    for (const [key, val] of Object.entries(userCustomTemplates)) {
+      if (val && typeof val === "object" && val.promptInstructions) {
+        result[key] = {
+          ...result[key] || { id: key, name: key },
+          ...val
+        };
+      }
+    }
+    return result;
+  }
+  function buildAgentIssuePrompt({
+    repo,
+    template,
+    userGoal
+  }) {
+    return `You are tasked with drafting and creating a new GitHub Issue for repository "${repo}".
+
+User Objective / Summary:
+${userGoal.trim()}
+
+Template Specification (${template.name}):
+Follow this exact structure and include actionable markdown subtasks (- [ ]):
+
+${template.promptInstructions.trim()}
+
+Instructions for the Agent:
+1. Inspect the relevant repository files in the project to gather accurate context, file paths, and function names.
+2. Structure the issue clearly with a concise title and the markdown body following the template above.
+3. Include an interactive checklist of subtasks with "- [ ]".
+4. Once you have drafted the complete issue, ask the user for confirmation or output the finalized issue so it can be committed to GitHub.`;
+  }
+  function serializeDraftSubtasks(body, subtaskTexts) {
+    const cleanBody = (body || "").trim();
+    const cleanTasks = (subtaskTexts || []).map((t) => typeof t === "string" ? t.trim() : "").filter(Boolean);
+    if (cleanTasks.length === 0) {
+      return cleanBody;
+    }
+    const checklistBlock = cleanTasks.map((t) => `- [ ] ${t}`).join("\n");
+    if (!cleanBody) {
+      return `### Actionable Subtasks Checklist:
+
+${checklistBlock}`;
+    }
+    if (cleanBody.includes("### Actionable Subtasks Checklist:")) {
+      return `${cleanBody}
+${checklistBlock}`;
+    }
+    return `${cleanBody}
+
+### Actionable Subtasks Checklist:
+
+${checklistBlock}`;
+  }
+  var DEPENDENCY_LINE_REGEX = /(?:^|\n)\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*([^\n]+)/gi;
+  function parseIssueDependencies(body) {
+    if (!body || typeof body !== "string") return [];
+    const numbers = /* @__PURE__ */ new Set();
+    const matches = body.matchAll(DEPENDENCY_LINE_REGEX);
+    for (const match of matches) {
+      const text = match[1] || "";
+      const numMatches = text.matchAll(/#(\d+)/g);
+      for (const nm of numMatches) {
+        const n = parseInt(nm[1], 10);
+        if (Number.isFinite(n) && n > 0) {
+          numbers.add(n);
+        }
+      }
+    }
+    return Array.from(numbers).sort((a, b) => a - b);
+  }
+  function addDependencyToMarkdown(body, blockerNumber) {
+    const blockerRef = `#${blockerNumber}`;
+    const existingBlockers = parseIssueDependencies(body);
+    if (existingBlockers.includes(blockerNumber)) {
+      return body || "";
+    }
+    const raw = (body || "").trim();
+    if (!raw) {
+      return `Blocked by ${blockerRef}`;
+    }
+    const lines = raw.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (/^\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on)(?:\s*:)?\s*/i.test(line)) {
+        lines[i] = `${line.trimEnd()}, ${blockerRef}`;
+        return lines.join("\n");
+      }
+    }
+    return `${raw}
+
+Blocked by ${blockerRef}`;
+  }
+  function removeDependencyFromMarkdown(body, blockerNumber) {
+    if (!body || typeof body !== "string") return "";
+    const blockerRef = `#${blockerNumber}`;
+    if (!body.includes(blockerRef)) return body;
+    const lines = body.split("\n");
+    const newLines = [];
+    for (const line of lines) {
+      if (/^\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*/i.test(line)) {
+        if (line.includes(blockerRef)) {
+          const currentNums = Array.from(line.matchAll(/#(\d+)/g)).map((m) => parseInt(m[1], 10)).filter((n) => n !== blockerNumber);
+          if (currentNums.length > 0) {
+            const prefixMatch = line.match(/^(\s*(?:[-*+]|\d+\.)?\s*\[?[ xX]?\]?\s*(?:blocked\s+by|depends\s+on|requires)(?:\s*:)?\s*)/i);
+            const prefix = prefixMatch ? prefixMatch[1] : "Blocked by ";
+            newLines.push(`${prefix}${currentNums.map((n) => `#${n}`).join(", ")}`);
+          }
+          continue;
+        }
+      }
+      newLines.push(line);
+    }
+    return newLines.join("\n").trim();
+  }
+  function renderBlockerChip(target, blocker) {
+    const targetNum = typeof target === "number" ? target : target.number;
+    return `<span class="graph-badge-blocked-item">#${blocker} <button class="btn-remove-blocker" data-target="${targetNum}" data-blocker="${blocker}" title="Remove dependency">&times;</button></span>`;
+  }
+  function renderBlockerChips(target, blockers) {
+    if (!blockers || blockers.length === 0) return "";
+    const targetNum = typeof target === "number" ? target : target.number;
+    return blockers.map((b) => renderBlockerChip(targetNum, b)).join(" ");
+  }
+  function extractIssueReferences(body, selfNumber) {
+    if (!body || typeof body !== "string") return [];
+    const numbers = /* @__PURE__ */ new Set();
+    const matches = body.matchAll(/#(\d+)/g);
+    for (const m of matches) {
+      const n = parseInt(m[1], 10);
+      if (Number.isFinite(n) && n > 0 && n !== selfNumber) {
+        numbers.add(n);
+      }
+    }
+    return Array.from(numbers).sort((a, b) => a - b);
+  }
+  function buildDependencyGraph(issues2) {
+    const parseRepo = (raw) => {
+      if (!raw || typeof raw !== "string") return "";
+      const trimmed = raw.trim();
+      const urlMatch = trimmed.match(/github\.com[/:]([^/\s#?]+)\/([^/\s#?.]+?)(?:\.git)?(?:[/?#]|$)/i);
+      if (urlMatch) return `${urlMatch[1]}/${urlMatch[2]}`;
+      const directMatch = trimmed.match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/);
+      return directMatch ? `${directMatch[1]}/${directMatch[2]}` : "";
+    };
+    const issueRepoOf = (issue) => {
+      if (!issue) return "";
+      return parseRepo(issue.repo) || parseRepo(issue.html_url) || "";
+    };
+    class DependencyNodeMap extends Map {
+      byLowerKey = /* @__PURE__ */ new Map();
+      byNumber = /* @__PURE__ */ new Map();
+      set(key, value) {
+        const strKey = typeof key === "number" ? `${issueRepoOf(value?.issue)}#${key}` : key;
+        super.set(strKey, value);
+        this.byLowerKey.set(strKey.toLowerCase(), value);
+        if (value?.issue && !this.byNumber.has(value.issue.number)) {
+          this.byNumber.set(value.issue.number, value);
+        }
+        return this;
+      }
+      get(key) {
+        if (typeof key === "number") {
+          return super.get(`#${key}`) ?? this.byNumber.get(key);
+        }
+        return super.get(key) ?? this.byLowerKey.get(key.toLowerCase());
+      }
+      has(key) {
+        return this.get(key) !== void 0;
+      }
+    }
+    const parseScopedIssueDependencies = (body, defaultRepo) => {
+      if (!body || typeof body !== "string") return [];
+      const byKey2 = /* @__PURE__ */ new Map();
+      const matches = body.matchAll(DEPENDENCY_LINE_REGEX);
+      for (const match of matches) {
+        const text = match[1] || "";
+        const refMatches = text.matchAll(/(?:([A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+))?#(\d+)/g);
+        for (const rm of refMatches) {
+          const n = parseInt(rm[2], 10);
+          if (!Number.isFinite(n) || n <= 0) continue;
+          const repoPart = parseRepo(rm[1]) || defaultRepo;
+          const key = `${repoPart}#${n}`;
+          const lower = key.toLowerCase();
+          if (!byKey2.has(lower)) {
+            byKey2.set(lower, { key, number: n });
+          }
+        }
+      }
+      return Array.from(byKey2.values()).sort((a, b) => a.number - b.number || a.key.localeCompare(b.key));
+    };
+    const nodes = new DependencyNodeMap();
+    const byKey = /* @__PURE__ */ new Map();
+    const openDependentKeys = /* @__PURE__ */ new Map();
+    for (const issue of issues2) {
+      const issueKey = `${issueRepoOf(issue)}#${issue.number}`;
+      byKey.set(issueKey.toLowerCase(), issue);
+    }
+    for (const issue of issues2) {
+      const issueRepo = issueRepoOf(issue);
+      const issueKey = `${issueRepo}#${issue.number}`;
+      const isDone = issue.state === "closed" || (issue.labels || []).some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase() === "status:done");
+      const blockerRefs = parseScopedIssueDependencies(issue.body, issueRepo);
+      const openBlockerRefs = blockerRefs.filter((ref) => {
+        const target = byKey.get(ref.key.toLowerCase());
+        if (!target) return true;
+        return target.state !== "closed" && !(target.labels || []).some((l) => (typeof l === "string" ? l : l.name || "").toLowerCase() === "status:done");
+      });
+      const blockers = blockerRefs.map((ref) => ref.number);
+      const openBlockers = openBlockerRefs.map((ref) => ref.number);
+      const blockerKeys = blockerRefs.map((ref) => ref.key);
+      const openBlockerKeys = openBlockerRefs.map((ref) => ref.key);
+      const isFrontier = !isDone && openBlockers.length === 0;
+      const isBlocked = !isDone && openBlockers.length > 0;
+      let priority = "normal";
+      for (const l of issue.labels || []) {
+        const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+        if (name.startsWith("priority:")) {
+          priority = name.slice(9);
+          break;
+        }
+      }
+      openDependentKeys.set(issueKey, []);
+      nodes.set(issueKey, {
+        key: issueKey,
+        issue,
+        blockers,
+        openBlockers,
+        blockerKeys,
+        openBlockerKeys,
+        dependents: [],
+        openDependents: [],
+        downstreamImpact: 0,
+        isDone,
+        isFrontier,
+        isBlocked,
+        layer: 0,
+        theme: getIssueTheme(issue),
+        priority
+      });
+    }
+    const nodeKeyOf = (n) => n.key || `${issueRepoOf(n.issue)}#${n.issue.number}`;
+    for (const node of nodes.values()) {
+      const nodeKey = nodeKeyOf(node);
+      for (const blockerKey of node.blockerKeys || []) {
+        const blockerNode = nodes.get(blockerKey);
+        if (blockerNode) {
+          const blockerCanonicalKey = nodeKeyOf(blockerNode);
+          blockerNode.dependents.push(node.issue.number);
+          if (!node.isDone) {
+            blockerNode.openDependents.push(node.issue.number);
+            openDependentKeys.get(blockerCanonicalKey)?.push(nodeKey);
+          }
+        }
+      }
+    }
+    for (const node of nodes.values()) {
+      if (node.isDone) {
+        node.downstreamImpact = 0;
+        continue;
+      }
+      const nodeKey = nodeKeyOf(node);
+      const seen = /* @__PURE__ */ new Set([nodeKey]);
+      const queue = [...openDependentKeys.get(nodeKey) || []];
+      while (queue.length > 0) {
+        const curr = queue.shift();
+        if (seen.has(curr)) continue;
+        seen.add(curr);
+        const nextDeps = openDependentKeys.get(curr);
+        if (nextDeps) {
+          queue.push(...nextDeps);
+        }
+      }
+      node.downstreamImpact = seen.size - 1;
+    }
+    const openNodeKeys = Array.from(nodes.values()).filter((n) => !n.isDone).map((n) => nodeKeyOf(n));
+    const indices = /* @__PURE__ */ new Map();
+    const lowLinks = /* @__PURE__ */ new Map();
+    const stack = [];
+    const onStack = /* @__PURE__ */ new Set();
+    const componentOf = /* @__PURE__ */ new Map();
+    const components = [];
+    let nextIndex = 0;
+    const visit = (nodeKey) => {
+      const idx = nextIndex++;
+      indices.set(nodeKey, idx);
+      lowLinks.set(nodeKey, idx);
+      stack.push(nodeKey);
+      onStack.add(nodeKey);
+      const node = nodes.get(nodeKey);
+      const activeBlockers = (node?.openBlockerKeys || []).map((bk) => nodes.get(bk)).filter((bn) => Boolean(bn && !bn.isDone)).map((bn) => nodeKeyOf(bn));
+      for (const blocker of activeBlockers) {
+        if (!indices.has(blocker)) {
+          visit(blocker);
+          lowLinks.set(nodeKey, Math.min(lowLinks.get(nodeKey), lowLinks.get(blocker)));
+        } else if (onStack.has(blocker)) {
+          lowLinks.set(nodeKey, Math.min(lowLinks.get(nodeKey), indices.get(blocker)));
+        }
+      }
+      if (lowLinks.get(nodeKey) === idx) {
+        const component = [];
+        while (stack.length > 0) {
+          const member = stack.pop();
+          onStack.delete(member);
+          componentOf.set(member, components.length);
+          component.push(member);
+          if (member === nodeKey) break;
+        }
+        components.push(component);
+      }
+    };
+    for (const nodeKey of openNodeKeys) {
+      if (!indices.has(nodeKey)) {
+        visit(nodeKey);
+      }
+    }
+    const memoLayer = /* @__PURE__ */ new Map();
+    const layerOfComponent = (compIdx) => {
+      const cached = memoLayer.get(compIdx);
+      if (cached !== void 0) return cached;
+      let maxBlockerLayer = -1;
+      for (const member of components[compIdx]) {
+        const memberNode = nodes.get(member);
+        if (!memberNode) continue;
+        for (const blockerKey of memberNode.openBlockerKeys || []) {
+          const blockerNode = nodes.get(blockerKey);
+          const canonicalBlockerKey = blockerNode ? nodeKeyOf(blockerNode) : blockerKey;
+          const blockerComp = componentOf.get(canonicalBlockerKey);
+          if (blockerComp !== void 0 && blockerComp !== compIdx) {
+            maxBlockerLayer = Math.max(maxBlockerLayer, layerOfComponent(blockerComp));
+          }
+        }
+      }
+      const layer = maxBlockerLayer + 1;
+      memoLayer.set(compIdx, layer);
+      return layer;
+    };
+    for (const node of nodes.values()) {
+      const nodeKey = nodeKeyOf(node);
+      if (node.isDone) {
+        node.layer = 0;
+      } else {
+        const comp = componentOf.get(nodeKey);
+        node.layer = comp !== void 0 ? layerOfComponent(comp) : 0;
+      }
+    }
+    let maxLayer = 0;
+    for (const node of nodes.values()) {
+      if (node.layer > maxLayer) maxLayer = node.layer;
+    }
+    const layers = Array.from({ length: maxLayer + 1 }, () => []);
+    for (const node of nodes.values()) {
+      layers[node.layer].push(node);
+    }
+    const pos = /* @__PURE__ */ new Map();
+    layers[0].sort((a, b) => {
+      if (a.isDone !== b.isDone) return a.isDone ? 1 : -1;
+      if (a.isFrontier !== b.isFrontier) return a.isFrontier ? -1 : 1;
+      return b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number || issueRepoOf(a.issue).localeCompare(issueRepoOf(b.issue));
+    });
+    layers[0].forEach((n, idx) => pos.set(nodeKeyOf(n), idx));
+    for (let l = 1; l < layers.length; l++) {
+      const layer = layers[l];
+      const key = (n) => {
+        const blockerPositions = (n.blockerKeys || []).map((bk) => {
+          const bn = nodes.get(bk);
+          return pos.get(bn ? nodeKeyOf(bn) : bk);
+        }).filter((p) => p !== void 0);
+        return blockerPositions.length > 0 ? blockerPositions.reduce((acc, p) => acc + p, 0) / blockerPositions.length : n.issue.number;
+      };
+      layer.sort(
+        (a, b) => key(a) - key(b) || b.downstreamImpact - a.downstreamImpact || a.issue.number - b.issue.number || issueRepoOf(a.issue).localeCompare(issueRepoOf(b.issue))
+      );
+      layer.forEach((n, idx) => pos.set(nodeKeyOf(n), idx));
+    }
+    const edges = [];
+    const themeNodes = /* @__PURE__ */ new Map();
+    const frontierNodes = [];
+    for (const node of nodes.values()) {
+      const toKey = nodeKeyOf(node);
+      if (node.isFrontier) {
+        frontierNodes.push(node);
+      }
+      let list = themeNodes.get(node.theme);
+      if (!list) {
+        list = [];
+        themeNodes.set(node.theme, list);
+      }
+      list.push(node);
+      const blockerKeys = node.blockerKeys || [];
+      for (let i = 0; i < node.blockers.length; i++) {
+        const blockerNum = node.blockers[i];
+        const blockerKey = blockerKeys[i] || `${issueRepoOf(node.issue)}#${blockerNum}`;
+        const blockerNode = nodes.get(blockerKey);
+        const isCrossTheme = blockerNode ? blockerNode.theme !== node.theme : false;
+        const isClosed = node.isDone || (blockerNode?.isDone ?? false);
+        edges.push({
+          from: blockerNum,
+          to: node.issue.number,
+          fromKey: blockerNode ? nodeKeyOf(blockerNode) : blockerKey,
+          toKey,
+          isCrossTheme,
+          isClosed,
+          isFrontier: node.isFrontier
+        });
+      }
+    }
+    const themes = Array.from(themeNodes.keys()).sort((a, b) => {
+      if (a === "No Theme") return 1;
+      if (b === "No Theme") return -1;
+      return (themeNodes.get(b)?.length || 0) - (themeNodes.get(a)?.length || 0);
+    });
+    return {
+      nodes,
+      layers,
+      edges,
+      themes,
+      themeNodes,
+      frontierNodes
+    };
+  }
+  function calculateEdgePath(sourceRect, targetRect, canvasRect) {
+    const sWidth = sourceRect.width ?? (sourceRect.right !== void 0 ? sourceRect.right - sourceRect.left : 0);
+    const sHeight = sourceRect.height ?? (sourceRect.bottom !== void 0 ? sourceRect.bottom - sourceRect.top : 0);
+    const tWidth = targetRect.width ?? (targetRect.right !== void 0 ? targetRect.right - targetRect.left : 0);
+    const x1 = Math.round(sourceRect.left + sWidth / 2 - canvasRect.left);
+    const y1 = Math.round((sourceRect.bottom !== void 0 ? sourceRect.bottom : sourceRect.top + sHeight) - canvasRect.top);
+    const x2 = Math.round(targetRect.left + tWidth / 2 - canvasRect.left);
+    const y2 = Math.round(targetRect.top - canvasRect.top);
+    const dy = y2 - y1;
+    const curvature = Math.max(30, Math.abs(dy) * 0.5);
+    const d = `M ${x1} ${y1} C ${x1} ${y1 + curvature}, ${x2} ${y2 - curvature}, ${x2} ${y2}`;
+    return { d, x1, y1, x2, y2 };
+  }
+  function detectCycle(issues2, newBlockerNum, targetNum) {
+    if (newBlockerNum === targetNum) return true;
+    const blockerMap = /* @__PURE__ */ new Map();
+    for (const issue of issues2) {
+      blockerMap.set(issue.number, parseIssueDependencies(issue.body));
+    }
+    const visited = /* @__PURE__ */ new Set();
+    const queue = [...blockerMap.get(newBlockerNum) || []];
+    while (queue.length > 0) {
+      const curr = queue.shift();
+      if (curr === targetNum) return true;
+      if (visited.has(curr)) continue;
+      visited.add(curr);
+      queue.push(...blockerMap.get(curr) || []);
+    }
+    return false;
+  }
+  function buildSessionIndex(sessions2) {
+    const index = /* @__PURE__ */ new Map();
+    if (!sessions2 || !Array.isArray(sessions2)) return index;
+    const activityPriority = (act) => {
+      if (act === "running") return 4;
+      if (act === "waiting-permission" || act === "waiting-question" || typeof act === "string" && act.startsWith("waiting")) return 3;
+      if (act === "idle") return 2;
+      return 1;
+    };
+    const register = (issueNum, session) => {
+      if (!Number.isFinite(issueNum) || issueNum <= 0) return;
+      const existing = index.get(issueNum);
+      if (!existing) {
+        index.set(issueNum, session);
+      } else {
+        const existingPrio = activityPriority(existing.activity || "");
+        const newPrio = activityPriority(session.activity || "");
+        if (newPrio > existingPrio) {
+          index.set(issueNum, session);
+        }
+      }
+    };
+    for (const s of sessions2) {
+      if (!s) continue;
+      if (Array.isArray(s.items)) {
+        for (const item of s.items) {
+          if (!item) continue;
+          if (item.id && /^\d+$/.test(item.id)) {
+            register(parseInt(item.id, 10), s);
+          }
+          if (item.data?.issueNumber != null) {
+            register(parseInt(String(item.data.issueNumber), 10), s);
+          }
+          if (Array.isArray(item.data?.issueNumbers)) {
+            for (const n of item.data.issueNumbers) {
+              register(parseInt(String(n), 10), s);
+            }
+          }
+        }
+      }
+      if (s.data?.issueNumber != null) {
+        register(parseInt(String(s.data.issueNumber), 10), s);
+      }
+      if (Array.isArray(s.data?.issueNumbers)) {
+        for (const n of s.data.issueNumbers) {
+          register(parseInt(String(n), 10), s);
+        }
+      }
+      if (typeof s.title === "string") {
+        const matches = s.title.matchAll(/#(\d+)(?=[^0-9]|$)/g);
+        for (const m of matches) {
+          register(parseInt(m[1], 10), s);
+        }
+      }
+      const wtStrings = [];
+      if (typeof s.worktree === "string") {
+        wtStrings.push(s.worktree);
+      } else if (s.worktree && typeof s.worktree === "object") {
+        if (s.worktree.name) wtStrings.push(String(s.worktree.name));
+        if (s.worktree.branch) wtStrings.push(String(s.worktree.branch));
+        if (s.worktree.directory) wtStrings.push(String(s.worktree.directory));
+      }
+      for (const wtStr of wtStrings) {
+        const wtMatches = wtStr.matchAll(/(?:^|[^a-zA-Z0-9])issue-(\d+)(?=[^0-9]|$)/gi);
+        for (const m of wtMatches) {
+          register(parseInt(m[1], 10), s);
+        }
+      }
+    }
+    return index;
+  }
+  function scopeDoneIssues(doneIssues, limit = 25, showAll = false) {
+    if (!doneIssues || !Array.isArray(doneIssues)) {
+      return { visible: [], total: 0, remaining: 0 };
+    }
+    const total = doneIssues.length;
+    if (showAll || total <= limit) {
+      return { visible: doneIssues, total, remaining: 0 };
+    }
+    return {
+      visible: doneIssues.slice(0, limit),
+      total,
+      remaining: total - limit
+    };
+  }
+  function isIssueClosed2(issue) {
+    if (!issue) return false;
+    if (issue.state === "closed") return true;
+    if (issue.state_reason === "completed" || issue.state_reason === "not_planned") return true;
+    const labelNames = (issue.labels || []).map(
+      (l) => (typeof l === "string" ? l : l?.name || "").toLowerCase()
+    );
+    if (labelNames.includes("status:done") || labelNames.includes("status:closed") || labelNames.includes("done") || labelNames.includes("closed")) {
+      return true;
+    }
+    return false;
+  }
+  function resolveMatchedSession(issue, sessionOrList) {
+    if (!sessionOrList || !issue) return null;
+    const issueNum = typeof issue.number === "number" ? issue.number : parseInt(String(issue.number || issue.id || 0), 10);
+    const issueNumStr = String(issueNum);
+    const isBoundToOther = (s, currentNum) => {
+      if (!s || !currentNum) return false;
+      const currentStr = String(currentNum);
+      if (Array.isArray(s.items)) {
+        for (const it of s.items) {
+          if (!it) continue;
+          if (it.id === currentStr) return false;
+          const otherNum = it.data?.issueNumber || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers[0] || (Number.isFinite(Number(it.id)) ? Number(it.id) : null);
+          if (otherNum && Number(otherNum) !== currentNum) return true;
+        }
+      }
+      if (typeof s.title === "string") {
+        const match = s.title.match(/#(\d+)/);
+        if (match && Number(match[1]) !== currentNum) return true;
+      }
+      const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
+      if (wtName) {
+        const match = wtName.match(/issue-(\d+)/);
+        if (match && Number(match[1]) !== currentNum) return true;
+      }
+      return false;
+    };
+    if (Array.isArray(sessionOrList)) {
+      if (Number.isFinite(issueNum) && issueNum > 0) {
+        return sessionOrList.find((s) => {
+          if (!s) return false;
+          if (s.items && Array.isArray(s.items) && s.items.some(
+            (it) => it && (it.id === issueNumStr || it.data?.issueNumber === issueNum || Array.isArray(it.data?.issueNumbers) && it.data.issueNumbers.includes(issueNum))
+          )) {
+            return true;
+          }
+          if (s.data && (s.data.issueNumber === issueNum || Array.isArray(s.data.issueNumbers) && s.data.issueNumbers.includes(issueNum))) {
+            return true;
+          }
+          if (typeof s.title === "string" && s.title.includes(`#${issueNum}`)) return true;
+          const wtName = typeof s.worktree === "string" ? s.worktree : s.worktree?.name || s.worktree?.branch || s.worktree?.directory || "";
+          if (wtName && wtName.includes(`issue-${issueNum}`)) return true;
+          return false;
+        }) || (sessionOrList.length === 1 && !isBoundToOther(sessionOrList[0], issueNum) ? sessionOrList[0] : null);
+      }
+      return sessionOrList.length === 1 ? sessionOrList[0] : null;
+    } else if (typeof sessionOrList === "object") {
+      if (Number.isFinite(issueNum) && issueNum > 0 && isBoundToOther(sessionOrList, issueNum)) {
+        return null;
+      }
+      return sessionOrList;
+    }
+    return null;
+  }
+  var ATTENTION_PRECEDENCE = {
+    "needs-permission": 4,
+    "needs-decision": 3,
+    "needs-review": 2,
+    none: 1
+  };
+  var PHASE_PRECEDENCE = {
+    done: 10,
+    archive: 9,
+    publication: 8,
+    human_verification: 7,
+    verification: 6,
+    execution: 5,
+    planning: 4,
+    alignment: 3,
+    exploration: 2,
+    draft: 1
+  };
+  var LIVENESS_PRECEDENCE = {
+    failed: 5,
+    retrying: 4,
+    running: 3,
+    completed: 2,
+    idle: 1
+  };
+  function resolveV2Metadata(issue, session, allIssues) {
+    if (!issue) {
+      return {
+        phase: "draft",
+        attention: "none",
+        liveness: "idle",
+        dependencyState: "ready",
+        isExplicitV2: false
+      };
+    }
+    const rawLabels = Array.isArray(issue.labels) ? issue.labels : [];
+    const labelNames = rawLabels.map(
+      (l) => (typeof l === "string" ? l : l?.name || "").trim().toLowerCase()
+    );
+    let phase = null;
+    let attention = null;
+    let liveness = null;
+    let dependencyState = null;
+    let isExplicitV2 = false;
+    for (const name of labelNames) {
+      if (name.startsWith("phase:")) {
+        const p = name.slice(6).trim().replace(/-/g, "_");
+        if (p === "draft" || p === "exploration" || p === "alignment" || p === "planning" || p === "execution" || p === "verification" || p === "human_verification" || p === "publication" || p === "done" || p === "archive") {
+          const candidate = p;
+          if (!phase || PHASE_PRECEDENCE[candidate] > PHASE_PRECEDENCE[phase]) {
+            phase = candidate;
+          }
+          isExplicitV2 = true;
+        }
+      } else if (name.startsWith("attention:")) {
+        const a = name.slice(10).trim();
+        if (a === "none" || a === "needs-decision" || a === "needs-permission" || a === "needs-review") {
+          const candidate = a;
+          if (!attention || ATTENTION_PRECEDENCE[candidate] > ATTENTION_PRECEDENCE[attention]) {
+            attention = candidate;
+          }
+          isExplicitV2 = true;
+        }
+      } else if (name.startsWith("liveness:")) {
+        const l = name.slice(9).trim();
+        if (l === "idle" || l === "running" || l === "retrying" || l === "failed" || l === "completed") {
+          const candidate = l;
+          if (!liveness || LIVENESS_PRECEDENCE[candidate] > LIVENESS_PRECEDENCE[liveness]) {
+            liveness = candidate;
+          }
+        }
+      } else if (name === "dependency:blocked" || name === "dependency:blocked-by-dependency") {
+        dependencyState = "blocked-by-dependency";
+      } else if (name === "dependency:ready") {
+        if (dependencyState !== "blocked-by-dependency") {
+          dependencyState = "ready";
+        }
+      }
+    }
+    if (!phase) {
+      const rawPhase = issue.phase || (issue.v2Metadata?.isExplicitV2 ? issue.v2Metadata.phase : null);
+      if (rawPhase && typeof rawPhase === "string") {
+        const p = rawPhase.trim().toLowerCase().replace(/-/g, "_");
+        if (p === "draft" || p === "exploration" || p === "alignment" || p === "planning" || p === "execution" || p === "verification" || p === "human_verification" || p === "publication" || p === "done" || p === "archive") {
+          phase = p;
+          isExplicitV2 = true;
+        }
+      }
+    }
+    if (!attention) {
+      const rawAttention = issue.attention || (issue.v2Metadata?.isExplicitV2 ? issue.v2Metadata.attention : null);
+      if (rawAttention && typeof rawAttention === "string") {
+        const a = rawAttention.trim().toLowerCase();
+        if (a === "none" || a === "needs-decision" || a === "needs-permission" || a === "needs-review") {
+          attention = a;
+          isExplicitV2 = true;
+        }
+      }
+    }
+    const closed = isIssueClosed2(issue);
+    if (!phase) {
+      if (closed) {
+        phase = "done";
+      } else if (labelNames.includes("archived") || labelNames.includes("archive")) {
+        phase = "archive";
+      } else if (labelNames.includes("status:in-review")) {
+        phase = "verification";
+      } else if (labelNames.includes("status:in-progress")) {
+        phase = "execution";
+      } else if (labelNames.includes("status:planned") || labelNames.includes("status:todo")) {
+        phase = "planning";
+      } else if (labelNames.includes("status:needs-alignment")) {
+        phase = "alignment";
+      } else if (labelNames.includes("status:draft") || labelNames.includes("status:backlog")) {
+        phase = "draft";
+      } else if (labelNames.includes("status:needs-human")) {
+        phase = "execution";
+      } else if (isVagueIdea(issue)) {
+        phase = "draft";
+      } else {
+        phase = "planning";
+      }
+    }
+    const matchedSession = resolveMatchedSession(issue, session);
+    if (!attention) {
+      if (closed || phase === "done" || phase === "archive") {
+        attention = "none";
+      } else {
+        if (matchedSession) {
+          const act = (typeof matchedSession.activity === "string" ? matchedSession.activity : "").trim();
+          if (act === "waiting-permission") {
+            attention = "needs-permission";
+          } else if (act === "waiting-question") {
+            attention = "needs-decision";
+          } else if (act === "waiting-review") {
+            attention = "needs-review";
+          } else if (act.startsWith("waiting")) {
+            attention = "needs-decision";
+          }
+        }
+        if (!attention) {
+          const humanTasks = Array.isArray(issue.humanTasks) ? issue.humanTasks : parseHumanTasks(typeof issue.body === "string" ? issue.body : "");
+          const openHumanTasks = humanTasks.filter((t) => !t.completed);
+          if (openHumanTasks.length > 0) {
+            const hasPerm = openHumanTasks.some(
+              (t) => /\b(permission|grant|access|secret|token|credential|deploy|provision)\b/i.test(t.text)
+            );
+            const hasDec = openHumanTasks.some(
+              (t) => /\b(decide|decision|choose|choice|answer)\b/i.test(t.text)
+            );
+            if (hasPerm) {
+              attention = "needs-permission";
+            } else if (hasDec) {
+              attention = "needs-decision";
+            } else {
+              attention = "needs-review";
+            }
+          } else {
+            const questions = Array.isArray(issue.openQuestions) ? issue.openQuestions : parseOpenQuestions(typeof issue.body === "string" ? issue.body : "");
+            const openQuestions = questions.filter((q) => !q.completed);
+            if (openQuestions.length > 0) {
+              attention = "needs-decision";
+            } else if (labelNames.includes("status:needs-human")) {
+              attention = "needs-review";
+            } else {
+              attention = "none";
+            }
+          }
+        }
+      }
+    }
+    if (!liveness) {
+      if (matchedSession) {
+        const act = (typeof matchedSession.activity === "string" ? matchedSession.activity : "").trim();
+        const stat = (typeof matchedSession.status === "string" ? matchedSession.status : "").trim();
+        if (act === "running" || stat === "running") {
+          liveness = "running";
+        } else if (act === "retrying" || stat === "retrying") {
+          liveness = "retrying";
+        } else if (act === "failed" || stat === "failed" || matchedSession.error) {
+          liveness = "failed";
+        } else if (act === "completed" || stat === "completed") {
+          liveness = "completed";
+        } else {
+          liveness = "idle";
+        }
+      } else if (closed || phase === "done") {
+        liveness = "completed";
+      } else {
+        liveness = "idle";
+      }
+    }
+    if (!dependencyState) {
+      const blockers = parseIssueDependencies(typeof issue.body === "string" ? issue.body : "");
+      if (blockers.length > 0) {
+        if (allIssues && Array.isArray(allIssues) && allIssues.length > 0) {
+          const openBlockers = blockers.filter((num) => {
+            const target = allIssues.find((i) => i.number === num);
+            if (!target) return true;
+            return !isIssueClosed2(target);
+          });
+          dependencyState = openBlockers.length > 0 ? "blocked-by-dependency" : "ready";
+        } else {
+          dependencyState = "blocked-by-dependency";
+        }
+      } else {
+        dependencyState = "ready";
+      }
+    }
+    return {
+      phase,
+      attention,
+      liveness,
+      dependencyState,
+      isExplicitV2
+    };
+  }
+  function hasPriorityLabel2(issueOrLabels) {
+    if (!issueOrLabels) return false;
+    const rawLabels = Array.isArray(issueOrLabels) ? issueOrLabels : Array.isArray(issueOrLabels.labels) ? issueOrLabels.labels : [];
+    for (const l of rawLabels) {
+      const name = (typeof l === "string" ? l : l?.name || "").trim().toLowerCase();
+      if (name.startsWith("priority:")) {
+        const val = name.slice(9).trim();
+        if (val && val !== "none") {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+  function normalizePriority2(priorityOrIssue) {
+    if (!priorityOrIssue) return null;
+    let raw = null;
+    if (typeof priorityOrIssue === "string") {
+      raw = priorityOrIssue;
+    } else if (typeof priorityOrIssue === "object") {
+      const rawLabels = Array.isArray(priorityOrIssue) ? priorityOrIssue : Array.isArray(priorityOrIssue.labels) ? priorityOrIssue.labels : [];
+      for (const l of rawLabels) {
+        const name = (typeof l === "string" ? l : l?.name || "").trim().toLowerCase();
+        if (name.startsWith("priority:")) {
+          const val = name.slice(9).trim();
+          if (val && val !== "none") {
+            raw = val;
+            break;
+          }
+        }
+      }
+    }
+    if (!raw || typeof raw !== "string") return null;
+    let lower = raw.trim().toLowerCase();
+    if (lower.startsWith("priority:")) {
+      lower = lower.slice(9).trim();
+    }
+    if (lower === "urgent" || lower === "critical") return "critical";
+    if (lower === "high" || lower === "important") return "important";
+    if (lower === "medium" || lower === "useful") return "useful";
+    if (lower === "low" || lower === "optional") return "optional";
+    if (lower === "none" || !lower) return null;
+    return lower;
+  }
+  function resolveIssueColumn2(issue, sessionOrList) {
+    if (!issue) return null;
+    if (isIssueClosed2(issue)) {
+      return "done";
+    }
+    const rawLabels = Array.isArray(issue.labels) ? issue.labels : [];
+    const labelNames = rawLabels.map(
+      (l) => (typeof l === "string" ? l : l?.name || "").trim().toLowerCase()
+    );
+    if (labelNames.includes("status:done")) return "done";
+    if (labelNames.includes("status:in-review")) return "in-review";
+    if (labelNames.includes("status:needs-human")) return "needs-human";
+    const matchedSession = resolveMatchedSession(issue, sessionOrList);
+    const isSessionRunning = Boolean(matchedSession && matchedSession.activity === "running");
+    const isSessionWaiting = Boolean(
+      matchedSession && (matchedSession.activity === "waiting-permission" || matchedSession.activity === "waiting-question" || matchedSession.activity.startsWith("waiting"))
+    );
+    const isSessionIdle = Boolean(matchedSession && matchedSession.activity === "idle");
+    if (labelNames.includes("status:in-progress")) {
+      if (isSessionIdle || isSessionWaiting) {
+        return "needs-human";
+      }
+      return "in-progress";
+    }
+    if (isSessionRunning) return "in-progress";
+    if (isSessionWaiting || isSessionIdle) return "needs-human";
+    const hasExplicitPhase = labelNames.some((l) => l.startsWith("phase:"));
+    const hasExplicitAttention = labelNames.some((l) => l.startsWith("attention:"));
+    if (hasExplicitPhase || hasExplicitAttention || issue.v2Metadata?.isExplicitV2) {
+      const meta = issue.v2Metadata && issue.v2Metadata.isExplicitV2 ? issue.v2Metadata : resolveV2Metadata(issue, sessionOrList);
+      if (meta.phase === "done" || meta.phase === "archive") {
+        return "done";
+      }
+      if (isSessionWaiting || isSessionIdle) {
+        return "needs-human";
+      }
+      if (meta.attention === "needs-decision" || meta.attention === "needs-permission" || meta.attention === "needs-review") {
+        return "needs-human";
+      }
+      if (isSessionRunning) {
+        return "in-progress";
+      }
+      switch (meta.phase) {
+        case "draft":
+        case "exploration":
+        case "alignment":
+          return "draft";
+        case "planning":
+          return "todo";
+        case "execution":
+          return "in-progress";
+        case "verification":
+        case "publication":
+          return "in-review";
+        case "human_verification":
+          return "needs-human";
+        case "done":
+        case "archive":
+          return "done";
+        default:
+          return "todo";
+      }
+    }
+    if (!hasPriorityLabel2(issue)) {
+      return "draft";
+    }
+    if (labelNames.includes("status:planned")) {
+      return "planned";
+    }
+    if (labelNames.includes("status:todo")) {
+      return "todo";
+    }
+    if (labelNames.includes("status:backlog")) {
+      return "backlog";
+    }
+    if (labelNames.includes("status:draft") || isVagueIdea(issue)) {
+      return "draft";
+    }
+    return "todo";
+  }
+  function groupIssuesByAttention(issues2, sessionIndex2) {
+    const groups = {
+      "needs-decision": [],
+      "needs-permission": [],
+      "needs-review": [],
+      none: []
+    };
+    if (!issues2 || !Array.isArray(issues2)) {
+      return groups;
+    }
+    for (const issue of issues2) {
+      if (!issue || typeof issue !== "object") {
+        continue;
+      }
+      let session = null;
+      if (sessionIndex2) {
+        if (sessionIndex2 instanceof Map) {
+          if (Number.isFinite(issue.number)) {
+            session = sessionIndex2.get(issue.number);
+          }
+          if (!session) {
+            const rKey = issueRepoKey(issue);
+            if (rKey) session = sessionIndex2.get(rKey);
+          }
+        } else if (Array.isArray(sessionIndex2)) {
+          session = resolveMatchedSession(issue, sessionIndex2);
+        } else if (typeof sessionIndex2 === "object") {
+          if (Number.isFinite(issue.number) && sessionIndex2[issue.number]) {
+            session = sessionIndex2[issue.number];
+          } else {
+            session = resolveMatchedSession(issue, sessionIndex2);
+          }
+        }
+      }
+      const meta = resolveV2Metadata(issue, session, issues2);
+      const att = meta && meta.attention;
+      const targetGroup = att === "needs-decision" || att === "needs-permission" || att === "needs-review" ? att : "none";
+      groups[targetGroup].push(issue);
+    }
+    return groups;
+  }
+  function filterIssuesByAttention(issues2, attention, sessionIndex2) {
+    if (!issues2 || !Array.isArray(issues2)) {
+      return [];
+    }
+    const validAttentions = /* @__PURE__ */ new Set([
+      "none",
+      "needs-decision",
+      "needs-permission",
+      "needs-review"
+    ]);
+    if (!validAttentions.has(attention)) {
+      return [];
+    }
+    const grouped = groupIssuesByAttention(issues2, sessionIndex2);
+    return grouped[attention] || [];
+  }
+  function normalizeGithubIssues(rawItems) {
+    if (!rawItems || !Array.isArray(rawItems)) return [];
+    const parseRepo = (val) => {
+      if (!val || typeof val !== "string") return null;
+      const apiMatch = /api\.github\.com\/repos\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (apiMatch) return `${apiMatch[1]}/${apiMatch[2].replace(/\.git$/, "")}`;
+      const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, "")}`;
+      const cleaned = val.trim().replace(/\.git$/, "");
+      if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+      return null;
+    };
+    return rawItems.filter((item) => item && !item.pull_request).map((item) => {
+      const repo = !item.repo && !item.repository_url && !item.html_url ? void 0 : parseRepo(item.repo) || parseRepo(item.repository_url) || parseRepo(item.html_url) || void 0;
+      const ac = parseAcceptanceCriteria(item.body || "");
+      const subtasks = parseSubtasks(item.body || "");
+      const openQuestions = parseOpenQuestions(item.body || "");
+      const humanTasks = parseHumanTasks(item.body || "");
+      const labels = Array.isArray(item.labels) && item.labels.length > 0 ? item.labels.map((l) => typeof l === "string" ? { name: l } : { name: l.name, ...l.color ? { color: l.color } : {} }) : [];
+      const assignees = Array.isArray(item.assignees) && item.assignees.length > 0 ? item.assignees.map((a) => ({ login: a.login, ...a.avatar_url ? { avatar_url: a.avatar_url } : {} })) : [];
+      const issue = {
+        number: item.number,
+        title: item.title || "",
+        body: item.body || "",
+        state: item.state || "open",
+        html_url: item.html_url || "",
+        labels,
+        ...item.user ? { user: { login: item.user.login, ...item.user.avatar_url ? { avatar_url: item.user.avatar_url } : {} } } : {},
+        assignees,
+        comments: item.comments || 0,
+        created_at: item.created_at || "",
+        ...item.updated_at ? { updated_at: item.updated_at } : {},
+        subtasks,
+        openQuestions,
+        humanTasks,
+        ...ac.length > 0 ? { acceptanceCriteria: ac } : {},
+        ...repo ? { repo } : {},
+        ...item.projectId ? { projectId: item.projectId } : {},
+        ...item.projectName ? { projectName: item.projectName } : {}
+      };
+      const shouldPopulateV2 = Boolean(
+        item.v2Metadata || item.labels !== void 0 || ac.length > 0 || item.phase || item.attention
+      );
+      if (shouldPopulateV2) {
+        issue.v2Metadata = resolveV2Metadata(issue);
+      }
+      return issue;
+    });
+  }
+  function mergeIssuePages(existing, incoming) {
+    const map = /* @__PURE__ */ new Map();
+    const parseRepo = (val) => {
+      if (!val || typeof val !== "string") return null;
+      const apiMatch = /api\.github\.com\/repos\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (apiMatch) return `${apiMatch[1]}/${apiMatch[2].replace(/\.git$/, "")}`;
+      const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(val);
+      if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, "")}`;
+      const cleaned = val.trim().replace(/\.git$/, "");
+      if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+      return null;
+    };
+    const getIssueKey = (issue) => {
+      const rawRepo = issue.repo ?? issue.projectRepo;
+      if (!rawRepo && !issue.html_url) {
+        return String(issue.number);
+      }
+      const repo = (parseRepo(rawRepo) || parseRepo(issue.html_url) || "").toLowerCase().trim();
+      return repo ? `${repo}#${issue.number}` : String(issue.number);
+    };
+    if (Array.isArray(existing)) {
+      for (const issue of existing) {
+        if (issue && Number.isFinite(issue.number)) {
+          map.set(getIssueKey(issue), issue);
+        }
+      }
+    }
+    if (Array.isArray(incoming)) {
+      for (const issue of incoming) {
+        if (issue && Number.isFinite(issue.number)) {
+          let key = getIssueKey(issue);
+          let prev = map.get(key);
+          if (!prev && key.includes("#")) {
+            const bareKey = String(issue.number);
+            const bareIssue = map.get(bareKey);
+            if (bareIssue && !(bareIssue.repo || parseRepo(bareIssue.html_url))) {
+              prev = bareIssue;
+              map.delete(bareKey);
+            }
+          }
+          const repo = issue.repo || prev?.repo;
+          const projectId = issue.projectId || prev?.projectId;
+          const projectName = issue.projectName || prev?.projectName;
+          map.set(key, {
+            ...prev || {},
+            ...issue,
+            ...repo ? { repo } : {},
+            ...projectId ? { projectId } : {},
+            ...projectName ? { projectName } : {}
+          });
+        }
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => b.number - a.number);
+  }
+  function getProjectRepoFullName(project) {
+    if (!project) return null;
+    const linked = typeof project.linkedRepo === "string" ? project.linkedRepo.trim() : "";
+    if (linked && linked.includes("/")) return linked;
+    if (project.gitRepo && project.gitRepo.owner && project.gitRepo.repo) {
+      return `${project.gitRepo.owner}/${project.gitRepo.repo}`;
+    }
+    return null;
+  }
+  function getIssueRepoFullName(issue) {
+    if (!issue) return null;
+    return parseRepoFullName(issue.repo) || parseRepoFullName(issue.html_url) || null;
+  }
+  function aggregateProjectIssues(sources) {
+    const byKey = /* @__PURE__ */ new Map();
+    const list = Array.isArray(sources) ? sources : [];
+    for (const source of list) {
+      if (!source) continue;
+      const repo = typeof source.repo === "string" ? source.repo.trim() : "";
+      const incoming = Array.isArray(source.issues) ? source.issues : [];
+      for (const issue of incoming) {
+        if (!issue || !Number.isFinite(issue.number)) continue;
+        const key = `${repo.toLowerCase()}#${issue.number}`;
+        byKey.set(key, {
+          ...issue,
+          projectId: source.projectId,
+          projectName: source.projectName,
+          repo: issue.repo || repo
+        });
+      }
+    }
+    return Array.from(byKey.values());
+  }
+  function groupIssuesByProject(issues2, projects) {
+    const list = Array.isArray(issues2) ? issues2.filter(Boolean) : [];
+    const projectList = Array.isArray(projects) ? projects.filter(Boolean) : [];
+    const byId = /* @__PURE__ */ new Map();
+    const byRepo = /* @__PURE__ */ new Map();
+    const projectGroups = /* @__PURE__ */ new Map();
+    for (const project of projectList) {
+      if (project.id) {
+        byId.set(project.id, project);
+        projectGroups.set(project.id, { id: project.id, title: project.name || project.id, issues: [], count: 0 });
+      }
+      const repo = getProjectRepoFullName(project);
+      if (repo) byRepo.set(repo.toLowerCase(), project);
+    }
+    const unmatchedGroups = /* @__PURE__ */ new Map();
+    for (const issue of list) {
+      if (!issue || !Number.isFinite(issue.number)) continue;
+      let target;
+      if (issue.projectId && byId.has(issue.projectId)) {
+        target = projectGroups.get(issue.projectId);
+      }
+      if (!target) {
+        const repo = getIssueRepoFullName(issue);
+        const project = repo ? byRepo.get(repo.toLowerCase()) : void 0;
+        if (project) target = projectGroups.get(project.id);
+      }
+      if (!target) {
+        const label = typeof issue.projectName === "string" && issue.projectName.trim() || getIssueRepoFullName(issue) || "Unknown Project";
+        if (!unmatchedGroups.has(label)) {
+          unmatchedGroups.set(label, { id: `unmatched:${label}`, title: label, issues: [], count: 0 });
+        }
+        target = unmatchedGroups.get(label);
+      }
+      target.issues.push(issue);
+    }
+    const result = [];
+    for (const project of projectList) {
+      const group = project.id ? projectGroups.get(project.id) : void 0;
+      if (group && group.issues.length > 0) {
+        group.count = group.issues.length;
+        result.push(group);
+      }
+    }
+    for (const group of unmatchedGroups.values()) {
+      if (group.issues.length > 0) {
+        group.count = group.issues.length;
+        result.push(group);
+      }
+    }
+    return result;
+  }
+  function readCachedIssueCollection(cache, key, ttlMs = 6e4, now = Date.now()) {
+    const entry = cache.get(key);
+    if (!entry) return null;
+    if (now - entry.timestamp >= ttlMs) {
+      cache.delete(key);
+      return null;
+    }
+    return entry.issues;
+  }
+  function parseRepoFullName(value) {
+    if (!value || typeof value !== "string") return null;
+    const apiMatch = /api\.github\.com\/repos\/([^/\s]+)\/([^/\s#?]+)/i.exec(value);
+    if (apiMatch) return `${apiMatch[1]}/${apiMatch[2].replace(/\.git$/, "")}`;
+    const githubMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/i.exec(value);
+    if (githubMatch) return `${githubMatch[1]}/${githubMatch[2].replace(/\.git$/, "")}`;
+    const cleaned = value.trim().replace(/\.git$/, "");
+    if (/^[^/\s]+\/[^/\s]+$/.test(cleaned)) return cleaned;
+    return null;
+  }
+  function getSessionIssueRepo(item) {
+    if (!item) return null;
+    if (Array.isArray(item.data?.issues)) {
+      const repos = /* @__PURE__ */ new Set();
+      for (const entry of item.data.issues) {
+        const r = parseRepoFullName(entry?.repo) || parseRepoFullName(entry?.projectRepo);
+        if (r) repos.add(r);
+      }
+      if (repos.size === 1) return Array.from(repos)[0];
+      if (repos.size > 1) return null;
+    }
+    const explicit = item.repo ?? item.projectRepo ?? item.data?.repo;
+    const fromExplicit = parseRepoFullName(explicit);
+    if (fromExplicit) return fromExplicit;
+    return parseRepoFullName(item.html_url) || parseRepoFullName(item.url);
+  }
+  function issueRepoKey(issue) {
+    if (!issue || !Number.isFinite(issue.number)) return null;
+    const repo = getIssueRepoFullName(issue);
+    if (!repo) return null;
+    return `${repo.toLowerCase()}#${issue.number}`;
+  }
+  function sessionRepoKeys(session) {
+    const keys = /* @__PURE__ */ new Set();
+    if (!session) return [];
+    const items = Array.isArray(session.items) ? session.items : [];
+    for (const item of items) {
+      if (!item) continue;
+      let handledPerIssue = false;
+      if (Array.isArray(item.data?.issues)) {
+        for (const entry of item.data.issues) {
+          if (!entry) continue;
+          const entryRepo = parseRepoFullName(entry.repo) || parseRepoFullName(entry.projectRepo);
+          const entryNum = Number(entry.number ?? entry.issueNumber);
+          if (entryRepo && Number.isFinite(entryNum) && entryNum > 0) {
+            keys.add(`${entryRepo.toLowerCase()}#${entryNum}`);
+            handledPerIssue = true;
+          }
+        }
+      }
+      if (handledPerIssue) continue;
+      const repo = getSessionIssueRepo(item);
+      if (!repo) continue;
+      const numbers = /* @__PURE__ */ new Set();
+      if (item.data?.issueNumber != null) numbers.add(Number(item.data.issueNumber));
+      if (Array.isArray(item.data?.issueNumbers)) {
+        for (const n of item.data.issueNumbers) numbers.add(Number(n));
+      }
+      if (item.id && /^\d+$/.test(String(item.id))) numbers.add(parseInt(String(item.id), 10));
+      for (const n of numbers) {
+        if (Number.isFinite(n) && n > 0) keys.add(`${repo.toLowerCase()}#${n}`);
+      }
+    }
+    return Array.from(keys);
+  }
+  function buildSessionIndexByRepo(sessions2) {
+    const index = /* @__PURE__ */ new Map();
+    if (!sessions2 || !Array.isArray(sessions2)) return index;
+    const activityPriority = (act) => {
+      if (act === "running") return 4;
+      if (act === "waiting-permission" || act === "waiting-question" || typeof act === "string" && act.startsWith("waiting")) return 3;
+      if (act === "idle") return 2;
+      return 1;
+    };
+    for (const session of sessions2) {
+      if (!session) continue;
+      for (const key of sessionRepoKeys(session)) {
+        const existing = index.get(key);
+        if (!existing || activityPriority(session.activity || "") > activityPriority(existing.activity || "")) {
+          index.set(key, session);
+        }
+      }
+    }
+    return index;
+  }
+  function findSessionForIssueByRepo(index, issue) {
+    if (!index || !issue) return null;
+    const key = issueRepoKey(issue);
+    if (!key) return null;
+    return index.get(key) || null;
+  }
+  function resolveWorkspaceRootProject(projects) {
+    const list = Array.isArray(projects) ? projects.filter(Boolean) : [];
+    const exact = list.find((p) => p.directory && p.directory.replace(/\/+$/, "") === "/workspace");
+    if (exact) return { project: exact, pinned: true, reason: "exact" };
+    const named = list.find((p) => {
+      const name = (p.name || "").trim().toLowerCase();
+      const id = (p.id || "").trim().toLowerCase();
+      const basename = p.directory ? p.directory.replace(/\/+$/, "").split("/").filter(Boolean).pop() || "" : "";
+      return name === "workspace" || id === "workspace" || basename === "workspace";
+    });
+    if (named) return { project: named, pinned: false, reason: "named" };
+    return { project: null, pinned: false, reason: "missing" };
+  }
+  function parseRetryAfterMs(headers, now = Date.now()) {
+    if (!headers) return 0;
+    const raw = headers["retry-after"] ?? headers["Retry-After"];
+    if (raw === void 0 || raw === null || raw === "") return 0;
+    const seconds = Number(raw);
+    if (Number.isFinite(seconds) && seconds >= 0) return Math.round(seconds * 1e3);
+    const date = Date.parse(String(raw));
+    if (!Number.isNaN(date)) return Math.max(0, date - now);
+    return 0;
+  }
+  function isSecondaryRateLimit(status, headers, body) {
+    if (status !== 403 && status !== 429) return false;
+    const retryAfter = headers?.["retry-after"] ?? headers?.["Retry-After"];
+    if (retryAfter !== void 0 && retryAfter !== null && retryAfter !== "") return true;
+    const remaining = headers?.["x-ratelimit-remaining"] ?? headers?.["X-RateLimit-Remaining"];
+    if (remaining !== void 0 && Number(remaining) === 0) return true;
+    const text = typeof body === "string" ? body.toLowerCase() : "";
+    return text.includes("secondary rate limit") || text.includes("abuse detection") || text.includes("rate limit") || text.includes("api rate limit exceeded");
+  }
+  function computeBackoffMs(attempt, retryAfterMs = 0, baseMs = 1e3, maxMs = 6e4) {
+    if (retryAfterMs > 0) return Math.min(retryAfterMs, maxMs);
+    const exp = baseMs * Math.pow(2, Math.max(0, attempt));
+    return Math.min(maxMs, Math.max(baseMs, exp));
+  }
+  async function retryWithBackoff(worker, options = {}) {
+    const maxAttempts = Math.max(1, options.maxAttempts ?? 3);
+    const baseMs = options.baseMs ?? 1e3;
+    const maxMs = options.maxMs ?? 6e4;
+    const isRetryable = options.isRetryable ?? (() => false);
+    const getRetryAfterMs = options.getRetryAfterMs ?? (() => 0);
+    const sleep = options.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+    let lastErr;
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      try {
+        return await worker(attempt);
+      } catch (err) {
+        lastErr = err;
+        if (!isRetryable(err) || attempt === maxAttempts - 1) throw err;
+        const delay = computeBackoffMs(attempt, getRetryAfterMs(err), baseMs, maxMs);
+        options.onRetry?.(attempt, delay, err);
+        await sleep(delay);
+      }
+    }
+    throw lastErr;
+  }
+  async function mapWithConcurrency(items, limit, worker) {
+    const list = Array.isArray(items) ? items : [];
+    const results = new Array(list.length);
+    const concurrency = Math.max(1, Math.min(Math.floor(limit) || 1, list.length || 1));
+    let cursor = 0;
+    const runner = async () => {
+      while (true) {
+        const index = cursor++;
+        if (index >= list.length) return;
+        try {
+          results[index] = { item: list[index], status: "fulfilled", value: await worker(list[index], index) };
+        } catch (reason) {
+          results[index] = { item: list[index], status: "rejected", reason };
+        }
+      }
+    };
+    await Promise.all(Array.from({ length: concurrency }, () => runner()));
+    return results;
+  }
+  var FULL_ISSUE_PAGE_SIZE = 100;
+  var SMALL_ISSUE_PAGE_SIZE = 20;
+  var MAX_ISSUES_PER_REPO = 1e3;
+  function isOversizedAnswer(err) {
+    if (!err) return false;
+    if (err.code === "RESPONSE_TOO_LARGE" || typeof err.message === "string" && err.message.includes("RESPONSE_TOO_LARGE")) {
+      return true;
+    }
+    if (err instanceof SyntaxError || err.name === "SyntaxError") {
+      const msg = typeof err.message === "string" ? err.message : "";
+      if (msg.includes("position 0") || msg.includes("token '<'") || msg.includes("token <") || msg.includes("<!DOCTYPE")) {
+        return false;
+      }
+      const lower = msg.toLowerCase();
+      return lower.includes("position 256000") || lower.includes("unexpected end of json") || lower.includes("unexpected end of data") || lower.includes("unexpected end of input") || lower.includes("unterminated string") || lower.includes("after property value") || lower.includes("after array element");
+    }
+    return false;
+  }
+  async function fetchIssuePage(repo, page, request, pageSizes, onShrink, headers) {
+    const read = async (pageSize2, reqHeaders) => {
+      const raw = await request("GET", `/repos/${repo}/issues?state=all&per_page=${pageSize2}&page=${page}`, void 0, void 0, reqHeaders);
+      return { items: Array.isArray(raw) ? raw : raw?.items || [], pageSize: pageSize2, raw };
+    };
+    const pageSize = pageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    try {
+      return await read(pageSize, headers);
+    } catch (err) {
+      if (page !== 1 || pageSize === SMALL_ISSUE_PAGE_SIZE || !isOversizedAnswer(err)) throw err;
+      pageSizes.set(repo, SMALL_ISSUE_PAGE_SIZE);
+      onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+      let retryHeaders;
+      if (headers) {
+        retryHeaders = { ...headers };
+        delete retryHeaders["If-None-Match"];
+        delete retryHeaders["if-none-match"];
+        if (Object.keys(retryHeaders).length === 0) {
+          retryHeaders = void 0;
+        }
+      }
+      return read(SMALL_ISSUE_PAGE_SIZE, retryHeaders);
+    }
+  }
+  function buildIncrementalIssuesPath(repo, since, page = 1, pageSize = FULL_ISSUE_PAGE_SIZE) {
+    const cleanRepo = parseRepoFullName(repo) || (typeof repo === "string" ? repo.trim() : "");
+    const sinceIso = typeof since === "string" ? since : new Date(since).toISOString();
+    return `/repos/${cleanRepo}/issues?state=all&since=${encodeURIComponent(sinceIso)}&per_page=${pageSize}&page=${page}`;
+  }
+  async function syncIncrementalRepoIssues(options) {
+    const { repo, since, currentIssues, etag, pageSizes, onShrink, requestFn } = options;
+    const cleanRepo = parseRepoFullName(repo) || (typeof repo === "string" ? repo.trim() : "");
+    let pageSize = options.pageSize ?? (pageSizes?.get(cleanRepo) ?? FULL_ISSUE_PAGE_SIZE);
+    let maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+    let page = 1;
+    const allItems = [];
+    let newEtag = etag;
+    let truncated = false;
+    while (page <= maxPages) {
+      let path = buildIncrementalIssuesPath(cleanRepo, since, page, pageSize);
+      const headers = page === 1 && etag ? { "If-None-Match": etag } : void 0;
+      let res;
+      try {
+        res = await requestFn("GET", path, void 0, void 0, headers);
+      } catch (err) {
+        if (page === 1 && pageSize !== SMALL_ISSUE_PAGE_SIZE && isOversizedAnswer(err)) {
+          pageSize = SMALL_ISSUE_PAGE_SIZE;
+          pageSizes?.set(cleanRepo, SMALL_ISSUE_PAGE_SIZE);
+          onShrink?.(SMALL_ISSUE_PAGE_SIZE);
+          newEtag = void 0;
+          maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+          path = buildIncrementalIssuesPath(cleanRepo, since, page, pageSize);
+          res = await requestFn("GET", path, void 0, void 0, void 0);
+        } else {
+          throw err;
+        }
+      }
+      if (page === 1 && res && (res.notModified || res.status === 304)) {
+        return {
+          issues: currentIssues,
+          modified: false,
+          changedCount: 0,
+          etag: res.etag || etag,
+          truncated: false
+        };
+      }
+      if (page === 1 && (res?.etag || typeof res === "object" && res && res.etag)) {
+        newEtag = res?.etag || res.etag;
+      }
+      const items = Array.isArray(res) ? res : res?.items || res?.data || [];
+      if (items.length === 0) break;
+      allItems.push(...items);
+      if (items.length < pageSize) break;
+      if (page === maxPages) {
+        truncated = true;
+        break;
+      }
+      page++;
+    }
+    if (allItems.length === 0) {
+      return {
+        issues: currentIssues,
+        modified: false,
+        changedCount: 0,
+        etag: newEtag,
+        truncated: false
+      };
+    }
+    const rawChanged = normalizeGithubIssues(allItems);
+    const changed = rawChanged.map((issue) => ({
+      ...issue,
+      repo: issue.repo || cleanRepo
+    }));
+    const merged = mergeIssuePages(currentIssues, changed);
+    return {
+      issues: merged,
+      modified: true,
+      changedCount: changed.length,
+      etag: newEtag,
+      truncated
+    };
+  }
+
+  // panel/main.ts
+  var host = connectHost();
+  var currentProject = null;
+  var currentDirectory = "";
+  var currentRepo = "";
+  var isManualRepoOverride = false;
+  var allProjects = [];
+  var isAllProjectsMode = false;
+  var allProjectsRepoRefs = [];
+  var ALL_PROJECTS_CACHE_KEY = "__all_projects__";
+  var issuePageSizes = /* @__PURE__ */ new Map();
+  var MAX_CONCURRENT_REPO_FETCHES = 4;
+  var RATE_LIMIT_MAX_ATTEMPTS = 3;
+  var workspaceRootNoticeShown = false;
+  var isDiscoveringRepos = false;
+  var issues = [];
+  var sessions = [];
+  var sessionIndex = /* @__PURE__ */ new Map();
+  var sessionIndexByRepo = /* @__PURE__ */ new Map();
+  var worktrees = [];
+  var activeIssue = null;
+  var searchQuery = "";
+  var showArchivedOnly = false;
+  var showAllDoneIssues = false;
+  var viewState = defaultViewState();
+  var projectNameOverrides = {};
+  var deviceStorageSupported = false;
+  var viewStateRevision = 0;
+  var viewStateLoadGeneration = 0;
+  var viewStateWriteQueue = Promise.resolve();
+  var selectedIssueNumbers = /* @__PURE__ */ new Set();
+  var draftMutations = /* @__PURE__ */ new Set();
+  var draftReorderBusy = false;
+  var draggedDraftKey = null;
+  var draftCaptureTitle = "";
+  var draftCaptureDescription = "";
+  var draftCaptureRepo = "";
+  var draftDescriptionVisible = false;
+  var draftCaptureBusy = false;
+  var optimisticDraftNumber = -1;
+  var isDraggingEdge = false;
+  var isAligningDrafts = false;
+  var aligningDraftsCount = 0;
+  var dragSourceNum = null;
+  var currentGraph = null;
+  var isWideScreen = false;
+  var draggedIssueNumber = null;
+  var isLoading = false;
+  var currentRenderedLayout = null;
+  var lastRateLimitRemaining = null;
+  var activeStreamEpoch = 0;
+  var currentSessionRepo = null;
+  var currentActiveSession = null;
+  var lastSyncErrorState = null;
+  var collapsedGroupKeys = /* @__PURE__ */ new Set();
+  function toggleGroupCollapse(key) {
+    if (collapsedGroupKeys.has(key)) {
+      collapsedGroupKeys.delete(key);
+    } else {
+      collapsedGroupKeys.add(key);
+    }
+    if (host?.storage) {
+      void host.storage.set("collapsed_groups", Array.from(collapsedGroupKeys));
+    }
+    return collapsedGroupKeys.has(key);
+  }
+  function isGroupCollapsed(key) {
+    return collapsedGroupKeys.has(key);
+  }
+  var elBtnRepoSelect = document.getElementById("btnRepoSelect");
+  var elTxtRepoLabel = document.getElementById("txtRepoLabel");
+  var elRepoPopover = document.getElementById("repoPopover");
+  var elDetectedReposList = document.getElementById("detectedReposList");
+  var elInputCustomRepo = document.getElementById("inputCustomRepo");
+  var elBtnSaveCustomRepo = document.getElementById("btnSaveCustomRepo");
+  var elSearchInput = document.getElementById("searchInput");
+  var elBtnViewSelect = document.getElementById("btnViewSelect");
+  var elViewSelectPopover = document.getElementById("viewSelectPopover");
+  var elViewSelectCurrentLabel = document.getElementById("viewSelectCurrentLabel");
+  var elGraphViewContainer = document.getElementById("graphViewContainer");
+  var elGraphStatFrontier = document.getElementById("graphStatFrontier");
+  var elGraphStatBlocked = document.getElementById("graphStatBlocked");
+  var elGraphStatDone = document.getElementById("graphStatDone");
+  var txtGraphStatFrontier = document.getElementById("txtGraphStatFrontier");
+  var txtGraphStatBlocked = document.getElementById("txtGraphStatBlocked");
+  var txtGraphStatDone = document.getElementById("txtGraphStatDone");
+  var elGraphCanvasContainer = document.getElementById("graphCanvasContainer");
+  var elGraphCanvas = document.getElementById("graphCanvas");
+  var elGraphSvgOverlay = document.getElementById("graphSvgOverlay");
+  var elGraphEdgesLayer = document.getElementById("graphEdgesLayer");
+  var elGraphDragLayer = document.getElementById("graphDragLayer");
+  var elGraphLayers = document.getElementById("graphLayers");
+  var elDrawerDependenciesContainer = document.getElementById("drawerDependenciesContainer");
+  var elDrawerDepsCountBadge = document.getElementById("drawerDepsCountBadge");
+  var elDrawerBlockedByList = document.getElementById("drawerBlockedByList");
+  var elDrawerBlocksList = document.getElementById("drawerBlocksList");
+  var elSelectAddBlocker = document.getElementById("selectAddBlocker");
+  var elBtnAddBlockerConfirm = document.getElementById("btnAddBlockerConfirm");
+  var elBtnRefresh = document.getElementById("btnRefresh");
+  var elIconRefresh = document.getElementById("iconRefresh");
+  var elBtnNewIssue = document.getElementById("btnNewIssue");
+  var elBtnLogsToggle = document.getElementById("btnLogsToggle");
+  var elBtnFilterToggle = document.getElementById("btnFilterToggle");
+  var elFilterPopover = document.getElementById("filterPopover");
+  var elActiveFilters = document.getElementById("activeFilters");
+  var elSelectSort = document.getElementById("selectSort");
+  var elBatchActionBar = document.getElementById("batchActionBar");
+  var elBatchCountBadge = document.getElementById("batchCountBadge");
+  var elBtnBatchPackage = document.getElementById("btnBatchPackage");
+  var elBtnBatchStart = document.getElementById("btnBatchStart");
+  var elBtnBatchAttach = document.getElementById("btnBatchAttach");
+  var elBtnBatchDeselect = document.getElementById("btnBatchDeselect");
+  var elSimpleListViewContainer = document.getElementById("simpleListViewContainer");
+  var elListViewContainer = document.getElementById("listViewContainer");
+  var elKanbanViewContainer = document.getElementById("kanbanViewContainer");
+  var elHumanViewContainer = document.getElementById("humanViewContainer");
+  var elQuestionsViewContainer = document.getElementById("questionsViewContainer");
+  var elAttentionViewContainer = document.getElementById("attentionViewContainer");
+  var kanbanCardContainers = {
+    "draft": document.getElementById("kCardsDraft"),
+    "backlog": document.getElementById("kCardsBacklog"),
+    "todo": document.getElementById("kCardsTodo"),
+    "planned": document.getElementById("kCardsPlanned"),
+    "in-progress": document.getElementById("kCardsProgress"),
+    "needs-human": document.getElementById("kCardsNeedsHuman"),
+    "in-review": document.getElementById("kCardsReview"),
+    "done": document.getElementById("kCardsDone")
+  };
+  var elDrawerScrim = document.getElementById("drawerScrim");
+  var elTaskDrawer = document.getElementById("taskDrawer");
+  var elBtnDrawerClose = document.getElementById("btnDrawerClose");
+  var elDrawerIssueNumber = document.getElementById("drawerIssueNumber");
+  var elDrawerIssueAuthor = document.getElementById("drawerIssueAuthor");
+  var elDrawerGithubLink = document.getElementById("drawerGithubLink");
+  var elBtnDrawerToggleClose = document.getElementById("btnDrawerToggleClose");
+  var elDrawerIssueTitle = document.getElementById("drawerIssueTitle");
+  var elDrawerPrioritySelect = document.getElementById("drawerPrioritySelect");
+  var elDrawerStatusSelect = document.getElementById("drawerStatusSelect");
+  var elDrawerComplexitySelect = document.getElementById("drawerComplexitySelect");
+  var elDrawerAlignmentWarning = document.getElementById("drawerAlignmentWarning");
+  var elDrawerLabelsContainer = document.getElementById("drawerLabelsContainer");
+  var elBtnAddLabelToggle = document.getElementById("btnAddLabelToggle");
+  var elDrawerAddLabelRow = document.getElementById("drawerAddLabelRow");
+  var elInputNewTag = document.getElementById("inputNewTag");
+  var elRepoLabelsDatalist = document.getElementById("repoLabelsDatalist");
+  var elBtnConfirmAddLabel = document.getElementById("btnConfirmAddLabel");
+  var elBtnCancelAddLabel = document.getElementById("btnCancelAddLabel");
+  var elDrawerAgentBadge = document.getElementById("drawerAgentBadge");
+  var elDrawerWorktreeName = document.getElementById("drawerWorktreeName");
+  var elBtnDrawerJumpSession = document.getElementById("btnDrawerJumpSession");
+  var elChecklistProgressText = document.getElementById("checklistProgressText");
+  var elChecklistProgressFill = document.getElementById("checklistProgressFill");
+  var elDrawerChecklistContainer = document.getElementById("drawerChecklistContainer");
+  var elInputAddSubtask = document.getElementById("inputAddSubtask");
+  var elBtnAddSubtask = document.getElementById("btnAddSubtask");
+  var elDrawerAcceptanceCriteriaSection = document.getElementById("drawerAcceptanceCriteriaSection");
+  var elDrawerAcceptanceCriteriaContainer = document.getElementById("drawerAcceptanceCriteriaContainer");
+  var elDrawerAcceptanceCriteriaCountBadge = document.getElementById("drawerAcceptanceCriteriaCountBadge");
+  var elQuestionsProgressText = document.getElementById("questionsProgressText");
+  var elDrawerQuestionsContainer = document.getElementById("drawerQuestionsContainer");
+  var elInputAddQuestion = document.getElementById("inputAddQuestion");
+  var elBtnAddQuestion = document.getElementById("btnAddQuestion");
+  var elIssueTestsProgressText = document.getElementById("issueTestsProgressText");
+  var elDrawerIssueTestsContainer = document.getElementById("drawerIssueTestsContainer");
+  var elInputAddIssueTest = document.getElementById("inputAddIssueTest");
+  var elBtnAddIssueTest = document.getElementById("btnAddIssueTest");
+  var elBatchTestsProgressText = document.getElementById("batchTestsProgressText");
+  var elDrawerBatchTestsContainer = document.getElementById("drawerBatchTestsContainer");
+  var elInputAddBatchTest = document.getElementById("inputAddBatchTest");
+  var elBtnAddBatchTest = document.getElementById("btnAddBatchTest");
+  var elDrawerDescriptionViewBox = document.getElementById("drawerDescriptionViewBox");
+  var elDrawerDescriptionCollapsible = document.getElementById("drawerDescriptionCollapsible");
+  var elDrawerDescriptionContent = document.getElementById("drawerDescriptionContent");
+  var elDrawerDescriptionToggleRow = document.getElementById("drawerDescriptionToggleRow");
+  var elBtnToggleCollapse = document.getElementById("btnToggleCollapse");
+  var elDrawerDescriptionEditBox = document.getElementById("drawerDescriptionEditBox");
+  var elDrawerDescriptionTextarea = document.getElementById("drawerDescriptionTextarea");
+  var elBtnEditDescription = document.getElementById("btnEditDescription");
+  var elBtnSaveDescription = document.getElementById("btnSaveDescription");
+  var elBtnCancelDescription = document.getElementById("btnCancelDescription");
+  var elDrawerCommentsContainer = document.getElementById("drawerCommentsContainer");
+  var elCommentCountBadge = document.getElementById("commentCountBadge");
+  var elDrawerRelatedIssuesContainer = document.getElementById("drawerRelatedIssuesContainer");
+  var elRelatedIssuesCountBadge = document.getElementById("relatedIssuesCountBadge");
+  var elBtnDrawerAttachComposer = document.getElementById("btnDrawerAttachComposer");
+  var elBtnDrawerArchive = document.getElementById("btnDrawerArchive");
+  var elTxtDrawerArchive = document.getElementById("txtDrawerArchive");
+  var elBtnDrawerOpenPreflight = document.getElementById("btnDrawerOpenPreflight");
+  var elPreflightBackdrop = document.getElementById("preflightModalBackdrop");
+  var elPreflightThemeNotice = document.getElementById("preflightThemeNotice");
+  var elModalPreflightTitle = document.getElementById("modalPreflightTitle");
+  var elPreflightWorktreeToggle = document.getElementById("preflightWorktreeToggle");
+  var elPreflightWorktreeSection = document.getElementById("preflightWorktreeSection");
+  var elRadioWorktreeTag = document.getElementById("radioWorktreeTag");
+  var elRadioWorktreeIssue = document.getElementById("radioWorktreeIssue");
+  var elPreflightTagPreview = document.getElementById("preflightTagPreview");
+  var elPreflightIssuePreview = document.getElementById("preflightIssuePreview");
+  var elPreflightBranchInput = document.getElementById("preflightBranchInput");
+  var elPreflightBaseBranchInput = document.getElementById("preflightBaseBranchInput");
+  var elPreflightPromptInput = document.getElementById("preflightPromptInput");
+  var elPreflightMoveInProgress = document.getElementById("preflightMoveInProgress");
+  var elBtnPreflightCancel = document.getElementById("btnPreflightCancel");
+  var elBtnPreflightClose = document.getElementById("btnPreflightClose");
+  var elBtnPreflightLaunch = document.getElementById("btnPreflightLaunch");
+  var elLogDrawer = document.getElementById("logDrawer");
+  var elBtnLogDrawerClose = document.getElementById("btnLogDrawerClose");
+  var elBtnCopyLogs = document.getElementById("btnCopyLogs");
+  var elBtnClearLogs = document.getElementById("btnClearLogs");
+  function showBanner(text, actionLabel, onAction) {
+    const elBanner = document.getElementById("boardBanner");
+    const elBannerText = document.getElementById("boardBannerText");
+    const elBannerActions = document.getElementById("boardBannerActions");
+    if (!elBanner || !elBannerText || !elBannerActions) return;
+    elBannerText.textContent = text;
+    elBannerActions.innerHTML = "";
+    if (actionLabel && onAction) {
+      const btn = document.createElement("button");
+      btn.className = "btn btn-sm btn-primary";
+      btn.textContent = actionLabel;
+      btn.onclick = onAction;
+      elBannerActions.appendChild(btn);
+    }
+    elBanner.style.display = "flex";
+  }
+  var elFilePreviewModalBackdrop = document.getElementById("filePreviewModalBackdrop");
+  var elFilePreviewTitle = document.getElementById("filePreviewTitle");
+  var elFilePreviewContent = document.getElementById("filePreviewContent");
+  var elBtnCloseFilePreview = document.getElementById("btnCloseFilePreview");
+  var elBtnDoneFilePreview = document.getElementById("btnDoneFilePreview");
+  var elBtnCopyPreviewPath = document.getElementById("btnCopyPreviewPath");
+  function hideBanner() {
+    const elBanner = document.getElementById("boardBanner");
+    if (elBanner) elBanner.style.display = "none";
+  }
+  var dirGitCache = /* @__PURE__ */ new Map();
+  var issueCache = /* @__PURE__ */ new Map();
+  var ISSUE_CACHE_TTL_MS = 6e4;
+  var DRAWER_COMMENTS_CACHE_TTL_MS = 6e4;
+  var commentsCache = /* @__PURE__ */ new Map();
+  var drawerGeneration = 0;
+  var unsubSessions = null;
+  var unsubWorktrees = null;
+  var activeWatchedProjectId = null;
+  async function watchActiveProject(projectId) {
+    if (activeWatchedProjectId === projectId) return;
+    activeWatchedProjectId = projectId;
+    if (unsubSessions) {
+      unsubSessions();
+      unsubSessions = null;
+    }
+    if (unsubWorktrees) {
+      unsubWorktrees();
+      unsubWorktrees = null;
+    }
+    sessions = [];
+    sessionIndex = /* @__PURE__ */ new Map();
+    sessionIndexByRepo = /* @__PURE__ */ new Map();
+    try {
+      unsubSessions = await host.onSessions(projectId, (sessSnap) => {
+        const prevSessions = sessions;
+        sessions = sessSnap.sessions || [];
+        sessionIndex = buildSessionIndex(sessions);
+        sessionIndexByRepo = buildSessionIndexByRepo(sessions);
+        renderViews();
+        if (activeIssue) renderDrawer(activeIssue);
+        statusReconciler.schedule(issues);
+        handleDraftSessionUpdates(sessions);
+        const becameIdle = sessions.some((s) => {
+          const prev = prevSessions.find((p) => p.id === s.id);
+          return s.activity === "idle" && (!prev || prev.activity !== "idle");
+        });
+        if (becameIdle) {
+          void handleIdleRefresh(sessions, prevSessions);
+        }
+      });
+      unsubWorktrees = await host.onWorktrees(projectId, (wtSnap) => {
+        worktrees = wtSnap.worktrees || [];
+      });
+    } catch (err) {
+      addLog(`Project watcher error on ${projectId}: ${err.message}`, "warn");
+    }
+  }
+  async function inspectGitConfigInDir(dir) {
+    const cleanDir = dir.replace(/\/+$/, "");
+    if (dirGitCache.has(cleanDir)) {
+      return dirGitCache.get(cleanDir);
+    }
+    let found = null;
+    try {
+      const res = await host.readFile(`${cleanDir}/.git/config`);
+      if (res && res.content) {
+        found = parseGitRemoteFromConfig(res.content);
+      }
+    } catch {
+    }
+    if (!found) {
+      try {
+        const gitFileRes = await host.readFile(`${cleanDir}/.git`);
+        if (gitFileRes && gitFileRes.content) {
+          const match = gitFileRes.content.match(/^gitdir:\s*(.+)$/m);
+          if (match) {
+            const gitdir = match[1].trim();
+            const targetPath = gitdir.startsWith("/") ? gitdir : `${cleanDir}/${gitdir}`;
+            if (targetPath.includes("/.git/worktrees/")) {
+              const parentRepoRoot = targetPath.split("/.git/worktrees/")[0];
+              try {
+                const parentConfig = await host.readFile(`${parentRepoRoot}/.git/config`);
+                if (parentConfig && parentConfig.content) {
+                  found = parseGitRemoteFromConfig(parentConfig.content);
+                }
+              } catch {
+              }
+            }
+            if (!found) {
+              try {
+                const wtConfig = await host.readFile(`${targetPath}/config`);
+                if (wtConfig?.content) {
+                  found = parseGitRemoteFromConfig(wtConfig.content);
+                }
+              } catch {
+              }
+              if (!found) {
+                try {
+                  const parentConfig = await host.readFile(`${targetPath}/../../config`);
+                  if (parentConfig?.content) {
+                    found = parseGitRemoteFromConfig(parentConfig.content);
+                  }
+                } catch {
+                }
+              }
+            }
+          }
+        }
+      } catch {
+      }
+    }
+    dirGitCache.set(cleanDir, found);
+    return found;
+  }
+  async function discoverWorkspaceRepositories() {
+    if (isDiscoveringRepos) return;
+    isDiscoveringRepos = true;
+    addLog("Scanning OpenChamber projects for Git repositories...");
+    try {
+      const snap = await host.listProjects();
+      const rawProjects = snap.projects || [];
+      const uniqueProjects = Array.from(new Map(rawProjects.map((p) => [p.id, p])).values());
+      const inspected = await Promise.all(
+        uniqueProjects.map(async (p) => {
+          if (!p.directory) return null;
+          const detected = await inspectGitConfigInDir(p.directory);
+          const storedLink = await host.storage.get(`repo_${p.id}`);
+          const linkedRepo = typeof storedLink === "string" && storedLink.includes("/") ? storedLink.trim() : null;
+          return {
+            id: p.id,
+            name: p.name || p.directory.split("/").pop() || p.id,
+            directory: p.directory,
+            gitRepo: detected,
+            linkedRepo: linkedRepo || (detected ? `${detected.owner}/${detected.repo}` : null)
+          };
+        })
+      );
+      allProjects = inspected.filter(Boolean);
+      if (isAllProjectsMode) {
+        allProjectsRepoRefs = buildProjectRepoRefs();
+      }
+      allProjects.forEach((p) => {
+        if (p.gitRepo) {
+          addLog(`Project "${p.name}" has Git repo: ${p.gitRepo.owner}/${p.gitRepo.repo}`, "succ");
+        } else {
+          addLog(`Project "${p.name}" (${p.directory}) has no Git remote`, "info");
+        }
+      });
+      renderRepoPopoverList();
+      await autoResolveRepoForActiveContext();
+    } catch (err) {
+      addLog(`Project scan error: ${err.message}`, "warn");
+      renderRepoPopoverList();
+      await autoResolveRepoForActiveContext();
+    } finally {
+      isDiscoveringRepos = false;
+    }
+  }
+  function getSessionLinkedRepo(activeSession) {
+    const sess = activeSession || currentActiveSession;
+    if (sess && Array.isArray(sess.items) && sess.items.length > 0) {
+      for (const it of sess.items) {
+        const repo = getSessionIssueRepo(it) || it.data?.repo || (typeof it.url === "string" ? parseRepoFullName(it.url) : null);
+        if (repo) return repo;
+      }
+    }
+    if (currentProject) {
+      const pRepo = currentProject.linkedRepo || (currentProject.gitRepo ? `${currentProject.gitRepo.owner}/${currentProject.gitRepo.repo}` : null);
+      if (pRepo) return pRepo;
+    }
+    if (currentDirectory) {
+      const cleanDir = currentDirectory.replace(/\/+$/, "");
+      const matched = allProjects.find((p) => {
+        if (!p.directory) return false;
+        const cleanP = p.directory.replace(/\/+$/, "");
+        return cleanP === cleanDir || cleanDir.startsWith(cleanP + "/");
+      });
+      if (matched) {
+        const pRepo = matched.linkedRepo || (matched.gitRepo ? `${matched.gitRepo.owner}/${matched.gitRepo.repo}` : null);
+        if (pRepo) return pRepo;
+      }
+    }
+    if (currentSessionRepo) return currentSessionRepo;
+    if (!isManualRepoOverride && !isAllProjectsMode && currentRepo) return currentRepo;
+    return null;
+  }
+  async function autoResolveRepoForActiveContext(activeSession) {
+    if (activeSession) {
+      currentActiveSession = activeSession;
+    }
+    if (isManualRepoOverride) return;
+    const contextRepo = currentRepo;
+    const contextDirectory = currentDirectory;
+    const contextSessionId = currentActiveSession?.id;
+    const contextIsCurrent = () => !isManualRepoOverride && currentRepo === contextRepo && currentDirectory === contextDirectory && currentActiveSession?.id === contextSessionId;
+    let worktreeMatchedProject = null;
+    if (currentDirectory && currentDirectory.includes("/workspace/.local/share/opencode/worktree/")) {
+      try {
+        const cleanCurDir = currentDirectory.replace(/\/+$/, "");
+        const gitFileRes = await host.readFile(`${cleanCurDir}/.git`);
+        if (!contextIsCurrent()) return;
+        if (gitFileRes && gitFileRes.content) {
+          const match = gitFileRes.content.match(/^gitdir:\s*(.+)$/m);
+          if (match) {
+            const gitdir = match[1].trim();
+            const targetPath = gitdir.startsWith("/") ? gitdir : `${cleanCurDir}/${gitdir}`;
+            if (targetPath.includes("/.git/worktrees/")) {
+              const parentRepoRoot = targetPath.split("/.git/worktrees/")[0].replace(/\/+$/, "");
+              worktreeMatchedProject = allProjects.find((p) => {
+                if (!p.directory) return false;
+                const cleanP = p.directory.replace(/\/+$/, "");
+                return cleanP === parentRepoRoot || parentRepoRoot.startsWith(cleanP + "/");
+              }) || null;
+              if (worktreeMatchedProject) {
+                addLog(`Worktree matched to parent project: "${worktreeMatchedProject.name}" (${worktreeMatchedProject.directory})`, "succ");
+              }
+            }
+          }
+        }
+      } catch (err) {
+        addLog(`Failed to resolve parent project from worktree .git: ${err?.message || err}`, "warn");
+      }
+    }
+    const sorted = [...allProjects].sort((a, b) => (b.directory?.length || 0) - (a.directory?.length || 0));
+    let targetProject = worktreeMatchedProject || sorted.find((p) => {
+      if (!p.directory) return false;
+      const cleanP = p.directory.replace(/\/+$/, "");
+      const cleanT = currentDirectory.replace(/\/+$/, "");
+      return cleanP === cleanT || cleanT.startsWith(cleanP + "/");
+    }) || (allProjects.length > 0 ? allProjects[0] : null);
+    currentProject = targetProject || null;
+    if (targetProject) {
+      void watchActiveProject(targetProject.id);
+      addLog(`Active conversation project: "${targetProject.name}" (${targetProject.directory})`);
+    }
+    if (currentDirectory) {
+      const dirRemote = await inspectGitConfigInDir(currentDirectory);
+      if (!contextIsCurrent()) return;
+      if (dirRemote) {
+        const full = `${dirRemote.owner}/${dirRemote.repo}`;
+        if (targetProject) {
+          targetProject.gitRepo = dirRemote;
+          targetProject.linkedRepo = full;
+        }
+        currentSessionRepo = full;
+        setRepository(full, targetProject ? `directory: ${targetProject.name}` : `directory: ${currentDirectory}`);
+        return;
+      }
+    }
+    if (targetProject?.gitRepo) {
+      const full = `${targetProject.gitRepo.owner}/${targetProject.gitRepo.repo}`;
+      currentSessionRepo = full;
+      setRepository(full, `project-git: ${targetProject.name}`);
+      return;
+    }
+    if (targetProject) {
+      const storedLink = await host.storage.get(`repo_${targetProject.id}`);
+      if (!contextIsCurrent()) return;
+      if (typeof storedLink === "string" && storedLink.includes("/")) {
+        const cleanStored = storedLink.trim();
+        currentSessionRepo = cleanStored;
+        setRepository(cleanStored, `stored-project-link: ${targetProject.name}`);
+        return;
+      }
+    }
+    const candidateSessions = activeSession ? [activeSession, ...sessions || []] : sessions || [];
+    if (candidateSessions.length > 0) {
+      for (const sess of candidateSessions) {
+        if (Array.isArray(sess.items)) {
+          for (const it of sess.items) {
+            const discoveredRepo = getSessionIssueRepo(it) || it.data?.repo || (typeof it.url === "string" ? parseRepoFullName(it.url) : null);
+            if (discoveredRepo) {
+              currentSessionRepo = discoveredRepo;
+              setRepository(discoveredRepo, `session-item: ${sess.title || sess.id}`);
+              return;
+            }
+          }
+        }
+      }
+    }
+    const previousRepo = await host.storage.get("selected_repo");
+    if (!contextIsCurrent()) return;
+    if (typeof previousRepo === "string" && previousRepo.includes("/")) {
+      const cleanPrev = previousRepo.trim();
+      currentSessionRepo = cleanPrev;
+      setRepository(cleanPrev, "stored-selected-repo");
+      return;
+    }
+    if (!targetProject) {
+      elTxtRepoLabel.textContent = "Select Repo";
+      elTxtRepoLabel.title = "No repository detected for active context. Click to link.";
+      showBanner("No Git remote detected. Enter a repository:", "Select Repo", () => {
+        openRepoPopover();
+      });
+      renderEmptyState('No GitHub repository detected for active directory. Click "Select Repo" above to link a repository.', "empty");
+      return;
+    }
+    elTxtRepoLabel.textContent = `${targetProject.name} (No Repo)`;
+    elTxtRepoLabel.title = `Project "${targetProject.name}" has no GitHub repository linked. Click to link.`;
+    const otherRepos = allProjects.filter((p) => p.linkedRepo || p.gitRepo);
+    const actionText = otherRepos.length > 0 ? `Project "${targetProject.name}" has no Git remote. Click to choose or link:` : `Project "${targetProject.name}" has no Git remote. Enter a repository:`;
+    showBanner(actionText, "Select Repo", () => {
+      openRepoPopover();
+    });
+    renderEmptyState(`No GitHub repository linked to project "${targetProject.name}". Click "Select Repo" above to link a repository.`, "empty");
+  }
+  function setRepository(repo, source, force = false) {
+    if (!force && currentRepo === repo) {
+      return;
+    }
+    flushScratchpadSave();
+    drawerGeneration++;
+    commentsCache.clear();
+    isAllProjectsMode = false;
+    allProjectsRepoRefs = [];
+    workspaceRootNoticeShown = false;
+    currentRepo = repo;
+    lastSyncTimestamp = 0;
+    lastSyncErrorState = null;
+    issues = [];
+    showAllDoneIssues = false;
+    clearSelection();
+    elTxtRepoLabel.textContent = displayProjectName(repo);
+    elTxtRepoLabel.title = `Project: ${currentProject?.name || "Workspace"} \u2022 Repo: ${repo} (via ${source})`;
+    addLog(`Switched repository to ${repo} [${source}]`, "succ");
+    hideBanner();
+    void host.storage.set("selected_repo", repo);
+    if (currentProject) {
+      void host.storage.set(`repo_${currentProject.id}`, repo);
+      currentProject.linkedRepo = repo;
+    }
+    if (!elRepoPopover.classList.contains("active")) {
+      renderRepoPopoverList();
+    }
+    if (elScratchpadModalBackdrop && elScratchpadModalBackdrop.classList.contains("active")) {
+      if (elScratchpadRepoBadge) {
+        elScratchpadRepoBadge.textContent = displayProjectName(repo) || "Global";
+        elScratchpadRepoBadge.title = repo || "";
+      }
+      void loadScratchpadContent(repo);
+    } else {
+      activeScratchpadRepo = null;
+    }
+    void fetchIssues();
+  }
+  function renderRepoPopoverList() {
+    const sessionRepo = getSessionLinkedRepo();
+    const sessionRepoDisplay = sessionRepo ? `Session repo: <span title="${escapeHtml(sessionRepo)}">${escapeHtml(displayProjectName(sessionRepo))}</span>` : "Session repo: none linked";
+    const projectItemsHtml = allProjects.length === 0 ? `
+      <div style="padding: 10px; color: var(--fg-faint); font-size: 11px;">
+        No workspace projects found. Enter custom repo below.
+      </div>
+    ` : allProjects.map((p) => {
+      const isCurrentProject = p.id === currentProject?.id;
+      const repoName = p.linkedRepo || (p.gitRepo ? `${p.gitRepo.owner}/${p.gitRepo.repo}` : null);
+      const isSelectedRepo = !isAllProjectsMode && repoName && repoName === currentRepo;
+      const activeBadge = isSelectedRepo ? '<span class="status-pill status-pill-picked" style="color: var(--succ); font-size: 10px; font-weight: 600;">[picked]</span>' : "";
+      return `
+        <div class="popover-item ${isSelectedRepo ? "is-active selected-repo" : ""}" data-project-id="${escapeHtml(p.id)}" data-repo="${escapeHtml(repoName || "")}">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+              <span class="popover-item-title" title="${escapeHtml(repoName || p.name)}">${escapeHtml(repoName ? displayProjectName(repoName) : p.name)}</span>
+              ${isCurrentProject ? '<span class="status-pill" style="font-size: 9px; padding: 0 4px;">active</span>' : ""}
+            </div>
+            ${activeBadge}
+          </div>
+          <span class="popover-item-sub" title="${escapeHtml(repoName || "")}">${repoName ? escapeHtml(displayProjectName(repoName)) : '<span style="color: var(--warn); font-style: italic;">No repo linked \u2022 click to link</span>'}</span>
+        </div>
+      `;
+    }).join("");
+    const statusNoticeHtml = lastSyncErrorState ? `
+      <div class="popover-status-notice ${escapeHtml(lastSyncErrorState.kind)}" style="margin: 6px 10px; padding: 8px 10px; background: color-mix(in srgb, var(--warn, #e3b341) 12%, transparent); border: 1px solid color-mix(in srgb, var(--warn, #e3b341) 30%, transparent); border-radius: var(--rad, 6px); font-size: 11px;">
+        <div style="font-weight: 600; color: var(--fg); margin-bottom: 2px;">
+          ${lastSyncErrorState.kind === "rate-limited" ? "API Rate-Limited (Showing Cached Issues)" : "Offline / Cached State"}
+        </div>
+        <div style="color: var(--fg-muted); line-height: 1.35; font-size: 10.5px;">
+          ${lastSyncErrorState.kind === "rate-limited" ? "GitHub rate limit reached. Showing local cache. Enter a Personal Access Token below to increase limits." : "Unable to reach GitHub. Showing local cache. Check connection or enter a token below."}
+        </div>
+      </div>
+    ` : "";
+    const currentSessionOptionHtml = `
+    <div class="repo-option current-session-option ${!isManualRepoOverride && !isAllProjectsMode ? "is-active selected-repo" : ""}" data-current-session="true">
+      <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <span>Current session</span>
+          <span class="session-repo-inline">${sessionRepoDisplay}</span>
+        </div>
+        ${!isManualRepoOverride && !isAllProjectsMode ? '<span class="status-pill status-pill-active" style="color: var(--succ); font-size: 10px; font-weight: 600;">[active default]</span>' : ""}
+      </div>
+    </div>
+  `;
+    const allProjectsOptionHtml = isAllProjectsMode ? `<div class="repo-option all-projects-option is-active selected-repo" data-all-projects="true"><span>All Projects</span><span style="color: var(--prim); font-size: 10px; font-weight: 600;">[active]</span></div>` : `<div class="repo-option all-projects-option" data-all-projects="true"><span>All Projects</span></div>`;
+    elDetectedReposList.innerHTML = statusNoticeHtml + currentSessionOptionHtml + allProjectsOptionHtml + projectItemsHtml;
+    elDetectedReposList.querySelector(".current-session-option")?.addEventListener("click", async () => {
+      isManualRepoOverride = false;
+      addLog("Reset repository to current session default [D13]");
+      closeRepoPopover();
+      await autoResolveRepoForActiveContext();
+    });
+    elDetectedReposList.querySelector(".all-projects-option")?.addEventListener("click", () => {
+      isManualRepoOverride = true;
+      void selectAllProjects();
+    });
+    elDetectedReposList.querySelectorAll(".popover-item").forEach((item) => {
+      item.addEventListener("click", async () => {
+        const projId = item.getAttribute("data-project-id");
+        const repo = item.getAttribute("data-repo");
+        const proj = allProjects.find((p) => p.id === projId);
+        if (repo) {
+          isManualRepoOverride = true;
+          if (proj) {
+            currentProject = proj;
+          }
+          setRepository(repo, `selected from ${proj?.name || "project"}`);
+          closeRepoPopover();
+        } else {
+          const entered = window.prompt(`Enter GitHub repository (owner/repo) to link to project "${proj?.name || "project"}":`);
+          if (entered && entered.includes("/")) {
+            const clean = entered.trim();
+            if (proj) {
+              proj.linkedRepo = clean;
+              await host.storage.set(`repo_${proj.id}`, clean);
+            }
+            if (currentProject && currentProject.id === proj?.id) {
+              setRepository(clean, `linked-to-${proj?.name}`);
+            } else {
+              renderRepoPopoverList();
+            }
+            closeRepoPopover();
+          }
+        }
+      });
+    });
+  }
+  function openRepoPopover() {
+    elRepoPopover.classList.add("active");
+  }
+  function closeRepoPopover() {
+    elRepoPopover.classList.remove("active");
+  }
+  function buildProjectRepoRefs() {
+    const refsByRepo = /* @__PURE__ */ new Map();
+    for (const project of allProjects) {
+      const repo = getProjectRepoFullName(project);
+      if (!repo) continue;
+      const key = repo.toLowerCase();
+      if (!refsByRepo.has(key)) {
+        refsByRepo.set(key, { projectId: project.id, projectName: project.name, repo });
+      }
+    }
+    return Array.from(refsByRepo.values());
+  }
+  async function selectAllProjects() {
+    const refs = buildProjectRepoRefs();
+    if (refs.length === 0) {
+      addLog("No workspace project has a linked or detected Git repository", "warn");
+      showBanner(
+        "No workspace project has a linked or detected Git repository. Link one to use the All Projects view.",
+        "Select Repo",
+        () => openRepoPopover()
+      );
+      return;
+    }
+    flushScratchpadSave();
+    isAllProjectsMode = true;
+    allProjectsRepoRefs = refs;
+    currentRepo = ALL_PROJECTS_CACHE_KEY;
+    issues = [];
+    showAllDoneIssues = false;
+    clearSelection();
+    elTxtRepoLabel.textContent = "All Projects";
+    elTxtRepoLabel.title = `Aggregated issues across ${refs.length} repositories`;
+    hideBanner();
+    closeRepoPopover();
+    addLog(`All Projects mode: aggregating issues from ${refs.length} repositories`, "succ");
+    if (elScratchpadModalBackdrop && elScratchpadModalBackdrop.classList.contains("active")) {
+      if (elScratchpadRepoBadge) {
+        elScratchpadRepoBadge.textContent = "All Projects";
+      }
+      void loadScratchpadContent(ALL_PROJECTS_CACHE_KEY);
+    } else {
+      activeScratchpadRepo = null;
+    }
+    getWorkspaceRootProject();
+    await fetchAllProjectIssues();
+  }
+  function getWorkspaceRootProject() {
+    const resolution = resolveWorkspaceRootProject(allProjects);
+    if (!resolution.pinned && !workspaceRootNoticeShown) {
+      workspaceRootNoticeShown = true;
+      addLog(
+        resolution.project ? `No project is registered at /workspace. Global sessions cannot be pinned to /workspace; using "${resolution.project.name}" (${resolution.project.directory}) for All Projects launches.` : 'No project is registered at /workspace and none is named "workspace". Global sessions cannot be pinned to /workspace; All Projects will use the active project.',
+        "warn"
+      );
+    } else if (resolution.pinned) {
+      workspaceRootNoticeShown = false;
+    }
+    return resolution.project;
+  }
+  var workspaceGitToken = null;
+  var issueListEtagCache = /* @__PURE__ */ new Map();
+  var pageBodyCache = /* @__PURE__ */ new Map();
+  var MAX_PAGE_CACHE_ENTRIES = 100;
+  function setCachedPage(path, items, etag) {
+    if (pageBodyCache.size >= MAX_PAGE_CACHE_ENTRIES) {
+      const oldest = pageBodyCache.keys().next().value;
+      if (oldest) pageBodyCache.delete(oldest);
+    }
+    pageBodyCache.set(path, { items, etag, timestamp: Date.now() });
+  }
+  var repoIncrementalEtagCache = /* @__PURE__ */ new Map();
+  var repoSyncWatermarks = /* @__PURE__ */ new Map();
+  var repoFullSyncTimestamps = /* @__PURE__ */ new Map();
+  var lastSyncTimestamp = 0;
+  async function getWorkspaceGitToken() {
+    if (workspaceGitToken) return workspaceGitToken;
+    try {
+      const creds = await host.readFile("/workspace/.git-credentials");
+      const token = extractGitHubTokenFromCredentials(creds?.content);
+      if (token) {
+        workspaceGitToken = token;
+        addLog("Loaded authenticated GitHub PAT from workspace credentials", "succ");
+        return workspaceGitToken;
+      }
+    } catch {
+    }
+    try {
+      const cfg = await host.readFile("/workspace/.gitconfig");
+      const token = extractGitHubTokenFromCredentials(cfg?.content);
+      if (token) {
+        workspaceGitToken = token;
+        return workspaceGitToken;
+      }
+    } catch {
+    }
+    return null;
+  }
+  function headerRecord(headers) {
+    const out = {};
+    if (!headers) return out;
+    if (typeof headers.forEach === "function") {
+      headers.forEach((value, key) => {
+        out[String(key).toLowerCase()] = String(value);
+      });
+      return out;
+    }
+    if (typeof headers === "object") {
+      for (const key of Object.keys(headers)) {
+        out[String(key).toLowerCase()] = String(headers[key]);
+      }
+    }
+    return out;
+  }
+  function makeRateLimitError(status, retryAfterMs) {
+    const err = new Error(
+      `GitHub rate limit (HTTP ${status})${retryAfterMs > 0 ? `; retry after ${Math.ceil(retryAfterMs / 1e3)}s` : ""}.`
+    );
+    err.status = status;
+    err.rateLimited = true;
+    err.retryAfterMs = retryAfterMs;
+    return err;
+  }
+  function rateLimitErrorFromResponse(status, headers, body) {
+    const record = headerRecord(headers);
+    const bodyText = typeof body === "string" ? body : "";
+    if (!isSecondaryRateLimit(status, record, bodyText)) return null;
+    const retryAfterMs = parseRetryAfterMs(record);
+    lastRateLimitRemaining = 0;
+    addLog(`GitHub rate limit hit (HTTP ${status}); backing off ${Math.ceil(retryAfterMs / 1e3)}s before retry...`, "warn");
+    showBanner(
+      "GitHub rate limit reached. The board is backing off and will retry automatically.",
+      "Dismiss",
+      () => hideBanner()
+    );
+    return makeRateLimitError(status, retryAfterMs);
+  }
+  async function githubRequest(method, path, body, query, headers) {
+    addLog(`API ${method} ${path}`);
+    const pat = await getWorkspaceGitToken() || await host.storage.get("custom_github_token");
+    if (pat && typeof pat === "string") {
+      try {
+        const url = new URL(path, "https://api.github.com/");
+        if (url.origin === "https://api.github.com") {
+          if (query) {
+            Object.entries(query).forEach(([k, v2]) => url.searchParams.set(k, v2));
+          }
+          const directRes = await fetch(url.toString(), {
+            method,
+            headers: {
+              "Accept": "application/vnd.github.v3+json",
+              "Authorization": `Bearer ${pat.trim()}`,
+              ...body ? { "Content-Type": "application/json" } : {},
+              ...headers || {}
+            },
+            body: body ? JSON.stringify(body) : void 0
+          });
+          if (directRes.status === 304) {
+            addLog(`API ${method} ${path} -> 304 Not Modified (via workspace PAT)`, "succ");
+            return { notModified: true, status: 304, etag: directRes.headers.get("etag") || void 0 };
+          }
+          if (directRes.ok) {
+            addLog(`API ${method} ${path} -> ${directRes.status} OK (via workspace PAT)`, "succ");
+            hideBanner();
+            const rem = directRes.headers.get("x-ratelimit-remaining");
+            if (rem !== null) lastRateLimitRemaining = parseInt(rem, 10);
+            const data = await directRes.json();
+            const etag = directRes.headers.get("etag");
+            if (etag && data && typeof data === "object") {
+              Object.defineProperty(data, "etag", { value: etag, configurable: true, writable: true });
+            }
+            return data;
+          }
+          if (directRes.status === 403 || directRes.status === 429) {
+            let errBody = "";
+            try {
+              errBody = await directRes.clone().text();
+            } catch {
+            }
+            const rlErr = rateLimitErrorFromResponse(directRes.status, directRes.headers, errBody);
+            if (rlErr) throw rlErr;
+          }
+          if (directRes.status === 401) {
+            throw new Error("GitHub PAT authentication failed (401)");
+          }
+          if (method !== "GET") {
+            let errText = "";
+            try {
+              errText = await directRes.clone().text();
+            } catch {
+            }
+            throw new Error(`GitHub ${method} ${path} failed (${directRes.status}): ${errText}`);
+          }
+          addLog(`PAT request returned HTTP ${directRes.status}, attempting host proxy...`, "warn");
+        } else {
+          addLog(`Direct PAT fetch rejected for origin ${url.origin}; falling back to host proxy...`, "warn");
+        }
+      } catch (err) {
+        if (err && err.rateLimited) throw err;
+        if (method !== "GET") throw err;
+        addLog(`Direct PAT fetch failed (${err.message}), falling back to host proxy...`, "warn");
+      }
+    }
+    try {
+      const res = await host.request({
+        method,
+        path,
+        query,
+        body: body ? JSON.stringify(body) : void 0
+      });
+      if (res.status === 304) {
+        addLog(`API ${method} ${path} -> 304 Not Modified`, "succ");
+        return { notModified: true, status: 304 };
+      }
+      if (res.status >= 200 && res.status < 300) {
+        addLog(`API ${method} ${path} -> ${res.status}`, "succ");
+        hideBanner();
+        const resHeaders = res.headers;
+        if (resHeaders) {
+          const rem = resHeaders["x-ratelimit-remaining"];
+          if (rem) lastRateLimitRemaining = parseInt(rem, 10);
+        }
+        const parsed = typeof res.body === "string" ? JSON.parse(res.body) : res.body;
+        const resEtag = resHeaders ? resHeaders["etag"] || resHeaders["ETag"] : void 0;
+        if (resEtag && parsed && typeof parsed === "object") {
+          Object.defineProperty(parsed, "etag", { value: resEtag, configurable: true, writable: true });
+        }
+        return parsed;
+      }
+      if (res.status === 403 || res.status === 429) {
+        const rlErr = rateLimitErrorFromResponse(res.status, res.headers, res.body);
+        if (rlErr) throw rlErr;
+      }
+      if (res.status === 401 || res.status === 403) {
+        addLog(`API auth error HTTP ${res.status}: OAuth access restricted or missing`, "error");
+        showBanner(
+          "GitHub authentication required. Please connect in Settings \u2192 Integrations or enter a Personal Access Token.",
+          "Enter Token",
+          promptCustomToken
+        );
+        throw new Error(`GitHub auth failed (${res.status})`);
+      }
+      throw new Error(`GitHub API error: ${res.status}`);
+    } catch (err) {
+      addLog(`GitHub request failed: ${err.message}`, "error");
+      if (err.message && (err.message.includes("NO_INTEGRATION") || err.message.includes("DISCONNECTED"))) {
+        showBanner(
+          "GitHub integration is not connected. Open Settings \u2192 Integrations or enter a token directly.",
+          "Enter Token",
+          promptCustomToken
+        );
+      }
+      throw err;
+    }
+  }
+  function githubRequestWithRetry(method, path, body, query, headers) {
+    return retryWithBackoff(() => githubRequest(method, path, body, query, headers), {
+      maxAttempts: RATE_LIMIT_MAX_ATTEMPTS,
+      isRetryable: (err) => Boolean(err && err.rateLimited),
+      getRetryAfterMs: (err) => Number(err?.retryAfterMs) || 0,
+      onRetry: (attempt, delayMs) => addLog(`Rate limited; retrying (${attempt + 1}) in ${Math.round(delayMs / 1e3)}s...`, "warn")
+    });
+  }
+  async function promptCustomToken() {
+    const token = window.prompt("Enter GitHub Personal Access Token (with repo access):");
+    if (token && token.trim()) {
+      await host.storage.set("custom_github_token", token.trim());
+      await host.toast({ kind: "success", message: "Saved token! Refreshing..." });
+      void fetchIssues(true);
+    }
+  }
+  function fetchRepoIssuePage(repo, page, request = githubRequestWithRetry, headers) {
+    return fetchIssuePage(repo, page, request, issuePageSizes, (pageSize) => {
+      addLog(`Issue page for ${repo} is too large for the host; reading ${pageSize} per page`, "warn");
+    }, headers);
+  }
+  function renderBoardFreshness(state, repo) {
+    const element = document.getElementById("boardFreshness");
+    if (!element) return;
+    const timestamp = repoFullSyncTimestamps.get(repo);
+    const lastSuccess = timestamp ? `Last full sync: ${new Date(timestamp).toLocaleString()}` : "No completed full sync";
+    element.textContent = state === "complete" ? `${displayProjectName(repo)} \xB7 ${lastSuccess}` : `${displayProjectName(repo)} \xB7 ${state === "refreshing" ? "Refreshing \u2014 cached data is provisional" : state === "partial" ? "Partial results \u2014 refresh incomplete" : "Stale / unavailable \u2014 refresh failed"} \xB7 ${lastSuccess}`;
+    element.title = repo;
+  }
+  function admitsIssueSnapshot(repo, epoch) {
+    return !isAllProjectsMode && currentRepo === repo && activeStreamEpoch === epoch;
+  }
+  var ISSUE_WRITE_TTL_MS = 5 * 6e4;
+  var MAX_ISSUE_WRITE_TRACKERS = MAX_ISSUES_PER_REPO * 2;
+  var MAX_ISSUE_WRITE_TRACKERS_HARD = MAX_ISSUES_PER_REPO * 4;
+  var issueWriteTrackers = /* @__PURE__ */ new Map();
+  var issueSnapshotStarts = /* @__PURE__ */ new Map();
+  var obsoleteIssueSnapshotEpochs = /* @__PURE__ */ new Set();
+  function issueWriteKey(repo, issue) {
+    const number = typeof issue === "number" ? issue : issue.number;
+    const owner = (typeof issue === "number" ? repo : getIssueRepoFullName(issue) || issue.repo || repo || "").toLowerCase();
+    return `${owner}#${number}`;
+  }
+  function latestWriteTime(groups) {
+    if (!groups) return 0;
+    let latest = 0;
+    for (const tracker of groups.values()) latest = Math.max(latest, tracker.time);
+    return latest;
+  }
+  function issueRecordRepo(key) {
+    const separator = key.lastIndexOf("#");
+    return separator > 0 ? key.slice(0, separator) : "";
+  }
+  function publishableIssueSnapshotStart(repo) {
+    if (isAllProjectsMode) return null;
+    const epoch = activeStreamEpoch;
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) return null;
+    const entry = issueSnapshotStarts.get(epoch);
+    if (!entry || entry.repo.toLowerCase() !== repo.toLowerCase()) return null;
+    return entry.startedAt;
+  }
+  function issueRecordIsPinned(key, groups) {
+    for (const tracker of groups.values()) {
+      if (tracker.pending > 0) return true;
+    }
+    const start = publishableIssueSnapshotStart(issueRecordRepo(key));
+    return start !== null && latestWriteTime(groups) > start;
+  }
+  function trimIssueWriteTrackers() {
+    const excess = issueWriteTrackers.size - MAX_ISSUE_WRITE_TRACKERS;
+    if (excess <= 0) return;
+    const candidates = [];
+    for (const [key, groups] of issueWriteTrackers) {
+      if (issueRecordIsPinned(key, groups)) continue;
+      candidates.push({ key, time: latestWriteTime(groups) });
+    }
+    candidates.sort((a, b) => a.time - b.time);
+    for (const candidate of candidates.slice(0, excess)) issueWriteTrackers.delete(candidate.key);
+  }
+  function pruneIssueWriteTrackers() {
+    const cutoff = Date.now() - ISSUE_WRITE_TTL_MS;
+    for (const [key, groups] of issueWriteTrackers) {
+      const start = publishableIssueSnapshotStart(issueRecordRepo(key));
+      for (const [group, tracker] of groups) {
+        const neededNow = start !== null && tracker.time > start;
+        if (tracker.pending === 0 && tracker.time < cutoff && !neededNow) groups.delete(group);
+      }
+      if (groups.size === 0) issueWriteTrackers.delete(key);
+    }
+    trimIssueWriteTrackers();
+    if (issueWriteTrackers.size > MAX_ISSUE_WRITE_TRACKERS_HARD) {
+      if (issueSnapshotStarts.has(activeStreamEpoch)) obsoleteIssueSnapshotEpochs.add(activeStreamEpoch);
+      trimIssueWriteTrackers();
+    }
+  }
+  function trackIssueWrite(repo, issue, groups) {
+    pruneIssueWriteTrackers();
+    const key = issueWriteKey(repo, issue);
+    const startedAt = Date.now();
+    let byGroup = issueWriteTrackers.get(key);
+    if (!byGroup) {
+      byGroup = /* @__PURE__ */ new Map();
+      issueWriteTrackers.set(key, byGroup);
+    }
+    for (const group of groups) {
+      const tracker = byGroup.get(group) || { time: 0, pending: 0 };
+      tracker.pending += 1;
+      tracker.time = Math.max(tracker.time, startedAt);
+      byGroup.set(group, tracker);
+    }
+    return (accepted) => {
+      for (const group of groups) {
+        const tracker = byGroup.get(group);
+        if (!tracker) continue;
+        tracker.pending = Math.max(0, tracker.pending - 1);
+        if (accepted) {
+          tracker.time = Math.max(tracker.time, Date.now());
+        } else if (tracker.pending === 0 && tracker.time <= startedAt) {
+          byGroup.delete(group);
+        }
+      }
+      if (byGroup.size === 0) issueWriteTrackers.delete(key);
+      pruneIssueWriteTrackers();
+    };
+  }
+  function admitIssueRecord(repo, issue, at = Date.now()) {
+    pruneIssueWriteTrackers();
+    const key = issueWriteKey(repo, issue);
+    const byGroup = issueWriteTrackers.get(key) || /* @__PURE__ */ new Map();
+    const tracker = byGroup.get("record") || { time: 0, pending: 0 };
+    tracker.time = Math.max(tracker.time, at);
+    byGroup.set("record", tracker);
+    issueWriteTrackers.set(key, byGroup);
+  }
+  function protectedIssueGroups(repo, issue, startedAt) {
+    const byGroup = issueWriteTrackers.get(issueWriteKey(repo, issue));
+    const groups = /* @__PURE__ */ new Set();
+    if (!byGroup) return groups;
+    for (const [group, tracker] of byGroup) {
+      if (tracker.pending > 0 || tracker.time > startedAt) groups.add(group);
+    }
+    return groups;
+  }
+  function findIssueRecord(repo, issue) {
+    const key = issueWriteKey(repo, issue);
+    return issues.find((entry) => entry && issueWriteKey(repo, entry) === key) || issue;
+  }
+  function applyProtectedIssueFields(published, local, groups) {
+    if (!local || groups.size === 0) return published;
+    if (groups.has("record")) return { ...published, ...local };
+    const merged = { ...published };
+    if (groups.has("body")) {
+      merged.body = local.body;
+      merged.subtasks = local.subtasks;
+      merged.openQuestions = local.openQuestions;
+      merged.humanTasks = local.humanTasks;
+      merged.acceptanceCriteria = local.acceptanceCriteria;
+    }
+    if (groups.has("state")) merged.state = local.state;
+    if (groups.has("labels")) merged.labels = local.labels;
+    merged.v2Metadata = local.v2Metadata;
+    if (local.updated_at) merged.updated_at = local.updated_at;
+    return merged;
+  }
+  function protectIssueFields(repo, published, localIssues, startedAt) {
+    const localByKey = /* @__PURE__ */ new Map();
+    for (const entry of localIssues || []) {
+      if (entry && Number.isFinite(entry.number)) localByKey.set(issueWriteKey(repo, entry), entry);
+    }
+    return published.map((entry) => {
+      if (!entry || !Number.isFinite(entry.number)) return entry;
+      const key = issueWriteKey(repo, entry);
+      return applyProtectedIssueFields(entry, localByKey.get(key), protectedIssueGroups(repo, entry, startedAt));
+    });
+  }
+  function reconcileIssueSnapshot(repo, snapshot, localIssues, startedAt) {
+    const reconciled = protectIssueFields(repo, snapshot, localIssues, startedAt);
+    const publishedKeys = /* @__PURE__ */ new Set();
+    for (const entry of snapshot) {
+      if (entry && Number.isFinite(entry.number)) publishedKeys.add(issueWriteKey(repo, entry));
+    }
+    const localByKey = /* @__PURE__ */ new Map();
+    for (const entry of localIssues || []) {
+      if (entry && Number.isFinite(entry.number)) localByKey.set(issueWriteKey(repo, entry), entry);
+    }
+    for (const [key, local] of localByKey) {
+      if (publishedKeys.has(key)) continue;
+      if (protectedIssueGroups(repo, local, startedAt).size > 0) reconciled.push(local);
+    }
+    return reconciled;
+  }
+  function publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch) {
+    pruneIssueWriteTrackers();
+    if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+      renderBoardFreshness("stale", repo);
+      return;
+    }
+    issues = reconcileIssueSnapshot(repo, snapshot, issues, startedAt);
+    const timestamp = Date.now();
+    issueCache.set(repo, { timestamp, issues });
+    repoFullSyncTimestamps.set(repo, timestamp);
+    void host.storage.set(storageKey, { timestamp, issues, fullSyncTimestamp: timestamp }).catch(() => {
+    });
+    lastSyncTimestamp = timestamp;
+    repoSyncWatermarks.set(repo, Math.max(startedAt, repoSyncWatermarks.get(repo) || 0));
+    lastSyncErrorState = null;
+    renderViews();
+    statusReconciler.schedule(issues);
+    renderBoardFreshness("complete", repo);
+  }
+  async function streamRemainingPages(repo, storageKey, startPage, epoch, force = false, snapshot = [], startedAt = Date.now()) {
+    const pageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+    for (let page = startPage; page <= maxPages; page++) {
+      if (!admitsIssueSnapshot(repo, epoch)) return;
+      if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+        renderBoardFreshness("stale", repo);
+        return;
+      }
+      const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
+      const cachedPage = !force ? pageBodyCache.get(pagePath) : void 0;
+      let raw = await githubRequestWithRetry(
+        "GET",
+        pagePath,
+        void 0,
+        void 0,
+        cachedPage?.etag ? { "If-None-Match": cachedPage.etag } : void 0
+      );
+      if (!admitsIssueSnapshot(repo, epoch)) return;
+      if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+        renderBoardFreshness("stale", repo);
+        return;
+      }
+      if (raw?.notModified || raw?.status === 304) {
+        if (cachedPage) raw = Object.assign([...cachedPage.items], { etag: cachedPage.etag });
+        else {
+          raw = await githubRequestWithRetry("GET", pagePath);
+          if (!admitsIssueSnapshot(repo, epoch)) return;
+          if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+            renderBoardFreshness("stale", repo);
+            return;
+          }
+        }
+      }
+      if (!Array.isArray(raw) && !Array.isArray(raw?.items)) throw new Error("Invalid issue page response");
+      const items = Array.isArray(raw) ? raw : raw.items;
+      setCachedPage(pagePath, items, raw?.etag);
+      if (raw?.etag) issueListEtagCache.set(pagePath, raw.etag);
+      snapshot = mergeIssuePages(snapshot, normalizeGithubIssues(items));
+      if (items.length < pageSize) {
+        publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch);
+        return;
+      }
+      const priorIssues = issues;
+      issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
+      renderViews();
+      renderBoardFreshness("partial", repo);
+    }
+    throw new Error(`Full refresh reached the ${MAX_ISSUES_PER_REPO}-issue limit; membership remains provisional`);
+  }
+  async function fetchIssues(force = false) {
+    if (isAllProjectsMode) {
+      await fetchAllProjectIssues(force);
+      return;
+    }
+    const repo = currentRepo;
+    if (!repo) return;
+    const storageKey = `cached_issues_${repo}`;
+    const epoch = ++activeStreamEpoch;
+    const startedAt = Date.now();
+    issueSnapshotStarts.set(epoch, { repo, startedAt });
+    isLoading = true;
+    if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
+    renderBoardFreshness("refreshing", repo);
+    try {
+      if (!force) {
+        const cached = issueCache.get(repo);
+        if (cached) {
+          issues = cached.issues;
+          renderViews();
+        } else if (issues.length === 0) {
+          const stored = await host.storage.get(storageKey);
+          if (!admitsIssueSnapshot(repo, epoch)) return;
+          if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+            renderBoardFreshness("stale", repo);
+            return;
+          }
+          if (stored && Array.isArray(stored.issues)) {
+            issues = stored.issues;
+            issueCache.set(repo, { timestamp: stored.timestamp || 0, issues });
+            if (typeof stored.fullSyncTimestamp === "number") repoFullSyncTimestamps.set(repo, stored.fullSyncTimestamp);
+            renderViews();
+          }
+        }
+        renderBoardFreshness("refreshing", repo);
+      }
+      const initialPageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+      const initialPath = `/repos/${repo}/issues?state=all&per_page=${initialPageSize}&page=1`;
+      const cachedPage = !force ? pageBodyCache.get(initialPath) : void 0;
+      let result = await fetchRepoIssuePage(
+        repo,
+        1,
+        githubRequestWithRetry,
+        cachedPage?.etag ? { "If-None-Match": cachedPage.etag } : void 0
+      );
+      if (!admitsIssueSnapshot(repo, epoch)) return;
+      if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+        renderBoardFreshness("stale", repo);
+        return;
+      }
+      if (result.raw?.notModified || result.raw?.status === 304) {
+        if (cachedPage) result = { ...result, items: cachedPage.items };
+        else {
+          result = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
+          if (!admitsIssueSnapshot(repo, epoch)) return;
+          if (obsoleteIssueSnapshotEpochs.has(epoch)) {
+            renderBoardFreshness("stale", repo);
+            return;
+          }
+          if (result.raw?.notModified || result.raw?.status === 304) throw new Error("304 without cached issue page");
+        }
+      }
+      if (!Array.isArray(result.raw) && !Array.isArray(result.raw?.items) && !result.raw?.notModified && result.raw?.status !== 304) {
+        throw new Error("Invalid issue page response");
+      }
+      const { items, pageSize, raw } = result;
+      const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=1`;
+      setCachedPage(pagePath, items, raw?.etag || cachedPage?.etag);
+      if (raw?.etag) issueListEtagCache.set(pagePath, raw.etag);
+      const snapshot = normalizeGithubIssues(items);
+      if (items.length < pageSize) {
+        publishIssueSnapshot(repo, storageKey, snapshot, startedAt, epoch);
+      } else {
+        const priorIssues = issues;
+        issues = protectIssueFields(repo, mergeIssuePages(priorIssues, snapshot), priorIssues, startedAt);
+        renderViews();
+        renderBoardFreshness("partial", repo);
+        await streamRemainingPages(repo, storageKey, 2, epoch, force, snapshot, startedAt);
+      }
+      if (!obsoleteIssueSnapshotEpochs.has(epoch) && admitsIssueSnapshot(repo, epoch)) {
+        renderViews();
+      }
+    } catch (err) {
+      if (!admitsIssueSnapshot(repo, epoch)) return;
+      lastSyncErrorState = {
+        kind: err?.rateLimited ? "rate-limited" : "offline",
+        message: err?.message || "Failed to refresh issues",
+        timestamp: Date.now()
+      };
+      addLog(`Full refresh incomplete for ${repo}: ${err.message}`, "warn");
+      renderBoardFreshness("stale", repo);
+      if (issues.length === 0) renderEmptyState(`Failed to load issues for ${repo}: ${err.message}`, "failed");
+    } finally {
+      issueSnapshotStarts.delete(epoch);
+      obsoleteIssueSnapshotEpochs.delete(epoch);
+      pruneIssueWriteTrackers();
+      if (admitsIssueSnapshot(repo, epoch)) {
+        isLoading = false;
+        if (elIconRefresh) elIconRefresh.style.animation = "";
+      }
+    }
+  }
+  async function fetchAllRepoIssuePages(repo, epoch, force = false) {
+    const initialPageSize = issuePageSizes.get(repo) ?? FULL_ISSUE_PAGE_SIZE;
+    const initialPage1Path = `/repos/${repo}/issues?state=all&per_page=${initialPageSize}&page=1`;
+    const cachedPage1 = !force ? pageBodyCache.get(initialPage1Path) : void 0;
+    const page1Etag = cachedPage1?.etag || (!force ? issueListEtagCache.get(initialPage1Path) : void 0);
+    const cachedRepoIssues = issueCache.get(repo)?.issues;
+    const canSendEtag = Boolean(page1Etag && (cachedPage1?.items?.length || cachedRepoIssues && cachedRepoIssues.length > 0));
+    const { items: firstRawItems, pageSize, raw: firstRawRes } = await fetchRepoIssuePage(
+      repo,
+      1,
+      githubRequestWithRetry,
+      canSendEtag && page1Etag ? { "If-None-Match": page1Etag } : void 0
+    );
+    let firstRaw = firstRawRes;
+    let firstItems = firstRawItems;
+    const page1Path = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=1`;
+    if (firstRaw && (firstRaw.notModified || firstRaw.status === 304)) {
+      if (cachedPage1 && cachedPage1.items && cachedPage1.items.length > 0) {
+        firstItems = cachedPage1.items;
+      } else {
+        const retryRes = await fetchRepoIssuePage(repo, 1, githubRequestWithRetry);
+        firstRaw = retryRes.raw;
+        firstItems = retryRes.items;
+      }
+    }
+    if (firstRaw?.etag) {
+      issueListEtagCache.set(page1Path, firstRaw.etag);
+    }
+    if (firstItems.length > 0) {
+      setCachedPage(page1Path, firstItems, firstRaw?.etag || (pageSize === initialPageSize ? page1Etag : void 0));
+    }
+    let repoIssues = normalizeGithubIssues(firstItems);
+    if (firstItems.length < pageSize) return repoIssues;
+    let page = 2;
+    const maxPages = Math.ceil(MAX_ISSUES_PER_REPO / pageSize);
+    while (page <= maxPages && activeStreamEpoch === epoch) {
+      const pagePath = `/repos/${repo}/issues?state=all&per_page=${pageSize}&page=${page}`;
+      const cachedPage = !force ? pageBodyCache.get(pagePath) : void 0;
+      const pageEtag = cachedPage?.etag || (!force ? issueListEtagCache.get(pagePath) : void 0);
+      const canSendPageEtag = Boolean(pageEtag && cachedPage?.items);
+      let nextRaw = await githubRequestWithRetry(
+        "GET",
+        pagePath,
+        void 0,
+        void 0,
+        canSendPageEtag && pageEtag ? { "If-None-Match": pageEtag } : void 0
+      );
+      let nextItems = [];
+      if (nextRaw && (nextRaw.notModified || nextRaw.status === 304)) {
+        if (cachedPage && cachedPage.items && cachedPage.items.length > 0) {
+          nextItems = cachedPage.items;
+        } else {
+          nextRaw = await githubRequestWithRetry("GET", pagePath);
+          nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
+        }
+      } else {
+        nextItems = Array.isArray(nextRaw) ? nextRaw : nextRaw?.items || [];
+      }
+      if (nextRaw?.etag) {
+        issueListEtagCache.set(pagePath, nextRaw.etag);
+      }
+      if (nextItems.length > 0) {
+        setCachedPage(pagePath, nextItems, nextRaw?.etag || pageEtag);
+      }
+      if (nextItems.length === 0) break;
+      repoIssues = mergeIssuePages(repoIssues, normalizeGithubIssues(nextItems));
+      if (nextItems.length < pageSize) break;
+      page++;
+    }
+    return repoIssues;
+  }
+  async function fetchAllProjectIssues(force = false) {
+    const cacheKey = ALL_PROJECTS_CACHE_KEY;
+    const epoch = ++activeStreamEpoch;
+    if (!force) {
+      const cached = readCachedIssueCollection(issueCache, cacheKey, ISSUE_CACHE_TTL_MS);
+      if (cached) {
+        issues = cached;
+        renderViews();
+        addLog(`Rendered ${issues.length} aggregated issues from memory cache`);
+        return;
+      }
+    }
+    if (!force && issues.length === 0 && host?.storage) {
+      try {
+        const stored = await host.storage.get(`cached_issues_${cacheKey}`);
+        if (stored && Array.isArray(stored.issues) && stored.issues.length > 0) {
+          issues = stored.issues;
+          issueCache.set(cacheKey, { timestamp: stored.timestamp || Date.now(), issues });
+          renderViews();
+          addLog(`Instantly rendered ${issues.length} aggregated issues from persistent storage`);
+        }
+      } catch {
+      }
+    }
+    isLoading = true;
+    if (elIconRefresh) elIconRefresh.style.animation = "spin 1s linear infinite";
+    try {
+      const refs = [...allProjectsRepoRefs];
+      addLog(`Fetching issues across ${refs.length} repositories (max ${MAX_CONCURRENT_REPO_FETCHES} in parallel)...`);
+      const settled = await mapWithConcurrency(refs, MAX_CONCURRENT_REPO_FETCHES, async (ref) => ({
+        projectId: ref.projectId,
+        projectName: ref.projectName,
+        repo: ref.repo,
+        issues: await fetchAllRepoIssuePages(ref.repo, epoch, force)
+      }));
+      if (activeStreamEpoch !== epoch) return;
+      const sources = [];
+      for (const result of settled) {
+        if (result.status === "fulfilled" && result.value) {
+          sources.push(result.value);
+        } else if (result.status === "rejected") {
+          addLog(`Skipped repository during aggregation: ${result.reason?.message || result.reason}`, "warn");
+        }
+      }
+      if (sources.length === 0) {
+        throw new Error("All repository requests failed");
+      }
+      issues = aggregateProjectIssues(sources);
+      lastSyncErrorState = null;
+      issueCache.set(cacheKey, { timestamp: Date.now(), issues });
+      if (host?.storage) {
+        void host.storage.set(`cached_issues_${cacheKey}`, { timestamp: Date.now(), issues }).catch(() => {
+        });
+      }
+      for (const src of sources) {
+        if (src.repo && src.issues) {
+          issueCache.set(src.repo, { timestamp: Date.now(), issues: src.issues });
+          if (host?.storage) {
+            void host.storage.set(`cached_issues_${src.repo}`, { timestamp: Date.now(), issues: src.issues }).catch(() => {
+            });
+          }
+          repoSyncWatermarks.set(src.repo, Date.now());
+        }
+      }
+      lastSyncTimestamp = Date.now();
+      renderViews();
+      statusReconciler.schedule(issues);
+      addLog(`Aggregated ${issues.length} deduplicated issues across ${sources.length} repositories`, "succ");
+    } catch (err) {
+      addLog(`Failed to fetch all-project issues: ${err.message}`, "error");
+      const isRateLimited = Boolean(err?.rateLimited) || err?.status === 403 && /rate limit/i.test(err?.message || "") || /rate limit/i.test(err?.message || "");
+      lastSyncErrorState = {
+        kind: isRateLimited ? "rate-limited" : "offline",
+        message: err?.message || (isRateLimited ? "GitHub API rate limit exceeded." : "Failed to fetch all-project issues."),
+        timestamp: Date.now()
+      };
+      if (issues.length > 0) {
+        if (host?.toast) {
+          void host.toast({
+            kind: "info",
+            message: isRateLimited ? `API Rate-limited. Showing ${issues.length} aggregated issues.` : `Offline / Rate-limited. Showing ${issues.length} aggregated issues.`
+          });
+        }
+      } else {
+        const isAccessError = err?.status === 401 || err?.status === 403 || err?.status === 404 || /401|403|404|token|auth|permission|not found|bad credentials|denied/i.test(err?.message || "");
+        renderEmptyState(
+          isRateLimited ? `GitHub API rate limit exceeded. Add a GitHub Personal Access Token to increase limits.` : `Failed to load aggregated issues: ${err?.message || "Check GitHub integration tokens"}`,
+          isRateLimited ? "rate-limited" : isAccessError ? "inaccessible" : "failed"
+        );
+      }
+    } finally {
+      if (activeStreamEpoch === epoch) {
+        isLoading = false;
+        if (elIconRefresh) elIconRefresh.style.animation = "";
+      }
+    }
+  }
+  var isIdleSyncing = false;
+  var pendingIdleRefresh = false;
+  async function syncRepoIncremental(repo, sinceIso, watermarkTime) {
+    const cleanRepo = parseRepoFullName(repo) || repo;
+    const etag = repoIncrementalEtagCache.get(cleanRepo);
+    const epoch = activeStreamEpoch;
+    const baselineIssues = issues;
+    try {
+      const result = await syncIncrementalRepoIssues({
+        repo: cleanRepo,
+        since: sinceIso,
+        currentIssues: baselineIssues,
+        etag,
+        pageSizes: issuePageSizes,
+        onShrink: (shrunkSize) => {
+          addLog(`Issue page for ${cleanRepo} is too large for the host; reading ${shrunkSize} per page`, "warn");
+        },
+        requestFn: (method, reqPath, body, query, headers) => githubRequestWithRetry(method, reqPath, body, query, headers)
+      });
+      if (activeStreamEpoch !== epoch || !isAllProjectsMode && currentRepo !== cleanRepo) return false;
+      const baseline = new Set(baselineIssues);
+      for (const entry of result.issues) {
+        if (entry && !baseline.has(entry)) admitIssueRecord(cleanRepo, entry);
+      }
+      if (result.etag && !result.truncated) {
+        repoIncrementalEtagCache.set(cleanRepo, result.etag);
+      } else if (result.truncated) {
+        repoIncrementalEtagCache.delete(cleanRepo);
+      }
+      if (result.truncated) {
+        addLog(`Incremental sync for ${cleanRepo} truncated at 1,000 changes. Watermark preserved for retry.`, "warn");
+        if (host?.toast) {
+          void host.toast({
+            kind: "info",
+            message: `Incremental sync for ${displayProjectName(cleanRepo)} exceeded 1,000 changes. Consider manual refresh.`
+          });
+        }
+      } else {
+        repoSyncWatermarks.set(cleanRepo, watermarkTime);
+      }
+      if (!result.modified) {
+        addLog(`Incremental sync for ${cleanRepo}: no changes`);
+        return true;
+      }
+      if (!isAllProjectsMode && currentRepo !== cleanRepo) {
+        addLog(`Scope switched away from ${cleanRepo}; updating background cache only`, "info");
+        const existingCached = issueCache.get(cleanRepo)?.issues || [];
+        const updated = mergeIssuePages(existingCached, result.issues.filter((i) => (getIssueRepoFullName(i) || i.repo)?.toLowerCase() === cleanRepo.toLowerCase()));
+        issueCache.set(cleanRepo, { timestamp: Date.now(), issues: updated });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: updated }).catch(() => {
+          });
+        }
+        return true;
+      }
+      if (activeStreamEpoch !== epoch) return true;
+      issues = result.issues;
+      if (isAllProjectsMode) {
+        issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+          });
+        }
+        const repoOnlyIssues = issues.filter((i) => (getIssueRepoFullName(i) || i.repo)?.toLowerCase() === cleanRepo.toLowerCase());
+        if (repoOnlyIssues.length > 0) {
+          issueCache.set(cleanRepo, { timestamp: Date.now(), issues: repoOnlyIssues });
+          if (host?.storage) {
+            void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues: repoOnlyIssues }).catch(() => {
+            });
+          }
+        }
+      } else {
+        issueCache.set(cleanRepo, { timestamp: Date.now(), issues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${cleanRepo}`, { timestamp: Date.now(), issues }).catch(() => {
+          });
+        }
+      }
+      renderViews();
+      statusReconciler.schedule(issues);
+      if (activeIssue) {
+        const activeRepo = repoForIssue(activeIssue);
+        const updatedActive = issues.find((i) => i.number === activeIssue.number && repoForIssue(i) === activeRepo);
+        if (updatedActive) {
+          activeIssue = updatedActive;
+          renderDrawer(activeIssue, true);
+        }
+      }
+      addLog(`Incremental sync for ${cleanRepo}: updated ${result.changedCount} issue(s)`, "succ");
+      return true;
+    } catch (err) {
+      addLog(`Incremental sync failed for ${cleanRepo}: ${err.message}`, "warn");
+      return false;
+    }
+  }
+  async function handleIdleRefresh(currentSessions, previousSessions) {
+    const idleSessions = currentSessions.filter((s) => {
+      const prev = previousSessions.find((p) => p.id === s.id);
+      return s.activity === "idle" && (!prev || prev.activity !== "idle");
+    });
+    if (idleSessions.length === 0) return;
+    if (isIdleSyncing) {
+      pendingIdleRefresh = true;
+      addLog("Idle refresh already in progress; queuing trailing sync", "info");
+      return;
+    }
+    isIdleSyncing = true;
+    try {
+      do {
+        pendingIdleRefresh = false;
+        const watermarkStart = Date.now();
+        const reposToSync = isAllProjectsMode ? allProjectsRepoRefs.length > 0 ? allProjectsRepoRefs.map((r) => r.repo) : currentRepo ? [currentRepo] : [] : currentRepo ? [currentRepo] : [];
+        addLog(`Session idle \u2014 incremental sync across ${reposToSync.length} repo(s)...`);
+        for (const repo of reposToSync) {
+          const cleanRepo = parseRepoFullName(repo) || repo;
+          const prevWatermark = repoSyncWatermarks.get(cleanRepo);
+          const sinceTime = prevWatermark ? Math.max(0, prevWatermark - 1e4) : watermarkStart - 6e4;
+          const sinceIso = new Date(sinceTime).toISOString();
+          await syncRepoIncremental(cleanRepo, sinceIso, watermarkStart);
+        }
+      } while (pendingIdleRefresh);
+    } finally {
+      isIdleSyncing = false;
+    }
+  }
+  function repoForIssue(issue) {
+    if (issue?.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY) return issue.repo;
+    if (isAllProjectsMode) return "";
+    return currentRepo;
+  }
+  async function notifyAgentOnHumanTasksComplete(issue, repo) {
+    const session = sessionIndex.get(issue.number) || (repo ? sessionIndexByRepo.get(`${repo}#${issue.number}`) : void 0);
+    const promptText = buildHumanTaskResumePrompt(issue.number);
+    let notified = false;
+    if (session && session.id) {
+      try {
+        if (typeof host.openSession === "function") {
+          void host.openSession(session.id);
+        }
+        if (typeof host.prompt === "function") {
+          await host.prompt({ text: promptText, send: true });
+          notified = true;
+        }
+        addLog(`Dispatched resume prompt to attached session ${session.id} for issue #${issue.number}`);
+        if (host?.toast) {
+          void host.toast({
+            kind: "info",
+            message: `All human tasks complete for #${issue.number}. Resumed attached agent session.`
+          });
+        }
+      } catch (err) {
+        addLog(`Failed to dispatch resume message to session ${session.id}: ${err.message}`, "warn");
+      }
+    } else {
+      try {
+        if (typeof host.prompt === "function") {
+          await host.prompt({ text: promptText, send: true });
+          notified = true;
+          addLog(`Dispatched resume prompt for issue #${issue.number} to active session`);
+        }
+      } catch {
+      }
+    }
+    return notified;
+  }
+  function isDefinitivePreCommitRejection(err) {
+    if (err?.name === "AbortError" || err?.name === "TimeoutError") {
+      return false;
+    }
+    const msg = typeof err?.message === "string" ? err.message.toLowerCase() : "";
+    if (msg.includes("timeout") || msg.includes("abort") || msg.includes("fetch failed") || msg.includes("networkerror") || msg.includes("econnreset")) {
+      return false;
+    }
+    let statusCode = null;
+    if (typeof err?.status === "number" && !isNaN(err.status)) {
+      statusCode = err.status;
+    } else if (typeof err?.statusCode === "number" && !isNaN(err.statusCode)) {
+      statusCode = err.statusCode;
+    } else if (typeof err?.message === "string") {
+      const match = /\b(?:API error:\s*|failed\s*\(?|HTTP\s*|status\s*:?\s*)(\d{3})\b/i.exec(err.message);
+      if (match) {
+        const code = parseInt(match[1], 10);
+        if (!isNaN(code)) statusCode = code;
+      }
+    }
+    if (statusCode === null) {
+      return false;
+    }
+    if (statusCode === 408) {
+      return false;
+    }
+    return statusCode >= 400 && statusCode < 500;
+  }
+  var questionAnswerDrafts = /* @__PURE__ */ new Map();
+  function getDraftKey(target, second, third) {
+    let repo = "";
+    let issueNumber = 0;
+    let questionText = "";
+    if (target && typeof target === "object") {
+      repo = repoForIssue(target);
+      issueNumber = target.number;
+      questionText = typeof second === "string" ? second : "";
+    } else if (typeof target === "string") {
+      repo = target.trim();
+      issueNumber = typeof second === "number" ? second : parseInt(String(second), 10);
+      questionText = third || "";
+    } else {
+      return null;
+    }
+    if (!repo || !issueNumber || !questionText) return null;
+    const cleanQ = questionText.trim();
+    if (!cleanQ) return null;
+    return `${repo}#${issueNumber}::${cleanQ}`;
+  }
+  function saveQuestionDraft(target, second, third, fourth) {
+    let key = null;
+    let answerText = "";
+    if (target && typeof target === "object") {
+      key = getDraftKey(target, second);
+      answerText = third || "";
+    } else {
+      key = getDraftKey(target, second, third);
+      answerText = fourth || "";
+    }
+    if (!key) return;
+    const cleanA = (answerText || "").trim();
+    if (!cleanA) {
+      questionAnswerDrafts.delete(key);
+      return;
+    }
+    questionAnswerDrafts.set(key, cleanA);
+  }
+  function getQuestionDraft(target, second, third) {
+    let key = null;
+    if (target && typeof target === "object") {
+      key = getDraftKey(target, second);
+    } else {
+      key = getDraftKey(target, second, third);
+    }
+    if (!key) return void 0;
+    return questionAnswerDrafts.get(key);
+  }
+  function clearQuestionDraft(target, second, third) {
+    let key = null;
+    if (target && typeof target === "object") {
+      key = getDraftKey(target, second);
+    } else {
+      key = getDraftKey(target, second, third);
+    }
+    if (!key) return;
+    questionAnswerDrafts.delete(key);
+  }
+  function getRecoverableQuestionDrafts(issue) {
+    if (!issue) return [];
+    const repo = repoForIssue(issue);
+    if (!repo) return [];
+    const prefix = `${repo}#${issue.number}::`;
+    const openQuestions = (issue.openQuestions || parseOpenQuestions(issue.body || "")).filter((q) => !q.completed).map((q) => q.text.trim());
+    const list = [];
+    for (const [key, answerText] of questionAnswerDrafts.entries()) {
+      if (key.startsWith(prefix)) {
+        const qText = key.slice(prefix.length).trim();
+        if (!openQuestions.includes(qText)) {
+          list.push({ questionText: qText, answerText });
+        }
+      }
+    }
+    return list;
+  }
+  function renderRecoverableDraftsElement(issue, onDiscard) {
+    const drafts = getRecoverableQuestionDrafts(issue);
+    if (drafts.length === 0) return null;
+    const container = document.createElement("div");
+    container.className = "recoverable-drafts-list";
+    container.style.cssText = "margin-top: 8px; display: flex; flex-direction: column; gap: 8px; width: 100%;";
+    drafts.forEach((draft) => {
+      const box = document.createElement("div");
+      box.className = "recoverable-draft-box";
+      box.style.cssText = "padding: 8px 10px; background: var(--surf-muted); border: 1px dashed var(--border); border-radius: 6px; font-size: 11.5px;";
+      const header = document.createElement("div");
+      header.className = "recoverable-draft-header";
+      header.style.cssText = "display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;";
+      const titleEl = document.createElement("span");
+      titleEl.className = "recoverable-draft-badge";
+      titleEl.style.cssText = "font-weight: 600; font-size: 10.5px; color: var(--warn); text-transform: uppercase; letter-spacing: 0.5px;";
+      titleEl.textContent = "Recoverable Draft (Unsaved)";
+      header.appendChild(titleEl);
+      const actions2 = document.createElement("div");
+      actions2.className = "recoverable-draft-actions";
+      actions2.style.cssText = "display: flex; gap: 4px;";
+      const btnCopy = document.createElement("button");
+      btnCopy.className = "btn btn-xs btn-copy-draft";
+      btnCopy.type = "button";
+      btnCopy.textContent = "Copy";
+      btnCopy.title = "Copy draft answer to clipboard";
+      btnCopy.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+          void navigator.clipboard.writeText(draft.answerText);
+        }
+        if (host?.toast) {
+          void host.toast({ kind: "info", message: "Draft copied to clipboard" });
+        }
+      });
+      const btnDiscard = document.createElement("button");
+      btnDiscard.className = "btn btn-xs btn-discard-draft";
+      btnDiscard.type = "button";
+      btnDiscard.textContent = "Discard";
+      btnDiscard.title = "Discard this draft";
+      btnDiscard.addEventListener("click", (e) => {
+        e.stopPropagation();
+        clearQuestionDraft(issue, draft.questionText);
+        if (onDiscard) {
+          onDiscard();
+        } else {
+          renderViews();
+          if (activeIssue && activeIssue.number === issue.number) {
+            renderDrawer(issue, true);
+          }
+        }
+      });
+      actions2.appendChild(btnCopy);
+      actions2.appendChild(btnDiscard);
+      header.appendChild(actions2);
+      box.appendChild(header);
+      const questionRow = document.createElement("div");
+      questionRow.className = "recoverable-draft-question";
+      questionRow.style.cssText = "color: var(--fg-muted); font-size: 11px; margin-bottom: 4px; word-break: break-word;";
+      questionRow.innerHTML = `<span style="font-weight: 500;">Original question:</span> ${escapeHtml(draft.questionText)}`;
+      box.appendChild(questionRow);
+      const answerRow = document.createElement("div");
+      answerRow.className = "recoverable-draft-text";
+      answerRow.style.cssText = "background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; font-family: var(--font-mono); font-size: 11px; color: var(--fg); white-space: pre-wrap; word-break: break-word; user-select: text; -webkit-user-select: text;";
+      answerRow.textContent = draft.answerText;
+      box.appendChild(answerRow);
+      container.appendChild(box);
+    });
+    return container;
+  }
+  var inFlightQuestions = /* @__PURE__ */ new Set();
+  async function reloadIssueBeforeMutation(issue) {
+    const repo = repoForIssue(issue);
+    if (!repo) return null;
+    try {
+      const raw = await githubRequestWithRetry("GET", `/repos/${repo}/issues/${issue.number}`);
+      if (raw && typeof raw.body === "string") {
+        const remoteUpdatedAt = raw.updated_at || "";
+        if (issue.updated_at && remoteUpdatedAt && issue.updated_at !== remoteUpdatedAt) {
+          addLog(`Issue #${issue.number} was modified remotely (${remoteUpdatedAt} vs ${issue.updated_at}); refreshing body before mutation`, "info");
+        }
+        issue.body = raw.body;
+        issue.updated_at = remoteUpdatedAt;
+        issue.subtasks = parseSubtasks(raw.body);
+        issue.openQuestions = parseOpenQuestions(raw.body);
+        issue.humanTasks = parseHumanTasks(raw.body);
+        issue.acceptanceCriteria = parseAcceptanceCriteria(raw.body);
+        delete issue.v2Metadata;
+        if (issue.unconfirmed) {
+          delete issue.unconfirmed;
+          addLog(`Reconciled unconfirmed state for issue #${issue.number}`, "info");
+        }
+        const session = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
+        issue.v2Metadata = resolveV2Metadata(issue, session);
+        return { body: raw.body, updated_at: remoteUpdatedAt };
+      }
+    } catch (err) {
+      addLog(`Could not reload issue #${issue.number} (${err.message})`, "warn");
+    }
+    return null;
+  }
+  async function updateIssueBody(issue, newBody, options) {
+    const repo = repoForIssue(issue);
+    if (!repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return false;
+    }
+    if (issue.unconfirmed) {
+      addLog(`Cannot update issue #${issue.number}: state is unconfirmed; refresh required`, "warn");
+      if (host?.toast) {
+        await host.toast({
+          kind: "error",
+          message: `Issue #${issue.number} state is unconfirmed; refresh to reconcile before modifying.`
+        });
+      }
+      return false;
+    }
+    const prevBody = issue.body;
+    const prevSubtasks = issue.subtasks;
+    const prevOpenQuestions = issue.openQuestions;
+    const prevHumanTasks = issue.humanTasks || parseHumanTasks(issue.body);
+    const prevAcceptanceCriteria = issue.acceptanceCriteria;
+    const nextHumanTasks = parseHumanTasks(newBody);
+    const shouldNotify = shouldNotifyAgentOnHumanTasksComplete(prevHumanTasks, nextHumanTasks);
+    const finishWrite = trackIssueWrite(repo, issue, ["body"]);
+    issue.body = newBody;
+    issue.subtasks = parseSubtasks(newBody);
+    issue.openQuestions = parseOpenQuestions(newBody);
+    issue.humanTasks = nextHumanTasks;
+    issue.acceptanceCriteria = parseAcceptanceCriteria(newBody);
+    delete issue.v2Metadata;
+    const session = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
+    issue.v2Metadata = resolveV2Metadata(issue, session);
+    issueCache.delete(repo);
+    renderViews();
+    if (activeIssue && activeIssue.number === issue.number) {
+      renderDrawer(issue, true);
+    }
+    let patchResponse = null;
+    try {
+      patchResponse = await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
+        body: newBody
+      });
+      finishWrite(true);
+      if (patchResponse && patchResponse.updated_at) {
+        issue.updated_at = patchResponse.updated_at;
+      }
+      delete issue.unconfirmed;
+    } catch (err) {
+      finishWrite(false);
+      issue.body = prevBody;
+      issue.subtasks = prevSubtasks || parseSubtasks(prevBody);
+      issue.openQuestions = prevOpenQuestions || parseOpenQuestions(prevBody);
+      issue.humanTasks = prevHumanTasks;
+      issue.acceptanceCriteria = prevAcceptanceCriteria || parseAcceptanceCriteria(prevBody);
+      delete issue.v2Metadata;
+      const session2 = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
+      issue.v2Metadata = resolveV2Metadata(issue, session2);
+      issueCache.delete(repo);
+      const isExplicitHttpRejection = isDefinitivePreCommitRejection(err);
+      if (isExplicitHttpRejection) {
+        delete issue.unconfirmed;
+        renderViews();
+        if (activeIssue && activeIssue.number === issue.number) {
+          renderDrawer(issue, true);
+        }
+        addLog(`Failed to sync body for #${issue.number}: ${err.message}`, "error");
+        if (host?.toast) {
+          await host.toast({ kind: "error", message: `Failed to update #${issue.number} on GitHub` });
+        }
+      } else {
+        issue.unconfirmed = true;
+        renderViews();
+        if (activeIssue && activeIssue.number === issue.number) {
+          renderDrawer(issue, true);
+        }
+        addLog(`Ambiguous outcome syncing body for #${issue.number}: ${err.message}`, "warn");
+        if (host?.toast) {
+          await host.toast({ kind: "error", message: "outcome unknown \u2014 check the issue on GitHub" });
+        }
+      }
+      return false;
+    }
+    try {
+      if (!options?.suppressToast && host?.toast) {
+        const msg = options?.toastMessage || `Updated issue #${issue.number}`;
+        await host.toast({ kind: "info", message: msg });
+      }
+    } catch (toastErr) {
+      addLog(`Post-mutation toast failed for #${issue.number}: ${toastErr?.message || toastErr}`, "warn");
+    }
+    try {
+      if (shouldNotify) {
+        await notifyAgentOnHumanTasksComplete(issue, repo);
+      }
+    } catch (notifyErr) {
+      addLog(`Post-mutation agent notification failed for #${issue.number}: ${notifyErr?.message || notifyErr}`, "warn");
+    }
+    return true;
+  }
+  async function answerQuestion(issue, questionText, answerText) {
+    const cleanAnswer = (answerText || "").trim();
+    if (!cleanAnswer) {
+      return false;
+    }
+    const cleanQuestion = (questionText || "").trim();
+    if (!cleanQuestion) {
+      return false;
+    }
+    const inFlightKey = `${repoForIssue(issue) || ""}#${issue.number}::${cleanQuestion}`;
+    if (inFlightQuestions.has(inFlightKey)) {
+      addLog(`Answer submission already in flight for #${issue.number}; ignoring duplicate`, "warn");
+      return false;
+    }
+    inFlightQuestions.add(inFlightKey);
+    try {
+      const prevOpen = (issue.openQuestions || parseOpenQuestions(issue.body || "")).filter((q) => !q.completed);
+      const fresh = await reloadIssueBeforeMutation(issue);
+      if (!fresh || typeof fresh.body !== "string") {
+        addLog(`Cannot answer question on #${issue.number}: fresh reload failed`, "error");
+        saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
+        if (host?.toast) {
+          await host.toast({
+            kind: "error",
+            message: `Failed to refresh issue #${issue.number}; answer not saved`
+          });
+        }
+        return false;
+      }
+      const freshBody = fresh.body;
+      const result = resolveOptimisticQuestionAnswer(freshBody, cleanQuestion, cleanAnswer);
+      if (!result.found) {
+        saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
+        renderViews();
+        if (activeIssue && activeIssue.number === issue.number) {
+          renderDrawer(issue, true);
+        }
+        if (result.reason === "already-answered") {
+          addLog(`Question on #${issue.number} was already answered remotely; refusing to overwrite`, "warn");
+          if (host?.toast) {
+            await host.toast({
+              kind: "error",
+              message: `Question on #${issue.number} was already answered; refreshed.`
+            });
+          }
+        } else if (result.reason === "ambiguous") {
+          addLog(`Question on #${issue.number} has ambiguous duplicates; refusing to guess`, "warn");
+          if (host?.toast) {
+            await host.toast({
+              kind: "error",
+              message: `Multiple identical open questions on #${issue.number}; cannot answer ambiguously.`
+            });
+          }
+        } else {
+          const currentOpen = parseOpenQuestions(freshBody).filter((q) => !q.completed);
+          let msg = "";
+          if (currentOpen.length === 0) {
+            msg = `Question on #${issue.number} is no longer open; refreshed.`;
+          } else if (prevOpen.length === 1 && currentOpen.length === 1) {
+            msg = `Question changed on #${issue.number}. Current text: "${currentOpen[0].text}"`;
+          } else {
+            msg = `Question changed on #${issue.number}; refreshed.`;
+          }
+          addLog(`Question on #${issue.number} was modified remotely; refusing write`, "warn");
+          if (host?.toast) {
+            await host.toast({ kind: "error", message: msg });
+          }
+        }
+        return false;
+      }
+      const ok = await updateIssueBody(issue, result.updatedBody, {
+        toastMessage: "Recorded answer to question"
+      });
+      if (ok) {
+        clearQuestionDraft(issue, cleanQuestion);
+        if (activeIssue && activeIssue.number === issue.number) {
+          renderDrawer(issue, true);
+        }
+      } else {
+        saveQuestionDraft(issue, cleanQuestion, cleanAnswer);
+      }
+      return ok;
+    } finally {
+      inFlightQuestions.delete(inFlightKey);
+    }
+  }
+  async function updateIssueStatus(issue, targetColumn, options) {
+    const repo = repoForIssue(issue);
+    if (!issue || !repo) {
+      if (issue && !repo) {
+        addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+        if (host?.toast) {
+          void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+        }
+      }
+      return;
+    }
+    if (targetColumn === "done" && !options?.isHumanGesture) {
+      addLog(`Blocked automatic closure of #${issue.number}: closing requires human gesture`, "warn");
+      return;
+    }
+    const prevLabels = [...issue.labels || []];
+    const prevState = issue.state;
+    const currentLabels = (issue.labels || []).map((l) => typeof l === "string" ? l : l.name || "");
+    let filteredLabels = currentLabels.filter((name) => !name.startsWith("status:"));
+    let newState = "open";
+    if (targetColumn === "done") {
+      newState = "closed";
+      filteredLabels.push("status:done");
+    } else {
+      filteredLabels.push(`status:${targetColumn}`);
+    }
+    if (options?.newPriorityGroup !== void 0) {
+      filteredLabels = updatePriorityLabels(filteredLabels, options.newPriorityGroup);
+    }
+    issue.state = newState;
+    issue.labels = filteredLabels.map((name) => ({ name }));
+    delete issue.v2Metadata;
+    const session = typeof getIssueSession === "function" ? getIssueSession(issue) : void 0;
+    issue.v2Metadata = resolveV2Metadata(issue, session);
+    const finishWrite = trackIssueWrite(repo, issue, ["state", "labels"]);
+    issueCache.delete(repo);
+    renderViews();
+    if (activeIssue && activeIssue.number === issue.number) {
+      renderDrawer(issue, true);
+    }
+    try {
+      await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
+        state: newState,
+        labels: filteredLabels
+      });
+      finishWrite(true);
+      await host.toast({ kind: "success", message: `Moved #${issue.number} to ${targetColumn}` });
+      addLog(`Moved #${issue.number} to ${targetColumn}`, "succ");
+    } catch (err) {
+      finishWrite(false);
+      for (const target of /* @__PURE__ */ new Set([issue, findIssueRecord(repo, issue)])) {
+        target.state = prevState;
+        target.labels = prevLabels;
+        delete target.v2Metadata;
+        const targetSession = typeof getIssueSession === "function" ? getIssueSession(target) : void 0;
+        target.v2Metadata = resolveV2Metadata(target, targetSession);
+      }
+      renderViews();
+      if (activeIssue && activeIssue.number === issue.number) {
+        renderDrawer(issue, true);
+      }
+      addLog(`Failed to move #${issue.number}: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to move #${issue.number}` });
+    }
+  }
+  function isIssueClosed3(issue) {
+    if (!issue) return false;
+    if (typeof issue.state === "string" && issue.state.toLowerCase() === "closed") {
+      return true;
+    }
+    if (issue.state_reason === "completed") {
+      return true;
+    }
+    const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labelNames.includes("status:done") || labelNames.includes("status:closed") || labelNames.includes("closed") || labelNames.includes("done")) {
+      return true;
+    }
+    return false;
+  }
+  function isIssueArchived(issue) {
+    if (!issue || !issue.labels) return false;
+    return issue.labels.some((l) => {
+      const name = (typeof l === "string" ? l : l.name || "").toLowerCase();
+      return name === "archived" || name === "archive" || name === "status:archived";
+    });
+  }
+  function getNextColumn(current) {
+    switch (current) {
+      case "draft":
+        return "backlog";
+      case "backlog":
+        return "todo";
+      case "todo":
+        return "planned";
+      case "planned":
+        return "in-progress";
+      case "in-progress":
+        return "in-review";
+      case "needs-human":
+        return "in-progress";
+      case "in-review":
+        return "done";
+      case "done":
+        return "todo";
+      default:
+        return "todo";
+    }
+  }
+  function getNextColumnAction(current) {
+    switch (current) {
+      case "draft":
+        return { label: "Backlog", target: "backlog", icon: "\u2192" };
+      case "backlog":
+        return { label: "To Do", target: "todo", icon: "\u2192" };
+      case "todo":
+        return { label: "Planned", target: "planned", icon: "\u2192" };
+      case "planned":
+        return { label: "In Progress", target: "in-progress", icon: "\u25B6" };
+      case "in-progress":
+        return { label: "In Review", target: "in-review", icon: "\u2192" };
+      case "needs-human":
+        return { label: "In Progress", target: "in-progress", icon: "\u25B6" };
+      case "in-review":
+        return { label: "Done", target: "done", icon: "\u2713" };
+      case "done":
+        return { label: "Reopen", target: "todo", icon: "\u21BA" };
+      default:
+        return { label: "Next", target: "todo", icon: "\u2192" };
+    }
+  }
+  async function toggleArchiveIssue(issue) {
+    const isArch = isIssueArchived(issue);
+    const prevLabels = [...issue.labels];
+    const prevState = issue.state;
+    const currentNames = issue.labels.map((l) => typeof l === "string" ? l : l.name || "");
+    const clean = currentNames.filter(
+      (n) => !["archived", "archive", "status:archived"].includes(n.toLowerCase())
+    );
+    let newState = issue.state;
+    let targetCategory = "todo";
+    if (!isArch) {
+      const currentCategory = resolveIssueColumn3(issue) || "todo";
+      if (!clean.some((n) => n.startsWith("status:"))) {
+        clean.push(`status:${currentCategory}`);
+      }
+      clean.push("archived");
+      newState = "closed";
+      targetCategory = currentCategory;
+    } else {
+      const statusLabel = clean.find((n) => n.startsWith("status:"));
+      if (statusLabel) {
+        targetCategory = statusLabel.replace("status:", "").trim() || "todo";
+      } else {
+        targetCategory = "todo";
+        clean.push("status:todo");
+      }
+      newState = targetCategory === "done" ? "closed" : "open";
+    }
+    issue.state = newState;
+    issue.labels = clean.map((name) => ({ name }));
+    const archiveRepo = repoForIssue(issue);
+    if (!archiveRepo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
+    }
+    issueCache.delete(archiveRepo);
+    renderViews();
+    if (activeIssue && activeIssue.number === issue.number) {
+      renderDrawer(issue, true);
+    }
+    try {
+      await githubRequestWithRetry("PATCH", `/repos/${archiveRepo}/issues/${issue.number}`, {
+        state: newState,
+        labels: clean
+      });
+      await host.toast({
+        kind: isArch ? "info" : "success",
+        message: isArch ? `Unarchived #${issue.number} back to ${targetCategory}` : `Archived #${issue.number}`
+      });
+      addLog(isArch ? `Unarchived #${issue.number} back to ${targetCategory}` : `Archived #${issue.number}`, "succ");
+    } catch (err) {
+      issue.state = prevState;
+      issue.labels = prevLabels;
+      renderViews();
+      if (activeIssue && activeIssue.number === issue.number) {
+        renderDrawer(issue, true);
+      }
+      addLog(`Failed to update archive state: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to archive #${issue.number}: ${err.message}` });
+    }
+  }
+  function groupIssuesBy2(issuesList, groupBy) {
+    if (groupBy === "priority") {
+      const groups2 = [
+        { id: "critical", title: "Critical", issues: [] },
+        { id: "important", title: "Important", issues: [] },
+        { id: "useful", title: "Useful", issues: [] },
+        { id: "optional", title: "Optional", issues: [] },
+        { id: "none", title: "No Priority", issues: [] }
+      ];
+      const map2 = new Map(groups2.map((g) => [g.id, g]));
+      for (const issue of issuesList) {
+        const p = normalizePriority(getIssuePriority(issue)) || "none";
+        (map2.get(p) || map2.get("none"))?.issues.push(issue);
+      }
+      return groups2;
+    }
+    if (groupBy === "theme" || groupBy === "tag") {
+      const themeMap = /* @__PURE__ */ new Map();
+      for (const issue of issuesList) {
+        const theme = getIssueTheme(issue);
+        if (!themeMap.has(theme)) {
+          themeMap.set(theme, { id: theme, title: theme, issues: [] });
+        }
+        themeMap.get(theme).issues.push(issue);
+      }
+      if (themeMap.size === 0) {
+        themeMap.set("No Theme", { id: "No Theme", title: "No Theme", issues: [] });
+      }
+      return Array.from(themeMap.values());
+    }
+    if (groupBy === "project") {
+      if (!isAllProjectsMode) {
+        return [{ id: currentRepo || "all", title: currentRepo || "All Items", issues: issuesList }];
+      }
+      return groupIssuesByProject(issuesList, allProjects).map((group) => ({
+        ...group,
+        title: displayProjectName(repoForIssue(group.issues[0])) || group.title
+      }));
+    }
+    if (groupBy === "none") {
+      return [{ id: "all", title: "All Items", issues: issuesList }];
+    }
+    const groups = [
+      { id: "draft", title: "Draft", issues: [] },
+      { id: "backlog", title: "Backlog", issues: [] },
+      { id: "todo", title: "To Do", issues: [] },
+      { id: "planned", title: "Planned", issues: [] },
+      { id: "in-progress", title: "In Progress", issues: [] },
+      { id: "needs-human", title: "Needs Human", issues: [] },
+      { id: "in-review", title: "In Review", issues: [] },
+      { id: "done", title: "Done", issues: [] }
+    ];
+    const map = new Map(groups.map((g) => [g.id, g]));
+    for (const issue of issuesList) {
+      const col = resolveIssueColumn3(issue);
+      if (col && map.has(col)) {
+        map.get(col).issues.push(issue);
+      }
+    }
+    return groups;
+  }
+  function getIssueSession(issue) {
+    if (!issue) return null;
+    const targetRepo = issue.repo || currentRepo;
+    if (isAllProjectsMode) {
+      return findSessionForIssueByRepo(sessionIndexByRepo, issue) || null;
+    }
+    if (targetRepo) {
+      const issueWithRepo = issue.repo ? issue : { ...issue, repo: targetRepo };
+      const repoMatch = findSessionForIssueByRepo(sessionIndexByRepo, issueWithRepo);
+      if (repoMatch) return repoMatch;
+    }
+    const numMatch = sessionIndex.get(issue.number);
+    if (numMatch && targetRepo) {
+      const keys = sessionRepoKeys(numMatch);
+      if (keys.length > 0) {
+        const matchFound = keys.some((k) => k.startsWith(`${targetRepo.toLowerCase()}#`));
+        if (!matchFound) return null;
+      }
+    }
+    return numMatch || null;
+  }
+  function resolveIssueColumn3(issue, sessionOverride) {
+    if (!issue) return null;
+    if (isIssueClosed3(issue)) {
+      return "done";
+    }
+    const labelNames = (issue.labels || []).map((l) => (typeof l === "string" ? l : l.name || "").toLowerCase());
+    if (labelNames.includes("status:done")) return "done";
+    if (labelNames.includes("status:in-review")) return "in-review";
+    if (labelNames.includes("status:needs-human")) return "needs-human";
+    let session = null;
+    if (sessionOverride !== void 0) {
+      if (Array.isArray(sessionOverride)) {
+        const issueNumStr = String(issue.number);
+        const targetRepo = issue.repo || currentRepo;
+        session = sessionOverride.find((s) => {
+          if (targetRepo) {
+            const keys = sessionRepoKeys(s);
+            if (keys.length > 0 && !keys.some((k) => k.startsWith(`${targetRepo.toLowerCase()}#`))) {
+              return false;
+            }
+          }
+          if (s.items && s.items.some(
+            (it) => it.id === issueNumStr || it.data && it.data.issueNumber === issue.number || it.data && Array.isArray(it.data.issueNumbers) && it.data.issueNumbers.includes(issue.number)
+          )) {
+            return true;
+          }
+          if (s.data && (s.data.issueNumber === issue.number || Array.isArray(s.data.issueNumbers) && s.data.issueNumbers.includes(issue.number))) {
+            return true;
+          }
+          if (s.title && s.title.includes(`#${issue.number}`)) {
+            return true;
+          }
+          const wtStrings = typeof s.worktree === "string" ? [s.worktree] : s.worktree ? [s.worktree.name, s.worktree.branch, s.worktree.directory].filter(Boolean) : [];
+          if (wtStrings.some((str) => String(str).includes(`issue-${issue.number}`))) {
+            return true;
+          }
+          return false;
+        }) || null;
+      } else {
+        session = sessionOverride;
+      }
+    } else {
+      session = getIssueSession(issue);
+    }
+    const isSessionRunning = Boolean(session && session.activity === "running");
+    const isSessionWaiting = Boolean(
+      session && (session.activity === "waiting-permission" || session.activity === "waiting-question" || session.activity.startsWith("waiting"))
+    );
+    const isSessionIdle = Boolean(session && session.activity === "idle");
+    if (labelNames.includes("status:in-progress")) {
+      if (isSessionIdle) {
+        return "needs-human";
+      }
+      if (isSessionWaiting) {
+        return "needs-human";
+      }
+      return "in-progress";
+    }
+    if (isSessionRunning) {
+      return "in-progress";
+    }
+    if (isSessionWaiting || isSessionIdle) {
+      return "needs-human";
+    }
+    if (!hasPriorityLabel(issue)) {
+      return "draft";
+    }
+    if (labelNames.includes("status:planned")) {
+      return "planned";
+    }
+    if (labelNames.includes("status:todo")) {
+      return "todo";
+    }
+    if (labelNames.includes("status:backlog")) {
+      return "backlog";
+    }
+    if (labelNames.includes("status:draft") || isVagueIdea(issue)) {
+      return "draft";
+    }
+    return "todo";
+  }
+  function resolveDefaultTab2(issues2) {
+    if (!issues2 || issues2.length === 0) return "all";
+    const hasNeedsHuman = issues2.some((i) => resolveIssueColumn3(i) === "needs-human");
+    if (hasNeedsHuman) return "needs-human";
+    const hasReview = issues2.some((i) => resolveIssueColumn3(i) === "in-review");
+    if (hasReview) return "in-review";
+    const hasProgress = issues2.some((i) => resolveIssueColumn3(i) === "in-progress");
+    if (hasProgress) return "in-progress";
+    const hasTodo = issues2.some((i) => resolveIssueColumn3(i) === "todo");
+    if (hasTodo) return "todo";
+    const hasPlanned = issues2.some((i) => resolveIssueColumn3(i) === "planned");
+    if (hasPlanned) return "planned";
+    const hasBacklog = issues2.some((i) => resolveIssueColumn3(i) === "backlog");
+    if (hasBacklog) return "backlog";
+    const hasDraft = issues2.some((i) => resolveIssueColumn3(i) === "draft");
+    if (hasDraft) return "draft";
+    return "all";
+  }
+  var statusReconciler = new StatusReconciler({
+    debounceMs: 300,
+    updateStatus: async (issue, targetColumn) => {
+      await updateIssueStatus(issue, targetColumn);
+    },
+    getSession: (issue) => getIssueSession(issue)
+  });
+  function updateBadgeCounts() {
+    const counts = {
+      "draft": 0,
+      "backlog": 0,
+      "todo": 0,
+      "planned": 0,
+      "in-progress": 0,
+      "needs-human": 0,
+      "in-review": 0,
+      "done": 0
+    };
+    const visibleIssues = issues.filter((issue) => showArchivedOnly ? isIssueArchived(issue) : !isIssueArchived(issue));
+    visibleIssues.forEach((issue) => {
+      const col = resolveIssueColumn3(issue);
+      if (col && counts[col] !== void 0) {
+        counts[col]++;
+      }
+    });
+    const total = visibleIssues.length;
+    const setTxt = (id, val) => {
+      const el2 = document.getElementById(id);
+      if (el2) el2.textContent = String(val);
+    };
+    setTxt("kCountDraft", counts["draft"]);
+    setTxt("kCountBacklog", counts["backlog"]);
+    setTxt("kCountTodo", counts["todo"]);
+    setTxt("kCountPlanned", counts["planned"]);
+    setTxt("kCountProgress", counts["in-progress"]);
+    setTxt("kCountNeedsHuman", counts["needs-human"]);
+    setTxt("kCountReview", counts["in-review"]);
+    setTxt("kCountDone", counts["done"]);
+    const blockedCount = sessions.filter(
+      (s) => s.activity === "waiting-permission" || s.activity === "waiting-question"
+    ).length;
+    void host.setBadge(blockedCount > 0 ? blockedCount : null);
+  }
+  function renderEmptyState(message, kind = "empty") {
+    const kindClass = kind === "inaccessible" ? "empty-state-inaccessible" : kind === "failed" ? "empty-state-failed" : kind === "rate-limited" ? "empty-state-rate-limited" : "empty-state-empty";
+    let iconSvg = "";
+    let title = "";
+    if (kind === "inaccessible") {
+      iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>';
+      title = "Repository Inaccessible";
+    } else if (kind === "failed") {
+      iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>';
+      title = "Failed to Load Repository";
+    } else if (kind === "rate-limited") {
+      iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>';
+      title = "API Rate-Limited";
+    } else {
+      iconSvg = '<svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5v-3h3.56c.69 1.19 1.97 2 3.45 2s2.75-.81 3.45-2H19v3zm0-5h-4.99c0 1.1-.9 2-2.01 2s-2.01-.9-2.01-2H5V5h14v9z"/></svg>';
+      title = "No Issues in Repository";
+    }
+    const html = `
+    <div class="empty-box ${kindClass}">
+      ${iconSvg}
+      <span style="font-weight: 500; font-size: 13px; color: var(--fg);">${escapeHtml(title)}</span>
+      <span style="color: var(--fg-muted); font-size: 11.5px; max-width: 380px;">${escapeHtml(message)}</span>
+    </div>
+  `;
+    if (elListViewContainer) {
+      elListViewContainer.innerHTML = html;
+    }
+    if (elKanbanViewContainer) {
+      elKanbanViewContainer.innerHTML = html;
+    }
+    if (elHumanViewContainer) {
+      elHumanViewContainer.innerHTML = html;
+    }
+    elSimpleListViewContainer.innerHTML = html;
+    if (elQuestionsViewContainer) {
+      elQuestionsViewContainer.innerHTML = html;
+    }
+  }
+  function renderArchiveView(archivedIssues) {
+    elListViewContainer.innerHTML = "";
+    const banner = document.createElement("div");
+    banner.className = "archive-header-banner";
+    banner.innerHTML = `
+    <div class="archive-title-wrap">
+      <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
+      <span>Archived Issues (${archivedIssues.length})</span>
+    </div>
+    <button class="btn btn-sm btn-secondary" id="btnExitArchive">Exit Archive</button>
+  `;
+    const btnExit = banner.querySelector("#btnExitArchive");
+    if (btnExit) {
+      btnExit.addEventListener("click", () => {
+        showArchivedOnly = false;
+        const btn = document.getElementById("btnArchiveToggle");
+        if (btn) btn.classList.remove("active");
+        renderViews();
+      });
+    }
+    elListViewContainer.appendChild(banner);
+    if (archivedIssues.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "empty-box";
+      empty.innerHTML = `
+      <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
+      <span>No archived issues in this repository.</span>
+    `;
+      elListViewContainer.appendChild(empty);
+      return;
+    }
+    archivedIssues.forEach((issue) => {
+      const card = buildCardElement(issue, false);
+      elListViewContainer.appendChild(card);
+    });
+  }
+  function displayProjectName(repo) {
+    return shortName(repo, projectNameOverrides);
+  }
+  function viewStateStorageKey() {
+    return `view_state_${currentDirectory || currentRepo || "workspace"}`;
+  }
+  function rememberViewState() {
+    viewStateRevision++;
+    const scope = deviceStorageSupported ? "device" : "instance";
+    const key = viewStateStorageKey();
+    const snapshot = { ...viewState, filters: [...viewState.filters] };
+    viewStateWriteQueue = viewStateWriteQueue.then(() => host.storage.set(key, snapshot, { scope })).catch((err) => {
+      addLog(`Could not remember view settings: ${err.message}`, "warn");
+      void host.toast({ kind: "error", message: "Could not remember View / Filter / Sort." });
+    });
+  }
+  async function loadViewState() {
+    const generation = ++viewStateLoadGeneration;
+    const revision = viewStateRevision;
+    const key = viewStateStorageKey();
+    try {
+      await viewStateWriteQueue;
+      const stored = await host.storage.get(key, { scope: deviceStorageSupported ? "device" : "instance" });
+      if (generation !== viewStateLoadGeneration || revision !== viewStateRevision || key !== viewStateStorageKey()) return;
+      viewState = normalizeViewState(stored);
+    } catch (err) {
+      addLog(`Could not load view settings: ${err.message}`, "warn");
+    }
+    if (generation === viewStateLoadGeneration) renderViews();
+  }
+  function availableProjectRepos() {
+    const repos = [
+      ...buildProjectRepoRefs().map((ref) => ref.repo),
+      ...allProjectsRepoRefs.map((ref) => ref.repo),
+      ...issues.map(repoForIssue)
+    ];
+    if (currentRepo && currentRepo !== ALL_PROJECTS_CACHE_KEY) repos.push(currentRepo);
+    return [...new Map(repos.filter(Boolean).map((repo) => [repo.toLowerCase(), repo])).values()];
+  }
+  function filterLabel(token) {
+    if (token.startsWith("stage:")) return STATUS_METADATA[token.slice(6)]?.displayName || token;
+    if (token.startsWith("project:")) return displayProjectName(token.slice(8));
+    return KIND_FILTER_LABELS[token] || token;
+  }
+  function changeFilter(token) {
+    viewState.filters = toggleFilter(viewState.filters, token);
+    rememberViewState();
+    renderViews();
+  }
+  function renderFilterControls() {
+    if (elSelectSort) elSelectSort.value = viewState.sort;
+    elBtnFilterToggle?.classList.toggle("active", viewState.filters.length > 0);
+    const focusedToken = document.activeElement?.getAttribute("data-filter");
+    elFilterPopover.innerHTML = "";
+    const groups = [
+      { title: "Attention", tokens: ["needs-me", "human", "questions"] },
+      { title: "Stage", tokens: STAGE_IDS.map((stage) => `stage:${stage}`) },
+      { title: "Project", tokens: availableProjectRepos().map((repo) => `project:${repo}`) }
+    ];
+    for (const group of groups) {
+      const section = document.createElement("div");
+      section.className = "filter-group";
+      const title = document.createElement("div");
+      title.className = "filter-group-title";
+      title.textContent = group.title;
+      section.appendChild(title);
+      for (const token of group.tokens) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "filter-chip";
+        chip.textContent = filterLabel(token);
+        chip.title = token.startsWith("project:") ? token.slice(8) : filterLabel(token);
+        chip.setAttribute("data-filter", token);
+        chip.setAttribute("aria-pressed", String(viewState.filters.includes(token)));
+        chip.addEventListener("click", (event) => {
+          event.stopPropagation();
+          changeFilter(token);
+        });
+        section.appendChild(chip);
+      }
+      elFilterPopover.appendChild(section);
+    }
+    elActiveFilters.innerHTML = "";
+    elActiveFilters.style.display = viewState.filters.length ? "flex" : "none";
+    for (const token of viewState.filters) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "filter-chip";
+      chip.textContent = `${filterLabel(token)} \xD7`;
+      chip.title = token.startsWith("project:") ? token.slice(8) : filterLabel(token);
+      chip.setAttribute("aria-label", `Remove ${filterLabel(token)} filter`);
+      chip.addEventListener("click", () => {
+        changeFilter(token);
+        elBtnFilterToggle?.focus();
+      });
+      elActiveFilters.appendChild(chip);
+    }
+    if (viewState.filters.length) {
+      const clear = document.createElement("button");
+      clear.type = "button";
+      clear.className = "btn btn-sm";
+      clear.textContent = "Clear";
+      clear.addEventListener("click", () => {
+        viewState.filters = [];
+        rememberViewState();
+        renderViews();
+        elBtnFilterToggle?.focus();
+      });
+      elActiveFilters.appendChild(clear);
+    }
+    if (focusedToken && elFilterPopover.style.display !== "none") {
+      Array.from(elFilterPopover.querySelectorAll("[data-filter]")).find((chip) => chip.getAttribute("data-filter") === focusedToken)?.focus();
+    }
+  }
+  function renderViews() {
+    updateBadgeCounts();
+    renderFilterControls();
+    const q = searchQuery.toLowerCase().trim();
+    const searched = issues.filter((issue) => {
+      if (showArchivedOnly ? !isIssueArchived(issue) : isIssueArchived(issue)) return false;
+      return !q || issue.title.toLowerCase().includes(q) || String(issue.number).includes(q) || (issue.labels || []).some((label) => (typeof label === "string" ? label : label.name || "").toLowerCase().includes(q));
+    });
+    const attention = groupIssuesByAttention(searched, sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex);
+    const needsMe = /* @__PURE__ */ new Set([...attention["needs-decision"], ...attention["needs-permission"], ...attention["needs-review"]]);
+    const filtered = applyFilters(searched, viewState.filters, {
+      stageOf: (issue) => resolveIssueColumn3(issue) || "todo",
+      repoOf: repoForIssue,
+      needsMe: (issue) => needsMe.has(issue) || resolveIssueColumn3(issue) === "needs-human" || collectHumanTodos(issue, getIssueSession(issue)).length > 0,
+      hasHumanTasks: (issue) => parseHumanTasks(issue.body || "").length > 0 || (issue.humanTasks || []).length > 0,
+      hasOpenQuestions: (issue) => parseOpenQuestions(issue.body || "").some((question) => !question.completed) || getRecoverableQuestionDrafts(issue).length > 0
+    });
+    const priorityWeights = { critical: 4, important: 3, useful: 2, optional: 1 };
+    const sorted = applySort(filtered, viewState.sort, (issue) => priorityWeights[normalizePriority(getIssuePriority(issue)) || ""] || 0);
+    applyLayoutMode(false);
+    if (showArchivedOnly) {
+      renderArchiveView(sorted);
+      return;
+    }
+    const activeLayout = viewState.view;
+    if (currentRenderedLayout && currentRenderedLayout !== activeLayout) {
+      elSimpleListViewContainer.innerHTML = "";
+      elListViewContainer.innerHTML = "";
+      if (elHumanViewContainer) elHumanViewContainer.innerHTML = "";
+    }
+    if (elQuestionsViewContainer) {
+      elQuestionsViewContainer.innerHTML = "";
+      elQuestionsViewContainer.style.display = "none";
+    }
+    if (elAttentionViewContainer) {
+      elAttentionViewContainer.innerHTML = "";
+      elAttentionViewContainer.style.display = "none";
+    }
+    if (activeLayout === "simple") renderSimpleListView(sorted);
+    else if (activeLayout === "cards") renderListView(sorted);
+    else if (activeLayout === "kanban") renderKanbanView(sorted);
+    else if (activeLayout === "graph") renderGraphView(sorted);
+    else if (activeLayout === "pending") renderHumanTasksView(sorted);
+    if ((activeLayout === "simple" || activeLayout === "cards") && !isQuickCaptureMode(viewState)) {
+      const target = activeLayout === "simple" ? elSimpleListViewContainer : elListViewContainer;
+      if (viewState.filters.includes("needs-me") && elAttentionViewContainer) {
+        renderAttentionView(sorted);
+        target.appendChild(elAttentionViewContainer);
+        elAttentionViewContainer.style.display = "flex";
+      } else if (elAttentionViewContainer) elAttentionViewContainer.style.display = "none";
+      if (viewState.filters.includes("questions") && elQuestionsViewContainer) {
+        renderQuestionsView(sorted);
+        target.appendChild(elQuestionsViewContainer);
+        elQuestionsViewContainer.style.display = "flex";
+      } else if (elQuestionsViewContainer) elQuestionsViewContainer.style.display = "none";
+    }
+    currentRenderedLayout = activeLayout;
+    updateBatchBar();
+  }
+  function projectPicker(repo, label) {
+    const select = document.createElement("select");
+    select.className = "select-sm simple-project";
+    select.setAttribute("aria-label", label);
+    const repos = availableProjectRepos();
+    if (repo && !repos.includes(repo)) repos.unshift(repo);
+    select.innerHTML = repos.map((value) => `<option value="${escapeHtml(value)}" title="${escapeHtml(value)}">${escapeHtml(displayProjectName(value))}</option>`).join("");
+    select.value = repo || repos[0] || "";
+    select.title = select.value;
+    return select;
+  }
+  var pendingDraftEdits = /* @__PURE__ */ new Map();
+  var draftTitleMutations = /* @__PURE__ */ new Set();
+  var pendingDraftFocusTarget = null;
+  var isRenderingSimpleListView = false;
+  function setPendingDraftField(key, field2, value) {
+    const existing = pendingDraftEdits.get(key) || {};
+    existing[field2] = value;
+    pendingDraftEdits.set(key, existing);
+  }
+  function clearPendingDraftField(key, field2) {
+    const existing = pendingDraftEdits.get(key);
+    if (!existing) return;
+    delete existing[field2];
+    if (existing.title === void 0 && existing.description === void 0) {
+      pendingDraftEdits.delete(key);
+    }
+  }
+  function findEnclosingDraftRow(el2) {
+    let cur = el2;
+    while (cur) {
+      if (typeof cur.getAttribute === "function" && cur.getAttribute("data-draft-key")) return cur;
+      cur = cur.parentElement || null;
+    }
+    return null;
+  }
+  function snapshotDraftElementFocus(el2) {
+    if (!el2) return null;
+    const row = findEnclosingDraftRow(el2);
+    if (!row) return null;
+    const key = row.getAttribute("data-draft-key") || "";
+    if (!key) return null;
+    let field2 = null;
+    if (el2 === row) field2 = "row";
+    else if (el2.classList?.contains("simple-title")) field2 = "title";
+    else if (el2.classList?.contains("simple-description")) field2 = "description";
+    else if (el2.classList?.contains("simple-project")) field2 = "project";
+    else if (el2.classList?.contains("simple-move-up")) field2 = "move-up";
+    else if (el2.classList?.contains("simple-move-down")) field2 = "move-down";
+    if (!field2) return null;
+    const anyInput = el2;
+    return {
+      key,
+      field: field2,
+      selectionStart: typeof anyInput.selectionStart === "number" ? anyInput.selectionStart : null,
+      selectionEnd: typeof anyInput.selectionEnd === "number" ? anyInput.selectionEnd : null
+    };
+  }
+  function restoreDraftElementFocus(snapshot) {
+    if (!snapshot) return;
+    const row = Array.from(elSimpleListViewContainer.querySelectorAll("[data-draft-key]")).find((candidate) => candidate.getAttribute("data-draft-key") === snapshot.key);
+    if (!row) return;
+    let target = null;
+    if (snapshot.field === "row") target = row;
+    else if (snapshot.field === "title") target = row.querySelector(".simple-title");
+    else if (snapshot.field === "description") target = row.querySelector(".simple-description");
+    else if (snapshot.field === "project") target = row.querySelector(".simple-project");
+    else if (snapshot.field === "move-up") target = row.querySelector(".simple-move-up");
+    else if (snapshot.field === "move-down") target = row.querySelector(".simple-move-down");
+    if (!target || target.disabled) return;
+    target.focus();
+    if (snapshot.selectionStart !== null && snapshot.selectionEnd !== null && typeof target.setSelectionRange === "function") {
+      try {
+        target.setSelectionRange(snapshot.selectionStart, snapshot.selectionEnd);
+      } catch {
+      }
+    }
+  }
+  function renderSimpleListView(sorted) {
+    const activeFocus = snapshotDraftElementFocus(document.activeElement);
+    const focusToRestore = activeFocus || pendingDraftFocusTarget;
+    pendingDraftFocusTarget = null;
+    isRenderingSimpleListView = true;
+    try {
+      elSimpleListViewContainer.innerHTML = "";
+    } finally {
+      isRenderingSimpleListView = false;
+    }
+    const quickCapture = isQuickCaptureMode(viewState);
+    if (!sorted.length) {
+      const empty = document.createElement("div");
+      empty.className = "empty-box";
+      empty.textContent = isLoading ? "Loading tasks..." : quickCapture ? "No drafts match. Add an idea below." : "No tasks match the active filters.";
+      elSimpleListViewContainer.appendChild(empty);
+    }
+    if (quickCapture) {
+      const tools = document.createElement("div");
+      tools.className = "simple-tools";
+      tools.innerHTML = `<span>\u2191/\u2193 or Alt+Up / Down to reorder${viewState.sort === "manual" ? "" : " (switches to Manual order)"}</span><button class="btn btn-xs" id="btnAlignDrafts" type="button"${isAligningDrafts ? " disabled" : ""}>${isAligningDrafts ? `<span class="btn-spinner"></span>Aligning (${aligningDraftsCount} drafts)...` : "Align Drafts"}</button>`;
+      tools.querySelector("#btnAlignDrafts")?.addEventListener("click", () => {
+        void batchAlignDrafts();
+      });
+      elSimpleListViewContainer.appendChild(tools);
+    }
+    for (let rowIndex = 0; rowIndex < sorted.length; rowIndex++) {
+      const issue = sorted[rowIndex];
+      const repo = repoForIssue(issue);
+      const key = issueWriteKey(repo, issue);
+      const stage = resolveIssueColumn3(issue) || "todo";
+      const editable = quickCapture && stage === "draft" && issue.number > 0;
+      const unconfirmed = Boolean(issue.unconfirmed);
+      const bodyBusy = draftMutations.has(key) || issue.number < 0 || unconfirmed;
+      const titleBusy = bodyBusy || draftTitleMutations.has(key);
+      const row = document.createElement("div");
+      row.className = "simple-row";
+      if (unconfirmed) row.classList.add("simple-row-unconfirmed");
+      row.setAttribute("tabindex", "0");
+      row.setAttribute("data-draft-key", key);
+      row.setAttribute("aria-label", `${issue.title}. ${STATUS_METADATA[stage].label}${unconfirmed ? ". Outcome unconfirmed; refresh required." : editable ? ". Alt+Up or Alt+Down to reorder." : ""}`);
+      row.setAttribute("aria-busy", String(draftMutations.has(key) || draftTitleMutations.has(key) || issue.number < 0));
+      const dot = document.createElement("span");
+      dot.className = "simple-status-dot";
+      dot.style.background = STATUS_METADATA[stage].color;
+      dot.title = STATUS_METADATA[stage].label;
+      row.appendChild(dot);
+      const content = document.createElement("div");
+      content.className = "simple-content";
+      if (editable) {
+        const savedEdit = pendingDraftEdits.get(key);
+        const title = document.createElement("input");
+        title.className = "form-ctrl simple-title";
+        title.value = savedEdit?.title !== void 0 ? savedEdit.title : issue.title;
+        title.disabled = titleBusy;
+        title.setAttribute("aria-label", `Title for draft #${issue.number}`);
+        title.addEventListener("input", () => {
+          if (title.value === issue.title) clearPendingDraftField(key, "title");
+          else setPendingDraftField(key, "title", title.value);
+        });
+        title.addEventListener("blur", (event) => {
+          if (isRenderingSimpleListView || title.isConnected === false) return;
+          const relatedEl = event?.relatedTarget;
+          if (relatedEl && (relatedEl === elBtnRefresh || elBtnRefresh?.contains(relatedEl))) {
+            pendingDraftFocusTarget = {
+              key,
+              field: "title",
+              selectionStart: typeof title.selectionStart === "number" ? title.selectionStart : null,
+              selectionEnd: typeof title.selectionEnd === "number" ? title.selectionEnd : null
+            };
+            return;
+          }
+          const related = snapshotDraftElementFocus(relatedEl);
+          if (related) pendingDraftFocusTarget = related;
+          if (!title.value.trim()) {
+            title.value = issue.title;
+            clearPendingDraftField(key, "title");
+          }
+          void editDraftTitle(issue, title.value);
+        });
+        title.addEventListener("keydown", (event) => {
+          if (event.key === "Tab" && !event.shiftKey) {
+            pendingDraftFocusTarget = { key, field: "description", selectionStart: null, selectionEnd: null };
+          }
+          if (event.key === "Enter") {
+            event.preventDefault();
+            title.blur();
+          }
+          if (event.key === "Escape") {
+            title.value = issue.title;
+            clearPendingDraftField(key, "title");
+            title.blur();
+          }
+        });
+        content.appendChild(title);
+        const description = document.createElement("textarea");
+        description.className = "form-ctrl simple-description";
+        description.rows = 1;
+        const originalDescription = stripOrderMarker(issue.body || "");
+        description.value = savedEdit?.description !== void 0 ? savedEdit.description : originalDescription;
+        description.placeholder = "Add description\u2026";
+        description.disabled = bodyBusy;
+        description.setAttribute("aria-label", `Description for draft #${issue.number}`);
+        description.addEventListener("input", () => {
+          if (description.value.replace(/\r\n/g, "\n") === originalDescription.replace(/\r\n/g, "\n")) {
+            clearPendingDraftField(key, "description");
+          } else {
+            setPendingDraftField(key, "description", description.value);
+          }
+        });
+        description.addEventListener("blur", (event) => {
+          if (isRenderingSimpleListView || description.isConnected === false) return;
+          const relatedEl = event?.relatedTarget;
+          if (relatedEl && (relatedEl === elBtnRefresh || elBtnRefresh?.contains(relatedEl))) {
+            pendingDraftFocusTarget = {
+              key,
+              field: "description",
+              selectionStart: typeof description.selectionStart === "number" ? description.selectionStart : null,
+              selectionEnd: typeof description.selectionEnd === "number" ? description.selectionEnd : null
+            };
+            return;
+          }
+          const related = snapshotDraftElementFocus(relatedEl);
+          if (related) pendingDraftFocusTarget = related;
+          void editDraftDescription(issue, description.value, originalDescription);
+        });
+        description.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" && !event.shiftKey) {
+            event.preventDefault();
+            description.blur();
+          }
+          if (event.key === "Escape") {
+            description.value = originalDescription;
+            clearPendingDraftField(key, "description");
+            description.blur();
+          }
+        });
+        content.appendChild(description);
+      } else {
+        const title = document.createElement("button");
+        title.className = "simple-title";
+        title.textContent = issue.title || `Issue #${issue.number}`;
+        title.disabled = bodyBusy;
+        title.addEventListener("click", () => openDrawer(issue));
+        content.appendChild(title);
+        const preview = getIssueDescriptionPreview(issue.body);
+        if (preview) {
+          const description = document.createElement("div");
+          description.className = "simple-description";
+          description.textContent = preview;
+          content.appendChild(description);
+        }
+      }
+      row.appendChild(content);
+      if (unconfirmed) {
+        const badge = document.createElement("span");
+        badge.className = "badge-unconfirmed";
+        badge.title = "Outcome unknown \u2014 refresh to reconcile before modifying";
+        badge.textContent = "unconfirmed";
+        row.appendChild(badge);
+      }
+      if (isAllProjectsMode && repo) {
+        if (editable) {
+          const select = projectPicker(repo, `Project for draft #${issue.number}`);
+          select.disabled = titleBusy;
+          select.addEventListener("change", () => {
+            void transferDraftProject(issue, select.value, select);
+          });
+          row.appendChild(select);
+        } else {
+          const pill = document.createElement("span");
+          pill.className = "status-pill project-pill";
+          pill.textContent = displayProjectName(repo);
+          pill.title = repo;
+          row.appendChild(pill);
+        }
+      }
+      if (editable) {
+        const moveControls = document.createElement("div");
+        moveControls.className = "simple-move-controls";
+        const moveUp = document.createElement("button");
+        moveUp.type = "button";
+        moveUp.className = "simple-move-btn simple-move-up";
+        moveUp.textContent = "\u2191";
+        moveUp.title = `Move draft #${issue.number} up`;
+        moveUp.setAttribute("aria-label", `Move draft #${issue.number} up`);
+        moveUp.disabled = titleBusy || rowIndex <= 0;
+        moveUp.addEventListener("click", (event) => {
+          event.stopPropagation();
+          void reorderDraft(issue, sorted, rowIndex - 1);
+        });
+        const moveDown = document.createElement("button");
+        moveDown.type = "button";
+        moveDown.className = "simple-move-btn simple-move-down";
+        moveDown.textContent = "\u2193";
+        moveDown.title = `Move draft #${issue.number} down`;
+        moveDown.setAttribute("aria-label", `Move draft #${issue.number} down`);
+        moveDown.disabled = titleBusy || rowIndex >= sorted.length - 1;
+        moveDown.addEventListener("click", (event) => {
+          event.stopPropagation();
+          void reorderDraft(issue, sorted, rowIndex + 1);
+        });
+        moveControls.appendChild(moveUp);
+        moveControls.appendChild(moveDown);
+        row.appendChild(moveControls);
+      }
+      row.addEventListener("keydown", (event) => {
+        if (editable && event.altKey && (event.key === "ArrowUp" || event.key === "ArrowDown")) {
+          event.preventDefault();
+          void reorderDraft(issue, sorted, sorted.indexOf(issue) + (event.key === "ArrowUp" ? -1 : 1));
+        } else if (event.key === "Enter" && event.target === row) {
+          event.preventDefault();
+          openDrawer(issue);
+        }
+      });
+      if (editable && !titleBusy) {
+        row.draggable = true;
+        row.addEventListener("dragstart", (event) => {
+          draggedDraftKey = key;
+          event.dataTransfer?.setData("text/plain", key);
+          if (event.dataTransfer) event.dataTransfer.effectAllowed = "move";
+        });
+        row.addEventListener("dragend", () => {
+          draggedDraftKey = null;
+        });
+        row.addEventListener("dragover", (event) => {
+          if (draggedDraftKey) event.preventDefault();
+        });
+        row.addEventListener("drop", (event) => {
+          event.preventDefault();
+          const moving = sorted.find((entry) => issueWriteKey(repoForIssue(entry), entry) === draggedDraftKey);
+          draggedDraftKey = null;
+          if (moving) void reorderDraft(moving, sorted, sorted.indexOf(issue));
+        });
+      }
+      elSimpleListViewContainer.appendChild(row);
+    }
+    if (quickCapture) renderDraftAddRow();
+    restoreDraftElementFocus(focusToRestore);
+  }
+  function renderDraftAddRow() {
+    const add = document.createElement("div");
+    add.className = "simple-add";
+    add.innerHTML = `<div class="simple-add-top"><input class="form-ctrl" id="draftCaptureTitle" aria-label="New draft title" placeholder="Add an idea\u2026 Enter to save" /><button class="btn btn-sm" id="btnDraftDescription" type="button" aria-expanded="${draftDescriptionVisible}">Description</button></div><textarea class="form-ctrl" id="draftCaptureDescription" aria-label="New draft description" placeholder="Optional inspiration for the AI. Shift+Enter for a new line." rows="2"></textarea>`;
+    const title = add.querySelector("#draftCaptureTitle");
+    const description = add.querySelector("#draftCaptureDescription");
+    title.value = draftCaptureTitle;
+    description.value = draftCaptureDescription;
+    title.disabled = description.disabled = draftCaptureBusy;
+    description.style.display = draftDescriptionVisible ? "" : "none";
+    title.addEventListener("input", () => {
+      draftCaptureTitle = title.value;
+    });
+    description.addEventListener("input", () => {
+      draftCaptureDescription = description.value;
+    });
+    const toggle = add.querySelector("#btnDraftDescription");
+    toggle.addEventListener("click", () => {
+      draftDescriptionVisible = !draftDescriptionVisible;
+      description.style.display = draftDescriptionVisible ? "" : "none";
+      toggle.setAttribute("aria-expanded", String(draftDescriptionVisible));
+      if (draftDescriptionVisible) description.focus();
+    });
+    title.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      if (event.shiftKey) {
+        draftDescriptionVisible = true;
+        description.style.display = "";
+        toggle.setAttribute("aria-expanded", "true");
+        description.focus();
+      } else void createQuickCaptureDraft();
+    });
+    description.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        void createQuickCaptureDraft();
+      }
+    });
+    if (isAllProjectsMode) {
+      const select = projectPicker(draftCaptureRepo, "Project for new draft");
+      draftCaptureRepo = select.value;
+      select.disabled = draftCaptureBusy;
+      select.addEventListener("change", () => {
+        draftCaptureRepo = select.value;
+        select.title = select.value;
+      });
+      add.querySelector(".simple-add-top").prepend(select);
+    }
+    elSimpleListViewContainer.appendChild(add);
+  }
+  async function createQuickCaptureDraft() {
+    if (draftCaptureBusy || !draftCaptureTitle.trim()) return;
+    const repo = isAllProjectsMode ? draftCaptureRepo : currentRepo;
+    if (!repo || repo === ALL_PROJECTS_CACHE_KEY) {
+      openRepoPopover();
+      return;
+    }
+    const title = draftCaptureTitle.trim();
+    const description = draftCaptureDescription;
+    const body = setOrderMarker(description, nextAppendOrder(issues.filter((issue) => repoForIssue(issue) === repo && resolveIssueColumn3(issue) === "draft")));
+    const temporary = normalizeGithubIssues([{
+      number: optimisticDraftNumber--,
+      title,
+      body,
+      repo,
+      labels: [{ name: "status:draft" }],
+      state: "open",
+      created_at: (/* @__PURE__ */ new Date()).toISOString(),
+      html_url: ""
+    }])[0];
+    draftCaptureBusy = true;
+    issues = [...issues, temporary];
+    renderViews();
+    try {
+      const created = await githubRequestWithRetry("POST", `/repos/${repo}/issues`, { title, body, labels: ["status:draft"] });
+      const normalized = normalizeGithubIssues([{ ...created, repo }]);
+      issues = issues.filter((issue) => issue !== temporary);
+      if (isAllProjectsMode || currentRepo === repo) {
+        issues = mergeIssuePages(issues, normalized);
+        if (normalized[0]) admitIssueRecord(repo, normalized[0]);
+      }
+      issueCache.delete(repo);
+      issueCache.delete(ALL_PROJECTS_CACHE_KEY);
+      draftCaptureTitle = draftCaptureDescription = "";
+      void host.toast({ kind: "success", message: `Draft created in ${displayProjectName(repo)}` });
+    } catch (err) {
+      issues = issues.filter((issue) => issue !== temporary);
+      void host.toast({ kind: "error", message: `Could not create draft: ${err.message}. Your idea is kept below; check GitHub before retrying if the connection failed.` });
+    } finally {
+      draftCaptureBusy = false;
+      renderViews();
+      document.getElementById("draftCaptureTitle")?.focus();
+    }
+  }
+  async function editDraftTitle(issue, value) {
+    const repo = repoForIssue(issue);
+    const key = issueWriteKey(repo, issue);
+    const title = value.trim();
+    if (!title || title === issue.title) {
+      clearPendingDraftField(key, "title");
+      return;
+    }
+    if (draftMutations.has(key) || draftTitleMutations.has(key) || issue.unconfirmed) return;
+    draftTitleMutations.add(key);
+    const previous = issue.title;
+    const finish = trackIssueWrite(repo, issue, ["record"]);
+    clearPendingDraftField(key, "title");
+    issue.title = title;
+    renderViews();
+    try {
+      const response = await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, { title });
+      if (response?.updated_at) issue.updated_at = response.updated_at;
+      findIssueRecord(repo, issue).title = title;
+      finish(true);
+    } catch (err) {
+      finish(false);
+      issue.title = previous;
+      findIssueRecord(repo, issue).title = previous;
+      void host.toast({ kind: "error", message: `Could not rename draft: ${err.message}` });
+    } finally {
+      draftTitleMutations.delete(key);
+      issueCache.delete(repo);
+      renderViews();
+    }
+  }
+  async function editDraftDescription(issue, value, original) {
+    const normalizeEol = (s) => (s || "").replace(/\r\n/g, "\n");
+    const key = issueWriteKey(repoForIssue(issue), issue);
+    if (normalizeEol(value) === normalizeEol(original)) {
+      clearPendingDraftField(key, "description");
+      return;
+    }
+    if (draftMutations.has(key) || issue.unconfirmed) return;
+    draftMutations.add(key);
+    setPendingDraftField(key, "description", value);
+    try {
+      const fresh = await reloadIssueBeforeMutation(issue);
+      if (!fresh) throw new Error("Could not refresh draft; nothing was overwritten");
+      if (normalizeEol(stripOrderMarker(fresh.body)) !== normalizeEol(original)) {
+        clearPendingDraftField(key, "description");
+        throw new Error("Description changed remotely; review the refreshed draft before editing again");
+      }
+      const order = parseOrderMarker(fresh.body);
+      const eolValue = fresh.body.includes("\r\n") ? normalizeEol(value).replace(/\n/g, "\r\n") : value;
+      const ok = await updateIssueBody(
+        issue,
+        order === null ? stripOrderMarker(eolValue) : setOrderMarker(eolValue, order),
+        { suppressToast: true }
+      );
+      if (ok) {
+        clearPendingDraftField(key, "description");
+      } else {
+        setPendingDraftField(key, "description", value);
+      }
+    } catch (err) {
+      void host.toast({ kind: "error", message: err.message });
+    } finally {
+      draftMutations.delete(key);
+      renderViews();
+    }
+  }
+  async function reorderDraft(issue, displayed, targetIndex) {
+    if (draftReorderBusy || issue.unconfirmed || targetIndex < 0 || targetIndex >= displayed.length) return;
+    const switchedToManual = viewState.sort !== "manual";
+    if (switchedToManual) {
+      viewState.sort = "manual";
+      rememberViewState();
+      void host.toast({ kind: "info", message: "Switched to Manual order." });
+    }
+    const displayedFrom = displayed.indexOf(issue);
+    const target = displayed[targetIndex];
+    const ordered = sortByManualOrder(displayed.filter((entry) => resolveIssueColumn3(entry) === "draft" && entry.number > 0));
+    const from = ordered.indexOf(issue);
+    const to = ordered.indexOf(target);
+    const directionMismatch = switchedToManual && displayedFrom >= 0 && (targetIndex < displayedFrom && to > from || targetIndex > displayedFrom && to < from);
+    if (from < 0 || to < 0 || from === to || directionMismatch) {
+      renderViews();
+      return;
+    }
+    const move = computeMove(ordered, from, to);
+    if (!move || move.length === 0) {
+      void host.toast({ kind: "info", message: "Order gap is full; move cancelled." });
+      renderViews();
+      return;
+    }
+    const rest = ordered.filter((entry) => entry !== issue);
+    const neighbours = [rest[to - 1], rest[to]].filter((entry) => !!entry);
+    const writtenIssues = move.map((step) => ordered[step.index]).filter((entry) => !!entry);
+    const participants = Array.from(/* @__PURE__ */ new Set([issue, ...writtenIssues, ...neighbours]));
+    if (participants.some((entry) => Boolean(entry.unconfirmed))) return;
+    const keys = participants.map((entry) => issueWriteKey(repoForIssue(entry), entry));
+    if (keys.some(
+      (key) => draftMutations.has(key) || draftTitleMutations.has(key) || Array.from(issueWriteTrackers.get(key)?.values() || []).some((write) => write.pending > 0)
+    )) {
+      return;
+    }
+    draftReorderBusy = true;
+    keys.forEach((key) => draftMutations.add(key));
+    try {
+      const before = participants.map((entry) => parseOrderMarker(entry.body));
+      const fresh = await Promise.all(participants.map(reloadIssueBeforeMutation));
+      if (fresh.some((entry) => !entry)) throw new Error("Could not refresh draft order; move cancelled");
+      if (participants.some((entry, index) => parseOrderMarker(entry.body) !== before[index])) {
+        throw new Error("Order changed while moving; try again");
+      }
+      const freshMove = computeMove(ordered, from, to);
+      if (!freshMove || freshMove.length === 0) throw new Error("Order gap is full; move cancelled");
+      for (const step of freshMove) {
+        const targetIssue = ordered[step.index];
+        const ok = await updateIssueBody(targetIssue, setOrderMarker(targetIssue.body, step.order), { suppressToast: true });
+        if (!ok) break;
+      }
+    } catch (err) {
+      void host.toast({ kind: "error", message: `Could not reorder draft: ${err.message}` });
+    } finally {
+      keys.forEach((key) => draftMutations.delete(key));
+      draftReorderBusy = false;
+      renderViews();
+      Array.from(elSimpleListViewContainer.querySelectorAll("[data-draft-key]")).find((row) => row.getAttribute("data-draft-key") === issueWriteKey(repoForIssue(issue), issue))?.focus();
+    }
+  }
+  async function transferDraftProject(issue, targetRepo, selectEl) {
+    const repo = repoForIssue(issue);
+    const key = issueWriteKey(repo, issue);
+    const resetSelect = () => {
+      if (selectEl) {
+        selectEl.value = repo;
+        selectEl.title = repo;
+      }
+      const rowSelect = Array.from(elSimpleListViewContainer.querySelectorAll("[data-draft-key]")).find((r) => r.getAttribute("data-draft-key") === key)?.querySelector(".simple-project");
+      if (rowSelect) {
+        rowSelect.value = repo;
+        rowSelect.title = repo;
+      }
+    };
+    if (!repo || !targetRepo || repo.toLowerCase() === targetRepo.toLowerCase() || draftMutations.has(key) || draftTitleMutations.has(key) || draftReorderBusy || Array.from(issueWriteTrackers.get(key)?.values() || []).some((write) => write.pending > 0) || issue.unconfirmed) {
+      resetSelect();
+      return;
+    }
+    const allowedTarget = availableProjectRepos().find((candidate) => candidate.toLowerCase() === targetRepo.toLowerCase());
+    if (!allowedTarget) {
+      resetSelect();
+      void host.toast({ kind: "error", message: `Could not move draft: unknown target project ${targetRepo}` });
+      return;
+    }
+    const sourceLabel = displayProjectName(repo) || repo;
+    const targetLabel = displayProjectName(allowedTarget) || allowedTarget;
+    const confirmMessage = `Move draft #${issue.number} from ${sourceLabel} (${repo}) to ${targetLabel} (${allowedTarget})? Its issue number and URL may change, and GitHub repository transfer permissions apply.`;
+    const confirmFn = typeof window.confirm === "function" ? window.confirm.bind(window) : null;
+    if (confirmFn && !confirmFn(confirmMessage)) {
+      resetSelect();
+      return;
+    }
+    const oldNumber = issue.number;
+    activeStreamEpoch++;
+    isLoading = false;
+    if (elIconRefresh) elIconRefresh.style.animation = "";
+    draftMutations.add(key);
+    renderViews();
+    let graphqlStarted = false;
+    try {
+      const [rawIssue, rawRepo] = await Promise.all([
+        githubRequestWithRetry("GET", `/repos/${repo}/issues/${issue.number}`),
+        githubRequestWithRetry("GET", `/repos/${allowedTarget}`)
+      ]);
+      if (!rawIssue?.node_id || !rawRepo?.node_id) throw new Error("GitHub did not return transfer IDs");
+      graphqlStarted = true;
+      const result = await githubRequest("POST", "/graphql", {
+        query: "mutation($issue:ID!,$repository:ID!){transferIssue(input:{issueId:$issue,repositoryId:$repository}){issue{number url repository{nameWithOwner}}}}",
+        variables: { issue: rawIssue.node_id, repository: rawRepo.node_id }
+      });
+      const moved = result?.data?.transferIssue?.issue;
+      if (!moved) {
+        if (Array.isArray(result?.errors) && result.errors.length > 0) {
+          graphqlStarted = false;
+          throw new Error(result.errors[0]?.message || "Transfer denied");
+        }
+        throw new Error("Transfer outcome unknown; check GitHub before retrying");
+      }
+      activeStreamEpoch++;
+      isLoading = false;
+      if (elIconRefresh) elIconRefresh.style.animation = "";
+      const published = findIssueRecord(repo, issue);
+      const oldEdit = pendingDraftEdits.get(key);
+      pendingDraftEdits.delete(key);
+      for (const record of /* @__PURE__ */ new Set([issue, published])) {
+        delete record.unconfirmed;
+        record.repo = moved.repository.nameWithOwner;
+        record.number = moved.number;
+        record.html_url = moved.url;
+        record.projectId = allProjects.find((project) => getProjectRepoFullName(project)?.toLowerCase() === allowedTarget.toLowerCase())?.id;
+      }
+      if (oldEdit) {
+        pendingDraftEdits.set(issueWriteKey(moved.repository.nameWithOwner, moved.number), oldEdit);
+      }
+      selectedIssueNumbers.delete(oldNumber);
+      commentsCache.clear();
+      drawerGeneration++;
+      issueWriteTrackers.delete(key);
+      admitIssueRecord(moved.repository.nameWithOwner, published);
+      if (activeIssue === issue || activeIssue === published) renderDrawer(published, true);
+      issueCache.delete(repo);
+      issueCache.delete(allowedTarget);
+      issueCache.delete(ALL_PROJECTS_CACHE_KEY);
+      void host.toast({ kind: "success", message: `Draft moved to ${displayProjectName(moved.repository.nameWithOwner)}` });
+    } catch (err) {
+      if (graphqlStarted && !isDefinitivePreCommitRejection(err)) {
+        const published = findIssueRecord(repo, issue);
+        issue.unconfirmed = true;
+        published.unconfirmed = true;
+        issueCache.delete(repo);
+        issueCache.delete(allowedTarget);
+        issueCache.delete(ALL_PROJECTS_CACHE_KEY);
+        void host.toast({
+          kind: "error",
+          message: `Transfer outcome unknown for #${issue.number} \u2014 refresh to reconcile ${sourceLabel} and ${targetLabel} before modifying.`
+        });
+      } else {
+        void host.toast({ kind: "error", message: `Could not move draft: ${err.message}` });
+      }
+    } finally {
+      draftMutations.delete(key);
+      renderViews();
+    }
+  }
+  function formatAlertBadges(issue) {
+    if (!issue) return "";
+    const meta = issue.v2Metadata || resolveV2Metadata(issue, typeof getIssueSession === "function" ? getIssueSession(issue) : void 0);
+    if (!meta) return "";
+    const badges = [];
+    if (meta.attention === "needs-decision") {
+      badges.push('<span class="badge-attention attention-decision" title="Requires human decision">needs-decision</span>');
+    } else if (meta.attention === "needs-permission") {
+      badges.push('<span class="badge-attention attention-permission" title="Blocked on agent permission">needs-permission</span>');
+    } else if (meta.attention === "needs-review") {
+      badges.push('<span class="badge-attention attention-review" title="Awaiting human review">needs-review</span>');
+    }
+    if (meta.liveness === "running") {
+      badges.push('<span class="badge-liveness liveness-running" title="Agent session active"><span class="pulse-dot"></span>running</span>');
+    }
+    return badges.join(" ");
+  }
+  function renderIssueCard(issue, inKanban) {
+    const session = getIssueSession(issue);
+    const card = document.createElement("div");
+    const isSelected = selectedIssueNumbers.has(issue.number);
+    card.className = `card ${isSelected ? "is-selected" : ""}`;
+    card.draggable = inKanban;
+    card.dataset.issueNumber = String(issue.number);
+    const totalSubtasks = issue.subtasks.length;
+    const completedSubtasks = issue.subtasks.filter((s) => s.completed).length;
+    const pct = totalSubtasks > 0 ? Math.round(completedSubtasks / totalSubtasks * 100) : 0;
+    let agentBadgeHtml = "";
+    if (session) {
+      let dotClass = "dot-idle";
+      let actLabel = "Agent Idle";
+      if (session.activity === "running") {
+        dotClass = "dot-running";
+        actLabel = "Running";
+      } else if (session.activity === "waiting-permission") {
+        dotClass = "dot-waiting";
+        actLabel = "Needs Permission";
+      } else if (session.activity === "waiting-question") {
+        dotClass = "dot-waiting";
+        actLabel = "Needs Input";
+      }
+      agentBadgeHtml = `
+      <div class="agent-pill">
+        <span class="dot ${dotClass}"></span>
+        <span>${actLabel}</span>
+      </div>
+    `;
+    }
+    const wtTag = extractWorktreeName2(session?.worktree);
+    const worktreeHtml = wtTag ? `
+      <div class="worktree-tag">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
+        <span>${escapeHtml(wtTag)}</span>
+      </div>
+    ` : "";
+    const labelsHtml = filterDisplayLabels(issue.labels).map((l) => {
+      const hex = sanitizeHexColor(l.color);
+      const bg2 = hex ? `${hex}18` : "var(--surf-muted)";
+      const fg2 = hex || "var(--fg-muted)";
+      return `<span class="badge" style="background: ${bg2}; color: ${fg2}; border: 1px solid ${fg2}33;">${escapeHtml(l.name)}</span>`;
+    }).join("");
+    const subtaskHtml = totalSubtasks > 0 ? `
+      <div class="subtask-prog" title="${completedSubtasks} of ${totalSubtasks} subtasks completed">
+        <span>${completedSubtasks}/${totalSubtasks}</span>
+        <div class="micro-bar"><div class="micro-fill" style="width: ${pct}%;"></div></div>
+      </div>
+    ` : "<span></span>";
+    const col = resolveIssueColumn3(issue);
+    const nextAction = col ? getNextColumnAction(col) : { label: "To Do", target: "todo", icon: "\u2192" };
+    const isArch = isIssueArchived(issue);
+    let archiveCategoryBadge = "";
+    if (isArch) {
+      const statusLabel = (issue.labels || []).find((l) => (typeof l === "string" ? l : l.name || "").startsWith("status:"));
+      const rawCat = statusLabel ? (typeof statusLabel === "string" ? statusLabel : statusLabel.name || "").replace("status:", "") : "";
+      const catLabel = STATUS_METADATA[rawCat]?.displayName || (rawCat ? rawCat : "To Do");
+      archiveCategoryBadge = `<span class="archive-from-badge">From: ${escapeHtml(catLabel)}</span>`;
+    }
+    const priority = getIssuePriority(issue);
+    const priorityHtml = priority ? `<span class="badge badge-priority badge-priority-${priority}">${priority}</span>` : "";
+    const complexity = getIssueComplexity(issue);
+    const complexityHtml = complexity ? `<span class="badge badge-complexity badge-complexity-${complexity.toLowerCase()}">${complexity}</span>` : "";
+    const vague = isVagueIdea(issue);
+    const vagueBadgeHtml = vague ? `<span class="badge badge-vague" title="Sparse task needing alignment">Needs Alignment</span>` : "";
+    const batchName = getIssueBatch(issue);
+    let awaitingBatchHtml = "";
+    if (col === "in-review" && batchName) {
+      const res = isBatchReadyForReview(batchName, issues || []);
+      const otherOutstanding = res.outstandingIssues.filter((n) => n !== issue.number);
+      if (!res.ready && otherOutstanding.length > 0) {
+        awaitingBatchHtml = `<span class="badge-awaiting-batch" title="Waiting on #${otherOutstanding.join(", #")} before batch testing">Awaiting Batch</span>`;
+      }
+    }
+    const questionBadgeInfo = formatQuestionBadge(issue.openQuestions);
+    const questionsBadgeHtml = questionBadgeInfo.html;
+    const descPreview = getIssueDescriptionPreview(issue.body);
+    const descHtml = descPreview ? `<div class="card-desc" title="${escapeHtml(descPreview)}">${escapeHtml(descPreview)}</div>` : "";
+    const nextStageButtonHtml = !inKanban && !showArchivedOnly ? `
+      <button class="card-btn-next" data-issue="${issue.number}" data-target="${nextAction.target}" title="Move to ${nextAction.label}">
+        <span>${nextAction.icon}</span>
+        <span>${nextAction.label}</span>
+      </button>
+    ` : "";
+    const archiveButtonHtml = showArchivedOnly ? `
+      <button class="btn btn-sm card-btn-archive is-archived" data-issue="${issue.number}" title="Unarchive issue (Restore to original category)">
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46A7.93 7.93 0 0 0 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74A7.93 7.93 0 0 0 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg>
+        <span>Unarchive</span>
+      </button>
+    ` : !inKanban ? `
+        <button class="card-btn-archive ${isArch ? "is-archived" : ""}" data-issue="${issue.number}" title="${isArch ? "Unarchive issue" : "Archive issue"}">
+          <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M3 3h18a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zm1 5h16v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8zm5 3v2h6v-2H9z"/></svg>
+        </button>
+      ` : "";
+    const attachButtonHtml = `
+    <button class="card-btn-attach" data-issue="${issue.number}" title="Attach issue chip to active prompt">
+      <svg class="icon icon-sm icon-paperclip" viewBox="0 0 24 24"><path d="M16.5 6v11.5c0 2.21-1.79 4-4 4s-4-1.79-4-4V5a2.5 2.5 0 0 1 5 0v10.5c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5V6h-2v9.5a3.5 3.5 0 0 0 7 0V5a4.5 4.5 0 0 0-9 0v12.5c0 3.31 2.69 6 6 6s6-2.69 6-6V6h-2z"/></svg>
+      <svg class="icon icon-sm icon-check" style="display: none;" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+    </button>
+  `;
+    const titles = parseFriendlyTitle(issue.body, issue.title);
+    const subtitleHtml = titles.subtitle ? `<div class="card-subtitle-tech" style="font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;">${escapeHtml(titles.subtitle)}</div>` : "";
+    const alertBadgesHtml = formatAlertBadges(issue);
+    card.innerHTML = `
+    <div class="card-meta">
+      <div class="card-id-wrap">
+        <input type="checkbox" class="card-checkbox" data-issue="${issue.number}" ${isSelected ? "checked" : ""} title="Select issue for batch actions" />
+        <span class="card-id">#${issue.number}</span>
+        ${issue.unconfirmed ? '<span class="badge badge-unconfirmed" style="background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4); font-size: 10px; padding: 1px 4px; border-radius: 3px; font-weight: 500;" title="Write outcome unconfirmed \u2014 refresh required">unconfirmed</span>' : ""}
+        ${isAllProjectsMode ? `<span class="status-pill project-pill" title="${escapeHtml(repoForIssue(issue))}">${escapeHtml(displayProjectName(repoForIssue(issue)))}</span>` : ""}
+        ${priorityHtml}
+        ${complexityHtml}
+        ${vagueBadgeHtml}
+        ${awaitingBatchHtml}
+        ${alertBadgesHtml}
+        ${issue.user ? `<span style="color: var(--fg-muted); font-size: 11px;">@${escapeHtml(issue.user.login)}</span>` : ""}
+        ${archiveCategoryBadge}
+      </div>
+      <div style="display: flex; align-items: center; gap: 5px;">
+        ${nextStageButtonHtml}
+        ${archiveButtonHtml}
+        ${agentBadgeHtml}
+      </div>
+    </div>
+    <div class="card-title">${escapeHtml(titles.title)}</div>
+    ${subtitleHtml}
+    ${descHtml}
+    ${labelsHtml ? `<div class="card-labels">${labelsHtml}</div>` : ""}
+    <div class="card-footer">
+      <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+        ${subtaskHtml}
+        ${questionsBadgeHtml}
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        ${worktreeHtml}
+        ${attachButtonHtml}
+      </div>
+    </div>
+  `;
+    const cbSelect = card.querySelector(".card-checkbox");
+    if (cbSelect) {
+      cbSelect.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleIssueSelection(issue.number);
+      });
+    }
+    const btnAttach = card.querySelector(".card-btn-attach");
+    if (btnAttach) {
+      btnAttach.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        try {
+          const payload = buildIssueAttachPayload(issue);
+          await host.attach(payload);
+          btnAttach.classList.add("attached");
+          await host.toast({ kind: "success", message: `Attached #${issue.number} to composer chip` });
+          setTimeout(() => {
+            btnAttach.classList.remove("attached");
+          }, 1500);
+        } catch (err) {
+          addLog(`Failed to attach issue #${issue.number}: ${err.message}`, "error");
+          await host.toast({ kind: "error", message: `Failed to attach: ${err.message || "Unknown error"}` });
+        }
+      });
+    }
+    const btnNext = card.querySelector(".card-btn-next");
+    if (btnNext) {
+      btnNext.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const target = btnNext.getAttribute("data-target");
+        if (target) {
+          await updateIssueStatus(issue, target, { isHumanGesture: true });
+        }
+      });
+    }
+    const btnArchive = card.querySelector(".card-btn-archive");
+    if (btnArchive) {
+      btnArchive.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        await toggleArchiveIssue(issue);
+      });
+    }
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("button, a, select, input")) return;
+      openDrawer(issue);
+    });
+    if (inKanban) {
+      card.addEventListener("dragstart", (e) => {
+        draggedIssueNumber = issue.number;
+        card.classList.add("dragging");
+        if (e.dataTransfer) {
+          e.dataTransfer.setData("text/plain", String(issue.number));
+          e.dataTransfer.effectAllowed = "move";
+        }
+      });
+      card.addEventListener("dragend", () => {
+        draggedIssueNumber = null;
+        card.classList.remove("dragging");
+      });
+    }
+    return card;
+  }
+  var buildCardElement = renderIssueCard;
+  function renderListView(filteredIssues) {
+    elListViewContainer.innerHTML = "";
+    const listItems = filteredIssues;
+    const currentGroupBy = isAllProjectsMode ? "project" : "none";
+    if (listItems.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elListViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading issues...</span>
+        </div>
+      `;
+        return;
+      }
+      elListViewContainer.innerHTML = `
+      <div class="empty-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+        <span>No issues match this view</span>
+      </div>
+    `;
+      return;
+    }
+    if (currentGroupBy === "none") {
+      const fragment = document.createDocumentFragment();
+      listItems.forEach((issue) => {
+        const card = buildCardElement(issue, false);
+        fragment.appendChild(card);
+      });
+      elListViewContainer.appendChild(fragment);
+    } else {
+      const groups = groupIssuesBy2(listItems, currentGroupBy);
+      let totalRendered = 0;
+      const fragment = document.createDocumentFragment();
+      groups.forEach((grp) => {
+        if (grp.issues.length === 0) return;
+        totalRendered += grp.issues.length;
+        const groupKey = `list:${grp.id}`;
+        const isCollapsed = isGroupCollapsed(groupKey);
+        const groupEl = document.createElement("div");
+        groupEl.className = `list-group ${isCollapsed ? "is-collapsed" : ""}`;
+        groupEl.dataset.groupId = grp.id;
+        groupEl.dataset.groupKey = groupKey;
+        groupEl.innerHTML = `
+        <div class="list-group-header" role="button" tabindex="0" title="Click to collapse / expand group">
+          <div style="display: flex; align-items: center; gap: 6px; min-width: 0;">
+            <svg class="list-group-chevron icon icon-sm" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+            <span title="${escapeHtml(isAllProjectsMode ? repoForIssue(grp.issues[0]) : grp.title)}">${escapeHtml(grp.title)}</span>
+          </div>
+          <span class="status-pill">${grp.issues.length}</span>
+        </div>
+        <div class="list-group-cards"></div>
+      `;
+        const headerEl = groupEl.querySelector(".list-group-header");
+        const toggleCollapse = (e) => {
+          e.stopPropagation();
+          toggleGroupCollapse(groupKey);
+          renderViews();
+        };
+        headerEl.addEventListener("click", toggleCollapse);
+        headerEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleCollapse(e);
+          }
+        });
+        if (!isCollapsed) {
+          const listCardsContainer = groupEl.querySelector(".list-group-cards");
+          const cardsFragment = document.createDocumentFragment();
+          grp.issues.forEach((issue) => {
+            const card = buildCardElement(issue, false);
+            cardsFragment.appendChild(card);
+          });
+          listCardsContainer.appendChild(cardsFragment);
+        }
+        fragment.appendChild(groupEl);
+      });
+      if (totalRendered === 0) {
+        elListViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+          <span>No issues match this view</span>
+        </div>
+      `;
+      } else {
+        elListViewContainer.appendChild(fragment);
+      }
+    }
+  }
+  function renderKanbanView(filteredIssues) {
+    const currentGroupBy = isAllProjectsMode ? "project" : "none";
+    elKanbanViewContainer.innerHTML = "";
+    const kanbanFragment = document.createDocumentFragment();
+    const columns = [
+      { id: "draft", title: "Draft" },
+      { id: "backlog", title: "Backlog" },
+      { id: "todo", title: "To Do" },
+      { id: "planned", title: "Planned" },
+      { id: "in-progress", title: "In Progress" },
+      { id: "needs-human", title: "Needs Human" },
+      { id: "in-review", title: "Review" },
+      { id: "done", title: "Done" }
+    ];
+    columns.forEach((col) => {
+      const colIssues = filteredIssues.filter((i) => resolveIssueColumn3(i) === col.id);
+      const colEl = document.createElement("div");
+      colEl.className = "kanban-col";
+      colEl.dataset.column = col.id;
+      colEl.innerHTML = `
+      <div class="kanban-col-header">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <span>${escapeHtml(col.title)}</span>
+          <span class="status-pill">${colIssues.length}</span>
+        </div>
+        ${col.id === "draft" ? `<button class="btn btn-xs" id="btnAlignDrafts" title="Align, structure, and prioritize all draft issues" type="button"${isAligningDrafts ? " disabled" : ""}>${isAligningDrafts ? `<span class="btn-spinner"></span>Aligning (${aligningDraftsCount} drafts)...` : "Align Drafts"}</button>` : ""}
+      </div>
+      ${col.id === "draft" ? `
+      <div class="kanban-quick-add-wrap">
+        <input type="text" class="kanban-quick-add-input" id="quickAddDraftInput" placeholder="Quick add draft... (press Enter)" />
+      </div>` : ""}
+      <div class="kanban-cards" data-column="${escapeHtml(col.id)}"></div>
+    `;
+      if (col.id === "draft") {
+        const qInput = colEl.querySelector("#quickAddDraftInput");
+        if (qInput) {
+          qInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void quickAddDraft(qInput);
+            }
+          });
+        }
+        const alignBtn = colEl.querySelector("#btnAlignDrafts");
+        if (alignBtn) {
+          alignBtn.addEventListener("click", () => {
+            void batchAlignDrafts();
+          });
+        }
+      }
+      const cardsContainer = colEl.querySelector(".kanban-cards");
+      cardsContainer.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        cardsContainer.classList.add("drag-over");
+      });
+      cardsContainer.addEventListener("dragleave", () => {
+        cardsContainer.classList.remove("drag-over");
+      });
+      cardsContainer.addEventListener("drop", async (e) => {
+        e.preventDefault();
+        cardsContainer.classList.remove("drag-over");
+        const issueNum = draggedIssueNumber || Number(e.dataTransfer?.getData("text/plain"));
+        if (!issueNum) return;
+        const issue = issues.find((i) => i.number === issueNum);
+        if (!issue) return;
+        const subEl = e.target?.closest?.(".kanban-subgroup");
+        const subgroupId = subEl?.dataset?.subgroupId;
+        const newPriorityGroup = currentGroupBy === "priority" && subgroupId ? subgroupId : void 0;
+        await updateIssueStatus(issue, col.id, { newPriorityGroup, isHumanGesture: true });
+      });
+      let displayIssues = colIssues;
+      let doneRemaining = 0;
+      if (col.id === "done" && !searchQuery.trim()) {
+        const scoped = scopeDoneIssues(colIssues, 25, showAllDoneIssues);
+        displayIssues = scoped.visible;
+        doneRemaining = scoped.remaining;
+      }
+      if (currentGroupBy === "none" || currentGroupBy === "status") {
+        const cardsFragment = document.createDocumentFragment();
+        displayIssues.forEach((issue) => {
+          const card = buildCardElement(issue, true);
+          cardsFragment.appendChild(card);
+        });
+        cardsContainer.appendChild(cardsFragment);
+      } else {
+        const subGroups = groupIssuesBy2(displayIssues, currentGroupBy);
+        const subFragment = document.createDocumentFragment();
+        subGroups.forEach((subGrp) => {
+          if (subGrp.issues.length === 0) return;
+          const groupKey = `kanban:${col.id}:${subGrp.id}`;
+          const isCollapsed = isGroupCollapsed(groupKey);
+          const subGroupEl = document.createElement("div");
+          subGroupEl.className = `kanban-subgroup ${isCollapsed ? "is-collapsed" : ""}`;
+          subGroupEl.dataset.subgroupId = subGrp.id;
+          subGroupEl.dataset.groupKey = groupKey;
+          subGroupEl.innerHTML = `
+          <div class="kanban-subgroup-header" role="button" tabindex="0" title="Click to collapse / expand group">
+            <div style="display: flex; align-items: center; gap: 5px; min-width: 0;">
+              <svg class="kanban-subgroup-chevron icon icon-sm" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+              <span class="kanban-subgroup-title">${escapeHtml(subGrp.title)}</span>
+            </div>
+            <span class="kanban-subgroup-count">${subGrp.issues.length}</span>
+          </div>
+          <div class="kanban-subgroup-cards"></div>
+        `;
+          const headerEl = subGroupEl.querySelector(".kanban-subgroup-header");
+          const toggleCollapse = (e) => {
+            e.stopPropagation();
+            toggleGroupCollapse(groupKey);
+            renderViews();
+          };
+          headerEl.addEventListener("click", toggleCollapse);
+          headerEl.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggleCollapse(e);
+            }
+          });
+          if (!isCollapsed) {
+            const subCardsContainer = subGroupEl.querySelector(".kanban-subgroup-cards");
+            const subCardsFragment = document.createDocumentFragment();
+            subGrp.issues.forEach((issue) => {
+              const card = buildCardElement(issue, true);
+              subCardsFragment.appendChild(card);
+            });
+            subCardsContainer.appendChild(subCardsFragment);
+          }
+          subFragment.appendChild(subGroupEl);
+        });
+        cardsContainer.appendChild(subFragment);
+      }
+      if (col.id === "done" && doneRemaining > 0) {
+        const showMoreBtn = document.createElement("div");
+        showMoreBtn.className = "kanban-show-more-btn";
+        showMoreBtn.style.cssText = "padding: 8px 10px; text-align: center; font-size: 11px; color: var(--prim); cursor: pointer; background: var(--surf-muted); border-radius: var(--rad); margin-top: 6px; border: 1px dashed var(--border); font-weight: 500;";
+        showMoreBtn.textContent = `Show all ${colIssues.length} Done (+${doneRemaining} more)`;
+        showMoreBtn.addEventListener("click", () => {
+          showAllDoneIssues = true;
+          renderViews();
+        });
+        cardsContainer.appendChild(showMoreBtn);
+      }
+      kanbanFragment.appendChild(colEl);
+    });
+    elKanbanViewContainer.appendChild(kanbanFragment);
+  }
+  var currentPreviewPath = "";
+  function showFilePreviewModal(pathStr, content) {
+    currentPreviewPath = pathStr;
+    if (elFilePreviewTitle) {
+      elFilePreviewTitle.textContent = pathStr;
+    }
+    if (elFilePreviewContent) {
+      elFilePreviewContent.textContent = content;
+    }
+    if (elFilePreviewModalBackdrop) {
+      elFilePreviewModalBackdrop.classList.add("active");
+    }
+  }
+  function closeFilePreviewModal() {
+    if (elFilePreviewModalBackdrop) {
+      elFilePreviewModalBackdrop.classList.remove("active");
+    }
+  }
+  async function handleFilePathClick(pathStr, e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    let cleanPath = pathStr.trim().replace(/^[`'"]+|[`'"]+$/g, "");
+    if (cleanPath.startsWith("./")) {
+      cleanPath = cleanPath.slice(2);
+    }
+    if (!cleanPath) return;
+    try {
+      if (host && typeof host.writeClipboard === "function") {
+        await host.writeClipboard(cleanPath);
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(cleanPath);
+      }
+    } catch {
+    }
+    let editorOpened = false;
+    if (host && typeof host.openFile === "function") {
+      try {
+        await host.openFile(cleanPath);
+        editorOpened = true;
+      } catch {
+        try {
+          await host.openFile({ path: cleanPath });
+          editorOpened = true;
+        } catch {
+        }
+      }
+    }
+    if (host && typeof host.openSurface === "function") {
+      try {
+        await host.openSurface("file.open", { path: cleanPath });
+        editorOpened = true;
+      } catch {
+        try {
+          await host.openSurface("file", { path: cleanPath });
+          editorOpened = true;
+        } catch {
+          try {
+            await host.openSurface("file");
+            editorOpened = true;
+          } catch {
+          }
+        }
+      }
+    }
+    let fileContent = null;
+    if (host && typeof host.readFile === "function") {
+      const cleanCurDir = (currentDirectory || "").replace(/\/+$/, "");
+      const cleanProjDir = (currentProject?.directory || "").replace(/\/+$/, "");
+      const candidatePaths = [
+        cleanPath,
+        cleanPath.startsWith("/") ? cleanPath.slice(1) : "/" + cleanPath,
+        cleanPath.startsWith("/") ? cleanPath : `/workspace/${cleanPath}`,
+        ...cleanCurDir && !cleanPath.startsWith("/") ? [`${cleanCurDir}/${cleanPath}`] : [],
+        ...cleanProjDir && cleanProjDir !== cleanCurDir && !cleanPath.startsWith("/") ? [`${cleanProjDir}/${cleanPath}`] : []
+      ];
+      for (const p of candidatePaths) {
+        try {
+          const res = await host.readFile(p);
+          if (res && typeof res.content === "string") {
+            fileContent = res.content;
+            break;
+          }
+        } catch {
+        }
+      }
+    }
+    if (fileContent !== null) {
+      showFilePreviewModal(cleanPath, fileContent);
+      if (host?.toast) {
+        void host.toast({ kind: "info", message: `Copied "${cleanPath}" & switched to Files. (Preview open in Task Board)` });
+      }
+    } else {
+      if (host?.toast) {
+        void host.toast({ kind: "info", message: `Path copied to clipboard: ${cleanPath}` });
+      }
+    }
+  }
+  function renderHumanTasksView(filteredIssues) {
+    if (!elHumanViewContainer) return;
+    elHumanViewContainer.innerHTML = "";
+    const getCompletedTasksForIssue = (issue) => {
+      const humanTasks = parseHumanTasks(issue.body);
+      if (humanTasks.length > 0) {
+        return humanTasks.filter((t) => t.completed).map((t) => ({ text: t.text.trim(), source: "human-task", done: true }));
+      }
+      const subtasks = parseSubtasks(issue.body);
+      if (subtasks.length > 0) {
+        return subtasks.filter((t) => t.completed).map((t) => ({ text: t.text.trim(), source: "human-task", done: true }));
+      }
+      return [];
+    };
+    const humanIssues = filteredIssues.filter((i) => {
+      if (resolveIssueColumn3(i) === "done") return false;
+      if (resolveIssueColumn3(i) === "needs-human") return true;
+      const session = getIssueSession(i);
+      const todos = collectHumanTodos(i, session);
+      if (todos.length > 0) return true;
+      const completed = getCompletedTasksForIssue(i);
+      if (completed.length > 0) return true;
+      if (getRecoverableQuestionDrafts(i).length > 0) return true;
+      return false;
+    });
+    if (humanIssues.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elHumanViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading human tasks...</span>
+        </div>
+      `;
+        return;
+      }
+      elHumanViewContainer.innerHTML = `
+      <div class="empty-box empty-state-empty">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Nothing is waiting on you</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">All tasks and sessions are moving forward.</span>
+      </div>
+    `;
+      return;
+    }
+    const pendingIssues = [];
+    const completedIssues = [];
+    for (const issue of humanIssues) {
+      const session = getIssueSession(issue);
+      const activeTodos = collectHumanTodos(issue, session);
+      const recoverable = getRecoverableQuestionDrafts(issue);
+      if (activeTodos.length > 0 || recoverable.length > 0) {
+        pendingIssues.push(issue);
+      } else {
+        completedIssues.push(issue);
+      }
+    }
+    const fragment = document.createDocumentFragment();
+    const buildHumanCard = (issue, isCompletedCard = false) => {
+      const card = document.createElement("div");
+      card.className = `human-issue-card${isCompletedCard ? " is-all-completed" : ""}`;
+      const session = getIssueSession(issue);
+      const activeTodos = isCompletedCard ? [] : collectHumanTodos(issue, session);
+      const doneTodos = getCompletedTasksForIssue(issue);
+      const totalTodosCount = activeTodos.length + doneTodos.length;
+      const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
+      const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
+      const header = document.createElement("div");
+      header.className = "human-issue-header";
+      header.setAttribute("role", "button");
+      header.setAttribute("tabindex", "0");
+      header.setAttribute("aria-label", `Open issue #${issue.number}: ${displayTitle}`);
+      const titleGroup = document.createElement("div");
+      titleGroup.className = "human-issue-title-group";
+      const titleSpan = document.createElement("div");
+      titleSpan.className = "human-issue-title";
+      titleSpan.textContent = displayTitle;
+      if (isPlaceholder) {
+        titleSpan.style.fontStyle = "italic";
+        titleSpan.style.color = "var(--fg-muted)";
+      }
+      titleGroup.appendChild(titleSpan);
+      if (displaySubtitle) {
+        const subSpan = document.createElement("div");
+        subSpan.className = "card-subtitle-tech";
+        subSpan.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
+        subSpan.textContent = displaySubtitle;
+        titleGroup.appendChild(subSpan);
+      }
+      const meta = document.createElement("div");
+      meta.className = "human-issue-meta";
+      if (isCompletedCard) {
+        const completedPill = document.createElement("span");
+        completedPill.className = "status-pill";
+        completedPill.style.cssText = "font-size: 10px; background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);";
+        completedPill.textContent = "All Completed";
+        meta.appendChild(completedPill);
+      }
+      const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+      if (isAllProjectsMode && repoName) {
+        const repoPill = document.createElement("span");
+        repoPill.className = "status-pill";
+        repoPill.style.fontSize = "10px";
+        repoPill.textContent = displayProjectName(repoName);
+        repoPill.title = repoName;
+        meta.appendChild(repoPill);
+      }
+      const numSpan = document.createElement("span");
+      numSpan.style.cssText = "font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted);";
+      numSpan.textContent = `#${issue.number}`;
+      meta.appendChild(numSpan);
+      header.appendChild(titleGroup);
+      header.appendChild(meta);
+      const onHeaderClick = () => openDrawer(issue);
+      header.addEventListener("click", onHeaderClick);
+      header.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onHeaderClick();
+        }
+      });
+      card.appendChild(header);
+      const list = document.createElement("div");
+      list.className = "human-todo-list";
+      if (totalTodosCount === 0) {
+        const emptyItem = document.createElement("div");
+        emptyItem.style.cssText = "font-size: 12px; color: var(--fg-muted); padding: 4px 0;";
+        emptyItem.textContent = "No specific checklist items. Review issue details in drawer.";
+        list.appendChild(emptyItem);
+      } else {
+        const renderTodoItem = (todo, _isDoneSection) => {
+          const itemEl = document.createElement("div");
+          itemEl.className = `human-todo-item ${todo.done ? "done is-done" : ""}`;
+          if (todo.source === "open-question") {
+            itemEl.className = "human-todo-item human-todo-item-question";
+            const headerRow = document.createElement("div");
+            headerRow.className = "human-question-header-row";
+            const textWrap = document.createElement("div");
+            textWrap.className = "human-question-text-wrap";
+            const qBadge = document.createElement("span");
+            qBadge.className = "question-icon-badge";
+            qBadge.title = "Question awaiting answer";
+            qBadge.innerHTML = '<svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
+            const spanText2 = document.createElement("span");
+            spanText2.className = "human-todo-text";
+            spanText2.innerHTML = formatTaskTextWithLinks(todo.text, issueRepo);
+            textWrap.appendChild(qBadge);
+            textWrap.appendChild(spanText2);
+            const actionsWrap = document.createElement("div");
+            actionsWrap.className = "human-question-actions";
+            const badge2 = document.createElement("span");
+            badge2.className = "human-todo-badge badge-open-question";
+            badge2.textContent = "Question";
+            const btnAnswer = document.createElement("button");
+            btnAnswer.className = "btn btn-xs btn-primary btn-answer-action";
+            btnAnswer.textContent = "Answer";
+            btnAnswer.title = "Answer question";
+            actionsWrap.appendChild(badge2);
+            actionsWrap.appendChild(btnAnswer);
+            headerRow.appendChild(textWrap);
+            headerRow.appendChild(actionsWrap);
+            itemEl.appendChild(headerRow);
+            const answerRow = document.createElement("div");
+            answerRow.className = "inline-answer-row human-todo-answer-box";
+            answerRow.style.cssText = "display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px; padding: 6px 8px; background: var(--surf-muted); border-radius: 6px; border: 1px solid var(--border);";
+            const options = extractQuestionOptions(todo.text, issue.body);
+            let optionsHtml = "";
+            if (options.length > 0) {
+              optionsHtml = `
+              <div class="question-options-group" style="margin-top: 0;">
+                <span class="question-options-label">Choices:</span>
+                <div class="question-options-chips">
+                  ${options.map((opt) => `<button type="button" class="question-option-btn" data-opt="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join("")}
+                </div>
+              </div>
+            `;
+            }
+            answerRow.innerHTML = `
+            ${optionsHtml}
+            <div class="inline-answer-input-bar">
+              <input type="text" class="form-ctrl input-human-answer" placeholder="Type answer or select a choice above..." />
+              <div class="inline-answer-btns">
+                <button class="btn btn-xs btn-primary btn-submit-human-answer">Save</button>
+                <button class="btn btn-xs btn-cancel-human-answer">Cancel</button>
+              </div>
+            </div>
+          `;
+            itemEl.appendChild(answerRow);
+            const answerInput = answerRow.querySelector(".input-human-answer");
+            const btnSubmit = answerRow.querySelector(".btn-submit-human-answer");
+            const btnCancel = answerRow.querySelector(".btn-cancel-human-answer");
+            const existingDraft = getQuestionDraft(issue, todo.text);
+            if (existingDraft && answerInput) {
+              answerInput.value = existingDraft;
+              answerRow.style.display = "flex";
+            }
+            answerInput?.addEventListener("input", () => {
+              saveQuestionDraft(issue, todo.text, answerInput.value);
+            });
+            answerRow.querySelectorAll(".question-option-btn").forEach((optBtn) => {
+              optBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                const optVal = optBtn.getAttribute("data-opt");
+                if (optVal && answerInput) {
+                  answerInput.value = optVal;
+                  saveQuestionDraft(issue, todo.text, optVal);
+                  answerInput.focus();
+                }
+              });
+            });
+            btnAnswer.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const isOpen = answerRow.style.display !== "none";
+              answerRow.style.display = isOpen ? "none" : "flex";
+              if (!isOpen) answerInput?.focus();
+            });
+            btnCancel?.addEventListener("click", (e) => {
+              e.stopPropagation();
+              clearQuestionDraft(issue, todo.text);
+              if (answerInput) answerInput.value = "";
+              answerRow.style.display = "none";
+            });
+            const doSubmitAnswer = async () => {
+              if (btnSubmit?.disabled) return;
+              const ans = answerInput?.value.trim();
+              if (!ans) {
+                answerInput?.focus();
+                return;
+              }
+              if (btnSubmit) btnSubmit.disabled = true;
+              if (answerInput) answerInput.disabled = true;
+              try {
+                const ok = await answerQuestion(issue, todo.text, ans);
+                if (ok) {
+                  clearQuestionDraft(issue, todo.text);
+                  if (answerRow) answerRow.style.display = "none";
+                }
+              } finally {
+                if (btnSubmit) btnSubmit.disabled = false;
+                if (answerInput) answerInput.disabled = false;
+              }
+            };
+            btnSubmit?.addEventListener("click", (e) => {
+              e.stopPropagation();
+              void doSubmitAnswer();
+            });
+            answerInput?.addEventListener("keydown", (e) => {
+              e.stopPropagation();
+              if (e.key === "Enter") {
+                e.preventDefault();
+                void doSubmitAnswer();
+              } else if (e.key === "Escape") {
+                answerRow.style.display = "none";
+              }
+            });
+            return itemEl;
+          }
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.className = "human-todo-checkbox";
+          cb.checked = todo.done;
+          cb.setAttribute("aria-label", todo.text);
+          cb.addEventListener("click", (e) => e.stopPropagation());
+          cb.addEventListener("change", async (e) => {
+            e.stopPropagation();
+            if (todo.source === "human-task") {
+              await reloadIssueBeforeMutation(issue);
+              const result = resolveOptimisticSubtaskUpdate(issue.body, todo.text, cb.checked);
+              if (result.found) {
+                await updateIssueBody(issue, result.updatedBody);
+                return;
+              }
+              const subtasks = parseSubtasks(issue.body);
+              const target = subtasks.find((t) => t.completed !== cb.checked && t.text.trim() === todo.text.trim()) || subtasks.find((t) => t.text.trim() === todo.text.trim());
+              if (target) {
+                const updatedBody = updateSubtaskInMarkdown(issue.body, target.lineIndex, cb.checked);
+                await updateIssueBody(issue, updatedBody);
+              }
+            } else if (todo.source === "session-waiting") {
+              cb.checked = false;
+              if (session?.id) {
+                void host.openSession(session.id);
+                await host.toast({ kind: "info", message: "Opened waiting session" });
+              }
+            }
+          });
+          const spanText = document.createElement("span");
+          spanText.className = "human-todo-text";
+          spanText.innerHTML = formatTaskTextWithLinks(todo.text, issueRepo);
+          const badge = document.createElement("span");
+          badge.className = `human-todo-badge badge-${todo.source}`;
+          badge.textContent = todo.source === "human-task" ? "Human Task" : "Agent Waiting";
+          itemEl.appendChild(cb);
+          itemEl.appendChild(spanText);
+          itemEl.appendChild(badge);
+          return itemEl;
+        };
+        activeTodos.forEach((todo) => {
+          list.appendChild(renderTodoItem(todo, false));
+        });
+        if (doneTodos.length > 0) {
+          const doneGroup = document.createElement("div");
+          doneGroup.className = "human-done-tasks-group is-collapsed";
+          const doneHeader = document.createElement("div");
+          doneHeader.className = "human-done-tasks-header";
+          doneHeader.setAttribute("role", "button");
+          doneHeader.setAttribute("tabindex", "0");
+          doneHeader.setAttribute("aria-expanded", "false");
+          doneHeader.setAttribute("aria-label", `Toggle completed tasks (${doneTodos.length})`);
+          doneHeader.innerHTML = `
+          <svg class="icon icon-xs done-tasks-chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+          <span class="human-done-tasks-title">Completed (${doneTodos.length})</span>
+          <span class="human-done-tasks-hint">Click to show</span>
+        `;
+          const doneItemsList = document.createElement("div");
+          doneItemsList.className = "human-done-tasks-items";
+          doneItemsList.style.display = "none";
+          doneTodos.forEach((todo) => {
+            doneItemsList.appendChild(renderTodoItem(todo, true));
+          });
+          const toggleDoneGroup = (e) => {
+            if (e) e.stopPropagation();
+            const isCollapsed = doneGroup.classList.contains("is-collapsed");
+            const hint = doneHeader.querySelector(".human-done-tasks-hint");
+            if (isCollapsed) {
+              doneGroup.classList.remove("is-collapsed");
+              doneItemsList.style.display = "flex";
+              doneHeader.setAttribute("aria-expanded", "true");
+              if (hint) hint.textContent = "Click to hide";
+            } else {
+              doneGroup.classList.add("is-collapsed");
+              doneItemsList.style.display = "none";
+              doneHeader.setAttribute("aria-expanded", "false");
+              if (hint) hint.textContent = "Click to show";
+            }
+          };
+          doneHeader.addEventListener("click", toggleDoneGroup);
+          doneHeader.addEventListener("keydown", (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              toggleDoneGroup(e);
+            }
+          });
+          doneGroup.appendChild(doneHeader);
+          doneGroup.appendChild(doneItemsList);
+          list.appendChild(doneGroup);
+        }
+      }
+      card.appendChild(list);
+      const recoverableDraftsEl = renderRecoverableDraftsElement(issue, () => {
+        renderViews();
+      });
+      if (recoverableDraftsEl) {
+        card.appendChild(recoverableDraftsEl);
+      }
+      return card;
+    };
+    if (isAllProjectsMode) {
+      const byRepo = {};
+      for (const issue of pendingIssues) {
+        const repo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : "Unknown Repository");
+        if (!byRepo[repo]) byRepo[repo] = [];
+        byRepo[repo].push(issue);
+      }
+      Object.keys(byRepo).forEach((repo) => {
+        const repoGroup = document.createElement("div");
+        repoGroup.className = "human-repo-group";
+        const repoHeader = document.createElement("div");
+        repoHeader.className = "human-repo-header";
+        repoHeader.innerHTML = `
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+        <span title="${escapeHtml(repo)}">${escapeHtml(displayProjectName(repo))}</span>
+      `;
+        repoGroup.appendChild(repoHeader);
+        byRepo[repo].forEach((issue) => {
+          repoGroup.appendChild(buildHumanCard(issue, false));
+        });
+        fragment.appendChild(repoGroup);
+      });
+    } else {
+      if (pendingIssues.length === 0 && completedIssues.length > 0) {
+        const allDoneBox = document.createElement("div");
+        allDoneBox.className = "empty-box empty-state-empty";
+        allDoneBox.style.padding = "16px 12px";
+        allDoneBox.innerHTML = `
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">All active human tasks are complete!</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">Completed tasks are retained below for review or unchecking.</span>
+      `;
+        fragment.appendChild(allDoneBox);
+      } else {
+        pendingIssues.forEach((issue) => {
+          fragment.appendChild(buildHumanCard(issue, false));
+        });
+      }
+    }
+    if (completedIssues.length > 0) {
+      const completedSection = document.createElement("div");
+      completedSection.className = "human-completed-section";
+      completedSection.innerHTML = `
+      <div class="human-completed-header" role="button" tabindex="0" aria-expanded="true">
+        <svg class="icon icon-sm completed-chevron" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5z"/></svg>
+        <span class="human-completed-title">Completed Tasks (${completedIssues.length} ${completedIssues.length === 1 ? "issue" : "issues"})</span>
+        <span class="human-completed-sub">All tasks checked &bull; Click to toggle</span>
+      </div>
+      <div class="human-completed-body"></div>
+    `;
+      const bodyEl = completedSection.querySelector(".human-completed-body");
+      const headerEl = completedSection.querySelector(".human-completed-header");
+      const toggleCompleted = () => {
+        const isExpanded = headerEl.getAttribute("aria-expanded") === "true";
+        headerEl.setAttribute("aria-expanded", isExpanded ? "false" : "true");
+        bodyEl.style.display = isExpanded ? "none" : "flex";
+        completedSection.classList.toggle("is-collapsed", isExpanded);
+      };
+      headerEl.addEventListener("click", toggleCompleted);
+      headerEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleCompleted();
+        }
+      });
+      completedIssues.forEach((issue) => {
+        bodyEl.appendChild(buildHumanCard(issue, true));
+      });
+      fragment.appendChild(completedSection);
+    }
+    elHumanViewContainer.appendChild(fragment);
+  }
+  function renderQuestionsView(filteredIssues) {
+    if (!elQuestionsViewContainer) return;
+    elQuestionsViewContainer.innerHTML = "";
+    const issuesWithQuestions = [];
+    for (const issue of filteredIssues) {
+      const questions = parseOpenQuestions(issue.body || "");
+      const unanswered = questions.filter((q) => !q.completed);
+      const recoverable = getRecoverableQuestionDrafts(issue);
+      if (unanswered.length > 0 || recoverable.length > 0) {
+        issuesWithQuestions.push({ issue, questions: unanswered });
+      }
+    }
+    if (issuesWithQuestions.length === 0) {
+      if (isLoading && issues.length === 0) {
+        elQuestionsViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading questions...</span>
+        </div>
+      `;
+        return;
+      }
+      elQuestionsViewContainer.innerHTML = `
+      <div class="empty-box">
+        <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>
+        <span style="font-weight: 500; font-size: 13px; color: var(--fg);">No open questions</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">All specifications and open questions have been answered.</span>
+      </div>
+    `;
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    const buildQuestionCard = ({ issue, questions }) => {
+      const card = document.createElement("div");
+      card.className = "questions-issue-card";
+      card.setAttribute("role", "region");
+      const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
+      card.setAttribute("aria-label", `Issue #${issue.number}: ${displayTitle}`);
+      const col = resolveIssueColumn3(issue) || "backlog";
+      const statusMeta = STATUS_METADATA[col];
+      const header = document.createElement("div");
+      header.className = "questions-issue-header";
+      header.setAttribute("role", "button");
+      header.setAttribute("tabindex", "0");
+      header.setAttribute("aria-label", `Open questions for issue #${issue.number}: ${displayTitle}`);
+      const titleGroup = document.createElement("div");
+      titleGroup.className = "human-issue-title-group";
+      const titleSpan = document.createElement("div");
+      titleSpan.className = "human-issue-title";
+      titleSpan.textContent = displayTitle;
+      if (isPlaceholder) {
+        titleSpan.style.fontStyle = "italic";
+        titleSpan.style.color = "var(--fg-muted)";
+      }
+      titleGroup.appendChild(titleSpan);
+      if (displaySubtitle) {
+        const subSpan = document.createElement("div");
+        subSpan.className = "card-subtitle-tech";
+        subSpan.style.cssText = "font-size: 10.5px; color: var(--fg-muted); font-family: var(--font-mono); margin-top: 2px;";
+        subSpan.textContent = displaySubtitle;
+        titleGroup.appendChild(subSpan);
+      }
+      const meta = document.createElement("div");
+      meta.className = "human-issue-meta";
+      const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+      if (isAllProjectsMode && repoName) {
+        const repoPill = document.createElement("span");
+        repoPill.className = "status-pill";
+        repoPill.style.fontSize = "10px";
+        repoPill.textContent = displayProjectName(repoName);
+        repoPill.title = repoName;
+        meta.appendChild(repoPill);
+      }
+      const statusPill = document.createElement("span");
+      statusPill.className = "status-pill";
+      statusPill.style.cssText = `background: color-mix(in srgb, ${statusMeta.color} 20%, transparent); color: ${statusMeta.color}; font-size: 10.5px;`;
+      statusPill.textContent = statusMeta.label;
+      meta.appendChild(statusPill);
+      const countPill = document.createElement("span");
+      countPill.className = "status-pill status-pill-frontier";
+      countPill.style.fontSize = "10.5px";
+      countPill.textContent = `${questions.length} open`;
+      meta.appendChild(countPill);
+      const numSpan = document.createElement("span");
+      numSpan.style.cssText = "font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted);";
+      numSpan.textContent = `#${issue.number}`;
+      meta.appendChild(numSpan);
+      header.appendChild(titleGroup);
+      header.appendChild(meta);
+      const onHeaderClick = () => {
+        openDrawer(issue);
+        setTimeout(() => {
+          const elQuestions = document.getElementById("drawerQuestionsContainer");
+          if (elQuestions) {
+            elQuestions.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
+        }, 50);
+      };
+      header.addEventListener("click", onHeaderClick);
+      header.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onHeaderClick();
+        }
+      });
+      card.appendChild(header);
+      if (questions.length === 0) {
+        const emptyNote = document.createElement("div");
+        emptyNote.className = "no-questions-notice";
+        emptyNote.style.cssText = "font-size: 11px; color: var(--fg-muted); padding: 6px 0; font-style: italic;";
+        emptyNote.textContent = "No open questions remaining on this issue.";
+        card.appendChild(emptyNote);
+      }
+      const list = document.createElement("div");
+      list.className = "question-items-list";
+      const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
+      let unresolvedIdx = 0;
+      questions.forEach((question) => {
+        const idx = unresolvedIdx;
+        unresolvedIdx++;
+        const itemEl = document.createElement("div");
+        itemEl.className = "question-view-item";
+        const row = document.createElement("div");
+        row.className = "question-view-row";
+        const leftRow = document.createElement("div");
+        leftRow.style.cssText = "display: flex; align-items: flex-start; gap: 8px; flex: 1 1 180px; min-width: 0;";
+        const qIcon = document.createElement("span");
+        qIcon.className = "question-icon-badge";
+        qIcon.title = "Open question requiring human answer";
+        qIcon.innerHTML = '<svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 16h-2v-2h2v2zm1.07-7.75l-.9.92C12.45 11.9 12 12.5 12 14h-2v-.5c0-1.1.45-2.1 1.17-2.83l1.24-1.26c.37-.36.59-.86.59-1.41 0-1.1-.9-2-2-2s-2 .9-2 2H7c0-2.76 2.24-5 5-5s5 2.24 5 5c0 1.04-.42 1.99-1.07 2.75z"/></svg>';
+        const spanText = document.createElement("span");
+        spanText.className = "question-view-text";
+        spanText.innerHTML = formatTaskTextWithLinks(question.text, issueRepo);
+        leftRow.appendChild(qIcon);
+        leftRow.appendChild(spanText);
+        const btnAnswer = document.createElement("button");
+        btnAnswer.className = "btn btn-xs btn-inline-answer";
+        btnAnswer.style.cssText = "flex-shrink: 0; margin-left: auto;";
+        btnAnswer.title = "Record decision or answer";
+        btnAnswer.setAttribute("aria-expanded", "false");
+        btnAnswer.setAttribute("aria-label", `Answer question: ${question.text}`);
+        btnAnswer.textContent = "Answer";
+        row.appendChild(leftRow);
+        row.appendChild(btnAnswer);
+        itemEl.appendChild(row);
+        const contextSnippet = extractQuestionContext(issue.body, question.lineIndex);
+        if (contextSnippet) {
+          const contextBox = document.createElement("div");
+          contextBox.className = "question-context-box";
+          contextBox.innerHTML = `
+          <div class="question-context-header">
+            <svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <span>Context from Issue</span>
+          </div>
+          <div class="question-context-body">${escapeHtml(contextSnippet)}</div>
+        `;
+          itemEl.appendChild(contextBox);
+        }
+        const options = extractQuestionOptions(question.text, issue.body);
+        if (options.length > 0) {
+          const optGroup = document.createElement("div");
+          optGroup.className = "question-options-group";
+          optGroup.innerHTML = `
+          <span class="question-options-label">Quick Choices:</span>
+          <div class="question-options-chips"></div>
+        `;
+          const chipsContainer = optGroup.querySelector(".question-options-chips");
+          options.forEach((opt) => {
+            const optBtn = document.createElement("button");
+            optBtn.className = "question-option-btn";
+            optBtn.textContent = opt;
+            optBtn.setAttribute("type", "button");
+            optBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              answerRow.style.display = "flex";
+              btnAnswer.setAttribute("aria-expanded", "true");
+              if (input) {
+                input.value = opt;
+                saveQuestionDraft(issue, question.text, opt);
+                input.focus();
+              }
+            });
+            chipsContainer.appendChild(optBtn);
+          });
+          itemEl.appendChild(optGroup);
+        }
+        const answerRow = document.createElement("div");
+        answerRow.className = "inline-answer-row";
+        answerRow.style.display = "none";
+        answerRow.style.cssText = "display: none; width: 100%; flex-direction: column; gap: 6px; margin-top: 6px;";
+        answerRow.innerHTML = `
+        <div class="inline-answer-input-bar">
+          <input type="text" class="form-ctrl input-inline-answer" aria-label="Answer for: ${escapeHtml(question.text)}" placeholder="Type answer or decision..." />
+          <div class="inline-answer-btns">
+            <button class="btn btn-xs btn-primary btn-submit-inline-answer" aria-label="Save answer">Save</button>
+            <button class="btn btn-xs btn-cancel-inline-answer" aria-label="Cancel answer">Cancel</button>
+          </div>
+        </div>
+      `;
+        itemEl.appendChild(answerRow);
+        const input = answerRow.querySelector(".input-inline-answer");
+        const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
+        const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
+        const existingDraft = getQuestionDraft(issue, question.text);
+        if (existingDraft && input) {
+          input.value = existingDraft;
+          answerRow.style.display = "flex";
+          btnAnswer.setAttribute("aria-expanded", "true");
+        }
+        input?.addEventListener("input", () => {
+          saveQuestionDraft(issue, question.text, input.value);
+        });
+        btnAnswer.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isVisible = answerRow.style.display !== "none";
+          answerRow.style.display = isVisible ? "none" : "flex";
+          btnAnswer.setAttribute("aria-expanded", isVisible ? "false" : "true");
+          if (!isVisible) {
+            input?.focus();
+          }
+        });
+        const submitAnswer = async () => {
+          if (btnSave?.disabled) return;
+          const answerText = input?.value.trim();
+          if (!answerText) {
+            input?.focus();
+            return;
+          }
+          if (btnSave) btnSave.disabled = true;
+          if (input) input.disabled = true;
+          try {
+            const ok = await answerQuestion(issue, question.text, answerText);
+            if (ok) {
+              clearQuestionDraft(issue, question.text);
+              answerRow.style.display = "none";
+              btnAnswer.setAttribute("aria-expanded", "false");
+            }
+          } finally {
+            if (btnSave) btnSave.disabled = false;
+            if (input) input.disabled = false;
+          }
+        };
+        btnSave?.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          void submitAnswer();
+        });
+        input?.addEventListener("keydown", (ev) => {
+          ev.stopPropagation();
+          if (ev.key === "Enter") {
+            ev.preventDefault();
+            void submitAnswer();
+          } else if (ev.key === "Escape") {
+            answerRow.style.display = "none";
+            btnAnswer.setAttribute("aria-expanded", "false");
+          }
+        });
+        btnCancel?.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          clearQuestionDraft(issue, question.text);
+          if (input) input.value = "";
+          answerRow.style.display = "none";
+          btnAnswer.setAttribute("aria-expanded", "false");
+        });
+        list.appendChild(itemEl);
+      });
+      card.appendChild(list);
+      const draftsEl = renderRecoverableDraftsElement(issue, () => {
+        renderViews();
+      });
+      if (draftsEl) {
+        card.appendChild(draftsEl);
+      }
+      return card;
+    };
+    if (isAllProjectsMode) {
+      const byRepo = {};
+      for (const item of issuesWithQuestions) {
+        const repo = getIssueRepoFullName(item.issue) || (item.issue.repo && item.issue.repo !== ALL_PROJECTS_CACHE_KEY ? item.issue.repo : "Unknown Repository");
+        if (!byRepo[repo]) byRepo[repo] = [];
+        byRepo[repo].push(item);
+      }
+      Object.keys(byRepo).forEach((repo) => {
+        const repoGroup = document.createElement("div");
+        repoGroup.className = "questions-repo-group";
+        const repoHeader = document.createElement("div");
+        repoHeader.className = "questions-repo-header";
+        repoHeader.innerHTML = `
+        <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M4 6h16v2H4V6zm0 5h16v2H4v-2zm0 5h16v2H4v-2z"/></svg>
+        <span title="${escapeHtml(repo)}">${escapeHtml(displayProjectName(repo))}</span>
+      `;
+        repoGroup.appendChild(repoHeader);
+        byRepo[repo].forEach((item) => {
+          repoGroup.appendChild(buildQuestionCard(item));
+        });
+        fragment.appendChild(repoGroup);
+      });
+    } else {
+      issuesWithQuestions.forEach((item) => {
+        fragment.appendChild(buildQuestionCard(item));
+      });
+    }
+    elQuestionsViewContainer.appendChild(fragment);
+  }
+  function renderAttentionView(filteredIssues) {
+    if (!elAttentionViewContainer) return;
+    elAttentionViewContainer.innerHTML = "";
+    const targetSessionIndex = sessionIndexByRepo.size > 0 ? sessionIndexByRepo : sessionIndex;
+    const grouped = groupIssuesByAttention(filteredIssues, targetSessionIndex);
+    const decisions = grouped["needs-decision"];
+    const permissions = grouped["needs-permission"];
+    const reviews = grouped["needs-review"];
+    const totalAttention = decisions.length + permissions.length + reviews.length;
+    if (totalAttention === 0) {
+      if (isLoading && filteredIssues.length === 0) {
+        elAttentionViewContainer.innerHTML = `
+        <div class="empty-box">
+          <svg class="icon icon-lg spin-fast" viewBox="0 0 24 24"><path d="M12 2v2a8 8 0 1 1-8 8H2C2 6.477 6.477 2 12 2z"/></svg>
+          <span style="font-weight: 500; font-size: 13px; color: var(--fg);">Loading attention queue...</span>
+        </div>
+      `;
+        return;
+      }
+      elAttentionViewContainer.innerHTML = `
+      <div class="empty-box empty-state-empty attention-empty-state">
+        <svg class="icon icon-lg" viewBox="0 0 24 24" style="color: var(--succ);"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+        <span style="font-weight: 600; font-size: 13px; color: var(--fg);">All systems clear \u2014 no tasks currently require human attention.</span>
+        <span style="color: var(--fg-muted); font-size: 11.5px;">All tasks and sessions are moving forward without blockers.</span>
+      </div>
+    `;
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    const header = document.createElement("h3");
+    header.className = "attention-header";
+    header.textContent = "Attention Action Queues";
+    fragment.appendChild(header);
+    const buildAttentionCard = (issue, category) => {
+      const card = document.createElement("div");
+      card.className = "attention-card";
+      card.setAttribute("role", "button");
+      card.setAttribute("tabindex", "0");
+      const session = getIssueSession(issue);
+      const v2 = resolveV2Metadata(issue, session);
+      const { displayTitle, displaySubtitle, isPlaceholder } = resolveSimplifiedViewTitle(issue);
+      const repoName = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : null);
+      card.setAttribute("aria-label", `Issue #${issue.number}: ${displayTitle}. Requires ${category}.`);
+      const topRow = document.createElement("div");
+      topRow.className = "attention-card-top";
+      const titleGroup = document.createElement("div");
+      titleGroup.className = "attention-card-title-group";
+      const titleEl = document.createElement("div");
+      titleEl.className = "attention-card-title";
+      titleEl.textContent = displayTitle;
+      if (isPlaceholder) {
+        titleEl.style.fontStyle = "italic";
+        titleEl.style.color = "var(--fg-muted)";
+      }
+      titleGroup.appendChild(titleEl);
+      if (displaySubtitle) {
+        const subEl = document.createElement("div");
+        subEl.className = "card-subtitle-tech";
+        subEl.style.cssText = "font-size: 10.5px; color: var(--fg-muted);";
+        subEl.textContent = displaySubtitle;
+        titleGroup.appendChild(subEl);
+      }
+      topRow.appendChild(titleGroup);
+      const metaEl = document.createElement("div");
+      metaEl.className = "attention-card-meta";
+      if ((isAllProjectsMode || currentRepo === null) && repoName) {
+        const repoBadge = document.createElement("span");
+        repoBadge.className = "attention-repo-badge";
+        repoBadge.textContent = displayProjectName(repoName);
+        repoBadge.title = repoName;
+        metaEl.appendChild(repoBadge);
+      }
+      const numBadge = document.createElement("span");
+      numBadge.style.cssText = "font-family: var(--font-mono); font-size: 11px; color: var(--fg-muted); font-weight: 600;";
+      numBadge.textContent = `#${issue.number}`;
+      metaEl.appendChild(numBadge);
+      const phaseBadge = document.createElement("span");
+      phaseBadge.className = "attention-phase-badge";
+      phaseBadge.textContent = v2.phase;
+      metaEl.appendChild(phaseBadge);
+      topRow.appendChild(metaEl);
+      card.appendChild(topRow);
+      const reasonEl = document.createElement("div");
+      let snippetText = "";
+      let reasonClass = "";
+      let actionBtnLabel = "";
+      if (category === "needs-decision") {
+        reasonClass = "reason-decision";
+        actionBtnLabel = "Decide";
+        const openQs = Array.isArray(issue.openQuestions) ? issue.openQuestions.filter((q) => !q.completed) : [];
+        if (openQs.length === 1) {
+          snippetText = "1 open question requires decision";
+        } else if (openQs.length > 1) {
+          snippetText = `${openQs.length} open questions require decisions`;
+        } else {
+          snippetText = "Pending design or implementation decision";
+        }
+      } else if (category === "needs-permission") {
+        reasonClass = "reason-permission";
+        actionBtnLabel = "Authorize";
+        snippetText = "Session blocked awaiting tool or permission approval";
+      } else {
+        reasonClass = "reason-review";
+        actionBtnLabel = "Review";
+        const subtasks = Array.isArray(issue.subtasks) ? issue.subtasks : [];
+        const completedSubtasks = subtasks.filter((s) => s.completed);
+        if (completedSubtasks.length > 0) {
+          snippetText = `${completedSubtasks.length} completed subtask${completedSubtasks.length > 1 ? "s" : ""} awaiting review`;
+        } else {
+          snippetText = "Completed work awaiting human review";
+        }
+      }
+      reasonEl.className = `attention-reason-snippet ${reasonClass}`;
+      reasonEl.textContent = snippetText;
+      card.appendChild(reasonEl);
+      const bottomRow = document.createElement("div");
+      bottomRow.className = "attention-card-bottom";
+      const actionBtn = document.createElement("button");
+      actionBtn.className = "btn btn-sm btn-primary";
+      actionBtn.style.cssText = "margin-left: auto; height: 22px; font-size: 11px; padding: 0 8px;";
+      actionBtn.textContent = actionBtnLabel;
+      const onCardAction = (e) => {
+        e?.stopPropagation();
+        openDrawer(issue);
+      };
+      actionBtn.addEventListener("click", onCardAction);
+      card.addEventListener("click", () => openDrawer(issue));
+      card.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openDrawer(issue);
+        }
+      });
+      bottomRow.appendChild(actionBtn);
+      card.appendChild(bottomRow);
+      return card;
+    };
+    const renderQueueSection = (category, title, dotClass, items) => {
+      const section = document.createElement("section");
+      section.className = "attention-queue-section";
+      section.setAttribute("aria-label", `${title} queue`);
+      const secHeader = document.createElement("div");
+      secHeader.className = "attention-queue-header";
+      const secHeaderLeft = document.createElement("div");
+      secHeaderLeft.className = "attention-queue-header-left";
+      const dot = document.createElement("span");
+      dot.className = `attention-queue-dot ${dotClass}`;
+      const titleSpan = document.createElement("span");
+      titleSpan.textContent = title;
+      secHeaderLeft.appendChild(dot);
+      secHeaderLeft.appendChild(titleSpan);
+      const countPill = document.createElement("span");
+      countPill.className = "filter-count";
+      countPill.style.cssText = "font-size: 10px; font-family: var(--font-mono);";
+      countPill.textContent = String(items.length);
+      secHeader.appendChild(secHeaderLeft);
+      secHeader.appendChild(countPill);
+      section.appendChild(secHeader);
+      const cardsContainer = document.createElement("div");
+      cardsContainer.className = "attention-queue-cards";
+      if (items.length === 0) {
+        const emptyNote = document.createElement("div");
+        emptyNote.style.cssText = "font-size: 12px; color: var(--fg-muted); padding: 12px 8px; font-style: italic;";
+        emptyNote.textContent = `No tasks currently in ${title.toLowerCase()}.`;
+        cardsContainer.appendChild(emptyNote);
+      } else {
+        items.forEach((issue) => {
+          cardsContainer.appendChild(buildAttentionCard(issue, category));
+        });
+      }
+      section.appendChild(cardsContainer);
+      fragment.appendChild(section);
+    };
+    renderQueueSection("needs-decision", "Needs Decision", "queue-dot-decision", decisions);
+    renderQueueSection("needs-permission", "Needs Permission", "queue-dot-permission", permissions);
+    renderQueueSection("needs-review", "Needs Review", "queue-dot-review", reviews);
+    elAttentionViewContainer.appendChild(fragment);
+  }
+  function applyLayoutMode(triggerRender = true) {
+    isWideScreen = window.innerWidth >= 680;
+    document.body.setAttribute("data-layout", showArchivedOnly ? "cards" : viewState.view);
+    if (elViewSelectCurrentLabel) elViewSelectCurrentLabel.textContent = VIEW_LABELS[viewState.view];
+    document.querySelectorAll(".view-opt-item").forEach((item) => {
+      const active2 = item.getAttribute("data-mode") === viewState.view;
+      item.classList.toggle("active", active2);
+      item.setAttribute("aria-checked", String(active2));
+    });
+    if (triggerRender) renderViews();
+  }
+  var THEME_PALETTE = [
+    "#3b82f6",
+    "#10b981",
+    "#f59e0b",
+    "#8b5cf6",
+    "#ec4899",
+    "#06b6d4",
+    "#14b8a6",
+    "#f97316",
+    "#6366f1",
+    "#84cc16"
+  ];
+  function getThemeColor(theme) {
+    if (!theme || theme === "No Theme") return "var(--border)";
+    let hash = 0;
+    for (let i = 0; i < theme.length; i++) {
+      hash = hash * 31 + theme.charCodeAt(i) & 4294967295;
+    }
+    return THEME_PALETTE[Math.abs(hash) % THEME_PALETTE.length];
+  }
+  async function handleAddDependency(targetNum, blockerNum) {
+    if (targetNum === blockerNum) return;
+    if (detectCycle(issues, blockerNum, targetNum)) {
+      if (host?.toast) {
+        await host.toast({ kind: "error", message: `Cannot link #${targetNum} -> #${blockerNum}: creates circular dependency` });
+      }
+      return;
+    }
+    const targetIssue = issues.find((i) => i.number === targetNum);
+    if (!targetIssue) return;
+    const newBody = addDependencyToMarkdown(targetIssue.body, blockerNum);
+    if (newBody !== targetIssue.body) {
+      const ok = await updateIssueBody(targetIssue, newBody, { suppressToast: true });
+      if (ok && host?.toast) {
+        await host.toast({ kind: "info", message: `Linked #${targetNum} as blocked by #${blockerNum}` });
+      }
+    }
+  }
+  async function handleRemoveDependency(targetNum, blockerNum) {
+    const targetIssue = issues.find((i) => i.number === targetNum);
+    if (!targetIssue) return;
+    const newBody = removeDependencyFromMarkdown(targetIssue.body, blockerNum);
+    if (newBody !== targetIssue.body) {
+      const ok = await updateIssueBody(targetIssue, newBody, { suppressToast: true });
+      if (ok && host?.toast) {
+        await host.toast({ kind: "info", message: `Removed dependency: #${blockerNum} no longer blocks #${targetNum}` });
+      }
+    }
+  }
+  document.addEventListener("click", (e) => {
+    const btn = e.target?.closest(".btn-remove-blocker");
+    if (btn) {
+      e.stopPropagation();
+      e.preventDefault();
+      const target = parseInt(btn.dataset.target || "0", 10);
+      const blocker = parseInt(btn.dataset.blocker || "0", 10);
+      if (target > 0 && blocker > 0) {
+        void handleRemoveDependency(target, blocker);
+      }
+    }
+  });
+  function showQuickBlockerPicker(targetIssue, triggerEl) {
+    document.querySelectorAll(".graph-quick-picker").forEach((p) => p.remove());
+    const popover = document.createElement("div");
+    popover.className = "popover graph-quick-picker";
+    popover.style.display = "block";
+    popover.style.position = "absolute";
+    popover.style.width = "240px";
+    popover.style.zIndex = "200";
+    const triggerRect = triggerEl.getBoundingClientRect();
+    popover.style.top = `${triggerRect.bottom + window.scrollY + 4}px`;
+    popover.style.left = `${Math.max(10, Math.min(window.innerWidth - 250, triggerRect.left + window.scrollX))}px`;
+    const existingBlockers = parseIssueDependencies(targetIssue.body);
+    const candidateIssues = issues.filter((i) => i.number !== targetIssue.number && !existingBlockers.includes(i.number));
+    let itemsHtml = "";
+    if (candidateIssues.length === 0) {
+      itemsHtml = '<div style="padding: 8px 10px; color: var(--fg-faint); font-size: 11px;">No other issues available.</div>';
+    } else {
+      candidateIssues.forEach((cand) => {
+        itemsHtml += `
+        <div class="popover-item" data-blocker-num="${cand.number}" style="padding: 6px 10px; cursor: pointer;">
+          <div style="font-weight: 600; font-size: 11.5px; color: var(--fg);">#${cand.number} ${escapeHtml(cand.title)}</div>
+        </div>
+      `;
+      });
+    }
+    popover.innerHTML = `
+    <div class="popover-head" style="display: flex; justify-content: space-between; align-items: center;">
+      <span>Add Blocker to #${targetIssue.number}</span>
+      <span class="popover-close-btn" style="cursor: pointer; font-weight: 700;">\xD7</span>
+    </div>
+    <div class="popover-list" style="max-height: 200px; overflow-y: auto;">
+      ${itemsHtml}
+    </div>
+  `;
+    document.body.appendChild(popover);
+    const closePopover = () => {
+      popover.remove();
+      document.removeEventListener("click", onDocClick);
+    };
+    const onDocClick = (e) => {
+      if (!popover.contains(e.target) && e.target !== triggerEl) {
+        closePopover();
+      }
+    };
+    setTimeout(() => {
+      document.addEventListener("click", onDocClick);
+    }, 10);
+    popover.querySelector(".popover-close-btn")?.addEventListener("click", closePopover);
+    popover.querySelectorAll(".popover-item[data-blocker-num]").forEach((item) => {
+      item.addEventListener("click", () => {
+        const bNum = parseInt(item.dataset.blockerNum || "0", 10);
+        if (bNum > 0) {
+          closePopover();
+          void handleAddDependency(targetIssue.number, bNum);
+        }
+      });
+    });
+  }
+  function initDragEdge(sourceNum, e) {
+    isDraggingEdge = true;
+    dragSourceNum = sourceNum;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!elGraphCanvas || !elGraphDragLayer) return;
+    const canvasRect = elGraphCanvas.getBoundingClientRect();
+    const sourceCard = elGraphCanvas.querySelector(`.graph-card[data-issue-number="${sourceNum}"]`);
+    if (!sourceCard) return;
+    const sourceRect = sourceCard.getBoundingClientRect();
+    const startX = Math.round(sourceRect.left + sourceRect.width / 2 - canvasRect.left);
+    const startY = Math.round(sourceRect.bottom - canvasRect.top);
+    const dragPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+    dragPath.setAttribute("class", "graph-edge graph-edge-drag");
+    dragPath.setAttribute("marker-end", "url(#wf-arrow-drag)");
+    elGraphDragLayer.innerHTML = "";
+    elGraphDragLayer.appendChild(dragPath);
+    const onMouseMove = (moveEv) => {
+      if (!isDraggingEdge || !elGraphCanvas) return;
+      const currentCanvasRect = elGraphCanvas.getBoundingClientRect();
+      const curX = Math.round(moveEv.clientX - currentCanvasRect.left);
+      const curY = Math.round(moveEv.clientY - currentCanvasRect.top);
+      const dy = curY - startY;
+      const curvature = Math.max(30, Math.abs(dy) * 0.5);
+      dragPath.setAttribute("d", `M ${startX} ${startY} C ${startX} ${startY + curvature}, ${curX} ${curY - curvature}, ${curX} ${curY}`);
+      elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
+        const rect = card.getBoundingClientRect();
+        const isInside = moveEv.clientX >= rect.left && moveEv.clientX <= rect.right && moveEv.clientY >= rect.top && moveEv.clientY <= rect.bottom;
+        const num = parseInt(card.dataset.issueNumber || "0", 10);
+        card.classList.toggle("drop-target-active", isInside && num !== dragSourceNum);
+      });
+    };
+    const onMouseUp = (upEv) => {
+      isDraggingEdge = false;
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+      if (elGraphDragLayer) elGraphDragLayer.innerHTML = "";
+      let targetNum = null;
+      if (elGraphCanvas) {
+        elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
+          const rect = card.getBoundingClientRect();
+          if (upEv.clientX >= rect.left && upEv.clientX <= rect.right && upEv.clientY >= rect.top && upEv.clientY <= rect.bottom) {
+            const num = parseInt(card.dataset.issueNumber || "0", 10);
+            if (num > 0 && num !== dragSourceNum) {
+              targetNum = num;
+            }
+          }
+          card.classList.remove("drop-target-active");
+        });
+      }
+      if (targetNum && dragSourceNum) {
+        void handleAddDependency(targetNum, dragSourceNum);
+      }
+      dragSourceNum = null;
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+  }
+  function createGraphCardElement(node) {
+    const card = document.createElement("div");
+    card.className = "graph-card";
+    card.dataset.issueNumber = String(node.issue.number);
+    card.dataset.issueKey = node.key || `${getIssueRepoFullName(node.issue) || ""}#${node.issue.number}`;
+    card.setAttribute("tabindex", "0");
+    card.setAttribute("role", "button");
+    card.setAttribute("aria-label", `Issue #${node.issue.number}: ${node.issue.title}`);
+    if (node.isDone) card.classList.add("graph-card-done");
+    if (node.isFrontier) card.classList.add("graph-card-frontier");
+    if (node.isBlocked) card.classList.add("graph-card-blocked");
+    const themeCol = getThemeColor(node.theme);
+    card.style.setProperty("--card-theme-color", themeCol);
+    const subTotal = (node.issue.subtasks || []).length;
+    const subDone = (node.issue.subtasks || []).filter((s) => s.completed).length;
+    let frontierFlagHtml = "";
+    if (node.isFrontier) {
+      frontierFlagHtml = '<div class="graph-frontier-flag">READY</div>';
+    }
+    let priorityHtml = "";
+    if (node.priority && node.priority !== "normal" && node.priority !== "none") {
+      priorityHtml = `<span class="badge badge-priority badge-priority-${node.priority.toLowerCase()} graph-card-priority">${node.priority}</span>`;
+    }
+    let blockersHtml = "";
+    if (node.isBlocked && node.openBlockers.length > 0) {
+      const chipsHtml = renderBlockerChips(node.issue, node.openBlockers);
+      blockersHtml = `<span class="graph-badge-blocked" title="Blocked by #${node.openBlockers.join(", #")}"><svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg> ${chipsHtml}</span>`;
+    }
+    let impactHtml = "";
+    if (node.downstreamImpact > 0) {
+      impactHtml = `<span class="graph-badge-impact" title="Unblocks ${node.downstreamImpact} downstream tasks"><svg class="icon icon-xs" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> ${node.downstreamImpact} waiting</span>`;
+    }
+    let subtaskHtml = "";
+    if (subTotal > 0) {
+      subtaskHtml = `<span class="graph-badge-subtasks">${subDone}/${subTotal}</span>`;
+    }
+    card.innerHTML = `
+    ${frontierFlagHtml}
+    <div class="graph-port graph-port-in" data-port="in" data-issue="${node.issue.number}" title="Drop arrow here to make #${node.issue.number} depend on another task">
+      <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>
+    </div>
+    <div class="graph-card-head">
+      <input type="checkbox" class="graph-card-check" ${node.isDone ? "checked" : ""} title="Mark done / todo" />
+      <span class="graph-card-num">#${node.issue.number}</span>
+      <span class="graph-card-theme" title="${escapeHtml(node.theme)}">${escapeHtml(node.theme)}</span>
+      ${isAllProjectsMode ? `<span class="status-pill project-pill" title="${escapeHtml(repoForIssue(node.issue))}">${escapeHtml(displayProjectName(repoForIssue(node.issue)))}</span>` : ""}
+      ${priorityHtml}
+    </div>
+    <div class="graph-card-title" title="${escapeHtml(node.issue.title)}">${escapeHtml(node.issue.title)}</div>
+    <div class="graph-card-meta">
+      ${blockersHtml}
+      ${impactHtml}
+      ${subtaskHtml}
+      <button class="graph-card-add-dep-btn" data-add-dep="${node.issue.number}" title="Add a blocker to #${node.issue.number}">+ Blocker</button>
+    </div>
+    <div class="graph-port graph-port-out" data-port="out" data-issue="${node.issue.number}" title="Drag arrow to another task to make it depend on #${node.issue.number}">
+      <svg viewBox="0 0 24 24"><path d="M12 16l-6-6h12l-6 6z"/></svg>
+    </div>
+  `;
+    const chk = card.querySelector(".graph-card-check");
+    if (chk) {
+      chk.addEventListener("click", (e) => {
+        e.stopPropagation();
+        void updateIssueStatus(node.issue, chk.checked ? "done" : "todo", { isHumanGesture: true });
+      });
+    }
+    const addBtn = card.querySelector(".graph-card-add-dep-btn");
+    if (addBtn) {
+      addBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        showQuickBlockerPicker(node.issue, addBtn);
+      });
+    }
+    card.querySelectorAll(".btn-remove-blocker").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        const target = parseInt(btn.dataset.target || "0", 10);
+        const blocker = parseInt(btn.dataset.blocker || "0", 10);
+        if (target > 0 && blocker > 0) {
+          void handleRemoveDependency(target, blocker);
+        }
+      });
+    });
+    card.addEventListener("click", (e) => {
+      const target = e.target;
+      if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn") || target.closest(".btn-remove-blocker")) {
+        return;
+      }
+      openDrawer(node.issue);
+    });
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        const target = e.target;
+        if (target.closest(".graph-port") || target.closest(".graph-card-check") || target.closest(".graph-card-add-dep-btn") || target.closest(".btn-remove-blocker")) {
+          return;
+        }
+        e.preventDefault();
+        openDrawer(node.issue);
+      }
+    });
+    const outPort = card.querySelector(".graph-port-out");
+    if (outPort) {
+      outPort.addEventListener("mousedown", (e) => {
+        initDragEdge(node.issue.number, e);
+      });
+    }
+    return card;
+  }
+  function drawGraphEdges(graph) {
+    if (!elGraphEdgesLayer || !elGraphCanvas || !elGraphSvgOverlay) return;
+    elGraphEdgesLayer.innerHTML = "";
+    const canvasW = Math.max(elGraphCanvas.scrollWidth, elGraphCanvas.clientWidth, elGraphCanvas.offsetWidth);
+    const canvasH = Math.max(elGraphCanvas.scrollHeight, elGraphCanvas.clientHeight, elGraphCanvas.offsetHeight);
+    if (canvasW === 0 || canvasH === 0) {
+      if (typeof requestAnimationFrame === "function") {
+        requestAnimationFrame(() => drawGraphEdges(graph));
+      }
+      return;
+    }
+    elGraphSvgOverlay.setAttribute("width", String(canvasW));
+    elGraphSvgOverlay.setAttribute("height", String(canvasH));
+    elGraphSvgOverlay.setAttribute("viewBox", `0 0 ${canvasW} ${canvasH}`);
+    const canvasRect = elGraphCanvas.getBoundingClientRect();
+    const cardRects = /* @__PURE__ */ new Map();
+    const cardRectsByKey = /* @__PURE__ */ new Map();
+    elGraphCanvas.querySelectorAll(".graph-card").forEach((card) => {
+      const rect = card.getBoundingClientRect();
+      const key = card.dataset.issueKey || "";
+      if (key) cardRectsByKey.set(key.toLowerCase(), rect);
+      const num = parseInt(card.dataset.issueNumber || "0", 10);
+      if (num > 0 && !cardRects.has(num)) cardRects.set(num, rect);
+    });
+    const edgeFragment = document.createDocumentFragment();
+    for (const edge of graph.edges) {
+      const sourceRect = (edge.fromKey ? cardRectsByKey.get(edge.fromKey.toLowerCase()) : void 0) || cardRects.get(edge.from);
+      const targetRect = (edge.toKey ? cardRectsByKey.get(edge.toKey.toLowerCase()) : void 0) || cardRects.get(edge.to);
+      if (!sourceRect || !targetRect) continue;
+      const pathData = calculateEdgePath(sourceRect, targetRect, canvasRect);
+      const edgeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      edgeGroup.setAttribute("class", "graph-edge-group");
+      edgeGroup.setAttribute("data-from", String(edge.from));
+      edgeGroup.setAttribute("data-to", String(edge.to));
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", pathData.d);
+      path.setAttribute("data-from", String(edge.from));
+      path.setAttribute("data-to", String(edge.to));
+      let edgeClass = "graph-edge";
+      let markerId = "wf-arrow-open";
+      if (edge.isClosed) {
+        edgeClass += " graph-edge-closed";
+        markerId = "wf-arrow-closed";
+      } else if (edge.isFrontier) {
+        edgeClass += " graph-edge-frontier";
+        markerId = "wf-arrow-frontier";
+      } else if (edge.isCrossTheme) {
+        edgeClass += " graph-edge-crosstheme";
+        markerId = "wf-arrow-crosstheme";
+      } else {
+        edgeClass += " graph-edge-open";
+      }
+      path.setAttribute("class", edgeClass);
+      path.setAttribute("marker-end", `url(#${markerId})`);
+      path.addEventListener("click", (e) => {
+        e.stopPropagation();
+        void handleRemoveDependency(edge.to, edge.from);
+      });
+      const titleEl = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      titleEl.textContent = `#${edge.from} blocks #${edge.to} (Click to remove dependency)`;
+      path.appendChild(titleEl);
+      edgeGroup.appendChild(path);
+      const midX = Math.round((pathData.x1 + pathData.x2) / 2);
+      const midY = Math.round((pathData.y1 + pathData.y2) / 2);
+      const badgeGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      badgeGroup.setAttribute("class", "graph-edge-delete-badge");
+      badgeGroup.setAttribute("transform", `translate(${midX}, ${midY})`);
+      badgeGroup.setAttribute("data-from", String(edge.from));
+      badgeGroup.setAttribute("data-to", String(edge.to));
+      badgeGroup.setAttribute("role", "button");
+      badgeGroup.setAttribute("aria-label", `Remove dependency: #${edge.from} blocks #${edge.to}`);
+      badgeGroup.style.cursor = "pointer";
+      const hitCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      hitCircle.setAttribute("r", "12");
+      hitCircle.setAttribute("fill", "transparent");
+      badgeGroup.appendChild(hitCircle);
+      const visualCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      visualCircle.setAttribute("class", "graph-edge-delete-circle");
+      visualCircle.setAttribute("r", "8");
+      badgeGroup.appendChild(visualCircle);
+      const textEl = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      textEl.setAttribute("class", "graph-edge-delete-text");
+      textEl.setAttribute("text-anchor", "middle");
+      textEl.setAttribute("dominant-baseline", "central");
+      textEl.textContent = "\xD7";
+      badgeGroup.appendChild(textEl);
+      const badgeTitle = document.createElementNS("http://www.w3.org/2000/svg", "title");
+      badgeTitle.textContent = `Remove dependency: #${edge.from} blocks #${edge.to}`;
+      badgeGroup.appendChild(badgeTitle);
+      badgeGroup.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        void handleRemoveDependency(edge.to, edge.from);
+      });
+      edgeGroup.appendChild(badgeGroup);
+      edgeFragment.appendChild(edgeGroup);
+    }
+    elGraphEdgesLayer.appendChild(edgeFragment);
+  }
+  function drawCurrentGraphEdges() {
+    if (!currentGraph || !elGraphEdgesLayer || !elGraphCanvas) return;
+    if (document.body.getAttribute("data-layout") !== "graph") return;
+    drawGraphEdges(currentGraph);
+  }
+  var graphResizeObserver = null;
+  function observeGraphResize() {
+    if (elGraphCanvasContainer && "ResizeObserver" in window) {
+      if (graphResizeObserver) graphResizeObserver.disconnect();
+      graphResizeObserver = new ResizeObserver(() => {
+        drawCurrentGraphEdges();
+      });
+      graphResizeObserver.observe(elGraphCanvasContainer);
+    }
+  }
+  function renderGraphView(filteredIssues) {
+    if (!elGraphViewContainer || !elGraphLayers) return;
+    const graph = buildDependencyGraph(filteredIssues);
+    currentGraph = graph;
+    if (txtGraphStatFrontier) txtGraphStatFrontier.textContent = `${graph.frontierNodes.length} Ready`;
+    if (txtGraphStatBlocked) {
+      const blockedCount = Array.from(graph.nodes.values()).filter((n) => n.isBlocked).length;
+      txtGraphStatBlocked.textContent = `${blockedCount} Blocked`;
+    }
+    if (txtGraphStatDone) {
+      const doneCount = Array.from(graph.nodes.values()).filter((n) => n.isDone).length;
+      txtGraphStatDone.textContent = `${doneCount} Done`;
+    }
+    const visibleNumbers = new Set(
+      Array.from(graph.nodes.values()).map((node) => `${getIssueRepoFullName(node.issue) || ""}#${node.issue.number}`)
+    );
+    elGraphLayers.innerHTML = "";
+    if (visibleNumbers.size === 0) {
+      elGraphLayers.innerHTML = `
+      <div style="color: var(--fg-muted); padding: 48px 0; text-align: center; font-size: 13px;">
+        No issues match the current graph filters.
+      </div>
+    `;
+      if (elGraphEdgesLayer) elGraphEdgesLayer.innerHTML = "";
+      return;
+    }
+    graph.layers.forEach((layerNodes, layerIdx) => {
+      const layerVisible = layerNodes.filter((n) => visibleNumbers.has(`${getIssueRepoFullName(n.issue) || ""}#${n.issue.number}`)).sort((a, b) => filteredIssues.indexOf(a.issue) - filteredIssues.indexOf(b.issue));
+      if (layerVisible.length === 0) return;
+      const rowEl = document.createElement("div");
+      rowEl.className = "graph-layer-row";
+      rowEl.dataset.layer = String(layerIdx);
+      const headerText = layerIdx === 0 ? "Layer 0 \u2014 Ready / Roots" : `Layer ${layerIdx} \u2014 Waterfall Step ${layerIdx + 1} (${layerVisible.length})`;
+      const headerEl = document.createElement("div");
+      headerEl.className = "graph-layer-header";
+      headerEl.innerHTML = `
+      <span class="graph-layer-header-num">L${layerIdx}</span>
+      <span>${headerText}</span>
+    `;
+      rowEl.appendChild(headerEl);
+      const cardsWrap = document.createElement("div");
+      cardsWrap.className = "graph-layer-cards";
+      layerVisible.forEach((node) => {
+        const card = createGraphCardElement(node);
+        cardsWrap.appendChild(card);
+      });
+      rowEl.appendChild(cardsWrap);
+      elGraphLayers.appendChild(rowEl);
+    });
+    observeGraphResize();
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => {
+        drawCurrentGraphEdges();
+        if (typeof requestAnimationFrame === "function") {
+          requestAnimationFrame(() => drawCurrentGraphEdges());
+        }
+      });
+    }
+  }
+  function renderDrawerDependencies(issue) {
+    if (!elDrawerDependenciesContainer) return;
+    const blockers = parseIssueDependencies(issue.body);
+    const dependents = issues.filter(
+      (other) => other.number !== issue.number && parseIssueDependencies(other.body).includes(issue.number)
+    );
+    if (elDrawerDepsCountBadge) {
+      elDrawerDepsCountBadge.textContent = String(blockers.length + dependents.length);
+    }
+    if (elDrawerBlockedByList) {
+      elDrawerBlockedByList.innerHTML = "";
+      if (blockers.length === 0) {
+        elDrawerBlockedByList.innerHTML = '<span style="color: var(--fg-faint); font-size: 11px;">None</span>';
+      } else {
+        blockers.forEach((bNum) => {
+          const blockerIssue = issues.find((i) => i.number === bNum);
+          const pill = document.createElement("div");
+          pill.className = "badge";
+          pill.style.display = "inline-flex";
+          pill.style.alignItems = "center";
+          pill.style.gap = "4px";
+          pill.style.cursor = "pointer";
+          const isClosed = blockerIssue ? isIssueClosed3(blockerIssue) : false;
+          if (isClosed) pill.style.opacity = "0.6";
+          pill.innerHTML = `
+          <span>#${bNum} ${escapeHtml(blockerIssue?.title || "")}</span>
+          <span class="badge-remove-btn" title="Remove dependency" style="font-weight: 700; cursor: pointer; padding: 0 2px;">\xD7</span>
+        `;
+          pill.addEventListener("click", (e) => {
+            if (e.target?.classList.contains("badge-remove-btn")) {
+              e.stopPropagation();
+              void handleRemoveDependency(issue.number, bNum);
+            } else if (blockerIssue) {
+              openDrawer(blockerIssue);
+            }
+          });
+          elDrawerBlockedByList.appendChild(pill);
+        });
+      }
+    }
+    if (elDrawerBlocksList) {
+      elDrawerBlocksList.innerHTML = "";
+      if (dependents.length === 0) {
+        elDrawerBlocksList.innerHTML = '<span style="color: var(--fg-faint); font-size: 11px;">None</span>';
+      } else {
+        dependents.forEach((dep) => {
+          const pill = document.createElement("div");
+          pill.className = "badge";
+          pill.style.cursor = "pointer";
+          const isClosed = isIssueClosed3(dep);
+          if (isClosed) pill.style.opacity = "0.6";
+          pill.textContent = `#${dep.number} ${dep.title}`;
+          pill.addEventListener("click", () => openDrawer(dep));
+          elDrawerBlocksList.appendChild(pill);
+        });
+      }
+    }
+    if (elSelectAddBlocker) {
+      let optionsHtml = '<option value="">+ Add blocker / dependency...</option>';
+      issues.filter((other) => other.number !== issue.number && !blockers.includes(other.number)).sort((a, b) => a.number - b.number).forEach((other) => {
+        optionsHtml += `<option value="${other.number}">#${other.number}: ${escapeHtml(other.title)}</option>`;
+      });
+      elSelectAddBlocker.innerHTML = optionsHtml;
+      elSelectAddBlocker.value = "";
+    }
+  }
+  function openDrawer(issue) {
+    drawerGeneration++;
+    activeIssue = issue;
+    renderDrawer(issue, false, drawerGeneration, true);
+    elDrawerScrim.classList.add("active");
+    elTaskDrawer.classList.add("active");
+    document.body.classList.add("drawer-open");
+    if (document.body.getAttribute("data-layout") === "graph" && typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => drawCurrentGraphEdges());
+    }
+  }
+  function closeDrawer() {
+    drawerGeneration++;
+    activeIssue = null;
+    elDrawerScrim.classList.remove("active");
+    elTaskDrawer.classList.remove("active");
+    document.body.classList.remove("drawer-open");
+    if (document.body.getAttribute("data-layout") === "graph" && typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(() => drawCurrentGraphEdges());
+    }
+  }
+  var repoLabelsCache = /* @__PURE__ */ new Map();
+  async function loadRepoLabels() {
+    const repo = repoForIssue(activeIssue);
+    if (!repo) return;
+    if (repoLabelsCache.has(repo)) {
+      populateLabelsDatalist(repoLabelsCache.get(repo));
+      return;
+    }
+    try {
+      const list = await githubRequestWithRetry("GET", `/repos/${repo}/labels?per_page=100`);
+      if (Array.isArray(list)) {
+        repoLabelsCache.set(repo, list);
+        populateLabelsDatalist(list);
+      }
+    } catch {
+    }
+  }
+  function populateLabelsDatalist(labels) {
+    elRepoLabelsDatalist.innerHTML = labels.map((l) => `<option value="${escapeHtml(l.name)}"></option>`).join("");
+  }
+  function renderDrawerLabels(issue) {
+    elDrawerLabelsContainer.innerHTML = "";
+    const nonStatusLabels = issue.labels.filter((l) => !l.name.startsWith("status:"));
+    if (nonStatusLabels.length === 0) {
+      elDrawerLabelsContainer.innerHTML = `<span style="font-size: 11px; color: var(--fg-faint); font-style: italic;">No labels</span>`;
+    } else {
+      nonStatusLabels.forEach((l) => {
+        const hex = sanitizeHexColor(l.color);
+        const bg2 = hex ? `${hex}18` : "var(--surf-muted)";
+        const fg2 = hex || "var(--fg-muted)";
+        const pill = document.createElement("span");
+        pill.className = "label-pill";
+        pill.style.background = bg2;
+        pill.style.color = fg2;
+        pill.style.border = `1px solid ${fg2}33`;
+        pill.innerHTML = `
+        <span>${escapeHtml(l.name)}</span>
+        <span class="label-pill-remove" title="Remove label">\xD7</span>
+      `;
+        pill.querySelector(".label-pill-remove")?.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          await removeTagFromIssue(issue, l.name);
+        });
+        elDrawerLabelsContainer.appendChild(pill);
+      });
+    }
+  }
+  async function addTagToIssue(issue, tagName) {
+    const clean = tagName.trim();
+    if (!clean) return;
+    const currentNames = issue.labels.map((l) => l.name);
+    if (currentNames.some((n) => n.toLowerCase() === clean.toLowerCase())) return;
+    const repo = repoForIssue(issue);
+    if (!repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
+    }
+    const newNames = [...currentNames, clean];
+    issue.labels.push({ name: clean });
+    renderDrawerLabels(issue);
+    renderViews();
+    try {
+      addLog(`Adding label "${clean}" to #${issue.number}...`);
+      await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
+        labels: newNames
+      });
+      await host.toast({ kind: "success", message: `Added label "${clean}" to #${issue.number}` });
+    } catch (err) {
+      addLog(`Failed to add label: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to add label: ${err.message}` });
+    }
+  }
+  async function removeTagFromIssue(issue, tagName) {
+    const repo = repoForIssue(issue);
+    if (!repo) {
+      addLog(`Cannot update issue #${issue.number}: repository unknown`, "warn");
+      if (host?.toast) {
+        void host.toast({ kind: "error", message: `Cannot update #${issue.number}: repository unknown` });
+      }
+      return;
+    }
+    const target = tagName.trim().toLowerCase();
+    const newLabels = issue.labels.filter((l) => l.name.toLowerCase() !== target);
+    issue.labels = newLabels;
+    renderDrawerLabels(issue);
+    renderViews();
+    try {
+      addLog(`Removing label "${tagName}" from #${issue.number}...`);
+      await githubRequestWithRetry("PATCH", `/repos/${repo}/issues/${issue.number}`, {
+        labels: newLabels.map((l) => l.name)
+      });
+      await host.toast({ kind: "info", message: `Removed label "${tagName}" from #${issue.number}` });
+    } catch (err) {
+      addLog(`Failed to remove label: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to remove label: ${err.message}` });
+    }
+  }
+  function renderDrawer(issue, skipComments = false, gen = drawerGeneration, forceFreshComments = false) {
+    elDrawerIssueNumber.textContent = `#${issue.number}`;
+    let elUnconfirmedBadge = elDrawerIssueNumber?.parentElement?.querySelector(".badge-drawer-unconfirmed");
+    if (issue.unconfirmed) {
+      if (!elUnconfirmedBadge && elDrawerIssueNumber?.parentElement) {
+        elUnconfirmedBadge = document.createElement("span");
+        elUnconfirmedBadge.className = "badge badge-drawer-unconfirmed";
+        elUnconfirmedBadge.style.cssText = "background: rgba(231, 76, 60, 0.2); color: #e74c3c; border: 1px solid rgba(231, 76, 60, 0.4); font-size: 11px; padding: 2px 6px; border-radius: 3px; font-weight: 600; margin-left: 6px; vertical-align: middle;";
+        elUnconfirmedBadge.textContent = "unconfirmed";
+        elUnconfirmedBadge.title = "Remote outcome unknown \u2014 refresh to reconcile";
+        elDrawerIssueNumber.parentElement.appendChild(elUnconfirmedBadge);
+      } else if (elUnconfirmedBadge) {
+        elUnconfirmedBadge.style.display = "inline-block";
+      }
+    } else if (elUnconfirmedBadge) {
+      elUnconfirmedBadge.style.display = "none";
+    }
+    elDrawerIssueAuthor.textContent = issue.user ? `by @${issue.user.login}` : "";
+    elDrawerGithubLink.href = issue.html_url;
+    elDrawerIssueTitle.textContent = issue.title;
+    const col = resolveIssueColumn3(issue);
+    elDrawerStatusSelect.value = col || "none";
+    if (elDrawerPrioritySelect) {
+      syncDrawerPrioritySelect(elDrawerPrioritySelect, getIssuePriority(issue));
+    }
+    if (elDrawerComplexitySelect) {
+      elDrawerComplexitySelect.value = getIssueComplexity(issue) || "none";
+    }
+    if (elDrawerAlignmentWarning) {
+      elDrawerAlignmentWarning.style.display = isVagueIdea(issue) ? "flex" : "none";
+    }
+    if (elBtnDrawerArchive && elTxtDrawerArchive) {
+      const isArch = isIssueArchived(issue);
+      elTxtDrawerArchive.textContent = isArch ? "Unarchive" : "Archive";
+      elBtnDrawerArchive.classList.toggle("active", isArch);
+      elBtnDrawerArchive.title = isArch ? "Unarchive issue" : "Archive issue";
+      elBtnDrawerArchive.onclick = () => {
+        void toggleArchiveIssue(issue);
+      };
+    }
+    if (elBtnDrawerToggleClose) {
+      const isClosed = isIssueClosed3(issue);
+      elBtnDrawerToggleClose.textContent = isClosed ? "Reopen Issue" : "Close Issue";
+      elBtnDrawerToggleClose.onclick = () => {
+        void updateIssueStatus(issue, isClosed ? "todo" : "done", { isHumanGesture: true });
+      };
+    }
+    renderDrawerLabels(issue);
+    void loadRepoLabels();
+    const session = getIssueSession(issue);
+    if (session) {
+      let dotClass = "dot-idle";
+      let label = "Agent Idle";
+      if (session.activity === "running") {
+        dotClass = "dot-running";
+        label = "Agent Working...";
+      } else if (session.activity === "waiting-permission") {
+        dotClass = "dot-waiting";
+        label = "Waiting for Permission";
+      } else if (session.activity === "waiting-question") {
+        dotClass = "dot-waiting";
+        label = "Waiting for User Input";
+      }
+      elDrawerAgentBadge.innerHTML = `
+      <span class="dot ${dotClass}"></span>
+      <span>${label}</span>
+    `;
+      const wtName = extractWorktreeName2(session.worktree);
+      elDrawerWorktreeName.textContent = wtName || "Project Root";
+      elBtnDrawerJumpSession.style.display = "inline-flex";
+      elBtnDrawerJumpSession.onclick = () => {
+        void host.openSession(session.id);
+      };
+    } else {
+      elDrawerAgentBadge.innerHTML = `
+      <span class="dot dot-idle"></span>
+      <span>No session active</span>
+    `;
+      elDrawerWorktreeName.textContent = "None";
+      elBtnDrawerJumpSession.style.display = "none";
+    }
+    renderChecklist(issue);
+    renderDrawerAcceptanceCriteria(issue);
+    renderQuestions(issue);
+    renderTestPlans(issue);
+    elDrawerDescriptionContent.innerHTML = renderMarkdown(issue.body);
+    elDrawerDescriptionViewBox.style.display = "block";
+    elDrawerDescriptionEditBox.style.display = "none";
+    const scheduleFrame = typeof requestAnimationFrame === "function" ? requestAnimationFrame : (cb) => setTimeout(cb, 0);
+    scheduleFrame(() => {
+      if (elDrawerDescriptionContent && elDrawerDescriptionContent.scrollHeight > 220) {
+        elDrawerDescriptionCollapsible.classList.remove("expanded");
+        elDrawerDescriptionToggleRow.style.display = "block";
+        elBtnToggleCollapse.textContent = "Show more";
+      } else if (elDrawerDescriptionCollapsible && elDrawerDescriptionToggleRow) {
+        elDrawerDescriptionCollapsible.classList.add("expanded");
+        elDrawerDescriptionToggleRow.style.display = "none";
+      }
+    });
+    if (!skipComments) {
+      void loadComments(issue.number, gen, forceFreshComments);
+    }
+    renderDrawerDependencies(issue);
+    renderRelatedIssues(issue);
+  }
+  function renderChecklist(issue) {
+    const total = issue.subtasks.length;
+    const completed = issue.subtasks.filter((s) => s.completed).length;
+    const pct = total > 0 ? Math.round(completed / total * 100) : 0;
+    elChecklistProgressText.textContent = `${completed} / ${total} (${pct}%)`;
+    elChecklistProgressFill.style.width = `${pct}%`;
+    elDrawerChecklistContainer.innerHTML = "";
+    if (total === 0) {
+      elDrawerChecklistContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No markdown subtasks found. Use "- [ ] task" in description or add one below.
+      </div>
+    `;
+      return;
+    }
+    issue.subtasks.forEach((subtask) => {
+      const itemEl = document.createElement("div");
+      itemEl.className = `check-item ${subtask.completed ? "done" : ""}`;
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = subtask.completed;
+      const span = document.createElement("span");
+      span.textContent = subtask.text;
+      cb.addEventListener("change", async () => {
+        await reloadIssueBeforeMutation(issue);
+        const result = resolveOptimisticSubtaskUpdate(issue.body, subtask.text, cb.checked);
+        void updateIssueBody(issue, result.updatedBody);
+      });
+      itemEl.appendChild(cb);
+      itemEl.appendChild(span);
+      elDrawerChecklistContainer.appendChild(itemEl);
+    });
+  }
+  function renderDrawerAcceptanceCriteria(issue) {
+    if (!issue) {
+      if (elDrawerAcceptanceCriteriaSection) elDrawerAcceptanceCriteriaSection.style.display = "none";
+      return;
+    }
+    if (!elDrawerAcceptanceCriteriaSection || !elDrawerAcceptanceCriteriaContainer) return;
+    if (!issue.acceptanceCriteria && issue.body) {
+      issue.acceptanceCriteria = parseAcceptanceCriteria(issue.body);
+    }
+    const items = issue.acceptanceCriteria || [];
+    if (items.length === 0) {
+      elDrawerAcceptanceCriteriaSection.style.display = "none";
+      elDrawerAcceptanceCriteriaContainer.innerHTML = "";
+      if (elDrawerAcceptanceCriteriaCountBadge) {
+        elDrawerAcceptanceCriteriaCountBadge.textContent = "0 / 0";
+      }
+      return;
+    }
+    elDrawerAcceptanceCriteriaSection.style.display = "block";
+    const total = items.length;
+    const done = items.filter((item) => item.completed).length;
+    if (elDrawerAcceptanceCriteriaCountBadge) {
+      elDrawerAcceptanceCriteriaCountBadge.textContent = `${done} / ${total}`;
+    }
+    elDrawerAcceptanceCriteriaContainer.innerHTML = "";
+    items.forEach((item, idx) => {
+      const itemEl = document.createElement("div");
+      itemEl.className = `check-item ${item.completed ? "done" : ""}`;
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = item.completed;
+      cb.setAttribute("aria-label", item.text);
+      cb.setAttribute("data-index", String(idx));
+      if (typeof item.lineIndex === "number") {
+        cb.setAttribute("data-line-index", String(item.lineIndex));
+        cb.dataset.lineIndex = String(item.lineIndex);
+        cb.lineIndex = item.lineIndex;
+      }
+      cb.dataIndex = idx;
+      const span = document.createElement("span");
+      span.textContent = item.text;
+      const onToggle = async () => {
+        const newChecked = cb.checked;
+        itemEl.className = `check-item ${newChecked ? "done" : ""}`;
+        const targetLine = typeof item.lineIndex === "number" ? item.lineIndex : -1;
+        const newBody = targetLine >= 0 ? updateSubtaskInMarkdown(issue.body, targetLine, newChecked) : issue.body;
+        issue.body = newBody;
+        if (issue.acceptanceCriteria && issue.acceptanceCriteria[idx]) {
+          issue.acceptanceCriteria[idx].completed = newChecked;
+        }
+        const curTotal = issue.acceptanceCriteria ? issue.acceptanceCriteria.length : total;
+        const curDone = issue.acceptanceCriteria ? issue.acceptanceCriteria.filter((it) => it.completed).length : newChecked ? done + 1 : done - 1;
+        if (elDrawerAcceptanceCriteriaCountBadge) {
+          elDrawerAcceptanceCriteriaCountBadge.textContent = `${curDone} / ${curTotal}`;
+        }
+        await reloadIssueBeforeMutation(issue);
+        const freshAc = parseAcceptanceCriteria(issue.body);
+        const matched = freshAc.find((it) => it.text.trim() === item.text.trim());
+        const freshLineIndex = matched && typeof matched.lineIndex === "number" ? matched.lineIndex : item.lineIndex;
+        const finalTargetLine = typeof freshLineIndex === "number" ? freshLineIndex : -1;
+        const finalBody = finalTargetLine >= 0 ? updateSubtaskInMarkdown(issue.body, finalTargetLine, newChecked) : issue.body;
+        void updateIssueBody(issue, finalBody);
+      };
+      cb.addEventListener("change", () => {
+        void onToggle();
+      });
+      cb.addEventListener("click", () => {
+        if (cb.checked === item.completed) {
+          cb.checked = !item.completed;
+          void onToggle();
+        }
+      });
+      itemEl.appendChild(cb);
+      itemEl.appendChild(span);
+      elDrawerAcceptanceCriteriaContainer.appendChild(itemEl);
+    });
+  }
+  function renderQuestions(issue) {
+    if (!elDrawerQuestionsContainer || !elQuestionsProgressText) return;
+    const questions = issue.openQuestions || [];
+    const total = questions.length;
+    const resolved = questions.filter((q) => q.completed).length;
+    const open = total - resolved;
+    if (total === 0) {
+      elQuestionsProgressText.textContent = "0 open";
+      elQuestionsProgressText.style.color = "var(--fg-muted)";
+      elDrawerQuestionsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No open questions. Add one below to align on specifications.
+      </div>
+    `;
+      const draftsEl = renderRecoverableDraftsElement(issue, () => {
+        renderDrawer(issue, true);
+        renderViews();
+      });
+      if (draftsEl) {
+        elDrawerQuestionsContainer.appendChild(draftsEl);
+      }
+      return;
+    }
+    elQuestionsProgressText.textContent = `${open} open (${resolved} resolved)`;
+    elQuestionsProgressText.style.color = open > 0 ? "var(--warn)" : "var(--succ)";
+    elDrawerQuestionsContainer.innerHTML = "";
+    let unresolvedIdx = 0;
+    questions.forEach((question) => {
+      const itemEl = document.createElement("div");
+      itemEl.className = `check-item ${question.completed ? "done" : ""}`;
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = question.completed;
+      cb.title = question.completed ? "Mark question as open" : "Mark question as resolved/answered";
+      cb.addEventListener("change", async () => {
+        await reloadIssueBeforeMutation(issue);
+        const questions2 = parseOpenQuestions(issue.body);
+        const target = questions2.find((q) => q.text.trim() === question.text.trim()) || question;
+        const updatedBody = updateOpenQuestionInMarkdown(issue.body, target.lineIndex, cb.checked);
+        void updateIssueBody(issue, updatedBody);
+      });
+      const contentEl = document.createElement("div");
+      contentEl.style.flex = "1";
+      contentEl.style.minWidth = "0";
+      const textRow = document.createElement("div");
+      textRow.style.display = "flex";
+      textRow.style.alignItems = "flex-start";
+      textRow.style.justifyContent = "space-between";
+      textRow.style.gap = "8px";
+      const span = document.createElement("span");
+      span.textContent = question.text;
+      span.style.flex = "1";
+      span.style.wordBreak = "break-word";
+      textRow.appendChild(span);
+      if (!question.completed) {
+        const idx = unresolvedIdx;
+        unresolvedIdx++;
+        const btnAnswer = document.createElement("button");
+        btnAnswer.className = "btn btn-xs btn-inline-answer";
+        btnAnswer.setAttribute("data-question-index", String(idx));
+        btnAnswer.title = "Record decision or answer";
+        btnAnswer.textContent = "Answer";
+        textRow.appendChild(btnAnswer);
+        const existingDraft = getQuestionDraft(issue, question.text);
+        const createOrGetAnswerRow = () => {
+          let answerRow = contentEl.querySelector(".inline-answer-row");
+          if (!answerRow) {
+            answerRow = document.createElement("div");
+            answerRow.className = "inline-answer-row";
+            answerRow.style.display = "flex";
+            answerRow.style.gap = "6px";
+            answerRow.style.marginTop = "4px";
+            answerRow.innerHTML = `<input type="text" class="form-ctrl input-inline-answer" placeholder="Type answer or decision..." style="font-size: 11px; height: 24px; flex: 1;" /><button class="btn btn-xs btn-primary btn-submit-inline-answer">Save</button><button class="btn btn-xs btn-cancel-inline-answer">Cancel</button>`;
+            contentEl.appendChild(answerRow);
+            const input = answerRow.querySelector(".input-inline-answer");
+            const btnSave = answerRow.querySelector(".btn-submit-inline-answer");
+            const btnCancel = answerRow.querySelector(".btn-cancel-inline-answer");
+            const draft = getQuestionDraft(issue, question.text);
+            if (draft && input) {
+              input.value = draft;
+            }
+            input?.addEventListener("input", () => {
+              saveQuestionDraft(issue, question.text, input.value);
+            });
+            const submitAnswer = async () => {
+              if (btnSave?.disabled) return;
+              const answerText = input?.value.trim();
+              if (!answerText) {
+                input?.focus();
+                return;
+              }
+              if (btnSave) btnSave.disabled = true;
+              if (input) input.disabled = true;
+              try {
+                const targetIssue = activeIssue || issue;
+                if (!targetIssue) return;
+                const ok = await answerQuestion(targetIssue, question.text, answerText);
+                if (ok) {
+                  clearQuestionDraft(issue, question.text);
+                  if (issue && issue !== targetIssue) {
+                    issue.body = targetIssue.body;
+                    issue.subtasks = targetIssue.subtasks;
+                    issue.openQuestions = targetIssue.openQuestions;
+                  }
+                  if (answerRow) answerRow.style.display = "none";
+                }
+              } finally {
+                if (btnSave) btnSave.disabled = false;
+                if (input) input.disabled = false;
+              }
+            };
+            btnSave?.addEventListener("click", (ev) => {
+              ev.stopPropagation();
+              void submitAnswer();
+            });
+            btnCancel?.addEventListener("click", (ev) => {
+              ev.stopPropagation();
+              clearQuestionDraft(issue, question.text);
+              if (input) input.value = "";
+              if (answerRow) answerRow.style.display = "none";
+              btnAnswer.focus();
+            });
+            input?.addEventListener("keydown", (ev) => {
+              if (ev.key === "Enter") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                void submitAnswer();
+              } else if (ev.key === "Escape") {
+                ev.preventDefault();
+                ev.stopPropagation();
+                if (answerRow) answerRow.style.display = "none";
+                btnAnswer.focus();
+              }
+            });
+          }
+          return answerRow;
+        };
+        if (existingDraft) {
+          createOrGetAnswerRow();
+        }
+        btnAnswer.addEventListener("click", (e) => {
+          e.stopPropagation();
+          let row = contentEl.querySelector(".inline-answer-row");
+          if (row) {
+            const isVisible = row.style.display !== "none";
+            row.style.display = isVisible ? "none" : "flex";
+            if (!isVisible) {
+              row.querySelector(".input-inline-answer")?.focus();
+            }
+            return;
+          }
+          row = createOrGetAnswerRow();
+          row.style.display = "flex";
+          row.querySelector(".input-inline-answer")?.focus();
+        });
+      }
+      contentEl.appendChild(textRow);
+      itemEl.appendChild(cb);
+      itemEl.appendChild(contentEl);
+      elDrawerQuestionsContainer.appendChild(itemEl);
+    });
+    const recoverableDraftsEl = renderRecoverableDraftsElement(issue, () => {
+      renderDrawer(issue, true);
+      renderViews();
+    });
+    if (recoverableDraftsEl) {
+      elDrawerQuestionsContainer.appendChild(recoverableDraftsEl);
+    }
+  }
+  function renderTestPlans(issue) {
+    if (!elDrawerIssueTestsContainer || !elDrawerBatchTestsContainer) return;
+    const { issueTests, batchTests } = parseTestPlan(issue.body);
+    const totalIssue = issueTests.length;
+    const completedIssue = issueTests.filter((t) => t.completed).length;
+    if (elIssueTestsProgressText) {
+      elIssueTestsProgressText.textContent = `${completedIssue} / ${totalIssue}`;
+    }
+    elDrawerIssueTestsContainer.innerHTML = "";
+    if (totalIssue === 0) {
+      elDrawerIssueTestsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No issue test plan found. Add tests below or add "## Test Plan (Issue)" in description.
+      </div>
+    `;
+    } else {
+      issueTests.forEach((item) => {
+        const itemEl = document.createElement("div");
+        itemEl.className = `check-item ${item.completed ? "done" : ""}`;
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = item.completed;
+        const span = document.createElement("span");
+        span.textContent = item.text;
+        cb.addEventListener("change", async () => {
+          await reloadIssueBeforeMutation(issue);
+          const result = resolveOptimisticTestItemUpdate(issue.body, item.text, cb.checked);
+          void updateIssueBody(issue, result.updatedBody);
+        });
+        itemEl.appendChild(cb);
+        itemEl.appendChild(span);
+        elDrawerIssueTestsContainer.appendChild(itemEl);
+      });
+    }
+    const totalBatch = batchTests.length;
+    const completedBatch = batchTests.filter((t) => t.completed).length;
+    if (elBatchTestsProgressText) {
+      elBatchTestsProgressText.textContent = `${completedBatch} / ${totalBatch}`;
+    }
+    elDrawerBatchTestsContainer.innerHTML = "";
+    if (totalBatch === 0) {
+      elDrawerBatchTestsContainer.innerHTML = `
+      <div style="color: var(--fg-faint); font-size: 12px; padding: 4px 0;">
+        No batch test plan found. Add tests below or add "## Test Plan (Batch)" in description.
+      </div>
+    `;
+    } else {
+      batchTests.forEach((item) => {
+        const itemEl = document.createElement("div");
+        itemEl.className = `check-item ${item.completed ? "done" : ""}`;
+        const cb = document.createElement("input");
+        cb.type = "checkbox";
+        cb.checked = item.completed;
+        const span = document.createElement("span");
+        span.textContent = item.text;
+        cb.addEventListener("change", async () => {
+          await reloadIssueBeforeMutation(issue);
+          const result = resolveOptimisticTestItemUpdate(issue.body, item.text, cb.checked);
+          void updateIssueBody(issue, result.updatedBody);
+        });
+        itemEl.appendChild(cb);
+        itemEl.appendChild(span);
+        elDrawerBatchTestsContainer.appendChild(itemEl);
+      });
+    }
+  }
+  function renderCommentsList(comments) {
+    elCommentCountBadge.textContent = String(comments.length);
+    if (!comments || comments.length === 0) {
+      elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">No comments yet.</div>';
+      return;
+    }
+    elDrawerCommentsContainer.innerHTML = comments.map((c) => {
+      const author = c.user ? c.user.login : "user";
+      const date = new Date(c.created_at).toLocaleDateString();
+      return `
+        <div class="check-item" style="flex-direction: column; gap: 4px;">
+          <div style="display: flex; justify-content: space-between; width: 100%; font-size: 11px; color: var(--fg-muted);">
+            <strong>@${escapeHtml(author)}</strong>
+            <span>${date}</span>
+          </div>
+          <div class="md-rendered" style="font-size: 12px; width: 100%;">${renderMarkdown(c.body)}</div>
+        </div>
+      `;
+    }).join("");
+  }
+  async function loadComments(issueNumber, expectedGen = drawerGeneration, force = false) {
+    const commentIssue = activeIssue && activeIssue.number === issueNumber ? activeIssue : issues.find((i) => i.number === issueNumber) || null;
+    const repo = repoForIssue(commentIssue);
+    if (!repo) return;
+    const cacheKey = `${repo.toLowerCase()}#${issueNumber}`;
+    if (!force && commentsCache.has(cacheKey)) {
+      const cached = commentsCache.get(cacheKey);
+      if (Date.now() - cached.timestamp < DRAWER_COMMENTS_CACHE_TTL_MS) {
+        if (drawerGeneration === expectedGen && activeIssue && activeIssue.number === issueNumber && repoForIssue(activeIssue) === repo) {
+          renderCommentsList(cached.comments);
+        }
+        return;
+      }
+    }
+    if (drawerGeneration !== expectedGen || !activeIssue || activeIssue.number !== issueNumber) {
+      return;
+    }
+    elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-muted); font-size: 11.5px;">Loading comments...</div>';
+    try {
+      const comments = await githubRequestWithRetry("GET", `/repos/${repo}/issues/${issueNumber}/comments`);
+      const list = Array.isArray(comments) ? comments : [];
+      commentsCache.set(cacheKey, { timestamp: Date.now(), comments: list });
+      if (drawerGeneration === expectedGen && activeIssue && activeIssue.number === issueNumber && repoForIssue(activeIssue) === repo) {
+        renderCommentsList(list);
+      }
+    } catch {
+      if (drawerGeneration === expectedGen && activeIssue && activeIssue.number === issueNumber && repoForIssue(activeIssue) === repo) {
+        elDrawerCommentsContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 12px;">Comments unavailable.</div>';
+      }
+    }
+  }
+  function renderRelatedIssues(issue) {
+    if (!elDrawerRelatedIssuesContainer || !elRelatedIssuesCountBadge) return;
+    const related = findRelatedIssues(issue, issues, 4);
+    elRelatedIssuesCountBadge.textContent = String(related.length);
+    elDrawerRelatedIssuesContainer.innerHTML = "";
+    if (related.length === 0) {
+      elDrawerRelatedIssuesContainer.innerHTML = '<div style="color: var(--fg-faint); font-size: 11.5px; padding: 2px 0;">No related issues found.</div>';
+      return;
+    }
+    related.forEach((other) => {
+      const item = document.createElement("div");
+      item.className = "related-issue-card";
+      const otherComp = getIssueComplexity(other);
+      const compHtml = otherComp ? `<span class="badge badge-complexity badge-complexity-${otherComp.toLowerCase()}">${otherComp}</span>` : "";
+      const isAlreadyBlocker = parseIssueDependencies(issue.body).includes(other.number);
+      const linkBtnHtml = isAlreadyBlocker ? '<span class="status-pill" style="font-size: 9px; color: var(--fg-muted);">Blocker</span>' : `<button class="btn btn-sm btn-link-blocker" data-other-num="${other.number}" style="font-size: 9.5px; height: 18px; padding: 0 5px;" title="Link #${other.number} as a blocker of #${issue.number}">+ Link Blocker</button>`;
+      item.innerHTML = `
+      <div class="related-issue-title" title="${escapeHtml(other.title)}">#${other.number} ${escapeHtml(other.title)}</div>
+      <div style="display: flex; align-items: center; gap: 5px; flex-shrink: 0;">
+        ${compHtml}
+        <span class="status-pill" style="font-size: 10px;">${resolveIssueColumn3(other) || "all"}</span>
+        ${linkBtnHtml}
+      </div>
+    `;
+      item.addEventListener("click", (e) => {
+        const btn = e.target.closest(".btn-link-blocker");
+        if (btn) {
+          e.stopPropagation();
+          void handleAddDependency(issue.number, other.number);
+          return;
+        }
+        openDrawer(other);
+      });
+      elDrawerRelatedIssuesContainer.appendChild(item);
+    });
+  }
+  function updatePreflightBrief() {
+    if (!activeIssue) return;
+    const useWt = elPreflightWorktreeToggle ? elPreflightWorktreeToggle.checked : false;
+    const theme = getIssueTheme(activeIssue);
+    const existingThemeWorktree = theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue) : null;
+    elPreflightPromptInput.value = renderSingleIssueBrief(activeIssue, {
+      useWorktree: Boolean(useWt || existingThemeWorktree)
+    });
+  }
+  function syncPreflightBranchInput() {
+    if (!activeIssue) return;
+    const isTagMode = elRadioWorktreeTag.checked;
+    const branchName = buildWorktreeBranchName({
+      issue: activeIssue,
+      mode: isTagMode ? "tag" : "issue"
+    });
+    elPreflightBranchInput.value = branchName;
+  }
+  function openPreflightModal(issue) {
+    activeIssue = issue;
+    elModalPreflightTitle.textContent = `Start Agent Task on #${issue.number}`;
+    elPreflightWorktreeToggle.checked = false;
+    elPreflightWorktreeSection.style.display = "none";
+    elRadioWorktreeIssue.checked = true;
+    const tagBranch = buildWorktreeBranchName({ issue, mode: "tag" });
+    const issueBranch = buildWorktreeBranchName({ issue, mode: "issue" });
+    elPreflightTagPreview.textContent = tagBranch;
+    elPreflightIssuePreview.textContent = issueBranch;
+    elPreflightBranchInput.value = issueBranch;
+    elPreflightBaseBranchInput.value = "main";
+    const theme = getIssueTheme(issue);
+    const hasTheme = Boolean(theme && theme !== "No Theme");
+    const existingThemeWorktree = hasTheme ? findThemeWorktree(worktrees, issue) : null;
+    if (isAllProjectsMode) {
+      elPreflightWorktreeToggle.checked = false;
+      elPreflightWorktreeToggle.disabled = true;
+      elPreflightWorktreeSection.style.display = "none";
+      if (elPreflightThemeNotice) {
+        elPreflightThemeNotice.style.display = "none";
+        elPreflightThemeNotice.textContent = "";
+      }
+      elBtnPreflightLaunch.textContent = "Start Agent Session (All Projects)";
+      updatePreflightBrief();
+      elPreflightBackdrop.classList.add("active");
+      return;
+    }
+    elPreflightWorktreeToggle.disabled = false;
+    if (elPreflightThemeNotice) {
+      if (existingThemeWorktree) {
+        elPreflightThemeNotice.style.display = "flex";
+        elPreflightThemeNotice.textContent = `Reusing active theme worktree: ${theme}`;
+        elPreflightThemeNotice.title = `Found existing theme worktree "${existingThemeWorktree.name || theme}". Session will automatically reuse it.`;
+      } else {
+        elPreflightThemeNotice.style.display = "none";
+        elPreflightThemeNotice.textContent = "";
+      }
+    }
+    if (existingThemeWorktree) {
+      elBtnPreflightLaunch.textContent = `Start Agent Session (Theme: ${theme})`;
+    } else {
+      elBtnPreflightLaunch.textContent = "Start Agent Session (Current Workspace)";
+    }
+    updatePreflightBrief();
+    elPreflightBackdrop.classList.add("active");
+  }
+  function closePreflightModal() {
+    elPreflightBackdrop.classList.remove("active");
+  }
+  async function launchAgentSession() {
+    if (!activeIssue) return;
+    const allProjectsMode = isAllProjectsMode;
+    const targetProject = allProjectsMode ? getWorkspaceRootProject() || currentProject : currentProject;
+    if (!targetProject) return;
+    const useWorktree = allProjectsMode ? false : elPreflightWorktreeToggle.checked;
+    const rawBranch = elPreflightBranchInput.value.trim();
+    const cleanBranch = useWorktree ? rawBranch.replace(/[^a-zA-Z0-9._-]/g, "-").slice(0, 80) : void 0;
+    const baseBranch = useWorktree ? elPreflightBaseBranchInput.value.trim() || void 0 : void 0;
+    const promptText = elPreflightPromptInput.value.trim().slice(0, 15e3);
+    const autoMove = elPreflightMoveInProgress.checked;
+    const theme = getIssueTheme(activeIssue);
+    const existingThemeWorktree = !allProjectsMode && theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue) : null;
+    const payload = buildLaunchSessionPayload({
+      issue: activeIssue,
+      projectId: targetProject.id,
+      useWorktree,
+      branchName: cleanBranch,
+      baseBranch,
+      prompt: promptText,
+      existingWorktree: existingThemeWorktree,
+      worktrees
+    });
+    if (allProjectsMode) {
+      payload.worktree = false;
+      if (payload.data) delete payload.data.branch;
+    }
+    elBtnPreflightLaunch.disabled = true;
+    elBtnPreflightLaunch.textContent = "Provisioning...";
+    try {
+      const targetDesc = allProjectsMode ? "workspace root /workspace" : existingThemeWorktree ? `theme worktree "${existingThemeWorktree.name || theme}"` : useWorktree && cleanBranch ? `worktree "${cleanBranch}"` : "workspace";
+      addLog(`Starting session in ${targetDesc} on project ${targetProject.id}...`);
+      const res = await host.startSession(payload);
+      closePreflightModal();
+      if (autoMove) {
+        void updateIssueStatus(activeIssue, "in-progress");
+      }
+      await host.toast({
+        kind: "success",
+        message: `Launched agent session in ${targetDesc}!`
+      });
+      if (res.sessionId) {
+        void host.openSession(res.sessionId);
+      }
+    } catch (err) {
+      addLog(`Failed to start session: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to launch agent: ${err.message || "Unknown error"}` });
+    } finally {
+      elBtnPreflightLaunch.disabled = false;
+      elBtnPreflightLaunch.textContent = allProjectsMode ? "Start Agent Session (All Projects)" : elPreflightWorktreeToggle.checked ? "Launch Worktree & Agent" : existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : "Start Agent Session (Current Workspace)";
+    }
+  }
+  function updateBatchBar() {
+    const count = selectedIssueNumbers.size;
+    if (count > 0) {
+      document.body.classList.add("selection-active");
+      if (elBatchActionBar) elBatchActionBar.style.display = "flex";
+      if (elBatchCountBadge) elBatchCountBadge.textContent = `${count} selected`;
+    } else {
+      document.body.classList.remove("selection-active");
+      if (elBatchActionBar) elBatchActionBar.style.display = "none";
+    }
+    document.querySelectorAll(".card").forEach((cardEl) => {
+      const num = Number(cardEl.dataset.issueNumber);
+      const isSelected = selectedIssueNumbers.has(num);
+      cardEl.classList.toggle("is-selected", isSelected);
+      const cb = cardEl.querySelector(".card-checkbox");
+      if (cb) cb.checked = isSelected;
+    });
+  }
+  function clearSelection() {
+    selectedIssueNumbers.clear();
+    updateBatchBar();
+  }
+  function toggleIssueSelection(issueNumber) {
+    if (selectedIssueNumbers.has(issueNumber)) {
+      selectedIssueNumbers.delete(issueNumber);
+    } else {
+      selectedIssueNumbers.add(issueNumber);
+    }
+    updateBatchBar();
+  }
+  async function launchPackagedSession() {
+    const selected = issues.filter((i) => selectedIssueNumbers.has(i.number));
+    if (selected.length === 0 || !currentProject) return;
+    const promptText = buildConsolidatedIssuePrompt(selected);
+    const title = `Packaged Tasks (${selected.length}): ${selected.map((i) => `#${i.number}`).join(", ")}`.slice(0, 150);
+    try {
+      addLog(`Launching packaged session for ${selected.length} issues...`);
+      const multiPayload = buildMultiIssueAttachPayload(selected, currentRepo);
+      const individualItems = selected.map((i) => buildIssueAttachPayload(i));
+      const items = mergeSessionItems([multiPayload], individualItems);
+      const { skillNames: packageSkills } = resolveIssueSkills(selected);
+      const res = await host.startSession({
+        projectId: currentProject.id,
+        worktree: false,
+        providerId: "github-task-board",
+        id: `package-${Date.now()}`,
+        title,
+        url: selected[0]?.html_url || (currentRepo ? `https://github.com/${currentRepo}/issues` : ""),
+        text: promptText,
+        ...packageSkills.length > 0 ? { skills: packageSkills } : {},
+        data: {
+          packaged: true,
+          issueNumber: selected[0]?.number,
+          issueNumbers: selected.map((i) => i.number),
+          ...packageSkills.length > 0 ? { skills: packageSkills } : {},
+          items
+        },
+        items
+      });
+      clearSelection();
+      selected.forEach((issue) => {
+        void updateIssueStatus(issue, "in-progress");
+      });
+      await host.toast({
+        kind: "success",
+        message: `Launched packaged session with ${selected.length} issues!`
+      });
+      if (res.sessionId) {
+        void host.openSession(res.sessionId);
+      }
+    } catch (err) {
+      addLog(`Failed to start packaged session: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to package issues: ${err.message || "Unknown error"}` });
+    }
+  }
+  async function launchBatchSeparateSessions() {
+    const selected = issues.filter((i) => selectedIssueNumbers.has(i.number));
+    if (selected.length === 0 || !currentProject) return;
+    clearSelection();
+    await host.toast({ kind: "info", message: `Launching ${selected.length} agent sessions...` });
+    let successCount = 0;
+    for (const issue of selected) {
+      try {
+        const issueRepo = getIssueRepoFullName(issue) || (issue.repo && issue.repo !== ALL_PROJECTS_CACHE_KEY ? issue.repo : currentRepo) || void 0;
+        const { skillNames } = resolveIssueSkills(issue);
+        const prompt = renderBatchLaunchPrompt(issue);
+        const payload = {
+          projectId: currentProject.id,
+          worktree: false,
+          providerId: "github-task-board",
+          id: String(issue.number),
+          title: `#${issue.number} ${issue.title || ""}`.slice(0, 150),
+          url: (issue.html_url || "").slice(0, 1e3),
+          text: prompt,
+          ...skillNames.length > 0 ? { skills: skillNames } : {},
+          data: {
+            issueNumber: issue.number,
+            ...issueRepo ? { repo: issueRepo } : {},
+            ...skillNames.length > 0 ? { skills: skillNames } : {}
+          }
+        };
+        await host.startSession(payload);
+        void updateIssueStatus(issue, "in-progress");
+        successCount++;
+      } catch (err) {
+        addLog(`Failed to start session for #${issue.number}: ${err.message}`, "error");
+      }
+    }
+    await host.toast({ kind: "success", message: `Successfully launched ${successCount} of ${selected.length} sessions.` });
+  }
+  async function attachSelectedIssues() {
+    const selected = issues.filter((i) => selectedIssueNumbers.has(i.number));
+    if (selected.length === 0) return;
+    try {
+      const payload = selected.length === 1 ? buildIssueAttachPayload(selected[0]) : buildMultiIssueAttachPayload(selected, currentRepo);
+      await host.attach(payload);
+      if (selected.length > 1 && typeof host.compose === "function") {
+        try {
+          await host.compose({ text: `Focusing on issues: ${selected.map((i) => `#${i.number}`).join(", ")}` });
+        } catch {
+        }
+      }
+      clearSelection();
+      await host.toast({
+        kind: "success",
+        message: selected.length === 1 ? `Attached issue #${selected[0].number} to composer` : `Attached ${selected.length} issues in consolidated chip to composer`
+      });
+    } catch (err) {
+      addLog(`Failed to attach selected issues: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to attach: ${err?.message || "Unknown error"}` });
+    }
+  }
+  var elNewIssueModalBackdrop = document.getElementById("newIssueModalBackdrop");
+  var elNewIssueRepoTarget = document.getElementById("newIssueRepoTarget");
+  var elBtnSwitchAI = document.getElementById("btnSwitchAI");
+  var elBtnSwitchManual = document.getElementById("btnSwitchManual");
+  var elPaneNewIssueAI = document.getElementById("paneNewIssueAI");
+  var elPaneNewIssueManual = document.getElementById("paneNewIssueManual");
+  var elFootNewIssueAI = document.getElementById("footNewIssueAI");
+  var elFootNewIssueManual = document.getElementById("footNewIssueManual");
+  var elAiIssueInput = document.getElementById("aiIssueInput");
+  var elBtnTogglePromptConfig = document.getElementById("btnTogglePromptConfig");
+  var elAiPromptConfigPanel = document.getElementById("aiPromptConfigPanel");
+  var elRadioScopeRepo = document.getElementById("radioScopeRepo");
+  var elRadioScopeGlobal = document.getElementById("radioScopeGlobal");
+  var elAiPromptTemplateTextarea = document.getElementById("aiPromptTemplateTextarea");
+  var elAiAlignmentPromptTextarea = document.getElementById("aiAlignmentPromptTextarea");
+  var elBtnResetPromptToDefault = document.getElementById("btnResetPromptToDefault");
+  var elBtnSavePromptConfig = document.getElementById("btnSavePromptConfig");
+  var elBtnNewIssueAICancel = document.getElementById("btnNewIssueAICancel");
+  var elBtnLaunchAISession = document.getElementById("btnLaunchAISession");
+  var elBtnImportFromScratchpad = document.getElementById("btnImportFromScratchpad");
+  var elBtnOpenScratchpad = document.getElementById("btnOpenScratchpad");
+  var elScratchpadModalBackdrop = document.getElementById("scratchpadModalBackdrop");
+  var elScratchpadRepoBadge = document.getElementById("scratchpadRepoBadge");
+  var elScratchpadSaveIndicator = document.getElementById("scratchpadSaveIndicator");
+  var elBtnScratchpadClose = document.getElementById("btnScratchpadClose");
+  var elBtnScratchpadAddTheme = document.getElementById("btnScratchpadAddTheme");
+  var elBtnScratchpadAddFeature = document.getElementById("btnScratchpadAddFeature");
+  var elBtnScratchpadAddBug = document.getElementById("btnScratchpadAddBug");
+  var elBtnScratchpadAddQuestion = document.getElementById("btnScratchpadAddQuestion");
+  var elScratchpadStatsBadge = document.getElementById("scratchpadStatsBadge");
+  var elScratchpadTextarea = document.getElementById("scratchpadTextarea");
+  var elBtnScratchpadClear = document.getElementById("btnScratchpadClear");
+  var elBtnScratchpadCopyToCreator = document.getElementById("btnScratchpadCopyToCreator");
+  var elBtnScratchpadDirectDraft = document.getElementById("btnScratchpadDirectDraft");
+  var elBtnScratchpadAlignAI = document.getElementById("btnScratchpadAlignAI");
+  var elScratchpadThemePopover = document.getElementById("scratchpadThemePopover");
+  var elScratchpadThemeSearch = document.getElementById("scratchpadThemeSearch");
+  var elBtnScratchpadThemeClose = document.getElementById("btnScratchpadThemeClose");
+  var elScratchpadThemeList = document.getElementById("scratchpadThemeList");
+  var elScratchpadThemeEmpty = document.getElementById("scratchpadThemeEmpty");
+  var elBtnScratchpadThemeAdd = document.getElementById("btnScratchpadThemeAdd");
+  var elBtnMoreMenu = document.getElementById("btnMoreMenu");
+  var elMoreMenuPopover = document.getElementById("moreMenuPopover");
+  var elMenuItemToggleArchive = document.getElementById("menuItemToggleArchive");
+  var elMenuItemRefresh = document.getElementById("menuItemRefresh");
+  var elMenuItemLogs = document.getElementById("menuItemLogs");
+  var elNewIssueTitleInput = document.getElementById("newIssueTitleInput");
+  var elNewIssueComplexitySelect = document.getElementById("newIssueComplexitySelect");
+  var elNewIssueBodyInput = document.getElementById("newIssueBodyInput");
+  var elNewIssueSubtasksList = document.getElementById("newIssueSubtasksList");
+  var elInputNewIssueDraftSubtask = document.getElementById("inputNewIssueDraftSubtask");
+  var elBtnAddNewIssueDraftSubtask = document.getElementById("btnAddNewIssueDraftSubtask");
+  var elDraftSubtasksCountBadge = document.getElementById("draftSubtasksCountBadge");
+  var elNewIssueQuestionsList = document.getElementById("newIssueQuestionsList");
+  var elInputNewIssueDraftQuestion = document.getElementById("inputNewIssueDraftQuestion");
+  var elBtnAddNewIssueDraftQuestion = document.getElementById("btnAddNewIssueDraftQuestion");
+  var elDraftQuestionsCountBadge = document.getElementById("draftQuestionsCountBadge");
+  var elBtnNewIssueSubmit = document.getElementById("btnNewIssueSubmit");
+  var elBtnNewIssueCancel = document.getElementById("btnNewIssueCancel");
+  var elBtnNewIssueClose = document.getElementById("btnNewIssueClose");
+  var draftSubtasks = [];
+  var draftQuestions = [];
+  var elAiDraftReviewCard = document.getElementById("aiDraftReviewCard");
+  var elDraftStatusIndicator = document.getElementById("draftStatusIndicator");
+  var elDraftStatusSpinner = document.getElementById("draftStatusSpinner");
+  var elDraftStatusText = document.getElementById("draftStatusText");
+  var elBtnDismissDraftReview = document.getElementById("btnDismissDraftReview");
+  var elDraftReviewTitleInput = document.getElementById("draftReviewTitleInput");
+  var elDraftReviewBodyInput = document.getElementById("draftReviewBodyInput");
+  var elDraftReviewMeta = document.getElementById("draftReviewMeta");
+  var elBtnEditDraftInManual = document.getElementById("btnEditDraftInManual");
+  var elBtnOpenDraftSessionLink = document.getElementById("btnOpenDraftSessionLink");
+  var elBtnAcceptAndPostDraft = document.getElementById("btnAcceptAndPostDraft");
+  var activeDraftSessionId = null;
+  var currentDraftIssue = null;
+  function setDraftReviewStatus(status, message) {
+    if (!elDraftStatusIndicator || !elDraftStatusText) return;
+    elDraftStatusText.textContent = message;
+    if (status === "drafting") {
+      elDraftStatusIndicator.className = "status-pill status-pill-running";
+      if (elDraftStatusSpinner) elDraftStatusSpinner.style.display = "inline-block";
+    } else if (status === "ready") {
+      elDraftStatusIndicator.className = "status-pill status-pill-ready";
+      if (elDraftStatusSpinner) elDraftStatusSpinner.style.display = "none";
+    } else {
+      elDraftStatusIndicator.className = "status-pill status-pill-failed";
+      if (elDraftStatusSpinner) elDraftStatusSpinner.style.display = "none";
+    }
+  }
+  function updateDraftReviewMeta() {
+    if (!elDraftReviewMeta) return;
+    const body = elDraftReviewBodyInput?.value || "";
+    const subtasks = parseSubtasks(body);
+    const questions = parseOpenQuestions(body);
+    elDraftReviewMeta.textContent = formatDraftReviewMeta(subtasks.length, questions.length);
+  }
+  function showDraftReviewCard(draft) {
+    if (!elAiDraftReviewCard) return;
+    currentDraftIssue = draft;
+    if (elDraftReviewTitleInput) {
+      elDraftReviewTitleInput.value = draft.title;
+    }
+    if (elDraftReviewBodyInput) {
+      elDraftReviewBodyInput.value = draft.body;
+    }
+    updateDraftReviewMeta();
+    if (draft.sessionId) {
+      activeDraftSessionId = draft.sessionId;
+      if (elBtnOpenDraftSessionLink) {
+        elBtnOpenDraftSessionLink.style.display = "inline-block";
+      }
+    }
+    setDraftReviewStatus(
+      draft.status || "ready",
+      draft.status === "drafting" ? "Drafting in background..." : "Draft ready for review"
+    );
+    elAiDraftReviewCard.style.display = "flex";
+  }
+  function hideDraftReviewCard() {
+    if (!elAiDraftReviewCard) return;
+    elAiDraftReviewCard.style.display = "none";
+    activeDraftSessionId = null;
+    currentDraftIssue = null;
+  }
+  function handleDraftSessionUpdates(allSessions) {
+    if (!activeDraftSessionId) return;
+    const draftSess = allSessions.find((s) => s.id === activeDraftSessionId);
+    if (!draftSess) return;
+    if (draftSess.activity === "idle" || draftSess.outcome === "completed") {
+      setDraftReviewStatus("ready", "Draft ready for review");
+    } else if (draftSess.activity === "running") {
+      setDraftReviewStatus("drafting", "Drafting in background...");
+    }
+  }
+  function editDraftInManualMode() {
+    const title = elDraftReviewTitleInput ? elDraftReviewTitleInput.value.trim() : "";
+    const body = elDraftReviewBodyInput ? elDraftReviewBodyInput.value.trim() : "";
+    elNewIssueTitleInput.value = title;
+    elNewIssueBodyInput.value = body;
+    draftSubtasks = parseSubtasks(body).map((s) => s.text);
+    renderDraftSubtasks();
+    draftQuestions = parseOpenQuestions(body).map((q) => q.text);
+    renderDraftQuestions();
+    setNewIssueMode("manual");
+  }
+  function openActiveDraftSession() {
+    if (activeDraftSessionId && typeof host.openSession === "function") {
+      void host.openSession(activeDraftSessionId);
+    }
+  }
+  async function acceptAndPostDraft() {
+    const targetRepo = currentRepo;
+    if (!targetRepo) {
+      await host.toast({ kind: "error", message: "No target repository selected" });
+      return;
+    }
+    const title = elDraftReviewTitleInput ? elDraftReviewTitleInput.value.trim() : "";
+    const body = elDraftReviewBodyInput ? elDraftReviewBodyInput.value.trim() : "";
+    if (!title) {
+      if (elDraftReviewTitleInput) elDraftReviewTitleInput.focus();
+      await host.toast({ kind: "info", message: "Issue title cannot be empty" });
+      return;
+    }
+    if (elBtnAcceptAndPostDraft) {
+      elBtnAcceptAndPostDraft.disabled = true;
+      elBtnAcceptAndPostDraft.textContent = "Posting to GitHub...";
+    }
+    try {
+      const payload = createDraftIssuePayload({ title, body, labels: ["status:todo"] });
+      addLog(`Posting accepted draft issue to ${targetRepo}: "${title}"...`);
+      const created = await githubRequestWithRetry("POST", `/repos/${targetRepo}/issues`, payload);
+      addLog(`Created issue #${created.number}: ${created.title}`, "succ");
+      await host.toast({ kind: "success", message: `Created #${created.number} on GitHub` });
+      closeNewIssueModal();
+      hideDraftReviewCard();
+      saveDraftAiInput("");
+      if (elAiIssueInput) elAiIssueInput.value = "";
+      if (created && created.number) {
+        const normalizedCreated = normalizeGithubIssues([{ ...created, repo: targetRepo }]);
+        normalizedCreated.forEach((i) => {
+          i.repo = targetRepo;
+        });
+        if (currentRepo === targetRepo || isAllProjectsMode) {
+          issues = mergeIssuePages(issues, normalizedCreated);
+          renderViews();
+          statusReconciler.schedule(issues);
+        }
+        const existingCached = issueCache.get(targetRepo)?.issues || [];
+        const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
+        issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues }).catch(() => {
+          });
+        }
+        if (isAllProjectsMode) {
+          issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+          if (host?.storage) {
+            void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+            });
+          }
+        }
+      }
+    } catch (err) {
+      addLog(`Failed to post draft issue: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to create issue: ${err.message || "Unknown error"}` });
+    } finally {
+      if (elBtnAcceptAndPostDraft) {
+        elBtnAcceptAndPostDraft.disabled = false;
+        elBtnAcceptAndPostDraft.innerHTML = `<svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg><span>Accept &amp; Post to GitHub</span>`;
+      }
+    }
+  }
+  var currentNewIssueMode = "manual";
+  function setNewIssueMode(mode) {
+    currentNewIssueMode = mode;
+    elBtnSwitchAI.classList.toggle("active", mode === "ai");
+    elBtnSwitchManual.classList.toggle("active", mode === "manual");
+    elPaneNewIssueAI.style.display = mode === "ai" ? "flex" : "none";
+    elPaneNewIssueManual.style.display = mode === "manual" ? "flex" : "none";
+    elFootNewIssueAI.style.display = mode === "ai" ? "flex" : "none";
+    elFootNewIssueManual.style.display = mode === "manual" ? "flex" : "none";
+    if (mode === "ai") {
+      setTimeout(() => elAiIssueInput.focus(), 50);
+    } else {
+      setTimeout(() => elNewIssueTitleInput.focus(), 50);
+    }
+  }
+  async function loadPromptConfigForEditor() {
+    const isRepoScope = elRadioScopeRepo.checked;
+    if (isRepoScope) {
+      const storedDraft = await host.storage.get(`ai_issue_prompt_${currentRepo}`);
+      const storedAlign = await host.storage.get(`ai_alignment_prompt_${currentRepo}`);
+      elAiPromptTemplateTextarea.value = typeof storedDraft === "string" ? storedDraft : DEFAULT_AI_ISSUE_PROMPT;
+      if (elAiAlignmentPromptTextarea) {
+        elAiAlignmentPromptTextarea.value = typeof storedAlign === "string" ? storedAlign : DEFAULT_AI_ALIGNMENT_PROMPT;
+      }
+    } else {
+      const storedDraft = await host.storage.get("ai_issue_prompt_global");
+      const storedAlign = await host.storage.get("ai_alignment_prompt_global");
+      elAiPromptTemplateTextarea.value = typeof storedDraft === "string" ? storedDraft : DEFAULT_AI_ISSUE_PROMPT;
+      if (elAiAlignmentPromptTextarea) {
+        elAiAlignmentPromptTextarea.value = typeof storedAlign === "string" ? storedAlign : DEFAULT_AI_ALIGNMENT_PROMPT;
+      }
+    }
+  }
+  async function savePromptConfig() {
+    const isRepoScope = elRadioScopeRepo.checked;
+    const draftText = elAiPromptTemplateTextarea.value.trim();
+    const alignText = elAiAlignmentPromptTextarea?.value.trim() || "";
+    if (!draftText) return;
+    try {
+      if (isRepoScope) {
+        await host.storage.set(`ai_issue_prompt_${currentRepo}`, draftText);
+        if (alignText) {
+          await host.storage.set(`ai_alignment_prompt_${currentRepo}`, alignText);
+        } else {
+          await host.storage.delete(`ai_alignment_prompt_${currentRepo}`);
+        }
+        addLog(`Saved prompt settings for repo ${currentRepo}`, "succ");
+        await host.toast({ kind: "success", message: "Saved settings for this repository" });
+      } else {
+        await host.storage.set("ai_issue_prompt_global", draftText);
+        if (alignText) {
+          await host.storage.set("ai_alignment_prompt_global", alignText);
+        } else {
+          await host.storage.delete("ai_alignment_prompt_global");
+        }
+        addLog("Saved global prompt settings", "succ");
+        await host.toast({ kind: "success", message: "Saved global settings" });
+      }
+      elAiPromptConfigPanel.style.display = "none";
+    } catch (err) {
+      addLog(`Failed to save prompt config: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: "Failed to save settings" });
+    }
+  }
+  async function resetPromptConfigToDefault() {
+    elAiPromptTemplateTextarea.value = DEFAULT_AI_ISSUE_PROMPT;
+    if (elAiAlignmentPromptTextarea) elAiAlignmentPromptTextarea.value = DEFAULT_AI_ALIGNMENT_PROMPT;
+    const isRepoScope = elRadioScopeRepo.checked;
+    try {
+      if (isRepoScope) {
+        await host.storage.delete(`ai_issue_prompt_${currentRepo}`);
+        await host.storage.delete(`ai_alignment_prompt_${currentRepo}`);
+      } else {
+        await host.storage.delete("ai_issue_prompt_global");
+        await host.storage.delete("ai_alignment_prompt_global");
+      }
+      await host.toast({ kind: "info", message: "Reset prompts to default" });
+    } catch {
+    }
+  }
+  function renderDraftSubtasks() {
+    if (!elNewIssueSubtasksList) return;
+    elNewIssueSubtasksList.innerHTML = "";
+    if (elDraftSubtasksCountBadge) {
+      elDraftSubtasksCountBadge.textContent = `${draftSubtasks.length} ${draftSubtasks.length === 1 ? "step" : "steps"}`;
+    }
+    if (draftSubtasks.length === 0) {
+      elNewIssueSubtasksList.innerHTML = `<div style="color: var(--fg-faint); font-size: 11px; padding: 2px 0;">No subtasks added yet.</div>`;
+      return;
+    }
+    draftSubtasks.forEach((task, idx) => {
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.justifyContent = "space-between";
+      row.style.padding = "3px 6px";
+      row.style.background = "var(--surf-subtle)";
+      row.style.borderRadius = "var(--rad-sm)";
+      row.style.fontSize = "11.5px";
+      row.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono);">${idx + 1}.</span>
+        <span style="color: var(--fg);">${escapeHtml(task)}</span>
+      </div>
+      <button class="btn btn-icon btn-sm btn-del-draft-task" type="button" style="width: 18px; height: 18px; font-size: 11px; padding: 0;" title="Remove step">\u2715</button>
+    `;
+      const btnDel = row.querySelector(".btn-del-draft-task");
+      if (btnDel) {
+        btnDel.addEventListener("click", () => {
+          draftSubtasks.splice(idx, 1);
+          renderDraftSubtasks();
+        });
+      }
+      elNewIssueSubtasksList.appendChild(row);
+    });
+  }
+  function renderDraftQuestions() {
+    if (!elNewIssueQuestionsList) return;
+    elNewIssueQuestionsList.innerHTML = "";
+    if (elDraftQuestionsCountBadge) {
+      elDraftQuestionsCountBadge.textContent = `${draftQuestions.length} open`;
+    }
+    if (draftQuestions.length === 0) {
+      elNewIssueQuestionsList.innerHTML = `<div style="color: var(--fg-faint); font-size: 11px; padding: 2px 0;">No open questions added yet.</div>`;
+      return;
+    }
+    draftQuestions.forEach((question, idx) => {
+      const row = document.createElement("div");
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.justifyContent = "space-between";
+      row.style.padding = "3px 6px";
+      row.style.background = "var(--surf-subtle)";
+      row.style.borderRadius = "var(--rad-sm)";
+      row.style.fontSize = "11.5px";
+      row.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono);">Q${idx + 1}.</span>
+        <span style="color: var(--fg);">${escapeHtml(question)}</span>
+      </div>
+      <button class="btn btn-icon btn-sm btn-del-draft-question" type="button" style="width: 18px; height: 18px; font-size: 11px; padding: 0;" title="Remove question">\u2715</button>
+    `;
+      const btnDel = row.querySelector(".btn-del-draft-question");
+      if (btnDel) {
+        btnDel.addEventListener("click", () => {
+          draftQuestions.splice(idx, 1);
+          renderDraftQuestions();
+        });
+      }
+      elNewIssueQuestionsList.appendChild(row);
+    });
+  }
+  var scratchpadSaveTimer = null;
+  var activeScratchpadRepo = null;
+  var scratchpadLastSavedContent = /* @__PURE__ */ new Map();
+  function getScratchpadStorageKey(repo) {
+    const target = repo !== void 0 ? repo : activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
+    return target ? `scratchpad_${target}` : "scratchpad_global";
+  }
+  function getScratchpadBackupStorageKey(repo) {
+    const target = repo !== void 0 ? repo : activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
+    return target ? `scratchpad_backup_${target}` : "scratchpad_backup_global";
+  }
+  function getScratchpadLocalKey(repo) {
+    const target = repo !== void 0 ? repo : activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
+    return `openchamber_scratchpad_${target || "global"}`;
+  }
+  function getScratchpadBackupLocalKey(repo) {
+    const target = repo !== void 0 ? repo : activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
+    return `openchamber_scratchpad_backup_${target || "global"}`;
+  }
+  async function loadScratchpadContent(repoOverride) {
+    const targetRepo = repoOverride !== void 0 ? repoOverride || "" : isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo;
+    activeScratchpadRepo = targetRepo;
+    const storageKey = getScratchpadStorageKey(targetRepo);
+    let text = "";
+    try {
+      const stored = await host.storage.get(storageKey);
+      if (typeof stored === "string") {
+        text = stored;
+      }
+    } catch {
+    }
+    if (!text) {
+      try {
+        text = localStorage.getItem(getScratchpadLocalKey(targetRepo)) || "";
+      } catch {
+      }
+    }
+    if (activeScratchpadRepo !== targetRepo) {
+      return text;
+    }
+    scratchpadLastSavedContent.set(targetRepo, text);
+    if (elScratchpadTextarea) {
+      elScratchpadTextarea.value = text;
+    }
+    updateScratchpadStats(text);
+    setScratchpadSaveStatus("Saved");
+    return text;
+  }
+  function setScratchpadSaveStatus(status) {
+    if (!elScratchpadSaveIndicator) return;
+    if (status === "Saving...") {
+      elScratchpadSaveIndicator.style.color = "var(--fg-muted)";
+      elScratchpadSaveIndicator.innerHTML = `<span>Saving...</span>`;
+    } else {
+      elScratchpadSaveIndicator.style.color = "var(--succ)";
+      elScratchpadSaveIndicator.innerHTML = `
+      <svg class="icon icon-xs" viewBox="0 0 24 24" style="width: 11px; height: 11px; fill: currentColor;"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+      <span>Saved</span>
+    `;
+    }
+  }
+  function updateScratchpadStats(text) {
+    if (!elScratchpadStatsBadge) return;
+    const { themes, totalIdeas, totalQuestions } = parseScratchPadThemes(text);
+    const themeWord = themes.length === 1 ? "theme" : "themes";
+    const ideaWord = totalIdeas === 1 ? "idea" : "ideas";
+    let stats = `${themes.length} ${themeWord}, ${totalIdeas} ${ideaWord}`;
+    if (totalQuestions > 0) {
+      const qWord = totalQuestions === 1 ? "question" : "questions";
+      stats += `, ${totalQuestions} ${qWord}`;
+    }
+    elScratchpadStatsBadge.textContent = stats;
+  }
+  function flushScratchpadSave() {
+    if (scratchpadSaveTimer !== null) {
+      clearTimeout(scratchpadSaveTimer);
+      scratchpadSaveTimer = null;
+    }
+    const targetRepo = activeScratchpadRepo ?? (isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo);
+    const text = elScratchpadTextarea?.value ?? "";
+    updateScratchpadStats(text);
+    let previousText = scratchpadLastSavedContent.get(targetRepo);
+    if (!previousText) {
+      try {
+        previousText = localStorage.getItem(getScratchpadLocalKey(targetRepo)) || "";
+      } catch {
+      }
+    }
+    if (previousText && previousText.trim() && previousText !== text) {
+      const backupKey = getScratchpadBackupStorageKey(targetRepo);
+      const backupLocalKey = getScratchpadBackupLocalKey(targetRepo);
+      try {
+        localStorage.setItem(backupLocalKey, previousText);
+      } catch {
+      }
+      void host.storage.set(backupKey, previousText).catch(() => {
+      });
+    }
+    scratchpadLastSavedContent.set(targetRepo, text);
+    try {
+      localStorage.setItem(getScratchpadLocalKey(targetRepo), text);
+    } catch {
+    }
+    setScratchpadSaveStatus("Saved");
+    void host.storage.set(getScratchpadStorageKey(targetRepo), text).then(() => setScratchpadSaveStatus("Saved")).catch(() => setScratchpadSaveStatus("Saved"));
+  }
+  function handleScratchpadInput() {
+    if (!elScratchpadTextarea) return;
+    setScratchpadSaveStatus("Saving...");
+    clearTimeout(scratchpadSaveTimer);
+    scratchpadSaveTimer = setTimeout(() => {
+      flushScratchpadSave();
+    }, 1e3);
+  }
+  function insertIntoScratchpad(snippet) {
+    if (!elScratchpadTextarea) return;
+    const ta = elScratchpadTextarea;
+    const start = ta.selectionStart || 0;
+    const end = ta.selectionEnd || 0;
+    const before = ta.value.substring(0, start);
+    const after = ta.value.substring(end);
+    const prefix = before && !before.endsWith("\n") ? "\n" : "";
+    ta.value = `${before}${prefix}${snippet}${after}`;
+    ta.selectionStart = ta.selectionEnd = start + prefix.length + snippet.length;
+    ta.focus();
+    handleScratchpadInput();
+  }
+  function insertScratchpadTheme(themeName) {
+    const clean = themeName.trim();
+    if (!clean) return;
+    insertIntoScratchpad(`## [Theme: ${clean}]
+- [ ] `);
+    if (elScratchpadThemePopover) elScratchpadThemePopover.style.display = "none";
+  }
+  function renderScratchpadThemeList(query) {
+    if (!elScratchpadThemeList) return;
+    const themes = extractTaskThemes(issues);
+    const q = (query || "").trim().toLowerCase();
+    const filtered = q ? themes.filter((t) => t.theme.toLowerCase().includes(q)) : themes;
+    elScratchpadThemeList.innerHTML = "";
+    if (filtered.length === 0) {
+      if (elScratchpadThemeEmpty) {
+        elScratchpadThemeEmpty.style.display = "block";
+        elScratchpadThemeEmpty.textContent = themes.length === 0 ? "No existing themes found in tasks. Type a name below to create one." : "No themes match your search. Press Enter or click Add to create it.";
+      }
+    } else if (elScratchpadThemeEmpty) {
+      elScratchpadThemeEmpty.style.display = "none";
+    }
+    filtered.forEach(({ theme, count }) => {
+      const row = document.createElement("div");
+      row.className = "theme-option-row";
+      row.style.display = "flex";
+      row.style.alignItems = "center";
+      row.style.justifyContent = "space-between";
+      row.style.padding = "4px 8px";
+      row.style.background = "var(--surf)";
+      row.style.border = "1px solid var(--border-subtle)";
+      row.style.borderRadius = "var(--rad-sm)";
+      row.style.cursor = "pointer";
+      row.style.fontSize = "11.5px";
+      row.style.gap = "8px";
+      row.setAttribute("role", "button");
+      row.setAttribute("tabindex", "0");
+      row.setAttribute("aria-label", `Insert theme ${theme} (${count} ${count === 1 ? "task" : "tasks"})`);
+      row.innerHTML = `
+      <span style="color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(theme)}</span>
+      <span style="color: var(--fg-muted); font-size: 10px; font-family: var(--font-mono); flex-shrink: 0;">${count} ${count === 1 ? "task" : "tasks"}</span>
+    `;
+      row.addEventListener("mouseenter", () => {
+        row.style.background = "var(--surf-hover)";
+        row.style.borderColor = "var(--border)";
+      });
+      row.addEventListener("mouseleave", () => {
+        row.style.background = "var(--surf)";
+        row.style.borderColor = "var(--border-subtle)";
+      });
+      row.addEventListener("click", () => insertScratchpadTheme(theme));
+      row.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          insertScratchpadTheme(theme);
+        }
+      });
+      elScratchpadThemeList.appendChild(row);
+    });
+  }
+  async function openScratchpadModal() {
+    const targetRepo = isAllProjectsMode ? ALL_PROJECTS_CACHE_KEY : currentRepo;
+    activeScratchpadRepo = targetRepo;
+    if (elScratchpadRepoBadge) {
+      elScratchpadRepoBadge.textContent = isAllProjectsMode ? "All Projects" : displayProjectName(currentRepo || "") || "Global";
+      elScratchpadRepoBadge.title = isAllProjectsMode ? "All Projects" : currentRepo || "Global";
+    }
+    await loadScratchpadContent();
+    if (elScratchpadModalBackdrop) {
+      elScratchpadModalBackdrop.classList.add("active");
+    }
+    if (elScratchpadTextarea) {
+      setTimeout(() => elScratchpadTextarea?.focus(), 50);
+    }
+  }
+  function closeScratchpadModal() {
+    flushScratchpadSave();
+    activeScratchpadRepo = null;
+    if (elScratchpadModalBackdrop) {
+      elScratchpadModalBackdrop.classList.remove("active");
+    }
+    if (elScratchpadThemePopover) {
+      elScratchpadThemePopover.style.display = "none";
+    }
+    elBtnScratchpadAddTheme?.setAttribute("aria-expanded", "false");
+  }
+  async function launchScratchpadAlignmentSession() {
+    const text = elScratchpadTextarea?.value.trim() || "";
+    if (!text) {
+      if (elScratchpadTextarea) elScratchpadTextarea.focus();
+      await host.toast({ kind: "info", message: "Add some ideas to the scratch pad first" });
+      return;
+    }
+    if (!currentRepo) {
+      openRepoPopover();
+      return;
+    }
+    const storedRepoPrompt = await host.storage.get(`ai_alignment_prompt_${currentRepo}`);
+    const storedGlobalPrompt = await host.storage.get("ai_alignment_prompt_global");
+    const promptText = resolveAiAlignmentPrompt({
+      repo: currentRepo,
+      userInput: text,
+      storedPrompt: typeof storedRepoPrompt === "string" ? storedRepoPrompt : typeof storedGlobalPrompt === "string" ? storedGlobalPrompt : null
+    });
+    const firstLine = text.split("\n")[0].replace(/[^a-zA-Z0-9\s-_]/g, "").trim().slice(0, 45);
+    try {
+      addLog(`Launching AI alignment & clarification session for scratch pad...`);
+      const res = await host.startSession({
+        projectId: currentProject?.id,
+        worktree: false,
+        navigation: "open",
+        providerId: "github-task-board",
+        id: `align-${Date.now()}`,
+        title: `Align: ${firstLine || "Ideas & Themes"}`,
+        url: `https://github.com/${currentRepo}/issues`,
+        text: promptText,
+        skills: ["issue-lifecycle"],
+        data: {
+          alignment: true,
+          repo: currentRepo,
+          skills: ["issue-lifecycle"]
+        }
+      });
+      closeScratchpadModal();
+      await host.toast({ kind: "success", message: "Launched interactive AI alignment session" });
+      if (res.sessionId) {
+        void host.openSession(res.sessionId);
+      }
+    } catch (err) {
+      addLog(`Failed to start alignment session: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to start session: ${err?.message || "Unknown error"}` });
+    }
+  }
+  async function launchScratchpadDirectSession() {
+    const text = elScratchpadTextarea?.value.trim() || "";
+    if (!text) {
+      if (elScratchpadTextarea) elScratchpadTextarea.focus();
+      await host.toast({ kind: "info", message: "Add some ideas to the scratch pad first" });
+      return;
+    }
+    if (!currentRepo) {
+      openRepoPopover();
+      return;
+    }
+    const storedRepoPrompt = await host.storage.get(`ai_issue_prompt_${currentRepo}`);
+    const storedGlobalPrompt = await host.storage.get("ai_issue_prompt_global");
+    const promptText = resolveAiIssuePrompt({
+      repo: currentRepo,
+      userInput: text,
+      storedRepoPrompt: typeof storedRepoPrompt === "string" ? storedRepoPrompt : null,
+      storedGlobalPrompt: typeof storedGlobalPrompt === "string" ? storedGlobalPrompt : null
+    });
+    const firstLine = text.split("\n")[0].replace(/[^a-zA-Z0-9\s-_]/g, "").trim().slice(0, 45);
+    try {
+      addLog(`Launching AI issue drafting session directly from scratch pad...`);
+      const res = await host.startSession({
+        projectId: currentProject?.id,
+        worktree: false,
+        navigation: "open",
+        providerId: "github-task-board",
+        id: `draft-${Date.now()}`,
+        title: `Draft: ${firstLine || "GitHub Issues"}`,
+        url: `https://github.com/${currentRepo}/issues`,
+        text: promptText,
+        skills: ["issue-lifecycle"],
+        data: {
+          drafting: true,
+          repo: currentRepo,
+          skills: ["issue-lifecycle"]
+        }
+      });
+      closeScratchpadModal();
+      await host.toast({ kind: "success", message: "Launched AI drafting session" });
+      if (res.sessionId) {
+        void host.openSession(res.sessionId);
+      }
+    } catch (err) {
+      addLog(`Failed to start AI session: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to start session: ${err?.message || "Unknown error"}` });
+    }
+  }
+  async function loadDraftAiInput() {
+    const key = currentRepo ? `ai_draft_input_${currentRepo}` : "ai_draft_input_global";
+    let val = "";
+    try {
+      const stored = await host.storage.get(key);
+      if (typeof stored === "string") val = stored;
+    } catch {
+    }
+    if (!val) {
+      try {
+        val = localStorage.getItem(`openchamber_ai_draft_${currentRepo || "global"}`) || "";
+      } catch {
+      }
+    }
+    if (elAiIssueInput && val) {
+      elAiIssueInput.value = val;
+    }
+  }
+  var draftSaveTimer = null;
+  function saveDraftAiInput(text) {
+    const key = currentRepo ? `ai_draft_input_${currentRepo}` : "ai_draft_input_global";
+    const localKey = `openchamber_ai_draft_${currentRepo || "global"}`;
+    try {
+      if (text) localStorage.setItem(localKey, text);
+      else localStorage.removeItem(localKey);
+    } catch {
+    }
+    clearTimeout(draftSaveTimer);
+    if (!text) {
+      void host.storage.delete(key).catch(() => {
+      });
+      return;
+    }
+    draftSaveTimer = setTimeout(() => {
+      void host.storage.set(key, text).catch(() => {
+      });
+    }, 300);
+  }
+  async function openNewIssueModal() {
+    if (isAllProjectsMode) {
+      await host.toast({ kind: "info", message: "Pick a specific repository to create an issue." });
+      openRepoPopover();
+      return;
+    }
+    if (!currentRepo) {
+      openRepoPopover();
+      return;
+    }
+    elNewIssueRepoTarget.textContent = displayProjectName(currentRepo || "");
+    elNewIssueRepoTarget.title = currentRepo || "";
+    elNewIssueTitleInput.value = "";
+    elNewIssueBodyInput.value = "";
+    if (elNewIssueComplexitySelect) elNewIssueComplexitySelect.value = "M";
+    draftSubtasks = [];
+    renderDraftSubtasks();
+    if (elInputNewIssueDraftSubtask) elInputNewIssueDraftSubtask.value = "";
+    draftQuestions = [];
+    renderDraftQuestions();
+    if (elInputNewIssueDraftQuestion) elInputNewIssueDraftQuestion.value = "";
+    await loadDraftAiInput();
+    elAiPromptConfigPanel.style.display = "none";
+    hideDraftReviewCard();
+    setNewIssueMode("manual");
+    elNewIssueModalBackdrop.classList.add("active");
+    setTimeout(() => elNewIssueTitleInput.focus(), 50);
+  }
+  function closeNewIssueModal() {
+    elNewIssueModalBackdrop.classList.remove("active");
+    hideDraftReviewCard();
+  }
+  async function quickAddDraft(titleInput) {
+    const title = titleInput.value.trim();
+    if (!title) return;
+    if (isAllProjectsMode) {
+      await host.toast({ kind: "info", message: "Pick a specific repository to create an issue." });
+      openRepoPopover();
+      return;
+    }
+    const targetRepo = currentRepo;
+    if (!targetRepo) {
+      openRepoPopover();
+      return;
+    }
+    titleInput.disabled = true;
+    try {
+      addLog(`Quick-adding draft in ${targetRepo}: "${title}"...`);
+      const created = await githubRequestWithRetry("POST", `/repos/${targetRepo}/issues`, {
+        title,
+        labels: ["status:draft"]
+      });
+      addLog(`Created draft issue #${created.number}: ${created.title}`, "succ");
+      await host.toast({ kind: "success", message: `Created draft #${created.number} on GitHub` });
+      titleInput.value = "";
+      if (created && created.number) {
+        const normalizedCreated = normalizeGithubIssues([{ ...created, repo: targetRepo }]);
+        normalizedCreated.forEach((i) => {
+          i.repo = targetRepo;
+        });
+        if (currentRepo === targetRepo || isAllProjectsMode) {
+          issues = mergeIssuePages(issues, normalizedCreated);
+          renderViews();
+          statusReconciler.schedule(issues);
+        }
+        const existingCached = issueCache.get(targetRepo)?.issues || [];
+        const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
+        issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues }).catch(() => {
+          });
+        }
+        if (isAllProjectsMode) {
+          issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+          if (host?.storage) {
+            void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+            });
+          }
+        }
+      }
+    } catch (err) {
+      addLog(`Failed to create draft issue: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to create draft: ${err.message || "Unknown error"}` });
+    } finally {
+      titleInput.disabled = false;
+      titleInput.focus();
+    }
+  }
+  async function batchAlignDrafts() {
+    if (isAligningDrafts) return;
+    const activeRepo = currentRepo;
+    if (!isAllProjectsMode && !activeRepo) {
+      if (host?.toast) {
+        void host.toast({ kind: "info", message: "Pick a repository to align draft issues." });
+      }
+      openRepoPopover();
+      return;
+    }
+    const targetDrafts = issues.filter((issue) => {
+      if (isIssueClosed3(issue)) return false;
+      const col = resolveIssueColumn3(issue);
+      if (col !== "draft") return false;
+      if (isAllProjectsMode) return true;
+      const r = repoForIssue(issue);
+      return !r || r === activeRepo;
+    });
+    if (targetDrafts.length === 0) {
+      if (host?.toast) {
+        void host.toast({ kind: "info", message: "No draft issues to align." });
+      }
+      return;
+    }
+    isAligningDrafts = true;
+    aligningDraftsCount = targetDrafts.length;
+    const countWord = `${targetDrafts.length} draft${targetDrafts.length === 1 ? "" : "s"}`;
+    document.querySelectorAll("#btnAlignDrafts").forEach((btn) => {
+      btn.disabled = true;
+      btn.innerHTML = `<span class="btn-spinner"></span>Aligning (${countWord})...`;
+    });
+    addLog(`Aligning ${targetDrafts.length} draft issues...`);
+    let successCount = 0;
+    const errors = [];
+    try {
+      for (const draft of targetDrafts) {
+        const issueRepo = repoForIssue(draft) || activeRepo;
+        if (!issueRepo || !draft.number) continue;
+        const { body: structuredBody, labels: newLabels, hasAmbiguity } = alignDraftIssue(draft);
+        const finishWrite = trackIssueWrite(issueRepo, draft, ["body", "labels"]);
+        const prevBody = draft.body;
+        const prevLabels = [...draft.labels || []];
+        draft.body = structuredBody;
+        draft.labels = newLabels.map((l) => ({ name: l }));
+        try {
+          await githubRequestWithRetry("PATCH", `/repos/${issueRepo}/issues/${draft.number}`, {
+            body: structuredBody,
+            labels: newLabels
+          });
+          finishWrite(true);
+          successCount += 1;
+          addLog(`Aligned draft #${draft.number} (${hasAmbiguity ? "needs-human" : "backlog"})`, "succ");
+        } catch (err) {
+          finishWrite(false);
+          draft.body = prevBody;
+          draft.labels = prevLabels;
+          errors.push(`#${draft.number}: ${err.message || "Error"}`);
+          addLog(`Failed to align draft #${draft.number}: ${err.message}`, "error");
+        }
+      }
+      if (isAllProjectsMode) {
+        issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+          });
+        }
+      } else if (activeRepo) {
+        issueCache.set(activeRepo, { timestamp: Date.now(), issues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${activeRepo}`, { timestamp: Date.now(), issues }).catch(() => {
+          });
+        }
+      }
+      statusReconciler.schedule(issues);
+      renderViews();
+      if (host?.toast) {
+        if (successCount > 0) {
+          const alignedWord = `${successCount} draft${successCount === 1 ? "" : "s"}`;
+          void host.toast({ kind: "success", message: `Aligned ${alignedWord} to Backlog` });
+        } else {
+          void host.toast({ kind: "error", message: `Failed to align draft issues: ${errors.join(", ")}` });
+        }
+      }
+    } finally {
+      isAligningDrafts = false;
+      aligningDraftsCount = 0;
+      document.querySelectorAll("#btnAlignDrafts").forEach((btn) => {
+        btn.disabled = false;
+        btn.innerHTML = "Align Drafts";
+      });
+    }
+  }
+  async function submitNewIssue() {
+    const title = elNewIssueTitleInput.value.trim();
+    const rawBody = elNewIssueBodyInput.value.trim();
+    if (!title) {
+      elNewIssueTitleInput.focus();
+      return;
+    }
+    const body = serializeDraftQuestions(serializeDraftSubtasks(rawBody, draftSubtasks), draftQuestions);
+    const initialLabels = ["status:todo"];
+    const complexity = elNewIssueComplexitySelect ? elNewIssueComplexitySelect.value : "none";
+    if (complexity && complexity !== "none") {
+      initialLabels.push(`complexity:${complexity.toUpperCase()}`);
+    }
+    const draftOpenQuestions = draftQuestions.map((q) => ({ text: q, completed: false }));
+    if (isVagueIdea({ title, body, subtasks: draftSubtasks.map((t) => ({ text: t })), openQuestions: draftOpenQuestions, labels: [] })) {
+      initialLabels.push("status:needs-alignment");
+    }
+    elBtnNewIssueSubmit.disabled = true;
+    elBtnNewIssueSubmit.textContent = "Creating...";
+    const targetRepo = currentRepo;
+    if (!targetRepo) {
+      elBtnNewIssueSubmit.disabled = false;
+      elBtnNewIssueSubmit.textContent = "Create Issue";
+      return;
+    }
+    try {
+      addLog(`Creating issue in ${targetRepo}: "${title}"...`);
+      const created = await githubRequestWithRetry("POST", `/repos/${targetRepo}/issues`, {
+        title,
+        body,
+        labels: initialLabels
+      });
+      addLog(`Created issue #${created.number}: ${created.title}`, "succ");
+      await host.toast({ kind: "success", message: `Created #${created.number} on GitHub` });
+      closeNewIssueModal();
+      if (created && created.number) {
+        const normalizedCreated = normalizeGithubIssues([{ ...created, repo: targetRepo }]);
+        normalizedCreated.forEach((i) => {
+          i.repo = targetRepo;
+        });
+        if (currentRepo === targetRepo || isAllProjectsMode) {
+          issues = mergeIssuePages(issues, normalizedCreated);
+          renderViews();
+          statusReconciler.schedule(issues);
+        }
+        const existingCached = issueCache.get(targetRepo)?.issues || [];
+        const updatedTargetIssues = mergeIssuePages(existingCached, normalizedCreated);
+        issueCache.set(targetRepo, { timestamp: Date.now(), issues: updatedTargetIssues });
+        if (host?.storage) {
+          void host.storage.set(`cached_issues_${targetRepo}`, { timestamp: Date.now(), issues: updatedTargetIssues }).catch(() => {
+          });
+        }
+        if (isAllProjectsMode) {
+          issueCache.set(ALL_PROJECTS_CACHE_KEY, { timestamp: Date.now(), issues });
+          if (host?.storage) {
+            void host.storage.set(`cached_issues_${ALL_PROJECTS_CACHE_KEY}`, { timestamp: Date.now(), issues }).catch(() => {
+            });
+          }
+        }
+      }
+    } catch (err) {
+      addLog(`Failed to create issue: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to create issue: ${err.message || "Unknown error"}` });
+    } finally {
+      elBtnNewIssueSubmit.disabled = false;
+      elBtnNewIssueSubmit.textContent = "Create Issue";
+    }
+  }
+  async function launchAiIssueSession() {
+    const userInput = elAiIssueInput.value.trim();
+    if (!userInput) {
+      elAiIssueInput.focus();
+      return;
+    }
+    const storedRepoPrompt = await host.storage.get(`ai_issue_prompt_${currentRepo}`);
+    const storedGlobalPrompt = await host.storage.get("ai_issue_prompt_global");
+    const promptText = resolveAiIssuePrompt({
+      repo: currentRepo,
+      userInput,
+      storedRepoPrompt: typeof storedRepoPrompt === "string" ? storedRepoPrompt : null,
+      storedGlobalPrompt: typeof storedGlobalPrompt === "string" ? storedGlobalPrompt : null
+    });
+    const firstLine = userInput.split("\n")[0].replace(/[^a-zA-Z0-9\s-_]/g, "").trim().slice(0, 50);
+    elBtnLaunchAISession.disabled = true;
+    elBtnLaunchAISession.textContent = "Starting AI Session...";
+    try {
+      addLog("Launching AI issue drafting session in background...");
+      const res = await host.startSession({
+        projectId: currentProject?.id,
+        worktree: false,
+        // Issue drafting is administrative; no worktree churn
+        navigation: "preserve",
+        // Keep modal open for live feedback
+        providerId: "github-task-board",
+        id: `draft-${Date.now()}`,
+        title: `Draft: ${firstLine || "GitHub Issues"}`,
+        url: `https://github.com/${currentRepo}/issues`,
+        text: promptText,
+        skills: ["issue-lifecycle"],
+        data: {
+          drafting: true,
+          repo: currentRepo,
+          skills: ["issue-lifecycle"]
+        }
+      });
+      const parsed = parseDraftIssueFromMarkdown(userInput);
+      showDraftReviewCard({
+        title: parsed?.title || firstLine || "Draft Issue",
+        body: parsed?.body || userInput,
+        sessionId: res.sessionId,
+        status: "drafting",
+        repo: currentRepo
+      });
+      await host.toast({
+        kind: "info",
+        message: "Launched background drafting session. Live draft preview below."
+      });
+    } catch (err) {
+      addLog(`Failed to start AI session: ${err.message}`, "error");
+      await host.toast({ kind: "error", message: `Failed to start session: ${err.message}` });
+    } finally {
+      elBtnLaunchAISession.disabled = false;
+      elBtnLaunchAISession.textContent = "Launch AI Drafting Session";
+    }
+  }
+  function setupDragAndDrop() {
+    Object.keys(kanbanCardContainers).forEach((colId) => {
+      const container = kanbanCardContainers[colId];
+      if (!container) return;
+      container.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        container.classList.add("drag-over");
+      });
+      container.addEventListener("dragleave", () => {
+        container.classList.remove("drag-over");
+      });
+      container.addEventListener("drop", (e) => {
+        e.preventDefault();
+        container.classList.remove("drag-over");
+        const issueNum = draggedIssueNumber || Number(e.dataTransfer?.getData("text/plain"));
+        if (!issueNum) return;
+        const issue = issues.find((i) => i.number === issueNum);
+        if (issue) {
+          void updateIssueStatus(issue, colId, { isHumanGesture: true });
+        }
+      });
+    });
+  }
+  if (typeof window !== "undefined") {
+    window.formatAlertBadges = formatAlertBadges;
+    window.renderDrawerAcceptanceCriteria = renderDrawerAcceptanceCriteria;
+    window.reloadIssueBeforeMutation = reloadIssueBeforeMutation;
+    window.answerQuestion = answerQuestion;
+    window.updateIssueBody = updateIssueBody;
+  }
+  function initEvents() {
+    initAllCustomDropdowns();
+    if (host?.storage) {
+      void host.storage.get("collapsed_groups").then((stored) => {
+        if (Array.isArray(stored)) {
+          stored.forEach((k) => collapsedGroupKeys.add(k));
+          renderViews();
+        }
+      });
+    }
+    elBtnRepoSelect.addEventListener("click", (e) => {
+      e.stopPropagation();
+      if (elRepoPopover.classList.contains("active")) {
+        closeRepoPopover();
+      } else {
+        openRepoPopover();
+      }
+    });
+    document.addEventListener("click", (e) => {
+      if (!elRepoPopover.contains(e.target) && !elBtnRepoSelect.contains(e.target)) {
+        closeRepoPopover();
+      }
+    });
+    const saveCustomRepo = () => {
+      const custom = elInputCustomRepo.value.trim();
+      if (custom && custom.includes("/")) {
+        isManualRepoOverride = true;
+        setRepository(custom, "custom-input");
+        closeRepoPopover();
+      }
+    };
+    elBtnSaveCustomRepo.addEventListener("click", saveCustomRepo);
+    elInputCustomRepo.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        saveCustomRepo();
+      }
+    });
+    let searchDebounceTimer = null;
+    elSearchInput.addEventListener("input", (e) => {
+      searchQuery = e.target.value;
+      clearTimeout(searchDebounceTimer);
+      searchDebounceTimer = setTimeout(() => {
+        renderViews();
+      }, 150);
+    });
+    elSearchInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        clearTimeout(searchDebounceTimer);
+        renderViews();
+      }
+    });
+    const closeViewPicker = () => {
+      if (elViewSelectPopover) elViewSelectPopover.style.display = "none";
+      elBtnViewSelect?.setAttribute("aria-expanded", "false");
+    };
+    const closeFilterPicker = () => {
+      elFilterPopover.style.display = "none";
+      elBtnFilterToggle?.setAttribute("aria-expanded", "false");
+    };
+    elBtnViewSelect?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (!elViewSelectPopover) return;
+      const opening = elViewSelectPopover.style.display === "none";
+      closeFilterPicker();
+      elViewSelectPopover.style.display = opening ? "flex" : "none";
+      elBtnViewSelect.setAttribute("aria-expanded", String(opening));
+      if (opening) elViewSelectPopover.querySelector(".view-opt-item")?.focus();
+    });
+    document.querySelectorAll(".view-opt-item").forEach((item) => {
+      item.addEventListener("click", () => {
+        viewState.view = item.getAttribute("data-mode");
+        rememberViewState();
+        applyLayoutMode();
+        closeViewPicker();
+        elBtnViewSelect?.focus();
+      });
+    });
+    elViewSelectPopover?.addEventListener("keydown", (event) => {
+      const options = Array.from(elViewSelectPopover.querySelectorAll(".view-opt-item"));
+      const index = options.indexOf(document.activeElement);
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        options[(index + (event.key === "ArrowDown" ? 1 : options.length - 1)) % options.length]?.focus();
+      }
+      if (event.key === "Escape") {
+        closeViewPicker();
+        elBtnViewSelect?.focus();
+      }
+    });
+    elBtnFilterToggle?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const opening = elFilterPopover.style.display === "none";
+      closeViewPicker();
+      elFilterPopover.style.display = opening ? "flex" : "none";
+      elBtnFilterToggle.setAttribute("aria-expanded", String(opening));
+      if (opening) {
+        elFilterPopover.style.left = "0px";
+        elFilterPopover.style.right = "auto";
+        const rect = elFilterPopover.getBoundingClientRect();
+        const viewportW = window.innerWidth || document.documentElement?.clientWidth || 360;
+        if (rect.width > 0) {
+          if (rect.left < 8) {
+            elFilterPopover.style.left = `${Math.round(8 - rect.left)}px`;
+          } else if (rect.right > viewportW - 8) {
+            const shift = Math.min(rect.left - 8, rect.right - (viewportW - 8));
+            if (shift > 0) elFilterPopover.style.left = `${Math.round(-shift)}px`;
+          }
+        }
+        elFilterPopover.querySelector("button")?.focus();
+      }
+    });
+    elFilterPopover.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        closeFilterPicker();
+        elBtnFilterToggle?.focus();
+      }
+    });
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!elViewSelectPopover?.contains(target) && !elBtnViewSelect?.contains(target)) closeViewPicker();
+      if (!elFilterPopover.contains(target) && !elBtnFilterToggle?.contains(target)) closeFilterPicker();
+    });
+    const settings = document.getElementById("boardSettingsBackdrop");
+    const closeSettings = () => {
+      settings.classList.remove("active");
+      document.getElementById("btnMoreMenu")?.focus();
+    };
+    document.getElementById("menuItemSettings")?.addEventListener("click", () => {
+      closeMoreMenu();
+      const list = document.getElementById("projectNamesList");
+      list.innerHTML = "";
+      for (const repo of availableProjectRepos()) {
+        const row = document.createElement("div");
+        row.className = "project-name-row";
+        const label = document.createElement("label");
+        label.textContent = displayProjectName(repo);
+        label.title = repo;
+        const input = document.createElement("input");
+        input.className = "form-ctrl";
+        input.setAttribute("data-repo-name", repo);
+        input.setAttribute("aria-label", `Project name for ${repo}`);
+        input.value = projectNameOverrides[projectNameKey(repo)] || "";
+        input.placeholder = shortName(repo);
+        row.appendChild(label);
+        row.appendChild(input);
+        list.appendChild(row);
+      }
+      if (!list.children.length) list.textContent = "Select a repository to rename its project.";
+      settings.classList.add("active");
+      document.getElementById("btnCloseBoardSettings")?.focus();
+    });
+    document.getElementById("btnCloseBoardSettings")?.addEventListener("click", closeSettings);
+    settings.addEventListener("click", (event) => {
+      if (event.target === settings) closeSettings();
+    });
+    settings.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        event.stopPropagation();
+        closeSettings();
+      }
+      if (event.key === "Tab") {
+        const controls = Array.from(settings.querySelectorAll("button, input"));
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus();
+        }
+        if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus();
+        }
+      }
+    });
+    document.getElementById("btnSaveProjectNames")?.addEventListener("click", async () => {
+      const button2 = document.getElementById("btnSaveProjectNames");
+      if (button2.disabled) return;
+      button2.disabled = true;
+      const next = { ...projectNameOverrides };
+      document.getElementById("projectNamesList").querySelectorAll("[data-repo-name]").forEach((input) => {
+        const key = projectNameKey(input.getAttribute("data-repo-name") || "");
+        if (input.value.trim()) next[key] = input.value.trim();
+        else delete next[key];
+      });
+      try {
+        await host.storage.set("project_name_overrides", next);
+        projectNameOverrides = next;
+        if (!isAllProjectsMode && currentRepo) elTxtRepoLabel.textContent = displayProjectName(currentRepo);
+        renderRepoPopoverList();
+        renderViews();
+        closeSettings();
+      } catch (err) {
+        void host.toast({ kind: "error", message: `Could not save project names: ${err.message}` });
+      } finally {
+        button2.disabled = false;
+      }
+    });
+    elBtnCloseFilePreview?.addEventListener("click", closeFilePreviewModal);
+    elBtnDoneFilePreview?.addEventListener("click", closeFilePreviewModal);
+    elFilePreviewModalBackdrop?.addEventListener("click", (e) => {
+      if (e.target === elFilePreviewModalBackdrop) {
+        closeFilePreviewModal();
+      }
+    });
+    elBtnCopyPreviewPath?.addEventListener("click", async () => {
+      if (!currentPreviewPath) return;
+      try {
+        if (host && typeof host.writeClipboard === "function") {
+          await host.writeClipboard(currentPreviewPath);
+        } else if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(currentPreviewPath);
+        }
+        if (host?.toast) {
+          void host.toast({ kind: "info", message: `Copied path: ${currentPreviewPath}` });
+        }
+      } catch {
+      }
+    });
+    document.addEventListener("click", (e) => {
+      const target = e.target;
+      const link = target?.closest(".task-file-path-link");
+      if (link) {
+        const pathStr = link.getAttribute("data-path") || link.textContent || "";
+        void handleFilePathClick(pathStr, e);
+      }
+    });
+    if (elSelectAddBlocker) {
+      elSelectAddBlocker.addEventListener("change", () => {
+        const val = parseInt(elSelectAddBlocker.value, 10);
+        if (val > 0 && activeIssue) {
+          void handleAddDependency(activeIssue.number, val);
+        }
+      });
+    }
+    window.addEventListener("resize", () => {
+      isWideScreen = window.innerWidth >= 680;
+      if (viewState.view === "graph") drawCurrentGraphEdges();
+    });
+    const refreshTasks = () => {
+      commentsCache.clear();
+      pageBodyCache.clear();
+      issueListEtagCache.clear();
+      repoIncrementalEtagCache.clear();
+      if (isAllProjectsMode) {
+        void discoverWorkspaceRepositories().then(() => fetchAllProjectIssues(true));
+      } else {
+        void fetchIssues(true);
+        void discoverWorkspaceRepositories();
+      }
+    };
+    elBtnRefresh.addEventListener("click", refreshTasks);
+    const elBtnArchiveToggle = document.getElementById("btnArchiveToggle");
+    const toggleArchiveView = () => {
+      showArchivedOnly = !showArchivedOnly;
+      elBtnArchiveToggle?.classList.toggle("active", showArchivedOnly);
+      if (elBtnArchiveToggle) {
+        elBtnArchiveToggle.title = showArchivedOnly ? "Viewing Archived (Click to show active issues)" : "Toggle Archived Issues View";
+      }
+      renderViews();
+      void host.toast({
+        kind: "info",
+        message: showArchivedOnly ? "Viewing archived issues" : "Viewing active issues"
+      });
+    };
+    if (elBtnArchiveToggle) {
+      elBtnArchiveToggle.addEventListener("click", toggleArchiveView);
+    }
+    const setMoreMenuOpen = (open) => {
+      if (!elMoreMenuPopover) return;
+      elMoreMenuPopover.style.display = open ? "flex" : "none";
+      elBtnMoreMenu?.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) {
+        const first = elMoreMenuPopover.querySelector('[role="menuitem"]');
+        first?.focus();
+      } else {
+        elBtnMoreMenu?.focus();
+      }
+    };
+    const closeMoreMenu = () => setMoreMenuOpen(false);
+    if (elBtnMoreMenu && elMoreMenuPopover) {
+      elBtnMoreMenu.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setMoreMenuOpen(elMoreMenuPopover.style.display === "none");
+      });
+      document.addEventListener("click", (e) => {
+        if (elMoreMenuPopover.style.display !== "none" && !elMoreMenuPopover.contains(e.target) && !elBtnMoreMenu.contains(e.target)) {
+          closeMoreMenu();
+        }
+      });
+      elMoreMenuPopover.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          closeMoreMenu();
+          return;
+        }
+        if (e.key !== "Enter" && e.key !== " ") return;
+        const item = e.target.closest('[role="menuitem"]');
+        if (item && item.querySelector(".popover-item-title")) {
+          e.preventDefault();
+          item.click();
+        }
+      });
+    }
+    if (elMenuItemToggleArchive) {
+      elMenuItemToggleArchive.addEventListener("click", () => {
+        toggleArchiveView();
+        closeMoreMenu();
+      });
+    }
+    if (elMenuItemRefresh) {
+      elMenuItemRefresh.addEventListener("click", () => {
+        refreshTasks();
+        closeMoreMenu();
+      });
+    }
+    if (elMenuItemLogs) {
+      elMenuItemLogs.addEventListener("click", () => {
+        elLogDrawer.classList.toggle("active");
+        closeMoreMenu();
+      });
+    }
+    elSelectSort?.addEventListener("change", () => {
+      viewState.sort = elSelectSort.value;
+      rememberViewState();
+      renderViews();
+    });
+    const initialQuickAddInput = document.getElementById("quickAddDraftInput");
+    if (initialQuickAddInput) {
+      initialQuickAddInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          void quickAddDraft(initialQuickAddInput);
+        }
+      });
+    }
+    const initialBtnAlignDrafts = document.getElementById("btnAlignDrafts");
+    if (initialBtnAlignDrafts) {
+      initialBtnAlignDrafts.addEventListener("click", () => {
+        void batchAlignDrafts();
+      });
+    }
+    elBtnNewIssue.addEventListener("click", () => {
+      void openNewIssueModal();
+    });
+    elBtnNewIssueClose.addEventListener("click", closeNewIssueModal);
+    elBtnNewIssueCancel.addEventListener("click", closeNewIssueModal);
+    elBtnNewIssueSubmit.addEventListener("click", () => {
+      void submitNewIssue();
+    });
+    elBtnSwitchAI.addEventListener("click", () => setNewIssueMode("ai"));
+    elBtnSwitchManual.addEventListener("click", () => setNewIssueMode("manual"));
+    elBtnNewIssueAICancel.addEventListener("click", closeNewIssueModal);
+    elBtnLaunchAISession.addEventListener("click", () => {
+      void launchAiIssueSession();
+    });
+    if (elBtnAcceptAndPostDraft) {
+      elBtnAcceptAndPostDraft.addEventListener("click", () => {
+        void acceptAndPostDraft();
+      });
+    }
+    if (elBtnEditDraftInManual) {
+      elBtnEditDraftInManual.addEventListener("click", () => {
+        editDraftInManualMode();
+      });
+    }
+    if (elBtnDismissDraftReview) {
+      elBtnDismissDraftReview.addEventListener("click", () => {
+        hideDraftReviewCard();
+      });
+    }
+    if (elBtnOpenDraftSessionLink) {
+      elBtnOpenDraftSessionLink.addEventListener("click", () => {
+        openActiveDraftSession();
+      });
+    }
+    if (elDraftReviewBodyInput) {
+      elDraftReviewBodyInput.addEventListener("input", () => {
+        updateDraftReviewMeta();
+      });
+    }
+    elBtnTogglePromptConfig.addEventListener("click", () => {
+      const isHidden = elAiPromptConfigPanel.style.display === "none";
+      if (isHidden) {
+        elAiPromptConfigPanel.style.display = "flex";
+        void loadPromptConfigForEditor();
+      } else {
+        elAiPromptConfigPanel.style.display = "none";
+      }
+    });
+    elRadioScopeRepo.addEventListener("change", () => {
+      void loadPromptConfigForEditor();
+    });
+    elRadioScopeGlobal.addEventListener("change", () => {
+      void loadPromptConfigForEditor();
+    });
+    elBtnSavePromptConfig.addEventListener("click", () => {
+      void savePromptConfig();
+    });
+    elBtnResetPromptToDefault.addEventListener("click", () => {
+      void resetPromptConfigToDefault();
+    });
+    if (elBtnOpenScratchpad) {
+      elBtnOpenScratchpad.addEventListener("click", () => {
+        void openScratchpadModal();
+      });
+    }
+    if (elBtnScratchpadClose) {
+      elBtnScratchpadClose.addEventListener("click", closeScratchpadModal);
+    }
+    if (elScratchpadModalBackdrop) {
+      elScratchpadModalBackdrop.addEventListener("click", (e) => {
+        if (e.target === elScratchpadModalBackdrop) closeScratchpadModal();
+      });
+    }
+    if (elScratchpadTextarea) {
+      elScratchpadTextarea.addEventListener("input", handleScratchpadInput);
+      elScratchpadTextarea.addEventListener("blur", flushScratchpadSave);
+    }
+    let boardWasHidden = document.hidden;
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        flushScratchpadSave();
+      } else if (boardWasHidden && !isLoading && currentRepo && !isAllProjectsMode) {
+        void fetchIssues();
+      }
+      boardWasHidden = document.hidden;
+    });
+    window.addEventListener("beforeunload", () => {
+      flushScratchpadSave();
+    });
+    if (elBtnScratchpadAddTheme) {
+      const setThemePickerOpen = (open) => {
+        if (!elScratchpadThemePopover) return;
+        elScratchpadThemePopover.style.display = open ? "flex" : "none";
+        elBtnScratchpadAddTheme?.setAttribute("aria-expanded", open ? "true" : "false");
+      };
+      elBtnScratchpadAddTheme.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (!elScratchpadThemePopover) return;
+        if (elScratchpadThemePopover.style.display === "none") {
+          setThemePickerOpen(true);
+          if (elScratchpadThemeSearch) elScratchpadThemeSearch.value = "";
+          renderScratchpadThemeList("");
+          elScratchpadThemeSearch?.focus();
+        } else {
+          setThemePickerOpen(false);
+        }
+      });
+      if (elScratchpadThemePopover) {
+        elScratchpadThemePopover.addEventListener("keydown", (e) => {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            setThemePickerOpen(false);
+            elBtnScratchpadAddTheme.focus();
+          }
+        });
+      }
+      if (elBtnScratchpadThemeClose) {
+        elBtnScratchpadThemeClose.addEventListener("click", () => setThemePickerOpen(false));
+      }
+    }
+    if (elScratchpadThemeSearch) {
+      elScratchpadThemeSearch.addEventListener("input", () => {
+        renderScratchpadThemeList(elScratchpadThemeSearch?.value || "");
+      });
+      elScratchpadThemeSearch.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const query = elScratchpadThemeSearch?.value.trim() || "";
+          if (query) insertScratchpadTheme(query);
+        }
+      });
+    }
+    if (elBtnScratchpadThemeAdd) {
+      elBtnScratchpadThemeAdd.addEventListener("click", () => {
+        const query = elScratchpadThemeSearch?.value.trim() || "";
+        if (query) {
+          insertScratchpadTheme(query);
+        } else {
+          elScratchpadThemeSearch?.focus();
+        }
+      });
+    }
+    document.addEventListener("click", (e) => {
+      if (elScratchpadThemePopover && elScratchpadThemePopover.style.display !== "none" && !elScratchpadThemePopover.contains(e.target) && !elBtnScratchpadAddTheme?.contains(e.target)) {
+        elScratchpadThemePopover.style.display = "none";
+      }
+    });
+    if (elBtnScratchpadAddFeature) {
+      elBtnScratchpadAddFeature.addEventListener("click", () => insertIntoScratchpad("- [ ] Feature: "));
+    }
+    if (elBtnScratchpadAddBug) {
+      elBtnScratchpadAddBug.addEventListener("click", () => insertIntoScratchpad("- [ ] Bug: "));
+    }
+    if (elBtnScratchpadAddQuestion) {
+      elBtnScratchpadAddQuestion.addEventListener("click", () => insertIntoScratchpad("  - ? "));
+    }
+    if (elBtnScratchpadClear) {
+      elBtnScratchpadClear.addEventListener("click", async () => {
+        if (elScratchpadTextarea) elScratchpadTextarea.value = "";
+        handleScratchpadInput();
+        await host.toast({ kind: "info", message: "Scratch pad cleared" });
+      });
+    }
+    if (elBtnScratchpadCopyToCreator) {
+      elBtnScratchpadCopyToCreator.addEventListener("click", async () => {
+        const text = elScratchpadTextarea?.value.trim() || "";
+        closeScratchpadModal();
+        await openNewIssueModal();
+        if (text && elAiIssueInput) {
+          elAiIssueInput.value = text;
+          saveDraftAiInput(text);
+        }
+      });
+    }
+    if (elBtnScratchpadAlignAI) {
+      elBtnScratchpadAlignAI.addEventListener("click", () => {
+        void launchScratchpadAlignmentSession();
+      });
+    }
+    if (elBtnScratchpadDirectDraft) {
+      elBtnScratchpadDirectDraft.addEventListener("click", () => {
+        void launchScratchpadDirectSession();
+      });
+    }
+    if (elAiIssueInput) {
+      elAiIssueInput.addEventListener("input", () => {
+        saveDraftAiInput(elAiIssueInput.value);
+      });
+    }
+    if (elBtnImportFromScratchpad) {
+      elBtnImportFromScratchpad.addEventListener("click", async () => {
+        const text = await loadScratchpadContent();
+        if (text && elAiIssueInput) {
+          elAiIssueInput.value = text;
+          saveDraftAiInput(text);
+          await host.toast({ kind: "info", message: "Loaded ideas from Scratch Pad" });
+        } else {
+          await host.toast({ kind: "info", message: "Scratch Pad is empty" });
+        }
+      });
+    }
+    elBtnLogsToggle.addEventListener("click", () => {
+      elLogDrawer.classList.toggle("active");
+    });
+    elBtnLogDrawerClose.addEventListener("click", () => {
+      elLogDrawer.classList.remove("active");
+    });
+    elBtnClearLogs.addEventListener("click", () => {
+      logEntries.length = 0;
+      const streamEl = document.getElementById("logStream");
+      if (streamEl) streamEl.innerHTML = "";
+    });
+    elBtnCopyLogs.addEventListener("click", () => {
+      const text = logEntries.map((e) => `[${e.time}] [${e.level.toUpperCase()}] ${e.msg}`).join("\n");
+      void host.writeClipboard(text);
+      void host.toast({ kind: "info", message: "Copied logs to clipboard" });
+    });
+    elBtnDrawerClose.addEventListener("click", closeDrawer);
+    elDrawerScrim.addEventListener("click", closeDrawer);
+    elTaskDrawer.addEventListener("transitionend", () => {
+      if (document.body.getAttribute("data-layout") === "graph") {
+        drawCurrentGraphEdges();
+      }
+    });
+    window.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        const activeModal = document.querySelector(".modal-backdrop.active");
+        if (activeModal) {
+          if (activeModal === elScratchpadModalBackdrop || activeModal.id === "scratchpadModalBackdrop") {
+            flushScratchpadSave();
+            closeScratchpadModal();
+          } else if (activeModal === elPreflightBackdrop || activeModal.id === "preflightModalBackdrop") {
+            closePreflightModal();
+          } else if (activeModal === elNewIssueModalBackdrop || activeModal.id === "newIssueModalBackdrop") {
+            closeNewIssueModal();
+          } else {
+            activeModal.classList.remove("active");
+          }
+          return;
+        }
+        if (activeIssue) {
+          closeDrawer();
+        }
+      }
+    });
+    if (elDrawerPrioritySelect) {
+      elDrawerPrioritySelect.addEventListener("change", async () => {
+        const priorityRepo = repoForIssue(activeIssue);
+        if (!activeIssue || !priorityRepo) {
+          if (activeIssue && !priorityRepo) {
+            addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, "warn");
+            if (host?.toast) {
+              void host.toast({ kind: "error", message: `Cannot update #${activeIssue.number}: repository unknown` });
+            }
+          }
+          return;
+        }
+        const val = elDrawerPrioritySelect.value;
+        const updatedLabels = updatePriorityLabels(activeIssue.labels, val);
+        activeIssue.labels = updatedLabels.map((name) => ({ name }));
+        issueCache.delete(priorityRepo);
+        renderDrawer(activeIssue, true);
+        renderViews();
+        try {
+          await githubRequestWithRetry("PATCH", `/repos/${priorityRepo}/issues/${activeIssue.number}`, {
+            labels: updatedLabels
+          });
+          await host.toast({ kind: "info", message: `Updated priority on #${activeIssue.number} to ${val}` });
+        } catch (err) {
+          addLog(`Failed to update priority: ${err.message}`, "error");
+        }
+      });
+    }
+    elDrawerStatusSelect.addEventListener("change", () => {
+      if (activeIssue) {
+        const val = elDrawerStatusSelect.value;
+        if (val === "none") {
+          const filteredLabels = activeIssue.labels.map((l) => typeof l === "string" ? l : l.name || "").filter((name) => !name.startsWith("status:"));
+          const statusRepo = repoForIssue(activeIssue);
+          if (!statusRepo) {
+            addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, "warn");
+            if (host?.toast) {
+              void host.toast({ kind: "error", message: `Cannot update #${activeIssue.number}: repository unknown` });
+            }
+            return;
+          }
+          activeIssue.labels = filteredLabels.map((name) => ({ name }));
+          issueCache.delete(statusRepo);
+          renderViews();
+          renderDrawer(activeIssue, true);
+          void githubRequestWithRetry("PATCH", `/repos/${statusRepo}/issues/${activeIssue.number}`, {
+            labels: filteredLabels
+          });
+        } else {
+          const targetCol = val;
+          void updateIssueStatus(activeIssue, targetCol, { isHumanGesture: true });
+        }
+      }
+    });
+    if (elDrawerComplexitySelect) {
+      elDrawerComplexitySelect.addEventListener("change", async () => {
+        const complexityRepo = repoForIssue(activeIssue);
+        if (!activeIssue || !complexityRepo) {
+          if (activeIssue && !complexityRepo) {
+            addLog(`Cannot update issue #${activeIssue.number}: repository unknown`, "warn");
+            if (host?.toast) {
+              void host.toast({ kind: "error", message: `Cannot update #${activeIssue.number}: repository unknown` });
+            }
+          }
+          return;
+        }
+        const val = elDrawerComplexitySelect.value;
+        const updatedLabels = updateComplexityLabel(activeIssue.labels, val);
+        activeIssue.labels = updatedLabels.map((name) => ({ name }));
+        issueCache.delete(complexityRepo);
+        renderDrawer(activeIssue, true);
+        renderViews();
+        try {
+          await githubRequestWithRetry("PATCH", `/repos/${complexityRepo}/issues/${activeIssue.number}`, {
+            labels: updatedLabels
+          });
+          await host.toast({ kind: "info", message: `Updated complexity on #${activeIssue.number} to ${val}` });
+        } catch (err) {
+          addLog(`Failed to update complexity: ${err.message}`, "error");
+        }
+      });
+    }
+    if (elBtnAddNewIssueDraftSubtask && elInputNewIssueDraftSubtask) {
+      const addDraftStep = () => {
+        const text = elInputNewIssueDraftSubtask.value.trim();
+        if (!text) return;
+        draftSubtasks.push(text);
+        elInputNewIssueDraftSubtask.value = "";
+        renderDraftSubtasks();
+      };
+      elBtnAddNewIssueDraftSubtask.addEventListener("click", addDraftStep);
+      elInputNewIssueDraftSubtask.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addDraftStep();
+        }
+      });
+    }
+    if (elBtnAddNewIssueDraftQuestion && elInputNewIssueDraftQuestion) {
+      const addDraftQuestion = () => {
+        const text = elInputNewIssueDraftQuestion.value.trim();
+        if (!text) return;
+        draftQuestions.push(text);
+        elInputNewIssueDraftQuestion.value = "";
+        renderDraftQuestions();
+      };
+      elBtnAddNewIssueDraftQuestion.addEventListener("click", addDraftQuestion);
+      elInputNewIssueDraftQuestion.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          addDraftQuestion();
+        }
+      });
+    }
+    elBtnEditDescription.addEventListener("click", () => {
+      if (!activeIssue) return;
+      const rawWithoutMarker = stripOrderMarker(activeIssue.body || "");
+      elDrawerDescriptionTextarea.value = rawWithoutMarker;
+      elDrawerDescriptionTextarea.dataset.originalDescription = rawWithoutMarker;
+      elDrawerDescriptionViewBox.style.display = "none";
+      elDrawerDescriptionEditBox.style.display = "flex";
+      elDrawerDescriptionTextarea.focus();
+    });
+    elBtnCancelDescription.addEventListener("click", () => {
+      elDrawerDescriptionEditBox.style.display = "none";
+      elDrawerDescriptionViewBox.style.display = "block";
+    });
+    elBtnSaveDescription.addEventListener("click", async () => {
+      if (!activeIssue) return;
+      const issue = activeIssue;
+      const original = elDrawerDescriptionTextarea.dataset.originalDescription || "";
+      await editDraftDescription(issue, elDrawerDescriptionTextarea.value, original);
+      if (activeIssue === issue) {
+        elDrawerDescriptionEditBox.style.display = "none";
+        elDrawerDescriptionViewBox.style.display = "block";
+        renderDrawer(issue, true);
+      }
+    });
+    elBtnToggleCollapse.addEventListener("click", () => {
+      const isExpanded = elDrawerDescriptionCollapsible.classList.toggle("expanded");
+      elBtnToggleCollapse.textContent = isExpanded ? "Show less" : "Show more";
+    });
+    elBtnAddLabelToggle.addEventListener("click", () => {
+      elDrawerAddLabelRow.style.display = "flex";
+      elInputNewTag.value = "";
+      elInputNewTag.focus();
+      void loadRepoLabels();
+    });
+    elBtnCancelAddLabel.addEventListener("click", () => {
+      elDrawerAddLabelRow.style.display = "none";
+    });
+    elBtnConfirmAddLabel.addEventListener("click", async () => {
+      if (activeIssue && elInputNewTag.value.trim()) {
+        const val = elInputNewTag.value.trim();
+        elDrawerAddLabelRow.style.display = "none";
+        await addTagToIssue(activeIssue, val);
+      }
+    });
+    elInputNewTag.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") elBtnConfirmAddLabel.click();
+      if (e.key === "Escape") elBtnCancelAddLabel.click();
+    });
+    elBtnAddSubtask.addEventListener("click", async () => {
+      if (activeIssue && elInputAddSubtask.value.trim()) {
+        await reloadIssueBeforeMutation(activeIssue);
+        const newBody = appendSubtaskToMarkdown(activeIssue.body, elInputAddSubtask.value);
+        elInputAddSubtask.value = "";
+        void updateIssueBody(activeIssue, newBody);
+      }
+    });
+    elInputAddSubtask.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") elBtnAddSubtask.click();
+    });
+    if (elBtnAddQuestion && elInputAddQuestion) {
+      elBtnAddQuestion.addEventListener("click", async () => {
+        if (activeIssue && elInputAddQuestion.value.trim()) {
+          await reloadIssueBeforeMutation(activeIssue);
+          const newBody = appendOpenQuestionToMarkdown(activeIssue.body, elInputAddQuestion.value);
+          elInputAddQuestion.value = "";
+          void updateIssueBody(activeIssue, newBody);
+        }
+      });
+      elInputAddQuestion.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") elBtnAddQuestion.click();
+      });
+    }
+    if (elBtnAddIssueTest && elInputAddIssueTest) {
+      elBtnAddIssueTest.addEventListener("click", async () => {
+        if (activeIssue && elInputAddIssueTest.value.trim()) {
+          await reloadIssueBeforeMutation(activeIssue);
+          const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddIssueTest.value, "issue");
+          elInputAddIssueTest.value = "";
+          void updateIssueBody(activeIssue, newBody);
+        }
+      });
+      elInputAddIssueTest.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") elBtnAddIssueTest.click();
+      });
+    }
+    if (elBtnAddBatchTest && elInputAddBatchTest) {
+      elBtnAddBatchTest.addEventListener("click", async () => {
+        if (activeIssue && elInputAddBatchTest.value.trim()) {
+          await reloadIssueBeforeMutation(activeIssue);
+          const newBody = appendTestItemToMarkdown(activeIssue.body, elInputAddBatchTest.value, "batch");
+          elInputAddBatchTest.value = "";
+          void updateIssueBody(activeIssue, newBody);
+        }
+      });
+      elInputAddBatchTest.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") elBtnAddBatchTest.click();
+      });
+    }
+    elBtnDrawerAttachComposer.addEventListener("click", async () => {
+      if (!activeIssue) return;
+      try {
+        const payload = buildIssueAttachPayload(activeIssue);
+        await host.attach(payload);
+        await host.toast({ kind: "success", message: `Attached #${activeIssue.number} to composer chip` });
+      } catch (err) {
+        await host.toast({ kind: "error", message: `Failed to attach: ${err.message || "Unknown error"}` });
+      }
+    });
+    elBtnDrawerOpenPreflight.addEventListener("click", () => {
+      if (activeIssue) openPreflightModal(activeIssue);
+    });
+    elBtnPreflightCancel.addEventListener("click", closePreflightModal);
+    elBtnPreflightClose.addEventListener("click", closePreflightModal);
+    elBtnPreflightLaunch.addEventListener("click", () => {
+      void launchAgentSession();
+    });
+    if (elPreflightWorktreeToggle) {
+      elPreflightWorktreeToggle.addEventListener("change", () => {
+        const isChecked = elPreflightWorktreeToggle.checked;
+        elPreflightWorktreeSection.style.display = isChecked ? "flex" : "none";
+        const theme = activeIssue ? getIssueTheme(activeIssue) : "";
+        const existingThemeWorktree = theme && theme !== "No Theme" ? findThemeWorktree(worktrees, activeIssue, void 0, currentProject?.id) : null;
+        elBtnPreflightLaunch.textContent = isChecked ? "Launch Worktree & Agent" : existingThemeWorktree ? `Start Agent Session (Theme: ${theme})` : "Start Agent Session (Current Workspace)";
+        updatePreflightBrief();
+      });
+    }
+    if (elRadioWorktreeTag) {
+      elRadioWorktreeTag.addEventListener("change", () => {
+        syncPreflightBranchInput();
+      });
+    }
+    if (elRadioWorktreeIssue) {
+      elRadioWorktreeIssue.addEventListener("change", () => {
+        syncPreflightBranchInput();
+      });
+    }
+    if (elBtnBatchPackage) {
+      elBtnBatchPackage.addEventListener("click", () => {
+        void launchPackagedSession();
+      });
+    }
+    if (elBtnBatchStart) {
+      elBtnBatchStart.addEventListener("click", () => {
+        void launchBatchSeparateSessions();
+      });
+    }
+    if (elBtnBatchAttach) {
+      elBtnBatchAttach.addEventListener("click", () => {
+        void attachSelectedIssues();
+      });
+    }
+    if (elBtnBatchDeselect) {
+      elBtnBatchDeselect.addEventListener("click", () => {
+        clearSelection();
+      });
+    }
+    setupDragAndDrop();
+  }
+  host.onReady(async (ctx) => {
+    addLog(`Host ready. Surface: ${ctx.surface}, Directory: ${ctx.directory || "none"}`);
+    applyHostReady(ctx, document.documentElement);
+    currentDirectory = ctx.directory || "";
+    deviceStorageSupported = ctx.features?.deviceStorage === true;
+    void host.storage.get("project_name_overrides").then((stored) => {
+      projectNameOverrides = normalizeProjectNameOverrides(stored);
+      if (currentRepo && !isAllProjectsMode) elTxtRepoLabel.textContent = displayProjectName(currentRepo);
+      renderRepoPopoverList();
+      renderViews();
+    }).catch((err) => {
+      addLog(`Could not load project names: ${err.message}`, "warn");
+    });
+    if (viewStateRevision === 0) void loadViewState();
+    if (ctx.settings && ctx.settings.repo) {
+      currentRepo = ctx.settings.repo.trim();
+      elTxtRepoLabel.textContent = displayProjectName(currentRepo);
+      elTxtRepoLabel.title = currentRepo;
+      addLog(`Repo set from extension settings: ${currentRepo}`, "info");
+    }
+    const startupEpoch = activeStreamEpoch;
+    await discoverWorkspaceRepositories();
+    if (ctx.settings?.repo && currentRepo && activeStreamEpoch === startupEpoch) await fetchIssues();
+  });
+  host.onDirectory(async (dir) => {
+    addLog(`Directory changed: ${dir}`);
+    const changedWorkspace = currentDirectory !== (dir || "");
+    currentDirectory = dir || "";
+    if (changedWorkspace) void loadViewState();
+    if (dir) {
+      await autoResolveRepoForActiveContext();
+    }
+  });
+  var activeSessionId = null;
+  host.onSession(async (rawSess) => {
+    const sess = rawSess;
+    if (sess) {
+      addLog(`Active session: "${sess.title}" (${sess.id})`);
+      currentActiveSession = sess;
+      const sessionChanged = activeSessionId !== null && activeSessionId !== sess.id;
+      activeSessionId = sess.id;
+      if (sessionChanged) {
+        isManualRepoOverride = false;
+        isAllProjectsMode = false;
+      }
+      if (!isManualRepoOverride) {
+        const sessDir = sess.directory || sess.location?.directory;
+        if (sessDir && sessDir !== currentDirectory) {
+          currentDirectory = sessDir;
+          void loadViewState();
+        }
+        if (Array.isArray(sess.items) && sess.items.length > 0) {
+          for (const it of sess.items) {
+            const itemRepo = getSessionIssueRepo(it) || it.data?.repo || (typeof it.url === "string" ? parseRepoFullName(it.url) : null);
+            if (itemRepo && itemRepo !== currentRepo) {
+              setRepository(itemRepo, `active session item: ${sess.title || sess.id}`);
+              return;
+            }
+          }
+        }
+        const matched = sessions.find((s) => s.id === sess.id);
+        if (matched && matched.directory && matched.directory !== currentDirectory) {
+          currentDirectory = matched.directory;
+          void loadViewState();
+        }
+        await autoResolveRepoForActiveContext(sess);
+      }
+    }
+  });
+  initEvents();
+})();

@@ -1,0 +1,12 @@
+diff --git a/web/server/app.ts b/web/server/app.ts
+index 29eaac2..063c6af 100644
+--- a/web/server/app.ts
++++ b/web/server/app.ts
+@@ -402,6 +402,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
+ 
+   const sessions = new SessionStore({
+     secret: config.sessionSecret,
++    passwordHash: config.passwordHash,
+     filePath: sessionFilePath,
+     absoluteTtlMs: options.sessionTtlMs,
+     idleTtlMs: options.idleTtlMs,

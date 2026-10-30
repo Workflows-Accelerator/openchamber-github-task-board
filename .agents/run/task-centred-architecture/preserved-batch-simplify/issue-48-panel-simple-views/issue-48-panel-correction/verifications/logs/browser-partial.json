@@ -1,0 +1,358 @@
+{
+  "results": [
+    {
+      "check": "render-Simple",
+      "width": 980,
+      "layout": "simple"
+    },
+    {
+      "check": "render-Cards",
+      "width": 980,
+      "layout": "cards"
+    },
+    {
+      "check": "render-Kanban",
+      "width": 980,
+      "layout": "kanban"
+    },
+    {
+      "check": "render-Graph",
+      "width": 980,
+      "layout": "graph"
+    },
+    {
+      "check": "render-Pending",
+      "width": 980,
+      "layout": "pending"
+    },
+    {
+      "check": "draft-geometry",
+      "width": 980,
+      "geometry": {
+        "client": 980,
+        "scroll": 980,
+        "add": {
+          "x": 10,
+          "y": 728,
+          "width": 959,
+          "height": 44,
+          "top": 728,
+          "right": 969,
+          "bottom": 772,
+          "left": 10
+        },
+        "touchButtons": [
+          {
+            "text": "↑",
+            "label": "Move draft #1 up",
+            "disabled": true
+          },
+          {
+            "text": "↓",
+            "label": "Move draft #1 down",
+            "disabled": false
+          },
+          {
+            "text": "↑",
+            "label": "Move draft #2 up",
+            "disabled": false
+          },
+          {
+            "text": "↓",
+            "label": "Move draft #2 down",
+            "disabled": false
+          },
+          {
+            "text": "↑",
+            "label": "Move draft #3 up",
+            "disabled": false
+          },
+          {
+            "text": "↓",
+            "label": "Move draft #3 down",
+            "disabled": true
+          }
+        ]
+      }
+    },
+    {
+      "check": "render-Simple",
+      "width": 390,
+      "layout": "simple"
+    },
+    {
+      "check": "draft-geometry",
+      "width": 390,
+      "geometry": {
+        "client": 390,
+        "scroll": 390,
+        "add": {
+          "x": 10,
+          "y": 792,
+          "width": 370,
+          "height": 44,
+          "top": 792,
+          "right": 380,
+          "bottom": 836,
+          "left": 10
+        },
+        "touchButtons": [
+          {
+            "text": "↑",
+            "label": "Move draft #1 up",
+            "disabled": true
+          },
+          {
+            "text": "↓",
+            "label": "Move draft #1 down",
+            "disabled": false
+          },
+          {
+            "text": "↑",
+            "label": "Move draft #2 up",
+            "disabled": false
+          },
+          {
+            "text": "↓",
+            "label": "Move draft #2 down",
+            "disabled": false
+          },
+          {
+            "text": "↑",
+            "label": "Move draft #3 up",
+            "disabled": false
+          },
+          {
+            "text": "↓",
+            "label": "Move draft #3 down",
+            "disabled": true
+          }
+        ]
+      }
+    },
+    {
+      "check": "render-Simple",
+      "width": 360,
+      "layout": "simple"
+    },
+    {
+      "check": "render-Cards",
+      "width": 360,
+      "layout": "cards"
+    },
+    {
+      "check": "render-Kanban",
+      "width": 360,
+      "layout": "kanban"
+    },
+    {
+      "check": "render-Graph",
+      "width": 360,
+      "layout": "graph"
+    },
+    {
+      "check": "render-Pending",
+      "width": 360,
+      "layout": "pending"
+    },
+    {
+      "check": "H1-filter-clamped-360",
+      "token": "stage:draft",
+      "chipBox": {
+        "x": 42,
+        "y": 151.875,
+        "width": 49,
+        "height": 21
+      },
+      "popoverBox": {
+        "x": 32,
+        "y": 67,
+        "width": 320,
+        "height": 249.8125
+      }
+    },
+    {
+      "check": "draft-geometry",
+      "width": 360,
+      "geometry": {
+        "client": 360,
+        "scroll": 360,
+        "add": {
+          "x": 10,
+          "y": 728,
+          "width": 340,
+          "height": 44,
+          "top": 728,
+          "right": 350,
+          "bottom": 772,
+          "left": 10
+        },
+        "touchButtons": [
+          {
+            "text": "↑",
+            "label": "Move draft #1 up",
+            "disabled": true
+          },
+          {
+            "text": "↓",
+            "label": "Move draft #1 down",
+            "disabled": false
+          },
+          {
+            "text": "↑",
+            "label": "Move draft #2 up",
+            "disabled": false
+          },
+          {
+            "text": "↓",
+            "label": "Move draft #2 down",
+            "disabled": false
+          },
+          {
+            "text": "↑",
+            "label": "Move draft #3 up",
+            "disabled": false
+          },
+          {
+            "text": "↓",
+            "label": "Move draft #3 down",
+            "disabled": true
+          }
+        ]
+      }
+    },
+    {
+      "check": "C1-unmarked-down",
+      "mutations": [
+        {
+          "method": "PATCH",
+          "path": "/repos/acme/openchamber-github-task-board/issues/2",
+          "body": "{\"body\":\"<!-- board-order: 1000 -->\"}"
+        },
+        {
+          "method": "PATCH",
+          "path": "/repos/acme/openchamber-github-task-board/issues/1",
+          "body": "{\"body\":\"Inspiration one\\n\\n<!-- board-order: 2000 -->\"}"
+        }
+      ],
+      "titles": [
+        "Second unmarked idea",
+        "First unmarked idea",
+        "Third unmarked idea"
+      ]
+    },
+    {
+      "check": "M1-move-up-button",
+      "titles": [
+        "First unmarked idea",
+        "Second unmarked idea",
+        "Third unmarked idea"
+      ]
+    },
+    {
+      "check": "M2-title-tab-focus",
+      "focus": {
+        "tag": "TEXTAREA",
+        "label": "Description for draft #1"
+      }
+    },
+    {
+      "check": "C2-saved-project-change-cancel",
+      "dialogs": [
+        "Move draft #1 from Task Board (acme/openchamber-github-task-board) to Very Long Project Name For Narrow Layout (acme/very-long-project-name-for-narrow-layout)? Its issue number and URL may change, and GitHub repository transfer permissions apply."
+      ],
+      "requestsDelta": 0,
+      "selectValueAfterCancel": "acme/openchamber-github-task-board",
+      "mutationsDelta": 0
+    },
+    {
+      "check": "C2-confirmed-and-unconfirmed-lock",
+      "transferredRowCount": 1,
+      "row2Unconfirmed": {
+        "hasClass": true,
+        "hasBadge": true,
+        "selectDisabled": true,
+        "titleDisabled": true
+      }
+    },
+    {
+      "check": "H3-graph-same-number",
+      "listTitles": [
+        "Choose the next step",
+        "First unmarked idea",
+        "Third unmarked idea",
+        "Completed task",
+        "Review toolbar",
+        "Second unmarked idea",
+        "Other project same issue number"
+      ],
+      "graphTitles": [
+        "Choose the next step",
+        "First unmarked idea",
+        "Third unmarked idea",
+        "Completed task",
+        "Review toolbar",
+        "Second unmarked idea",
+        "Other project same issue number"
+      ]
+    },
+    {
+      "check": "C1-marked-first-gesture-and-create",
+      "titlesAfterFirstGesture": [
+        "Third unmarked idea",
+        "First unmarked idea",
+        "Second unmarked idea"
+      ],
+      "mutations": [
+        {
+          "method": "PATCH",
+          "path": "/repos/acme/openchamber-github-task-board/issues/3",
+          "body": "{\"body\":\"Inspiration three\\n\\n<!-- board-order: 0 -->\"}"
+        },
+        {
+          "method": "PATCH",
+          "path": "/repos/acme/openchamber-github-task-board/issues/1",
+          "body": "{\"body\":\"Inspiration one\\n\\n<!-- board-order: 3000 -->\"}"
+        },
+        {
+          "method": "POST",
+          "path": "/repos/acme/openchamber-github-task-board/issues",
+          "body": "{\"title\":\"Captured twice-Enter guarded\",\"body\":\"Inspiration only\\n\\n<!-- board-order: 4000 -->\",\"labels\":[\"status:draft\"]}"
+        }
+      ],
+      "sessionCalls": []
+    },
+    {
+      "check": "M2-failed-description-value",
+      "value": "DO NOT LOSE THIS EDIT",
+      "toasts": [
+        {
+          "kind": "info",
+          "message": "Switched to Manual order."
+        },
+        {
+          "kind": "success",
+          "message": "Draft created in Task Board"
+        },
+        {
+          "kind": "error",
+          "message": "Could not create draft: GitHub API error: 422. Your idea is kept below; check GitHub before retrying if the connection failed."
+        },
+        {
+          "kind": "error",
+          "message": "Failed to update #2 on GitHub"
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "consoles": [
+    "[TaskBoard] No project is registered at /workspace and none is named \"workspace\". Global sessions cannot be pinned to /workspace; All Projects will use the active project.",
+    "[TaskBoard] GitHub request failed: Synthetic response lost",
+    "[TaskBoard] No project is registered at /workspace and none is named \"workspace\". Global sessions cannot be pinned to /workspace; All Projects will use the active project.",
+    "[TaskBoard] GitHub request failed: GitHub API error: 422",
+    "[TaskBoard] GitHub request failed: GitHub API error: 422",
+    "[TaskBoard] Failed to sync body for #2: GitHub API error: 422"
+  ],
+  "failure": "AssertionError [ERR_ASSERTION]: M2: refresh during typing preserves unsaved textarea value\n+ actual - expected\n\n+ 'Inspiration one'\n- 'UNSAVED TYPING'\n"
+}

@@ -1,0 +1,18 @@
+{"name":"F9 isolated per-fixture stores","boardADir":"/tmp/test-board-TuDWqz","boardBDir":"/tmp/test-board-xsZy0l","leakedToB":false}
+{"name":"F10 web batch-align removed","repoScopedStatus":404,"legacyStatus":404}
+{"name":"F1 confirmed native GraphQL transferIssue","unconfirmedStatus":400,"confirmedStatus":200,"graphqlCalls":1,"transferredIssueNumber":2,"transferredRepo":"owner/beta"}
+{"name":"F3 & F7 byte-safe marker and fence-aware dependency parser","fencedMarkerPreserved":true,"trailingWhitespaceRestored":true,"depChecklist":[2],"depFenced":[]}
+{"name":"F5 server rebalance and neighbour conflict detection","precisionStatus":200,"staleNeighbourStatus":409}
+{"name":"F5 downward reorder succeeds: all unmarked","after":["B","A","C"],"screenshot":"/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/corrected-reorder-all-unmarked.png"}
+{"name":"F5 downward reorder succeeds: marked into unmarked","after":["B","A","C"],"screenshot":"/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/corrected-reorder-marked-into-unmarked.png"}
+{"name":"F5 downward reorder succeeds: equal markers","after":["B","A","C"],"screenshot":"/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/corrected-reorder-equal-markers.png"}
+{"name":"F4 reorder preserves unsaved inline title","visibleTitles":["UNSAVED B","A","C"]}
+{"name":"F4 refresh does not rebase stale inline edit","persistedBody":"Other device description\n\n<!-- board-order: 1000 -->","notice":"This task changed on GitHub after you opened it; nothing was written Refresh before trying again; your text is retained."}
+{"name":"F2 uncertain create held without duplicate resend","copiesOnServer":1}
+{"name":"F2 in-flight offline edit retained in queue","retainedCount":1,"description":"New during sync"}
+{"name":"F2 duplicate offline titles preserved","queue":[{"title":"Same title","description":"First description"},{"title":"Same title","description":"Second description"}]}
+{"name":"F6 & F8 human task checkbox, GitHub link, 44px drawer buttons, and focus restoration","humanCheckboxes":1,"githubLinks":1,"smallDrawerButtons":[],"restoredKey":"owner/beta#1","screenshot":"/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/corrected-pending-and-drawer-360.png"}
+{"name":"F4 qualified Mark Done, unchecked checkbox property, and preserved overview draft","stateRows":[{"repository":"owner/alpha","state":"open"},{"repository":"owner/beta","state":"closed"}]}
+{"name":"F8 multi-line draft description auto-sizes without clipping","dimensions":{"clientHeight":71,"scrollHeight":71,"value":"Line one\nLine two\nLine three"},"layoutMetrics":[{"top":413,"bottom":589,"height":176},{"top":589,"bottom":736,"height":147},{"top":736,"bottom":883,"height":147}],"screenshot":"/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/corrected-multiline-description-360.png"}
+{"name":"F2 cold offline reload displays local draft shell instead of login screen","offlineRows":1,"screenshot":"/workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-correction/verifications/screenshots/corrected-cold-offline-reload-390.png"}
+{"name":"Issue #47 fresh-app stay-signed-in preserved after server restart","authenticatedOnFreshTab":true}

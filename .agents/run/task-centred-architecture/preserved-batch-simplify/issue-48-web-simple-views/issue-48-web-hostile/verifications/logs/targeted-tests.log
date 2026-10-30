@@ -1,0 +1,244 @@
+TAP version 13
+# Subtest: qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+ok 1 - qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 34.162301
+  type: 'test'
+  ...
+# Subtest: qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+ok 2 - qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 5.255505
+  type: 'test'
+  ...
+# Subtest: qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+ok 3 - qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 5.810417
+  type: 'test'
+  ...
+# Subtest: qualified overview drafts survive navigation without crossing same-number repositories
+ok 4 - qualified overview drafts survive navigation without crossing same-number repositories
+  ---
+  duration_ms: 7.537621
+  type: 'test'
+  ...
+# Subtest: observed revision change never rebinds an old answer; original question draft is recoverable
+ok 5 - observed revision change never rebinds an old answer; original question draft is recoverable
+  ---
+  duration_ms: 8.518875
+  type: 'test'
+  ...
+# Subtest: same-number combined row update replaces only the written repository
+ok 6 - same-number combined row update replaces only the written repository
+  ---
+  duration_ms: 8.313121
+  type: 'test'
+  ...
+# Subtest: older detail read cannot replace a newer confirmed mutation
+ok 7 - older detail read cannot replace a newer confirmed mutation
+  ---
+  duration_ms: 5.190378
+  type: 'test'
+  ...
+# Subtest: a detail refresh started during a write cannot clear the later UNKNOWN outcome
+ok 8 - a detail refresh started during a write cannot clear the later UNKNOWN outcome
+  ---
+  duration_ms: 4.484671
+  type: 'test'
+  ...
+# Subtest: detached question input stays bound to its exact source repository and observed revision
+ok 9 - detached question input stays bound to its exact source repository and observed revision
+  ---
+  duration_ms: 4.858606
+  type: 'test'
+  ...
+# Subtest: answer confirms only the qualified combined row question count
+ok 10 - answer confirms only the qualified combined row question count
+  ---
+  duration_ms: 14.897969
+  type: 'test'
+  ...
+# Subtest: F2: a write for the previous repository cannot discard the newly selected repository board
+ok 11 - F2: a write for the previous repository cannot discard the newly selected repository board
+  ---
+  duration_ms: 20.832567
+  type: 'test'
+  ...
+# Subtest: F3: a pre-dispatch discovery refusal is definite and never marked UNKNOWN
+ok 12 - F3: a pre-dispatch discovery refusal is definite and never marked UNKNOWN
+  ---
+  duration_ms: 7.361626
+  type: 'test'
+  ...
+# Subtest: clearing a qualified draft does not resurrect an older typed value on return
+ok 13 - clearing a qualified draft does not resurrect an older typed value on return
+  ---
+  duration_ms: 5.784562
+  type: 'test'
+  ...
+# Subtest: defaults, validation and remembered device state
+ok 14 - defaults, validation and remembered device state
+  ---
+  duration_ms: 22.19557
+  type: 'test'
+  ...
+# Subtest: client short names and overrides match shared contract
+ok 15 - client short names and overrides match shared contract
+  ---
+  duration_ms: 2.459622
+  type: 'test'
+  ...
+# Subtest: filter groups combine OR within groups and AND across groups with all sorts
+ok 16 - filter groups combine OR within groups and AND across groups with all sorts
+  ---
+  duration_ms: 3.288957
+  type: 'test'
+  ...
+# Subtest: offline drafts render in quick capture, preserve description and local reorder markers
+ok 17 - offline drafts render in quick capture, preserve description and local reorder markers
+  ---
+  duration_ms: 7.06892
+  type: 'test'
+  ...
+# Subtest: offline sync retains drafts on definite server refusal instead of deleting local work
+ok 18 - offline sync retains drafts on definite server refusal instead of deleting local work
+  ---
+  duration_ms: 2.864597
+  type: 'test'
+  ...
+# Subtest: existing GitHub drafts cannot silently queue reorder while offline
+ok 19 - existing GitHub drafts cannot silently queue reorder while offline
+  ---
+  duration_ms: 2.523154
+  type: 'test'
+  ...
+# Subtest: Align Drafts and old preset tabs absent; controls, native modal and bottom capture present
+ok 20 - Align Drafts and old preset tabs absent; controls, native modal and bottom capture present
+  ---
+  duration_ms: 0.729711
+  type: 'test'
+  ...
+# Subtest: short name: Workflows-Accelerator/openchamber-github-task-board
+ok 21 - short name: Workflows-Accelerator/openchamber-github-task-board
+  ---
+  duration_ms: 1.864774
+  type: 'test'
+  ...
+# Subtest: short name: owner/GH_repo.github
+ok 22 - short name: owner/GH_repo.github
+  ---
+  duration_ms: 0.325195
+  type: 'test'
+  ...
+# Subtest: short name: owner/REPO.API_tools-v2
+ok 23 - short name: owner/REPO.API_tools-v2
+  ---
+  duration_ms: 0.160797
+  type: 'test'
+  ...
+# Subtest: short name: owner/coffee
+ok 24 - short name: owner/coffee
+  ---
+  duration_ms: 0.158733
+  type: 'test'
+  ...
+# Subtest: short name: owner/gh
+ok 25 - short name: owner/gh
+  ---
+  duration_ms: 0.142553
+  type: 'test'
+  ...
+# Subtest: short name override is case-insensitive and wins
+ok 26 - short name override is case-insensitive and wins
+  ---
+  duration_ms: 0.217003
+  type: 'test'
+  ...
+# Subtest: order marker parse, last marker, finite, stripping and midpoint contract
+ok 27 - order marker parse, last marker, finite, stripping and midpoint contract
+  ---
+  duration_ms: 1.280586
+  type: 'test'
+  ...
+# Subtest: marker hidden from body, overview, description and pending items; raw fingerprint retained
+ok 28 - marker hidden from body, overview, description and pending items; raw fingerprint retained
+  ---
+  duration_ms: 6.971101
+  type: 'test'
+  ...
+# Subtest: draft create, inline edit and marker-only reorder routes use fingerprint + ETag
+ok 29 - draft create, inline edit and marker-only reorder routes use fingerprint + ETag
+  ---
+  duration_ms: 368.900942
+  type: 'test'
+  ...
+# Subtest: two devices cannot overwrite draft title or order with stale observed fingerprint
+ok 30 - two devices cannot overwrite draft title or order with stale observed fingerprint
+  ---
+  duration_ms: 175.014796
+  type: 'test'
+  ...
+# Subtest: draft routes validate inputs, sign-in, CSRF and draft-only state
+ok 31 - draft routes validate inputs, sign-in, CSRF and draft-only state
+  ---
+  duration_ms: 184.144152
+  type: 'test'
+  ...
+# Subtest: move creates target first, links source, then closes source without deleting it
+ok 32 - move creates target first, links source, then closes source without deleting it
+  ---
+  duration_ms: 181.072624
+  type: 'test'
+  ...
+# Subtest: failed target create never comments or closes source
+ok 33 - failed target create never comments or closes source
+  ---
+  duration_ms: 148.524963
+  type: 'test'
+  ...
+# Subtest: halfway move failure returns target link and explicit no-retry warning
+ok 34 - halfway move failure returns target link and explicit no-retry warning
+  ---
+  duration_ms: 168.419368
+  type: 'test'
+  ...
+# Subtest: drawer overview and checklist body saves retain hidden marker
+ok 35 - drawer overview and checklist body saves retain hidden marker
+  ---
+  duration_ms: 158.278641
+  type: 'test'
+  ...
+# Subtest: project rename is signed-in, CSRF protected, validated, stored beside data, persistent and resettable
+ok 36 - project rename is signed-in, CSRF protected, validated, stored beside data, persistent and resettable
+  ---
+  duration_ms: 239.743001
+  type: 'test'
+  ...
+# Subtest: GitHub ETag rejection during reorder is a conflict, never a successful order
+ok 37 - GitHub ETag rejection during reorder is a conflict, never a successful order
+  ---
+  duration_ms: 198.415764
+  type: 'test'
+  ...
+# Subtest: failed link comment leaves source open with target link and no blind move retry
+ok 38 - failed link comment leaves source open with target link and no blind move retry
+  ---
+  duration_ms: 190.936009
+  type: 'test'
+  ...
+# Subtest: an empty friendly-title heading cannot expose hidden order marker as title
+ok 39 - an empty friendly-title heading cannot expose hidden order marker as title
+  ---
+  duration_ms: 1.307326
+  type: 'test'
+  ...
+1..39
+# tests 39
+# suites 0
+# pass 39
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2551.963153

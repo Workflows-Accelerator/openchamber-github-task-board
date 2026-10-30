@@ -1,0 +1,168 @@
+{
+  "kind": "synthetic-fixture browser verification",
+  "startedAt": "2026-10-29T15:50:57.038Z",
+  "engine": "Obscura (CDP), no Chromium download",
+  "fixtures": "fake GitHub server with synthetic issues",
+  "checks": [
+    {
+      "name": "login page hides data",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "pull requests are excluded from the board",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "board names the default All Projects scope",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "session cookie is not readable from JavaScript",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "nothing is kept in local or session storage",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page source carries no token",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "page source carries no password",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop board: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=1281 clientWidth=1280"
+    },
+    {
+      "name": "board names the configured repository",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail shows phase metadata",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail shows attention metadata",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail shows an open question input",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail has no agent or session controls",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "detail shows warning that simultaneous edit can be overwritten",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "desktop task detail: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=1281 clientWidth=1280"
+    },
+    {
+      "name": "overview edit reached GitHub",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "other sections survived the edit",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict is explained and offers a reload",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "conflict did not overwrite the remote change",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "inline answer was written to the issue",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "status label changed",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "non-status labels were preserved",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "browser transport failure on write classifies outcome as unknown and offers refresh (R1)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "browser transport failure makes zero write retries (R1)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "a failed refresh keeps the last board and says it is stale",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "the empty repository state is plainly explained",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "360px board: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=360 clientWidth=360"
+    },
+    {
+      "name": "360px task detail: no horizontal overflow",
+      "pass": true,
+      "detail": "scrollWidth=360 clientWidth=360"
+    },
+    {
+      "name": "every control is a native element in the tab order",
+      "pass": false,
+      "detail": "[{\"tag\":\"A\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"refresh-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"signout-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"username\",\"tabIndex\":-1,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"password\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"login-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"repo-select-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"repo-search-input\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"view-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"filter-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"sort-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"settings-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"quick-add-input\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"quick-add-description\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"SELECT\",\"id\":\"quick-add-project\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"sheet-close\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"back-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"A\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"conflict-reload\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"TEXTAREA\",\"id\":\"overview-text\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"save-overview\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"SELECT\",\"id\":\"status-select\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"apply-status\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"mark-done-btn\",\"tabIndex\":0,\"disabled\":false}]"
+    }
+  ],
+  "screenshots": [
+    ".agents/run/issue-48-web-correction/verifications/issue-33-standalone-board/screenshots/login-desktop-2026-10-29T15-50-57-037Z.png",
+    ".agents/run/issue-48-web-correction/verifications/issue-33-standalone-board/screenshots/board-desktop-2026-10-29T15-50-57-037Z.png",
+    ".agents/run/issue-48-web-correction/verifications/issue-33-standalone-board/screenshots/task-detail-desktop-2026-10-29T15-50-57-037Z.png",
+    ".agents/run/issue-48-web-correction/verifications/issue-33-standalone-board/screenshots/conflict-desktop-2026-10-29T15-50-57-037Z.png",
+    ".agents/run/issue-48-web-correction/verifications/issue-33-standalone-board/screenshots/task-detail-after-edits-desktop-2026-10-29T15-50-57-037Z.png",
+    ".agents/run/issue-48-web-correction/verifications/issue-33-standalone-board/screenshots/stale-board-desktop-2026-10-29T15-50-57-037Z.png",
+    ".agents/run/issue-48-web-correction/verifications/issue-33-standalone-board/screenshots/empty-board-desktop-2026-10-29T15-50-57-037Z.png",
+    ".agents/run/issue-48-web-correction/verifications/issue-33-standalone-board/screenshots/board-360-2026-10-29T15-50-57-037Z.png",
+    ".agents/run/issue-48-web-correction/verifications/issue-33-standalone-board/screenshots/task-detail-360-2026-10-29T15-50-57-037Z.png"
+  ],
+  "notes": [
+    "fake GitHub PATCH calls after conflict: 1"
+  ],
+  "error": "check failed: every control is a native element in the tab order ([{\"tag\":\"A\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"refresh-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"signout-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"username\",\"tabIndex\":-1,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"password\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"login-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"repo-select-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"repo-search-input\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"view-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"filter-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"sort-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"settings-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"quick-add-input\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"INPUT\",\"id\":\"quick-add-description\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"SELECT\",\"id\":\"quick-add-project\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"sheet-close\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"back-btn\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"A\",\"id\":\"\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"conflict-reload\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"TEXTAREA\",\"id\":\"overview-text\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"save-overview\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"SELECT\",\"id\":\"status-select\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"apply-status\",\"tabIndex\":0,\"disabled\":false},{\"tag\":\"BUTTON\",\"id\":\"mark-done-btn\",\"tabIndex\":0,\"disabled\":false}])"
+}

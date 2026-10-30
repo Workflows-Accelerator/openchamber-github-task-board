@@ -1,0 +1,5 @@
+{"name":"create security","statuses":[401,403]}
+{"name":"section edit destroys fenced marker elsewhere","status":200,"before":"## Overview\r\nOriginal\r\n\r\n## Notes\r\n```md\r\n<!-- board-order: 42 -->\r\n```\r\n\r\n## Overview\r\nKeep second heading  \r\n<!-- board-ordering: 7 -->\r\n\r\n<!-- board-order: 2000 -->","after":"## Overview\r\nChanged overview\r\n\r\n## Notes\r\n```md\r\n\n```\r\n\r\n## Overview\r\nKeep second heading  \r\n<!-- board-ordering: 7 -->\r\n\r\n<!-- board-order: 2000 -->"}
+{"name":"real repeated reorder writes exhaust precision","successfulWrites":53,"lastStatus":409,"previous":1000,"next":1000.0000000000001,"payload":{"error":"order_precision","message":"No space between these neighbours; choose another position"}}
+{"name":"two independent sessions collide","statuses":[200,200],"orders":[1500,1500]}
+{"name":"extension-only align still exposed by web API","status":200,"alignedCount":2,"patches":[["body","labels"],["body","labels"]]}

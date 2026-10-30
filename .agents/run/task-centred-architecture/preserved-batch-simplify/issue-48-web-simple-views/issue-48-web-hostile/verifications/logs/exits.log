@@ -1,0 +1,10 @@
+typecheck exit=0
+web-typecheck exit=0
+targeted-tests exit=0
+protected-tests exit=0
+build exit=0
+hostile-extra exit=0
+builder-browser exit=0
+hostile-runtime exit=0
+order-body-runtime exit=0
+isolation-runtime exit=0

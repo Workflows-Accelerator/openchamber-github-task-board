@@ -1,0 +1,285 @@
+[
+  {
+    "check": "render-Simple",
+    "width": 980,
+    "layout": "simple"
+  },
+  {
+    "check": "render-Cards",
+    "width": 980,
+    "layout": "cards"
+  },
+  {
+    "check": "render-Kanban",
+    "width": 980,
+    "layout": "kanban"
+  },
+  {
+    "check": "render-Graph",
+    "width": 980,
+    "layout": "graph"
+  },
+  {
+    "check": "render-Pending",
+    "width": 980,
+    "layout": "pending"
+  },
+  {
+    "check": "draft-geometry",
+    "width": 980,
+    "geometry": {
+      "client": 980,
+      "scroll": 980,
+      "add": {
+        "x": 10,
+        "y": 728,
+        "width": 959,
+        "height": 44,
+        "top": 728,
+        "right": 969,
+        "bottom": 772,
+        "left": 10
+      },
+      "touchButtons": []
+    }
+  },
+  {
+    "check": "render-Simple",
+    "width": 360,
+    "layout": "simple"
+  },
+  {
+    "check": "render-Cards",
+    "width": 360,
+    "layout": "cards"
+  },
+  {
+    "check": "render-Kanban",
+    "width": 360,
+    "layout": "kanban"
+  },
+  {
+    "check": "render-Graph",
+    "width": 360,
+    "layout": "graph"
+  },
+  {
+    "check": "render-Pending",
+    "width": 360,
+    "layout": "pending"
+  },
+  {
+    "check": "filter-offscreen",
+    "token": "stage:draft",
+    "box": {
+      "x": -137,
+      "y": 151.875,
+      "width": 49,
+      "height": 21
+    },
+    "popover": {
+      "x": -147,
+      "y": 67,
+      "width": 320,
+      "height": 249.8125
+    }
+  },
+  {
+    "check": "draft-geometry",
+    "width": 360,
+    "geometry": {
+      "client": 360,
+      "scroll": 360,
+      "add": {
+        "x": 10,
+        "y": 728,
+        "width": 340,
+        "height": 44,
+        "top": 728,
+        "right": 350,
+        "bottom": 772,
+        "left": 10
+      },
+      "touchButtons": []
+    }
+  },
+  {
+    "check": "filter-offscreen",
+    "token": "stage:draft",
+    "box": {
+      "x": -137,
+      "y": 151.875,
+      "width": 49,
+      "height": 21
+    },
+    "popover": {
+      "x": -147,
+      "y": 67,
+      "width": 320,
+      "height": 249.8125
+    }
+  },
+  {
+    "check": "unmarked-down",
+    "mutations": [],
+    "titles": [
+      "First unmarked idea",
+      "Second unmarked idea",
+      "Third unmarked idea"
+    ],
+    "toasts": [
+      {
+        "kind": "info",
+        "message": "That slot needs more than one marker write, or its order gap is full. Move an unordered draft to the top first."
+      }
+    ]
+  },
+  {
+    "check": "title-tab-focus",
+    "focus": {
+      "tag": "BODY",
+      "label": null
+    }
+  },
+  {
+    "check": "saved-project-change-with-cancel-policy",
+    "dialogs": [],
+    "hostConfirms": [],
+    "mutations": [
+      {
+        "method": "PATCH",
+        "path": "/repos/acme/openchamber-github-task-board/issues/1",
+        "body": "{\"title\":\"Renamed with keyboard\"}"
+      },
+      {
+        "method": "POST",
+        "path": "/graphql",
+        "body": "{\"query\":\"mutation($issue:ID!,$repository:ID!){transferIssue(input:{issueId:$issue,repositoryId:$repository}){issue{number url repository{nameWithOwner}}}}\",\"variables\":{\"issue\":\"ISSUE_0\",\"repository\":\"REPO_TARGET\"}}"
+      }
+    ]
+  },
+  {
+    "check": "graph-same-number",
+    "listTitles": [
+      "Choose the next step",
+      "First unmarked idea",
+      "Third unmarked idea",
+      "Completed task",
+      "Review toolbar",
+      "Second unmarked idea",
+      "Other project same issue number"
+    ],
+    "graphTitles": [
+      "Choose the next step",
+      "Third unmarked idea",
+      "Completed task",
+      "Review toolbar",
+      "Second unmarked idea",
+      "Other project same issue number"
+    ]
+  },
+  {
+    "check": "marked-reorder-and-create",
+    "mutations": [
+      {
+        "method": "PATCH",
+        "path": "/repos/acme/openchamber-github-task-board/issues/3",
+        "body": "{\"body\":\"Inspiration three\\n\\n<!-- board-order: 1500 -->\"}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/repos/acme/openchamber-github-task-board/issues/1",
+        "body": "{\"body\":\"Inspiration one\\n\\n<!-- board-order: 3000 -->\"}"
+      },
+      {
+        "method": "POST",
+        "path": "/repos/acme/openchamber-github-task-board/issues",
+        "body": "{\"title\":\"Captured twice-Enter guarded\",\"body\":\"Inspiration only\\n\\n<!-- board-order: 4000 -->\",\"labels\":[\"status:draft\"]}"
+      }
+    ],
+    "sessionCalls": []
+  },
+  {
+    "check": "failed-description-value",
+    "value": "",
+    "toasts": [
+      {
+        "kind": "info",
+        "message": "Switched to Manual order. Move the draft again in this order."
+      },
+      {
+        "kind": "success",
+        "message": "Draft created in Task Board"
+      },
+      {
+        "kind": "error",
+        "message": "Could not create draft: GitHub API error: 422. Your idea is kept below; check GitHub before retrying if the connection failed."
+      },
+      {
+        "kind": "error",
+        "message": "Failed to update #2 on GitHub"
+      }
+    ]
+  },
+  {
+    "check": "refresh-during-typing",
+    "value": "Inspiration one",
+    "mutations": [
+      {
+        "method": "PATCH",
+        "path": "/repos/acme/openchamber-github-task-board/issues/1",
+        "body": "{\"body\":\"UNSAVED TYPING\"}"
+      }
+    ]
+  },
+  {
+    "check": "question-answer-controls",
+    "textareas": 0,
+    "buttons": [
+      "Answer",
+      "Save",
+      "Cancel"
+    ]
+  },
+  {
+    "check": "question-saved",
+    "mutations": [
+      {
+        "method": "PATCH",
+        "path": "/repos/acme/openchamber-github-task-board/issues/4",
+        "body": "{\"body\":\"### Human Tasks:\\n- [ ] Inspect the preview\\n\\n### Open Questions:\\n- [x] Which colour should we use? *(Answer: Use blue)*\"}"
+      }
+    ]
+  },
+  {
+    "check": "pending-completion",
+    "mutations": [
+      {
+        "method": "PATCH",
+        "path": "/repos/acme/openchamber-github-task-board/issues/4",
+        "body": "{\"body\":\"### Human Tasks:\\n- [ ] Inspect the preview\\n\\n### Open Questions:\\n- [x] Which colour should we use? *(Answer: Use blue)*\"}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/repos/acme/openchamber-github-task-board/issues/4",
+        "body": "{\"body\":\"### Human Tasks:\\n- [x] Inspect the preview\\n\\n### Open Questions:\\n- [x] Which colour should we use? *(Answer: Use blue)*\"}"
+      }
+    ]
+  },
+  {
+    "check": "fenced-inline-body",
+    "value": "Sample:\n```html\n\n```\n\n### Human Tasks:\n- [ ] Keep this",
+    "remote": "Sample:\r\n```html\r\n<!-- board-order: 777 -->\r\n```\r\n\r\n\r\n### Human Tasks:\r\n- [ ] Keep this\r\n\r\n<!-- board-order: 1000 -->"
+  },
+  {
+    "check": "runtime-errors",
+    "pageErrors": [],
+    "console": [
+      "[TaskBoard] No project is registered at /workspace and none is named \"workspace\". Global sessions cannot be pinned to /workspace; All Projects will use the active project.",
+      "[TaskBoard] No project is registered at /workspace and none is named \"workspace\". Global sessions cannot be pinned to /workspace; All Projects will use the active project.",
+      "[TaskBoard] GitHub request failed: GitHub API error: 422",
+      "[TaskBoard] GitHub request failed: GitHub API error: 422",
+      "[TaskBoard] Failed to sync body for #2: GitHub API error: 422"
+    ]
+  }
+]

@@ -1,0 +1,166 @@
+TAP version 13
+# Subtest: session cookie is HttpOnly, Secure, SameSite=Strict and path scoped
+ok 1 - session cookie is HttpOnly, Secure, SameSite=Strict and path scoped
+  ---
+  duration_ms: 1.788592
+  type: 'test'
+  ...
+# Subtest: clear cookie expires the session cookie
+ok 2 - clear cookie expires the session cookie
+  ---
+  duration_ms: 0.36781
+  type: 'test'
+  ...
+# Subtest: parseCookieHeader handles multiple cookies and encoding
+ok 3 - parseCookieHeader handles multiple cookies and encoding
+  ---
+  duration_ms: 3.144844
+  type: 'test'
+  ...
+# Subtest: sessions are created, signed, validated and destroyed
+ok 4 - sessions are created, signed, validated and destroyed
+  ---
+  duration_ms: 2.61677
+  type: 'test'
+  ...
+# Subtest: sessions reject forged and unsigned cookie values
+ok 5 - sessions reject forged and unsigned cookie values
+  ---
+  duration_ms: 0.588998
+  type: 'test'
+  ...
+# Subtest: sessions expire on absolute and idle timeouts
+ok 6 - sessions expire on absolute and idle timeouts
+  ---
+  duration_ms: 0.844864
+  type: 'test'
+  ...
+# Subtest: csrfMatches compares exact tokens
+ok 7 - csrfMatches compares exact tokens
+  ---
+  duration_ms: 0.311461
+  type: 'test'
+  ...
+# Subtest: login limiter blocks repeated failures, then recovers after the window
+ok 8 - login limiter blocks repeated failures, then recovers after the window
+  ---
+  duration_ms: 0.565422
+  type: 'test'
+  ...
+# Subtest: login limiter enforces bounded cooldown of at most 60 seconds with no accumulating lockout
+ok 9 - login limiter enforces bounded cooldown of at most 60 seconds with no accumulating lockout
+  ---
+  duration_ms: 0.595501
+  type: 'test'
+  ...
+# Subtest: session store caps stored sessions and evicts least recently used when full
+ok 10 - session store caps stored sessions and evicts least recently used when full
+  ---
+  duration_ms: 1.148859
+  type: 'test'
+  ...
+# Subtest: login limiter bounds failure map size and does not grow without bound on 5000 failures
+ok 11 - login limiter bounds failure map size and does not grow without bound on 5000 failures
+  ---
+  duration_ms: 10.861718
+  type: 'test'
+  ...
+# Subtest: session store defaults to 30-day absolute and idle TTL, and 30-day cookie Max-Age
+ok 12 - session store defaults to 30-day absolute and idle TTL, and 30-day cookie Max-Age
+  ---
+  duration_ms: 0.479779
+  type: 'test'
+  ...
+# Subtest: sessions survive constructing a new SessionStore from the same file
+ok 13 - sessions survive constructing a new SessionStore from the same file
+  ---
+  duration_ms: 1.917078
+  type: 'test'
+  ...
+# Subtest: persisted session file contains only SHA-256 hashes and no raw secrets or cookie values
+ok 14 - persisted session file contains only SHA-256 hashes and no raw secrets or cookie values
+  ---
+  duration_ms: 1.346366
+  type: 'test'
+  ...
+# Subtest: expired sessions on disk are rejected and pruned on store initialization
+ok 15 - expired sessions on disk are rejected and pruned on store initialization
+  ---
+  duration_ms: 1.357977
+  type: 'test'
+  ...
+# Subtest: sign-out removes the record from memory and persists immediately to disk
+ok 16 - sign-out removes the record from memory and persists immediately to disk
+  ---
+  duration_ms: 1.639755
+  type: 'test'
+  ...
+# Subtest: corrupted session file is tolerated without crashing and starts empty
+ok 17 - corrupted session file is tolerated without crashing and starts empty
+  ---
+  duration_ms: 3.265612
+  type: 'test'
+  ...
+# Subtest: throttles lastSeen writes to disk during session activity
+ok 18 - throttles lastSeen writes to disk during session activity
+  ---
+  duration_ms: 5.827441
+  type: 'test'
+  ...
+# Subtest: getVersionStamp produces package-version prefixed build stamp from assets
+ok 19 - getVersionStamp produces package-version prefixed build stamp from assets
+  ---
+  duration_ms: 3.224013
+  type: 'test'
+  ...
+# Subtest: app.js registers service worker with updateViaCache: none, update triggers, and loop guard
+ok 20 - app.js registers service worker with updateViaCache: none, update triggers, and loop guard
+  ---
+  duration_ms: 1.138742
+  type: 'test'
+  ...
+# Subtest: sw.js defines versioned cache name, network-first shell, cache-first icons, and api bypass
+ok 21 - sw.js defines versioned cache name, network-first shell, cache-first icons, and api bypass
+  ---
+  duration_ms: 0.460188
+  type: 'test'
+  ...
+# Subtest: Service Worker install caches shell assets and calls skipWaiting
+ok 22 - Service Worker install caches shell assets and calls skipWaiting
+  ---
+  duration_ms: 2.415061
+  type: 'test'
+  ...
+# Subtest: Service Worker activate purges old caches including workflows-board-v1 and claims clients
+ok 23 - Service Worker activate purges old caches including workflows-board-v1 and claims clients
+  ---
+  duration_ms: 1.841982
+  type: 'test'
+  ...
+# Subtest: App shell requests are network-first with cache fallback only when offline
+ok 24 - App shell requests are network-first with cache fallback only when offline
+  ---
+  duration_ms: 1.991755
+  type: 'test'
+  ...
+# Subtest: Icon requests are cache-first with network fallback
+ok 25 - Icon requests are cache-first with network fallback
+  ---
+  duration_ms: 1.724625
+  type: 'test'
+  ...
+# Subtest: API and non-GET requests bypass the service worker cache entirely
+ok 26 - API and non-GET requests bypass the service worker cache entirely
+  ---
+  duration_ms: 1.501282
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 26
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 349.002874

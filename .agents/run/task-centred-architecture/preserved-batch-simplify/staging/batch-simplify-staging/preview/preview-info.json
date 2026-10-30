@@ -1,0 +1,14 @@
+{
+  "pid": 1690522,
+  "url": "http://0.0.0.0:4040",
+  "fakeGithubUrl": "http://127.0.0.1:46645",
+  "credentials": {
+    "username": "preview-user",
+    "password": "correct horse battery staple"
+  },
+  "repositories": [
+    "Workflows-Accelerator/openchamber-github-task-board",
+    "Workflows-Accelerator/workflows-mobile-pwa"
+  ],
+  "startedAt": "2026-10-29T17:16:46.208Z"
+}

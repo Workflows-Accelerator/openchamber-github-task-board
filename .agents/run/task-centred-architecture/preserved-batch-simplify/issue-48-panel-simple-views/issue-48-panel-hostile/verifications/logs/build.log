@@ -1,0 +1,8 @@
+
+> openchamber-github-task-board@1.2.1 build:panel
+> esbuild panel/main.ts --bundle --format=iife --target=chrome100 --tree-shaking=false --outfile=panel/main.js --outfile=.agents/run/issue-48-panel-hostile/verifications/scratch/main.js
+
+
+  .agents/run/issue-48-panel-hostile/verifications/scratch/main.js  685.7kb
+
+⚡ Done in 163ms

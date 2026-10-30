@@ -1,5 +1,23 @@
 # Task-centred delivery
 
+## CURRENT — simplified board batch 2026-10-29
+
+| Outcome | State | Worker / evidence / next |
+|---|---|---|
+| #47 fresh app + persistent sign-in | AWAITING BATCH | Candidate268bd28 independently PASS/APPROVED actual9router/engineer; E CLOSED. Hosting12/web413/root553/types0 + restart12/HTTP9. Gate outputs/issue-47-isolation-accepted.md supersedes isolation hold. Physical autofill/installed-PWA/live restart NOT RUN. No human/deploy approval. |
+| #48 simplified extension | AWAITING BATCH | c9fb61b independently PASS/APPROVED (ses_c4a41984b6681c1467b7dfb5, actual9router/genius): root595, parity18, cmp0, Chromium27/0 errors. M4 removals disclosed for L5. Gate outputs/issue-48-panel-accepted.md. |
+| #48 simplified web/mobile | AWAITING BATCH | d5a205da26827d0555824339fcb14c9a39d7af7f independently PASS/APPROVED (ses_48cf0489bcd90c7a9d52bacd, actual9router/genius): F1–F10 CLOSED, merges #47 268bd28 (0 diff on auth/config/sw.js), web449, root553, browser 14/14 + 12/12 (20 view×sort combos). Gate outputs/issue-48-web-accepted.md. |
+| #47 test-storage safety and durable proof | L4 PASSED | Reviewer ses_461dba08beef2f87a65063b3 actual9router/engineer verified storage paths, old/new stand-in regression, secret-free retained harnesses and all checks. Evidence in #47 worktree .agents/run/issue-47-isolation-review/verifications/proof.md; preserve before cleanup. |
+| Integration and UI proof | L4 PASSED (ab7516c) | Worker ses_eca7e0e0844247c8973a2a69 (actual9router/engineer) merged panel c9fb61b + web d5a205d (incl. #47 268bd28) onto feat/batch-simplify-staging at ab7516c (product merge a29192c). Root595/web449/parity18/browser 14+33 pass, 0-byte panel delta, all 6 proofs preserved, local preview on http://127.0.0.1:4040 (PID 1690522). Gate outputs/batch-simplify-staging-accepted.md. |
+| Human batch validation | APPROVED BY USER | User replied "Approved" to #47/#48 master push, deploy and closure request, followed by Continue. Recorded in outputs/batch-simplify-human-approval.md. Physical autofill/touch tests remain NOT VERIFIED, not implied by approval. |
+| Release #47 + #48 | WEB LIVE / CODE PUBLISHED | origin/master ab7516c, release ab7516c-20261030, rollback cc08379-20261029; independently verified public assets/health/TLS. #47/#48 human-directed closure receipts retained. |
+| Independent release audit | PASS WITH CONDITIONS | ses_25a94faee8b9d60c3459d387 actual9router/engineer, Spec PASS/Quality APPROVED. F01 login visual bleed; F02 restart/downtime historical narrative not confirmed. Gate outputs/batch-simplify-live-audit-gate.md. |
+| Extension activation | APPROVED / DISPATCHING | D57 user chose Activate + prepare fix. Fresh root worker tasks/brief-task-board-activation.md preserves historic branch and manager state, loads exact master product on ops continuation branch, toggles only guest service, proves host iframe/runtime. No full host restart. |
+| Cleanup | VERIFIED COMPLETE | Independent actual9router/engineer Spec PASS/Quality APPROVED: 300/300 archive checks,107/107 staging parity, all4 batch worktrees removed normally and deregistered; branches retained,25 unrelated worktrees untouched. Gate outputs/batch-simplify-cleanup-accepted.md. |
+| #49 readable sign-in form | PREPARATION APPROVED / QUEUED | D57 user approves narrow visual correction for independent review, not deploy. Start after activation boundary; isolate from master and protect auth/autofill behavior. Fresh L5 before publication. |
+
+#47 receipt: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/47#issuecomment-6495833880. Provider/model fidelity has not been established from metadata; requested tiers are not verified actuals. No new sessions for the already-running tasks. Failed push permissions are not to be retried or bypassed without a changed permission event.
+
 ## CURRENT — recovery and deployment go 2026-10-26
 
 - Owner deployment go recorded decision18; not L5 pass/credential reuse/issue closure.

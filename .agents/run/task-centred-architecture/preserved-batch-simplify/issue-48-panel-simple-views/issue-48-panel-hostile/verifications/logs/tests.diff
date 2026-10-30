@@ -1,0 +1,1406 @@
+diff --git a/test/clickthrough-repair-titles-queues-picker.test.js b/test/clickthrough-repair-titles-queues-picker.test.js
+index 0aa7fb5..c265314 100644
+--- a/test/clickthrough-repair-titles-queues-picker.test.js
++++ b/test/clickthrough-repair-titles-queues-picker.test.js
+@@ -153,7 +153,7 @@ test('D15: Popover shows session linked repo inline and highlights active sessio
+   app.renderRepoPopoverList();
+   const listEl = elements.get('detectedReposList');
+   assert.ok(
+-    listEl.innerHTML.includes('Session repo: Workflows-Accelerator/openchamber-github-task-board'),
++    listEl.innerHTML.includes('Session repo: <span title="Workflows-Accelerator/openchamber-github-task-board">Task Board</span>'),
+     'must display linked session repo inline'
+   );
+   const currentSessionOpt = listEl.querySelector('.current-session-option');
+diff --git a/test/human-tasks-ux-enhancements.test.js b/test/human-tasks-ux-enhancements.test.js
+index be47cd0..4be56d2 100644
+--- a/test/human-tasks-ux-enhancements.test.js
++++ b/test/human-tasks-ux-enhancements.test.js
+@@ -131,13 +131,13 @@ test('panel/index.html defines categorized view dropdown and file preview modal'
+   // Dropdown button and popover
+   assert.ok(INDEX_HTML.includes('id="btnViewSelect"'), 'btnViewSelect exists in index.html');
+   assert.ok(INDEX_HTML.includes('id="viewSelectPopover"'), 'viewSelectPopover exists in index.html');
+-  assert.ok(INDEX_HTML.includes('id="viewOptHuman"'), 'viewOptHuman exists in index.html');
+-  assert.ok(INDEX_HTML.includes('id="viewOptQuestions"'), 'viewOptQuestions exists in index.html');
++  assert.ok(INDEX_HTML.includes('id="viewOptPending"'), 'viewOptHuman exists in index.html');
++  assert.ok(INDEX_HTML.includes('id="viewOptSimple"'), 'viewOptQuestions exists in index.html');
+   assert.ok(INDEX_HTML.includes('id="viewOptKanban"'), 'viewOptKanban exists in index.html');
+-  assert.ok(INDEX_HTML.includes('id="viewOptList"'), 'viewOptList exists in index.html');
++  assert.ok(INDEX_HTML.includes('id="viewOptCards"'), 'viewOptList exists in index.html');
+   assert.ok(INDEX_HTML.includes('id="viewOptGraph"'), 'viewOptGraph exists in index.html');
+-  assert.ok(INDEX_HTML.includes('TASKS'), 'TASKS category header exists');
+-  assert.ok(INDEX_HTML.includes('ISSUES'), 'ISSUES category header exists');
++  assert.ok(INDEX_HTML.includes('aria-label="Task views"'), 'single view menu is labelled');
++  assert.ok(!INDEX_HTML.includes('id="viewModeGroup"'), 'duplicate view group removed');
+ 
+   // File Preview Modal
+   assert.ok(INDEX_HTML.includes('id="filePreviewModalBackdrop"'), 'filePreviewModalBackdrop exists');
+@@ -161,47 +161,20 @@ test('panel/index.html defines categorized view dropdown and file preview modal'
+ // ==========================================
+ import { createTestApp } from './test-app-harness.js';
+ 
+-test('Toolbar: categorized dropdown provides Tasks and Issues navigation', () => {
++test('Toolbar: one picker provides all five task views', () => {
+   const { elements, app } = createTestApp();
+-
+-  const btnViewSelect = elements.get('btnViewSelect');
+-  const viewSelectPopover = elements.get('viewSelectPopover');
+-  const viewOptHuman = elements.get('viewOptHuman');
+-  const viewOptQuestions = elements.get('viewOptQuestions');
+-  const viewOptKanban = elements.get('viewOptKanban');
+-  const viewOptList = elements.get('viewOptList');
+-  const viewOptGraph = elements.get('viewOptGraph');
+-  const currentLabel = elements.get('viewSelectCurrentLabel');
+-
+-  assert.ok(btnViewSelect, '#btnViewSelect exists in runtime DOM');
+-  assert.ok(viewSelectPopover, '#viewSelectPopover exists in runtime DOM');
+-  assert.ok(viewOptHuman, '#viewOptHuman exists');
+-  assert.ok(viewOptQuestions, '#viewOptQuestions exists');
+-  assert.ok(viewOptKanban, '#viewOptKanban exists');
+-  assert.ok(viewOptList, '#viewOptList exists');
+-  assert.ok(viewOptGraph, '#viewOptGraph exists');
+-
+-  // Toggle popover
+-  assert.equal(viewSelectPopover.style.display, 'none', 'popover initially hidden');
+-  btnViewSelect.click();
+-  assert.equal(viewSelectPopover.style.display, 'flex', 'popover visible on click');
+-  assert.equal(btnViewSelect.getAttribute('aria-expanded'), 'true');
+-
+-  // Select Human Tasks view
+-  viewOptHuman.click();
+-  assert.equal(currentLabel.textContent, 'Human Tasks', 'current label updated to Human Tasks');
+-  assert.equal(viewSelectPopover.style.display, 'none', 'popover closes after selection');
+-  assert.equal(btnViewSelect.getAttribute('aria-expanded'), 'false');
+-
+-  // Select Questions view
+-  btnViewSelect.click();
+-  viewOptQuestions.click();
+-  assert.equal(currentLabel.textContent, 'Questions', 'current label updated to Questions');
+-
+-  // Select Board (Kanban) view
+-  btnViewSelect.click();
+-  viewOptKanban.click();
+-  assert.equal(currentLabel.textContent, 'Board', 'current label updated to Board');
++  const picker = elements.get('btnViewSelect');
++  const popover = elements.get('viewSelectPopover');
++  assert.equal(popover.style.display, 'none');
++  for (const [id, mode, label] of [['Simple', 'simple', 'Simple list'], ['Cards', 'cards', 'Cards'], ['Kanban', 'kanban', 'Kanban board'], ['Graph', 'graph', 'Graph'], ['Pending', 'pending', 'Pending items']]) {
++    picker.click();
++    assert.equal(picker.getAttribute('aria-expanded'), 'true');
++    elements.get(`viewOpt${id}`).click();
++    assert.equal(app.getState().viewState.view, mode);
++    assert.equal(elements.get('viewSelectCurrentLabel').textContent, label);
++    assert.equal(popover.style.display, 'none');
++    assert.equal(picker.getAttribute('aria-expanded'), 'false');
++  }
+ });
+ 
+ test('Human Tasks View: completed tasks remain visible for review and unchecking; all-done issues move to bottom', () => {
+@@ -245,7 +218,7 @@ test('Human Tasks View: completed tasks remain visible for review and unchecking
+   app.setState({ issues: sampleIssues, currentRepo: 'owner/repo' });
+ 
+   // Switch to Human Tasks view
+-  const humanBtn = elements.get('btnViewHuman');
++  const humanBtn = elements.get('viewOptPending');
+   humanBtn.click();
+ 
+   const humanContainer = elements.get('humanViewContainer');
+@@ -304,8 +277,8 @@ The batch human review gate (#12) parks issues on status:needs-human.
+   app.setState({ issues: [issueWithTableQuestion], currentRepo: 'owner/repo' });
+ 
+   // Switch to Questions view
+-  const questionsBtn = elements.get('btnViewQuestions');
+-  questionsBtn.click();
++  app.setState({ viewState: { view: 'simple', filters: ['questions'], sort: 'priority' } });
++  app.renderViews();
+ 
+   const questionsContainer = elements.get('questionsViewContainer');
+   assert.ok(questionsContainer, 'questionsViewContainer exists');
+diff --git a/test/issue-34-answer-integrity.test.js b/test/issue-34-answer-integrity.test.js
+index 13aa40c..27fc80f 100644
+--- a/test/issue-34-answer-integrity.test.js
++++ b/test/issue-34-answer-integrity.test.js
+@@ -954,7 +954,7 @@ test('Finding 6: Typed answer is preserved across refusal in Questions View, Dra
+       issues: [issueQV],
+       currentRepo: 'test-owner/test-repo',
+       isManualRepoOverride: true,
+-      userLayoutPreference: 'questions',
++      viewState: { view: 'simple', filters: ['questions'], sort: 'priority' },
+     });
+     app.applyLayoutMode();
+     app.renderViews();
+@@ -1070,7 +1070,7 @@ test('Finding 6: Typed answer is preserved across refusal in Questions View, Dra
+       issues: [issueHuman],
+       currentRepo: 'test-owner/test-repo',
+       isManualRepoOverride: true,
+-      userLayoutPreference: 'human',
++      viewState: { view: 'pending', filters: [], sort: 'priority' },
+     });
+     app.applyLayoutMode();
+     app.renderViews();
+@@ -1400,7 +1400,7 @@ test('Decision 14 Isolation C2: Remotely changed question leaves current input e
+     issues: [issue],
+     currentRepo: 'owner/repo-main',
+     isManualRepoOverride: true,
+-    userLayoutPreference: 'questions',
++    viewState: { view: 'simple', filters: ['questions'], sort: 'priority' },
+   });
+   app.applyLayoutMode();
+   app.renderViews();
+@@ -1469,7 +1469,7 @@ test('Decision 14 Isolation C3: Remotely deleted questions renders issue with re
+     issues: [issueZero],
+     currentRepo: 'owner/repo-main',
+     isManualRepoOverride: true,
+-    userLayoutPreference: 'questions',
++    viewState: { view: 'simple', filters: ['questions'], sort: 'priority' },
+   });
+   app.applyLayoutMode();
+   app.renderViews();
+@@ -1506,7 +1506,7 @@ test('Decision 14 Isolation C3: Remotely deleted questions renders issue with re
+   );
+ });
+ 
+-test('Decision 14 Layout D1: Direct renderers do not mutate userLayoutPreference or data-layout', async () => {
++test('Decision 14 Layout D1: Direct renderers do not mutate viewState or data-layout', async () => {
+   const { app } = createTestApp({
+     onRequest: async () => ({ status: 200, body: '{}' }),
+   });
+diff --git a/test/layout-and-views.test.js b/test/layout-and-views.test.js
+index 7c4c75a..7e52e68 100644
+--- a/test/layout-and-views.test.js
++++ b/test/layout-and-views.test.js
+@@ -10,35 +10,16 @@ const here = path.dirname(fileURLToPath(import.meta.url));
+ const INDEX_HTML = fs.readFileSync(path.join(here, '..', 'panel', 'index.html'), 'utf8');
+ const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
+ 
+-export function getNextLayoutMode(currentLayout) {
+-  if (currentLayout === 'kanban') return 'graph';
+-  if (currentLayout === 'graph') return 'list';
+-  return 'kanban';
+-}
+-
+-export function getActiveLayoutMode({ userLayoutPreference = 'auto', showArchivedOnly = false, isWideScreen = false }) {
+-  if (showArchivedOnly) return 'list';
+-  if (userLayoutPreference === 'graph') return 'graph';
+-  if (userLayoutPreference === 'kanban') return 'kanban';
+-  if (userLayoutPreference === 'list') return 'list';
+-  return isWideScreen ? 'kanban' : 'list';
+-}
++import { normalizeViewState, VIEW_IDS } from '../panel/viewstate.ts';
+ 
+-test('getNextLayoutMode cycles list -> kanban -> graph -> list correctly', () => {
+-  assert.equal(getNextLayoutMode('list'), 'kanban');
+-  assert.equal(getNextLayoutMode(null), 'kanban');
+-  assert.equal(getNextLayoutMode(''), 'kanban');
+-  assert.equal(getNextLayoutMode('kanban'), 'graph');
+-  assert.equal(getNextLayoutMode('graph'), 'list');
++test('View picker includes every supported layout once', () => {
++  assert.deepEqual([...INDEX_HTML.matchAll(/class="view-opt-item" data-mode="([^"]+)"/g)].map((match) => match[1]), VIEW_IDS);
+ });
+ 
+-test('getActiveLayoutMode determines current active view accurately', () => {
+-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'graph' }), 'graph');
+-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'kanban' }), 'kanban');
+-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'list' }), 'list');
+-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'auto', isWideScreen: true }), 'kanban');
+-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'auto', isWideScreen: false }), 'list');
+-  assert.equal(getActiveLayoutMode({ userLayoutPreference: 'graph', showArchivedOnly: true }), 'list');
++test('View defaults do not change with viewport width; saved selections are restored', () => {
++  assert.equal(normalizeViewState(null).view, 'simple');
++  for (const view of VIEW_IDS) assert.equal(normalizeViewState({ view }).view, view);
++  assert.ok(MAIN_TS.includes("document.body.setAttribute('data-layout', showArchivedOnly ? 'cards' : viewState.view)"));
+ });
+ 
+ test('panel/index.html drawer has zero dark blur and supports split push & full page', () => {
+@@ -93,10 +74,10 @@ test('panel/index.html repo dropdown and button have expanded width', () => {
+   assert.ok(INDEX_HTML.includes('width: 380px'), 'repoPopover must have width: 380px');
+ });
+ 
+-test('panel/index.html has sidebar view cycle button for compact screens', () => {
+-  assert.ok(INDEX_HTML.includes('btn-cycle-views'), 'btn-cycle-views CSS class must exist');
+-  assert.ok(INDEX_HTML.includes('id="btnLayoutToggle"'), 'btnLayoutToggle button must exist in toolbar');
+-  assert.ok(INDEX_HTML.includes('display: none !important'), 'btn-cycle-views must hide on wide screen');
++test('panel/index.html keeps the one view picker visible on compact screens', () => {
++  assert.ok(INDEX_HTML.includes('id="btnViewSelect"'));
++  assert.ok(INDEX_HTML.includes('.btn-view-select { display: inline-flex !important;'));
++  assert.equal(INDEX_HTML.includes('id="btnLayoutToggle"'), false);
+ });
+ 
+ export function handleEscapeKey({
+@@ -129,18 +110,16 @@ export function handleEscapeKey({
+   return 'none';
+ }
+ 
+-test('panel/index.html chkGraphShowDone is unchecked by default', () => {
+-  const match = INDEX_HTML.match(/<input[^>]*id=["']chkGraphShowDone["'][^>]*>/);
+-  assert.ok(match, 'chkGraphShowDone input must exist in panel/index.html');
+-  assert.equal(match[0].includes('checked'), false, 'chkGraphShowDone must not have checked attribute');
++test('Graph uses shared stage Filter instead of its own Show Done control', () => {
++  assert.equal(INDEX_HTML.includes('id="chkGraphShowDone"'), false);
++  assert.ok(INDEX_HTML.includes('id="filterPopover"'));
++  assert.ok(MAIN_TS.includes('STAGE_IDS.map((stage) => `stage:${stage}`)'));
+ });
+ 
+-test('panel/main.ts initializes graphShowDone to false', () => {
+-  assert.match(
+-    MAIN_TS,
+-    /let\s+graphShowDone\s*:\s*boolean\s*=\s*false;/,
+-    'panel/main.ts initializes graphShowDone to false'
+-  );
++test('Graph admits every shared-filter result, including Done, without a second hidden predicate', () => {
++  assert.equal(MAIN_TS.includes('graphShowDone'), false);
++  assert.equal(MAIN_TS.includes('graphSelectedTheme'), false);
++  assert.ok(MAIN_TS.includes('const visibleNumbers = new Set(Array.from(graph.nodes.values()).map((node) => node.issue.number))'));
+ });
+ 
+ test('Escape closes active modals before drawer', () => {
+diff --git a/test/panel-simple-views.test.js b/test/panel-simple-views.test.js
+new file mode 100644
+index 0000000..cdce936
+--- /dev/null
++++ b/test/panel-simple-views.test.js
+@@ -0,0 +1,276 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++import fs from 'node:fs';
++import { createTestApp } from './test-app-harness.js';
++import { normalizeGithubIssues } from '../panel/core.ts';
++import { parseOrderMarker, setOrderMarker, stripOrderMarker } from '../panel/viewstate.ts';
++
++const wait = (ms = 40) => new Promise((resolve) => setTimeout(resolve, ms));
++const response = (body, status = 200) => ({ status, body: JSON.stringify(body) });
++const draft = (number, order = number * 1000, repo = 'acme/task-board') => normalizeGithubIssues([{
++  number, title: `Idea ${number}`, repo, body: order === null ? '' : setOrderMarker(`Inspiration ${number}`, order),
++  labels: ['status:draft'], state: 'open', created_at: `2026-01-0${number}T00:00:00Z`,
++}])[0];
++const setup = async (options = {}) => {
++  const harness = createTestApp(options);
++  harness.app.setState({ currentRepo: 'acme/task-board', isManualRepoOverride: true,
++    viewState: { view: 'simple', filters: ['stage:draft'], sort: 'manual' } });
++  await wait();
++  return harness;
++};
++const writes = (calls) => calls.filter((call) => call.type === 'request' && call.payload.method === 'PATCH');
++const toasts = (calls) => calls.filter((call) => call.type === 'toast').map((call) => call.payload.message);
++
++test('quick capture: optimistic draft, one POST, optional description, no agent session', async () => {
++  let release;
++  const { app, hostCalls } = await setup({ onRequest: async (request) => {
++    if (request.method === 'POST') return await new Promise((resolve) => { release = () => resolve(response({ ...JSON.parse(request.body), number: 9 })); });
++    return response({});
++  } });
++  app.setState({ issues: [], draftCaptureTitle: '  A new idea  ', draftCaptureDescription: 'Just inspiration' });
++  const create = app.createQuickCaptureDraft();
++  assert.equal(app.getState().draftCaptureBusy, true);
++  assert.equal(app.getState().issues.length, 1);
++  assert.ok(app.getState().issues[0].number < 0);
++  await wait();
++  const post = hostCalls.find((call) => call.type === 'request' && call.payload.method === 'POST');
++  assert.equal(post.payload.path, '/repos/acme/task-board/issues');
++  const payload = JSON.parse(post.payload.body);
++  assert.deepEqual(payload.labels, ['status:draft']);
++  assert.equal(payload.title, 'A new idea');
++  assert.equal(stripOrderMarker(payload.body), 'Just inspiration');
++  assert.equal(parseOrderMarker(payload.body), 1000);
++  release();
++  await create;
++  assert.deepEqual(app.getState().issues.map((issue) => issue.number), [9]);
++  assert.equal(app.getState().draftCaptureTitle, '');
++  assert.equal(app.getState().draftCaptureDescription, '');
++  assert.equal(hostCalls.some((call) => /start.session/i.test(call.type)), false);
++});
++
++test('quick capture: failed creation rolls back temporary row and keeps input for retry', async () => {
++  const { app, hostCalls } = await setup({ onRequest: async () => response({}, 422) });
++  app.setState({ issues: [], draftCaptureTitle: 'Keep me', draftCaptureDescription: '' });
++  await app.createQuickCaptureDraft();
++  assert.equal(app.getState().issues.length, 0);
++  assert.equal(app.getState().draftCaptureTitle, 'Keep me');
++  assert.equal(app.getState().draftCaptureBusy, false);
++  assert.ok(toasts(hostCalls).some((message) => message.includes('Could not create draft')));
++});
++
++test('empty draft list keeps bottom add row, title-only body hides marker, Shift+Enter reveals description', async () => {
++  const { app, elements } = await setup();
++  app.setState({ issues: [] });
++  app.renderViews();
++  const list = elements.get('simpleListViewContainer');
++  assert.ok(list.textContent.includes('No drafts match'));
++  assert.equal(list.children.at(-1).className, 'simple-add');
++  const title = list.querySelector('#draftCaptureTitle');
++  const description = list.querySelector('#draftCaptureDescription');
++  title.dispatchEvent({ type: 'keydown', key: 'Enter', shiftKey: true, preventDefault() {} });
++  assert.notEqual(description.style.display, 'none');
++  app.setState({ issues: [draft(1, null)] });
++  app.renderViews();
++  assert.equal(list.querySelector('.simple-description').value, '');
++  assert.equal(list.innerHTML.includes('board-order'), false);
++  assert.equal(list.querySelectorAll('input[type="checkbox"]').length, 0);
++});
++
++test('inline title edit: optimistic update and rollback/toast on rejection', async () => {
++  let release, started;
++  const patchStarted = new Promise((resolve) => { started = resolve; });
++  const { app, hostCalls } = await setup({ onRequest: async (request) => request.method === 'PATCH' ? await new Promise((resolve) => {
++    release = () => resolve(response({}, 422));
++    started();
++  }) : response({}) });
++  const issue = draft(1);
++  app.setState({ issues: [issue] });
++  const edit = app.editDraftTitle(issue, 'Renamed');
++  assert.equal(issue.title, 'Renamed');
++  await patchStarted;
++  const refreshed = { ...issue };
++  app.setState({ issues: [refreshed] });
++  release();
++  await edit;
++  assert.equal(issue.title, 'Idea 1');
++  assert.equal(app.getState().issues[0].title, 'Idea 1', 'rollback reaches replacement from refresh');
++  assert.equal(writes(hostCalls).length, 1);
++  assert.ok(toasts(hostCalls).some((message) => message.includes('Could not rename draft')));
++});
++
++test('description edit reloads first, preserves remote order and refuses changed remote description', async () => {
++  let remote = setOrderMarker('Inspiration 1', 9000);
++  const { app, hostCalls } = await setup({ onRequest: async (request) => response(request.method === 'GET' ? { body: remote } : {}) });
++  const issue = draft(1);
++  app.setState({ issues: [issue] });
++  await app.editDraftDescription(issue, '', 'Inspiration 1');
++  assert.equal(stripOrderMarker(issue.body), '');
++  assert.equal(parseOrderMarker(issue.body), 9000);
++  assert.equal(writes(hostCalls).length, 1);
++  remote = setOrderMarker('Changed on another device', 10000);
++  await app.editDraftDescription(issue, 'Do not overwrite', '');
++  assert.equal(writes(hostCalls).length, 1, 'conflict must not PATCH');
++  assert.equal(stripOrderMarker(issue.body), 'Changed on another device');
++  assert.ok(toasts(hostCalls).some((message) => message.includes('changed remotely')));
++});
++
++test('drawer description editor hides marker and saving preserves its fresh value', async () => {
++  const issue = draft(1);
++  const { app, elements, hostCalls } = await setup({ onRequest: async (request) => response(request.method === 'GET' ? { body: setOrderMarker('Inspiration 1', 8000) } : {}) });
++  app.setState({ issues: [issue], activeIssue: issue });
++  elements.get('btnEditDescription').click();
++  assert.equal(elements.get('drawerDescriptionTextarea').value, 'Inspiration 1');
++  elements.get('drawerDescriptionTextarea').value = 'Edited in drawer';
++  elements.get('btnSaveDescription').click();
++  await wait(100);
++  assert.equal(writes(hostCalls).length, 1);
++  assert.equal(stripOrderMarker(issue.body), 'Edited in drawer');
++  assert.equal(parseOrderMarker(issue.body), 8000);
++});
++
++test('reorder: locks overlapping gestures, reloads destination, PATCHes only moved issue, preserves remote body', async () => {
++  const items = [draft(1), draft(2), draft(3)];
++  const { app, hostCalls } = await setup({ onRequest: async (request) => {
++    if (request.method === 'GET') {
++      const number = Number(request.path.split('/').at(-1));
++      return response({ body: setOrderMarker(`Remote inspiration ${number}`, number * 1000) });
++    }
++    return response({});
++  } });
++  app.setState({ issues: items });
++  const moving = app.reorderDraft(items[2], items, 1);
++  await app.reorderDraft(items[0], items, 2);
++  await moving;
++  assert.equal(writes(hostCalls).length, 1);
++  assert.equal(writes(hostCalls)[0].payload.path, '/repos/acme/task-board/issues/3');
++  assert.equal(parseOrderMarker(items[2].body), 1500);
++  assert.equal(stripOrderMarker(items[2].body), 'Remote inspiration 3');
++  assert.equal(parseOrderMarker(items[0].body), 1000);
++  assert.equal(parseOrderMarker(items[1].body), 2000);
++});
++
++test('reorder: remote marker race aborts, failed PATCH rolls back and toasts', async () => {
++  let changed = true;
++  const items = [draft(1), draft(2), draft(3)];
++  const { app, hostCalls } = await setup({ onRequest: async (request) => {
++    if (request.method === 'GET') {
++      const number = Number(request.path.split('/').at(-1));
++      return response({ body: setOrderMarker(`Inspiration ${number}`, changed && number === 2 ? 2500 : number * 1000) });
++    }
++    return response({}, 422);
++  } });
++  app.setState({ issues: items });
++  await app.reorderDraft(items[2], items, 1);
++  assert.equal(writes(hostCalls).length, 0);
++  assert.ok(toasts(hostCalls).some((message) => message.includes('Order changed')));
++  changed = false;
++  items[1].body = setOrderMarker('Inspiration 2', 2000);
++  await app.reorderDraft(items[2], items, 1);
++  assert.equal(writes(hostCalls).length, 1);
++  assert.equal(parseOrderMarker(items[2].body), 3000);
++  assert.ok(toasts(hostCalls).some((message) => message.includes('Failed to update')));
++});
++
++test('reorder: nonmanual sort switches first without a write; impossible unmarked slot never rewrites neighbour', async () => {
++  const { app, hostCalls } = await setup();
++  const items = [draft(1), draft(2, null)];
++  app.setState({ issues: items, viewState: { view: 'simple', filters: ['stage:draft'], sort: 'priority' } });
++  await app.reorderDraft(items[0], items, 1);
++  assert.equal(app.getState().viewState.sort, 'manual');
++  assert.equal(writes(hostCalls).length, 0);
++  await app.reorderDraft(items[0], items, 1);
++  assert.equal(writes(hostCalls).length, 0);
++  assert.equal(parseOrderMarker(items[1].body), null);
++  assert.ok(toasts(hostCalls).some((message) => message.includes('more than one marker')));
++});
++
++test('All Projects transfer uses repo-aware IDs and real transfer, never copy/delete; failure keeps identity', async () => {
++  let reject = false;
++  const { app, hostCalls } = await setup({ onRequest: async (request) => {
++    if (request.path === '/graphql') return response(reject ? { errors: [{ message: 'Transfer denied' }] } : { data: { transferIssue: { issue: { number: 19, url: 'https://github.com/acme/other/issues/19', repository: { nameWithOwner: 'acme/other' } } } } });
++    return response({ node_id: request.path?.endsWith('/issues/1') ? 'ISSUE_A' : 'REPO_B' });
++  } });
++  const one = draft(1), unrelated = draft(1, 1000, 'other/same-number');
++  app.setState({ issues: [one, unrelated], isAllProjectsMode: true });
++  await app.transferDraftProject(one, 'acme/other');
++  assert.equal(one.repo, 'acme/other');
++  assert.equal(one.number, 19);
++  assert.equal(unrelated.repo, 'other/same-number');
++  assert.equal(app.getState().activeStreamEpoch, 2, 'transfer invalidates refreshes with pre-transfer identity');
++  const mutation = hostCalls.find((call) => call.type === 'request' && call.payload.path === '/graphql');
++  assert.deepEqual(JSON.parse(mutation.payload.body).variables, { issue: 'ISSUE_A', repository: 'REPO_B' });
++  assert.equal(hostCalls.some((call) => call.type === 'request' && call.payload.method === 'DELETE'), false);
++  reject = true;
++  await app.transferDraftProject(unrelated, 'acme/other');
++  assert.equal(unrelated.repo, 'other/same-number');
++  assert.equal(unrelated.number, 1);
++  assert.ok(toasts(hostCalls).some((message) => message.includes('Transfer denied')));
++});
++
++test('View/Filter/Sort persists with device scope per workspace; stale loads do not undo user choices', async () => {
++  const { app, hostCalls, mockStorage, emitDirectory } = await setup({ features: { deviceStorage: true } });
++  app.setState({ currentDirectory: '/workspace/a', viewState: { view: 'cards', filters: ['questions'], sort: 'updated' } });
++  app.rememberViewState();
++  await wait();
++  const saved = hostCalls.findLast((call) => call.type === 'storage' && call.payload.op === 'set' && call.payload.key.startsWith('view_state_'));
++  assert.equal(saved.payload.scope, 'device');
++  assert.equal(saved.payload.key, 'view_state_/workspace/a');
++  mockStorage.set('view_state_/workspace/b', { view: 'pending', filters: ['human'], sort: 'created' });
++  await emitDirectory('/workspace/b');
++  await wait();
++  assert.deepEqual(app.getState().viewState, { view: 'pending', filters: ['human'], sort: 'created' });
++  const load = app.loadViewState();
++  app.setState({ viewState: { view: 'graph', filters: [], sort: 'manual' } });
++  app.rememberViewState();
++  await load;
++  assert.equal(app.getState().viewState.view, 'graph');
++  app.setState({ viewState: { view: 'cards', filters: [], sort: 'updated' } });
++  app.rememberViewState();
++  app.setState({ viewState: { view: 'pending', filters: ['human'], sort: 'created' } });
++  app.rememberViewState();
++  await app.loadViewState();
++  assert.deepEqual(mockStorage.get('view_state_/workspace/b'), { view: 'pending', filters: ['human'], sort: 'created' });
++  assert.equal(app.getState().viewState.view, 'pending');
++  await emitDirectory('/workspace/unseen');
++  await wait();
++  assert.deepEqual(app.getState().viewState, { view: 'simple', filters: [], sort: 'priority' });
++});
++
++test('Project names settings saves override, keeps full repository tooltip, and rolls back storage rejection', async () => {
++  let reject = false;
++  const { app, elements, hostCalls, mockStorage } = await setup({ onPostMessage: async (call) => {
++    if (reject && call.type === 'storage' && call.payload.op === 'set' && call.payload.key === 'project_name_overrides') return { error: 'Storage unavailable' };
++  } });
++  elements.get('menuItemSettings').click();
++  let input = elements.get('projectNamesList').querySelector('[data-repo-name]');
++  assert.ok(input);
++  input.value = 'My board';
++  elements.get('btnSaveProjectNames').click();
++  await wait();
++  assert.deepEqual(mockStorage.get('project_name_overrides'), { 'acme/task-board': 'My board' });
++  assert.equal(elements.get('txtRepoLabel').textContent, 'My board');
++  elements.get('menuItemSettings').click();
++  input = elements.get('projectNamesList').querySelector('[data-repo-name]');
++  input.value = 'Must not persist';
++  reject = true;
++  elements.get('btnSaveProjectNames').click();
++  await wait();
++  assert.equal(app.getState().projectNameOverrides['acme/task-board'], 'My board');
++  assert.ok(toasts(hostCalls).some((message) => message.includes('Could not save project names')));
++});
++
++test('panel CSS has balanced blocks; base pill/banner styles and visible Pending layout survive simplification', () => {
++  const html = fs.readFileSync(new URL('../panel/index.html', import.meta.url), 'utf8');
++  const css = html.match(/<style>([\s\S]*?)<\/style>/)[1].replace(/\/\*[\s\S]*?\*\//g, '').replace(/"[^"]*"|'[^']*'/g, '');
++  let depth = 0;
++  for (const char of css) {
++    if (char === '{') depth++;
++    if (char === '}') depth--;
++    assert.ok(depth >= 0, 'no unmatched closing block');
++  }
++  assert.equal(depth, 0, 'no missing closing media block');
++  for (const selector of ['.status-pill {', '.banner {', '.banner-text {']) assert.ok(css.includes(selector));
++  assert.match(html, /id="humanViewContainer" aria-label="Pending items"><\/main>/);
++  assert.equal(html.includes('id="chkGraphShowDone"'), false);
++  assert.equal(html.includes('id="graphThemePills"'), false);
++});
+diff --git a/test/review-feedback-views.test.js b/test/review-feedback-views.test.js
+index 719188a..01e2aae 100644
+--- a/test/review-feedback-views.test.js
++++ b/test/review-feedback-views.test.js
+@@ -24,73 +24,26 @@ const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8
+ // ==========================================
+ // 1. Icon Distinction & Accessibility
+ // ==========================================
+-test('Icons: All Tasks view-mode button has distinct checklist SVG icon compared to List', () => {
++test('Views: labelled choices replace ambiguous duplicate icon buttons', () => {
+   const { elements } = createTestApp();
+-
+-  const allTasksBtn = elements.get('btnViewAllTasks');
+-  const listBtn = elements.get('btnViewList');
+-  const humanBtn = elements.get('btnViewHuman');
+-  const questionsBtn = elements.get('btnViewQuestions');
+-
+-  assert.ok(allTasksBtn, '#btnViewAllTasks must exist in runtime DOM');
+-  assert.ok(listBtn, '#btnViewList must exist in runtime DOM');
+-  assert.ok(humanBtn, '#btnViewHuman must exist in runtime DOM');
+-  assert.ok(questionsBtn, '#btnViewQuestions must exist in runtime DOM');
+-
+-  // Extract path data from runtime elements
+-  const extractPath = (el) => {
+-    const m = el.innerHTML.match(/<path\s+d="([^"]+)"/);
+-    return m ? m[1] : '';
+-  };
+-
+-  const pathAllTasks = extractPath(allTasksBtn);
+-  const pathList = extractPath(listBtn);
+-  const pathHuman = extractPath(humanBtn);
+-  const pathQuestions = extractPath(questionsBtn);
+-
+-  assert.ok(pathAllTasks, 'All Tasks must have a valid SVG path');
+-  assert.ok(pathList, 'List must have a valid SVG path');
+-  assert.ok(pathHuman, 'Human must have a valid SVG path');
+-  assert.ok(pathQuestions, 'Questions must have a valid SVG path');
+-
+-  // Assert paths are distinct from each other
+-  assert.notEqual(pathAllTasks, pathList, 'All Tasks icon must not match List icon');
+-  assert.notEqual(pathAllTasks, pathHuman, 'All Tasks icon must not match Human Tasks icon');
+-  assert.notEqual(pathAllTasks, pathQuestions, 'All Tasks icon must not match Questions icon');
+-  assert.notEqual(pathHuman, pathList, 'Human Tasks icon must not match List icon');
+-  assert.notEqual(pathQuestions, pathList, 'Questions icon must not match List icon');
+-
+-  // Assert All Tasks contains checkmark segments (checklist shape)
+-  assert.ok(
+-    pathAllTasks.includes('5.54') || pathAllTasks.includes('7.46') || pathAllTasks.includes('15.46'),
+-    'All Tasks icon must contain checklist checkmark coordinates'
+-  );
+-
+-  // Assert accessible attributes are preserved in runtime DOM
+-  assert.equal(allTasksBtn.title, 'All Tasks View', 'All Tasks button has title');
+-  assert.equal(allTasksBtn.getAttribute('aria-label'), 'All Tasks View', 'All Tasks button has aria-label');
+-  assert.equal(allTasksBtn.getAttribute('role'), 'radio', 'All Tasks button has role="radio"');
+-  assert.equal(allTasksBtn.getAttribute('aria-checked'), 'false', 'All Tasks button has aria-checked');
++  const choices = ['Simple', 'Cards', 'Kanban', 'Graph', 'Pending'].map((name) => elements.get(`viewOpt${name}`));
++  assert.equal(new Set(choices.map((choice) => choice.textContent)).size, 5);
++  for (const choice of choices) {
++    assert.equal(choice.tagName, 'BUTTON');
++    assert.equal(choice.getAttribute('role'), 'menuitemradio');
++    assert.ok(choice.textContent.trim());
++  }
++  assert.equal(INDEX_HTML.includes('id="btnViewAllTasks"'), false);
+ });
+ 
+-test('Icons: sidebar layout toggle icon updates with distinct checklist SVG in all-tasks mode', () => {
+-  const { elements } = createTestApp();
+-
+-  // Trigger switch to all-tasks mode via button click in runtime DOM
+-  elements.get('btnViewAllTasks').click();
+-
+-  const btnLayoutToggle = elements.get('btnLayoutToggle');
+-  assert.ok(btnLayoutToggle, 'btnLayoutToggle element exists');
+-  assert.equal(btnLayoutToggle.title, 'View: All Tasks (click to switch to Questions)');
+-  assert.equal(btnLayoutToggle.getAttribute('aria-label'), 'View: All Tasks (click to switch to Questions)');
+-  assert.ok(
+-    btnLayoutToggle.innerHTML.includes('M22 7h-9v2h9V7zm0 8h-9v2h9v-2z'),
+-    'Sidebar toggle button must render distinct checklist SVG in all-tasks mode'
+-  );
+-  assert.ok(
+-    btnLayoutToggle.innerHTML.includes('M5.54 11L2 7.46'),
+-    'Sidebar toggle button must include checklist checkmark coordinates'
+-  );
++test('Views: single picker label and checked state follow Pending items selection', () => {
++  const { elements, mockDoc } = createTestApp();
++  elements.get('viewOptPending').click();
++  assert.equal(mockDoc.body.getAttribute('data-layout'), 'pending');
++  assert.equal(elements.get('viewSelectCurrentLabel').textContent, 'Pending items');
++  assert.equal(elements.get('viewOptPending').getAttribute('aria-checked'), 'true');
++  assert.equal(elements.get('viewOptSimple').getAttribute('aria-checked'), 'false');
++  assert.equal(INDEX_HTML.includes('id="btnLayoutToggle"'), false);
+ });
+ 
+ // ==========================================
+diff --git a/test/simplified-views.test.js b/test/simplified-views.test.js
+index af70059..ed564ad 100644
+--- a/test/simplified-views.test.js
++++ b/test/simplified-views.test.js
+@@ -342,23 +342,22 @@ test('Zero Emoji: Empty states and labels for new views contain zero emojis', ()
+ 
+ test('panel/index.html defines containers for the three simplified views', () => {
+   assert.ok(INDEX_HTML.includes('id="humanViewContainer"'), 'humanViewContainer must exist in index.html');
+-  assert.ok(INDEX_HTML.includes('id="allTasksViewContainer"'), 'allTasksViewContainer must exist in index.html');
++  assert.ok(INDEX_HTML.includes('id="simpleListViewContainer"'), 'simpleListViewContainer must exist in index.html');
+   assert.ok(INDEX_HTML.includes('id="questionsViewContainer"'), 'questionsViewContainer must exist in index.html');
+ });
+ 
+-test('panel/index.html defines view mode buttons in viewModeGroup', () => {
+-  assert.ok(INDEX_HTML.includes('id="btnViewHuman"'), 'btnViewHuman button must exist');
+-  assert.ok(INDEX_HTML.includes('id="btnViewAllTasks"'), 'btnViewAllTasks button must exist');
+-  assert.ok(INDEX_HTML.includes('id="btnViewQuestions"'), 'btnViewQuestions button must exist');
+-  assert.ok(INDEX_HTML.includes('data-mode="human"'), 'data-mode="human" must exist');
+-  assert.ok(INDEX_HTML.includes('data-mode="all-tasks"'), 'data-mode="all-tasks" must exist');
+-  assert.ok(INDEX_HTML.includes('data-mode="questions"'), 'data-mode="questions" must exist');
++test('panel/index.html defines one labelled five-view picker, no duplicate group', () => {
++  assert.equal(INDEX_HTML.includes('id="viewModeGroup"'), false);
++  for (const mode of ['simple', 'cards', 'kanban', 'graph', 'pending']) {
++    assert.ok(INDEX_HTML.includes(`data-mode="${mode}"`), `${mode} selectable`);
++  }
++  assert.ok(INDEX_HTML.includes('role="menuitemradio"'));
+ });
+ 
+-test('panel/index.html defines layout display styles for the three new views', () => {
+-  assert.ok(INDEX_HTML.includes('body[data-layout="human"]'), 'CSS must define human layout selector');
+-  assert.ok(INDEX_HTML.includes('body[data-layout="all-tasks"]'), 'CSS must define all-tasks layout selector');
+-  assert.ok(INDEX_HTML.includes('body[data-layout="questions"]'), 'CSS must define questions layout selector');
++test('panel/index.html defines layout styles for five task views, questions are filter details', () => {
++  for (const mode of ['simple', 'cards', 'kanban', 'graph', 'pending']) assert.ok(INDEX_HTML.includes(`body[data-layout="${mode}"]`));
++  assert.equal(INDEX_HTML.includes('body[data-layout="questions"]'), false);
++  assert.ok(INDEX_HTML.includes('.questions-view'));
+ });
+ 
+ // ---------------------------------------------------------------------------
+@@ -367,13 +366,13 @@ test('panel/index.html defines layout display styles for the three new views', (
+ 
+ test('panel/main.ts defines render functions for all three simplified views', () => {
+   assert.match(MAIN_TS, /function\s+renderHumanTasksView\s*\(/, 'main.ts must declare renderHumanTasksView');
+-  assert.match(MAIN_TS, /function\s+renderAllTasksView\s*\(/, 'main.ts must declare renderAllTasksView');
++  assert.match(MAIN_TS, /function\s+renderSimpleListView\s*\(/, 'main.ts must declare renderSimpleListView');
+   assert.match(MAIN_TS, /function\s+renderQuestionsView\s*\(/, 'main.ts must declare renderQuestionsView');
+ });
+ 
+-test('panel/main.ts dispatches active layout to renderHumanTasksView, renderAllTasksView, renderQuestionsView', () => {
++test('panel/main.ts dispatches active layout to renderHumanTasksView, renderSimpleListView, renderQuestionsView', () => {
+   assert.ok(MAIN_TS.includes('renderHumanTasksView'), 'main.ts must call renderHumanTasksView');
+-  assert.ok(MAIN_TS.includes('renderAllTasksView'), 'main.ts must call renderAllTasksView');
++  assert.ok(MAIN_TS.includes('renderSimpleListView'), 'main.ts must call renderSimpleListView');
+   assert.ok(MAIN_TS.includes('renderQuestionsView'), 'main.ts must call renderQuestionsView');
+ });
+ 
+@@ -413,7 +412,7 @@ test('Loading vs Empty State: Simplified views distinguish loading state from ze
+ test('View Switching: Inactive view containers are cleared on layout change to prevent stale DOM', () => {
+   assert.ok(MAIN_TS.includes('currentRenderedLayout && currentRenderedLayout !== activeLayout'), 'Must check layout change');
+   assert.ok(MAIN_TS.includes("elHumanViewContainer.innerHTML = ''"), 'Must clear humanViewContainer on switch away');
+-  assert.ok(MAIN_TS.includes("elAllTasksViewContainer.innerHTML = ''"), 'Must clear allTasksViewContainer on switch away');
++  assert.ok(MAIN_TS.includes("elSimpleListViewContainer.innerHTML = ''"), 'Must clear simpleListViewContainer on switch away');
+   assert.ok(MAIN_TS.includes("elQuestionsViewContainer.innerHTML = ''"), 'Must clear questionsViewContainer on switch away');
+ });
+ 
+@@ -430,13 +429,12 @@ test('Drawer reveal: Questions view targets existing drawerQuestionsContainer, n
+   assert.ok(INDEX_HTML.includes('id="drawerQuestionsContainer"'), 'index.html must define drawerQuestionsContainer');
+ });
+ 
+-test('Accessibility: ARIA landmarks and labels configured on simplified views and controls', () => {
+-  assert.ok(INDEX_HTML.includes('aria-label="Human Tasks View"'), 'humanViewContainer must have aria-label');
+-  assert.ok(INDEX_HTML.includes('aria-label="All Tasks View"'), 'allTasksViewContainer must have aria-label');
+-  assert.ok(INDEX_HTML.includes('aria-label="Questions View"'), 'questionsViewContainer must have aria-label');
+-  assert.ok(INDEX_HTML.includes('id="btnViewHuman" title="Human Tasks View" aria-label="Human Tasks View"'), 'btnViewHuman must have aria-label');
+-  assert.ok(INDEX_HTML.includes('id="btnViewAllTasks" title="All Tasks View" aria-label="All Tasks View"'), 'btnViewAllTasks must have aria-label');
+-  assert.ok(INDEX_HTML.includes('id="btnViewQuestions" title="Questions View" aria-label="Questions View"'), 'btnViewQuestions must have aria-label');
+-  assert.ok(MAIN_TS.includes('aria-expanded'), 'Inline answer toggles must manage aria-expanded');
+-  assert.ok(MAIN_TS.includes('aria-level="2"'), 'All tasks group headers must have aria-level');
++test('Accessibility: ARIA landmarks and labels configured on task views and filter controls', () => {
++  for (const label of ['Pending items', 'Simple task list', 'Questions View', 'Task views', 'Task filters', 'Active filters', 'Sort tasks']) {
++    assert.ok(INDEX_HTML.includes(`aria-label="${label}"`), label);
++  }
++  assert.ok(INDEX_HTML.includes('aria-haspopup="menu"'));
++  assert.ok(INDEX_HTML.includes('aria-haspopup="dialog"'));
++  assert.ok(MAIN_TS.includes('aria-expanded'));
++  assert.ok(MAIN_TS.includes("row.setAttribute('tabindex', '0')"));
+ });
+diff --git a/test/stage2a-attention-ui.test.js b/test/stage2a-attention-ui.test.js
+index 143784e..4081e73 100644
+--- a/test/stage2a-attention-ui.test.js
++++ b/test/stage2a-attention-ui.test.js
+@@ -19,21 +19,18 @@ const MAIN_TS = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8
+ // ============================================================================
+ // 1. DOM Structure & Layout Contracts in panel/index.html
+ // ============================================================================
+-test('DOM: panel/index.html defines Attention View toolbar button and badge', () => {
+-  assert.ok(INDEX_HTML.includes('id="btnViewAttention"'), '#btnViewAttention must exist in index.html');
+-  assert.ok(INDEX_HTML.includes('data-mode="attention"'), 'btnViewAttention must specify data-mode="attention"');
+-  assert.ok(INDEX_HTML.includes('id="attentionViewBadge"'), '#attentionViewBadge must exist in index.html');
+-
+-  // Must be in #viewModeGroup
+-  const viewModeGroupIdx = INDEX_HTML.indexOf('id="viewModeGroup"');
+-  const btnAttentionIdx = INDEX_HTML.indexOf('id="btnViewAttention"');
+-  assert.ok(viewModeGroupIdx !== -1 && btnAttentionIdx > viewModeGroupIdx, 'btnViewAttention must be inside #viewModeGroup');
++test('DOM: Needs me is a filter, not a duplicate toolbar view', () => {
++  assert.ok(INDEX_HTML.includes('id="btnFilterToggle"'));
++  assert.ok(INDEX_HTML.includes('id="activeFilters"'));
++  assert.equal(INDEX_HTML.includes('id="btnViewAttention"'), false);
++  assert.ok(MAIN_TS.includes("['needs-me', 'human', 'questions']"));
+ });
+ 
+-test('DOM: panel/index.html defines layout menu items for Attention mode', () => {
+-  assert.ok(INDEX_HTML.includes('id="viewOptAttention"'), '#viewOptAttention must exist in layout popover');
+-  assert.ok(INDEX_HTML.includes('id="menuItemViewAttention"'), '#menuItemViewAttention must exist in sidebar overflow menu');
+-  assert.ok(INDEX_HTML.includes('id="sidebarMenuContent"'), '#sidebarMenuContent must exist for sidebar overflow menu');
++test('DOM: one view menu replaces separate Attention menu entries', () => {
++  assert.ok(INDEX_HTML.includes('id="viewOptSimple"'));
++  assert.equal(INDEX_HTML.includes('id="viewOptAttention"'), false);
++  assert.equal(INDEX_HTML.includes('id="menuItemViewAttention"'), false);
++  assert.ok(INDEX_HTML.includes('id="sidebarMenuContent"'));
+ });
+ 
+ test('DOM: panel/index.html defines Attention View main container', () => {
+@@ -52,7 +49,7 @@ test('CSS: panel/index.html defines required Attention View styles and tokens',
+     '.attention-card',
+     '.attention-empty-state',
+     '.view-mode-badge',
+-    'body[data-layout="attention"]',
++    '.filter-chip',
+   ];
+ 
+   for (const sel of requiredSelectors) {
+@@ -63,17 +60,10 @@ test('CSS: panel/index.html defines required Attention View styles and tokens',
+ // ============================================================================
+ // 2. Main.ts Layout & Wiring Contracts
+ // ============================================================================
+-test('Main.ts: activeLayout and userLayoutPreference include "attention"', () => {
+-  assert.match(
+-    MAIN_TS,
+-    /activeLayout.*'attention'/,
+-    'activeLayout union must include "attention"'
+-  );
+-  assert.match(
+-    MAIN_TS,
+-    /userLayoutPreference.*'attention'/,
+-    'userLayoutPreference union must include "attention"'
+-  );
++test('Main.ts: Needs me is persisted with shared view state rather than a layout', () => {
++  assert.ok(MAIN_TS.includes('let viewState: ViewState = defaultViewState()'));
++  assert.ok(MAIN_TS.includes("viewState.filters.includes('needs-me')"));
++  assert.equal(MAIN_TS.includes('userLayoutPreference'), false);
+ });
+ 
+ test('Main.ts: defines renderAttentionView and wires it to layout switching', () => {
+@@ -83,7 +73,7 @@ test('Main.ts: defines renderAttentionView and wires it to layout switching', ()
+     'main.ts must declare renderAttentionView'
+   );
+   assert.ok(
+-    MAIN_TS.includes("activeLayout === 'attention'"),
++    MAIN_TS.includes("viewState.filters.includes('needs-me')"),
+     'main.ts must handle activeLayout === "attention"'
+   );
+   assert.ok(
+@@ -153,46 +143,26 @@ test('groupIssuesByAttention correctly categorizes mock issues for Attention Vie
+ // ============================================================================
+ // 4. Runtime App Wiring & Layout Switching Integration
+ // ============================================================================
+-test('Runtime: clicking btnViewAttention activates Attention layout', () => {
+-  const { elements, mockDoc } = createTestApp();
+-
+-  const btnAttention = elements.get('btnViewAttention');
+-  assert.ok(btnAttention, '#btnViewAttention must exist in runtime DOM');
+-
+-  // Initially List view is active
+-  assert.equal(btnAttention.getAttribute('aria-checked'), 'false');
+-
+-  // Click Attention View button
+-  btnAttention.click();
+-
+-  assert.equal(mockDoc.body.getAttribute('data-layout'), 'attention', 'body data-layout must be "attention"');
+-  assert.equal(btnAttention.getAttribute('aria-checked'), 'true', 'btnViewAttention must be checked');
+-  assert.ok(btnAttention.classList.contains('active'), 'btnViewAttention must have active class');
+-
+-  // Verify other mode buttons are deactivated
+-  assert.equal(elements.get('btnViewHuman').getAttribute('aria-checked'), 'false');
+-  assert.equal(elements.get('btnViewList').getAttribute('aria-checked'), 'false');
++test('Runtime: Needs me chip filters Simple list without changing the view', () => {
++  const { app, elements, mockDoc } = createTestApp();
++  app.renderViews();
++  elements.get('btnFilterToggle').click();
++  const chip = elements.get('filterPopover').querySelector('[data-filter="needs-me"]');
++  assert.ok(chip);
++  chip.click();
++  assert.equal(mockDoc.body.getAttribute('data-layout'), 'simple');
++  assert.deepEqual(app.getState().viewState.filters, ['needs-me']);
++  assert.equal(elements.get('btnFilterToggle').getAttribute('aria-expanded'), 'true');
+ });
+ 
+-test('Runtime: layout toggle cycle includes Attention mode (Graph -> Attention -> Human)', () => {
+-  const { elements, mockDoc } = createTestApp();
+-
+-  // Switch to graph mode
+-  elements.get('btnViewGraph').click();
++test('Runtime: Needs me selection survives switching from Graph to Pending items', () => {
++  const { app, elements, mockDoc } = createTestApp();
++  app.setState({ viewState: { view: 'graph', filters: ['needs-me'], sort: 'priority' } });
++  app.renderViews();
+   assert.equal(mockDoc.body.getAttribute('data-layout'), 'graph');
+-
+-  const btnToggle = elements.get('btnLayoutToggle');
+-  assert.equal(btnToggle.title, 'View: Graph (click to switch to Attention)');
+-
+-  // Click toggle: should transition graph -> attention
+-  btnToggle.click();
+-  assert.equal(mockDoc.body.getAttribute('data-layout'), 'attention');
+-  assert.equal(btnToggle.title, 'View: Attention (click to switch to Human Tasks)');
+-
+-  // Click toggle again: should transition attention -> human
+-  btnToggle.click();
+-  assert.equal(mockDoc.body.getAttribute('data-layout'), 'human');
+-  assert.equal(btnToggle.title, 'View: Human Tasks (click to switch to All Tasks)');
++  elements.get('viewOptPending').click();
++  assert.equal(mockDoc.body.getAttribute('data-layout'), 'pending');
++  assert.deepEqual(app.getState().viewState.filters, ['needs-me']);
+ });
+ 
+ // ============================================================================
+@@ -246,13 +216,11 @@ test('Runtime: renderViews in Attention mode populates action queues and badge',
+   app.setState({ issues: mockIssues });
+ 
+   // Switch to Attention mode
+-  elements.get('btnViewAttention').click();
++  app.setState({ viewState: { view: 'simple', filters: ['needs-me'], sort: 'priority' } });
+   app.renderViews();
+ 
+-  // 1. Check toolbar badge
+-  const badge = elements.get('attentionViewBadge');
+-  assert.equal(badge.textContent, '3', 'Badge must display total count of 3 attention items');
+-  assert.notEqual(badge.style.display, 'none', 'Badge must be visible when total > 0');
++  // Active filter chip replaces the old toolbar count badge.
++  assert.ok(elements.get('activeFilters').textContent.includes('Needs me'));
+ 
+   // 2. Check container contents
+   const container = elements.get('attentionViewContainer');
+@@ -294,6 +262,7 @@ test('Runtime: sub-filter pills filter queue visibility', () => {
+     {
+       number: 22,
+       title: 'feat: needs review',
++      repo: 'review/repo',
+       body: 'Check work',
+       labels: [{ name: 'phase:verification' }, { name: 'attention:needs-review' }],
+       status: 'in-review',
+@@ -303,24 +272,19 @@ test('Runtime: sub-filter pills filter queue visibility', () => {
+   ];
+ 
+   app.setState({ issues: mockIssues });
+-  elements.get('btnViewAttention').click();
++  app.setState({ viewState: { view: 'simple', filters: ['needs-me'], sort: 'priority' } });
+   app.renderViews();
+ 
+   const container = elements.get('attentionViewContainer');
+ 
+-  // Find sub-filter buttons
+-  const subFilterBtns = container.querySelectorAll('.attention-sub-filter-btn');
+-  assert.equal(subFilterBtns.length, 4, 'Must render 4 sub-filter tabs');
+-
+-  const decisionTab = Array.from(subFilterBtns).find((b) => b.getAttribute('data-subfilter') === 'needs-decision');
+-  assert.ok(decisionTab, 'Needs Decision sub-filter button must exist');
+-
+-  // Click Needs Decision sub-filter
+-  decisionTab.click();
++  // One Filter control replaces the old attention presets. Combine Needs me
++  // with stage to narrow the same action queues without hiding other functions.
++  assert.equal(container.querySelectorAll('.attention-sub-filter-btn').length, 0);
++  app.setState({ viewState: { view: 'simple', filters: ['needs-me', 'project:review/repo'], sort: 'priority' } });
++  app.renderViews();
++  assert.ok(container.innerHTML.includes('#22'));
++  assert.ok(!container.innerHTML.includes('#11'));
+ 
+-  const filteredHtml = container.innerHTML;
+-  assert.ok(filteredHtml.includes('#11'), 'Issue #11 must be visible under needs-decision filter');
+-  assert.ok(!filteredHtml.includes('#22'), 'Issue #22 (needs-review) must be hidden when filtering by needs-decision');
+ });
+ 
+ test('Runtime: empty state banner renders when zero attention items exist', () => {
+@@ -339,11 +303,11 @@ test('Runtime: empty state banner renders when zero attention items exist', () =
+   ];
+ 
+   app.setState({ issues: mockIssues });
+-  elements.get('btnViewAttention').click();
++  app.setState({ viewState: { view: 'simple', filters: ['needs-me'], sort: 'priority' } });
+   app.renderViews();
+ 
+-  const badge = elements.get('attentionViewBadge');
+-  assert.equal(badge.style.display, 'none', 'Badge must be hidden when attention count is 0');
++  assert.equal(elements.has('attentionViewBadge'), false, 'duplicate badge removed');
++  assert.equal(elements.get('attentionViewContainer').querySelectorAll('.attention-card').length, 0);
+ 
+   const container = elements.get('attentionViewContainer');
+   assert.ok(
+@@ -368,7 +332,7 @@ test('Runtime: clicking attention card opens drawer for that issue', () => {
+   ];
+ 
+   app.setState({ issues: mockIssues });
+-  elements.get('btnViewAttention').click();
++  app.setState({ viewState: { view: 'simple', filters: ['needs-me'], sort: 'priority' } });
+   app.renderViews();
+ 
+   const container = elements.get('attentionViewContainer');
+@@ -544,10 +508,7 @@ test('Runtime: Card rendering injects alert badges and excludes them on neutral
+ 
+   app.setState({ issues: mockIssues });
+ 
+-  // Use flat list view (currentGroupBy = 'none')
+-  const selectGroupBy = elements.get('selectGroupBy');
+-  selectGroupBy.value = 'none';
+-  selectGroupBy.dispatchEvent({ type: 'change', target: selectGroupBy });
++  app.setState({ viewState: { view: 'cards', filters: [], sort: 'priority' } });
+ 
+   app.renderViews();
+ 
+diff --git a/test/status-model.test.js b/test/status-model.test.js
+index 13aa3f6..852f227 100644
+--- a/test/status-model.test.js
++++ b/test/status-model.test.js
+@@ -415,24 +415,10 @@ test('index.html and main.ts adhere strictly to 8-stage layout and reconciler co
+   const html = fs.readFileSync(path.join(here, '..', 'panel', 'index.html'), 'utf8');
+   const mainTs = fs.readFileSync(path.join(here, '..', 'panel', 'main.ts'), 'utf8');
+ 
+-  // Order: Draft | Backlog | To Do | Planned | In Progress | Needs Human | Review | Done
+-  const tabMatches = [...html.matchAll(/data-tab="([a-z-]+)"/g)].map((m) => m[1]);
+-  assert.deepEqual(tabMatches, [
+-    'all',
+-    'draft',
+-    'backlog',
+-    'todo',
+-    'planned',
+-    'in-progress',
+-    'needs-human',
+-    'in-review',
+-    'done',
+-  ]);
+-
+-  // Tab badge counts exist in html
+-  assert.ok(html.includes('id="tabCountDraft"'));
+-  assert.ok(html.includes('id="tabCountPlanned"'));
+-  assert.ok(html.includes('id="tabCountNeedsHuman"'));
++  // Stages moved from tabs to one multi-select Filter; Kanban retains its columns.
++  assert.deepEqual([...html.matchAll(/data-tab="([a-z-]+)"/g)], []);
++  assert.ok(html.includes('id="filterPopover"'));
++  assert.ok(mainTs.includes('STAGE_IDS.map((stage) => `stage:${stage}`)'));
+ 
+   // Kanban columns exist in html in order
+   const colMatches = [...html.matchAll(/data-column="([a-z-]+)"/g)].map((m) => m[1]);
+diff --git a/test/test-app-harness.js b/test/test-app-harness.js
+index b72fc19..88c51d7 100644
+--- a/test/test-app-harness.js
++++ b/test/test-app-harness.js
+@@ -159,7 +159,11 @@ export function createTestApp(options = {}) {
+         add: function (...cls) { cls.forEach((c) => this._classes.add(c)); },
+         remove: function (...cls) { cls.forEach((c) => this._classes.delete(c)); },
+         contains: function (c) { return this._classes.has(c); },
+-        toggle: function (c) { if (this._classes.has(c)) this._classes.delete(c); else this._classes.add(c); },
++        toggle: function (c, force) {
++          const add = force === undefined ? !this._classes.has(c) : force;
++          if (add) this._classes.add(c); else this._classes.delete(c);
++          return add;
++        },
+       },
+       get className() {
+         return Array.from(this.classList._classes).join(' ');
+@@ -265,9 +269,16 @@ export function createTestApp(options = {}) {
+           child.children = [];
+           return child;
+         }
++        if (child.parentElement) child.parentElement.removeChild(child);
++        child.parentElement = el;
+         el.children.push(child);
+         return child;
+       },
++      prepend: function (child) {
++        if (child.parentElement) child.parentElement.removeChild(child);
++        child.parentElement = el;
++        el.children.unshift(child);
++      },
+       removeChild: function (child) {
+         el.children = el.children.filter((c) => c !== child);
+         return child;
+@@ -328,12 +339,19 @@ export function createTestApp(options = {}) {
+         childCache.clear();
+         el.children = parseHtmlChildren(innerHTMLValue, createElement);
+       },
+-      textContent: '',
++      get textContent() {
++        if (el.children.length) return el.children.map((child) => child.textContent).join('');
++        return innerHTMLValue.replace(/<[^>]*>/g, '');
++      },
++      set textContent(value) {
++        innerHTMLValue = String(value);
++        el.children = [];
++      },
+       value: '',
+       checked: false,
+       disabled: false,
+-      focus: () => {},
+-      blur: () => {},
++      focus: () => { mockDoc.activeElement = el; },
++      blur: () => { el.dispatchEvent({ type: 'blur', target: el }); mockDoc.activeElement = mockDoc.body; },
+     };
+     return el;
+   };
+@@ -427,7 +445,9 @@ export function createTestApp(options = {}) {
+   };
+ 
+   let messageListener = null;
+-  const mockStorage = new Map();
++  let markReady;
++  const ready = new Promise((resolve) => { markReady = resolve; });
++  const mockStorage = new Map(Object.entries(options.storage || {}));
+   const hostCalls = [];
+ 
+   const setIntervalCalls = [];
+@@ -460,12 +480,14 @@ export function createTestApp(options = {}) {
+                     session: null,
+                     connection: { status: 'connected' },
+                     settings: options.settings || {},
++                    features: options.features || {},
+                     theme: { mode: 'dark', tokens: { font: 'sans', foreground: '#fff', background: '#000' } },
+                   },
+                 },
+               });
+               Object.defineProperty(evt, 'source', { value: mockWindow.parent });
+               messageListener(evt);
++              markReady();
+             }
+           }, 1);
+         } else if (data && data.id) {
+@@ -498,7 +520,7 @@ export function createTestApp(options = {}) {
+                     resultPayload = { storage: true, op: 'set', key: data.payload.key, value: data.payload.value };
+                   }
+                 } else if (data.payload?.op === 'get') {
+-                  resultPayload = { storage: true, op: 'get', key: data.payload.key, value: mockStorage.get(data.payload.key) };
++                  resultPayload = { storage: true, op: 'get', key: data.payload.key, found: mockStorage.has(data.payload.key), value: mockStorage.get(data.payload.key) };
+                 }
+               } else if (options.onRequest) {
+                 try {
+@@ -583,6 +605,14 @@ export function createTestApp(options = {}) {
+       renderHumanTasksView,
+       renderQuestionsView,
+       renderViews,
++      renderSimpleListView,
++      createQuickCaptureDraft,
++      editDraftTitle,
++      editDraftDescription,
++      reorderDraft,
++      transferDraftProject,
++      loadViewState,
++      rememberViewState,
+       openDrawer,
+       closeDrawer,
+       renderDrawer,
+@@ -599,7 +629,11 @@ export function createTestApp(options = {}) {
+         issues,
+         currentRepo,
+         isManualRepoOverride,
+-        userLayoutPreference,
++        viewState,
++        projectNameOverrides,
++        draftCaptureTitle,
++        draftCaptureDescription,
++        draftCaptureBusy,
+         activeSessionId,
+         currentActiveSession,
+         currentSessionRepo,
+@@ -624,7 +658,11 @@ export function createTestApp(options = {}) {
+         if (updates.issues !== undefined) issues = updates.issues;
+         if (updates.currentRepo !== undefined) currentRepo = updates.currentRepo;
+         if (updates.isManualRepoOverride !== undefined) isManualRepoOverride = updates.isManualRepoOverride;
+-        if (updates.userLayoutPreference !== undefined) userLayoutPreference = updates.userLayoutPreference;
++        if (updates.viewState !== undefined) { viewState = normalizeViewState(updates.viewState); viewStateRevision++; }
++        if (updates.projectNameOverrides !== undefined) projectNameOverrides = updates.projectNameOverrides;
++        if (updates.draftCaptureTitle !== undefined) draftCaptureTitle = updates.draftCaptureTitle;
++        if (updates.draftCaptureDescription !== undefined) draftCaptureDescription = updates.draftCaptureDescription;
++        if (updates.draftCaptureRepo !== undefined) draftCaptureRepo = updates.draftCaptureRepo;
+         if (updates.activeSessionId !== undefined) activeSessionId = updates.activeSessionId;
+         if (updates.currentActiveSession !== undefined) currentActiveSession = updates.currentActiveSession;
+         if (updates.currentSessionRepo !== undefined) currentSessionRepo = updates.currentSessionRepo;
+@@ -658,6 +696,7 @@ export function createTestApp(options = {}) {
+   };
+ 
+   const emitSession = async (session) => {
++    await ready;
+     emitMessage({
+       channel: 'openchamber.sdk',
+       v: 1,
+@@ -668,6 +707,7 @@ export function createTestApp(options = {}) {
+   };
+ 
+   const emitDirectory = async (directory) => {
++    await ready;
+     emitMessage({
+       channel: 'openchamber.sdk',
+       v: 1,
+diff --git a/test/viewstate.test.js b/test/viewstate.test.js
+new file mode 100644
+index 0000000..17934ec
+--- /dev/null
++++ b/test/viewstate.test.js
+@@ -0,0 +1,265 @@
++import test from 'node:test';
++import assert from 'node:assert/strict';
++
++import {
++  shortName,
++  normalizeProjectNameOverrides,
++  parseOrderMarker,
++  stripOrderMarker,
++  setOrderMarker,
++  midpointOrder,
++  compareManualOrder,
++  sortByManualOrder,
++  nextAppendOrder,
++  computeMove,
++  DEFAULT_VIEW_STATE,
++  defaultViewState,
++  normalizeViewState,
++  toggleFilter,
++  isQuickCaptureMode,
++  applyFilters,
++  applySort,
++} from '../panel/viewstate.ts';
++
++// ==========================================
++// Short project names
++// ==========================================
++test('shortName: contract example Workflows-Accelerator/openchamber-github-task-board -> Task Board', () => {
++  assert.equal(shortName('Workflows-Accelerator/openchamber-github-task-board'), 'Task Board');
++});
++
++test('shortName: splits on - _ . and Title Cases each token', () => {
++  assert.equal(shortName('acme/my_cool.service-api'), 'My Cool Service Api');
++  assert.equal(shortName('acme/WEB-APP'), 'Web App');
++  assert.equal(shortName('acme/web--app__x'), 'Web App X');
++});
++
++test('shortName: drops openchamber, github, gh, repo case-insensitively', () => {
++  assert.equal(shortName('o/GitHub-Gh-REPO-Notes'), 'Notes');
++  assert.equal(shortName('o/OpenChamber.Extensions'), 'Extensions');
++  assert.equal(shortName('o/ghost'), 'Ghost', 'only whole tokens are dropped');
++});
++
++test('shortName: when every token is dropped, Title Case the whole repo part', () => {
++  assert.equal(shortName('o/github-repo'), 'Github-repo');
++  assert.equal(shortName('o/openchamber'), 'Openchamber');
++  assert.equal(shortName('o/gh'), 'Gh');
++});
++
++test('shortName: edge cases (no owner, empty, trailing slash, whitespace)', () => {
++  assert.equal(shortName('task-board'), 'Task Board');
++  assert.equal(shortName(''), '');
++  assert.equal(shortName(null), '');
++  assert.equal(shortName('  acme/data-pipeline  '), 'Data Pipeline');
++  assert.equal(shortName('acme/'), 'acme/');
++});
++
++test('shortName: user rename overrides the rule (case-insensitive key), blank rename ignored', () => {
++  const overrides = normalizeProjectNameOverrides({
++    'Workflows-Accelerator/OpenChamber-GitHub-Task-Board': '  Board  ',
++    'acme/x': '   ',
++    'acme/y': 42,
++  });
++  assert.deepEqual(overrides, { 'workflows-accelerator/openchamber-github-task-board': 'Board' });
++  assert.equal(shortName('Workflows-Accelerator/openchamber-github-task-board', overrides), 'Board');
++  assert.equal(shortName('acme/x-y', overrides), 'X Y');
++  assert.deepEqual(normalizeProjectNameOverrides(null), {});
++  assert.deepEqual(normalizeProjectNameOverrides(['a']), {});
++});
++
++// ==========================================
++// Draft order marker
++// ==========================================
++test('parseOrderMarker: reads the marker on its own line, last one wins', () => {
++  assert.equal(parseOrderMarker('Body\n\n<!-- board-order: 2500 -->'), 2500);
++  assert.equal(parseOrderMarker('<!-- board-order: -1000 -->'), -1000);
++  assert.equal(parseOrderMarker('x\n<!--board-order:12.5-->\n'), 12.5);
++  assert.equal(parseOrderMarker('a\n<!-- board-order: 1 -->\nb\n<!-- board-order: 7 -->'), 7);
++  assert.equal(parseOrderMarker('no marker'), null);
++  assert.equal(parseOrderMarker(''), null);
++  assert.equal(parseOrderMarker(null), null);
++  assert.equal(parseOrderMarker('inline <!-- board-order: 5 --> text'), null, 'must be on its own line');
++  assert.equal(parseOrderMarker('<!-- board-order: abc -->'), null);
++});
++
++test('stripOrderMarker: removes marker lines and keeps the rest of the body', () => {
++  assert.equal(stripOrderMarker('Hello\n\n<!-- board-order: 1000 -->'), 'Hello');
++  assert.equal(stripOrderMarker('<!-- board-order: 1000 -->'), '');
++  assert.equal(stripOrderMarker('Plain body\n'), 'Plain body\n', 'body without marker is untouched');
++  assert.equal(stripOrderMarker('A\n<!-- board-order: 1 -->\nB'), 'A\n\nB');
++  assert.equal(stripOrderMarker(null), '');
++});
++
++test('setOrderMarker: appends one marker on its own line at the end, replacing any old one', () => {
++  assert.equal(setOrderMarker('Idea', 1000), 'Idea\n\n<!-- board-order: 1000 -->');
++  assert.equal(setOrderMarker('', 1000), '<!-- board-order: 1000 -->', 'draft with no description');
++  assert.equal(setOrderMarker(null, -500), '<!-- board-order: -500 -->');
++  const rewritten = setOrderMarker('Idea\n\n<!-- board-order: 1000 -->', 1500);
++  assert.equal(rewritten, 'Idea\n\n<!-- board-order: 1500 -->');
++  assert.equal(parseOrderMarker(rewritten), 1500);
++  assert.equal(setOrderMarker('Idea', 1250.5), 'Idea\n\n<!-- board-order: 1250.5 -->');
++  assert.ok(!setOrderMarker('x', 1e-7).includes('e-'), 'never writes exponent notation');
++});
++
++test('midpointOrder: midpoint between neighbours, first/last use -/+ 1000', () => {
++  assert.equal(midpointOrder(1000, 2000), 1500);
++  assert.equal(midpointOrder(null, 1000), 0);
++  assert.equal(midpointOrder(3000, null), 4000);
++  assert.equal(midpointOrder(null, null), 1000);
++});
++
++const draft = (number, order, created) => ({
++  number,
++  body: order === null ? `Draft ${number}` : `Draft ${number}\n\n<!-- board-order: ${order} -->`,
++  created_at: created,
++});
++
++test('manual order: marked first by number, then unmarked oldest created first', () => {
++  const items = [
++    draft(1, null, '2026-01-03T00:00:00Z'),
++    draft(2, 2000, '2026-01-01T00:00:00Z'),
++    draft(3, null, '2026-01-02T00:00:00Z'),
++    draft(4, 1000, '2026-01-05T00:00:00Z'),
++  ];
++  assert.deepEqual(sortByManualOrder(items).map((i) => i.number), [4, 2, 3, 1]);
++  assert.ok(compareManualOrder(items[1], items[0]) < 0);
++  assert.equal(nextAppendOrder(items), 3000);
++  assert.equal(nextAppendOrder([draft(9, null, '')]), 1000);
++});
++
++test('computeMove: rewrites only the moved item with the neighbour midpoint', () => {
++  const ordered = [draft(1, 1000, 'a'), draft(2, 2000, 'b'), draft(3, 3000, 'c')];
++  assert.deepEqual(computeMove(ordered, 2, 0), { index: 2, order: 0, exact: true }, 'to first: next - 1000');
++  assert.deepEqual(computeMove(ordered, 0, 2), { index: 0, order: 4000, exact: true }, 'to last: prev + 1000');
++  assert.deepEqual(computeMove(ordered, 0, 1), { index: 0, order: 2500, exact: true }, 'one step down');
++  assert.deepEqual(computeMove(ordered, 2, 1), { index: 2, order: 1500, exact: true }, 'one step up');
++  assert.equal(computeMove(ordered, 1, 1), null, 'no-op');
++  assert.equal(computeMove(ordered, 5, 0), null, 'out of range');
++});
++
++test('computeMove: moving down past an unmarked item refuses instead of writing another item', () => {
++  const ordered = [draft(1, 1000, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03')];
++  const original = structuredClone(ordered);
++  assert.equal(computeMove(ordered, 0, 1), null);
++  assert.deepEqual(ordered, original, 'no neighbour marker may change');
++});
++
++test('computeMove: moving an unmarked item up lands it right after the marked items', () => {
++  const ordered = [draft(1, 1000, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03')];
++  const move = computeMove(ordered, 2, 1);
++  assert.deepEqual(move, { index: 2, order: 2000, exact: true });
++  const allUnmarked = [draft(1, null, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03')];
++  const top = computeMove(allUnmarked, 2, 0);
++  assert.deepEqual(top, { index: 2, order: 1000, exact: true });
++  const mid = computeMove(allUnmarked, 2, 1);
++  assert.equal(mid, null, 'slot between two unmarked items is unreachable with only the moved marker');
++});
++
++test('computeMove: unreachable slot after unmarked items is reported, never silently wrong', () => {
++  const ordered = [draft(1, 1000, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03')];
++  assert.equal(computeMove(ordered, 0, 2), null, 'marked item cannot move after unmarked ones with one write');
++  const four = [draft(1, null, '2026-01-01'), draft(2, null, '2026-01-02'), draft(3, null, '2026-01-03'), draft(4, null, '2026-01-04')];
++  const m = computeMove(four, 3, 1);
++  assert.equal(m, null, 'never silently falls back to another slot');
++});
++
++test('computeMove: precision exhaustion between equal markers returns null', () => {
++  const ordered = [draft(1, 1000, 'a'), draft(2, 1000, 'b'), draft(3, 1000, 'c'), draft(4, 1000, 'd')];
++  assert.equal(computeMove(ordered, 3, 1), null);
++  const swap = computeMove(ordered.slice(0, 3), 2, 1);
++  assert.equal(swap, null, 'equal-marker swap must not rewrite the other item');
++});
++
++// ==========================================
++// View / Filter / Sort state
++// ==========================================
++test('default state: View = Simple list, Filter = none, Sort = priority', () => {
++  assert.deepEqual({ ...DEFAULT_VIEW_STATE, filters: [...DEFAULT_VIEW_STATE.filters] }, { view: 'simple', filters: [], sort: 'priority' });
++  assert.deepEqual(defaultViewState(), { view: 'simple', filters: [], sort: 'priority' });
++  assert.ok(Object.isFrozen(DEFAULT_VIEW_STATE));
++});
++
++test('normalizeViewState: invalid or missing stored values fall back to defaults', () => {
++  assert.deepEqual(normalizeViewState(undefined), { view: 'simple', filters: [], sort: 'priority' });
++  assert.deepEqual(normalizeViewState({ view: 'attention', sort: 'newest', filters: 'x' }), { view: 'simple', filters: [], sort: 'priority' });
++  assert.deepEqual(
++    normalizeViewState({ view: 'kanban', sort: 'manual', filters: ['needs-me', 'stage:draft', 'stage:bogus', 'project:a/b', 'needs-me', 7] }),
++    { view: 'kanban', filters: ['needs-me', 'stage:draft', 'project:a/b'], sort: 'manual' }
++  );
++});
++
++test('toggleFilter and quick-capture mode', () => {
++  let f = toggleFilter([], 'stage:draft');
++  assert.deepEqual(f, ['stage:draft']);
++  assert.equal(isQuickCaptureMode({ view: 'simple', filters: f, sort: 'manual' }), true);
++  assert.equal(isQuickCaptureMode({ view: 'cards', filters: f, sort: 'manual' }), false);
++  f = toggleFilter(f, 'stage:draft');
++  assert.deepEqual(f, []);
++  assert.deepEqual(toggleFilter(['human'], 'nonsense'), ['human']);
++});
++
++const items = [
++  { number: 1, stage: 'draft', repo: 'a/one', me: false, human: false, q: false, prio: 1, created_at: '2026-01-01T00:00:00Z', updated_at: '2026-03-01T00:00:00Z', body: 'x\n<!-- board-order: 2000 -->' },
++  { number: 2, stage: 'needs-human', repo: 'b/two', me: true, human: true, q: false, prio: 3, created_at: '2026-01-02T00:00:00Z', updated_at: '2026-01-05T00:00:00Z', body: '' },
++  { number: 3, stage: 'in-review', repo: 'a/one', me: true, human: false, q: true, prio: 2, created_at: '2026-01-03T00:00:00Z', updated_at: '2026-02-01T00:00:00Z', body: '' },
++  { number: 4, stage: 'draft', repo: 'B/Two', me: false, human: false, q: true, prio: 0, created_at: '2026-01-04T00:00:00Z', body: 'y\n<!-- board-order: 1000 -->' },
++];
++const acc = {
++  stageOf: (i) => i.stage,
++  repoOf: (i) => i.repo,
++  needsMe: (i) => i.me,
++  hasHumanTasks: (i) => i.human,
++  hasOpenQuestions: (i) => i.q,
++};
++const nums = (list) => list.map((i) => i.number);
++
++test('applyFilters: none returns all; groups AND, tokens within a group OR', () => {
++  assert.deepEqual(nums(applyFilters(items, [], acc)), [1, 2, 3, 4]);
++  assert.deepEqual(nums(applyFilters(items, ['stage:draft'], acc)), [1, 4]);
++  assert.deepEqual(nums(applyFilters(items, ['stage:draft', 'stage:in-review'], acc)), [1, 3, 4]);
++  assert.deepEqual(nums(applyFilters(items, ['needs-me'], acc)), [2, 3]);
++  assert.deepEqual(nums(applyFilters(items, ['human', 'questions'], acc)), [2, 3, 4]);
++  assert.deepEqual(nums(applyFilters(items, ['questions', 'stage:draft'], acc)), [4]);
++  assert.deepEqual(nums(applyFilters(items, ['project:b/two'], acc)), [2, 4], 'project match is case-insensitive');
++  assert.deepEqual(nums(applyFilters(items, ['project:a/one', 'needs-me', 'stage:in-review'], acc)), [3]);
++  assert.deepEqual(nums(applyFilters(items, ['project:none/none'], acc)), []);
++});
++
++test('applySort: priority, recently updated, recently created, manual', () => {
++  const w = (i) => i.prio;
++  assert.deepEqual(nums(applySort(items, 'priority', w)), [2, 3, 1, 4]);
++  assert.deepEqual(nums(applySort(items, 'updated', w)), [1, 3, 2, 4], 'missing updated_at falls back to created_at');
++  assert.deepEqual(nums(applySort(items, 'created', w)), [4, 3, 2, 1]);
++  assert.deepEqual(nums(applySort(items, 'manual', w)), [4, 1, 2, 3]);
++  assert.deepEqual(nums(items), [1, 2, 3, 4], 'input is not mutated');
++});
++
++test('filter + sort combine: drafts in manual order, needs-me by priority', () => {
++  const w = (i) => i.prio;
++  assert.deepEqual(nums(applySort(applyFilters(items, ['stage:draft'], acc), 'manual', w)), [4, 1]);
++  assert.deepEqual(nums(applySort(applyFilters(items, ['needs-me'], acc), 'priority', w)), [2, 3]);
++  assert.deepEqual(nums(applySort(applyFilters(items, ['questions'], acc), 'created', w)), [4, 3]);
++});
++
++test('board-order marker never renders in issue body views', async () => {
++  const { renderMarkdown, getIssueDescriptionPreview } = await import('../panel/markdown.ts');
++  const body = 'Short idea\n\n<!-- board-order: 1500 -->';
++  const html = renderMarkdown(body);
++  assert.ok(!html.includes('board-order'), 'renderMarkdown strips the marker');
++  assert.ok(html.includes('Short idea'));
++  assert.equal(getIssueDescriptionPreview(body), 'Short idea');
++  assert.equal(getIssueDescriptionPreview('<!-- board-order: 1500 -->'), '', 'draft with no description has no preview');
++  assert.ok(!renderMarkdown('<!-- board-order: 1500 -->').includes('board-order'));
++});
++
++test('order markers round-trip tiny and huge positions without rounding a midpoint into its neighbour', () => {
++  for (const value of [1e-20, -1e-30, 1e22, Number.MAX_VALUE]) {
++    assert.equal(parseOrderMarker(setOrderMarker('', value)), value);
++    assert.equal(/[eE][+-]?\d+/.test(setOrderMarker('', value)), false);
++  }
++  const ordered = [draft(1, 1e-15, ''), draft(2, 2e-15, ''), draft(3, 1000, '')];
++  const move = computeMove(ordered, 2, 1);
++  assert.equal(move.index, 2);
++  const persisted = parseOrderMarker(setOrderMarker('', move.order));
++  assert.ok(persisted > 1e-15 && persisted < 2e-15);
++});

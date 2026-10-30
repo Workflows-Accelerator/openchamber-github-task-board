@@ -1,0 +1,32 @@
+{"name":"new mutation security","security":[{"route":"/api/project-names","anonymous":401,"noCsrf":403,"unlisted":400},{"route":"/api/repos/owner/alpha/issues/1/draft","anonymous":401,"noCsrf":403,"unlisted":400},{"route":"/api/repos/owner/alpha/issues/1/order","anonymous":401,"noCsrf":403,"unlisted":400},{"route":"/api/repos/owner/alpha/issues/1/move","anonymous":401,"noCsrf":403,"unlisted":400}],"unknownGitHubHits":0}
+{"name":"stale target rejected","routes":3,"status":409}
+{"name":"unapproved destructive project move","status":200,"sourceState":"closed","targetTitle":"Other device","methods":["POST /repos/owner/beta/issues","POST /repos/owner/alpha/issues/1/comments","PATCH /repos/owner/alpha/issues/1"]}
+{"name":"marker destroys fenced source","status":200,"before":"## Overview\r\nOriginal\r\n\r\n## Notes\r\n```md\r\n<!-- board-order: 42 -->\r\n```\r\n\r\n## Overview\r\nKeep second heading  \r\n<!-- board-ordering: 7 -->\r\n\r\n<!-- board-order: 1000 -->","after":"## Overview\r\nOriginal\r\n\r\n## Notes\r\n```md\r\n\n```\r\n\r\n## Overview\r\nKeep second heading  \r\n<!-- board-ordering: 7 -->\r\n\r\n<!-- board-order: 1500 -->"}
+{"name":"marker strips non-marker trailing bytes","before":"Keep this hard break  \r\n\r\n","after":"Keep this hard break\r\n\r\n<!-- board-order: 1000 -->"}
+{"name":"dependency parser","declaredChecklist":[],"fencedFalseEdge":[2]}
+{"name":"rename validation and same-process concurrent distinct keys","invalidStatuses":[400,400,400],"keys":["owner/alpha","owner/beta"]}
+{"name":"midpoint exhaustion","successfulBisections":53,"previous":1000,"next":1000.0000000000001,"status":409,"payload":{"error":"order_precision","message":"No space between these neighbours; choose another position"}}
+{"name":"two devices stale neighbour accepted","neighbourStatus":200,"staleNeighbourStatus":200,"orders":[["A",1000],["B",4000],["C",1500]]}
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
++ actual - expected
+
+  [
++   'Filtered low',
+    'Filtered urgent',
+-   'Filtered low'
+  ]
+
+    at file:///workspace/extensions/github-task-board/.worktrees/team-dev-issue-48-web-simple-views/.agents/run/issue-48-web-hostile/verifications/hostile-runtime.mjs:91:11 {
+  generatedMessage: true,
+  code: 'ERR_ASSERTION',
+  actual: [ 'Filtered low', 'Filtered urgent' ],
+  expected: [ 'Filtered urgent', 'Filtered low' ],
+  operator: 'deepStrictEqual',
+  diff: 'simple'
+}
+
+Node.js v22.23.4

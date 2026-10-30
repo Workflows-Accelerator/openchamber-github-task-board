@@ -1,0 +1,8 @@
+
+> openchamber-github-task-board@1.2.1 build:panel
+> esbuild panel/main.ts --bundle --format=iife --target=chrome100 --tree-shaking=false --outfile=panel/main.js
+
+
+  panel/main.js  707.6kb
+
+⚡ Done in 106ms
