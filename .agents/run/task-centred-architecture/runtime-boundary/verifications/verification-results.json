@@ -1,0 +1,575 @@
+{
+  "engines": {
+    "chromium": {
+      "name": "Google Chrome for Testing 156.0.8078.4",
+      "results": {
+        "dark": {
+          "360": {
+            "isIframe": true,
+            "rootTheme": "dark",
+            "bodyBg": "rgb(15, 16, 18)",
+            "bodyColor": "rgb(240, 242, 245)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(107, 107, 107)",
+              "color": "rgb(255, 255, 255)",
+              "height": "19px",
+              "padding": "0px",
+              "width": 126,
+              "heightPx": 19
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 130,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 94,
+              "clientWidth": 76,
+              "width": 76,
+              "left": 37,
+              "isOverflowing": true,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": "1"
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 101.125,
+              "clientWidth": 99,
+              "scrollWidth": 99,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "1",
+              "isCrowded": false
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-chromium-dark-360.png"
+          },
+          "980": {
+            "isIframe": true,
+            "rootTheme": "dark",
+            "bodyBg": "rgb(15, 16, 18)",
+            "bodyColor": "rgb(240, 242, 245)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(107, 107, 107)",
+              "color": "rgb(255, 255, 255)",
+              "height": "19px",
+              "padding": "0px",
+              "width": 126,
+              "heightPx": 19
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 147.5,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 94,
+              "clientWidth": 94,
+              "width": 93.5,
+              "left": 37,
+              "isOverflowing": false,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": "1"
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 101.125,
+              "clientWidth": 99,
+              "scrollWidth": 99,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "1",
+              "isCrowded": false
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-chromium-dark-980.png"
+          },
+          "1280": {
+            "isIframe": true,
+            "rootTheme": "dark",
+            "bodyBg": "rgb(15, 16, 18)",
+            "bodyColor": "rgb(240, 242, 245)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(107, 107, 107)",
+              "color": "rgb(255, 255, 255)",
+              "height": "19px",
+              "padding": "0px",
+              "width": 126,
+              "heightPx": 19
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 147.5,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 94,
+              "clientWidth": 94,
+              "width": 93.5,
+              "left": 37,
+              "isOverflowing": false,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": "1"
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 101.125,
+              "clientWidth": 99,
+              "scrollWidth": 99,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "1",
+              "isCrowded": false
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-chromium-dark-1280.png"
+          }
+        },
+        "light": {
+          "360": {
+            "isIframe": true,
+            "rootTheme": "light",
+            "bodyBg": "rgb(255, 255, 255)",
+            "bodyColor": "rgb(28, 30, 33)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(239, 239, 239)",
+              "color": "rgb(0, 0, 0)",
+              "height": "19px",
+              "padding": "0px",
+              "width": 126,
+              "heightPx": 19
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 130,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 94,
+              "clientWidth": 76,
+              "width": 76,
+              "left": 37,
+              "isOverflowing": true,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": "1"
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 101.125,
+              "clientWidth": 99,
+              "scrollWidth": 99,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "1",
+              "isCrowded": false
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-chromium-light-360.png"
+          },
+          "980": {
+            "isIframe": true,
+            "rootTheme": "light",
+            "bodyBg": "rgb(255, 255, 255)",
+            "bodyColor": "rgb(28, 30, 33)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(239, 239, 239)",
+              "color": "rgb(0, 0, 0)",
+              "height": "19px",
+              "padding": "0px",
+              "width": 126,
+              "heightPx": 19
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 147.5,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 94,
+              "clientWidth": 94,
+              "width": 93.5,
+              "left": 37,
+              "isOverflowing": false,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": "1"
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 101.125,
+              "clientWidth": 99,
+              "scrollWidth": 99,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "1",
+              "isCrowded": false
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-chromium-light-980.png"
+          },
+          "1280": {
+            "isIframe": true,
+            "rootTheme": "light",
+            "bodyBg": "rgb(255, 255, 255)",
+            "bodyColor": "rgb(28, 30, 33)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(239, 239, 239)",
+              "color": "rgb(0, 0, 0)",
+              "height": "19px",
+              "padding": "0px",
+              "width": 126,
+              "heightPx": 19
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 147.5,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 94,
+              "clientWidth": 94,
+              "width": 93.5,
+              "left": 37,
+              "isOverflowing": false,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": "1"
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 101.125,
+              "clientWidth": 99,
+              "scrollWidth": 99,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "1",
+              "isCrowded": false
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-chromium-light-1280.png"
+          }
+        }
+      }
+    },
+    "obscura": {
+      "name": "Obscura Headless Chromium 0.2.5 (CDP)",
+      "results": {
+        "dark": {
+          "360": {
+            "isIframe": true,
+            "rootTheme": "dark",
+            "bodyBg": "rgb(15, 16, 18)",
+            "bodyColor": "rgb(240, 242, 245)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(255, 255, 255)",
+              "color": "rgb(240, 242, 245)",
+              "height": "17px",
+              "padding": "0px",
+              "width": 95,
+              "heightPx": 17
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 121,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 67,
+              "clientWidth": 67,
+              "width": 67,
+              "left": 37,
+              "isOverflowing": false,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": ""
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 87,
+              "clientWidth": 85,
+              "scrollWidth": 92,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "",
+              "isCrowded": true
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-obscura-dark-360.png"
+          },
+          "980": {
+            "isIframe": true,
+            "rootTheme": "dark",
+            "bodyBg": "rgb(15, 16, 18)",
+            "bodyColor": "rgb(240, 242, 245)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(255, 255, 255)",
+              "color": "rgb(240, 242, 245)",
+              "height": "17px",
+              "padding": "0px",
+              "width": 95,
+              "heightPx": 17
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 121,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 67,
+              "clientWidth": 67,
+              "width": 67,
+              "left": 37,
+              "isOverflowing": false,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": ""
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 87,
+              "clientWidth": 85,
+              "scrollWidth": 92,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "",
+              "isCrowded": true
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-obscura-dark-980.png"
+          },
+          "1280": {
+            "isIframe": true,
+            "rootTheme": "dark",
+            "bodyBg": "rgb(15, 16, 18)",
+            "bodyColor": "rgb(240, 242, 245)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(255, 255, 255)",
+              "color": "rgb(240, 242, 245)",
+              "height": "17px",
+              "padding": "0px",
+              "width": 95,
+              "heightPx": 17
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 121,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 67,
+              "clientWidth": 67,
+              "width": 67,
+              "left": 37,
+              "isOverflowing": false,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": ""
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 87,
+              "clientWidth": 85,
+              "scrollWidth": 92,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "",
+              "isCrowded": true
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-obscura-dark-1280.png"
+          }
+        },
+        "light": {
+          "360": {
+            "isIframe": true,
+            "rootTheme": "light",
+            "bodyBg": "rgb(255, 255, 255)",
+            "bodyColor": "rgb(28, 30, 33)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(255, 255, 255)",
+              "color": "rgb(28, 30, 33)",
+              "height": "17px",
+              "padding": "0px",
+              "width": 95,
+              "heightPx": 17
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 121,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 67,
+              "clientWidth": 67,
+              "width": 67,
+              "left": 37,
+              "isOverflowing": false,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": ""
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 87,
+              "clientWidth": 85,
+              "scrollWidth": 92,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "",
+              "isCrowded": true
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-obscura-light-360.png"
+          },
+          "980": {
+            "isIframe": true,
+            "rootTheme": "light",
+            "bodyBg": "rgb(255, 255, 255)",
+            "bodyColor": "rgb(28, 30, 33)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(255, 255, 255)",
+              "color": "rgb(28, 30, 33)",
+              "height": "17px",
+              "padding": "0px",
+              "width": 95,
+              "heightPx": 17
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 121,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 67,
+              "clientWidth": 67,
+              "width": 67,
+              "left": 37,
+              "isOverflowing": false,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": ""
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 87,
+              "clientWidth": 85,
+              "scrollWidth": 92,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "",
+              "isCrowded": true
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-obscura-light-980.png"
+          },
+          "1280": {
+            "isIframe": true,
+            "rootTheme": "light",
+            "bodyBg": "rgb(255, 255, 255)",
+            "bodyColor": "rgb(28, 30, 33)",
+            "sortSelect": {
+              "tagName": "SELECT",
+              "className": "",
+              "bg": "rgb(255, 255, 255)",
+              "color": "rgb(28, 30, 33)",
+              "height": "17px",
+              "padding": "0px",
+              "width": 95,
+              "heightPx": 17
+            },
+            "repoLabel": {
+              "btnTextAlign": "center",
+              "btnWidth": 121,
+              "btnPaddingLeft": "8px",
+              "btnPaddingRight": "8px",
+              "text": "Detecting repo...",
+              "scrollWidth": 67,
+              "clientWidth": 67,
+              "width": 67,
+              "left": 37,
+              "isOverflowing": false,
+              "textOverflow": "ellipsis",
+              "whiteSpace": "nowrap",
+              "flexShrink": ""
+            },
+            "viewBtn": {
+              "text": "ViewSimple list",
+              "width": 87,
+              "clientWidth": 85,
+              "scrollWidth": 92,
+              "paddingLeft": "8px",
+              "paddingRight": "8px",
+              "flexShrink": "",
+              "isCrowded": true
+            },
+            "hasNoHostFrameWarning": false,
+            "logsCount": 6,
+            "errorsCount": 0,
+            "warningsCount": 3,
+            "screenshot": "toolbar-obscura-light-1280.png"
+          }
+        }
+      }
+    }
+  },
+  "timestamp": "2026-10-30T14:38:49.770Z"
+}
