@@ -1,7 +1,7 @@
 <env_preflight>
 Repo:/workspace/extensions/github-task-board
 Worktree:/workspace/extensions/github-task-board/.worktrees/team-dev-issue-49-login-label
-DISPATCH HOLD: replace this line after correction1 ses_f4015b07b5d060d0948e87ae completes with exact branch/HEAD/dirty state/changed files. Do not dispatch while source writer running.
+Correction1 ses_f4015b07b5d060d0948e87ae COMPLETED actual9router/engineer at e6995e9 (commits4ee7bc9,27cd1fa,bc97e58,e6995e9), clean confirmed manager. Product delta claims: theme.css only input.sr-only{left:-9999px} +4lines vsbase; login-label.test.mjs4 dependency-free tests; separate login-label-browser-verify.mjs CDP harness25checks. Claimed web453/root595/parity18/types0; Obscura region623byte diff, minimal output identical to combinedrule, Chromium region0byte difference; overflow0. All independent CLAIMS to recheck. No source writer running.
 Branch fix/issue-49-login-label from masterab7516c4a3634c3d69f7b82936ddb7655d327ebb. Prior hostile6f079f9 preserved. Expected correction: minimal offscreen hidden username CSS, no opacity/global clip-path, dependency-free normal unit glob and explicit standalone CDP browser proof.
 Read-only source/tests. Write+commit ONLY .agents/run/issue-49-recheck/** on feature branch (serialize stage/commit; don't commit manager files). No fixes/push/master/deploy/close/PR/host toggle/root source mutation.
 Tests: node --test web/tests/*.test.mjs (base449); node --test --test-concurrency=1 test/*.test.js595; node --test test/shipped-parity.test.js18; npx tsc -p web/tsconfig.json; standalone browser harness33+14 plus new explicit login compatibility harness. All isolated fake GitHub/synthetic data, no real stores.
