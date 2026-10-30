@@ -1,0 +1,88 @@
+{
+  "timestamp": "2026-10-30T13:31:25.236Z",
+  "git": {
+    "branch": "ops/task-board-activation",
+    "headSha": "6252bebb0e4ae9ec44bf7b7d4feaea8950b08e17",
+    "oldFeatureSha": "f485a0a",
+    "reviewedMasterSha": "ab7516c4a3634c3d69f7b82936ddb7655d327ebb",
+    "productDiffBytes": 0,
+    "productTreeIdentical": true
+  },
+  "hashes": {
+    "packageJson": "e6e333e151fb5625be106476226666021fa8e0076fc072f68289842c07bfd7ee",
+    "panelHtml": "3b7fc833c06d6ce798c305a9adae81f03f222eafe92c2fd6d1213e0699b09404",
+    "panelJs": "9d9c2d04c20e9f282bf6031a1e93f062349b8b27708f96d272d3919fcf203aec",
+    "serviceJs": "a29d18cc1a43c823f304119b9effc8231241cd6e2fd07ab4ee36bc9b2cb30f84",
+    "servedPanelJs": "9d9c2d04c20e9f282bf6031a1e93f062349b8b27708f96d272d3919fcf203aec",
+    "servedMatchesDisk": true
+  },
+  "tests": {
+    "shippedParity": {
+      "passed": true,
+      "summary": "18/18 pass"
+    },
+    "typecheck": {
+      "passed": true
+    }
+  },
+  "serviceLifecycle": {
+    "taskBoardGuest": {
+      "id": "github-task-board",
+      "name": "Task Board",
+      "version": "1.2.1",
+      "enabled": true,
+      "path": "/workspace/extensions/github-task-board",
+      "entry": "panel/index.html"
+    },
+    "chamberVoiceGuest": {
+      "id": "chambervoice",
+      "name": "ChamberVoice",
+      "enabled": true
+    }
+  },
+  "domControls": {
+    "initialView": {
+      "label": "Simple list",
+      "dataLayout": null
+    },
+    "cardsView": {
+      "label": "Cards",
+      "dataLayout": "cards"
+    },
+    "simpleView": {
+      "label": "Simple list",
+      "dataLayout": "simple"
+    },
+    "sort": {
+      "sortValUpdated": "updated",
+      "sortValPriority": "priority"
+    },
+    "filter": {
+      "filterOpen": {
+        "display": "flex",
+        "ariaExpanded": "true"
+      },
+      "filterClosed": {
+        "display": "none",
+        "ariaExpanded": "false"
+      }
+    },
+    "draftControls": {
+      "hasQuickAdd": true,
+      "quickAddPlaceholder": "Quick add draft... (press Enter)",
+      "hasAlignBtn": true,
+      "alignBtnText": "Align Drafts",
+      "alignBtnDisabled": false
+    },
+    "pageErrors": []
+  },
+  "publicHealth": {
+    "status": 200,
+    "ok": true,
+    "body": {
+      "status": "ok",
+      "version": "1.2.1",
+      "uptime": 18908
+    }
+  }
+}
