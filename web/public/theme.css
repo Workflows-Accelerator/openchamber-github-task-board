@@ -538,16 +538,12 @@ label {
   margin: -1px;
   overflow: hidden;
   clip: rect(0, 0, 0, 0);
-  clip-path: inset(50%);
   white-space: nowrap;
   border: 0;
 }
 
 input.sr-only {
-  position: absolute;
   left: -9999px;
-  top: auto;
-  opacity: 0;
 }
 
 pre,
