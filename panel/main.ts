@@ -525,6 +525,44 @@ function hideBanner(): void {
   if (elBanner) elBanner.style.display = 'none';
 }
 
+/**
+ * D59: Probe background coordinator service once on panel open.
+ * Uses existing host.serviceRequest bridge to perform an authenticated GET /health.
+ * Provides observable sanitized diagnostics without silent swallow or auto-grant.
+ */
+async function checkBackgroundServiceConnection(): Promise<void> {
+  try {
+    const res = await (host as any).serviceRequest({ method: 'GET', path: '/health' });
+    if (res && res.status === 200) {
+      // Outcome 1: Connected (healthy)
+      // Advisory 1: Only hide banner if it currently displays coordinator notice
+      const cur = document.getElementById('boardBannerText')?.textContent;
+      if (cur && cur.includes('Background coordinator')) {
+        hideBanner();
+      }
+      console.info('[TaskBoard] Background coordinator service connected (healthy).');
+    } else {
+      // Non-200 response from loopback server
+      showBanner('Background coordinator service returned an unexpected status.');
+      console.warn('[TaskBoard] Background coordinator service returned HTTP status: ' + (res ? res.status : 'unknown'));
+    }
+  } catch (err: unknown) {
+    const code = (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
+      ? (err as any).code
+      : 'UNKNOWN';
+
+    if (code === 'NO_SERVICE' || code === 'DISABLED') {
+      // Outcome 2: Capability unapproved or extension disabled
+      showBanner('Background coordinator service is not enabled in OpenChamber Settings -> Extensions.');
+      console.info('[TaskBoard] Background coordinator service not enabled in Settings -> Extensions.');
+    } else {
+      // Outcome 3: Service failed, request failed, host timeout, or crash
+      showBanner('Background coordinator service failed to connect.');
+      console.warn('[TaskBoard] Background coordinator service connection failed (' + code + ').');
+    }
+  }
+}
+
 // ==========================================
 // Subtask & Markdown Parsing
 // ==========================================
@@ -9906,6 +9944,9 @@ host.onReady(async (ctx) => {
   // Apply native theme and surface attributes to documentElement
   applyHostReady(ctx, document.documentElement);
 
+  // D59: Probe background service once on panel open
+  void checkBackgroundServiceConnection();
+
   currentDirectory = ctx.directory || '';
   deviceStorageSupported = ctx.features?.deviceStorage === true;
   void host.storage.get('project_name_overrides').then((stored) => {
@@ -9984,5 +10025,11 @@ host.onSession(async (rawSess) => {
     }
   }
 });
+
+if (typeof window !== 'undefined') {
+  (window as any).__taskBoardBackgroundService = {
+    checkBackgroundServiceConnection,
+  };
+}
 
 initEvents();
