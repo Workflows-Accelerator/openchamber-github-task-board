@@ -1,6 +1,6 @@
 # Discovery: OpenChamber Host Service Contract & Task Board Runtime Boundary
 
-**Audit Date:** Fri Oct 30 2026  
+**Audit Date:** Fri Oct 30 2026 (Updated Sun Nov 01 2026 for Plan Correction R2)  
 **Investigator:** Model `9router/engineer`  
 **Repository:** `openchamber-github-task-board`  
 **Branch:** `fix/issue-50-host-connection`  
@@ -16,9 +16,9 @@ The task board extension's built service (`service/main.js`) currently starts an
 
 ---
 
-## 2. Host Guest Service Runner Contract
+## 2. Host Guest Service Runner Contract & Error Taxonomy
 
-Source inspection of `/usr/local/lib/node_modules/@openchamber/web/server/lib/guests/service.js` and `@openchamber/sdk/GUEST_SERVICES.md` establishes the exact host contract:
+Source inspection of `/usr/local/lib/node_modules/@openchamber/web/server/lib/guests/service.js`, `/usr/local/lib/node_modules/@openchamber/web/server/lib/guests/routes.js`, and `@openchamber/sdk` (`dist/host.js`, `dist/contract.d.ts`, `GUEST_SERVICES.md`) establishes the exact host contract and error codes:
 
 ### 2.1 On-Demand Lifecycle & Spawning
 1. **Manifest Declaration:** The package declares:
@@ -30,9 +30,20 @@ Source inspection of `/usr/local/lib/node_modules/@openchamber/web/server/lib/gu
      }
    }
    ```
-2. **Admission & Grants:** At installation, declaring `contributes.service` adds the capability `"service"` to the extension's requested list. The host refuses requests with `NO_SERVICE` until the user approves the capability in Settings → Extensions (`service.js:665-667`).
-3. **Trigger Mechanism:** The host does not launch guest services at boot. Spawning is lazy and triggered exclusively via `openGuestServiceRequest` / `proxyGuestServiceRequest` when an incoming request targets `POST /api/guests/:id/service/request` (`service.js:576-592, 622-684`).
-4. **Status Queries Do Not Spawn:** The host route `GET /api/guests/:id/service/status` calls `getServiceStatus(guestId)` (`service.js:210-216`), which inspects the in-memory `runtimes` map. It returns `'stopped'` if no request has spawned the service. Calling `host.serviceStatus()` from the panel does not trigger a spawn.
+2. **Admission & Grants (`service.js:665-667`):** At installation, declaring `contributes.service` adds the capability `"service"` to the extension's requested list. The host refuses requests with `NO_SERVICE` until the user approves the capability in Settings → Extensions:
+   ```javascript
+   if (!Array.isArray(granted) || !granted.includes('service')) {
+     throw new GuestServiceError('Allow this extension\'s local service in Settings → Extensions.', 'NO_SERVICE');
+   }
+   ```
+3. **Disabled Extension Check (`service.js:653-658`):** If the user has disabled the extension, the host throws:
+   ```javascript
+   if (store.disabledGuests?.[guestId]) {
+     throw new GuestServiceError(`${label} is disabled in Settings → Extensions.`, 'DISABLED');
+   }
+   ```
+4. **Trigger Mechanism:** The host does not launch guest services at boot. Spawning is lazy and triggered exclusively via `openGuestServiceRequest` / `proxyGuestServiceRequest` when an incoming request targets `POST /api/guests/:id/service/request` (`service.js:576-592, 622-684`).
+5. **Status Queries Do Not Spawn:** The host route `GET /api/guests/:id/service/status` calls `getServiceStatus(guestId)` (`service.js:210-216`), which inspects the in-memory `runtimes` map. It returns `'stopped'` if no request has spawned the service. Calling `host.serviceStatus()` from the panel does not trigger a spawn.
 
 ### 2.2 Injected Environment & Port Allocation
 When spawning a service process (`service.js:461-492`):
@@ -59,20 +70,25 @@ When spawning a service process (`service.js:461-492`):
    - Polling interval: 200ms
    - Overall timeout: 15,000ms (`SERVICE_READY_TIMEOUT_MS`)
 2. **Success Condition:** The service must answer HTTP 200 OK. Once received, the host marks the runtime status as `'ready'` and proceeds to proxy the request.
-3. **Failure Condition:** If the service exits, crashes, or fails to answer HTTP 200 within 15,000ms, the host calls `discardRuntime`, collects process output (up to 2,000 characters from stdout/stderr), and throws:
+3. **Failure Condition (`service.js:525-535`):** If the service exits, crashes, or fails to answer HTTP 200 within 15,000ms, the host calls `discardRuntime`, collects process output (up to 2,000 characters from stdout/stderr), and throws:
    `GuestServiceError('Guest service failed to become ready. [detail]', 'SERVICE_FAILED')`.
 
-### 2.4 Request Proxy & Protocol
-- Inbound requests from the panel reach the host via `POST /api/guests/:id/service/request`.
-- The host validates the path (`isGuestRequestPath`: must start with `/`, no protocol/host traversal) and proxies to `http://127.0.0.1:${port}${path}`.
-- Allowed methods: `GET`, `POST`, `PUT`, `PATCH`, `DELETE`.
-- Headers passed: `Authorization: Bearer ${token}`, `Accept`, and `Content-Type: application/json` (if body provided).
-- Response body is bounded by `GUEST_REQUEST_RESPONSE_MAX` (8,000,000 bytes). If exceeded, host terminates response with `RESPONSE_TOO_LARGE`.
-
-### 2.5 Shutdown, Idle Stopping, & Process Registry
-1. **Host Shutdown / Extension Stop:** `stopGuestService` triggers `discardRuntime` (`service.js:314-347`). It sends `SIGTERM`, waits up to 5,000ms (`SERVICE_KILL_TIMEOUT_MS`), and then sends `SIGKILL`.
-2. **Process Registry (`service-registry.js`):** Process ID, token, and entry are recorded in `lifecycle.registryDir` upon spawn (`recordServiceProcess`). If the host crashes without stopping children, the subsequent host instance reaps orphan processes on startup.
-3. **Idle Stop (`idleStopMs`):** Panel-driven requests do not set `idleStopMs` and remain active while the panel is mounted, unless explicitly stopped by extension pause or host shutdown.
+### 2.4 Request Proxy & Error Taxonomy
+- Inbound requests from the panel reach the host via `POST /api/guests/:id/service/request` (`routes.js:604-635`).
+- If `service.js` throws a `GuestServiceError`, `routes.js:628-634` maps the error code to HTTP status and JSON:
+  - `SERVICE_FAILED`, `REQUEST_FAILED`, `RESPONSE_TOO_LARGE` -> HTTP 502 Bad Gateway with `{ error: code, message }`.
+  - `NO_SERVICE`, `DISABLED`, `BAD_PATH` -> HTTP 400 Bad Request with `{ error: code, message }`.
+- In the SDK client (`@openchamber/sdk/dist/host.js:284-294`):
+  When the postMessage reply arrives with `ok: false`, it rejects the waiting promise:
+  `waiter.reject(new HostRequestError(message.code, message.error))`.
+  `HostRequestError` has fields:
+  - `name`: `'HostRequestError'` (`host.js:16`)
+  - `code`: `HostRequestErrorCode` (`host.js:17`, defined in `contract.d.ts:400-406`)
+  - `message`: Sanitized error description (`host.js:14`)
+- Direct caller errors:
+  - `HOST_UNAVAILABLE`: Frame missing or client disposed (`host.js:303, 963`).
+  - `HOST_TIMEOUT`: Host did not respond within 20s (`host.js:308`).
+  - `BAD_PATH`: Request path invalid (`host.js:22`).
 
 ---
 
@@ -143,15 +159,47 @@ Under `.agents/run/issue-50-plan/verifications/reproduce-unready-contract.mjs`, 
 
 ## 5. Safety Audit: Remote GitHub Mutation Risk (`StatusReconciler`)
 
-Inspection of `panel/labels.ts:633-721` and `panel/main.ts:3190-3196` revealed a critical safety boundary:
-- On issue snapshot updates, `StatusReconciler.reconcile(issues)` detects discrepancies between an issue's `status:*` label and an active OpenChamber session's liveness state (e.g. running session on a `todo` issue).
-- When a discrepancy is found, it calls `updateStatus(issue, targetCol)`, which issues `PATCH /repos/.../issues/.../labels` directly to the remote GitHub API.
-- There is no dry-run flag in `panel/main.ts` for live repositories.
-- **Safety Decision:** Live end-to-end testing against real production repositories was not performed and must remain prohibited in automated test harnesses to prevent unintended remote GitHub modifications. All verification must use synthetic mock stores and isolated fixtures.
+Source code inspection of `panel/labels.ts:633-721` and `panel/main.ts:1654, 3190-3196`:
+1. When `fetchIssues()` completes (`panel/main.ts:1654`), it calls:
+   `statusReconciler.schedule(issues)`.
+2. Inside `StatusReconciler.schedule` (`panel/labels.ts:664-672`), it sets a 300ms debounce timer leading to `reconcile(issues)`.
+3. In `reconcile(issues)` (`panel/labels.ts:674-718`):
+   - For each issue with an active session (`this.getSession(issue)`), it determines `targetCol = resolveIssueColumn(issue, session)`.
+   - While `targetCol === 'done'` is strictly prevented from issuing closures (`labels.ts:688`), any non-terminal discrepancy (e.g. session is running but issue has `status:todo` -> resolves to `in-progress`; or session is idle -> resolves to `needs-human`) triggers:
+     `await this.updateStatus(issue, targetCol)`.
+4. In `panel/main.ts:3192-3194`:
+   `updateStatus: async (issue, targetColumn) => { await updateIssueStatus(issue, targetColumn); }`.
+5. In `updateIssueStatus` (`panel/main.ts:2114+`):
+   Sends a live `PATCH /repos/:repo/issues/:number` with the updated labels array to `https://api.github.com`.
+6. **Safety Finding:** Loading the panel in a live OpenChamber host with real GitHub repositories and active sessions **will trigger remote label mutations** on GitHub whenever an issue label and session state diverge.
+7. **Prohibition:** Live end-to-end testing against real production repositories must remain strictly prohibited. All automated test suites and contract verifications must use synthetic mock stores, stubbed SDK bridges, and isolated loopback fixtures.
 
 ---
 
-## 6. Structural & Sequential Constraints for Issue #51
+## 6. Panel Status & Notice UX Inventory
+
+Inspection of `panel/index.html` and `panel/main.ts` identifies existing notice infrastructure suitable for D59:
+1. **HTML Elements (`panel/index.html:3580-3583`):**
+   ```html
+   <!-- Status / Info Banner -->
+   <div id="boardBanner" class="banner" style="display: none;">
+     <div class="banner-text" id="boardBannerText"></div>
+     <div id="boardBannerActions"></div>
+   </div>
+   ```
+2. **Styling (`panel/index.html:293-309`):**
+   - `.banner`: Flex container positioned directly below the toolbar, subtle primary background (`var(--prim-subtle)`), bottom border, font size 12px.
+   - `.banner-text`: Flex container with 6px gap, uses theme foreground (`var(--fg)`).
+3. **Helper Functions (`panel/main.ts:497-526`):**
+   - `showBanner(text: string, actionLabel?: string, onAction?: () => void): void`
+   - `hideBanner(): void`
+4. **Alignment with D59:**
+   - D59 requires observable feedback without adding a new toolbar button or speculative settings system.
+   - Calling `showBanner(...)` on failure (capability disabled vs connection failed) and `hideBanner()` on connection success reuses existing UI patterns cleanly and minimally.
+
+---
+
+## 7. Structural & Sequential Constraints for Issue #51
 
 - Issue #51 ("Clear task board toolbar controls") addresses three styling bugs in the panel toolbar:
   1. `#selectSort`: Unstyled native `<select>` causing low contrast / white-on-white text in dark mode.

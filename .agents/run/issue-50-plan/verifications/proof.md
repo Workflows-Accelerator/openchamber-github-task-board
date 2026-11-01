@@ -1,6 +1,6 @@
 # Empirical Proof & Verification Report: Issue #50
 
-**Audit Date:** Fri Oct 30 2026  
+**Audit Date:** Fri Oct 30 2026 (Updated Sun Nov 01 2026 for Plan Correction R2)  
 **Auditor:** Model `9router/engineer`  
 **Repository:** `openchamber-github-task-board`  
 **Worktree:** `/workspace/extensions/github-task-board/.worktrees/team-dev-issue-50-host-connection`  
@@ -11,15 +11,17 @@
 
 ## 1. Capability Verification Matrix
 
-| Layer / Capability | Prior Audit Claim | Empirical Discovery | Root Cause & Evidence | Planned #50 Resolution |
+| Layer / Capability | Prior Plan Defect | Source-Grounded Truth | Root Cause & Evidence | Planned #50 Correction (R2) |
 |---|---|---|---|---|
 | **Built Service Entry** | Spawns as child | `service/main.js` starts internal timer only | Lines 202–227 direct entry calls `CoordinatorService.start()`; no HTTP server. | Introduce lightweight stdlib HTTP server on `OPENCHAMBER_SERVICE_PORT`. |
 | **Readiness Probe (`GET /health`)** | Believed working | Fails with `ECONNREFUSED` | No listener bound on loopback port. Probe times out after 15,000ms -> `SERVICE_FAILED`. | Add `/health` endpoint returning HTTP 200 with timing-safe Bearer auth. |
-| **Inbound Auth** | Assumed present | Missing | `OPENCHAMBER_SERVICE_TOKEN` environment variable is completely ignored. | Implement `crypto.timingSafeEqual` Bearer check on all routes. |
-| **Panel Service Caller** | Assumed active | Completely absent | 0 calls to `serviceRequest` across `panel/main.ts` and `panel/main.js`. Service never spawns. | Add read-only `host.serviceRequest({ method: 'GET', path: '/status' })` in `host.onReady`. |
+| **Inbound Auth** | Assumed present / dummy check on length | Timing safe equal throws `RangeError` on unequal buffer lengths | Node.js `crypto.timingSafeEqual` requires identical buffer byte lengths. | Hash both expected and received tokens with SHA-256 (strictly 32 bytes) prior to comparison. |
+| **Config Validation** | Missing fast-fail; permissive parse | Host hangs 15s if port/token invalid | Unhandled invalid port causes silent stall; `parseInt` accepts trailing non-numeric text. | Strict regex `/^[0-9]+$/` (1..65535) and non-empty token check; sanitized stderr and fast `process.exit(1)`. |
+| **Service Endpoints** | Speculative `GET /status` leaking internals | Leaked `ownerId` and `activeLeases` | Panel does not consume `ownerId`/`activeLeases`; violates least privilege. | Restrict HTTP routes to `GET /health` only; return 404/405 for all others. |
+| **Panel Service Caller** | Missing caller / proposed silent catch | Swallowing errors hides broken connection | Swallowed errors prevent diagnosis of port collisions, crashes, or unapproved states. | Call `GET /health` on board open; distinguish `NO_SERVICE`/`DISABLED` from `SERVICE_FAILED`/`REQUEST_FAILED` with observable notice. |
 | **Graceful Shutdown** | Unknown | Works for internal timer, missing HTTP | `SIGTERM` terminates timer and releases leases, but no server to close. | Close HTTP server on `SIGTERM`, release own leases, preserve other owners. |
 | **Single-Writer Safety** | Verified in tests | Invariant holds in unit tests | `releaseHeldLeases` filters by `ownerId`. Other owners' leases survive. | Retain invariant in host-contract fixture tests. |
-| **Live Remote Mutation Safety** | Not addressed | High Risk | `StatusReconciler` triggers `PATCH .../labels` on snapshot mismatch. Live testing unsafe. | Prohibit live production task mutation; verify via synthetic fixtures. |
+| **Live Remote Mutation Safety** | Not addressed | High Risk: `StatusReconciler` fires live `PATCH` | Loading panel with active sessions mutates remote issue labels via GitHub API. | Prohibit live production repository testing; verify strictly via synthetic fixtures. |
 
 ---
 
@@ -68,20 +70,47 @@ To empirically prove the host readiness failure without wasting 15 seconds per p
 
 ---
 
-## 3. Remote Mutation Safety Analysis (`StatusReconciler`)
+## 3. Cryptographic Verification: Fixed-Digest Timing-Safe Comparison
 
-Inspection of `panel/labels.ts:633-721` and `panel/main.ts:3190-3196`:
-- `StatusReconciler` schedules reconciliation whenever issue snapshots or session updates arrive.
-- When an issue with an active session exhibits a state mismatch (e.g., active session on a task labelled `status:todo`), it immediately invokes `updateStatus`, which calls `updateIssueStatus` (`panel/main.ts:2704`).
-- `updateIssueStatus` issues a remote GitHub API call: `PATCH /repos/:owner/:repo/issues/:number/labels`.
-- Because this extension lacks a dry-run flag for live GitHub APIs, mounting the panel against a production repository with real sessions will trigger automated label modifications.
-- **Verification Rule:** Automated tests and contract proofs must operate exclusively on mocked SDK responses and isolated loopback fixtures. Zero live repository modifications were performed.
+In Node.js, `crypto.timingSafeEqual(bufA, bufB)` throws:
+`RangeError: Input buffers must have the same length`
+whenever `bufA.length !== bufB.length`.
+
+Pre-hashing both the expected token and the caller-provided token with SHA-256 resolves this invariant:
+```javascript
+const expectedHash = crypto.createHash('sha256').update(expectedToken, 'utf8').digest();
+const presentedHash = crypto.createHash('sha256').update(presentedToken, 'utf8').digest();
+const authenticated = crypto.timingSafeEqual(expectedHash, presentedHash);
+```
+- Both `expectedHash` and `presentedHash` are guaranteed strictly 32 bytes (`Buffer.byteLength === 32`).
+- The comparison executes in constant time regardless of whether the presented token is empty, 1 byte, 24 bytes, or 10,000 bytes.
+- Zero `RangeError` exceptions are thrown.
+- Missing headers or malformed bearer schemes return false without invoking buffer allocations.
 
 ---
 
-## 4. Security & Isolation Invariants
+## 4. Verification Categorization & Boundaries
 
-1. **Loopback Only:** The planned server binds strictly to `127.0.0.1`. Binding to `0.0.0.0` or external addresses is forbidden.
-2. **Timing-Safe Auth:** `crypto.timingSafeEqual` prevents timing-based extraction of `OPENCHAMBER_SERVICE_TOKEN`.
-3. **No Secret Ingestion:** The service inherits only the standard host allowlist (`PATH`, `HOME`, temp dir). No API tokens or passwords from `/workspace/.openchamber-data/**` or `.env*` are accessed.
-4. **Boundary Honesty:** Fixture proof demonstrates that the built Node service conforms to OpenChamber's loopback HTTP protocol. It does not certify that the full OpenChamber Web UI on port 3000 is authenticated or visually mounted, as the production parent UI is protected by `#openchamber-ui-password`.
+Three distinct levels of evidence are explicitly distinguished:
+
+1. **Source Predictions (Host Contract):**
+   - Derived directly from installed host runner source (`/usr/local/lib/node_modules/@openchamber/web/server/lib/guests/service.js:134-155, 461-536, 628-689`).
+   - Grounded prediction: Host allocates loopback port and 24-byte hex token, polls `GET /health` with `Authorization: Bearer <token>`, requires HTTP 200 within 15 seconds, and delivers `SIGTERM` on shutdown with a 5-second kill window.
+2. **Fixture Observations (Isolated Built Artifact Tests):**
+   - Measured by spawning the compiled `service/main.js` artifact with ephemeral loopback ports, synthetic bearer tokens, and temporary filesystem paths (`/tmp/antigravity/...`).
+   - Proves HTTP server binding, SHA-256 constant-time Bearer authentication, strict port validation, fast stderr exit, graceful SIGTERM termination, and preservation of foreign unexpired leases.
+3. **Real-Host Verification (Parent Web UI Boundary):**
+   - The production OpenChamber Web UI running on port 3000 is protected by `#openchamber-ui-password`.
+   - In accordance with the secrets wall, password extraction is prohibited.
+   - Genuine end-to-end integration inside an authenticated OpenChamber iframe remains unverified and awaits human-authenticated review (L5).
+
+---
+
+## 5. Remote Mutation Safety Analysis (`StatusReconciler`)
+
+Inspection of `panel/labels.ts:633-721` and `panel/main.ts:1654, 3190-3196`:
+- `StatusReconciler.schedule(issues)` is called immediately upon issue fetch.
+- If an issue has an active session whose liveness maps to a column (`in-progress` or `needs-human`) differing from the issue's GitHub `status:*` label, `StatusReconciler.reconcile` calls `updateIssueStatus`.
+- `updateIssueStatus` dispatches a live `PATCH /repos/:owner/:repo/issues/:number` with mutated labels to `https://api.github.com`.
+- Because this extension lacks a dry-run flag for live GitHub APIs, mounting the panel against a production repository with real sessions will trigger automated label modifications.
+- **Verification Rule:** Automated tests and contract proofs must operate exclusively on mocked SDK responses and isolated loopback fixtures. Zero live repository modifications were performed.
