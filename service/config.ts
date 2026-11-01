@@ -76,3 +76,35 @@ export function loadCoordinatorConfig(overrides?: Partial<CoordinatorConfig>): C
     dryRun: Boolean(dryRunEnv),
   };
 }
+
+/**
+ * Strict fast-fail validation for OpenChamber guest service environment variables.
+ * Validates OPENCHAMBER_SERVICE_PORT and OPENCHAMBER_SERVICE_TOKEN BEFORE any
+ * storage, leaseStore, or service initialization.
+ */
+export function validateServiceHostEnv(): { port: number; token: string } {
+  const rawPort = process.env.OPENCHAMBER_SERVICE_PORT;
+  if (!rawPort || !/^[0-9]+$/.test(rawPort)) {
+    process.stderr.write(
+      '[Coordinator Service] Startup error: OPENCHAMBER_SERVICE_PORT must be an integer between 1 and 65535.\n'
+    );
+    process.exit(1);
+  }
+  const port = Number(rawPort);
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65535) {
+    process.stderr.write(
+      '[Coordinator Service] Startup error: OPENCHAMBER_SERVICE_PORT out of valid range (1..65535).\n'
+    );
+    process.exit(1);
+  }
+
+  const token = process.env.OPENCHAMBER_SERVICE_TOKEN;
+  if (!token || typeof token !== 'string' || token.trim().length === 0) {
+    process.stderr.write(
+      '[Coordinator Service] Startup error: OPENCHAMBER_SERVICE_TOKEN must be a non-empty string.\n'
+    );
+    process.exit(1);
+  }
+
+  return { port, token };
+}

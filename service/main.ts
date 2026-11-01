@@ -1,6 +1,8 @@
 import fs from 'node:fs';
+import http from 'node:http';
+import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { loadCoordinatorConfig, resolveStorageDir } from './config.ts';
+import { loadCoordinatorConfig, resolveStorageDir, validateServiceHostEnv } from './config.ts';
 import { LeaseStore } from './lease-store.ts';
 import type { ClaimResult, CoordinatorConfig, CoordinatorStatus } from './types.js';
 
@@ -199,33 +201,176 @@ export * from './task-claim.ts';
 export * from './session-watcher.ts';
 export * from './reconciler.ts';
 
-// If executed directly, run the coordinator service
-if (process.argv[1] && import.meta.url) {
-  try {
-    const currentFilePath = fileURLToPath(import.meta.url);
-    if (process.argv[1] === currentFilePath) {
-      const service = new CoordinatorService();
+/**
+ * Timing-safe Bearer token authentication using SHA-256 digests.
+ * Pre-hashing guarantees fixed 32-byte buffers, preventing Node.js RangeError
+ * on input length mismatches and eliminating timing side channels.
+ */
+export function authenticateRequest(authHeader: string | undefined, expectedToken: string): boolean {
+  if (!authHeader || typeof authHeader !== 'string') return false;
+  const match = /^Bearer\s+(\S+)$/.exec(authHeader.trim());
+  if (!match) return false;
+  const presentedToken = match[1];
 
-      const shutdown = async (signal: string) => {
-        console.log(`[Coordinator Service] Received ${signal}, initiating graceful shutdown...`);
-        try {
-          await service.stop();
-        } catch (err) {
-          console.error('[Coordinator Service] Error during shutdown:', err);
-        } finally {
-          process.exit(0);
+  const expectedHash = crypto.createHash('sha256').update(expectedToken, 'utf8').digest();
+  const presentedHash = crypto.createHash('sha256').update(presentedToken, 'utf8').digest();
+
+  return crypto.timingSafeEqual(expectedHash, presentedHash);
+}
+
+/**
+ * Creates the minimal HTTP server adapter for the OpenChamber guest service runner.
+ * Enforces loopback binding, 15s socket timeout, 64KB body cap, and strict route confinement.
+ */
+export function createCoordinatorHostServer(token: string): http.Server {
+  const MAX_BODY_BYTES = 65536;
+
+  const server = http.createServer((req, res) => {
+    // 15-second socket timeout
+    req.socket.setTimeout(15000, () => {
+      req.socket.destroy();
+    });
+
+    // Request body cap: 64KB (65,536 bytes)
+    const contentLength = req.headers['content-length'] ? Number(req.headers['content-length']) : null;
+    if (contentLength !== null && (!Number.isSafeInteger(contentLength) || contentLength > MAX_BODY_BYTES)) {
+      res.writeHead(413, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'Payload Too Large' }));
+      req.destroy();
+      return;
+    }
+
+    let bytesRead = 0;
+    req.on('data', (chunk: Buffer) => {
+      bytesRead += chunk.length;
+      if (bytesRead > MAX_BODY_BYTES) {
+        if (!res.headersSent) {
+          res.writeHead(413, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ error: 'Payload Too Large' }));
         }
-      };
+        req.destroy();
+      }
+    });
 
-      process.on('SIGINT', () => void shutdown('SIGINT'));
-      process.on('SIGTERM', () => void shutdown('SIGTERM'));
+    // Constant-time Bearer authentication
+    const authHeader = req.headers.authorization;
+    if (!authenticateRequest(authHeader, token)) {
+      res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      return;
+    }
 
-      service.start().catch((err) => {
-        console.error('[Coordinator Service] Fatal startup error:', err);
-        process.exit(1);
-      });
+    // Route confinement: ONLY authenticated GET /health returns 200
+    const url = new URL(req.url || '/', 'http://127.0.0.1');
+    if (url.pathname === '/health') {
+      if (req.method === 'GET') {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ status: 'ok', service: 'task-coordinator' }));
+        return;
+      } else {
+        res.writeHead(405, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ error: 'Method Not Allowed' }));
+        return;
+      }
+    }
+
+    // All other paths (including /status) return 404 Not Found
+    res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+    res.end(JSON.stringify({ error: 'Not Found' }));
+  });
+
+  return server;
+}
+
+/**
+ * Direct-run entry guard with realpath normalization (Advisory 4).
+ * Ensures module imports in test runners or unit suites have zero side effects,
+ * while host runner direct invocation always starts the service.
+ */
+function isDirectExecution(): boolean {
+  if (!process.argv[1] || !import.meta.url) return false;
+  try {
+    const entryPath = fileURLToPath(import.meta.url);
+    if (process.argv[1] === entryPath) return true;
+    try {
+      if (fs.realpathSync(process.argv[1]) === entryPath) return true;
+    } catch {
+      // Safe fallback if realpathSync throws
     }
   } catch {
-    // Ignore resolution errors when not running from file URL
+    return false;
   }
+  return false;
+}
+
+/**
+ * Starts the coordinator HTTP host adapter server and the background CoordinatorService.
+ * Validates configuration fast before initializing storage or coordinator.
+ */
+export async function startHostServiceServer(): Promise<void> {
+  // Fast-fail startup config validation strictly BEFORE storage/coordinator initialization
+  const { port, token } = validateServiceHostEnv();
+
+  const server = createCoordinatorHostServer(token);
+  const coordinatorService = new CoordinatorService();
+
+  let isShuttingDown = false;
+  const shutdown = async (signal: string) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log(`[Coordinator Service] Received ${signal}, initiating graceful shutdown...`);
+
+    // Advisory 3: arm 2,500ms unref'd safety timer calling server.closeAllConnections?.()
+    const safetyTimer = setTimeout(() => {
+      server.closeAllConnections?.();
+    }, 2500);
+    safetyTimer.unref();
+
+    const closeServerPromise = new Promise<void>((resolve) => {
+      server.close(() => resolve());
+    });
+    server.closeIdleConnections?.();
+
+    try {
+      await Promise.all([
+        coordinatorService.stop(),
+        closeServerPromise,
+      ]);
+    } catch (err) {
+      console.error('[Coordinator Service] Error during shutdown:', err);
+    } finally {
+      clearTimeout(safetyTimer);
+      process.exit(0);
+    }
+  };
+
+  process.on('SIGINT', () => void shutdown('SIGINT'));
+  process.on('SIGTERM', () => void shutdown('SIGTERM'));
+
+  server.on('error', (err) => {
+    console.error('[Coordinator Service] Server error:', err);
+    process.exit(1);
+  });
+
+  await new Promise<void>((resolve, reject) => {
+    server.listen(port, '127.0.0.1', () => {
+      console.log(`[Coordinator Service] Host adapter listening on http://127.0.0.1:${port}`);
+      resolve();
+    });
+    server.once('error', reject);
+  });
+
+  try {
+    await coordinatorService.start();
+  } catch (err) {
+    console.error('[Coordinator Service] Fatal startup error:', err);
+    process.exit(1);
+  }
+}
+
+if (isDirectExecution()) {
+  startHostServiceServer().catch((err) => {
+    console.error('[Coordinator Service] Fatal startup error:', err);
+    process.exit(1);
+  });
 }

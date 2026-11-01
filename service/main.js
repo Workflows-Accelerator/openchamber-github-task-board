@@ -1,5 +1,7 @@
 // service/main.ts
 import fs3 from "node:fs";
+import http from "node:http";
+import crypto2 from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 // service/config.ts
@@ -57,6 +59,30 @@ function loadCoordinatorConfig(overrides) {
     storageDir,
     dryRun: Boolean(dryRunEnv)
   };
+}
+function validateServiceHostEnv() {
+  const rawPort = process.env.OPENCHAMBER_SERVICE_PORT;
+  if (!rawPort || !/^[0-9]+$/.test(rawPort)) {
+    process.stderr.write(
+      "[Coordinator Service] Startup error: OPENCHAMBER_SERVICE_PORT must be an integer between 1 and 65535.\n"
+    );
+    process.exit(1);
+  }
+  const port = Number(rawPort);
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65535) {
+    process.stderr.write(
+      "[Coordinator Service] Startup error: OPENCHAMBER_SERVICE_PORT out of valid range (1..65535).\n"
+    );
+    process.exit(1);
+  }
+  const token = process.env.OPENCHAMBER_SERVICE_TOKEN;
+  if (!token || typeof token !== "string" || token.trim().length === 0) {
+    process.stderr.write(
+      "[Coordinator Service] Startup error: OPENCHAMBER_SERVICE_TOKEN must be a non-empty string.\n"
+    );
+    process.exit(1);
+  }
+  return { port, token };
 }
 
 // service/lease-store.ts
@@ -837,30 +863,130 @@ var CoordinatorService = class {
     this.heldLeases.clear();
   }
 };
-if (process.argv[1] && import.meta.url) {
-  try {
-    const currentFilePath = fileURLToPath(import.meta.url);
-    if (process.argv[1] === currentFilePath) {
-      const service = new CoordinatorService();
-      const shutdown = async (signal) => {
-        console.log(`[Coordinator Service] Received ${signal}, initiating graceful shutdown...`);
-        try {
-          await service.stop();
-        } catch (err) {
-          console.error("[Coordinator Service] Error during shutdown:", err);
-        } finally {
-          process.exit(0);
+function authenticateRequest(authHeader, expectedToken) {
+  if (!authHeader || typeof authHeader !== "string") return false;
+  const match = /^Bearer\s+(\S+)$/.exec(authHeader.trim());
+  if (!match) return false;
+  const presentedToken = match[1];
+  const expectedHash = crypto2.createHash("sha256").update(expectedToken, "utf8").digest();
+  const presentedHash = crypto2.createHash("sha256").update(presentedToken, "utf8").digest();
+  return crypto2.timingSafeEqual(expectedHash, presentedHash);
+}
+function createCoordinatorHostServer(token) {
+  const MAX_BODY_BYTES = 65536;
+  const server = http.createServer((req, res) => {
+    req.socket.setTimeout(15e3, () => {
+      req.socket.destroy();
+    });
+    const contentLength = req.headers["content-length"] ? Number(req.headers["content-length"]) : null;
+    if (contentLength !== null && (!Number.isSafeInteger(contentLength) || contentLength > MAX_BODY_BYTES)) {
+      res.writeHead(413, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "Payload Too Large" }));
+      req.destroy();
+      return;
+    }
+    let bytesRead = 0;
+    req.on("data", (chunk) => {
+      bytesRead += chunk.length;
+      if (bytesRead > MAX_BODY_BYTES) {
+        if (!res.headersSent) {
+          res.writeHead(413, { "Content-Type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({ error: "Payload Too Large" }));
         }
-      };
-      process.on("SIGINT", () => void shutdown("SIGINT"));
-      process.on("SIGTERM", () => void shutdown("SIGTERM"));
-      service.start().catch((err) => {
-        console.error("[Coordinator Service] Fatal startup error:", err);
-        process.exit(1);
-      });
+        req.destroy();
+      }
+    });
+    const authHeader = req.headers.authorization;
+    if (!authenticateRequest(authHeader, token)) {
+      res.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+    const url = new URL(req.url || "/", "http://127.0.0.1");
+    if (url.pathname === "/health") {
+      if (req.method === "GET") {
+        res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ status: "ok", service: "task-coordinator" }));
+        return;
+      } else {
+        res.writeHead(405, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ error: "Method Not Allowed" }));
+        return;
+      }
+    }
+    res.writeHead(404, { "Content-Type": "application/json; charset=utf-8" });
+    res.end(JSON.stringify({ error: "Not Found" }));
+  });
+  return server;
+}
+function isDirectExecution() {
+  if (!process.argv[1] || !import.meta.url) return false;
+  try {
+    const entryPath = fileURLToPath(import.meta.url);
+    if (process.argv[1] === entryPath) return true;
+    try {
+      if (fs3.realpathSync(process.argv[1]) === entryPath) return true;
+    } catch {
     }
   } catch {
+    return false;
   }
+  return false;
+}
+async function startHostServiceServer() {
+  const { port, token } = validateServiceHostEnv();
+  const server = createCoordinatorHostServer(token);
+  const coordinatorService = new CoordinatorService();
+  let isShuttingDown = false;
+  const shutdown = async (signal) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log(`[Coordinator Service] Received ${signal}, initiating graceful shutdown...`);
+    const safetyTimer = setTimeout(() => {
+      server.closeAllConnections?.();
+    }, 2500);
+    safetyTimer.unref();
+    const closeServerPromise = new Promise((resolve) => {
+      server.close(() => resolve());
+    });
+    server.closeIdleConnections?.();
+    try {
+      await Promise.all([
+        coordinatorService.stop(),
+        closeServerPromise
+      ]);
+    } catch (err) {
+      console.error("[Coordinator Service] Error during shutdown:", err);
+    } finally {
+      clearTimeout(safetyTimer);
+      process.exit(0);
+    }
+  };
+  process.on("SIGINT", () => void shutdown("SIGINT"));
+  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  server.on("error", (err) => {
+    console.error("[Coordinator Service] Server error:", err);
+    process.exit(1);
+  });
+  await new Promise((resolve, reject) => {
+    server.listen(port, "127.0.0.1", () => {
+      console.log(`[Coordinator Service] Host adapter listening on http://127.0.0.1:${port}`);
+      resolve();
+    });
+    server.once("error", reject);
+  });
+  try {
+    await coordinatorService.start();
+  } catch (err) {
+    console.error("[Coordinator Service] Fatal startup error:", err);
+    process.exit(1);
+  }
+}
+if (isDirectExecution()) {
+  startHostServiceServer().catch((err) => {
+    console.error("[Coordinator Service] Fatal startup error:", err);
+    process.exit(1);
+  });
 }
 export {
   CasManager,
@@ -874,8 +1000,10 @@ export {
   LeaseStore,
   SessionWatcher,
   TaskClaimEngine,
+  authenticateRequest,
   claimPilotTask,
   computeIssueSha,
+  createCoordinatorHostServer,
   getDefaultLeasesFilePath,
   inspectSessionLiveness,
   isTaskEligibleForPilot,
@@ -883,5 +1011,7 @@ export {
   reconcileTaskState,
   resolveLeaseStorageDir,
   resolveStorageDir,
+  startHostServiceServer,
+  validateServiceHostEnv,
   verifyIssueCas
 };
