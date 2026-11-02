@@ -1,0 +1,570 @@
+{
+  "chromiumResult": {
+    "success": false,
+    "message": "browserType.launch: Target page, context or browser has been closed\nBrowser logs:\n\n<launching> /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-sDEfCt --remote-debugging-pipe --no-startup-window\n<launched> pid=3218401\n[pid=3218401][err] /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell: error while loading shared libraries: libglib-2.0.so.0: cannot open shared object file: No such file or directory\nCall log:\n\u001b[2m  - <launching> /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell --disable-field-trial-config --disable-background-networking --disable-background-timer-throttling --disable-backgrounding-occluded-windows --disable-back-forward-cache --disable-breakpad --disable-client-side-phishing-detection --disable-component-extensions-with-background-pages --disable-component-update --no-default-browser-check --disable-default-apps --disable-dev-shm-usage --disable-edgeupdater --disable-extensions --disable-features=AvoidUnnecessaryBeforeUnloadCheckSync,DestroyProfileOnBrowserClose,DialMediaRouteProvider,GlobalMediaControls,HttpsUpgrades,LensOverlay,MediaRouter,PaintHolding,ThirdPartyStoragePartitioning,BlockOriginHeaderModificationOnRedirect,AvoidCorsURLLoaderRestartOnRedirect,Translate,AutoDeElevate,OptimizationHints,NetworkTimeServiceQuerying,AimEnabled,msForceBrowserSignIn,msEdgeUpdateLaunchServicesPreferredVersion --enable-features=CDPScreenshotNewSurface --allow-pre-commit-input --disable-hang-monitor --disable-ipc-flooding-protection --disable-popup-blocking --disable-prompt-on-repost --disable-renderer-backgrounding --disable-updater-scheduler --force-color-profile=srgb --metrics-recording-only --no-first-run --password-store=basic --use-mock-keychain --no-service-autorun --export-tagged-pdf --disable-search-engine-choice-screen --unsafely-disable-devtools-self-xss-warnings --edge-skip-compat-layer-relaunch --disable-infobars --disable-search-engine-choice-screen --disable-sync --enable-unsafe-swiftshader --headless --hide-scrollbars --mute-audio --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4 --no-sandbox --no-sandbox --user-data-dir=/tmp/playwright_chromiumdev_profile-sDEfCt --remote-debugging-pipe --no-startup-window\u001b[22m\n\u001b[2m  - <launched> pid=3218401\u001b[22m\n\u001b[2m  - [pid=3218401][err] /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell: error while loading shared libraries: libglib-2.0.so.0: cannot open shared object file: No such file or directory\u001b[22m\n\u001b[2m  - [pid=3218401] <gracefully close start>\u001b[22m\n\u001b[2m  - [pid=3218401] <kill>\u001b[22m\n\u001b[2m  - [pid=3218401] <will force kill>\u001b[22m\n\u001b[2m  - [pid=3218401] exception while trying to kill process: Error: kill ESRCH\u001b[22m\n\u001b[2m  - [pid=3218401] <process did exit: exitCode=127, signal=null>\u001b[22m\n\u001b[2m  - [pid=3218401] starting temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=3218401] finished temporary directories cleanup\u001b[22m\n\u001b[2m  - [pid=3218401] <gracefully close end>\u001b[22m\n",
+    "missingLib": "libglib-2.0.so.0"
+  },
+  "pageErrorsCount": 0,
+  "pageErrors": [],
+  "sortFocused": {
+    "outline": "",
+    "outlineColor": "rgb(240, 242, 245)",
+    "isFocused": true
+  },
+  "viewPopoverVisible": true,
+  "repoPopoverVisible": true,
+  "results": [
+    {
+      "config": {
+        "width": 1280,
+        "height": 800,
+        "theme": "dark",
+        "repoMode": "default",
+        "name": "1280-dark-default"
+      },
+      "measurements": {
+        "viewportWidth": 1280,
+        "viewportHeight": 800,
+        "docScrollWidth": 1280,
+        "docClientWidth": 1280,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(22, 24, 27)",
+          "color": "rgb(240, 242, 245)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Select or switch target repository",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 47,
+          "labelClientWidth": 47,
+          "isTruncated": false,
+          "labelText": "Select Repo"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/1280-dark-default.png"
+    },
+    {
+      "config": {
+        "width": 1280,
+        "height": 800,
+        "theme": "dark",
+        "repoMode": "long",
+        "name": "1280-dark-long"
+      },
+      "measurements": {
+        "viewportWidth": 1280,
+        "viewportHeight": 800,
+        "docScrollWidth": 1280,
+        "docClientWidth": 1280,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(22, 24, 27)",
+          "color": "rgb(240, 242, 245)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Workflows-Accelerator/openchamber-github-task-board-extended-name",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 286,
+          "labelClientWidth": 286,
+          "isTruncated": false,
+          "labelText": "Workflows-Accelerator/openchamber-github-task-board-extended-name"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/1280-dark-long.png"
+    },
+    {
+      "config": {
+        "width": 1280,
+        "height": 800,
+        "theme": "light",
+        "repoMode": "default",
+        "name": "1280-light-default"
+      },
+      "measurements": {
+        "viewportWidth": 1280,
+        "viewportHeight": 800,
+        "docScrollWidth": 1280,
+        "docClientWidth": 1280,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(244, 245, 247)",
+          "color": "rgb(28, 30, 33)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Select or switch target repository",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 47,
+          "labelClientWidth": 47,
+          "isTruncated": false,
+          "labelText": "Select Repo"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/1280-light-default.png"
+    },
+    {
+      "config": {
+        "width": 1280,
+        "height": 800,
+        "theme": "light",
+        "repoMode": "long",
+        "name": "1280-light-long"
+      },
+      "measurements": {
+        "viewportWidth": 1280,
+        "viewportHeight": 800,
+        "docScrollWidth": 1280,
+        "docClientWidth": 1280,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(244, 245, 247)",
+          "color": "rgb(28, 30, 33)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Workflows-Accelerator/openchamber-github-task-board-extended-name",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 286,
+          "labelClientWidth": 286,
+          "isTruncated": false,
+          "labelText": "Workflows-Accelerator/openchamber-github-task-board-extended-name"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/1280-light-long.png"
+    },
+    {
+      "config": {
+        "width": 980,
+        "height": 800,
+        "theme": "dark",
+        "repoMode": "default",
+        "name": "980-dark-default"
+      },
+      "measurements": {
+        "viewportWidth": 980,
+        "viewportHeight": 800,
+        "docScrollWidth": 980,
+        "docClientWidth": 980,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(22, 24, 27)",
+          "color": "rgb(240, 242, 245)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Select or switch target repository",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 47,
+          "labelClientWidth": 47,
+          "isTruncated": false,
+          "labelText": "Select Repo"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/980-dark-default.png"
+    },
+    {
+      "config": {
+        "width": 980,
+        "height": 800,
+        "theme": "dark",
+        "repoMode": "long",
+        "name": "980-dark-long"
+      },
+      "measurements": {
+        "viewportWidth": 980,
+        "viewportHeight": 800,
+        "docScrollWidth": 980,
+        "docClientWidth": 980,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(22, 24, 27)",
+          "color": "rgb(240, 242, 245)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Workflows-Accelerator/openchamber-github-task-board-extended-name",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 286,
+          "labelClientWidth": 286,
+          "isTruncated": false,
+          "labelText": "Workflows-Accelerator/openchamber-github-task-board-extended-name"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/980-dark-long.png"
+    },
+    {
+      "config": {
+        "width": 980,
+        "height": 800,
+        "theme": "light",
+        "repoMode": "default",
+        "name": "980-light-default"
+      },
+      "measurements": {
+        "viewportWidth": 980,
+        "viewportHeight": 800,
+        "docScrollWidth": 980,
+        "docClientWidth": 980,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(244, 245, 247)",
+          "color": "rgb(28, 30, 33)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Select or switch target repository",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 47,
+          "labelClientWidth": 47,
+          "isTruncated": false,
+          "labelText": "Select Repo"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/980-light-default.png"
+    },
+    {
+      "config": {
+        "width": 980,
+        "height": 800,
+        "theme": "light",
+        "repoMode": "long",
+        "name": "980-light-long"
+      },
+      "measurements": {
+        "viewportWidth": 980,
+        "viewportHeight": 800,
+        "docScrollWidth": 980,
+        "docClientWidth": 980,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(244, 245, 247)",
+          "color": "rgb(28, 30, 33)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Workflows-Accelerator/openchamber-github-task-board-extended-name",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 286,
+          "labelClientWidth": 286,
+          "isTruncated": false,
+          "labelText": "Workflows-Accelerator/openchamber-github-task-board-extended-name"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/980-light-long.png"
+    },
+    {
+      "config": {
+        "width": 360,
+        "height": 640,
+        "theme": "dark",
+        "repoMode": "default",
+        "name": "360-dark-default"
+      },
+      "measurements": {
+        "viewportWidth": 360,
+        "viewportHeight": 640,
+        "docScrollWidth": 360,
+        "docClientWidth": 360,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(22, 24, 27)",
+          "color": "rgb(240, 242, 245)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Select or switch target repository",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 47,
+          "labelClientWidth": 47,
+          "isTruncated": false,
+          "labelText": "Select Repo"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/360-dark-default.png"
+    },
+    {
+      "config": {
+        "width": 360,
+        "height": 640,
+        "theme": "dark",
+        "repoMode": "long",
+        "name": "360-dark-long"
+      },
+      "measurements": {
+        "viewportWidth": 360,
+        "viewportHeight": 640,
+        "docScrollWidth": 360,
+        "docClientWidth": 360,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(22, 24, 27)",
+          "color": "rgb(240, 242, 245)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Workflows-Accelerator/openchamber-github-task-board-extended-name",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 76,
+          "labelClientWidth": 76,
+          "isTruncated": false,
+          "labelText": "Workflows-Accelerator/openchamber-github-task-board-extended-name"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/360-dark-long.png"
+    },
+    {
+      "config": {
+        "width": 360,
+        "height": 640,
+        "theme": "light",
+        "repoMode": "default",
+        "name": "360-light-default"
+      },
+      "measurements": {
+        "viewportWidth": 360,
+        "viewportHeight": 640,
+        "docScrollWidth": 360,
+        "docClientWidth": 360,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(244, 245, 247)",
+          "color": "rgb(28, 30, 33)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Select or switch target repository",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 47,
+          "labelClientWidth": 47,
+          "isTruncated": false,
+          "labelText": "Select Repo"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/360-light-default.png"
+    },
+    {
+      "config": {
+        "width": 360,
+        "height": 640,
+        "theme": "light",
+        "repoMode": "long",
+        "name": "360-light-long"
+      },
+      "measurements": {
+        "viewportWidth": 360,
+        "viewportHeight": 640,
+        "docScrollWidth": 360,
+        "docClientWidth": 360,
+        "hasHorizontalOverflow": false,
+        "selectSort": {
+          "bg": "rgb(244, 245, 247)",
+          "color": "rgb(28, 30, 33)",
+          "height": "28px",
+          "fontSize": "11px",
+          "fontWeight": "500",
+          "borderRadius": "0px",
+          "border": "",
+          "colorScheme": ""
+        },
+        "repoBtn": {
+          "justifyContent": "flex-start",
+          "textAlign": "start",
+          "title": "Workflows-Accelerator/openchamber-github-task-board-extended-name",
+          "labelMinZero": true,
+          "labelTextAlign": "start",
+          "labelTextOverflow": "ellipsis",
+          "labelScrollWidth": 76,
+          "labelClientWidth": 76,
+          "isTruncated": false,
+          "labelText": "Workflows-Accelerator/openchamber-github-task-board-extended-name"
+        },
+        "viewBtn": {
+          "flexShrink": "",
+          "whiteSpace": "nowrap",
+          "scrollWidth": 95,
+          "clientWidth": 95,
+          "isClipped": false
+        }
+      },
+      "shotPath": "/workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls/.agents/run/issue-51-build/verifications/screenshots/360-light-long.png"
+    }
+  ]
+}
