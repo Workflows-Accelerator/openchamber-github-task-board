@@ -1,6 +1,11 @@
 {
-  "startedAt": "2026-11-02T21:07:08.135Z",
+  "startedAt": "2026-11-02T22:15:15.007Z",
   "checks": [
+    {
+      "name": "Desktop dark mode: body background is #0f1012 (rgb(15, 16, 18))",
+      "pass": true,
+      "detail": "bg=rgb(15, 16, 18)"
+    },
     {
       "name": "Desktop layout: main width >= 1200px at 1280px viewport",
       "pass": true,
@@ -10,6 +15,26 @@
       "name": "Desktop layout: #board-view width >= 1200px",
       "pass": true,
       "detail": "width=1280px"
+    },
+    {
+      "name": "SVG icons: all inline SVGs have bounding box <= 24x24px",
+      "pass": true,
+      "detail": "[{\"width\":14,\"height\":14},{\"width\":13,\"height\":13},{\"width\":14,\"height\":14}]"
+    },
+    {
+      "name": "Unified toolbar: #repo-label is visible, width >= 40px, and not truncated (scrollWidth <= clientWidth + 1)",
+      "pass": true,
+      "detail": "{\"text\":\"All Projects\",\"width\":61,\"height\":18,\"scrollWidth\":61,\"clientWidth\":61}"
+    },
+    {
+      "name": "Unified toolbar: icon, #repo-label, and chevron sit inside #repo-select-btn with >= 4px inner padding",
+      "pass": true,
+      "detail": "{\"btnLeft\":16,\"btnRight\":144,\"kids\":[{\"cls\":\"icon icon-sm\",\"left\":25,\"right\":39},{\"cls\":\"repo-label\",\"left\":43,\"right\":104},{\"cls\":\"repo-select-chevron\",\"left\":112,\"right\":118}],\"contained\":true}"
+    },
+    {
+      "name": "Hidden elements: closed #board-sheet, #repo-popover, #drawer-backdrop have display:none and offsetHeight===0",
+      "pass": true,
+      "detail": "{\"sheetHidden\":true,\"popoverHidden\":true,\"backdropHidden\":true}"
     },
     {
       "name": "Desktop layout: #discovery-status is hidden",
@@ -24,7 +49,7 @@
     {
       "name": "Unified toolbar: height <= 56px at 1280px desktop",
       "pass": true,
-      "detail": "height=56px"
+      "detail": "height=41px"
     },
     {
       "name": "Unified toolbar: contains #repo-select-btn",
@@ -47,6 +72,11 @@
       "detail": ""
     },
     {
+      "name": "Quick-add bar: #quick-add-form is visible in Simple list view",
+      "pass": true,
+      "detail": ""
+    },
+    {
       "name": "Search: initial task rows count >= 3",
       "pass": true,
       "detail": "count=3"
@@ -62,24 +92,24 @@
       "detail": "count=3"
     },
     {
-      "name": "Linear rows: row height <= 52px at 1280px",
+      "name": "Linear rows: all rows have height <= 56px",
       "pass": true,
-      "detail": "height=52px"
+      "detail": "[{\"rowHeight\":44,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Online web board matches OpenChamber panel layout and styling.\"},{\"rowHeight\":45,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Instant 0ms cached board display on reload.\"},{\"rowHeight\":44,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Beta survey responses and feedback collection.\"}]"
     },
     {
-      "name": "Linear rows: contains status dot",
+      "name": "Linear rows: .simple-dot is left-aligned (rect.left < 40)",
       "pass": true,
-      "detail": ""
+      "detail": "[{\"rowHeight\":44,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Online web board matches OpenChamber panel layout and styling.\"},{\"rowHeight\":45,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Instant 0ms cached board display on reload.\"},{\"rowHeight\":44,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Beta survey responses and feedback collection.\"}]"
     },
     {
-      "name": "Linear rows: contains task title",
+      "name": "Linear rows: .simple-row-title is visible (width > 100px, within viewport)",
       "pass": true,
-      "detail": ""
+      "detail": "[{\"rowHeight\":44,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Online web board matches OpenChamber panel layout and styling.\"},{\"rowHeight\":45,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Instant 0ms cached board display on reload.\"},{\"rowHeight\":44,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Beta survey responses and feedback collection.\"}]"
     },
     {
-      "name": "Linear rows: contains issue number",
+      "name": "Linear rows: .simple-row-desc has clean plain text without markdown headings",
       "pass": true,
-      "detail": ""
+      "detail": "[{\"rowHeight\":44,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Online web board matches OpenChamber panel layout and styling.\"},{\"rowHeight\":45,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Instant 0ms cached board display on reload.\"},{\"rowHeight\":44,\"dotLeft\":24,\"titleWidth\":1093,\"titleLeft\":42,\"titleRight\":1135,\"metaLeft\":1145,\"descText\":\"Beta survey responses and feedback collection.\"}]"
     },
     {
       "name": "Slide-over drawer: #board-view remains visible underneath",
@@ -100,6 +130,11 @@
       "name": "Slide-over drawer: width is 480px on desktop (±4px)",
       "pass": true,
       "detail": "width=480px"
+    },
+    {
+      "name": "Slide-over drawer: elementFromPoint(1200,20) and (1200,150) are inside #detail-view and #board-view width <= 800px",
+      "pass": true,
+      "detail": "{\"inDv1\":true,\"inDv2\":true,\"boardWidth\":800}"
     },
     {
       "name": "Slide-over drawer: backdrop click closes drawer",
@@ -179,12 +214,32 @@
     {
       "name": "Mobile 360px: task row min-height >= 44px",
       "pass": true,
-      "detail": "height=88px"
+      "detail": "height=44px"
+    },
+    {
+      "name": "Mobile dark mode: body background is #0f1012 (rgb(15, 16, 18))",
+      "pass": true,
+      "detail": "bg=rgb(15, 16, 18)"
+    },
+    {
+      "name": "Mobile 360px: #quick-add-form visible in Simple list with controls >= 44px",
+      "pass": true,
+      "detail": "{\"visible\":true,\"heights\":[44,44,44,44]}"
+    },
+    {
+      "name": "Mobile 360px: no horizontal page overflow",
+      "pass": true,
+      "detail": ""
     },
     {
       "name": "Mobile 360px: drawer spans full 360px width",
       "pass": true,
       "detail": "width=360px"
+    },
+    {
+      "name": "Mobile 360px: elementFromPoint hits only #detail-view and #board-view is visibility:hidden (not [hidden])",
+      "pass": true,
+      "detail": "{\"allInDrawer\":true,\"boardVisibility\":\"hidden\",\"boardHiddenAttr\":false}"
     }
   ],
   "screenshots": [
@@ -196,6 +251,6 @@
     "screenshots/06-mobile-board.png",
     "screenshots/07-mobile-detail-drawer.png"
   ],
-  "finishedAt": "2026-11-02T21:07:13.314Z",
+  "finishedAt": "2026-11-02T22:15:20.192Z",
   "allPassed": true
 }

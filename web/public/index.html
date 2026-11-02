@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <meta name="color-scheme" content="dark light">
-  <meta name="theme-color" content="#09090b">
+  <meta name="theme-color" content="#0f1012">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Task Board">
@@ -54,7 +54,7 @@
             <label id="repo-picker-label" for="repo-select-btn" class="sr-only">Project</label>
             <div class="repo-picker-wrapper">
               <button id="repo-select-btn" class="button repo-select-btn repo-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="repo-picker-label repo-select-btn" title="All Projects">
-                <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
+                <svg class="icon icon-sm" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
                 <span id="repo-label" class="repo-label">All Projects</span>
                 <span id="repo-select-btn-text" class="sr-only">All Projects</span>
                 <span class="repo-select-chevron" aria-hidden="true">&#x25BE;</span>
@@ -72,14 +72,14 @@
         </div>
         <div class="toolbar-right">
           <div class="search-wrap">
-            <svg class="icon icon-sm search-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+            <svg class="icon icon-sm search-icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
             <input type="text" id="board-search" class="search-input" placeholder="Search..." autocomplete="off" />
           </div>
           <button id="view-btn" class="button btn toolbar-view-btn" type="button" aria-haspopup="dialog">View: Simple list</button>
           <button id="filter-btn" class="button btn toolbar-filter-btn" type="button" aria-haspopup="dialog">Filter</button>
           <button id="sort-btn" class="button btn toolbar-sort-btn" type="button" aria-haspopup="dialog">Sort: Priority</button>
           <button id="refresh-btn" class="button btn btn-icon toolbar-refresh-btn" type="button" title="Refresh Issues & Sessions" aria-label="Refresh">
-            <svg class="icon icon-sm" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
+            <svg class="icon icon-sm" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
           </button>
           <button id="settings-btn" class="button btn toolbar-settings-btn" type="button" aria-label="Settings" title="Settings" aria-haspopup="dialog">Settings</button>
           <button id="signout-btn" class="button btn toolbar-signout-btn" type="button" aria-label="Sign out" title="Sign out">Sign out</button>

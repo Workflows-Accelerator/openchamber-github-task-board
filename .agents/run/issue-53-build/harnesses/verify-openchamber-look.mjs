@@ -147,10 +147,14 @@ async function main() {
     // 1. Desktop 1280px Viewport: Full-Width Layout & Compact Toolbar (D63.1, D63.2)
     // --------------------------------------------------------------------------
     console.log('\n--- 1. Testing desktop 1280px full-width layout & unified toolbar ---');
-    const desktopContext = await browser.newContext({ viewport: { width: 1280, height: 800 } });
+    const desktopContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, colorScheme: 'dark' });
     const desktopPage = await desktopContext.newPage();
 
     await desktopPage.goto(webBoard.url, { waitUntil: 'load' });
+    await desktopPage.evaluate(() => {
+      localStorage.setItem('tb_theme_mode', 'dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    });
     await desktopPage.locator('#login-view:not([hidden])').waitFor({ state: 'visible', timeout: 5000 });
 
     // Sign in
@@ -160,12 +164,66 @@ async function main() {
     await desktopPage.locator('#board-view:not([hidden])').waitFor({ state: 'visible', timeout: 5000 });
     await desktopPage.locator('.task-row').first().waitFor({ state: 'visible', timeout: 5000 });
 
+    // Check dark theme background color on initial dark board
+    const initialBodyBg = await desktopPage.evaluate(() => window.getComputedStyle(document.body).backgroundColor);
+    recordCheck('Desktop dark mode: body background is #0f1012 (rgb(15, 16, 18))', initialBodyBg === 'rgb(15, 16, 18)', `bg=${initialBodyBg}`);
+
     // Check full-width layout
     const mainBox = await desktopPage.locator('main').boundingBox();
     recordCheck('Desktop layout: main width >= 1200px at 1280px viewport', mainBox.width >= 1200, `width=${mainBox.width}px`);
 
     const boardViewBox = await desktopPage.locator('#board-view').boundingBox();
     recordCheck('Desktop layout: #board-view width >= 1200px', boardViewBox.width >= 1200, `width=${boardViewBox.width}px`);
+
+    // Check all SVG icons have bounding box <= 24x24px
+    const svgBoxes = await desktopPage.evaluate(() => {
+      return Array.from(document.querySelectorAll('svg')).map((svg) => {
+        const r = svg.getBoundingClientRect();
+        return { width: r.width, height: r.height };
+      });
+    });
+    const allSvgsCompact = svgBoxes.length >= 3 && svgBoxes.every((b) => b.width > 0 && b.width <= 24 && b.height > 0 && b.height <= 24);
+    recordCheck('SVG icons: all inline SVGs have bounding box <= 24x24px', allSvgsCompact, JSON.stringify(svgBoxes));
+
+    // Check #repo-label is visibly rendered and not collapsed
+    const repoLabelInfo = await desktopPage.evaluate(() => {
+      const el = document.getElementById('repo-label');
+      const r = el.getBoundingClientRect();
+      return { text: el.textContent, width: r.width, height: r.height, scrollWidth: el.scrollWidth, clientWidth: el.clientWidth };
+    });
+    recordCheck('Unified toolbar: #repo-label is visible, width >= 40px, and not truncated (scrollWidth <= clientWidth + 1)',
+      repoLabelInfo.width >= 40 && repoLabelInfo.text.length > 0 && repoLabelInfo.scrollWidth <= repoLabelInfo.clientWidth + 1,
+      JSON.stringify(repoLabelInfo));
+
+    // Check every child of #repo-select-btn stays inside the button border box
+    const repoBtnContainment = await desktopPage.evaluate(() => {
+      const btn = document.getElementById('repo-select-btn');
+      const b = btn.getBoundingClientRect();
+      const kids = Array.from(btn.children).filter((c) => !c.classList.contains('sr-only')).map((c) => {
+        const r = c.getBoundingClientRect();
+        return { cls: c.getAttribute('class'), left: r.left, right: r.right };
+      });
+      return { btnLeft: b.left, btnRight: b.right, kids, contained: kids.every((k) => k.left >= b.left + 4 && k.right <= b.right - 4) };
+    });
+    recordCheck('Unified toolbar: icon, #repo-label, and chevron sit inside #repo-select-btn with >= 4px inner padding', repoBtnContainment.contained, JSON.stringify(repoBtnContainment));
+
+    // Check hidden popovers and closed dialogs have display === 'none' and offsetHeight === 0
+    const hiddenElementsCheck = await desktopPage.evaluate(() => {
+      const sheet = document.getElementById('board-sheet');
+      const popover = document.getElementById('repo-popover');
+      const backdrop = document.getElementById('drawer-backdrop');
+      const sheetStyle = window.getComputedStyle(sheet);
+      const popoverStyle = window.getComputedStyle(popover);
+      const backdropStyle = window.getComputedStyle(backdrop);
+      return {
+        sheetHidden: !sheet.open && sheetStyle.display === 'none' && sheet.offsetHeight === 0,
+        popoverHidden: popover.hidden && popoverStyle.display === 'none' && popover.offsetHeight === 0,
+        backdropHidden: backdrop.hidden && backdropStyle.display === 'none' && backdrop.offsetHeight === 0,
+      };
+    });
+    recordCheck('Hidden elements: closed #board-sheet, #repo-popover, #drawer-backdrop have display:none and offsetHeight===0',
+      hiddenElementsCheck.sheetHidden && hiddenElementsCheck.popoverHidden && hiddenElementsCheck.backdropHidden,
+      JSON.stringify(hiddenElementsCheck));
 
     // Check diagnostic nodes hidden
     const discoveryStatusHidden = await desktopPage.evaluate(() => {
@@ -202,6 +260,10 @@ async function main() {
     const statusStripText = await desktopPage.locator('#status-strip').innerText();
     recordCheck('Status strip: visible with scope, count, freshness', hasStatusStrip && statusStripText.includes('Task Board'));
 
+    // Check inline quick-add draft bar is visible in Simple list view
+    const quickAddVisible = await desktopPage.locator('#quick-add-form').isVisible();
+    recordCheck('Quick-add bar: #quick-add-form is visible in Simple list view', quickAddVisible);
+
     // Capture 01-desktop-dark-board.png
     const shot1 = path.join(SCREENSHOTS_DIR, '01-desktop-dark-board.png');
     await desktopPage.screenshot({ path: shot1 });
@@ -234,15 +296,34 @@ async function main() {
     // 3. Linear-Style Compact Rows (D63.3)
     // --------------------------------------------------------------------------
     console.log('\n--- 3. Testing Linear-style compact Simple list rows ---');
-    const firstRowBox = await desktopPage.locator('.task-row.simple-row').first().boundingBox();
-    recordCheck('Linear rows: row height <= 52px at 1280px', firstRowBox.height <= 52, `height=${firstRowBox.height}px`);
-
-    const hasDot = await desktopPage.locator('.task-row.simple-row .simple-dot').first().isVisible();
-    const hasTitle = await desktopPage.locator('.task-row.simple-row .simple-row-title').first().isVisible();
-    const hasNumber = await desktopPage.locator('.task-row.simple-row .simple-row-number').first().isVisible();
-    recordCheck('Linear rows: contains status dot', hasDot);
-    recordCheck('Linear rows: contains task title', hasTitle);
-    recordCheck('Linear rows: contains issue number', hasNumber);
+    const rowGeometry = await desktopPage.evaluate(() => {
+      const rows = Array.from(document.querySelectorAll('.task-row.simple-row'));
+      return rows.map((row) => {
+        const rowRect = row.getBoundingClientRect();
+        const dot = row.querySelector('.simple-dot');
+        const title = row.querySelector('.simple-row-title');
+        const desc = row.querySelector('.simple-row-desc');
+        const meta = row.querySelector('.simple-row-meta');
+        const dotRect = dot ? dot.getBoundingClientRect() : null;
+        const titleRect = title ? title.getBoundingClientRect() : null;
+        const metaRect = meta ? meta.getBoundingClientRect() : null;
+        return {
+          rowHeight: rowRect.height,
+          dotLeft: dotRect ? dotRect.left : 999,
+          titleWidth: titleRect ? titleRect.width : 0,
+          titleLeft: titleRect ? titleRect.left : 0,
+          titleRight: titleRect ? titleRect.right : 9999,
+          metaLeft: metaRect ? metaRect.left : 0,
+          descText: desc ? desc.textContent : '',
+        };
+      });
+    });
+    recordCheck('Linear rows: all rows have height <= 56px', rowGeometry.every((r) => r.rowHeight > 24 && r.rowHeight <= 56), JSON.stringify(rowGeometry));
+    recordCheck('Linear rows: .simple-dot is left-aligned (rect.left < 40)', rowGeometry.every((r) => r.dotLeft > 0 && r.dotLeft < 40), JSON.stringify(rowGeometry));
+    recordCheck('Linear rows: .simple-row-title is visible (width > 100px, within viewport)',
+      rowGeometry.every((r) => r.titleWidth > 100 && r.titleLeft >= 20 && r.titleRight <= 1280), JSON.stringify(rowGeometry));
+    recordCheck('Linear rows: .simple-row-desc has clean plain text without markdown headings',
+      rowGeometry.every((r) => !r.descText.includes('##')), JSON.stringify(rowGeometry));
 
     // --------------------------------------------------------------------------
     // 4. Slide-Over Detail Drawer (D63.4)
@@ -255,11 +336,24 @@ async function main() {
     const isBackdropVisible = await desktopPage.evaluate(() => !document.getElementById('drawer-backdrop').hidden);
     const hasDrawerOpenClass = await desktopPage.evaluate(() => document.body.classList.contains('drawer-open'));
     const drawerBox = await desktopPage.locator('#detail-view').boundingBox();
+    const drawerHitTest = await desktopPage.evaluate(() => {
+      const dv = document.getElementById('detail-view');
+      const bv = document.getElementById('board-view');
+      const e1 = document.elementFromPoint(1200, 20);
+      const e2 = document.elementFromPoint(1200, 150);
+      return {
+        inDv1: Boolean(e1 && dv.contains(e1)),
+        inDv2: Boolean(e2 && dv.contains(e2)),
+        boardWidth: bv.getBoundingClientRect().width,
+      };
+    });
 
     recordCheck('Slide-over drawer: #board-view remains visible underneath', isBoardViewVisibleDuringDrawer);
     recordCheck('Slide-over drawer: #drawer-backdrop is visible', isBackdropVisible);
     recordCheck('Slide-over drawer: document.body has .drawer-open', hasDrawerOpenClass);
     recordCheck('Slide-over drawer: width is 480px on desktop (±4px)', Math.abs(drawerBox.width - 480) <= 4, `width=${drawerBox.width}px`);
+    recordCheck('Slide-over drawer: elementFromPoint(1200,20) and (1200,150) are inside #detail-view and #board-view width <= 800px',
+      drawerHitTest.inDv1 && drawerHitTest.inDv2 && drawerHitTest.boardWidth <= 800, JSON.stringify(drawerHitTest));
 
     // Capture 03-desktop-detail-drawer.png
     const shot3 = path.join(SCREENSHOTS_DIR, '03-desktop-detail-drawer.png');
@@ -339,10 +433,14 @@ async function main() {
     // 6. Mobile Responsiveness (360px viewport)
     // --------------------------------------------------------------------------
     console.log('\n--- 6. Testing mobile 360px responsiveness & touch targets ---');
-    const mobileContext = await browser.newContext({ viewport: { width: 360, height: 640 } });
+    const mobileContext = await browser.newContext({ viewport: { width: 360, height: 640 }, colorScheme: 'dark' });
     const mobilePage = await mobileContext.newPage();
 
     await mobilePage.goto(webBoard.url, { waitUntil: 'load' });
+    await mobilePage.evaluate(() => {
+      localStorage.setItem('tb_theme_mode', 'dark');
+      document.documentElement.setAttribute('data-theme', 'dark');
+    });
     await mobilePage.locator('#login-view:not([hidden])').waitFor({ state: 'visible', timeout: 5000 });
 
     await mobilePage.locator('#password').fill(BOARD_PASSWORD);
@@ -357,10 +455,25 @@ async function main() {
     const mobileViewBtnBox = await mobilePage.locator('#view-btn').boundingBox();
     const mobileRowBox = await mobilePage.locator('.task-row').first().boundingBox();
 
-    recordCheck('Mobile 360px: #board-search min-height >= 44px', mobileSearchBox.height >= 40, `height=${mobileSearchBox.height}px`);
-    recordCheck('Mobile 360px: #repo-select-btn min-height >= 44px', mobileRepoBtnBox.height >= 40, `height=${mobileRepoBtnBox.height}px`);
-    recordCheck('Mobile 360px: #view-btn min-height >= 44px', mobileViewBtnBox.height >= 40, `height=${mobileViewBtnBox.height}px`);
-    recordCheck('Mobile 360px: task row min-height >= 44px', mobileRowBox.height >= 40, `height=${mobileRowBox.height}px`);
+    recordCheck('Mobile 360px: #board-search min-height >= 44px', mobileSearchBox.height >= 44, `height=${mobileSearchBox.height}px`);
+    recordCheck('Mobile 360px: #repo-select-btn min-height >= 44px', mobileRepoBtnBox.height >= 44, `height=${mobileRepoBtnBox.height}px`);
+    recordCheck('Mobile 360px: #view-btn min-height >= 44px', mobileViewBtnBox.height >= 44, `height=${mobileViewBtnBox.height}px`);
+    recordCheck('Mobile 360px: task row min-height >= 44px', mobileRowBox.height >= 44, `height=${mobileRowBox.height}px`);
+
+    const mobileBodyBg = await mobilePage.evaluate(() => window.getComputedStyle(document.body).backgroundColor);
+    recordCheck('Mobile dark mode: body background is #0f1012 (rgb(15, 16, 18))', mobileBodyBg === 'rgb(15, 16, 18)', `bg=${mobileBodyBg}`);
+
+    const mobileQuickAdd = await mobilePage.evaluate(() => {
+      const form = document.getElementById('quick-add-form');
+      const visible = Boolean(form) && !form.hidden && window.getComputedStyle(form).display !== 'none';
+      const controls = form ? Array.from(form.querySelectorAll('input, select, button')).filter((n) => n.getBoundingClientRect().height > 0) : [];
+      return { visible, heights: controls.map((n) => n.getBoundingClientRect().height) };
+    });
+    recordCheck('Mobile 360px: #quick-add-form visible in Simple list with controls >= 44px',
+      mobileQuickAdd.visible && mobileQuickAdd.heights.length > 0 && mobileQuickAdd.heights.every((h) => h >= 44), JSON.stringify(mobileQuickAdd));
+
+    const mobileOverflow = await mobilePage.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
+    recordCheck('Mobile 360px: no horizontal page overflow', mobileOverflow);
 
     // Capture 06-mobile-board.png
     const shot6 = path.join(SCREENSHOTS_DIR, '06-mobile-board.png');
@@ -373,6 +486,23 @@ async function main() {
 
     const mobileDrawerBox = await mobilePage.locator('#detail-view').boundingBox();
     recordCheck('Mobile 360px: drawer spans full 360px width', Math.abs(mobileDrawerBox.width - 360) <= 4, `width=${mobileDrawerBox.width}px`);
+
+    const mobileDrawerHit = await mobilePage.evaluate(() => {
+      const dv = document.getElementById('detail-view');
+      const bv = document.getElementById('board-view');
+      const points = [[20, 20], [180, 120], [340, 300], [180, 600]];
+      return {
+        allInDrawer: points.every(([x, y]) => {
+          const e = document.elementFromPoint(x, y);
+          return Boolean(e && dv.contains(e));
+        }),
+        boardVisibility: window.getComputedStyle(bv).visibility,
+        boardHiddenAttr: bv.hidden,
+      };
+    });
+    recordCheck('Mobile 360px: elementFromPoint hits only #detail-view and #board-view is visibility:hidden (not [hidden])',
+      mobileDrawerHit.allInDrawer && mobileDrawerHit.boardVisibility === 'hidden' && mobileDrawerHit.boardHiddenAttr === false,
+      JSON.stringify(mobileDrawerHit));
 
     // Capture 07-mobile-detail-drawer.png
     const shot7 = path.join(SCREENSHOTS_DIR, '07-mobile-detail-drawer.png');

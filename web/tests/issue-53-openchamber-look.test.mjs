@@ -409,3 +409,140 @@ test('5.b D64 app.js supports Theme mode Auto / Dark / Light persisted to localS
     'Auto mode removes data-theme or sets data-theme="auto"'
   );
 });
+
+// ============================================================================
+// 6. Hostile Review Regression Checks (Blockers 1–6)
+// ============================================================================
+test('6.a Blocker 1: all inline SVGs in index.html have explicit width="14" height="14" and theme.css constrains svg/.icon/.icon-sm to 14px', () => {
+  const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
+  const svgTags = html.match(/<svg\b[^>]*>/g) || [];
+  assert.ok(svgTags.length >= 3, 'index.html should contain toolbar SVG icons');
+  for (const tag of svgTags) {
+    assert.match(tag, /\bwidth="14"/, `SVG tag must have width="14": ${tag}`);
+    assert.match(tag, /\bheight="14"/, `SVG tag must have height="14": ${tag}`);
+  }
+
+  const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
+  assert.match(
+    css,
+    /svg,\s*\.icon,\s*\.icon-sm\s*\{[^}]*width:\s*14px;[^}]*height:\s*14px;[^}]*flex-shrink:\s*0;/s,
+    'theme.css must size svg, .icon, .icon-sm to 14px x 14px with flex-shrink: 0'
+  );
+
+  const { app, get } = createMockBrowser();
+  app.state.repositories = {
+    freshnessMs: 60000,
+    visibleCount: 2,
+    discoveryFailed: false,
+    repositories: [
+      { full: 'owner/alpha', available: true, archived: false, hasIssues: true },
+      { full: 'owner/beta', available: true, archived: false, hasIssues: true },
+    ],
+  };
+  app.state.selected = 'all';
+  app.renderPicker();
+  assert.equal(get('repo-label').textContent, 'All Projects');
+  app.state.selected = 'owner/alpha';
+  app.renderPicker();
+  assert.equal(get('repo-label').textContent, 'Alpha');
+});
+
+test('6.b Blocker 2: Simple list row strips markdown headings/checklists from description preview and theme.css sets flex-direction: row on .simple-row', () => {
+  const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
+  assert.match(
+    css,
+    /\.simple-row,\s*\.view-simple\s+\.task-row\s*\{[^}]*flex-direction:\s*row;/s,
+    'theme.css must explicitly set flex-direction: row on .simple-row, .view-simple .task-row'
+  );
+  assert.match(
+    css,
+    /\.simple-row-main\s*\{[^}]*flex-direction:\s*column;/s,
+    'theme.css must set flex-direction: column on .simple-row-main'
+  );
+
+  const { app, get } = createMockBrowser();
+  const issueWithMarkdown = {
+    number: 53,
+    title: 'Match OpenChamber UI',
+    description: '## Overview\nUpdate the standalone web board to match the OpenChamber extension UI.\n\n### Acceptance Criteria\n- [ ] Match colors\n',
+    body: '## Overview\nUpdate the standalone web board to match the OpenChamber extension UI.\n\n### Acceptance Criteria\n- [ ] Match colors\n',
+    state: 'open',
+    statusLabel: 'status:todo',
+    labels: ['status:todo', 'priority:high'],
+    user: 'board-owner',
+    repository: { full: 'owner/alpha', owner: 'owner', name: 'alpha' },
+    createdAt: '2026-10-01T00:00:00Z',
+    updatedAt: '2026-10-02T00:00:00Z',
+    counts: {},
+  };
+  app.state.board = {
+    repo: 'owner/alpha',
+    repository: { full: 'owner/alpha', owner: 'owner', name: 'alpha', hasIssues: true, archived: false },
+    issues: [issueWithMarkdown],
+  };
+  app.state.repositories = { repositories: [{ full: 'owner/alpha', available: true, archived: false, hasIssues: true }] };
+  app.state.selected = 'owner/alpha';
+  app.state.viewState = { view: 'simple', filters: [], sort: 'priority' };
+
+  app.renderBoard();
+  const row = get('task-list').children[0].children[0];
+  const mainCol = row.children.find((c) => c.classList.contains('simple-row-main'));
+  assert.ok(mainCol, 'Row must contain .simple-row-main');
+  const descEl = mainCol.children.find((c) => c.classList.contains('simple-row-desc'));
+  assert.ok(descEl, 'Row must contain .simple-row-desc');
+  assert.equal(descEl.textContent, 'Update the standalone web board to match the OpenChamber extension UI.');
+  assert.ok(!descEl.textContent.includes('##'), 'Description preview must not include markdown heading markers');
+});
+
+test('6.c Blocker 3: theme.css enforces display: none !important on closed dialog:not([open]), .board-sheet:not([open]), .view[hidden], and [hidden]', () => {
+  const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
+  assert.match(
+    css,
+    /dialog:not\(\[open\]\),\s*\.board-sheet:not\(\[open\]\),\s*\.view\[hidden\],\s*\[hidden\]\s*\{\s*display:\s*none\s*!important;\s*\}/s,
+    'theme.css must enforce display: none !important on closed dialogs and hidden elements'
+  );
+});
+
+test('6.d Blocker 4: theme.css places explicit [data-theme="dark"] and [data-theme="light"] rules AFTER @media (prefers-color-scheme: light) and index.html sets theme-color #0f1012', () => {
+  const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
+  const mediaIdx = css.indexOf('@media (prefers-color-scheme: light)');
+  const darkIdx = css.indexOf(':root[data-theme="dark"]');
+  const lightIdx = css.indexOf(':root[data-theme="light"]');
+  assert.ok(mediaIdx >= 0, 'theme.css must contain @media (prefers-color-scheme: light)');
+  assert.ok(darkIdx > mediaIdx, ':root[data-theme="dark"] must appear AFTER @media (prefers-color-scheme: light)');
+  assert.ok(lightIdx > mediaIdx, ':root[data-theme="light"] must appear AFTER @media (prefers-color-scheme: light)');
+
+  const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
+  assert.match(html, /<meta name="theme-color" content="#0f1012">/, 'index.html must set theme-color to #0f1012');
+});
+
+test('6.e Blocker 5: theme.css positions #drawer-backdrop at z-index 900 and #detail-view at z-index 1000 and constrains body.drawer-open #board-view', () => {
+  const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
+  assert.match(css, /#drawer-backdrop[\s\S]*?z-index:\s*900/, '#drawer-backdrop must have z-index: 900');
+  assert.match(css, /#detail-view[\s\S]*?z-index:\s*1000/, '#detail-view must have z-index: 1000');
+  assert.match(css, /body\.drawer-open\s+#board-view/, 'theme.css must constrain body.drawer-open #board-view');
+});
+
+test('6.f Blocker 6: #quick-add-form is visible in Simple list view even without stage:draft filter, and hidden in non-simple views', () => {
+  const { app, get } = createMockBrowser();
+  app.state.board = {
+    repo: 'owner/alpha',
+    repository: { full: 'owner/alpha', owner: 'owner', name: 'alpha', hasIssues: true, archived: false },
+    issues: mockIssues,
+  };
+  app.state.repositories = { repositories: [{ full: 'owner/alpha', available: true, archived: false, hasIssues: true }] };
+  app.state.selected = 'owner/alpha';
+
+  app.state.viewState = { view: 'simple', filters: [], sort: 'priority' };
+  app.renderBoard();
+  assert.equal(get('quick-add-form').hidden, false, '#quick-add-form must be visible in simple list view');
+
+  app.state.viewState = { view: 'cards', filters: [], sort: 'priority' };
+  app.renderBoard();
+  assert.equal(get('quick-add-form').hidden, true, '#quick-add-form must be hidden in cards view');
+
+  app.state.viewState = { view: 'kanban', filters: [], sort: 'priority' };
+  app.renderBoard();
+  assert.equal(get('quick-add-form').hidden, true, '#quick-add-form must be hidden in kanban view');
+});
+

@@ -1173,7 +1173,7 @@
       state.viewState.filters = []; rememberView();
     } }));
     $('capture-hint').hidden = !quickCapture();
-    $('quick-add-form').hidden = !quickCapture();
+    $('quick-add-form').hidden = state.viewState.view !== 'simple';
     var target = $('quick-add-project');
     var previous = target.value;
     target.textContent = '';
@@ -1535,6 +1535,23 @@
     'done': '#238636'
   };
 
+  function cleanPreviewText(raw) {
+    if (!raw || typeof raw !== 'string') return '';
+    var cleaned = raw.replace(/<!--[\s\S]*?-->/g, '');
+    var lines = cleaned.split(/\r?\n/);
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i].trim();
+      if (!line) continue;
+      if (/^#{1,6}\s+/.test(line)) continue;
+      if (/^(?:[-*_]\s*){3,}$/.test(line)) continue;
+      if (/^(?:```|~~~)/.test(line)) continue;
+      if (/^[-*+]\s+\[[ xX]\]\s+/.test(line)) continue;
+      line = line.replace(/^(?:[-*+]\s+|\d+\.\s+|>\s+)/, '').replace(/(\*\*|__|`)/g, '').trim();
+      if (line) return line.length > 160 ? line.slice(0, 157) + '...' : line;
+    }
+    return '';
+  }
+
   function simpleTaskRow(issue) {
     var friendly = resolveFriendlyTitle(issue);
     var stage = stageOf(issue);
@@ -1547,7 +1564,7 @@
     });
     var titleEl = el('span', { class: 'simple-row-title task-title', text: friendly.title });
     var mainColChildren = [titleEl];
-    var descText = friendly.subtitle || issue.description || (issue.body ? issue.body.split('\n')[0].replace(/^#+\s*/, '').trim() : '');
+    var descText = friendly.subtitle || cleanPreviewText(issue.description || issue.body || '');
     if (descText && descText !== friendly.title) {
       mainColChildren.push(el('span', { class: 'simple-row-desc task-subtitle muted small', text: descText }));
     }
@@ -1687,14 +1704,21 @@
     }
 
     var btnText = $('repo-select-btn-text');
+    var repoLabel = $('repo-label');
+    var btn = $('repo-select-btn');
+    var cur = state.selected === 'all' ? null : view.repositories.find(function (r) { return r.full === state.selected; });
+    var pickerText = state.selected === 'all' ? 'All Projects' : shortName(cur ? cur.full : state.selected);
+    var pickerTitle = state.selected === 'all' ? 'All Projects' : state.selected;
     if (btnText) {
-      if (state.selected === 'all') {
-        btnText.textContent = 'All Projects';
-      } else {
-        var cur = view.repositories.find(function (r) { return r.full === state.selected; });
-        btnText.textContent = shortName(cur ? cur.full : state.selected);
-        btnText.setAttribute('title', state.selected);
-      }
+      btnText.textContent = pickerText;
+      if (state.selected !== 'all') btnText.setAttribute('title', state.selected);
+    }
+    if (repoLabel) {
+      repoLabel.textContent = pickerText;
+      repoLabel.setAttribute('title', pickerTitle);
+    }
+    if (btn) {
+      btn.setAttribute('title', pickerTitle);
     }
 
     renderRepoOptions();
@@ -2676,6 +2700,8 @@
       setThemeMode: setThemeMode,
       getThemeMode: getThemeMode,
       simpleTaskRow: simpleTaskRow,
+      cleanPreviewText: cleanPreviewText,
+      renderPicker: renderPicker,
     };
   }
 
