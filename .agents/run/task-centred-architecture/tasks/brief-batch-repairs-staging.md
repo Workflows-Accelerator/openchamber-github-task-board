@@ -4,7 +4,7 @@ Worktree: /workspace/extensions/github-task-board/.worktrees/team-dev-staging-re
 Branch: staging/repairs-49-50-51, branched from accepted fix/issue-51-toolbar-controls (which already includes accepted #50 fix/issue-50-host-connection), clean, node_modules and web/node_modules symlinked.
 Preflight facts are authoritative at dispatch: skip initial pwd/ls/git status discovery.
 Branches to integrate:
-- Already in HEAD: fix/issue-50-host-connection (f0dae5b) + fix/issue-51-toolbar-controls ({{ISSUE_51_HEAD}})
+- Already in HEAD: fix/issue-50-host-connection (f0dae5b) + fix/issue-51-toolbar-controls (c37ad8b)
 - Merge into HEAD: fix/issue-49-login-label (84d2e39) — `--no-ff -m "chore(staging): merge fix/issue-49-login-label into staging/repairs-49-50-51"`
 Test commands: npm run build ; npm run typecheck ; npm test ; npm --prefix web test
 Do not touch: root checkout, other worktrees, live deployment (/workspace/releases/board/**), systemd/process state of live board or OpenChamber port 3000, package.json, package-lock.json.
