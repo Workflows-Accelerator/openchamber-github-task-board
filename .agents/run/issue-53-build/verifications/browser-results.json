@@ -1,0 +1,201 @@
+{
+  "startedAt": "2026-11-02T21:07:08.135Z",
+  "checks": [
+    {
+      "name": "Desktop layout: main width >= 1200px at 1280px viewport",
+      "pass": true,
+      "detail": "width=1280px"
+    },
+    {
+      "name": "Desktop layout: #board-view width >= 1200px",
+      "pass": true,
+      "detail": "width=1280px"
+    },
+    {
+      "name": "Desktop layout: #discovery-status is hidden",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Desktop layout: #refresh-policy is hidden",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Unified toolbar: height <= 56px at 1280px desktop",
+      "pass": true,
+      "detail": "height=56px"
+    },
+    {
+      "name": "Unified toolbar: contains #repo-select-btn",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Unified toolbar: contains #board-search",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Unified toolbar: contains controls (#view-btn, #filter-btn, #sort-btn, #refresh-btn, #settings-btn, #signout-btn)",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Status strip: visible with scope, count, freshness",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Search: initial task rows count >= 3",
+      "pass": true,
+      "detail": "count=3"
+    },
+    {
+      "name": "Search: searching \"Beta\" filters to 1 row",
+      "pass": true,
+      "detail": "count=1"
+    },
+    {
+      "name": "Search: clearing search restores all rows",
+      "pass": true,
+      "detail": "count=3"
+    },
+    {
+      "name": "Linear rows: row height <= 52px at 1280px",
+      "pass": true,
+      "detail": "height=52px"
+    },
+    {
+      "name": "Linear rows: contains status dot",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Linear rows: contains task title",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Linear rows: contains issue number",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Slide-over drawer: #board-view remains visible underneath",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Slide-over drawer: #drawer-backdrop is visible",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Slide-over drawer: document.body has .drawer-open",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Slide-over drawer: width is 480px on desktop (±4px)",
+      "pass": true,
+      "detail": "width=480px"
+    },
+    {
+      "name": "Slide-over drawer: backdrop click closes drawer",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Slide-over drawer: backdrop is hidden after close",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Slide-over drawer: body .drawer-open removed after close",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Theme toggle: settings sheet contains 3 theme mode options",
+      "pass": true,
+      "detail": "count=3"
+    },
+    {
+      "name": "Theme toggle: Light mode sets data-theme=\"light\"",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Theme toggle: Light mode persists tb_theme_mode=\"light\"",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Theme toggle: Light mode body background is #f4f5f7 (rgb(244, 245, 247))",
+      "pass": true,
+      "detail": "bg=rgb(244, 245, 247)"
+    },
+    {
+      "name": "Theme toggle: Dark mode sets data-theme=\"dark\"",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Theme toggle: Dark mode persists tb_theme_mode=\"dark\"",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Theme toggle: Dark mode body background is #0f1012 (rgb(15, 16, 18))",
+      "pass": true,
+      "detail": "bg=rgb(15, 16, 18)"
+    },
+    {
+      "name": "Theme toggle: Auto mode clears data-theme attribute",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Theme toggle: Auto mode persists tb_theme_mode=\"auto\"",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Mobile 360px: #board-search min-height >= 44px",
+      "pass": true,
+      "detail": "height=44px"
+    },
+    {
+      "name": "Mobile 360px: #repo-select-btn min-height >= 44px",
+      "pass": true,
+      "detail": "height=44px"
+    },
+    {
+      "name": "Mobile 360px: #view-btn min-height >= 44px",
+      "pass": true,
+      "detail": "height=44px"
+    },
+    {
+      "name": "Mobile 360px: task row min-height >= 44px",
+      "pass": true,
+      "detail": "height=88px"
+    },
+    {
+      "name": "Mobile 360px: drawer spans full 360px width",
+      "pass": true,
+      "detail": "width=360px"
+    }
+  ],
+  "screenshots": [
+    "screenshots/01-desktop-dark-board.png",
+    "screenshots/02-desktop-search-filter.png",
+    "screenshots/03-desktop-detail-drawer.png",
+    "screenshots/05-desktop-settings-theme.png",
+    "screenshots/04-desktop-light-board.png",
+    "screenshots/06-mobile-board.png",
+    "screenshots/07-mobile-detail-drawer.png"
+  ],
+  "finishedAt": "2026-11-02T21:07:13.314Z",
+  "allPassed": true
+}

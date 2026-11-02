@@ -31,6 +31,7 @@
     drawerOpenerKey: null,
     drawerFromDraftBtn: false,
     sessionPromise: null,
+    searchQuery: '',
   };
 
   function identity(issue) {
@@ -400,6 +401,9 @@
     if (discoveryStatus) discoveryStatus.textContent = '';
     var refreshPolicy = document.getElementById('refresh-policy');
     if (refreshPolicy) refreshPolicy.textContent = '';
+    state.searchQuery = '';
+    var searchInput = document.getElementById('board-search');
+    if (searchInput) searchInput.value = '';
   }
 
   function showLogin(message) {
@@ -498,6 +502,61 @@
   var OFFLINE_DRAFTS_KEY = 'openchamber_offline_drafts';
   var AUTH_HINT_KEY = 'tb_auth_hint';
   var CACHED_BOARD_KEY = 'tb_cached_board';
+  var THEME_MODE_KEY = 'tb_theme_mode';
+
+  function getThemeMode() {
+    try {
+      return (typeof localStorage !== 'undefined' && localStorage.getItem(THEME_MODE_KEY)) || 'auto';
+    } catch (_) {
+      return 'auto';
+    }
+  }
+
+  function setThemeMode(mode) {
+    try {
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(THEME_MODE_KEY, mode);
+      }
+    } catch (_) {}
+    applyThemeMode(mode);
+  }
+
+  function applyThemeMode(mode) {
+    var m = mode || getThemeMode();
+    if (typeof document !== 'undefined' && document.documentElement) {
+      if (m === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      } else if (m === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+    }
+  }
+
+  function matchesSearch(issue, q) {
+    if (!q) return true;
+    var normQ = q.toLowerCase().trim();
+    if (!normQ) return true;
+    if (issue.title && issue.title.toLowerCase().indexOf(normQ) !== -1) return true;
+    if (issue.number && String(issue.number).indexOf(normQ) !== -1) return true;
+    if (issue.description && issue.description.toLowerCase().indexOf(normQ) !== -1) return true;
+    if (issue.body && issue.body.toLowerCase().indexOf(normQ) !== -1) return true;
+    if (issue.labels && issue.labels.some(function (l) {
+      var name = typeof l === 'string' ? l : (l.name || '');
+      return name.toLowerCase().indexOf(normQ) !== -1;
+    })) return true;
+    return false;
+  }
+
+  function setSearchQuery(q) {
+    state.searchQuery = q || '';
+    var input = $('board-search');
+    if (input && input.value !== state.searchQuery) {
+      input.value = state.searchQuery;
+    }
+    renderBoard();
+  }
   var isSyncingOfflineDrafts = false;
   var offlineSeq = 0;
 
@@ -951,16 +1010,31 @@
   }
 
   function showView(name) {
-    ['login', 'board', 'detail'].forEach(function (view) {
-      var section = document.getElementById(view + '-view');
-      section.hidden = view !== name;
-    });
-    var backdrop = $('drawer-backdrop');
-    if (backdrop) {
-      backdrop.hidden = name !== 'detail';
-    }
-    if (name === 'board' && typeof document !== 'undefined' && document.querySelectorAll) {
-      document.querySelectorAll('.draft-description').forEach(autoSizeTextarea);
+    if (name === 'detail') {
+      var detailSec = document.getElementById('detail-view');
+      if (detailSec) detailSec.hidden = false;
+      var boardSec = document.getElementById('board-view');
+      if (boardSec) boardSec.hidden = false;
+      var loginSec = document.getElementById('login-view');
+      if (loginSec) loginSec.hidden = true;
+      var backdrop = $('drawer-backdrop');
+      if (backdrop) backdrop.hidden = false;
+      if (typeof document !== 'undefined' && document.body && document.body.classList) {
+        document.body.classList.add('drawer-open');
+      }
+    } else {
+      ['login', 'board', 'detail'].forEach(function (view) {
+        var section = document.getElementById(view + '-view');
+        if (section) section.hidden = view !== name;
+      });
+      var backdrop = $('drawer-backdrop');
+      if (backdrop) backdrop.hidden = true;
+      if (typeof document !== 'undefined' && document.body && document.body.classList) {
+        document.body.classList.remove('drawer-open');
+      }
+      if (name === 'board' && typeof document !== 'undefined' && document.querySelectorAll) {
+        document.querySelectorAll('.draft-description').forEach(autoSizeTextarea);
+      }
     }
   }
 
@@ -1146,6 +1220,27 @@
       });
       content.appendChild(el('p', { class: 'muted small', text: 'Any selected option within a group; all selected groups must match.' }));
     } else {
+      content.appendChild(el('h3', { text: 'Theme' }));
+      var currentTheme = getThemeMode();
+      var themeModes = [
+        { id: 'auto', label: 'Auto (device theme)' },
+        { id: 'dark', label: 'Dark' },
+        { id: 'light', label: 'Light' }
+      ];
+      themeModes.forEach(function (tm) {
+        content.appendChild(el('button', {
+          type: 'button',
+          class: 'sheet-option theme-option',
+          text: tm.label,
+          'aria-label': 'Theme: ' + tm.label,
+          'aria-pressed': String(currentTheme === tm.id),
+          onclick: function () {
+            setThemeMode(tm.id);
+            closeSheet();
+          }
+        }));
+      });
+      content.appendChild(el('h3', { text: 'Project names' }));
       content.appendChild(el('p', { class: 'muted', text: 'Names are shared across devices. Empty resets the automatic short name.' }));
       (state.repositories ? state.repositories.repositories : []).forEach(function (repo) {
         var input = el('input', { type: 'text', maxlength: '60', 'aria-label': 'Project name for ' + repo.full });
@@ -1429,16 +1524,71 @@
     });
     return row;
   }
+  var STAGE_COLORS = {
+    'draft': '#a855f7',
+    'backlog': '#8b949e',
+    'todo': '#3b82f6',
+    'planned': '#58a6ff',
+    'in-progress': '#10b981',
+    'needs-human': '#ef4444',
+    'in-review': '#3fb950',
+    'done': '#238636'
+  };
+
+  function simpleTaskRow(issue) {
+    var friendly = resolveFriendlyTitle(issue);
+    var stage = stageOf(issue);
+    var dotColor = STAGE_COLORS[stage] || '#8b949e';
+    var dot = el('span', {
+      class: 'simple-dot status-dot stage-' + stage,
+      style: 'background-color: ' + dotColor + ';',
+      title: statusText('status:' + stage),
+      'aria-hidden': 'true'
+    });
+    var titleEl = el('span', { class: 'simple-row-title task-title', text: friendly.title });
+    var mainColChildren = [titleEl];
+    var descText = friendly.subtitle || issue.description || (issue.body ? issue.body.split('\n')[0].replace(/^#+\s*/, '').trim() : '');
+    if (descText && descText !== friendly.title) {
+      mainColChildren.push(el('span', { class: 'simple-row-desc task-subtitle muted small', text: descText }));
+    }
+    var content = el('div', { class: 'simple-row-main' }, mainColChildren);
+
+    var metaChildren = [];
+    if (issue.repository && (!state.selected || state.selected === 'all')) {
+      metaChildren.push(el('span', { class: 'badge repo-badge', text: shortName(issue.repository.full), title: issue.repository.full }));
+    }
+    if (countOf(issue, 'openQuestions')) {
+      metaChildren.push(el('span', { class: 'badge attention', text: countOf(issue, 'openQuestions') + ' questions' }));
+    }
+    if (countOf(issue, 'humanTasks')) {
+      metaChildren.push(el('span', { class: 'badge attention', text: countOf(issue, 'humanTasks') + ' human' }));
+    }
+    metaChildren.push(el('span', { class: 'task-number simple-row-number muted', text: issue.offline ? '(offline)' : '#' + issue.number }));
+    var meta = el('div', { class: 'simple-row-meta' }, metaChildren);
+
+    return el('button', {
+      type: 'button',
+      class: 'task-row simple-row',
+      'data-issue-key': identity(issue),
+      'aria-label': friendly.title + ', ' + statusText('status:' + stage) + ', #' + (issue.offline ? 'offline' : issue.number),
+      onclick: function () {
+        if (issue.offline) { setNotice('Saved offline. Use Simple list + Draft filter to edit.'); return; }
+        openIssueView(issue, false);
+      }
+    }, [dot, content, meta]);
+  }
+
   function taskCard(issue, compact) {
+    if (compact) return simpleTaskRow(issue);
     var friendly = resolveFriendlyTitle(issue);
     var children = [el('div', { class: 'task-top' }, [el('span', { class: 'task-title', text: friendly.title }), el('span', { class: 'task-number', text: issue.offline ? '(offline)' : '#' + issue.number })])];
-    if (friendly.subtitle && !compact) children.push(el('span', { class: 'task-subtitle muted small', text: friendly.subtitle }));
+    if (friendly.subtitle) children.push(el('span', { class: 'task-subtitle muted small', text: friendly.subtitle }));
     children.push(el('div', { class: 'badges' }, [issue.repository ? projectBadge(issue.repository) : null,
       badge(statusText('status:' + stageOf(issue)), 'status'), priorityOf(issue) ? badge(priorityOf(issue), 'badge-priority') : null,
       issue.offline ? badge('(offline)', 'badge-offline') : null,
       countOf(issue, 'openQuestions') ? badge(countOf(issue, 'openQuestions') + ' questions', 'attention') : null,
       countOf(issue, 'humanTasks') ? badge(countOf(issue, 'humanTasks') + ' human tasks', 'attention') : null]));
-    if (!compact) children.push(el('p', { class: 'muted small', text: 'Updated ' + relative(issue.updatedAt) }));
+    children.push(el('p', { class: 'muted small', text: 'Updated ' + relative(issue.updatedAt) }));
     return el('button', { type: 'button', class: 'task-row', 'data-issue-key': identity(issue), onclick: function () {
       if (issue.offline) { setNotice('Saved offline. Use Simple list + Draft filter to edit.'); return; } openIssueView(issue, false);
     } }, children);
@@ -1451,7 +1601,13 @@
     $('repo-label').setAttribute('title', board.repo);
     document.title = 'Task Board · ' + name;
     renderControls(); renderFreshness();
-    var issues = filterSort((board.issues || []).concat(offlineRows()), state.viewState);
+    var allRows = (board.issues || []).concat(offlineRows());
+    if (state.searchQuery) {
+      allRows = allRows.filter(function (issue) {
+        return matchesSearch(issue, state.searchQuery);
+      });
+    }
+    var issues = filterSort(allRows, state.viewState);
     var pending = state.viewState.view === 'pending';
     if (pending) issues = issues.filter(function (issue) { return stageOf(issue) !== 'done' && (needsMe(issue) || countOf(issue, 'humanTasks', true) || countOf(issue, 'openQuestions', true)); });
     $('board-count').textContent = issues.length + (issues.length === 1 ? ' task' : ' tasks');
@@ -1459,9 +1615,10 @@
     if (scopeStatus) {
       var reasons = (board.failures || []).map(function (failure) { return shortName(failure.repository.full) + ': ' + failure.message; });
       if (board.truncatedByIssueCap) reasons.push('combined issue cap of ' + board.issueCap + ' reached');
-      scopeStatus.textContent = board.partial ? 'Partial refresh — results are NOT complete. ' + reasons.join('; ') :
+      var statusWarning = board.partial ? 'Partial refresh — results are NOT complete. ' + reasons.join('; ') :
         board.repository && !board.repository.hasIssues ? 'Issues disabled for this project.' : board.repository && board.repository.archived ? 'Archived project — GitHub may refuse edits.' : '';
-      scopeStatus.className = board.partial ? 'notice error' : 'muted small';
+      scopeStatus.textContent = statusWarning || name;
+      scopeStatus.className = board.partial ? 'notice error status-strip-scope' : 'status-strip-scope';
     }
     var list = $('task-list'); list.textContent = ''; list.className = 'task-list view-' + state.viewState.view;
     var empty = $('empty-state'); empty.hidden = issues.length !== 0;
@@ -2309,6 +2466,13 @@
       });
     }
 
+    var boardSearch = $('board-search');
+    if (boardSearch) {
+      boardSearch.addEventListener('input', function () {
+        setSearchQuery(boardSearch.value);
+      });
+    }
+
     var backdrop = $('drawer-backdrop');
     if (backdrop) {
       backdrop.addEventListener('click', function () {
@@ -2410,6 +2574,7 @@
   }
 
   async function boot() {
+    applyThemeMode();
     initServiceWorker();
     bind();
 
@@ -2503,6 +2668,14 @@
       syncOfflineDrafts: syncOfflineDrafts,
       toggleChecklistItem: toggleChecklistItem,
       toggleMarkDone: toggleMarkDone,
+      showBoard: showBoard,
+      showView: showView,
+      setSearchQuery: setSearchQuery,
+      matchesSearch: matchesSearch,
+      applyThemeMode: applyThemeMode,
+      setThemeMode: setThemeMode,
+      getThemeMode: getThemeMode,
+      simpleTaskRow: simpleTaskRow,
     };
   }
 
