@@ -1,7 +1,8 @@
 # Run work from the task board
 
-## Current checkpoint — 2026-11-02 Online board polish exploration (#53, #54) complete; awaiting user alignment
-State: ALIGNING (#53 and #54). Explorer `ses_cfb761cb508c8d955ffd9295` (`9router/engineer`) completed at `02d367c` in `.worktrees/team-dev-explore-online-board-polish` (0 product edits). Manager inspected `findings.md`, `metrics.json`, and 6 screenshots (`panel-1280-dark`, `web-1280-dark`, `panel-360-dark`, `web-360-dark`, `panel-drawer-1280-dark`, `web-drawer-1280-dark`). Gate recorded at `outputs/online-board-polish-explore-gate.md`; receipts posted on #54 (comment 6581548231) and #53 (comment 6581548269). Asking user bundled alignment questions before any build.
+## Current checkpoint — 2026-11-02 D62–D64 aligned; Building #54 (no sign-in flash), #53 queued next
+State: BUILDING #54 (`fix/issue-54-no-signin-flash` in `.worktrees/team-dev-issue-54-no-signin-flash`). User aligned D62 (#54 open straight to board shell), D63 (#53 match OpenChamber layout, toolbar, rows, slide-over drawer & colors), and D64 (#53 auto device theme + manual override in Settings). Receipts posted on #54 (comment 6582325234) and #53 (comment 6582325243); recorded in `outputs/online-board-polish-alignment-approval.md`.
+- Sequential frontier in `web/public/**`: #54 build -> #54 L4 hostile review + independent audit -> #53 build (branched from accepted #54 commit) -> #53 L4 hostile review + independent audit -> combined staging + single batched L5 human review gate.
 
 ## Previous checkpoint — 2026-11-02 Repairs #49, #50, and #51 Released, Audited, and Cleaned Up
 State: #49, #50, and #51 PUBLISHED ON `origin/master` (`8b7e059`), DEPLOYED LIVE at `https://board.workflows.ac` (`/workspace/releases/board/8b7e059-20261102`, child PID 163), ROOT SYNCED (`a8992e0` / `3803764`), CLOSED (`status:done`), INDEPENDENT RELEASE AUDIT PASSED (`ses_96c8cc2cacbb51d10fcdd525`, Spec PASS / Quality APPROVED / Release PROCEED), AND WORKTREES CLEANED UP (`79b3f60` + `d4ec7dd`); D47–D60 aligned.
