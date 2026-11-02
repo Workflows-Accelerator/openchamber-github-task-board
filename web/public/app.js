@@ -30,6 +30,7 @@
     draftEdits: new Map(),
     drawerOpenerKey: null,
     drawerFromDraftBtn: false,
+    sessionPromise: null,
   };
 
   function identity(issue) {
@@ -123,20 +124,23 @@
         }
       }
     }
-    if (state.board) state.board.issues = state.board.issues.map(function (row) {
-      if (!sameIdentity(row, issue)) return row;
-      var current = response.issue;
-      return Object.assign({}, row, current, {
-        pendingItems: (current.humanTasks || []).concat(current.openQuestions || []).map(function (item) {
-          return { text: item.text, completed: item.completed };
-        }),
-        counts: {
-          subtasks: { total: current.subtasks.length, done: current.subtasks.filter(function (item) { return item.completed; }).length },
-          openQuestions: { total: current.openQuestions.length, open: current.openQuestions.filter(function (item) { return !item.completed; }).length },
-          humanTasks: { total: current.humanTasks.length, open: current.humanTasks.filter(function (item) { return !item.completed; }).length },
-        },
+    if (state.board) {
+      state.board.issues = state.board.issues.map(function (row) {
+        if (!sameIdentity(row, issue)) return row;
+        var current = response.issue;
+        return Object.assign({}, row, current, {
+          pendingItems: (current.humanTasks || []).concat(current.openQuestions || []).map(function (item) {
+            return { text: item.text, completed: item.completed };
+          }),
+          counts: {
+            subtasks: { total: current.subtasks.length, done: current.subtasks.filter(function (item) { return item.completed; }).length },
+            openQuestions: { total: current.openQuestions.length, open: current.openQuestions.filter(function (item) { return !item.completed; }).length },
+            humanTasks: { total: current.humanTasks.length, open: current.humanTasks.filter(function (item) { return !item.completed; }).length },
+          },
+        });
       });
-    });
+      saveCachedBoard(state.board);
+    }
     if (generation !== state.readGeneration || !state.detail || !sameIdentity(state.detail, issue)) return false;
     state.detail = response.issue;
     state.statusOptions = response.statusOptions;
@@ -262,8 +266,16 @@
     var method = options.method || 'GET';
     var headers = {};
     if (options.body !== undefined) headers['content-type'] = 'application/json';
-    if (method !== 'GET' && state.csrf) headers['x-csrf-token'] = state.csrf;
     var isMutation = method !== 'GET' && !path.startsWith('/api/session');
+    if (isMutation && !state.csrf && state.sessionPromise) {
+      try {
+        var sessionResult = await state.sessionPromise;
+        if (sessionResult && sessionResult.csrfToken) {
+          state.csrf = sessionResult.csrfToken;
+        }
+      } catch (e) {}
+    }
+    if (method !== 'GET' && state.csrf) headers['x-csrf-token'] = state.csrf;
     var response;
     var text;
     try {
@@ -362,18 +374,32 @@
   }
 
   function clearRenderedData() {
-    ['task-list', 'detail-meta', 'question-list', 'human-list'].forEach(function (id) {
+    ['task-list', 'detail-meta', 'question-list', 'human-list', 'ac-list', 'subtasks-list', 'filter-chips', 'repo-options-list'].forEach(function (id) {
       var node = document.getElementById(id);
       if (node) node.textContent = '';
     });
     var title = document.getElementById('detail-title');
     if (title) title.textContent = '';
+    var subtitle = document.getElementById('detail-subtitle');
+    if (subtitle) { subtitle.textContent = ''; subtitle.hidden = true; }
+    var freshness = document.getElementById('detail-freshness');
+    if (freshness) freshness.textContent = '';
+    var drafts = document.getElementById('recoverable-drafts');
+    if (drafts) { drafts.textContent = ''; drafts.hidden = true; }
+    var statusSelect = document.getElementById('status-select');
+    if (statusSelect) statusSelect.textContent = '';
     var overview = document.getElementById('overview-text');
     if (overview) overview.value = '';
     var count = document.getElementById('board-count');
     if (count) count.textContent = '';
     var saveStatus = document.getElementById('save-status');
     if (saveStatus) saveStatus.textContent = '';
+    var scopeStatus = document.getElementById('scope-status');
+    if (scopeStatus) scopeStatus.textContent = '';
+    var discoveryStatus = document.getElementById('discovery-status');
+    if (discoveryStatus) discoveryStatus.textContent = '';
+    var refreshPolicy = document.getElementById('refresh-policy');
+    if (refreshPolicy) refreshPolicy.textContent = '';
   }
 
   function showLogin(message) {
@@ -391,6 +417,7 @@
     state.drafts.clear();
     state.uncertain.clear();
     $('repository-picker').hidden = true;
+    if ($('board-toolbar')) $('board-toolbar').hidden = true;
     if ($('repo-select')) $('repo-select').textContent = '';
     state.projectNames = {};
     state.draftEdits.clear();
@@ -479,7 +506,11 @@
       var raw = localStorage.getItem(CACHED_BOARD_KEY);
       if (!raw) return null;
       var parsed = JSON.parse(raw);
-      return parsed && Array.isArray(parsed.issues) ? parsed : null;
+      if (!parsed || !Array.isArray(parsed.issues)) return null;
+      parsed.issues = parsed.issues.filter(function (i) {
+        return i && typeof i === 'object' && typeof i.number === 'number';
+      });
+      return parsed;
     } catch (e) {
       return null;
     }
@@ -1052,6 +1083,7 @@
     return KIND_LABELS[token] || (token.startsWith('stage:') ? statusText(token.slice(6)) : shortName(token.slice(8)));
   }
   function renderControls() {
+    if ($('board-toolbar')) $('board-toolbar').hidden = false;
     $('view-btn').textContent = 'View: ' + VIEW_LABELS[state.viewState.view];
     $('filter-btn').textContent = 'Filter' + (state.viewState.filters.length ? ' (' + state.viewState.filters.length + ')' : '');
     $('sort-btn').textContent = 'Sort: ' + SORT_LABELS[state.viewState.sort];
@@ -2118,6 +2150,7 @@
         setAuthHint();
         $('password').value = '';
         showView('board');
+        if ($('board-toolbar')) $('board-toolbar').hidden = false;
         $('refresh-btn').hidden = false;
         $('signout-btn').hidden = false;
         await loadBoard();
@@ -2164,7 +2197,11 @@
         });
         if (!response || !response.issue || typeof response.issue.number !== 'number') throw new ApiError('write_outcome_unknown', 502, { message: 'Creation outcome unknown; refresh before retrying.' });
         input.value = ''; description.value = '';
-        if (state.board) { state.board.issues.push(response.issue); renderBoard(); }
+        if (state.board) {
+          state.board.issues.push(response.issue);
+          saveCachedBoard(state.board);
+          renderBoard();
+        }
         announce('Draft added. No agent started.'); setNotice('');
       } catch (error) { setNotice(error.message + ' Your text is retained. Refresh before retrying an unknown outcome.', true); }
       finally { input.disabled = false; input.focus(); }
@@ -2383,17 +2420,25 @@
 
     var cached = hasAuthHint ? getCachedBoard() : null;
     if (cached) {
-      state.board = cached;
-      renderBoard();
-      showView('board');
+      try {
+        state.board = cached;
+        renderBoard();
+        showView('board');
+        if ($('board-toolbar')) $('board-toolbar').hidden = false;
+      } catch (cacheError) {
+        clearAuthHint();
+        state.board = null;
+      }
     }
 
     try {
-      var session = await api('/api/session');
+      state.sessionPromise = api('/api/session');
+      var session = await state.sessionPromise;
       if (session && session.authenticated) {
         setAuthHint();
         state.csrf = session.csrfToken;
         showView('board');
+        if ($('board-toolbar')) $('board-toolbar').hidden = false;
         $('refresh-btn').hidden = false;
         $('signout-btn').hidden = false;
         await loadBoard();
@@ -2419,16 +2464,21 @@
         renderFreshness();
         setNotice('Could not reach the server. Showing the last board loaded in this browser.', true);
         showView('board');
+        if ($('board-toolbar')) $('board-toolbar').hidden = false;
         return;
       }
       clearAuthHint();
       showLogin('The board could not be reached. Reload to try again.');
       return;
+    } finally {
+      state.sessionPromise = null;
     }
   }
 
   if (typeof window !== 'undefined') {
     window.__taskBoard = {
+      api: api,
+      publishMutation: publishMutation,
       state: state,
       boot: boot,
       showLogin: showLogin,

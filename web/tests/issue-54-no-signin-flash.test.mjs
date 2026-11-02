@@ -87,9 +87,11 @@ function createMockBrowser(storage = {}, initialHidden = {}) {
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
   const loginHiddenInHtml = /<section[^>]*id="login-view"[^>]*hidden/.test(html);
   const boardHiddenInHtml = /<section[^>]*id="board-view"[^>]*hidden/.test(html);
+  const toolbarHiddenInHtml = /<div[^>]*id="board-toolbar"[^>]*hidden/.test(html);
 
   get('login-view').hidden = initialHidden['login-view'] !== undefined ? initialHidden['login-view'] : loginHiddenInHtml;
   get('board-view').hidden = initialHidden['board-view'] !== undefined ? initialHidden['board-view'] : boardHiddenInHtml;
+  get('board-toolbar').hidden = initialHidden['board-toolbar'] !== undefined ? initialHidden['board-toolbar'] : toolbarHiddenInHtml;
   get('detail-view').hidden = initialHidden['detail-view'] !== undefined ? initialHidden['detail-view'] : true;
   get('drawer-backdrop').hidden = true;
 
@@ -470,4 +472,257 @@ test('1.f When GET /api/session fails with network error and no cached board exi
   assert.equal(browserWithCache.get('login-view').hidden, true, '#login-view must NOT be revealed when cached board exists');
   assert.ok(browserWithCache.app.state.board, 'state.board should have cached board');
   assert.equal(browserWithCache.app.state.board.issues.length, 1);
+});
+
+test('2.a Hostile 1: Static HTML noscript fallback reveals #login-view, and #board-toolbar is hidden until auth confirms', async () => {
+  const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
+
+  // Must include a noscript style ensuring login-view displays and board-view is hidden if JS is disabled
+  assert.match(
+    html,
+    /<noscript>[\s\S]*#login-view[\s\S]*display:\s*block[\s\S]*#board-view[\s\S]*display:\s*none[\s\S]*<\/noscript>/,
+    'static HTML must provide a noscript fallback that reveals login-view when JS is disabled',
+  );
+
+  // #board-toolbar must have the hidden attribute in static index.html
+  assert.match(
+    html,
+    /<div[^>]*id="board-toolbar"[^>]*\bhidden\b/,
+    '#board-toolbar must statically carry the hidden attribute',
+  );
+
+  // When boot() runs with unauthenticated user: #board-toolbar remains hidden
+  const unauthBrowser = createMockBrowser({}, { 'login-view': true, 'board-view': false, 'board-toolbar': true });
+  unauthBrowser.setResponder(async (url) => {
+    if (url === '/api/session') return { status: 200, ok: true, text: async () => JSON.stringify({ authenticated: false }) };
+    return { status: 404, ok: false, text: async () => '{}' };
+  });
+  await unauthBrowser.app.boot();
+  assert.equal(unauthBrowser.get('board-toolbar').hidden, true, '#board-toolbar must remain hidden when unauthenticated');
+
+  // When boot() runs with authenticated user: #board-toolbar is revealed
+  const authBrowser = createMockBrowser({}, { 'login-view': true, 'board-view': false, 'board-toolbar': true });
+  authBrowser.setResponder(async (url) => {
+    if (url === '/api/session') return { status: 200, ok: true, text: async () => JSON.stringify({ authenticated: true, csrfToken: 'csrf-1' }) };
+    if (url === '/api/repos') return { status: 200, ok: true, text: async () => JSON.stringify({ repositories: [], visibleCount: 0, discoveryFailed: false }) };
+    if (url.includes('/board')) return { status: 200, ok: true, text: async () => JSON.stringify(sampleBoard) };
+    return { status: 404, ok: false, text: async () => '{}' };
+  });
+  await authBrowser.app.boot();
+  assert.equal(authBrowser.get('board-toolbar').hidden, false, '#board-toolbar must be revealed when authenticated');
+
+  // When showLogin() runs: #board-toolbar is re-hidden
+  authBrowser.app.showLogin();
+  assert.equal(authBrowser.get('board-toolbar').hidden, true, '#board-toolbar must be hidden when showLogin runs');
+});
+
+test('2.b Hostile 2: Security & Privacy: showLogin() thoroughly scrubs sensitive task data from all DOM nodes', () => {
+  const browser = createMockBrowser();
+  const get = browser.get;
+
+  // Seed sensitive data into DOM elements
+  get('task-list').textContent = '<li>Sensitive task row</li>';
+  get('ac-list').textContent = '<li>Private acceptance criteria</li>';
+  get('subtasks-list').textContent = '<li>Private subtask item</li>';
+  get('detail-title').textContent = 'Confidential Issue Title';
+  get('detail-subtitle').textContent = 'private-org/secret-repo #42';
+  get('detail-freshness').textContent = 'Loaded 2 minutes ago';
+  get('recoverable-drafts').textContent = 'Unsaved draft text with secrets';
+  get('filter-chips').textContent = '<button>project:private/repo</button>';
+  get('repo-options-list').textContent = '<div>private-org/secret-repo</div>';
+  get('status-select').textContent = '<option>Draft</option>';
+  get('overview-text').value = 'Confidential overview details';
+  get('board-count').textContent = '42 tasks';
+  get('save-status').textContent = 'Saved';
+  get('scope-status').textContent = 'Scope status for secret-repo';
+
+  browser.app.showLogin();
+
+  assert.equal(get('task-list').textContent, '', 'task-list must be emptied');
+  assert.equal(get('ac-list').textContent, '', 'ac-list must be emptied');
+  assert.equal(get('subtasks-list').textContent, '', 'subtasks-list must be emptied');
+  assert.equal(get('detail-title').textContent, '', 'detail-title must be emptied');
+  assert.equal(get('detail-subtitle').textContent, '', 'detail-subtitle must be emptied');
+  assert.equal(get('detail-freshness').textContent, '', 'detail-freshness must be emptied');
+  assert.equal(get('recoverable-drafts').textContent, '', 'recoverable-drafts must be emptied');
+  assert.equal(get('filter-chips').textContent, '', 'filter-chips must be emptied');
+  assert.equal(get('repo-options-list').textContent, '', 'repo-options-list must be emptied');
+  assert.equal(get('status-select').textContent, '', 'status-select must be emptied');
+  assert.equal(get('overview-text').value, '', 'overview-text must be emptied');
+  assert.equal(get('board-count').textContent, '', 'board-count must be emptied');
+  assert.equal(get('save-status').textContent, '', 'save-status must be emptied');
+  assert.equal(get('scope-status').textContent, '', 'scope-status must be emptied');
+});
+
+test('2.c Hostile 3: Concurrency & CSRF: mutations fired while cached board is rendered await in-flight /api/session check', async () => {
+  const browser = createMockBrowser(
+    {
+      tb_auth_hint: '1',
+      tb_cached_board: JSON.stringify(sampleBoard),
+    },
+    { 'login-view': true, 'board-view': false },
+  );
+
+  let resolveSession;
+  const sessionPromise = new Promise((resolve) => {
+    resolveSession = resolve;
+  });
+
+  browser.setResponder(async (url, opts) => {
+    if (url === '/api/session') {
+      await sessionPromise;
+      return {
+        status: 200,
+        ok: true,
+        text: async () => JSON.stringify({ authenticated: true, csrfToken: 'tok-concurrency-csrf-777' }),
+      };
+    }
+    if (url === '/api/repos') {
+      return { status: 200, ok: true, text: async () => JSON.stringify({ repositories: [], visibleCount: 0, discoveryFailed: false }) };
+    }
+    if (url === '/api/repos/owner/test-repo/issues/101/status' && opts?.method === 'POST') {
+      // Must receive the CSRF token!
+      if (!opts.headers || opts.headers['x-csrf-token'] !== 'tok-concurrency-csrf-777') {
+        return {
+          status: 403,
+          ok: false,
+          text: async () => JSON.stringify({ error: 'csrf_rejected', message: 'Missing valid CSRF token' }),
+        };
+      }
+      return {
+        status: 200,
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            issue: {
+              ...sampleBoard.issues[0],
+              fingerprint: 'fp-101-abc',
+              phase: 'todo',
+              attention: 'none',
+              editableSections: [],
+              openQuestions: [],
+              humanTasks: [],
+              acceptanceCriteria: [],
+              subtasks: [],
+              statusLabel: 'status:done',
+            },
+            statusOptions: [{ value: 'status:todo', label: 'To do' }, { value: 'status:done', label: 'Done' }],
+          }),
+      };
+    }
+    if (url.includes('/board')) return { status: 200, ok: true, text: async () => JSON.stringify(sampleBoard) };
+    return { status: 404, ok: false, text: async () => '{}' };
+  });
+
+  // Start boot - cached board renders immediately, but /api/session is still pending
+  const bootPromise = browser.app.boot();
+  await new Promise((r) => setImmediate(r));
+
+  // Verify cached board is rendered and state.csrf is not yet set
+  assert.equal(browser.get('board-view').hidden, false);
+
+  // Now simulate a mutation initiated by user clicking while /api/session is still in flight
+  const mutationPromise = browser.app.api('/api/repos/owner/test-repo/issues/101/status', {
+    method: 'POST',
+    body: { status: 'status:done' },
+    expected: 101,
+  });
+
+  // Release the pending session
+  resolveSession();
+  await bootPromise;
+
+  // The mutation MUST await the session promise and succeed with the csrf token
+  const mutationResult = await mutationPromise;
+  assert.ok(mutationResult, 'mutation must succeed');
+  assert.equal(mutationResult.issue.statusLabel, 'status:done');
+
+  // Verify the mutation call included the x-csrf-token
+  const mutationCall = browser.calls.find((c) => c.url.includes('/status'));
+  assert.ok(mutationCall, 'mutation call must have been made');
+  assert.equal(mutationCall.options.headers['x-csrf-token'], 'tok-concurrency-csrf-777');
+});
+
+test('2.d Hostile 4: Corrupted cache resilience: malformed / non-object entries in tb_cached_board do not crash boot()', async () => {
+  // Scenario 1: parsed.issues contains null, strings, or numbers
+  const browserA = createMockBrowser(
+    {
+      tb_auth_hint: '1',
+      tb_cached_board: JSON.stringify({
+        repo: 'owner/test-repo',
+        issues: [null, 42, 'invalid', { notAnIssue: true }],
+      }),
+    },
+    { 'login-view': true, 'board-view': false },
+  );
+
+  browserA.setResponder(async (url) => {
+    if (url === '/api/session') return { status: 200, ok: true, text: async () => JSON.stringify({ authenticated: false }) };
+    return { status: 404, ok: false, text: async () => '{}' };
+  });
+
+  // boot() must NOT throw an unhandled TypeError when encountering corrupt cache items
+  await assert.doesNotReject(async () => {
+    await browserA.app.boot();
+  });
+
+  // Scenario 2: malformed JSON syntax in tb_cached_board
+  const browserB = createMockBrowser(
+    {
+      tb_auth_hint: '1',
+      tb_cached_board: '<<<MALFORMED JSON>>>{corrupted',
+    },
+    { 'login-view': true, 'board-view': false },
+  );
+
+  browserB.setResponder(async (url) => {
+    if (url === '/api/session') return { status: 200, ok: true, text: async () => JSON.stringify({ authenticated: false }) };
+    return { status: 404, ok: false, text: async () => '{}' };
+  });
+
+  await assert.doesNotReject(async () => {
+    await browserB.app.boot();
+  });
+});
+
+test('2.e Hostile 5: Cache freshness on mutations: publishMutation updates tb_cached_board immediately', async () => {
+  const browser = createMockBrowser(
+    {
+      tb_auth_hint: '1',
+      tb_cached_board: JSON.stringify(sampleBoard),
+    },
+    { 'login-view': true, 'board-view': false },
+  );
+
+  browser.setResponder(async (url) => {
+    if (url === '/api/session') return { status: 200, ok: true, text: async () => JSON.stringify({ authenticated: true, csrfToken: 'tok-1' }) };
+    if (url === '/api/repos') return { status: 200, ok: true, text: async () => JSON.stringify({ repositories: [], visibleCount: 0, discoveryFailed: false }) };
+    if (url.includes('/board')) return { status: 200, ok: true, text: async () => JSON.stringify(sampleBoard) };
+    return { status: 404, ok: false, text: async () => '{}' };
+  });
+
+  await browser.app.boot();
+
+  const mutatedIssue = {
+    ...sampleBoard.issues[0],
+    title: 'Updated Task Title via Mutation',
+    statusLabel: 'status:in-progress',
+    subtasks: [],
+    openQuestions: [],
+    humanTasks: [],
+  };
+
+  browser.app.publishMutation(
+    { issue: mutatedIssue, statusOptions: sampleBoard.statusOptions },
+    sampleBoard.issues[0],
+    browser.app.state.readGeneration,
+    'status',
+    null,
+  );
+
+  const cached = JSON.parse(browser.store.get('tb_cached_board'));
+  assert.ok(cached, 'tb_cached_board must exist in store');
+  const target = cached.issues.find((i) => i.number === 101);
+  assert.ok(target, 'issue 101 must be in cached board');
+  assert.equal(target.title, 'Updated Task Title via Mutation', 'cached board must reflect mutated title');
 });

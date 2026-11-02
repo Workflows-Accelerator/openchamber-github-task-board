@@ -1,5 +1,5 @@
 {
-  "startedAt": "2026-11-02T17:48:42.793Z",
+  "startedAt": "2026-11-02T18:54:54.218Z",
   "checks": [
     {
       "name": "Unauthenticated: login-view is visible after session check",
@@ -70,42 +70,48 @@
   "timeline": [
     {
       "event": "init_script_start",
-      "time": 61.835693359375,
+      "time": 54.346923828125,
       "loginHidden": true,
       "boardHidden": false
     },
     {
       "event": "fetch_start",
-      "time": 71.835693359375,
+      "time": 61.346923828125,
       "loginHidden": true,
       "boardHidden": false,
       "url": "/api/session"
     },
     {
       "event": "DOMContentLoaded",
-      "time": 72.835693359375,
+      "time": 62.346923828125,
+      "loginHidden": true,
+      "boardHidden": false
+    },
+    {
+      "event": "window_load",
+      "time": 63.346923828125,
       "loginHidden": true,
       "boardHidden": false
     },
     {
       "event": "fetch_end",
-      "time": 77.835693359375,
+      "time": 66.346923828125,
       "loginHidden": true,
       "boardHidden": false,
       "url": "/api/session",
-      "duration": 6,
+      "duration": 5,
       "status": 200
     },
     {
       "event": "fetch_start",
-      "time": 79.835693359375,
+      "time": 67.346923828125,
       "loginHidden": true,
       "boardHidden": false,
       "url": "/api/repos"
     },
     {
       "event": "hidden_attribute_changed",
-      "time": 79.835693359375,
+      "time": 68.346923828125,
       "loginHidden": true,
       "boardHidden": false,
       "id": "login-view",
@@ -113,32 +119,32 @@
     },
     {
       "event": "fetch_end",
-      "time": 94.835693359375,
+      "time": 78.346923828125,
       "loginHidden": true,
       "boardHidden": false,
       "url": "/api/repos",
-      "duration": 15,
+      "duration": 11,
       "status": 200
     },
     {
       "event": "fetch_start",
-      "time": 96.835693359375,
+      "time": 79.346923828125,
       "loginHidden": true,
       "boardHidden": false,
       "url": "/api/combined/board"
     },
     {
       "event": "fetch_end",
-      "time": 471.835693359375,
+      "time": 439.346923828125,
       "loginHidden": true,
       "boardHidden": false,
       "url": "/api/combined/board",
-      "duration": 374,
+      "duration": 360,
       "status": 200
     },
     {
       "event": "hidden_attribute_changed",
-      "time": 474.835693359375,
+      "time": 443.346923828125,
       "loginHidden": true,
       "boardHidden": false,
       "id": "login-view",
@@ -146,7 +152,7 @@
     },
     {
       "event": "hidden_attribute_changed",
-      "time": 476.835693359375,
+      "time": 445.346923828125,
       "loginHidden": true,
       "boardHidden": false,
       "id": "login-view",
