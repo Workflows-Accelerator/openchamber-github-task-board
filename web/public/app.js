@@ -377,6 +377,7 @@
   }
 
   function showLogin(message) {
+    clearAuthHint();
     state.csrf = null;
     state.board = null;
     state.detail = null;
@@ -468,8 +469,42 @@
   }
 
   var OFFLINE_DRAFTS_KEY = 'openchamber_offline_drafts';
+  var AUTH_HINT_KEY = 'tb_auth_hint';
+  var CACHED_BOARD_KEY = 'tb_cached_board';
   var isSyncingOfflineDrafts = false;
   var offlineSeq = 0;
+
+  function getCachedBoard() {
+    try {
+      var raw = localStorage.getItem(CACHED_BOARD_KEY);
+      if (!raw) return null;
+      var parsed = JSON.parse(raw);
+      return parsed && Array.isArray(parsed.issues) ? parsed : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function saveCachedBoard(board) {
+    try {
+      if (board && Array.isArray(board.issues) && board.repo !== 'Offline local drafts') {
+        localStorage.setItem(CACHED_BOARD_KEY, JSON.stringify(board));
+      }
+    } catch (e) {}
+  }
+
+  function clearAuthHint() {
+    try {
+      localStorage.removeItem(AUTH_HINT_KEY);
+      localStorage.removeItem(CACHED_BOARD_KEY);
+    } catch (e) {}
+  }
+
+  function setAuthHint() {
+    try {
+      localStorage.setItem(AUTH_HINT_KEY, '1');
+    } catch (e) {}
+  }
 
   function getOfflineDrafts() {
     try {
@@ -1628,6 +1663,7 @@
       var board = await api(path);
       if (generation !== state.boardGeneration) return;
       state.board = board;
+      saveCachedBoard(board);
       state.uncertain.clear();
       state.loadedAt = Date.now();
       state.stale = false;
@@ -2079,12 +2115,17 @@
       try {
         var response = await api('/api/session', { method: 'POST', body: { password: password } });
         state.csrf = response.csrfToken;
+        setAuthHint();
         $('password').value = '';
+        showView('board');
+        $('refresh-btn').hidden = false;
+        $('signout-btn').hidden = false;
         await loadBoard();
         route();
         syncOfflineDrafts();
         announce('Signed in.');
       } catch (requestError) {
+        clearAuthHint();
         if (requestError.status === 429) {
           error.textContent =
             'Too many attempts. Try again in ' +
@@ -2145,14 +2186,18 @@
         try {
           var session = await api('/api/session');
           if (session && session.authenticated) {
+            setAuthHint();
             state.csrf = session.csrfToken;
+            showView('board');
             await loadBoard();
             syncOfflineDrafts();
             return;
           }
         } catch (e) {
-          if (getOfflineDrafts().length > 0) {
-            showOfflineShell();
+          if (getOfflineDrafts().length > 0 || getCachedBoard()) {
+            if (getOfflineDrafts().length > 0) {
+              showOfflineShell();
+            }
             return;
           }
           showLogin('The board could not be reached. Reload to try again.');
@@ -2330,30 +2375,68 @@
   async function boot() {
     initServiceWorker();
     bind();
+
+    var hasAuthHint = false;
+    try {
+      hasAuthHint = localStorage.getItem(AUTH_HINT_KEY) === '1';
+    } catch (e) {}
+
+    var cached = hasAuthHint ? getCachedBoard() : null;
+    if (cached) {
+      state.board = cached;
+      renderBoard();
+      showView('board');
+    }
+
     try {
       var session = await api('/api/session');
       if (session && session.authenticated) {
+        setAuthHint();
         state.csrf = session.csrfToken;
+        showView('board');
+        $('refresh-btn').hidden = false;
+        $('signout-btn').hidden = false;
         await loadBoard();
         route();
         syncOfflineDrafts();
         return;
       }
+      clearAuthHint();
+      showLogin();
+      return;
     } catch (error) {
+      if (error && (error.status === 401 || error.code === 'unauthenticated')) {
+        clearAuthHint();
+        showLogin();
+        return;
+      }
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         showOfflineShell();
         return;
       }
+      if (cached || state.board) {
+        state.stale = true;
+        renderFreshness();
+        setNotice('Could not reach the server. Showing the last board loaded in this browser.', true);
+        showView('board');
+        return;
+      }
+      clearAuthHint();
       showLogin('The board could not be reached. Reload to try again.');
       return;
     }
-    showLogin();
   }
 
   if (typeof window !== 'undefined') {
     window.__taskBoard = {
       state: state,
       boot: boot,
+      showLogin: showLogin,
+      signOut: signOut,
+      getCachedBoard: getCachedBoard,
+      saveCachedBoard: saveCachedBoard,
+      clearAuthHint: clearAuthHint,
+      setAuthHint: setAuthHint,
       shortName: shortName, filterSort: filterSort, manualCompare: manualCompare,
       renderBoard: renderBoard, renderDetail: renderDetail,
       openIssue: openIssue, openIssueView: openIssueView, closeDrawer: closeDrawer,

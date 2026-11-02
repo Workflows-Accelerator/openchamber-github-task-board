@@ -33,7 +33,7 @@
   <main id="main" tabindex="-1">
     <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
 
-    <section id="login-view" class="view" aria-labelledby="login-title">
+    <section id="login-view" class="view" aria-labelledby="login-title" hidden>
       <h1 id="login-title">Sign in</h1>
       <p class="muted">This board is private. Enter the board password to continue.</p>
       <form id="login-form" class="login-form" method="post" action="/api/session">
@@ -46,7 +46,7 @@
       </form>
     </section>
 
-    <section id="board-view" class="view" aria-labelledby="board-title" hidden>
+    <section id="board-view" class="view" aria-labelledby="board-title">
       <div id="repository-picker" class="repository-picker" hidden>
         <label id="repo-picker-label" for="repo-select-btn">Project</label>
         <div class="repo-picker-wrapper">
