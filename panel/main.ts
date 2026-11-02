@@ -972,7 +972,11 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
   elTxtRepoLabel.textContent = displayProjectName(repo);
   elTxtRepoLabel.title = `Project: ${currentProject?.name || 'Workspace'} • Repo: ${repo} (via ${source})`;
   addLog(`Switched repository to ${repo} [${source}]`, 'succ');
-  hideBanner();
+  // Advisory 1: Preserve coordinator notice if active
+  const curBanner = document.getElementById('boardBannerText')?.textContent;
+  if (!curBanner || !curBanner.includes('Background coordinator')) {
+    hideBanner();
+  }
   void host.storage.set('selected_repo', repo);
   if (currentProject) {
     void host.storage.set(`repo_${currentProject.id}`, repo);
@@ -9944,9 +9948,6 @@ host.onReady(async (ctx) => {
   // Apply native theme and surface attributes to documentElement
   applyHostReady(ctx, document.documentElement);
 
-  // D59: Probe background service once on panel open
-  void checkBackgroundServiceConnection();
-
   currentDirectory = ctx.directory || '';
   deviceStorageSupported = ctx.features?.deviceStorage === true;
   void host.storage.get('project_name_overrides').then((stored) => {
@@ -9971,6 +9972,9 @@ host.onReady(async (ctx) => {
   const startupEpoch = activeStreamEpoch;
   await discoverWorkspaceRepositories();
   if (ctx.settings?.repo && currentRepo && activeStreamEpoch === startupEpoch) await fetchIssues();
+
+  // D59: Probe background service once on panel open
+  void checkBackgroundServiceConnection();
 });
 
 // React to directory change (when user switches projects, worktrees, or chats)

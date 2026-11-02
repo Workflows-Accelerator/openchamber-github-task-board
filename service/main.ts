@@ -222,7 +222,10 @@ export function authenticateRequest(authHeader: string | undefined, expectedToke
  * Creates the minimal HTTP server adapter for the OpenChamber guest service runner.
  * Enforces loopback binding, 15s socket timeout, 64KB body cap, and strict route confinement.
  */
-export function createCoordinatorHostServer(token: string): http.Server {
+export function createCoordinatorHostServer(
+  token: string,
+  getStatus?: () => CoordinatorStatus
+): http.Server {
   const MAX_BODY_BYTES = 65536;
 
   const server = http.createServer((req, res) => {
@@ -231,7 +234,16 @@ export function createCoordinatorHostServer(token: string): http.Server {
       req.socket.destroy();
     });
 
-    // Request body cap: 64KB (65,536 bytes)
+    // Constant-time Bearer authentication: verify first before body buffering or route disclosure
+    const authHeader = req.headers.authorization;
+    if (!authenticateRequest(authHeader, token)) {
+      res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+      res.end(JSON.stringify({ error: 'Unauthorized' }));
+      req.resume(); // drain incoming bytes without buffering
+      return;
+    }
+
+    // Request body cap: 64KB (65,536 bytes) for authenticated requests
     const contentLength = req.headers['content-length'] ? Number(req.headers['content-length']) : null;
     if (contentLength !== null && (!Number.isSafeInteger(contentLength) || contentLength > MAX_BODY_BYTES)) {
       res.writeHead(413, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -252,18 +264,17 @@ export function createCoordinatorHostServer(token: string): http.Server {
       }
     });
 
-    // Constant-time Bearer authentication
-    const authHeader = req.headers.authorization;
-    if (!authenticateRequest(authHeader, token)) {
-      res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify({ error: 'Unauthorized' }));
-      return;
-    }
-
     // Route confinement: ONLY authenticated GET /health returns 200
+    // Normalize path by stripping trailing slashes while preserving root /
     const url = new URL(req.url || '/', 'http://127.0.0.1');
-    if (url.pathname === '/health') {
+    const normalizedPath = url.pathname.replace(/\/+$/, '') || '/';
+    if (normalizedPath === '/health') {
       if (req.method === 'GET') {
+        if (getStatus && getStatus() !== 'running') {
+          res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({ error: 'Service Unavailable' }));
+          return;
+        }
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({ status: 'ok', service: 'task-coordinator' }));
         return;
@@ -311,8 +322,8 @@ export async function startHostServiceServer(): Promise<void> {
   // Fast-fail startup config validation strictly BEFORE storage/coordinator initialization
   const { port, token } = validateServiceHostEnv();
 
-  const server = createCoordinatorHostServer(token);
   const coordinatorService = new CoordinatorService();
+  const server = createCoordinatorHostServer(token, () => coordinatorService.getStatus());
 
   let isShuttingDown = false;
   const shutdown = async (signal: string) => {
@@ -320,10 +331,12 @@ export async function startHostServiceServer(): Promise<void> {
     isShuttingDown = true;
     console.log(`[Coordinator Service] Received ${signal}, initiating graceful shutdown...`);
 
-    // Advisory 3: arm 2,500ms unref'd safety timer calling server.closeAllConnections?.()
+    // Arm 3,500ms safety timer: if graceful shutdown hangs, force exit before host's 5s SIGKILL
     const safetyTimer = setTimeout(() => {
+      console.warn('[Coordinator Service] Graceful shutdown deadline exceeded; forcing exit.');
       server.closeAllConnections?.();
-    }, 2500);
+      process.exit(1);
+    }, 3500);
     safetyTimer.unref();
 
     const closeServerPromise = new Promise<void>((resolve) => {
@@ -352,18 +365,27 @@ export async function startHostServiceServer(): Promise<void> {
     process.exit(1);
   });
 
-  await new Promise<void>((resolve, reject) => {
-    server.listen(port, '127.0.0.1', () => {
-      console.log(`[Coordinator Service] Host adapter listening on http://127.0.0.1:${port}`);
-      resolve();
-    });
-    server.once('error', reject);
-  });
-
+  // Start coordinatorService strictly BEFORE opening the HTTP server socket
+  // Ensures /health never returns 200 while startup is pending or if it fails
   try {
     await coordinatorService.start();
   } catch (err) {
     console.error('[Coordinator Service] Fatal startup error:', err);
+    process.exit(1);
+  }
+
+  // Open HTTP server socket on loopback
+  try {
+    await new Promise<void>((resolve, reject) => {
+      server.listen(port, '127.0.0.1', () => {
+        console.log(`[Coordinator Service] Host adapter listening on http://127.0.0.1:${port}`);
+        resolve();
+      });
+      server.once('error', reject);
+    });
+  } catch (err) {
+    console.error('[Coordinator Service] Server bind error:', err);
+    await coordinatorService.stop().catch(() => {});
     process.exit(1);
   }
 }

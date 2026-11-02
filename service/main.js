@@ -872,12 +872,19 @@ function authenticateRequest(authHeader, expectedToken) {
   const presentedHash = crypto2.createHash("sha256").update(presentedToken, "utf8").digest();
   return crypto2.timingSafeEqual(expectedHash, presentedHash);
 }
-function createCoordinatorHostServer(token) {
+function createCoordinatorHostServer(token, getStatus) {
   const MAX_BODY_BYTES = 65536;
   const server = http.createServer((req, res) => {
     req.socket.setTimeout(15e3, () => {
       req.socket.destroy();
     });
+    const authHeader = req.headers.authorization;
+    if (!authenticateRequest(authHeader, token)) {
+      res.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      req.resume();
+      return;
+    }
     const contentLength = req.headers["content-length"] ? Number(req.headers["content-length"]) : null;
     if (contentLength !== null && (!Number.isSafeInteger(contentLength) || contentLength > MAX_BODY_BYTES)) {
       res.writeHead(413, { "Content-Type": "application/json; charset=utf-8" });
@@ -896,15 +903,15 @@ function createCoordinatorHostServer(token) {
         req.destroy();
       }
     });
-    const authHeader = req.headers.authorization;
-    if (!authenticateRequest(authHeader, token)) {
-      res.writeHead(401, { "Content-Type": "application/json; charset=utf-8" });
-      res.end(JSON.stringify({ error: "Unauthorized" }));
-      return;
-    }
     const url = new URL(req.url || "/", "http://127.0.0.1");
-    if (url.pathname === "/health") {
+    const normalizedPath = url.pathname.replace(/\/+$/, "") || "/";
+    if (normalizedPath === "/health") {
       if (req.method === "GET") {
+        if (getStatus && getStatus() !== "running") {
+          res.writeHead(503, { "Content-Type": "application/json; charset=utf-8" });
+          res.end(JSON.stringify({ error: "Service Unavailable" }));
+          return;
+        }
         res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
         res.end(JSON.stringify({ status: "ok", service: "task-coordinator" }));
         return;
@@ -935,16 +942,18 @@ function isDirectExecution() {
 }
 async function startHostServiceServer() {
   const { port, token } = validateServiceHostEnv();
-  const server = createCoordinatorHostServer(token);
   const coordinatorService = new CoordinatorService();
+  const server = createCoordinatorHostServer(token, () => coordinatorService.getStatus());
   let isShuttingDown = false;
   const shutdown = async (signal) => {
     if (isShuttingDown) return;
     isShuttingDown = true;
     console.log(`[Coordinator Service] Received ${signal}, initiating graceful shutdown...`);
     const safetyTimer = setTimeout(() => {
+      console.warn("[Coordinator Service] Graceful shutdown deadline exceeded; forcing exit.");
       server.closeAllConnections?.();
-    }, 2500);
+      process.exit(1);
+    }, 3500);
     safetyTimer.unref();
     const closeServerPromise = new Promise((resolve) => {
       server.close(() => resolve());
@@ -968,17 +977,24 @@ async function startHostServiceServer() {
     console.error("[Coordinator Service] Server error:", err);
     process.exit(1);
   });
-  await new Promise((resolve, reject) => {
-    server.listen(port, "127.0.0.1", () => {
-      console.log(`[Coordinator Service] Host adapter listening on http://127.0.0.1:${port}`);
-      resolve();
-    });
-    server.once("error", reject);
-  });
   try {
     await coordinatorService.start();
   } catch (err) {
     console.error("[Coordinator Service] Fatal startup error:", err);
+    process.exit(1);
+  }
+  try {
+    await new Promise((resolve, reject) => {
+      server.listen(port, "127.0.0.1", () => {
+        console.log(`[Coordinator Service] Host adapter listening on http://127.0.0.1:${port}`);
+        resolve();
+      });
+      server.once("error", reject);
+    });
+  } catch (err) {
+    console.error("[Coordinator Service] Server bind error:", err);
+    await coordinatorService.stop().catch(() => {
+    });
     process.exit(1);
   }
 }

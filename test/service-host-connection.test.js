@@ -187,6 +187,34 @@ test('service-host-connection: timing-safe auth rejects missing, invalid, and ma
       headers: { Authorization: `Bearer ${token} extra-junk` },
     });
     assert.equal(resMultiToken.statusCode, 401);
+
+    // Auth-first invariant: unauthenticated probe on unknown path or method returns 401 (not 404/405)
+    const resUnauthUnknown = await makeHttpRequest(port, {
+      path: '/unknown-secret-probe',
+      method: 'GET',
+    });
+    assert.equal(resUnauthUnknown.statusCode, 401);
+
+    const resUnauthPost = await makeHttpRequest(port, {
+      path: '/health',
+      method: 'POST',
+    });
+    assert.equal(resUnauthPost.statusCode, 401);
+
+    // Unauthenticated oversized body returns 401 without buffering
+    const unauthOversized = 'y'.repeat(70000);
+    const resUnauthBody = await makeHttpRequest(
+      port,
+      {
+        path: '/health',
+        method: 'POST',
+        headers: {
+          'Content-Length': String(Buffer.byteLength(unauthOversized)),
+        },
+      },
+      unauthOversized
+    );
+    assert.equal(resUnauthBody.statusCode, 401);
   } finally {
     proc.child.kill('SIGTERM');
     await new Promise((r) => proc.child.on('close', r));
@@ -235,6 +263,22 @@ test('service-host-connection: route and method confinement (no /status, only GE
     });
     assert.equal(resPostHealth.statusCode, 405);
     assert.deepEqual(JSON.parse(resPostHealth.body), { error: 'Method Not Allowed' });
+
+    // 4. GET /health/ (trailing slash) -> 200 OK (normalized)
+    const resTrailingSlash = await makeHttpRequest(port, {
+      path: '/health/',
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    assert.equal(resTrailingSlash.statusCode, 200);
+
+    // 5. GET /health?probe=1 (query params) -> 200 OK
+    const resQuery = await makeHttpRequest(port, {
+      path: '/health?probe=1&source=host',
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    assert.equal(resQuery.statusCode, 200);
   } finally {
     proc.child.kill('SIGTERM');
     await new Promise((r) => proc.child.on('close', r));
@@ -402,4 +446,67 @@ test('service-host-connection: importing service/main.js as module does not bind
   const imported = await import('../service/main.js');
   assert.ok(imported.CoordinatorService, 'CoordinatorService class must be exported');
   assert.equal(typeof imported.CoordinatorService, 'function');
+});
+
+test('service-host-connection: port bind collision (EADDRINUSE) exits code 1 fast', async () => {
+  const port = await getFreePort();
+  const blockerServer = http.createServer((_req, res) => res.end('ok'));
+  await new Promise((resolve) => blockerServer.listen(port, '127.0.0.1', resolve));
+
+  const tmpDir = createTempDir();
+  try {
+    const startTime = Date.now();
+    const proc = startServiceProcess({
+      OPENCHAMBER_SERVICE_PORT: String(port),
+      OPENCHAMBER_SERVICE_TOKEN: 'collision-test-token',
+      COORDINATOR_STORAGE_DIR: tmpDir,
+    });
+
+    const exitCode = await new Promise((resolve) => {
+      proc.child.on('close', resolve);
+    });
+    const duration = Date.now() - startTime;
+
+    assert.equal(exitCode, 1, 'Port collision must cause service to exit with code 1');
+    assert.ok(duration < 2000, `Process exited in ${duration}ms, must not hang for 15s`);
+    const stderr = proc.getStderr();
+    assert.ok(stderr.includes('Server bind error') || stderr.includes('EADDRINUSE'));
+  } finally {
+    await new Promise((resolve) => blockerServer.close(resolve));
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test('service-host-connection: createCoordinatorHostServer returns 503 if coordinator status is stopping or stopped', async () => {
+  const imported = await import('../service/main.js');
+  assert.equal(typeof imported.createCoordinatorHostServer, 'function');
+
+  let currentStatus = 'stopping';
+  const server = imported.createCoordinatorHostServer('status-test-token', () => currentStatus);
+
+  const port = await getFreePort();
+  await new Promise((resolve) => server.listen(port, '127.0.0.1', resolve));
+
+  try {
+    // 1. When status is 'stopping', GET /health returns 503 Service Unavailable
+    const resStopping = await makeHttpRequest(port, {
+      path: '/health',
+      method: 'GET',
+      headers: { Authorization: 'Bearer status-test-token' },
+    });
+    assert.equal(resStopping.statusCode, 503);
+    assert.deepEqual(JSON.parse(resStopping.body), { error: 'Service Unavailable' });
+
+    // 2. When status becomes 'running', GET /health returns 200 OK
+    currentStatus = 'running';
+    const resRunning = await makeHttpRequest(port, {
+      path: '/health',
+      method: 'GET',
+      headers: { Authorization: 'Bearer status-test-token' },
+    });
+    assert.equal(resRunning.statusCode, 200);
+    assert.deepEqual(JSON.parse(resRunning.body), { status: 'ok', service: 'task-coordinator' });
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
 });

@@ -9125,7 +9125,10 @@ Blocked by ${blockerRef}`;
     elTxtRepoLabel.textContent = displayProjectName(repo);
     elTxtRepoLabel.title = `Project: ${currentProject?.name || "Workspace"} \u2022 Repo: ${repo} (via ${source})`;
     addLog(`Switched repository to ${repo} [${source}]`, "succ");
-    hideBanner();
+    const curBanner = document.getElementById("boardBannerText")?.textContent;
+    if (!curBanner || !curBanner.includes("Background coordinator")) {
+      hideBanner();
+    }
     void host.storage.set("selected_repo", repo);
     if (currentProject) {
       void host.storage.set(`repo_${currentProject.id}`, repo);
@@ -16710,7 +16713,6 @@ Blocked by ${blockerRef}`;
   host.onReady(async (ctx) => {
     addLog(`Host ready. Surface: ${ctx.surface}, Directory: ${ctx.directory || "none"}`);
     applyHostReady(ctx, document.documentElement);
-    void checkBackgroundServiceConnection();
     currentDirectory = ctx.directory || "";
     deviceStorageSupported = ctx.features?.deviceStorage === true;
     void host.storage.get("project_name_overrides").then((stored) => {
@@ -16731,6 +16733,7 @@ Blocked by ${blockerRef}`;
     const startupEpoch = activeStreamEpoch;
     await discoverWorkspaceRepositories();
     if (ctx.settings?.repo && currentRepo && activeStreamEpoch === startupEpoch) await fetchIssues();
+    void checkBackgroundServiceConnection();
   });
   host.onDirectory(async (dir) => {
     addLog(`Directory changed: ${dir}`);

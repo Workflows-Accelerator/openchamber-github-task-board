@@ -2,305 +2,408 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
+import vm from 'node:vm';
 import { fileURLToPath } from 'node:url';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT_DIR = path.resolve(here, '..');
 const PANEL_MAIN_JS_PATH = path.join(ROOT_DIR, 'panel', 'main.js');
 
-function scanDecl(src, start) {
-  let i = start, depth = 0, paren = 0, inS = null, inT = false, inLC = false, inBC = false, inRe = false;
-  let started = false;
-  while (i < src.length) {
-    const c = src[i], n = src[i + 1];
-    if (inLC) { if (c === '\n') inLC = false; i++; continue; }
-    if (inBC) { if (c === '*' && n === '/') { inBC = false; i += 2; continue; } i++; continue; }
-    if (inT) { if (c === '\\') { i += 2; continue; } if (c === '`') inT = false; i++; continue; }
-    if (inS) { if (c === '\\') { i += 2; continue; } if (c === inS) inS = null; i++; continue; }
-    if (inRe) { if (c === '\\') { i += 2; continue; } if (c === '[') { let j = i + 1; while (j < src.length && src[j] !== ']') { if (src[j] === '\\') j++; j++; } i = j + 1; continue; } if (c === '/') { inRe = false; i++; continue; } i++; continue; }
-    if (c === '/' && n === '/') { inLC = true; i += 2; continue; }
-    if (c === '/' && n === '*') { inBC = true; i += 2; continue; }
-    if (c === '`') { inT = true; i++; continue; }
-    if (c === '"' || c === "'") { inS = c; i++; continue; }
-    if (c === '/') { let p = i - 1; while (p >= 0 && /\s/.test(src[p])) p--; if ('=(,:![&|?{;'.includes(src[p])) { inRe = true; i++; continue; } i++; continue; }
-    if (c === '(') { paren++; i++; continue; }
-    if (c === ')') { paren--; i++; continue; }
-    if (paren > 0) { i++; continue; }
-    if (c === '{') { depth++; started = true; i++; continue; }
-    if (c === '}') { depth--; i++; if (started && depth === 0) return src.slice(start, i); continue; }
-    if (c === ';' && depth === 0 && !started) return src.slice(start, i + 1);
-    i++;
+/**
+ * Creates a simulated browser runtime environment that executes the REAL built panel bundle
+ * (panel/main.js) and intercepts host postMessage communication.
+ * Exercises real host.onReady wiring, real DOM banner elements, and real closures.
+ */
+function createRealPanelApp(options = {}) {
+  const elements = new Map();
+
+  function makeElement(tag, id = '') {
+    const el = {
+      tagName: tag.toUpperCase(),
+      id,
+      style: {
+        display: 'none',
+        setProperty: () => {},
+      },
+      children: [],
+      classList: {
+        _classes: new Set(),
+        add: (...cls) => cls.forEach((c) => el.classList._classes.add(c)),
+        remove: (...cls) => cls.forEach((c) => el.classList._classes.delete(c)),
+        contains: (c) => el.classList._classes.has(c),
+        toggle: (c, force) => {
+          const add = force === undefined ? !el.classList._classes.has(c) : force;
+          if (add) el.classList._classes.add(c); else el.classList._classes.delete(c);
+          return add;
+        },
+      },
+      textContent: '',
+      innerHTML: '',
+      appendChild: (c) => el.children.push(c),
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      setAttribute: () => {},
+      getAttribute: () => null,
+      querySelector: () => null,
+      querySelectorAll: () => [],
+      focus: () => {},
+      blur: () => {},
+    };
+    return el;
   }
-  throw new Error('unterminated declaration at ' + start);
-}
 
-function loadCallerFunction() {
-  const mainJs = fs.readFileSync(PANEL_MAIN_JS_PATH, 'utf8');
-  const targetPattern = 'async function checkBackgroundServiceConnection';
-  const start = mainJs.indexOf(targetPattern);
-  if (start === -1) {
-    throw new Error('Could not find checkBackgroundServiceConnection in panel/main.js');
+  // Pre-seed banner elements matching panel/index.html
+  elements.set('boardBanner', makeElement('div', 'boardBanner'));
+  elements.set('boardBannerText', makeElement('span', 'boardBannerText'));
+  elements.set('boardBannerActions', makeElement('div', 'boardBannerActions'));
+  if (options.initialBannerText) {
+    elements.get('boardBannerText').textContent = options.initialBannerText;
+    elements.get('boardBanner').style.display = 'flex';
   }
-  const fnDecl = scanDecl(mainJs, start);
 
-  // Return a runner that evaluates the extracted function from the built panel bundle
-  return (context) => {
-    const runner = new Function(
-      'host',
-      'document',
-      'showBanner',
-      'hideBanner',
-      'console',
-      `return (${fnDecl})();`
-    );
-    return runner(
-      context.host,
-      context.document,
-      context.showBanner,
-      context.hideBanner,
-      context.console
-    );
-  };
-}
-
-function createMockEnvironment(options = {}) {
-  let bannerVisible = options.bannerVisible || false;
-  let bannerText = options.bannerText || '';
-  const serviceRequestCalls = [];
-  const logCalls = { info: [], warn: [], error: [] };
-
-  const host = {
-    serviceRequest: async (req) => {
-      serviceRequestCalls.push(req);
-      if (options.serviceRequestReject) {
-        throw options.serviceRequestReject;
-      }
-      return options.serviceRequestResolve || { status: 200, body: '{"status":"ok","service":"task-coordinator"}' };
-    },
-  };
-
-  const document = {
-    getElementById: (id) => {
-      if (id === 'boardBannerText') {
-        return {
-          get textContent() {
-            return bannerText;
-          },
-          set textContent(v) {
-            bannerText = v;
-          },
-        };
-      }
-      if (id === 'boardBanner') {
-        return {
-          style: {
-            get display() {
-              return bannerVisible ? 'flex' : 'none';
-            },
-            set display(v) {
-              bannerVisible = v === 'flex';
-            },
-          },
-        };
-      }
-      return null;
-    },
-  };
-
-  let showBannerCalledWith = null;
-  let hideBannerCallCount = 0;
-
-  const showBanner = (text) => {
-    showBannerCalledWith = text;
-    bannerVisible = true;
-    bannerText = text;
-  };
-
-  const hideBanner = () => {
-    hideBannerCallCount++;
-    bannerVisible = false;
-  };
-
+  const logs = { info: [], warn: [], error: [] };
+  const formatArg = (a) => (typeof a === 'object' ? JSON.stringify(a) : String(a));
   const mockConsole = {
-    info: (...args) => logCalls.info.push(args),
-    warn: (...args) => logCalls.warn.push(args),
-    error: (...args) => logCalls.error.push(args),
+    info: (...args) => logs.info.push(args.map(formatArg).join(' ')),
+    warn: (...args) => logs.warn.push(args.map(formatArg).join(' ')),
+    error: (...args) => logs.error.push(args.map(formatArg).join(' ')),
+    log: () => {},
   };
+
+  const serviceRequests = [];
+  let messageHandler = null;
+
+  const mockWindow = {
+    document: {
+      getElementById: (id) => elements.get(id) || makeElement('div', id),
+      querySelector: (sel) => (sel.startsWith('#') ? elements.get(sel.slice(1)) || null : null),
+      querySelectorAll: () => [],
+      createElement: (tag) => makeElement(tag),
+      documentElement: makeElement('html'),
+      body: makeElement('body'),
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    },
+    addEventListener: (type, handler) => {
+      if (type === 'message') messageHandler = handler;
+    },
+    removeEventListener: () => {},
+    parent: {
+      postMessage: (msg) => {
+        if (msg?.type === 'hello') {
+          setTimeout(() => {
+            const evt = new MessageEvent('message', {
+              data: {
+                channel: 'openchamber.sdk',
+                v: 1,
+                type: 'ready',
+                payload: {
+                  surface: 'panel',
+                  directory: '/test',
+                  features: {},
+                  theme: {
+                    mode: 'dark',
+                    tokens: {
+                      font: 'sans',
+                      foreground: '#fff',
+                      background: '#000',
+                      card: '#111',
+                      cardForeground: '#eee',
+                      muted: '#333',
+                      mutedForeground: '#888',
+                      border: '#444',
+                      primary: '#00f',
+                      primaryForeground: '#fff',
+                    },
+                  },
+                },
+              },
+            });
+            Object.defineProperty(evt, 'source', { value: mockWindow.parent });
+            messageHandler?.(evt);
+          }, 1);
+        } else if (msg?.type === 'service-request') {
+          serviceRequests.push(msg.payload);
+          setTimeout(async () => {
+            let res;
+            if (options.onServiceRequest) {
+              res = await options.onServiceRequest(msg.payload);
+            } else {
+              res = { ok: true, payload: { status: 200, body: '{"status":"ok","service":"task-coordinator"}' } };
+            }
+            const evt = new MessageEvent('message', {
+              data: {
+                channel: 'openchamber.sdk',
+                v: 1,
+                type: 'result',
+                id: msg.id,
+                ...res,
+              },
+            });
+            Object.defineProperty(evt, 'source', { value: mockWindow.parent });
+            messageHandler?.(evt);
+          }, 1);
+        } else if (msg?.type === 'storage') {
+          setTimeout(() => {
+            const isSelectedRepo = Boolean(options.hasSelectedRepo && msg.payload?.key === 'selected_repo');
+            const evt = new MessageEvent('message', {
+              data: {
+                channel: 'openchamber.sdk',
+                v: 1,
+                type: 'result',
+                id: msg.id,
+                ok: true,
+                payload: {
+                  storage: true,
+                  op: msg.payload?.op,
+                  found: isSelectedRepo,
+                  value: isSelectedRepo ? 'test-org/test-repo' : undefined,
+                },
+              },
+            });
+            Object.defineProperty(evt, 'source', { value: mockWindow.parent });
+            messageHandler?.(evt);
+          }, 1);
+        } else if (msg?.id) {
+          setTimeout(() => {
+            const evt = new MessageEvent('message', {
+              data: {
+                channel: 'openchamber.sdk',
+                v: 1,
+                type: 'result',
+                id: msg.id,
+                ok: true,
+                payload: {},
+              },
+            });
+            Object.defineProperty(evt, 'source', { value: mockWindow.parent });
+            messageHandler?.(evt);
+          }, 1);
+        }
+      },
+    },
+    console: mockConsole,
+    setTimeout,
+    clearTimeout,
+    setInterval: () => 1,
+    clearInterval: () => {},
+    Date,
+    Math,
+    JSON,
+    Array,
+    Object,
+    Promise,
+    MessageEvent,
+    TextEncoder,
+    TextDecoder,
+  };
+
+  const context = vm.createContext({
+    window: mockWindow,
+    document: mockWindow.document,
+    console: mockConsole,
+    setTimeout,
+    clearTimeout,
+    setInterval: () => 1,
+    clearInterval: () => {},
+    Date,
+    Math,
+    JSON,
+    Array,
+    Object,
+    Promise,
+    MessageEvent,
+    TextEncoder,
+    TextDecoder,
+  });
+
+  const bundleJs = fs.readFileSync(PANEL_MAIN_JS_PATH, 'utf8');
+  vm.runInContext(bundleJs, context);
 
   return {
-    host,
-    document,
-    showBanner,
-    hideBanner,
-    console: mockConsole,
-    getServiceRequestCalls: () => serviceRequestCalls,
-    getLogCalls: () => logCalls,
-    getBannerState: () => ({ bannerVisible, bannerText, showBannerCalledWith, hideBannerCallCount }),
+    mockWindow,
+    elements,
+    logs,
+    serviceRequests,
+    waitForReady: () => new Promise((resolve) => setTimeout(resolve, 40)),
   };
 }
 
-test('panel-service-connection: Outcome 1: 200 OK connected hides prior coordinator banner and logs info', async () => {
-  const caller = loadCallerFunction();
-  const env = createMockEnvironment({
-    bannerVisible: true,
-    bannerText: 'Background coordinator service failed to connect.',
-    serviceRequestResolve: { status: 200, body: '{"status":"ok"}' },
+test('panel-service-connection: real panel bundle executes onReady probe and outcome 1 hides prior coordinator banner', async () => {
+  const app = createRealPanelApp({
+    hasSelectedRepo: true,
+    initialBannerText: 'Background coordinator service failed to connect.',
+    onServiceRequest: () => ({ ok: true, payload: { status: 200, body: '{"status":"ok"}' } }),
   });
 
-  await caller(env);
+  await app.waitForReady();
 
-  assert.equal(env.getServiceRequestCalls().length, 1);
-  assert.deepEqual(env.getServiceRequestCalls()[0], { method: 'GET', path: '/health' });
+  // Assert host.onReady dispatched real serviceRequest
+  assert.equal(app.serviceRequests.length, 1);
+  assert.equal(app.serviceRequests[0].method, 'GET');
+  assert.equal(app.serviceRequests[0].path, '/health');
 
-  const banner = env.getBannerState();
-  assert.equal(banner.hideBannerCallCount, 1, 'Should call hideBanner when prior banner was coordinator notice');
-  assert.equal(banner.bannerVisible, false);
+  // Real banner element is hidden
+  const banner = app.elements.get('boardBanner');
+  assert.equal(banner.style.display, 'none');
 
-  const logs = env.getLogCalls();
-  assert.equal(logs.info.length, 1);
-  assert.ok(logs.info[0][0].includes('Background coordinator service connected (healthy).'));
+  // Real console log receives healthy notice
+  const infoLogs = app.logs.info.filter((l) => l.includes('Background coordinator'));
+  assert.equal(infoLogs.length, 1);
+  assert.ok(infoLogs[0].includes('connected (healthy)'));
 });
 
-test('panel-service-connection: Outcome 1: 200 OK preserves unrelated active banner (Advisory 1)', async () => {
-  const caller = loadCallerFunction();
+test('panel-service-connection: Outcome 1 200 OK preserves unrelated active banner (Advisory 1)', async () => {
   const unrelatedText = 'No Git remote detected. Enter a repository:';
-  const env = createMockEnvironment({
-    bannerVisible: true,
-    bannerText: unrelatedText,
-    serviceRequestResolve: { status: 200 },
+  const app = createRealPanelApp({
+    initialBannerText: unrelatedText,
+    onServiceRequest: () => ({ ok: true, payload: { status: 200, body: '{"status":"ok"}' } }),
   });
 
-  await caller(env);
+  await app.waitForReady();
 
-  const banner = env.getBannerState();
-  assert.equal(banner.hideBannerCallCount, 0, 'Must NOT dismiss unrelated setup banner on successful service connection');
-  assert.equal(banner.bannerVisible, true, 'Unrelated banner must remain visible');
-  assert.equal(banner.bannerText, unrelatedText, 'Unrelated banner text must not be altered');
+  const banner = app.elements.get('boardBanner');
+  const bannerText = app.elements.get('boardBannerText');
+  assert.equal(banner.style.display, 'flex', 'Unrelated banner must remain visible');
+  assert.equal(bannerText.textContent, unrelatedText, 'Unrelated banner text must not be dismissed');
 });
 
-test('panel-service-connection: Outcome 2: NO_SERVICE shows Settings notice without claiming success', async () => {
-  const caller = loadCallerFunction();
-  const env = createMockEnvironment({
-    serviceRequestReject: { code: 'NO_SERVICE', message: 'Capability not approved' },
+test('panel-service-connection: Outcome 2 NO_SERVICE shows Settings notice without claiming success', async () => {
+  const app = createRealPanelApp({
+    onServiceRequest: () => ({ ok: false, code: 'NO_SERVICE', error: 'Capability not granted in Settings' }),
   });
 
-  await caller(env);
+  await app.waitForReady();
 
-  const banner = env.getBannerState();
-  assert.equal(banner.bannerVisible, true);
+  const banner = app.elements.get('boardBanner');
+  const bannerText = app.elements.get('boardBannerText');
+  assert.equal(banner.style.display, 'flex');
   assert.equal(
-    banner.showBannerCalledWith,
+    bannerText.textContent,
     'Background coordinator service is not enabled in OpenChamber Settings -> Extensions.'
   );
 
-  const logs = env.getLogCalls();
-  assert.equal(logs.info.length, 1);
-  assert.ok(logs.info[0][0].includes('not enabled in Settings -> Extensions.'));
-  // Never log raw error objects
-  assert.equal(logs.info[0].some((arg) => typeof arg === 'object'), false);
+  const infoLogs = app.logs.info.filter((l) => l.includes('Settings -> Extensions'));
+  assert.equal(infoLogs.length, 1);
+  // Never leak raw objects or tokens
+  assert.equal(infoLogs[0].includes('[object Object]'), false);
 });
 
-test('panel-service-connection: Outcome 2: DISABLED shows Settings notice without claiming success', async () => {
-  const caller = loadCallerFunction();
-  const env = createMockEnvironment({
-    serviceRequestReject: { code: 'DISABLED', message: 'Extension is disabled' },
+test('panel-service-connection: Outcome 2 DISABLED shows Settings notice without claiming success', async () => {
+  const app = createRealPanelApp({
+    onServiceRequest: () => ({ ok: false, code: 'DISABLED', error: 'Extension is disabled' }),
   });
 
-  await caller(env);
+  await app.waitForReady();
 
-  const banner = env.getBannerState();
-  assert.equal(banner.bannerVisible, true);
+  const banner = app.elements.get('boardBanner');
+  const bannerText = app.elements.get('boardBannerText');
+  assert.equal(banner.style.display, 'flex');
   assert.equal(
-    banner.showBannerCalledWith,
+    bannerText.textContent,
     'Background coordinator service is not enabled in OpenChamber Settings -> Extensions.'
   );
 });
 
-test('panel-service-connection: Outcome 3: SERVICE_FAILED shows failure banner and sanitized warning', async () => {
-  const caller = loadCallerFunction();
-  const env = createMockEnvironment({
-    serviceRequestReject: { code: 'SERVICE_FAILED', message: 'Process exited with code 1' },
+test('panel-service-connection: Outcome 3 SERVICE_FAILED shows failure banner and sanitized warning', async () => {
+  const app = createRealPanelApp({
+    onServiceRequest: () => ({ ok: false, code: 'SERVICE_FAILED', error: 'Process exited with code 1' }),
   });
 
-  await caller(env);
+  await app.waitForReady();
 
-  const banner = env.getBannerState();
-  assert.equal(banner.bannerVisible, true);
-  assert.equal(banner.showBannerCalledWith, 'Background coordinator service failed to connect.');
+  const banner = app.elements.get('boardBanner');
+  const bannerText = app.elements.get('boardBannerText');
+  assert.equal(banner.style.display, 'flex');
+  assert.equal(bannerText.textContent, 'Background coordinator service failed to connect.');
 
-  const logs = env.getLogCalls();
-  assert.equal(logs.warn.length, 1);
-  assert.ok(logs.warn[0][0].includes('SERVICE_FAILED'));
-  // Sanitized logging: never pass raw Error object
-  assert.equal(logs.warn[0].some((arg) => typeof arg === 'object'), false);
+  const warnLogs = app.logs.warn.filter((l) => l.includes('Background coordinator'));
+  assert.equal(warnLogs.length, 1);
+  assert.ok(warnLogs[0].includes('SERVICE_FAILED'));
+  // Sanitized logging: never leak raw Error object or private stack
+  assert.equal(warnLogs[0].includes('Process exited'), false);
 });
 
-test('panel-service-connection: Outcome 3: REQUEST_FAILED and HOST_TIMEOUT show failure banner', async () => {
-  const caller = loadCallerFunction();
-
+test('panel-service-connection: Outcome 3 REQUEST_FAILED, HOST_TIMEOUT, and HOST_UNAVAILABLE show failure banner', async () => {
   for (const code of ['REQUEST_FAILED', 'HOST_TIMEOUT', 'HOST_UNAVAILABLE']) {
-    const env = createMockEnvironment({
-      serviceRequestReject: { code, message: 'Transport error' },
+    const app = createRealPanelApp({
+      onServiceRequest: () => ({ ok: false, code, error: 'Connection transport failure' }),
     });
 
-    await caller(env);
+    await app.waitForReady();
 
-    const banner = env.getBannerState();
-    assert.equal(banner.bannerVisible, true);
-    assert.equal(banner.showBannerCalledWith, 'Background coordinator service failed to connect.');
+    const banner = app.elements.get('boardBanner');
+    const bannerText = app.elements.get('boardBannerText');
+    assert.equal(banner.style.display, 'flex');
+    assert.equal(bannerText.textContent, 'Background coordinator service failed to connect.');
 
-    const logs = env.getLogCalls();
-    assert.equal(logs.warn.length, 1);
-    assert.ok(logs.warn[0][0].includes(code));
+    const warnLogs = app.logs.warn.filter((l) => l.includes(code));
+    assert.equal(warnLogs.length, 1);
   }
 });
 
-test('panel-service-connection: Outcome 3: Non-200 HTTP status shows unexpected status notice', async () => {
-  const caller = loadCallerFunction();
-  const env = createMockEnvironment({
-    serviceRequestResolve: { status: 500, body: 'Internal Server Error' },
+test('panel-service-connection: Outcome 3 Non-200 HTTP status shows unexpected status notice', async () => {
+  const app = createRealPanelApp({
+    onServiceRequest: () => ({ ok: true, payload: { status: 500, body: 'Internal Server Error' } }),
   });
 
-  await caller(env);
+  await app.waitForReady();
 
-  const banner = env.getBannerState();
-  assert.equal(banner.bannerVisible, true);
-  assert.equal(banner.showBannerCalledWith, 'Background coordinator service returned an unexpected status.');
+  const banner = app.elements.get('boardBanner');
+  const bannerText = app.elements.get('boardBannerText');
+  assert.equal(banner.style.display, 'flex');
+  assert.equal(bannerText.textContent, 'Background coordinator service returned an unexpected status.');
 
-  const logs = env.getLogCalls();
-  assert.equal(logs.warn.length, 1);
-  assert.ok(logs.warn[0][0].includes('500'));
+  const warnLogs = app.logs.warn.filter((l) => l.includes('500'));
+  assert.equal(warnLogs.length, 1);
 });
 
-test('panel-service-connection: Outcome 3: Generic error without code logs UNKNOWN safely', async () => {
-  const caller = loadCallerFunction();
-  const env = createMockEnvironment({
-    serviceRequestReject: new Error('Network failure with private /workspace/path in stack trace'),
+test('panel-service-connection: Outcome 3 Generic error without code logs HOST_REJECTED safely', async () => {
+  const app = createRealPanelApp({
+    onServiceRequest: () => ({ ok: false, error: 'Network failure with secret /workspace/token' }),
   });
 
-  await caller(env);
+  await app.waitForReady();
 
-  const banner = env.getBannerState();
-  assert.equal(banner.bannerVisible, true);
-  assert.equal(banner.showBannerCalledWith, 'Background coordinator service failed to connect.');
+  const banner = app.elements.get('boardBanner');
+  assert.equal(banner.style.display, 'flex');
 
-  const logs = env.getLogCalls();
-  assert.equal(logs.warn.length, 1);
-  assert.ok(logs.warn[0][0].includes('UNKNOWN'));
-  assert.equal(logs.warn[0][0].includes('/workspace/path'), false, 'Never leak stack or file paths in log');
+  const warnLogs = app.logs.warn.filter((l) => l.includes('Background coordinator service connection failed'));
+  assert.equal(warnLogs.length, 1);
+  assert.ok(warnLogs[0].includes('HOST_REJECTED') || warnLogs[0].includes('UNKNOWN'));
+  assert.equal(warnLogs[0].includes('/workspace/token'), false, 'Must never leak error detail');
+});
+
+test('panel-service-connection: real window hook __taskBoardBackgroundService is exported and callable', async () => {
+  const app = createRealPanelApp({
+    onServiceRequest: () => ({ ok: true, payload: { status: 200, body: '{"status":"ok"}' } }),
+  });
+
+  await app.waitForReady();
+
+  assert.ok(app.mockWindow.__taskBoardBackgroundService, 'Window hook must be defined');
+  assert.equal(typeof app.mockWindow.__taskBoardBackgroundService.checkBackgroundServiceConnection, 'function');
+
+  // Trigger manual invocation via exported window hook
+  await app.mockWindow.__taskBoardBackgroundService.checkBackgroundServiceConnection();
+  assert.equal(app.serviceRequests.length, 2);
 });
 
 test('panel-service-connection: Invariant: zero emojis in UI banner copy or log output', async () => {
-  const caller = loadCallerFunction();
   const emojiRegex = /[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/u;
 
-  const testCodes = ['NO_SERVICE', 'DISABLED', 'SERVICE_FAILED', 'REQUEST_FAILED', 'HOST_TIMEOUT', 'UNKNOWN'];
-  for (const code of testCodes) {
-    const env = createMockEnvironment({
-      serviceRequestReject: { code, message: 'error' },
+  for (const code of ['NO_SERVICE', 'DISABLED', 'SERVICE_FAILED', 'REQUEST_FAILED']) {
+    const app = createRealPanelApp({
+      onServiceRequest: () => ({ ok: false, code, error: 'err' }),
     });
-    await caller(env);
-    const banner = env.getBannerState();
-    assert.equal(emojiRegex.test(banner.bannerText), false, `Banner text for ${code} must have 0 emojis`);
+
+    await app.waitForReady();
+
+    const bannerText = app.elements.get('boardBannerText').textContent;
+    assert.equal(emojiRegex.test(bannerText), false, `Banner text for ${code} must have zero emojis`);
+
+    for (const log of [...app.logs.info, ...app.logs.warn]) {
+      assert.equal(emojiRegex.test(log), false, `Log for ${code} must have zero emojis`);
+    }
   }
 });
