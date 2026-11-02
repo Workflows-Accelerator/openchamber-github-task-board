@@ -1,7 +1,7 @@
 <env_preflight>
 Repo: /workspace/extensions/github-task-board
 Worktree: /workspace/extensions/github-task-board/.worktrees/team-dev-issue-51-toolbar-controls
-Branch: fix/issue-51-toolbar-controls, HEAD {{L4_HEAD}} (after L4 hostile review), clean. #51 base f0dae5b (accepted #50). Master ab7516c4a3634c3d69f7b82936ddb7655d327ebb.
+Branch: fix/issue-51-toolbar-controls, HEAD 7b7bbc5 (after L4 hostile review), clean. #51 base f0dae5b (accepted #50). Master ab7516c4a3634c3d69f7b82936ddb7655d327ebb.
 Preflight facts are authoritative: skip initial pwd/ls/git status discovery.
 Files to audit (read-only): git diff f0dae5b..HEAD -- panel/ test/ ; .agents/run/issue-51-build/verifications/proof.md (incl. "Hostile Findings (L4)") ; .agents/run/issue-51-build/verifications/screenshots/*.
 Test commands: npm run typecheck ; node --test test/toolbar-controls.test.js test/panel-service-connection.test.js test/panel-simple-views.test.js test/shipped-parity.test.js ; npm test
