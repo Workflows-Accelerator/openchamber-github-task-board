@@ -9,6 +9,7 @@
     :root {
       --bg: var(--oc-bg, var(--surface-background, #0f1012));
       --surf: var(--oc-elevated, var(--surface-elevated, #16181b));
+      --bg-elev: var(--surf);
       --surf-muted: var(--oc-muted-surface, var(--surface-muted, #1c1f24));
       --surf-subtle: var(--oc-subtle, var(--surface-subtle, #23272e));
       --surf-hover: var(--oc-hover, var(--interactive-hover, #2a2f38));
@@ -27,6 +28,7 @@
       --err: var(--oc-error, var(--status-error, #ef4444));
       --rad: var(--oc-radius, var(--radius, 6px));
       --rad-sm: calc(var(--rad) - 2px);
+      --radius-xs: var(--rad-sm);
       --rad-lg: calc(var(--rad) + 4px);
       --font-sans: var(--oc-font, var(--font-sans, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif));
       --font-mono: var(--oc-mono, var(--font-mono, ui-monospace, "SFMono-Regular", Menlo, monospace));
@@ -86,9 +88,12 @@
     }
 
     /* Repo Selector Dropdown Trigger */
-    .repo-btn {
+    .repo-btn,
+    .repo-select-btn {
       display: flex;
       align-items: center;
+      justify-content: flex-start;
+      text-align: left;
       gap: 6px;
       background: var(--surf);
       border: 1px solid var(--border);
@@ -104,11 +109,13 @@
       flex-shrink: 1;
     }
     @media (min-width: 768px) {
-      .repo-btn {
+      .repo-btn,
+      .repo-select-btn {
         max-width: 340px;
       }
     }
-    .repo-btn:hover {
+    .repo-btn:hover,
+    .repo-select-btn:hover {
       background: var(--surf-hover);
       border-color: rgba(255, 255, 255, 0.15);
     }
@@ -119,6 +126,9 @@
       font-family: var(--font-mono);
       font-size: 11px;
       color: var(--fg);
+      text-align: left;
+      min-width: 0;
+      flex: 1;
     }
 
     /* Toolbar Responsive & More Menu
@@ -148,7 +158,8 @@
       .search-input {
         width: 70px;
       }
-      .repo-btn {
+      .repo-btn,
+      .repo-select-btn {
         max-width: 130px;
       }
     }
@@ -156,7 +167,8 @@
       .search-input {
         width: 50px;
       }
-      .repo-btn {
+      .repo-btn,
+      .repo-select-btn {
         max-width: 85px;
       }
     }
@@ -3075,17 +3087,20 @@
     }
 
     /* Categorized View Selector Dropdown */
-    .view-select-wrapper {
+    .view-select-wrapper,
+    .toolbar-dropdown-wrap {
       position: relative;
       display: inline-flex;
       align-items: center;
+      flex-shrink: 0;
     }
-    .btn-view-select {
+    .btn-view-select,
+    .toolbar-view-btn {
       display: inline-flex;
       flex-direction: row;
       align-items: center;
       gap: 6px;
-      padding: 0 8px;
+      padding: 0 18px 0 8px;
       height: 28px;
       background: var(--surf);
       border: 1px solid var(--border);
@@ -3095,12 +3110,16 @@
       color: var(--fg);
       cursor: pointer;
       transition: all 0.15s ease;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
-    .btn-view-select:hover {
+    .btn-view-select:hover,
+    .toolbar-view-btn:hover {
       background: var(--surf-hover);
       border-color: rgba(255, 255, 255, 0.18);
     }
-    .btn-view-select .icon-chevron {
+    .btn-view-select .icon-chevron,
+    .toolbar-view-btn .icon-chevron {
       width: 14px;
       height: 14px;
       opacity: 0.7;
@@ -3422,10 +3441,55 @@
 
     .toolbar { flex-wrap: wrap; gap: 6px; }
     .toolbar-right { flex-wrap: wrap; min-width: 0; }
-    .btn-view-select { display: inline-flex !important; max-width: 100%; }
+    @media (min-width: 768px) {
+      .toolbar-right { flex-wrap: nowrap; }
+    }
+    .btn-view-select { display: inline-flex !important; max-width: 100%; flex-shrink: 0; white-space: nowrap; }
+    .toolbar-view-btn { display: inline-flex !important; max-width: 100%; flex-shrink: 0; white-space: nowrap; }
     .view-opt-item { width: 100%; background: transparent; color: var(--fg); border: 0; text-align: left; font: inherit; }
-    .sort-control { display: flex; align-items: center; gap: 4px; font-size: 11px; }
-    .sort-control select { max-width: 150px; }
+    .sort-control { display: flex; align-items: center; gap: 4px; font-size: 11px; flex-shrink: 0; }
+    .sort-control select,
+    .toolbar-sort-select,
+    #selectSort {
+      background: var(--bg-elev, var(--surf));
+      color: var(--fg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xs, var(--rad-sm));
+      height: 28px;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: inherit;
+      padding: 0 8px;
+      cursor: pointer;
+      max-width: 150px;
+      color-scheme: inherit;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .sort-control select:hover,
+    .toolbar-sort-select:hover,
+    #selectSort:hover {
+      background: var(--surf-hover);
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+    [data-oc-theme="light"] .sort-control select:hover,
+    [data-oc-theme="light"] .toolbar-sort-select:hover,
+    [data-oc-theme="light"] #selectSort:hover,
+    [data-oc-theme="light"] .btn-view-select:hover,
+    [data-oc-theme="light"] .toolbar-view-btn:hover {
+      border-color: var(--border);
+    }
+    .sort-control select:focus-visible,
+    .toolbar-sort-select:focus-visible,
+    #selectSort:focus-visible {
+      outline: 2px solid var(--prim);
+      outline-offset: 1px;
+    }
+    .sort-control select option,
+    .toolbar-sort-select option,
+    #selectSort option {
+      background: var(--bg-elev, var(--surf));
+      color: var(--fg);
+    }
     .filter-popover { top: 32px; left: 0; right: auto; width: min(320px, calc(100vw - 16px)); max-width: calc(100vw - 16px); padding: 10px; gap: 10px; max-height: 60vh; overflow-y: auto; }
     .filter-group { display: flex; flex-wrap: wrap; gap: 6px; }
     .filter-group-title { width: 100%; color: var(--fg-muted); font-size: 11px; }
@@ -3466,7 +3530,7 @@
   <header class="toolbar">
     <div class="toolbar-left">
       <!-- Repo Dropdown Trigger -->
-      <button class="repo-btn" id="btnRepoSelect" title="Select or switch target repository">
+      <button class="repo-btn repo-select-btn" id="btnRepoSelect" title="Select or switch target repository">
         <!-- Git Branch Icon -->
         <svg class="icon icon-sm" viewBox="0 0 24 24"><path d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
         <span class="repo-label" id="txtRepoLabel">Detecting repo...</span>
@@ -3482,12 +3546,12 @@
         <input type="text" id="searchInput" class="search-input" placeholder="Search..." />
       </div>
 
-      <div class="view-select-wrapper" id="filterWrapper">
+      <div class="view-select-wrapper toolbar-dropdown-wrap" id="filterWrapper">
         <button class="btn" id="btnFilterToggle" title="Filter tasks" aria-haspopup="dialog" aria-controls="filterPopover" aria-expanded="false">Filter</button>
         <div class="popover filter-popover" id="filterPopover" role="dialog" aria-label="Task filters" style="display: none;"></div>
       </div>
       <label class="sort-control">Sort
-        <select id="selectSort" aria-label="Sort tasks">
+        <select id="selectSort" class="toolbar-sort-select" aria-label="Sort tasks">
           <option value="priority">Priority</option>
           <option value="updated">Recently updated</option>
           <option value="created">Recently created</option>
@@ -3500,8 +3564,8 @@
         <svg class="icon" id="iconRefresh" viewBox="0 0 24 24"><path d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
       </button>
 
-      <div class="view-select-wrapper" id="viewSelectWrapper">
-        <button class="btn btn-view-select" id="btnViewSelect" title="Select view" aria-haspopup="menu" aria-expanded="false" aria-controls="viewSelectPopover" aria-label="Select view">
+      <div class="view-select-wrapper toolbar-dropdown-wrap" id="viewSelectWrapper">
+        <button class="btn btn-view-select toolbar-view-btn" id="btnViewSelect" title="Select view" aria-haspopup="menu" aria-expanded="false" aria-controls="viewSelectPopover" aria-label="Select view">
           <span>View</span><span id="viewSelectCurrentLabel">Simple list</span>
         </button>
         <div class="popover view-select-popover" id="viewSelectPopover" role="menu" aria-label="Task views" style="display: none;">

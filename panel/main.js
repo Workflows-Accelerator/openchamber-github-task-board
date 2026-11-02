@@ -8785,6 +8785,30 @@ Blocked by ${blockerRef}`;
     const elBanner = document.getElementById("boardBanner");
     if (elBanner) elBanner.style.display = "none";
   }
+  async function checkBackgroundServiceConnection() {
+    try {
+      const res = await host.serviceRequest({ method: "GET", path: "/health" });
+      if (res && res.status === 200) {
+        const cur = document.getElementById("boardBannerText")?.textContent;
+        if (cur && cur.includes("Background coordinator")) {
+          hideBanner();
+        }
+        console.info("[TaskBoard] Background coordinator service connected (healthy).");
+      } else {
+        showBanner("Background coordinator service returned an unexpected status.");
+        console.warn("[TaskBoard] Background coordinator service returned HTTP status: " + (res ? res.status : "unknown"));
+      }
+    } catch (err) {
+      const code = err && typeof err === "object" && "code" in err && typeof err.code === "string" ? err.code : "UNKNOWN";
+      if (code === "NO_SERVICE" || code === "DISABLED") {
+        showBanner("Background coordinator service is not enabled in OpenChamber Settings -> Extensions.");
+        console.info("[TaskBoard] Background coordinator service not enabled in Settings -> Extensions.");
+      } else {
+        showBanner("Background coordinator service failed to connect.");
+        console.warn("[TaskBoard] Background coordinator service connection failed (" + code + ").");
+      }
+    }
+  }
   var dirGitCache = /* @__PURE__ */ new Map();
   var issueCache = /* @__PURE__ */ new Map();
   var ISSUE_CACHE_TTL_MS = 6e4;
@@ -9101,7 +9125,10 @@ Blocked by ${blockerRef}`;
     elTxtRepoLabel.textContent = displayProjectName(repo);
     elTxtRepoLabel.title = `Project: ${currentProject?.name || "Workspace"} \u2022 Repo: ${repo} (via ${source})`;
     addLog(`Switched repository to ${repo} [${source}]`, "succ");
-    hideBanner();
+    const curBanner = document.getElementById("boardBannerText")?.textContent;
+    if (!curBanner || !curBanner.includes("Background coordinator")) {
+      hideBanner();
+    }
     void host.storage.set("selected_repo", repo);
     if (currentProject) {
       void host.storage.set(`repo_${currentProject.id}`, repo);
@@ -16706,6 +16733,7 @@ Blocked by ${blockerRef}`;
     const startupEpoch = activeStreamEpoch;
     await discoverWorkspaceRepositories();
     if (ctx.settings?.repo && currentRepo && activeStreamEpoch === startupEpoch) await fetchIssues();
+    void checkBackgroundServiceConnection();
   });
   host.onDirectory(async (dir) => {
     addLog(`Directory changed: ${dir}`);
@@ -16752,5 +16780,10 @@ Blocked by ${blockerRef}`;
       }
     }
   });
+  if (typeof window !== "undefined") {
+    window.__taskBoardBackgroundService = {
+      checkBackgroundServiceConnection
+    };
+  }
   initEvents();
 })();

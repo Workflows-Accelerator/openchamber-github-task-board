@@ -525,6 +525,44 @@ function hideBanner(): void {
   if (elBanner) elBanner.style.display = 'none';
 }
 
+/**
+ * D59: Probe background coordinator service once on panel open.
+ * Uses existing host.serviceRequest bridge to perform an authenticated GET /health.
+ * Provides observable sanitized diagnostics without silent swallow or auto-grant.
+ */
+async function checkBackgroundServiceConnection(): Promise<void> {
+  try {
+    const res = await (host as any).serviceRequest({ method: 'GET', path: '/health' });
+    if (res && res.status === 200) {
+      // Outcome 1: Connected (healthy)
+      // Advisory 1: Only hide banner if it currently displays coordinator notice
+      const cur = document.getElementById('boardBannerText')?.textContent;
+      if (cur && cur.includes('Background coordinator')) {
+        hideBanner();
+      }
+      console.info('[TaskBoard] Background coordinator service connected (healthy).');
+    } else {
+      // Non-200 response from loopback server
+      showBanner('Background coordinator service returned an unexpected status.');
+      console.warn('[TaskBoard] Background coordinator service returned HTTP status: ' + (res ? res.status : 'unknown'));
+    }
+  } catch (err: unknown) {
+    const code = (err && typeof err === 'object' && 'code' in err && typeof (err as any).code === 'string')
+      ? (err as any).code
+      : 'UNKNOWN';
+
+    if (code === 'NO_SERVICE' || code === 'DISABLED') {
+      // Outcome 2: Capability unapproved or extension disabled
+      showBanner('Background coordinator service is not enabled in OpenChamber Settings -> Extensions.');
+      console.info('[TaskBoard] Background coordinator service not enabled in Settings -> Extensions.');
+    } else {
+      // Outcome 3: Service failed, request failed, host timeout, or crash
+      showBanner('Background coordinator service failed to connect.');
+      console.warn('[TaskBoard] Background coordinator service connection failed (' + code + ').');
+    }
+  }
+}
+
 // ==========================================
 // Subtask & Markdown Parsing
 // ==========================================
@@ -934,7 +972,11 @@ function setRepository(repo: string, source: string, force: boolean = false): vo
   elTxtRepoLabel.textContent = displayProjectName(repo);
   elTxtRepoLabel.title = `Project: ${currentProject?.name || 'Workspace'} • Repo: ${repo} (via ${source})`;
   addLog(`Switched repository to ${repo} [${source}]`, 'succ');
-  hideBanner();
+  // Advisory 1: Preserve coordinator notice if active
+  const curBanner = document.getElementById('boardBannerText')?.textContent;
+  if (!curBanner || !curBanner.includes('Background coordinator')) {
+    hideBanner();
+  }
   void host.storage.set('selected_repo', repo);
   if (currentProject) {
     void host.storage.set(`repo_${currentProject.id}`, repo);
@@ -9930,6 +9972,9 @@ host.onReady(async (ctx) => {
   const startupEpoch = activeStreamEpoch;
   await discoverWorkspaceRepositories();
   if (ctx.settings?.repo && currentRepo && activeStreamEpoch === startupEpoch) await fetchIssues();
+
+  // D59: Probe background service once on panel open
+  void checkBackgroundServiceConnection();
 });
 
 // React to directory change (when user switches projects, worktrees, or chats)
@@ -9984,5 +10029,11 @@ host.onSession(async (rawSess) => {
     }
   }
 });
+
+if (typeof window !== 'undefined') {
+  (window as any).__taskBoardBackgroundService = {
+    checkBackgroundServiceConnection,
+  };
+}
 
 initEvents();

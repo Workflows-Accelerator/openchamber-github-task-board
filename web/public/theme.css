@@ -542,6 +542,10 @@ label {
   border: 0;
 }
 
+input.sr-only {
+  left: -9999px;
+}
+
 pre,
 code {
   font-family: var(--font-mono);

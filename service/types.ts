@@ -60,3 +60,17 @@ export interface CoordinatorConfig {
 }
 
 export type CoordinatorStatus = 'stopped' | 'starting' | 'running' | 'stopping';
+
+export interface ServiceHealthResponse {
+  status: 'ok';
+  service: 'task-coordinator';
+}
+
+export interface ServiceErrorResponse {
+  error: string;
+}
+
+export interface ServiceHostServerConfig {
+  port: number;
+  token: string;
+}
