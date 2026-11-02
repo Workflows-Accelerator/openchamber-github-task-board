@@ -176,6 +176,11 @@ async function run() {
       pageErrors.push({ config: config.name, error: err.message });
       console.error('Page error in', config.name, ':', err.message);
     });
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') {
+        console.error(`[${config.name} console.error]`, msg.text());
+      }
+    });
 
     const isLight = config.theme === 'light';
     const repoName = config.repoMode === 'long'
@@ -230,7 +235,7 @@ async function run() {
                 data: { channel: 'openchamber.sdk', v: 1, type: 'result', id, ok, payload },
                 source: mockParent
               }));
-            }, 10);
+            }, 0);
           }
 
           if (msg.type === 'hello') {
@@ -251,7 +256,7 @@ async function run() {
                 },
                 source: mockParent
               }));
-            }, 10);
+            }, 0);
           } else if (msg.type === 'service-request') {
             reply(msg.id, { status: 200, body: JSON.stringify({ status: 'ok' }) });
           } else if (msg.type === 'workspace-read') {
@@ -286,7 +291,17 @@ async function run() {
 
     await page.goto(`http://127.0.0.1:${HTTP_PORT}/panel/index.html`, { waitUntil: 'load' });
     await page.locator('#selectSort').waitFor({ state: 'visible' });
-    await page.waitForTimeout(800);
+    try {
+      await page.waitForFunction(
+        (expectedTheme) => document.documentElement.dataset.ocTheme === expectedTheme,
+        config.theme,
+        { timeout: 5000 }
+      );
+    } catch (e) {
+      const actualTheme = await page.evaluate(() => document.documentElement.dataset.ocTheme);
+      console.warn(`[warn] waitForFunction theme timeout in ${config.name}: expected ${config.theme}, actual: ${actualTheme}`);
+    }
+    await page.waitForTimeout(200);
 
     // If long repo, also ensure tooltip is set and test custom long label if needed
     if (config.repoMode === 'long') {
@@ -421,7 +436,11 @@ async function run() {
 
   await focusPage.goto(`http://127.0.0.1:${HTTP_PORT}/panel/index.html`, { waitUntil: 'load' });
   await focusPage.locator('#selectSort').waitFor({ state: 'visible' });
-  await focusPage.waitForTimeout(600);
+  await focusPage.waitForFunction(
+    () => Boolean(document.documentElement.dataset.ocTheme),
+    { timeout: 3000 }
+  ).catch(() => {});
+  await focusPage.waitForTimeout(400);
 
   // Focus #selectSort
   await focusPage.locator('#selectSort').focus();

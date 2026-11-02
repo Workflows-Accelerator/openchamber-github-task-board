@@ -85,3 +85,21 @@ Consequently, visual verification was executed using the container-provided Obsc
 
 ### 2. OpenChamber Host L5 Authentication Boundary
 The live OpenChamber parent host web interface enforces password-based session authentication that cannot be automated in headless non-interactive mode. The verification harness emulated the parent host postMessage RPC interface (`openchamber.sdk` channel) with exact host token maps matching `@openchamber/sdk/ui` conventions, validating the panel bundle in isolation without touching production authentication states.
+
+---
+
+## Adversarial L4 Hostile Review Findings & Defect Resolutions
+
+### Finding 1: Desktop Toolbar Button Wrapping (#btnMoreMenu orphan row on wide screens)
+- **Defect**: With `.toolbar-right { flex-wrap: wrap; }` active without desktop breakpoint constraints, Blink calculated the children's combined width at 612px against a 611px container at 1280px and 980px viewports. This pushed `#btnMoreMenu` (more actions 3-dot button) onto an orphaned second row beneath the main toolbar actions on wide desktop screens.
+- **Fix**: Added `@media (min-width: 768px) { .toolbar-right { flex-wrap: nowrap; } }` in `panel/index.html`. Primary and secondary actions remain unified on row 1 across 1280px, 980px, and 768px, while fluid wrapping is retained on mobile viewports (360px) without horizontal scrolling.
+- **Regression Assertion**: Added wide-screen `flex-wrap: nowrap` CSS contract check to `test/toolbar-controls.test.js`.
+
+### Finding 2: Sort Dropdown Color Scheme Synchronization & Light-Theme Hover Contrast
+- **Defect**: Hardcoded `color-scheme: dark light;` on `#selectSort` did not dynamically track `applyHostTheme`'s `root.style.colorScheme = theme.mode`. Furthermore, the hover border `rgba(255, 255, 255, 0.18)` washed out against light theme surfaces (`#f4f5f7` / `#ffffff`).
+- **Fix**: Configured `color-scheme: inherit;` on `#selectSort` to inherit host mode directly. Added `[data-oc-theme="light"] .sort-control select:hover, [data-oc-theme="light"] .btn-view-select:hover { border-color: var(--border); }` to guarantee high-contrast hover feedback across light theme modes.
+- **Regression Assertion**: Added light theme hover contrast protection check to `test/toolbar-controls.test.js`.
+
+### Finding 3: Theme Handshake Timing & Verification Determinism
+- **Defect**: Visual verification harness initially captured CSS styles before the asynchronous OpenChamber SDK host handshake set `dataset.ocTheme` on `document.documentElement`, causing intermittent default-dark reads on light theme configurations.
+- **Fix**: Synchronized `run-verify.mjs` with `await page.waitForFunction((expectedTheme) => document.documentElement.dataset.ocTheme === expectedTheme, config.theme, { timeout: 5000 })` and zero-latency mock RPC message dispatch. All 12 matrix viewports now deterministically pass with 0 page errors and verified light/dark background/foreground colors.

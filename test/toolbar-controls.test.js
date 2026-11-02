@@ -50,6 +50,10 @@ test('Defect 1: #selectSort has explicit toolbar select styling tokens and contr
     /(?:#selectSort|\.toolbar-sort-select|\.sort-control\s+select)[^{]*\{[^}]*color-scheme:/.test(css);
   assert.ok(hasOptionStyle, '#selectSort must provide option styling or color-scheme protection');
 
+  // Light theme hover contrast protection
+  const hasLightHoverProtection = /\[data-oc-theme="light"\][^{]*(?:#selectSort|\.toolbar-sort-select|\.sort-control\s+select)[^{]*:hover[^{]*\{[^}]*border-color:/.test(css);
+  assert.ok(hasLightHoverProtection, '#selectSort must provide light-theme hover contrast protection');
+
   // Focus visible ring
   const hasFocus = /(?:#selectSort|\.toolbar-sort-select|\.sort-control\s+select):focus-visible/.test(css);
   assert.ok(hasFocus, '#selectSort must define focus-visible styling');
@@ -91,6 +95,10 @@ test('Defect 3: #btnViewSelect / .toolbar-dropdown-wrap prevents crowding with f
   // #btnViewSelect must have white-space: nowrap
   const hasNowrap = /(?:#btnViewSelect|\.btn-view-select|\.toolbar-view-btn|\.btn)[^{]*\{[^}]*white-space:\s*nowrap/.test(css);
   assert.ok(hasNowrap, '#btnViewSelect must have white-space: nowrap');
+
+  // Wide screen toolbar integrity: .toolbar-right must prevent wrapping at >= 768px
+  const hasWideNowrap = /@media\s*\([^)]*min-width:\s*768px[^)]*\)[^{]*\{[^}]*\.toolbar-right\s*\{[^}]*flex-wrap:\s*nowrap/.test(css);
+  assert.ok(hasWideNowrap, '.toolbar-right must specify flex-wrap: nowrap at >= 768px to prevent #btnMoreMenu wrapping');
 
   // DOM elements and ARIA attributes
   assert.ok(html.includes('id="btnViewSelect"'), '#btnViewSelect must exist');

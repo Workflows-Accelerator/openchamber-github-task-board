@@ -3441,6 +3441,9 @@
 
     .toolbar { flex-wrap: wrap; gap: 6px; }
     .toolbar-right { flex-wrap: wrap; min-width: 0; }
+    @media (min-width: 768px) {
+      .toolbar-right { flex-wrap: nowrap; }
+    }
     .btn-view-select { display: inline-flex !important; max-width: 100%; flex-shrink: 0; white-space: nowrap; }
     .toolbar-view-btn { display: inline-flex !important; max-width: 100%; flex-shrink: 0; white-space: nowrap; }
     .view-opt-item { width: 100%; background: transparent; color: var(--fg); border: 0; text-align: left; font: inherit; }
@@ -3459,7 +3462,7 @@
       padding: 0 8px;
       cursor: pointer;
       max-width: 150px;
-      color-scheme: dark light;
+      color-scheme: inherit;
       transition: background 0.15s ease, border-color 0.15s ease;
     }
     .sort-control select:hover,
@@ -3467,6 +3470,13 @@
     #selectSort:hover {
       background: var(--surf-hover);
       border-color: rgba(255, 255, 255, 0.18);
+    }
+    [data-oc-theme="light"] .sort-control select:hover,
+    [data-oc-theme="light"] .toolbar-sort-select:hover,
+    [data-oc-theme="light"] #selectSort:hover,
+    [data-oc-theme="light"] .btn-view-select:hover,
+    [data-oc-theme="light"] .toolbar-view-btn:hover {
+      border-color: var(--border);
     }
     .sort-control select:focus-visible,
     .toolbar-sort-select:focus-visible,
