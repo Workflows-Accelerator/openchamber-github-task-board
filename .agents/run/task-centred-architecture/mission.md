@@ -1,6 +1,11 @@
 # Run work from the task board
 
-## Current checkpoint — 2026-11-03 #54 + #53 Released, Audited, and Cleaned Up (Issues Kept Open per D65)
+## Current checkpoint — 2026-11-03 PAUSED per User (D66); Live #53/#54 Reported "The issues never load."
+State: PAUSED (zero running workers). `origin/master` = `98261a8`; live web currently `/workspace/releases/board/98261a8-20261103` (rollback `/workspace/releases/board/8b7e059-20261102` ready). #53 and #54 OPEN (`status:needs-human`).
+- D66 (2026-11-03): User checked live `https://board.workflows.ac` and reported: "The issues never load." User instructed: "Please pause. I have something that I've been cooking up. It's an HTML version of the web board that I've refined across conversations outside of OpenChamber, and I'll need us to complete a working version of the HTML, but I'll pick this up in a new session."
+- No workers dispatched; portfolio paused for the user's new session.
+
+## Previous checkpoint — 2026-11-03 #54 + #53 Released, Audited, and Cleaned Up (Issues Kept Open per D65)
 State: `origin/master` = `98261a8b417c8005b63bc234399bdf6e4cebb974`; live web = `/workspace/releases/board/98261a8-20261103` (`current`; rollback `8b7e059-20261102`); root `ops/task-board-activation` synced (`898ec36`, 0-byte product diff); release audit `ses_ef100b1239cd99ba55e37687` (`1a42ec2`) Spec PASS / Quality APPROVED / Release PROCEED; cleanup `ses_b50d5a810fe5ca00fcb2c41a` (`91cf92a`) archived 43 files in `preserved-online-board-polish/` and normally removed/pruned/DB-deregistered all 3 worktrees (branches `explore/online-board-polish` `02d367c`, `fix/issue-54-no-signin-flash` `4606b45`, `feat/issue-53-openchamber-look` `1a42ec2` retained). #53 (comment 6612603077) and #54 (comment 6612604228) remain OPEN with `status:needs-human` per D65 until user checks live. Next: ask user for live verdict on #53/#54 and next portfolio item.
 
 ## Previous checkpoint — 2026-11-03 #54 + #53 L5 approved (D65); releasing
