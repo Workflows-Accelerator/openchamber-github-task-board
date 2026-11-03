@@ -1,6 +1,9 @@
 # Run work from the task board
 
-## Current checkpoint — 2026-11-03 #54 + #53 L5 approved (D65); releasing
+## Current checkpoint — 2026-11-03 #54 + #53 Released, Audited, and Cleaned Up (Issues Kept Open per D65)
+State: `origin/master` = `98261a8b417c8005b63bc234399bdf6e4cebb974`; live web = `/workspace/releases/board/98261a8-20261103` (`current`; rollback `8b7e059-20261102`); root `ops/task-board-activation` synced (`898ec36`, 0-byte product diff); release audit `ses_ef100b1239cd99ba55e37687` (`1a42ec2`) Spec PASS / Quality APPROVED / Release PROCEED; cleanup `ses_b50d5a810fe5ca00fcb2c41a` (`91cf92a`) archived 43 files in `preserved-online-board-polish/` and normally removed/pruned/DB-deregistered all 3 worktrees (branches `explore/online-board-polish` `02d367c`, `fix/issue-54-no-signin-flash` `4606b45`, `feat/issue-53-openchamber-look` `1a42ec2` retained). #53 (comment 6612603077) and #54 (comment 6612604228) remain OPEN with `status:needs-human` per D65 until user checks live. Next: ask user for live verdict on #53/#54 and next portfolio item.
+
+## Previous checkpoint — 2026-11-03 #54 + #53 L5 approved (D65); releasing
 State: RELEASING `98261a8` via `tasks/brief-online-board-polish-release.md` (push master, deploy, receipts; issues stay OPEN status:needs-human until user checks live). Next: release audit -> cleanup -> ask user for next portfolio item.
 - #53 audit `ses_4e9e0c8996fb422d0633f2fc` -> `98261a8` Spec PASS / Quality APPROVED. Gate `outputs/issue-53-accepted.md`; receipt comment 6590564625; label status:in-review.
 - #53 build `764bd08` had 7 visual blockers; L4 hostile review (genius, `ses_88b861988e04909b3347357d`) fixed all at `35a23fe` (15/15 #53 tests, 479/479 web, 618/618 root, 48/48 Obscura, #54 no-flash still passes; Chromium NOT VERIFIED, libglib missing). Manager re-inspected screenshots 01/03/04/06/07: acceptable.
