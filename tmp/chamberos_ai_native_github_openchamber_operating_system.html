@@ -1,0 +1,3917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Atelier — Operations Manager & Spatial Studio</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            paper: '#F6F4EE',
+            ivory: '#FCFBF8',
+            well: '#EDEAE2',
+            wellDeep: '#E2DDD2',
+            ink: '#181613',
+            inkSecondary: '#57524A',
+            inkMuted: '#8A8378',
+            burgundy: '#7C1D2E',
+            burgundyHover: '#611523',
+            burgundyWash: '#F7ECEE',
+            burgundyBorder: '#E2C3C8',
+            terracotta: '#C85A28',
+            terracottaHover: '#A6461B',
+            terracottaWash: '#FCF0EA',
+            terracottaBorder: '#EBD0C2',
+            sage: '#2E6B4E',
+            sageWash: '#ECF5F0',
+            sageBorder: '#C2DEC9',
+            ochre: '#B86B19',
+            ochreWash: '#FAF3E8',
+            ochreBorder: '#E8D5B7',
+            crimson: '#A62626',
+            crimsonWash: '#FBECEC',
+            stickyBg: '#FBF5DF',
+            stickyBorder: '#E5D59B'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    :root {
+      --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-variant-numeric: tabular-nums;
+      text-transform: none !important;
+    }
+
+    body {
+      background-color: #F6F4EE;
+      color: #181613;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      letter-spacing: -0.014em;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Elevated Crisp Archival Ivory Card (10px radius) */
+    .card-surface {
+      background-color: #FCFBF8;
+      box-shadow: 0 2px 6px rgba(24, 22, 19, 0.04), 0 10px 28px -6px rgba(24, 22, 19, 0.06);
+      border: 1px solid rgba(24, 22, 19, 0.08);
+      border-radius: 10px;
+      transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out), border-color 160ms var(--ease-out);
+    }
+
+    .card-interactive {
+      background-color: #FCFBF8;
+      box-shadow: 0 2px 6px rgba(24, 22, 19, 0.04), 0 10px 28px -6px rgba(24, 22, 19, 0.06);
+      border: 1px solid rgba(24, 22, 19, 0.08);
+      border-radius: 10px;
+      transition: transform 160ms var(--ease-out), box-shadow 160ms var(--ease-out), border-color 160ms var(--ease-out);
+    }
+
+    @media (hover: hover) {
+      .card-interactive:hover {
+        box-shadow: 0 4px 12px rgba(24, 22, 19, 0.06), 0 16px 32px -6px rgba(24, 22, 19, 0.08);
+        border-color: rgba(124, 29, 46, 0.28);
+        transform: translateY(-1px);
+      }
+    }
+
+    /* Custom Grounded Popover Surface (10px-14px radius) */
+    .popover-surface {
+      background-color: #FCFBF8;
+      box-shadow: 0 16px 40px -6px rgba(24, 22, 19, 0.14), 0 3px 10px rgba(24, 22, 19, 0.06);
+      border: 1px solid rgba(24, 22, 19, 0.09);
+      border-radius: 10px;
+      animation: popIn 140ms var(--ease-out);
+    }
+
+    @keyframes popIn {
+      from {
+        opacity: 0;
+        transform: translateY(-4px) scale(0.985);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Drawer & Modal Surface (14px radius) */
+    .modal-surface {
+      background-color: #FCFBF8;
+      box-shadow: 0 24px 60px -12px rgba(24, 22, 19, 0.18), 0 4px 16px rgba(24, 22, 19, 0.07);
+      border: 1px solid rgba(24, 22, 19, 0.09);
+      border-radius: 14px;
+    }
+
+    /* Recessed Warm Travertine Well */
+    .well-surface {
+      background-color: #EDEAE2;
+      border: 1px solid rgba(24, 22, 19, 0.06);
+      border-radius: 10px;
+    }
+
+    .well-tag {
+      background-color: #EDEAE2;
+      border: 1px solid rgba(24, 22, 19, 0.06);
+      border-radius: 6px;
+    }
+
+    .tactile {
+      transition: transform 130ms var(--ease-out), background-color 130ms var(--ease-out), box-shadow 130ms var(--ease-out), color 130ms var(--ease-out);
+    }
+
+    .tactile:active {
+      transform: scale(0.985);
+    }
+
+    /* Spatial Dot Grid Canvas */
+    .canvas-dot-grid {
+      background-color: #EFECE5;
+      background-image: radial-gradient(#C8C0B3 1.3px, transparent 1.3px);
+      background-size: 24px 24px;
+    }
+
+    /* n8n-Style Floating Hover Mini-Toolbar (8px above top-right of node) */
+    .canvas-node-wrapper .node-hover-bar {
+      opacity: 0;
+      transform: translateY(4px);
+      pointer-events: none;
+      transition: opacity 140ms var(--ease-out), transform 140ms var(--ease-out);
+    }
+
+    .canvas-node-wrapper:hover .node-hover-bar,
+    .canvas-node-wrapper.node-selected .node-hover-bar {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .node-selected .node-card-body {
+      box-shadow: 0 12px 28px -4px rgba(124, 29, 46, 0.16), 0 0 0 2px #7C1D2E !important;
+      border-color: #7C1D2E !important;
+    }
+
+    /* Connection Port Styling (6px radius square port) */
+    .node-port {
+      width: 12px;
+      height: 12px;
+      border-radius: 4px;
+      background-color: #FCFBF8;
+      border: 1.5px solid #7C1D2E;
+      box-shadow: 0 1px 3px rgba(24, 22, 19, 0.14);
+      transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
+    }
+
+    .node-port:hover {
+      transform: scale(1.3);
+      background-color: #7C1D2E;
+    }
+
+    /* Animated Cross-Repo Dashed Wire */
+    @keyframes wireFlow {
+      to {
+        stroke-dashoffset: -24;
+      }
+    }
+    .wire-animated {
+      stroke-dasharray: 6 6;
+      animation: wireFlow 1.2s linear infinite;
+    }
+
+    /* Discussion Message Hover Action */
+    .disc-msg-card .turn-idea-btn {
+      opacity: 0;
+      transition: opacity 140ms var(--ease-out);
+    }
+    .disc-msg-card:hover .turn-idea-btn {
+      opacity: 1;
+    }
+
+    /* Subtle Warm Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D2C9BC;
+      border-radius: 6px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #B8AEA0;
+    }
+  </style>
+</head>
+
+<body class="h-screen w-screen overflow-hidden flex flex-col select-none">
+
+  <!-- Subtle Archival Paper Grain Overlay (0.022 opacity) -->
+  <svg class="fixed inset-0 w-full h-full pointer-events-none z-50" style="opacity: 0.022;" xmlns="http://www.w3.org/2000/svg">
+    <filter id="paper-grain-filter">
+      <feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="3" stitchTiles="stitch" />
+    </filter>
+    <rect width="100%" height="100%" filter="url(#paper-grain-filter)" />
+  </svg>
+
+  <!-- ===================================================================== -->
+  <!-- TOP GROUNDED BAR (56px height, Custom Popovers, Natural Sentence Case)-->
+  <!-- ===================================================================== -->
+  <header class="h-[56px] px-3 sm:px-5 flex items-center justify-between gap-2 shrink-0 z-30"
+          style="background-color: rgba(252, 251, 248, 0.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(24, 22, 19, 0.08);">
+
+    <!-- Left: Brand Mark + Custom Grounded Project Switcher Popover -->
+    <div class="flex items-center gap-2.5 min-w-0 relative">
+      <button onclick="handleBrandClick()"
+              class="tactile flex items-center gap-2 pr-1">
+        <div class="w-7 h-7 rounded-[6px] bg-burgundy text-ivory flex items-center justify-center shadow-sm">
+          <i data-lucide="square-kanban" class="w-4 h-4"></i>
+        </div>
+        <span class="font-semibold text-[15px] tracking-tight text-ink">Atelier</span>
+      </button>
+
+      <span class="text-inkMuted text-[13px] hidden sm:inline">/</span>
+
+      <!-- Lead View: Custom Grounded Project Switcher Popover (NO <select>) -->
+      <div id="lead-project-switcher-wrap" class="relative">
+        <button onclick="togglePopover('project-dropdown-popover', event)"
+                class="tactile well-tag px-2.5 py-1.5 flex items-center gap-2 text-[12.5px] font-medium text-ink hover:bg-wellDeep">
+          <span id="active-project-dot" class="w-2.5 h-2.5 rounded-[4px] bg-burgundy shrink-0"></span>
+          <span id="active-project-label" class="truncate max-w-[140px] sm:max-w-[235px]">All projects · 4 active</span>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-inkSecondary shrink-0"></i>
+        </button>
+
+        <div id="project-dropdown-popover"
+             onclick="event.stopPropagation()"
+             class="hidden popover-surface absolute left-0 top-10 w-[340px] p-2 z-50 space-y-1">
+          <div class="px-2.5 py-1 text-[11.5px] font-medium text-inkMuted flex items-center justify-between">
+            <span>Switch project workspace</span>
+            <span class="font-mono text-[11px]">0ms filter</span>
+          </div>
+          <div id="project-dropdown-items" class="space-y-0.5">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Client View: Custom Grounded Client Selector Popover (NO <select>) -->
+      <div id="client-org-switcher-wrap" class="hidden relative">
+        <button onclick="togglePopover('client-org-popover', event)"
+                class="tactile well-tag px-2.5 py-1.5 flex items-center gap-2 text-[12.5px] font-medium text-ink hover:bg-wellDeep">
+          <span class="w-2.5 h-2.5 rounded-[4px] bg-terracotta shrink-0"></span>
+          <span id="active-client-org-label">Parris Law Firm</span>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-inkSecondary"></i>
+        </button>
+
+        <div id="client-org-popover"
+             onclick="event.stopPropagation()"
+             class="hidden popover-surface absolute left-0 top-10 w-[290px] p-2 z-50 space-y-1">
+          <div class="px-2.5 py-1 text-[11.5px] font-medium text-inkMuted">Preview client portal for</div>
+          <button onclick="selectClientOrg('Parris Law Firm')"
+                  class="w-full text-left px-2.5 py-2 rounded-[6px] hover:bg-well flex items-center justify-between text-[12.5px] font-medium text-ink">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-[4px] bg-burgundy shrink-0"></span>
+              <div>
+                <div>Parris Law Firm</div>
+                <div class="text-[11px] text-inkMuted font-mono">Discovery portal · parris-cmp</div>
+              </div>
+            </div>
+            <span id="check-client-parris" class="text-burgundy font-mono text-[12px]">✓</span>
+          </button>
+          <button onclick="selectClientOrg('Mirakl Enterprise')"
+                  class="w-full text-left px-2.5 py-2 rounded-[6px] hover:bg-well flex items-center justify-between text-[12.5px] font-medium text-ink">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-[4px] bg-ochre shrink-0"></span>
+              <div>
+                <div>Mirakl Enterprise</div>
+                <div class="text-[11px] text-inkMuted font-mono">Enterprise academy · n8n-ac</div>
+              </div>
+            </div>
+            <span id="check-client-mirakl" class="text-burgundy font-mono text-[12px] hidden">✓</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Center: 5 Crystal-Clear Workspaces in Lead View -->
+    <nav id="lead-top-nav" class="hidden lg:flex well-tag p-1 items-center gap-1 shrink-0">
+      <button onclick="switchMainTab('operations')" id="tab-btn-operations"
+              class="tactile px-3 py-1 rounded-[6px] bg-ivory text-ink font-medium text-[12.5px] shadow-sm flex items-center gap-1.5">
+        <i data-lucide="activity" class="w-3.5 h-3.5 text-burgundy"></i>
+        <span>Operations</span>
+      </button>
+
+      <button onclick="switchMainTab('ideation')" id="tab-btn-ideation"
+              class="tactile px-3 py-1 rounded-[6px] text-inkSecondary hover:text-ink font-medium text-[12.5px] flex items-center gap-1.5">
+        <i data-lucide="workflow" class="w-3.5 h-3.5 text-terracotta"></i>
+        <span>Ideation</span>
+        <span id="nav-count-ideation" class="px-1.5 py-0.2 rounded-[4px] bg-well text-inkSecondary font-mono text-[11px]">9</span>
+      </button>
+
+      <button onclick="switchMainTab('decisions')" id="tab-btn-decisions"
+              class="tactile px-3 py-1 rounded-[6px] text-inkSecondary hover:text-ink font-medium text-[12.5px] flex items-center gap-1.5">
+        <i data-lucide="git-fork" class="w-3.5 h-3.5 text-ochre"></i>
+        <span>Decisions</span>
+        <span id="nav-count-decisions" class="px-1.5 py-0.2 rounded-[4px] bg-terracotta text-ivory font-mono text-[11px] font-medium">3</span>
+      </button>
+
+      <button onclick="switchMainTab('blocked')" id="tab-btn-blocked"
+              class="tactile px-3 py-1 rounded-[6px] text-inkSecondary hover:text-ink font-medium text-[12.5px] flex items-center gap-1.5">
+        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-crimson"></i>
+        <span>Blocked</span>
+        <span id="nav-count-blocked" class="px-1.5 py-0.2 rounded-[4px] bg-burgundy text-ivory font-mono text-[11px] font-medium">3</span>
+      </button>
+
+      <button onclick="switchMainTab('discussions')" id="tab-btn-discussions"
+              class="tactile px-3 py-1 rounded-[6px] text-inkSecondary hover:text-ink font-medium text-[12.5px] flex items-center gap-1.5">
+        <i data-lucide="message-square" class="w-3.5 h-3.5 text-burgundy"></i>
+        <span>Discussions</span>
+        <span id="nav-count-discussions" class="px-1.5 py-0.2 rounded-[4px] bg-well text-inkSecondary font-mono text-[11px]">4</span>
+      </button>
+    </nav>
+
+    <!-- Right: Quick Capture Trigger + Grounded Lead / Client View Switcher -->
+    <div class="flex items-center gap-2 shrink-0 relative">
+
+      <!-- Quick Capture Trigger ('Cmd+K' or '/') -->
+      <div class="relative">
+        <button onclick="togglePopover('quick-capture-popover', event)"
+                class="tactile px-2.5 sm:px-3 py-1.5 rounded-[6px] bg-burgundy hover:bg-burgundyHover text-ivory text-[12.5px] font-medium shadow-sm flex items-center gap-1.5">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span class="hidden sm:inline">New idea or note</span>
+          <span class="sm:hidden">New</span>
+          <span class="hidden md:inline px-1.5 py-0.2 rounded-[4px] bg-ivory/15 font-mono text-[10.5px]">Cmd+K</span>
+        </button>
+
+        <!-- Grounded Quick Capture Popover -->
+        <div id="quick-capture-popover"
+             onclick="event.stopPropagation()"
+             class="hidden popover-surface absolute right-0 top-10 w-[340px] sm:w-[440px] p-4 z-50 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[13.5px] font-semibold text-ink">Capture idea, bug, question, or resource</span>
+            <span class="px-2 py-0.5 rounded-[5px] bg-burgundyWash text-burgundy font-mono text-[11px]">
+              jev-1.14 auto-triage
+            </span>
+          </div>
+
+          <textarea id="global-capture-input" rows="2"
+                    oninput="handleLiveCaptureTyping(this.value, 'modal')"
+                    placeholder="Type an idea, bug, or question — project, priority, and destination are picked automatically..."
+                    class="w-full well-tag p-2.5 text-[13px] text-ink placeholder-inkMuted focus:outline-none resize-none select-text"></textarea>
+
+          <div class="flex items-center gap-2">
+            <input id="global-capture-asset" type="text"
+                   placeholder="Optional YouTube URL, screenshot description, or link..."
+                   class="flex-1 well-tag px-2.5 py-1.5 text-[12px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+          </div>
+
+          <!-- Auto-picked Project, Priority & Destination Preview -->
+          <div class="p-2.5 rounded-[6px] bg-paper flex items-center justify-between text-[11.5px]" style="border: 1px solid rgba(24,22,19,0.07);">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-inkMuted">Auto-routed:</span>
+              <span id="capture-auto-project" class="font-mono font-medium text-ink">Discovery portal</span>
+              <span class="text-inkMuted">·</span>
+              <span id="capture-auto-priority" class="px-1.5 py-0.2 rounded-[4px] bg-terracottaWash text-terracotta font-medium">High (96%)</span>
+              <span class="text-inkMuted">-></span>
+              <span id="capture-auto-dest" class="font-medium text-burgundy">Ideation</span>
+            </div>
+          </div>
+
+          <div class="flex items-center justify-end gap-2 pt-1">
+            <button onclick="closeAllPopovers()" class="tactile px-3 py-1.5 rounded-[6px] bg-well text-inkSecondary text-[12px] font-medium">Cancel</button>
+            <button onclick="submitGlobalCapture('modal')" class="tactile px-3.5 py-1.5 rounded-[6px] bg-burgundy text-ivory text-[12px] font-medium">Create item</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grounded Lead View vs Client View Switcher -->
+      <div class="well-tag p-1 flex items-center gap-0.5 text-[12px] font-medium">
+        <button onclick="setPerspectiveMode('lead')" id="persp-btn-lead"
+                class="tactile px-2.5 py-1 rounded-[5px] bg-ivory text-ink shadow-sm flex items-center gap-1.5">
+          <i data-lucide="Compass" class="w-3.5 h-3.5 text-burgundy"></i>
+          <span class="hidden sm:inline">Lead view</span>
+        </button>
+        <button onclick="setPerspectiveMode('client')" id="persp-btn-client"
+                class="tactile px-2.5 py-1 rounded-[5px] text-inkSecondary hover:text-ink flex items-center gap-1.5">
+          <i data-lucide="users" class="w-3.5 h-3.5 text-terracotta"></i>
+          <span class="hidden sm:inline">Client view</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN WORKSPACE CONTAINER                                              -->
+  <!-- ===================================================================== -->
+  <div class="flex-1 overflow-hidden flex flex-col relative">
+
+    <!-- =================================================================== -->
+    <!-- WORKSPACE 1: OPERATIONS (Operations Manager & Running Analytics)    -->
+    <!-- =================================================================== -->
+    <main id="view-operations" class="flex-1 overflow-y-auto px-4 lg:px-7 py-5">
+      <div class="max-w-[1420px] mx-auto space-y-5 pb-20">
+
+        <!-- 1. Universal Quick-Capture & Auto-Routing Bar -->
+        <section class="card-surface p-3.5 sm:p-4">
+          <div class="flex flex-col lg:flex-row lg:items-center gap-3">
+            <div class="flex items-center gap-2.5 flex-1 min-w-0">
+              <div class="w-8 h-8 rounded-[6px] bg-burgundyWash text-burgundy flex items-center justify-center shrink-0">
+                <i data-lucide="sparkles" class="w-4 h-4"></i>
+              </div>
+              <input id="ops-omni-input" type="text"
+                     oninput="handleLiveCaptureTyping(this.value, 'omni')"
+                     onkeydown="if(event.key === 'Enter') submitGlobalCapture('omni')"
+                     placeholder="Drop any raw thought, bug, question, or paste a YouTube / screenshot URL — press Enter to auto-route..."
+                     class="w-full bg-transparent text-[13.5px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+            </div>
+
+            <!-- Live jev-1.14 Auto-Picked Strip -->
+            <div class="flex flex-wrap items-center justify-between lg:justify-end gap-2 pt-2 lg:pt-0 border-t lg:border-t-0 border-stone-200/60 shrink-0 text-[12px]">
+              <div class="flex items-center gap-1.5 well-tag px-2.5 py-1">
+                <span class="text-inkMuted">Project:</span>
+                <span id="omni-auto-project" class="font-mono font-medium text-ink">Discovery portal</span>
+                <span class="text-inkMuted">·</span>
+                <span id="omni-auto-priority" class="text-terracotta font-medium">High (96%)</span>
+                <span class="text-inkMuted">-></span>
+                <span id="omni-auto-dest" class="text-burgundy font-medium">Ideation</span>
+              </div>
+              <button onclick="submitGlobalCapture('omni')"
+                      class="tactile px-3.5 py-1.5 rounded-[6px] bg-burgundy hover:bg-burgundyHover text-ivory text-[12px] font-medium shrink-0">
+                Route item ->
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Running Operations Telemetry Row (4 Tactile Analytics Cards) -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+
+          <!-- Card 1: Active flow & velocity -->
+          <div class="card-surface p-4 flex flex-col justify-between space-y-3">
+            <div class="flex items-center justify-between text-[12px]">
+              <span class="font-medium text-inkSecondary">Active flow & velocity</span>
+              <span class="px-2 py-0.5 rounded-[6px] bg-sageWash text-sage font-mono text-[11px] font-medium">+18% this week</span>
+            </div>
+            <div class="flex items-end justify-between gap-2">
+              <div>
+                <div class="text-[24px] font-semibold text-ink font-mono leading-tight">24 shipped</div>
+                <div class="text-[11.5px] text-inkSecondary mt-0.5">19 autonomous · 5 human-touched</div>
+              </div>
+              <svg class="w-24 h-10 overflow-visible shrink-0" viewBox="0 0 96 36">
+                <path d="M2 30 L18 24 L34 26 L52 15 L70 17 L94 5" fill="none" stroke="#7C1D2E" stroke-width="2.2" stroke-linecap="round"/>
+                <path d="M2 30 L18 24 L34 26 L52 15 L70 17 L94 5 L94 36 L2 36 Z" fill="#7C1D2E" fill-opacity="0.09"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Card 2: Human bottlenecks -->
+          <div class="card-surface p-4 flex flex-col justify-between space-y-3">
+            <div class="flex items-center justify-between text-[12px]">
+              <span class="font-medium text-inkSecondary">Human bottlenecks</span>
+              <span class="px-2 py-0.5 rounded-[6px] bg-terracottaWash text-terracotta font-mono text-[11px] font-medium">avg 14m wait</span>
+            </div>
+            <div class="grid grid-cols-2 gap-2 pt-0.5">
+              <button onclick="switchMainTab('decisions')"
+                      class="tactile well-tag p-2.5 text-left hover:bg-terracottaWash group">
+                <div id="telemetry-decisions-count" class="text-[19px] font-semibold font-mono text-terracotta">3 waiting</div>
+                <div class="text-[11.5px] text-inkSecondary group-hover:text-ink flex items-center justify-between">
+                  <span>Decisions</span>
+                  <span>-></span>
+                </div>
+              </button>
+              <button onclick="switchMainTab('blocked')"
+                      class="tactile well-tag p-2.5 text-left hover:bg-burgundyWash group">
+                <div id="telemetry-blocked-count" class="text-[19px] font-semibold font-mono text-burgundy">3 blocked</div>
+                <div class="text-[11.5px] text-inkSecondary group-hover:text-ink flex items-center justify-between">
+                  <span>Validation</span>
+                  <span>-></span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 3: Project health matrix -->
+          <div class="card-surface p-4 flex flex-col justify-between space-y-2">
+            <div class="flex items-center justify-between text-[12px]">
+              <span class="font-medium text-inkSecondary">Project health matrix</span>
+              <span class="text-[11px] text-inkMuted">Click to filter</span>
+            </div>
+            <div class="space-y-1.5 text-[11.5px]">
+              <button onclick="selectProjectFilter('parris-cmp')" class="w-full flex items-center justify-between gap-2 hover:text-burgundy">
+                <span class="truncate font-medium">Discovery portal</span>
+                <div class="flex items-center gap-2">
+                  <div class="w-20 h-1.5 rounded-[4px] bg-well overflow-hidden"><div class="h-full bg-burgundy" style="width:78%"></div></div>
+                  <span class="font-mono text-[11px] w-8 text-right">78%</span>
+                </div>
+              </button>
+              <button onclick="selectProjectFilter('n8n-cli')" class="w-full flex items-center justify-between gap-2 hover:text-terracotta">
+                <span class="truncate font-medium">Workflow engine</span>
+                <div class="flex items-center gap-2">
+                  <div class="w-20 h-1.5 rounded-[4px] bg-well overflow-hidden"><div class="h-full bg-terracotta" style="width:92%"></div></div>
+                  <span class="font-mono text-[11px] w-8 text-right">92%</span>
+                </div>
+              </button>
+              <button onclick="selectProjectFilter('n8n-ac')" class="w-full flex items-center justify-between gap-2 hover:text-ochre">
+                <span class="truncate font-medium">Enterprise academy</span>
+                <div class="flex items-center gap-2">
+                  <div class="w-20 h-1.5 rounded-[4px] bg-well overflow-hidden"><div class="h-full bg-ochre" style="width:64%"></div></div>
+                  <span class="font-mono text-[11px] w-8 text-right">64%</span>
+                </div>
+              </button>
+              <button onclick="selectProjectFilter('workflows-hq')" class="w-full flex items-center justify-between gap-2 hover:text-ink">
+                <span class="truncate font-medium">Internal operations</span>
+                <div class="flex items-center gap-2">
+                  <div class="w-20 h-1.5 rounded-[4px] bg-well overflow-hidden"><div class="h-full bg-inkSecondary" style="width:85%"></div></div>
+                  <span class="font-mono text-[11px] w-8 text-right">85%</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Card 4: Backburner & archive vault -->
+          <div class="card-surface p-4 flex flex-col justify-between space-y-3">
+            <div class="flex items-center justify-between text-[12px]">
+              <span class="font-medium text-inkSecondary">Backburner & archive vault</span>
+              <span class="px-2 py-0.5 rounded-[6px] bg-ochreWash text-ochre font-mono text-[11px]"> Focus protected</span>
+            </div>
+            <div>
+              <div id="telemetry-vault-summary" class="text-[20px] font-semibold text-ink font-mono">19 backburner · 142 archived</div>
+              <p class="text-[11.5px] text-inkSecondary mt-0.5">Paused ideas & completed deliverables</p>
+            </div>
+            <button onclick="openBackburnerDrawer()"
+                    class="tactile w-full py-1.5 px-3 rounded-[6px] bg-well hover:bg-wellDeep text-ink text-[12px] font-medium flex items-center justify-between">
+              <span>Open backburner drawer</span>
+              <i data-lucide="panel-right-open" class="w-3.5 h-3.5 text-burgundy"></i>
+            </button>
+          </div>
+
+        </section>
+
+        <!-- 3. Live Operations Board (Clean 4-Stage Pipeline + Cross-Project Links) -->
+        <section class="space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5">
+              <h2 class="text-[16px] font-semibold text-ink">Live operations pipeline</h2>
+              <span class="text-[12px] text-inkMuted hidden md:inline">· Single-click any card for side window · Double-click for full-screen studio</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="switchMainTab('ideation'); setIdeationMode('canvas');"
+                      class="tactile well-tag px-2.5 py-1 text-[12px] font-medium text-burgundy hover:bg-burgundyWash flex items-center gap-1.5">
+                <i data-lucide="workflow" class="w-3.5 h-3.5"></i>
+                <span>Open spatial canvas</span>
+              </button>
+            </div>
+          </div>
+
+          <div id="ops-kanban-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start">
+            <!-- Populated by JS -->
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- WORKSPACE 2: IDEATION (Full-Screen n8n Spatial Canvas + List Toggle)-->
+    <!-- =================================================================== -->
+    <main id="view-ideation" class="hidden flex-1 flex flex-col overflow-hidden relative">
+
+      <!-- MODE 2A: FULL-SCREEN N8N-STYLE SPATIAL CANVAS (calc(100vh - 56px)) -->
+      <div id="ideation-canvas-viewport"
+           class="flex-1 canvas-dot-grid relative overflow-hidden cursor-grab active:cursor-grabbing">
+
+        <!-- Floating Top-Left Bar: Spatial Canvas vs Simplified List + Category Filter Pills -->
+        <div onmousedown="event.stopPropagation()"
+             class="absolute top-3.5 left-3.5 z-30 flex flex-wrap items-center gap-2 max-w-[85%]">
+
+          <!-- Mode Switcher: Spatial canvas vs Simplified list -->
+          <div class="p-1 rounded-[10px] flex items-center gap-1 text-[12px] font-medium"
+               style="background-color: rgba(252, 251, 248, 0.94); backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(24,22,19,0.08); border: 1px solid rgba(24,22,19,0.08);">
+            <button onclick="setIdeationMode('canvas')" id="ideation-mode-btn-canvas"
+                    class="tactile px-2.5 py-1 rounded-[6px] bg-burgundy text-ivory shadow-sm flex items-center gap-1.5">
+              <i data-lucide="workflow" class="w-3.5 h-3.5"></i>
+              <span>Spatial canvas</span>
+            </button>
+            <button onclick="setIdeationMode('list')" id="ideation-mode-btn-list"
+                    class="tactile px-2.5 py-1 rounded-[6px] text-inkSecondary hover:text-ink flex items-center gap-1.5">
+              <i data-lucide="list" class="w-3.5 h-3.5"></i>
+              <span>Simplified list</span>
+            </button>
+          </div>
+
+          <!-- Category Filter Bar -->
+          <div id="canvas-category-filter-bar"
+               class="p-1 rounded-[10px] hidden sm:flex flex-wrap items-center gap-1 text-[12px] font-medium"
+               style="background-color: rgba(252, 251, 248, 0.94); backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(24,22,19,0.08); border: 1px solid rgba(24,22,19,0.08);">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+
+        <!-- Floating Top-Right Bar: Zoom & Fit Controls (-, 100%, +, Fit all, Auto-layout) -->
+        <div onmousedown="event.stopPropagation()"
+             class="absolute top-3.5 right-3.5 z-30 p-1 rounded-[10px] flex items-center gap-1 text-[12px] font-medium"
+             style="background-color: rgba(252, 251, 248, 0.94); backdrop-filter: blur(12px); box-shadow: 0 4px 16px rgba(24,22,19,0.08); border: 1px solid rgba(24,22,19,0.08);">
+          <button onclick="zoomCanvasBy(-0.15)" title="Zoom out"
+                  class="tactile px-2 py-1 rounded-[6px] hover:bg-well text-ink font-mono text-[13px]">-</button>
+          <button onclick="resetCanvasView()" id="canvas-zoom-readout"
+                  class="tactile px-2 py-1 rounded-[6px] hover:bg-well text-ink font-mono text-[11.5px]">100%</button>
+          <button onclick="zoomCanvasBy(0.15)" title="Zoom in"
+                  class="tactile px-2 py-1 rounded-[6px] hover:bg-well text-ink font-mono text-[13px]">+</button>
+          <span class="text-inkMuted px-0.5">|</span>
+          <button onclick="fitAllCanvasNodes()"
+                  class="tactile px-2.5 py-1 rounded-[6px] hover:bg-well text-inkSecondary hover:text-ink text-[12px]">
+            Fit all
+          </button>
+          <button onclick="autoLayoutCanvasNodes()"
+                  class="tactile px-2.5 py-1 rounded-[6px] hover:bg-burgundyWash text-burgundy text-[12px] font-medium flex items-center gap-1">
+            <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Auto-layout</span>
+          </button>
+        </div>
+
+        <!-- Floating Bottom-Center Creation Dock (+ New idea node, + Sticky note, + Attach YouTube / Screenshot / Link, Auto-space canvas) -->
+        <div onmousedown="event.stopPropagation()"
+             class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 p-1.5 rounded-[10px] flex flex-wrap items-center justify-center gap-1.5 text-[12px] font-medium shadow-lg"
+             style="background-color: rgba(252, 251, 248, 0.96); backdrop-filter: blur(12px); box-shadow: 0 10px 30px rgba(24,22,19,0.12); border: 1px solid rgba(24,22,19,0.09);">
+          <button onclick="openCanvasMediaPrompt('idea')"
+                  class="tactile px-3 py-1.5 rounded-[6px] bg-burgundy hover:bg-burgundyHover text-ivory flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>+ New idea node</span>
+          </button>
+          <button onclick="addCanvasStickyNote()"
+                  class="tactile px-3 py-1.5 rounded-[6px] bg-stickyBg hover:bg-ochreWash text-ink border border-stickyBorder flex items-center gap-1.5">
+            <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-ochre"></i>
+            <span>+ Sticky note</span>
+          </button>
+          <button onclick="openCanvasMediaPrompt('media')"
+                  class="tactile px-3 py-1.5 rounded-[6px] bg-well hover:bg-wellDeep text-ink flex items-center gap-1.5">
+            <i data-lucide="paperclip" class="w-3.5 h-3.5 text-terracotta"></i>
+            <span class="hidden sm:inline">+ Attach YouTube / Screenshot / Link</span>
+            <span class="sm:hidden">+ Attach media</span>
+          </button>
+          <button onclick="autoLayoutCanvasNodes()"
+                  class="tactile px-2.5 py-1.5 rounded-[6px] hover:bg-well text-inkSecondary hover:text-ink hidden md:flex items-center gap-1">
+            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-burgundy"></i>
+            <span>Auto-space canvas</span>
+          </button>
+        </div>
+
+        <!-- Transformed 2D Spatial Plane -->
+        <div id="ideation-canvas-plane"
+             class="absolute top-0 left-0 w-[3400px] h-[2200px] origin-top-left will-change-transform"
+             style="transform: translate3d(24px, 56px, 0px) scale(1);">
+
+          <!-- Cubic-Bezier SVG Connection Layer -->
+          <svg id="ideation-canvas-svg" class="absolute inset-0 w-full h-full pointer-events-none z-0" xmlns="http://www.w3.org/2000/svg"></svg>
+
+          <!-- Wire Badges Layer -->
+          <div id="ideation-wire-labels" class="absolute inset-0 w-full h-full pointer-events-none z-10"></div>
+
+          <!-- Generously Spaced Compact n8n-Style Nodes Layer -->
+          <div id="ideation-canvas-nodes" class="relative w-full h-full z-20">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- MODE 2B: SIMPLIFIED IDEATION LIST VIEW -->
+      <div id="ideation-list-viewport" class="hidden flex-1 overflow-y-auto px-4 lg:px-7 py-5">
+        <div class="max-w-[1340px] mx-auto space-y-5 pb-20">
+
+          <!-- Top Header + Mode Switcher + Quick Capture Bar -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <div class="well-tag p-1 flex items-center gap-1 text-[12px] font-medium">
+                <button onclick="setIdeationMode('canvas')"
+                        class="tactile px-2.5 py-1 rounded-[6px] text-inkSecondary hover:text-ink flex items-center gap-1.5">
+                  <i data-lucide="workflow" class="w-3.5 h-3.5"></i>
+                  <span>Spatial canvas</span>
+                </button>
+                <button onclick="setIdeationMode('list')"
+                        class="tactile px-2.5 py-1 rounded-[6px] bg-burgundy text-ivory shadow-sm flex items-center gap-1.5">
+                  <i data-lucide="list" class="w-3.5 h-3.5"></i>
+                  <span>Simplified list</span>
+                </button>
+              </div>
+              <div>
+                <h1 class="text-[18px] font-semibold text-ink">Ideation & resource backlog</h1>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="addCanvasStickyNote(); setIdeationMode('list');"
+                      class="tactile well-tag px-3 py-1.5 text-[12px] font-medium text-ink hover:bg-wellDeep flex items-center gap-1.5">
+                <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-ochre"></i>
+                <span>+ Quick note</span>
+              </button>
+              <button onclick="openCanvasMediaPrompt('media')"
+                      class="tactile px-3 py-1.5 rounded-[6px] bg-burgundy text-ivory text-[12px] font-medium flex items-center gap-1.5">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+                <span>+ Attach YouTube / screenshot / idea</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Inline List Capture Bar -->
+          <div class="card-surface p-3.5 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            <input id="list-quick-title" type="text"
+                   placeholder="Drop an idea, optimization, or steal-from-niche note..."
+                   onkeydown="if(event.key === 'Enter') submitSimplifiedListIdea()"
+                   class="flex-1 well-tag px-3 py-2 text-[13px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+            <input id="list-quick-url" type="text"
+                   placeholder="Optional YouTube link, screenshot, or website..."
+                   onkeydown="if(event.key === 'Enter') submitSimplifiedListIdea()"
+                   class="sm:w-72 well-tag px-3 py-2 text-[12.5px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+            <button onclick="submitSimplifiedListIdea()"
+                    class="tactile px-4 py-2 rounded-[6px] bg-burgundy hover:bg-burgundyHover text-ivory text-[12.5px] font-medium shrink-0">
+              Add to list
+            </button>
+          </div>
+
+          <div id="ideation-simplified-groups" class="space-y-4">
+            <!-- Populated by JS -->
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- WORKSPACE 3: DECISIONS (2-Column Master-Detail Decision Queue)      -->
+    <!-- =================================================================== -->
+    <main id="view-decisions" class="hidden flex-1 overflow-y-auto px-4 lg:px-7 py-5">
+      <div class="max-w-[1360px] mx-auto h-full flex flex-col space-y-4 pb-16">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 shrink-0">
+          <div>
+            <h1 class="text-[19px] font-semibold text-ink tracking-tight">Architectural & scope decisions</h1>
+            <p class="text-[13px] text-inkSecondary">Select an option in one click to unblock execution and record the rule in the project playbook, or move the feature to the backburner.</p>
+          </div>
+          <span id="decisions-header-badge" class="px-3 py-1 rounded-[6px] bg-terracottaWash text-terracotta font-mono text-[12px] font-medium self-start">
+            3 pending decisions
+          </span>
+        </div>
+
+        <!-- Master-Detail Layout: Left 340px Queue + Right Focused Decision Sheet -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <!-- Left Column (4 cols / ~340px): Scannable Pending Queue -->
+          <div id="decisions-queue-list" class="lg:col-span-4 card-surface p-3 space-y-2">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Right Column (8 cols): Focused Decision Sheet -->
+          <div id="decision-focused-sheet" class="lg:col-span-8 card-surface p-5 sm:p-6 space-y-5">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- WORKSPACE 4: BLOCKED (Human Action Station: Testing, Keys, Release) -->
+    <!-- =================================================================== -->
+    <main id="view-blocked" class="hidden flex-1 overflow-y-auto px-4 lg:px-7 py-5">
+      <div class="max-w-[1320px] mx-auto space-y-5 pb-20">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h1 class="text-[19px] font-semibold text-ink tracking-tight">Human action station</h1>
+            <p class="text-[13px] text-inkSecondary">Interactive visual testing with Before/After slider, missing API credentials, and executive release greenlights.</p>
+          </div>
+          <span id="blocked-header-badge" class="px-3 py-1 rounded-[6px] bg-burgundyWash text-burgundy font-mono text-[12px] font-medium self-start">
+            3 human validations waiting
+          </span>
+        </div>
+
+        <div id="blocked-stations-container" class="space-y-5">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- WORKSPACE 5: DISCUSSIONS (Dedicated Project & Client Rooms)         -->
+    <!-- =================================================================== -->
+    <main id="view-discussions" class="hidden flex-1 overflow-hidden px-4 lg:px-7 py-5">
+      <div class="max-w-[1380px] mx-auto h-full grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+        <!-- Left Sidebar (3 cols): Filter by Channel + Thread List -->
+        <div class="lg:col-span-4 card-surface p-3.5 flex flex-col justify-between overflow-hidden">
+          <div class="space-y-3 overflow-y-auto pr-1">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-[14px] font-semibold text-ink">Project & client discussions</span>
+              <button onclick="openNewDiscussionModal()" class="tactile px-2.5 py-1 rounded-[6px] bg-burgundy text-ivory text-[11.5px] font-medium">+ New thread</button>
+            </div>
+
+            <!-- Channel Filter Buttons -->
+            <div id="discussion-channel-filters" class="well-tag p-1 flex flex-wrap gap-1 text-[11.5px] font-medium">
+              <!-- Populated by JS -->
+            </div>
+
+            <!-- Thread List -->
+            <div id="discussions-thread-list" class="space-y-1.5">
+              <!-- Populated by JS -->
+            </div>
+          </div>
+
+          <div class="well-tag p-3 text-[11.5px] text-inkSecondary mt-3 space-y-1">
+            <div class="font-medium text-ink flex items-center gap-1.5">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5 text-burgundy"></i>
+              <span>Hover any message -> "+ Turn into idea"</span>
+            </div>
+            <p class="leading-snug">Sends the message and its attached video or screenshot directly onto the Ideation canvas.</p>
+          </div>
+        </div>
+
+        <!-- Center/Right Thread View (8 cols) -->
+        <div class="lg:col-span-8 card-surface flex flex-col overflow-hidden">
+          <div id="discussion-detail-header" class="px-5 py-4 shrink-0" style="border-bottom: 1px solid rgba(24, 22, 19, 0.08);">
+            <!-- Populated by JS -->
+          </div>
+
+          <div id="discussion-detail-messages" class="flex-1 overflow-y-auto p-5 space-y-4">
+            <!-- Populated by JS -->
+          </div>
+
+          <!-- Bottom Composer Bar -->
+          <div class="p-3.5 bg-well/60 shrink-0" style="border-top: 1px solid rgba(24, 22, 19, 0.07);">
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+              <input id="discussion-reply-input" type="text"
+                     placeholder="Write a reply, answer a client question, or share an insight..."
+                     onkeydown="if(event.key === 'Enter') submitDiscussionReply()"
+                     class="flex-1 bg-ivory px-3.5 py-2 rounded-[6px] text-[13px] text-ink placeholder-inkMuted focus:outline-none select-text"
+                     style="border: 1px solid rgba(24,22,19,0.08);" />
+              <input id="discussion-reply-media" type="text"
+                     placeholder="Attach screenshot / YouTube link..."
+                     onkeydown="if(event.key === 'Enter') submitDiscussionReply()"
+                     class="sm:w-56 bg-ivory px-3 py-2 rounded-[6px] text-[12.5px] text-ink placeholder-inkMuted focus:outline-none select-text"
+                     style="border: 1px solid rgba(24,22,19,0.08);" />
+              <button onclick="submitDiscussionReply()"
+                      class="tactile px-4 py-2 rounded-[6px] bg-burgundy hover:bg-burgundyHover text-ivory text-[12.5px] font-medium shrink-0">
+                Post reply
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- SIMPLIFIED EXECUTIVE CLIENT VIEW (When toggled in header)           -->
+    <!-- =================================================================== -->
+    <main id="view-client" class="hidden flex-1 overflow-y-auto px-4 lg:px-7 py-6">
+      <div id="client-portal-container" class="max-w-[1140px] mx-auto space-y-6 pb-20">
+        <!-- Populated by JS -->
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- RIGHT SIDE INSPECTOR WINDOW (420px wide — Opens on Single-Click)    -->
+    <!-- =================================================================== -->
+    <aside id="right-side-drawer"
+           class="hidden fixed top-[56px] right-0 bottom-0 w-full sm:w-[420px] z-40 modal-surface flex flex-col overflow-hidden"
+           style="border-radius: 14px 0 0 14px;">
+      <div id="right-side-drawer-body" class="flex-1 overflow-y-auto p-5 space-y-5">
+        <!-- Populated by JS -->
+      </div>
+    </aside>
+
+    <!-- =================================================================== -->
+    <!-- BACKBURNER & ARCHIVE VAULT SLIDE-OVER DRAWER                        -->
+    <!-- =================================================================== -->
+    <aside id="backburner-vault-drawer"
+           class="hidden fixed top-[56px] right-0 bottom-0 w-full sm:w-[460px] z-40 modal-surface flex flex-col overflow-hidden"
+           style="border-radius: 14px 0 0 14px;">
+      <div class="p-5 flex items-center justify-between" style="border-bottom: 1px solid rgba(24,22,19,0.08);">
+        <div>
+          <h2 class="text-[16px] font-semibold text-ink">Backburner & archive vault</h2>
+          <p class="text-[12px] text-inkSecondary">Restore paused ideas to active priority or inspect shipped work.</p>
+        </div>
+        <button onclick="closeBackburnerDrawer()" class="tactile p-1.5 rounded-[6px] bg-well text-inkSecondary hover:text-ink">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="px-5 pt-3">
+        <div class="well-tag p-1 grid grid-cols-2 gap-1 text-[12px] font-medium">
+          <button onclick="setVaultTab('backburner')" id="vault-tab-backburner" class="tactile py-1.5 rounded-[5px] bg-ivory text-ink shadow-sm">
+            Backburner (19)
+          </button>
+          <button onclick="setVaultTab('archived')" id="vault-tab-archived" class="tactile py-1.5 rounded-[5px] text-inkSecondary hover:text-ink">
+            Archived (142)
+          </button>
+        </div>
+      </div>
+      <div id="backburner-drawer-items" class="flex-1 overflow-y-auto p-5 space-y-3">
+        <!-- Populated by JS -->
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- FULL-SCREEN DEEP-DIVE STUDIO MODAL (Opens on Double-Click of a Node)  -->
+  <!-- ===================================================================== -->
+  <div id="fullscreen-studio-modal"
+       onclick="if(event.target === this) closeStudioModal()"
+       class="hidden fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6"
+       style="background-color: rgba(24, 22, 19, 0.42); backdrop-filter: blur(4px);">
+    <div id="fullscreen-studio-dialog" class="modal-surface w-full max-w-[1320px] h-[90vh] flex flex-col overflow-hidden">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- ATTACH RESOURCE / NEW CANVAS NODE MODAL                               -->
+  <!-- ===================================================================== -->
+  <div id="media-attach-modal"
+       onclick="if(event.target === this) closeCanvasMediaPrompt()"
+       class="hidden fixed inset-0 z-50 flex items-center justify-center p-4"
+       style="background-color: rgba(24, 22, 19, 0.36); backdrop-filter: blur(3px);">
+    <div class="modal-surface w-full max-w-[460px] p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <span class="text-[15px] font-semibold text-ink">Add idea node with YouTube, screenshot, or link</span>
+        <button onclick="closeCanvasMediaPrompt()" class="p-1 rounded-[6px] hover:bg-well text-inkSecondary">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="space-y-3">
+        <input id="media-node-title" type="text"
+               placeholder="Idea title (e.g., Steal Stripe Radar inline hover confidence slice)"
+               class="w-full well-tag px-3 py-2 text-[13px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+        <input id="media-node-url" type="text"
+               placeholder="YouTube URL, screenshot description, or reference website..."
+               class="w-full well-tag px-3 py-2 text-[13px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+      </div>
+      <div class="flex items-center justify-end gap-2">
+        <button onclick="closeCanvasMediaPrompt()" class="tactile px-3 py-1.5 rounded-[6px] bg-well text-inkSecondary text-[12.5px] font-medium">Cancel</button>
+        <button onclick="confirmCanvasMediaNode()" class="tactile px-3.5 py-1.5 rounded-[6px] bg-burgundy text-ivory text-[12.5px] font-medium">Add to canvas</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- NATIVELY RESPONSIVE MOBILE BOTTOM BAR (< 1024px)                      -->
+  <!-- ===================================================================== -->
+  <nav id="responsive-bottom-nav" class="lg:hidden h-14 px-2 bg-ivory flex items-center justify-around shrink-0 z-30"
+       style="border-top: 1px solid rgba(24, 22, 19, 0.08);">
+    <button onclick="switchMainTab('operations')" class="flex flex-col items-center gap-0.5 text-[11px] font-medium text-ink">
+      <i data-lucide="activity" class="w-4 h-4 text-burgundy"></i>
+      <span>Operations</span>
+    </button>
+    <button onclick="switchMainTab('ideation')" class="flex flex-col items-center gap-0.5 text-[11px] font-medium text-inkSecondary">
+      <i data-lucide="workflow" class="w-4 h-4 text-terracotta"></i>
+      <span>Ideation</span>
+    </button>
+    <button onclick="switchMainTab('decisions')" class="flex flex-col items-center gap-0.5 text-[11px] font-medium text-inkSecondary">
+      <i data-lucide="git-fork" class="w-4 h-4 text-ochre"></i>
+      <span>Decisions (3)</span>
+    </button>
+    <button onclick="switchMainTab('blocked')" class="flex flex-col items-center gap-0.5 text-[11px] font-medium text-inkSecondary">
+      <i data-lucide="shield-alert" class="w-4 h-4 text-crimson"></i>
+      <span>Blocked (3)</span>
+    </button>
+    <button onclick="switchMainTab('discussions')" class="flex flex-col items-center gap-0.5 text-[11px] font-medium text-inkSecondary">
+      <i data-lucide="message-square" class="w-4 h-4 text-burgundy"></i>
+      <span>Discussions</span>
+    </button>
+  </nav>
+
+  <!-- Toast Stack -->
+  <div id="toast-container" class="fixed bottom-16 lg:bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- ===================================================================== -->
+  <!-- APPLICATION DATA & INTERACTIVE ENGINE                                 -->
+  <!-- ===================================================================== -->
+  <script>
+    // -----------------------------------------------------------------------
+    // 1. PROJECTS (4 Grounded Projects · 18 Active Items)
+    // -----------------------------------------------------------------------
+    const PROJECTS = [
+      {
+        id: 'parris-cmp',
+        slug: 'parris-cmp',
+        shortPrefix: 'cmp',
+        label: 'Discovery portal',
+        repoName: 'parris-cmp',
+        subtitle: 'Client: Parris Law',
+        activeCount: 7,
+        clientOrg: 'Parris Law Firm',
+        color: '#7C1D2E',
+        badgeClass: 'bg-burgundyWash text-burgundy border border-burgundyBorder'
+      },
+      {
+        id: 'n8n-cli',
+        slug: 'n8n-cli',
+        shortPrefix: 'n8n',
+        label: 'Workflow engine',
+        repoName: 'n8n-cli',
+        subtitle: 'Open source',
+        activeCount: 5,
+        clientOrg: 'Mirakl Enterprise',
+        color: '#C85A28',
+        badgeClass: 'bg-terracottaWash text-terracotta border border-terracottaBorder'
+      },
+      {
+        id: 'n8n-ac',
+        slug: 'n8n-ac',
+        shortPrefix: 'ac',
+        label: 'Enterprise academy',
+        repoName: 'n8n-ac',
+        subtitle: 'Client: Mirakl',
+        activeCount: 4,
+        clientOrg: 'Mirakl Enterprise',
+        color: '#B86B19',
+        badgeClass: 'bg-ochreWash text-ochre border border-ochreBorder'
+      },
+      {
+        id: 'workflows-hq',
+        slug: 'workflows-hq',
+        shortPrefix: 'hq',
+        label: 'Internal operations',
+        repoName: 'workflows-hq',
+        subtitle: 'Internal',
+        activeCount: 2,
+        clientOrg: 'Internal',
+        color: '#57524A',
+        badgeClass: 'bg-well text-inkSecondary'
+      }
+    ];
+
+    const PRIORITY_META = {
+      urgent: { label: 'Urgent', dot: '#7C1D2E', badge: 'bg-burgundyWash text-burgundy border border-burgundyBorder' },
+      high:   { label: 'High',   dot: '#C85A28', badge: 'bg-terracottaWash text-terracotta border border-terracottaBorder' },
+      normal: { label: 'Normal', dot: '#57524A', badge: 'bg-well text-inkSecondary' },
+      low:    { label: 'Low',    dot: '#8A8378', badge: 'bg-paper text-inkMuted' }
+    };
+    const PRIORITY_ORDER = ['urgent', 'high', 'normal', 'low'];
+
+    // Generously spaced n8n-style nodes (minimum 370px horizontal gap, 195px vertical gap)
+    let ISSUES = [
+      {
+        id: 'cmp-142',
+        code: 'parris-cmp · #142',
+        shortSlug: 'cmp-rfa-parser',
+        projectId: 'parris-cmp',
+        title: 'Automated RFA objection parser & Bates linker',
+        priority: 'urgent',
+        confidence: '97%',
+        stage: 'waiting', // 'exploring' | 'in_progress' | 'waiting' | 'shipped'
+        statusLabel: 'Blocked',
+        category: 'Optimization',
+        crossRepoDep: 'Depends on n8n-cli#89',
+        x: 440,
+        y: 60,
+        summary: 'Parses two-column Los Angeles Superior Court admission tables, cross-checks dates against hospital chronologies, and drafts responses with clickable Bates page numbers.',
+        videoCount: 1,
+        imageCount: 2,
+        linkCount: 1,
+        steps: [
+          { num: 1, title: 'Index Superior Court filing samples & Marci video timestamps', status: 'Completed', detail: 'Extracted 4 sample court PDFs.' },
+          { num: 2, title: 'Consume normalized table bounding boxes from n8n-cli#89', status: 'Completed', detail: 'Cross-repo contract verified.' },
+          { num: 3, title: 'Draft side-by-side response table with Bates citations', status: 'Completed', detail: 'Zero date mismatches across 42 test rows.' },
+          { num: 4, title: 'Human visual Before/After slider verification', status: 'Waiting on human', detail: 'Ready in Blocked tab.' }
+        ],
+        assets: [
+          { kind: 'video', title: 'YouTube · Marci walkthrough of two-column court objections (02:34)', url: 'youtube.com/watch?v=parris-rfa', note: 'Shows Request #14 wrapping across pages 4 and 5.' },
+          { kind: 'image', title: 'Screenshot · Annotated Superior Court table wrap pins', url: 'artifact://cmp-142/table-pins.html', note: '2 visual pins marking repeating headers and triage margin dates.' }
+        ],
+        comments: [
+          { author: 'Marci · Parris Law', time: '10:18 am', text: 'Make sure midnight ER admission splits include a 1-day qualification note.' },
+          { author: 'Lucas · Lead', time: '10:42 am', text: 'Added automatic midnight variance note in Step 3.' }
+        ]
+      },
+      {
+        id: 'n8n-89',
+        code: 'n8n-cli · #89',
+        shortSlug: 'n8n-pdf-bbox',
+        projectId: 'n8n-cli',
+        title: 'Multi-page PDF table bounding-box contract',
+        priority: 'urgent',
+        confidence: '98%',
+        stage: 'waiting',
+        statusLabel: 'Blocked',
+        category: 'Optimization',
+        crossRepoDep: null,
+        x: 60,
+        y: 60,
+        summary: 'Emits deterministic [x1, y1, x2, y2] table cell coordinates across page breaks so downstream legal and enterprise parsers never lose row alignment.',
+        videoCount: 0,
+        imageCount: 1,
+        linkCount: 2,
+        steps: [
+          { num: 1, title: 'Define JSON schema for multi-page table stitches', status: 'Completed', detail: 'Schema locked.' },
+          { num: 2, title: 'Verify against 40 rotated scan packets', status: 'Completed', detail: 'All assertions green.' },
+          { num: 3, title: 'Save NPM_AUTOMATION_TOKEN to publish @workflows-accelerator/n8n-cli', status: 'Waiting on human', detail: 'Waiting on credential in Blocked tab.' }
+        ],
+        assets: [
+          { kind: 'link', title: 'Contract spec · docs.n8n-cli.dev/ocr-bounding-boxes', url: 'docs.n8n-cli.dev/ocr-bounding-boxes', note: 'Shared across Discovery portal and Enterprise academy.' }
+        ],
+        comments: [
+          { author: 'OpenCode Architect', time: '09:30 am', text: 'Contract test suite passed for both parris-cmp and n8n-ac.' }
+        ]
+      },
+      {
+        id: 'cmp-148',
+        code: 'parris-cmp · #148',
+        shortSlug: 'cmp-docket-cite',
+        projectId: 'parris-cmp',
+        title: 'CourtListener docket & ruling citation verifier',
+        priority: 'high',
+        confidence: '95%',
+        stage: 'in_progress',
+        statusLabel: 'Planned',
+        category: 'Bug hunt',
+        crossRepoDep: 'Depends on parris-cmp#142',
+        x: 820,
+        y: 60,
+        summary: 'Verifies every cited case and docket number against the live CourtListener REST API before finalizing any court admission response.',
+        videoCount: 0,
+        imageCount: 1,
+        linkCount: 1,
+        steps: [
+          { num: 1, title: 'Build citation parser & mock verifier', status: 'Completed', detail: 'Verified against 120 sample citations.' },
+          { num: 2, title: 'Wire inline docket preview badge', status: 'In progress', detail: 'Running integration checks.' }
+        ],
+        assets: [
+          { kind: 'link', title: 'CourtListener REST v4 endpoint spec', url: 'courtlistener.com/api/rest/v4', note: 'Used for instant case verification.' }
+        ],
+        comments: []
+      },
+      {
+        id: 'cmp-146',
+        code: 'parris-cmp · #146',
+        shortSlug: 'cmp-hover-crop',
+        projectId: 'parris-cmp',
+        title: 'Steal Stripe Radar hover crop for ER physician notes',
+        priority: 'high',
+        confidence: '96%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Steal from niche',
+        crossRepoDep: 'Depends on n8n-cli#89',
+        x: 440,
+        y: 265,
+        summary: 'When hovering over any medical chronology row with uncertain cursive handwriting, float the cropped original scan slice at 60fps right above the cursor.',
+        videoCount: 0,
+        imageCount: 2,
+        linkCount: 1,
+        steps: [
+          { num: 1, title: 'Slice bounding box from n8n-cli#89 coordinate payload', status: 'Completed', detail: 'Sub-20ms crop extraction.' },
+          { num: 2, title: 'Decide yellow flag badge vs batch halt on date mismatch', status: 'Waiting in Decisions', detail: 'Open in Decisions tab.' },
+          { num: 3, title: 'Wire keyboard Spacebar quick-peek', status: 'Queued', detail: 'Starts after decision.' }
+        ],
+        assets: [
+          { kind: 'image', title: 'Screenshot · Handwritten ER dosage crop preview', url: 'artifact://cmp-146/hover-slice.html', note: 'Borrowed from Stripe Radar inline review cards.' }
+        ],
+        comments: []
+      },
+      {
+        id: 'cmp-155',
+        code: 'parris-cmp · #155',
+        shortSlug: 'cmp-jk-navigation',
+        projectId: 'parris-cmp',
+        title: 'Sub-50ms J/K keyboard row navigation & Spacebar peek',
+        priority: 'normal',
+        confidence: '93%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Steal from niche',
+        crossRepoDep: null,
+        x: 820,
+        y: 265,
+        summary: 'Let paralegals navigate 400-row medical chronologies with J/K keys and press Spacebar to peek at the cited source PDF page.',
+        videoCount: 1,
+        imageCount: 0,
+        linkCount: 1,
+        steps: [
+          { num: 1, title: 'Pre-render adjacent PDF pages in memory', status: 'In progress', detail: 'Benchmarking memory footprint.' },
+          { num: 2, title: 'Add keyboard shortcut guide overlay', status: 'Queued', detail: 'Planned.' }
+        ],
+        assets: [
+          { kind: 'video', title: 'YouTube · High-speed keyboard triage reference (01:18)', url: 'youtube.com/watch?v=jk-triage', note: 'Zero-latency canvas pre-fetching.' }
+        ],
+        comments: []
+      },
+      {
+        id: 'n8n-94',
+        code: 'n8n-cli · #94',
+        shortSlug: 'n8n-fax-continuity',
+        projectId: 'n8n-cli',
+        title: 'Skipped fax page sequence detector in intake packets',
+        priority: 'high',
+        confidence: '95%',
+        stage: 'in_progress',
+        statusLabel: 'Planned',
+        category: 'Bug hunt',
+        crossRepoDep: null,
+        x: 60,
+        y: 265,
+        summary: 'Flags when footer pagination jumps (e.g., "Page 5 of 12" directly to "Page 8 of 12") so missing pages are caught before human review.',
+        videoCount: 1,
+        imageCount: 1,
+        linkCount: 0,
+        steps: [
+          { num: 1, title: 'Scan footer sequence numbers across pages', status: 'Completed', detail: 'Tested on 30 packets.' },
+          { num: 2, title: 'Wire alert banner into intake summary', status: 'In progress', detail: 'Building preview.' }
+        ],
+        assets: [
+          { kind: 'image', title: 'Screenshot · Skipped page footer alert banner', url: 'artifact://n8n-94/fax-gap.html', note: 'Highlights missing pages 6–7 in terracotta.' }
+        ],
+        comments: []
+      },
+      {
+        id: 'ac-54',
+        code: 'n8n-ac · #54',
+        shortSlug: 'ac-mirakl-grader',
+        projectId: 'n8n-ac',
+        title: 'Mirakl cohort 2 interactive workflow lab rubric grader',
+        priority: 'urgent',
+        confidence: '97%',
+        stage: 'waiting',
+        statusLabel: 'Blocked',
+        category: 'Steal from niche',
+        crossRepoDep: 'Depends on n8n-cli#89',
+        x: 440,
+        y: 470,
+        summary: 'Grades Mirakl Enterprise learner workflow submissions automatically and highlights exact node differences side by side.',
+        videoCount: 1,
+        imageCount: 1,
+        linkCount: 1,
+        steps: [
+          { num: 1, title: 'Parse learner workflow submission graph', status: 'Completed', detail: 'Uses n8n-cli#89 parser.' },
+          { num: 2, title: 'Render visual rubric comparison card', status: 'Completed', detail: 'All 24 cohort labs verified.' },
+          { num: 3, title: 'Executive greenlight for Mirakl cohort 2 launch', status: 'Waiting on human', detail: 'Ready in Blocked tab.' }
+        ],
+        assets: [
+          { kind: 'video', title: 'YouTube · Mirakl cohort grading walkthrough (03:12)', url: 'youtube.com/watch?v=mirakl-grader', note: 'Shows how instructors review learner JSON workflows.' }
+        ],
+        comments: []
+      },
+      {
+        id: 'hq-44',
+        code: 'workflows-hq · #44',
+        shortSlug: 'hq-jev-calibration',
+        projectId: 'workflows-hq',
+        title: 'Weekly jev-1.14 auto-priority calibration from overrides',
+        priority: 'normal',
+        confidence: '94%',
+        stage: 'shipped',
+        statusLabel: 'Planned',
+        category: 'Curiosity',
+        crossRepoDep: null,
+        x: 820,
+        y: 470,
+        summary: 'Whenever a priority or project badge is manually overridden, log the delta and refine the one-sentence jev-1.14 criteria strings weekly.',
+        videoCount: 0,
+        imageCount: 0,
+        linkCount: 1,
+        steps: [
+          { num: 1, title: 'Record manual priority overrides from board', status: 'Completed', detail: 'Hook active.' },
+          { num: 2, title: 'Generate weekly criteria diff PR', status: 'Completed', detail: 'Shipped to production.' }
+        ],
+        assets: [],
+        comments: []
+      },
+      {
+        id: 'note-1',
+        code: 'workflows-hq · note',
+        shortSlug: 'canvas-note-1',
+        projectId: 'workflows-hq',
+        title: 'Sticky note: Drag from any right port (+) to link issues across repositories',
+        priority: 'normal',
+        confidence: '100%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Sticky notes',
+        isStickyNote: true,
+        crossRepoDep: null,
+        x: 60,
+        y: 470,
+        summary: 'Use sticky notes on the spatial canvas to jot down freeform ideas, industry inspirations, or architecture reminders before turning them into formal tasks.',
+        videoCount: 0,
+        imageCount: 0,
+        linkCount: 0,
+        steps: [],
+        assets: [],
+        comments: []
+      }
+    ];
+
+    // Backburner (19 items represented) & Archive (142 items represented)
+    let VAULT_ITEMS = [
+      { id: 'bb-1', code: 'parris-cmp · #131', shortSlug: 'cmp-audio-sync', projectId: 'parris-cmp', title: 'Deposition MP3 audio-to-Bates timestamp sync', priority: 'low', vaultType: 'backburner', summary: 'Parked on backburner until the two-column admission parser ships.' },
+      { id: 'bb-2', code: 'n8n-cli · #78',    shortSlug: 'n8n-wasm-ocr',   projectId: 'n8n-cli',    title: 'Offline WebAssembly OCR fallback for air-gapped clinics', priority: 'low', vaultType: 'backburner', summary: 'Kept on backburner for Q3 exploration.' },
+      { id: 'bb-3', code: 'n8n-ac · #19',     shortSlug: 'ac-voice-synth', projectId: 'n8n-ac',     title: 'Automated French & German subtitle voiceover synthesis', priority: 'normal', vaultType: 'backburner', summary: 'Waiting until Mirakl cohort 2 completes.' },
+      { id: 'ar-1', code: 'parris-cmp · #128',shortSlug: 'cmp-bates-v1',   projectId: 'parris-cmp', title: 'Multi-volume Bates stamp footer indexer (v1)', priority: 'urgent', vaultType: 'archived', summary: 'Shipped & verified · Indexes 1,000 pages in 3.8 seconds.' },
+      { id: 'ar-2', code: 'n8n-cli · #82',    shortSlug: 'n8n-json-sort',  projectId: 'n8n-cli',    title: 'Deterministic workflow JSON canonical key sorter', priority: 'high', vaultType: 'archived', summary: 'Shipped · Eliminates noisy Git diffs across exports.' },
+      { id: 'ar-3', code: 'workflows-hq · #39',shortSlug: 'hq-agents-md',  projectId: 'workflows-hq', title: 'Department Playbook auto-injector on Q&A resolution', priority: 'normal', vaultType: 'archived', summary: 'Shipped · Appends answered decision rules into repository playbooks.' }
+    ];
+
+    // Spatial Canvas Cubic-Bezier Links
+    let CANVAS_LINKS = [
+      { id: 'lnk-1', from: 'n8n-89',  to: 'cmp-142' },
+      { id: 'lnk-2', from: 'cmp-142', to: 'cmp-148' },
+      { id: 'lnk-3', from: 'n8n-89',  to: 'cmp-146' },
+      { id: 'lnk-4', from: 'cmp-146', to: 'cmp-155' },
+      { id: 'lnk-5', from: 'n8n-89',  to: 'ac-54' }
+    ];
+
+    // Workspace 3: Decisions (3 Pending Architectural & Scope Questions)
+    let DECISIONS = [
+      {
+        id: 'dec-1',
+        issueId: 'cmp-146',
+        issueCode: 'parris-cmp · #146',
+        projectId: 'parris-cmp',
+        priority: 'urgent',
+        waitTime: '12m ago',
+        question: 'Should ambiguous medical dates in discovery PDFs halt the batch or flag for paralegal review?',
+        whyItMatters: 'Paralegals need unbroken chronological order when preparing trial timelines, but uncertain cursive handwriting (<75% OCR confidence) must never pass silently into court filings.',
+        previewTitle: 'Side-by-side preview · Los Angeles Superior Court ER chronology excerpt',
+        previewLeftLabel: 'Option A · Inline yellow flag + hover image crop',
+        previewLeftBody: 'Row stays in chronological order; hovering floats the original physician ink slice at 60fps.',
+        previewRightLabel: 'Option B · Strict batch halt on date mismatch',
+        previewRightBody: 'Pauses the entire 400-page PDF ingestion job until a human manually types the date.',
+        optionA: {
+          title: 'Option A: Flag with yellow badge & continue batch (Recommended)',
+          desc: 'Keeps chronological flow intact, attaches the cropped scan slice on hover, and groups flagged rows into a quick filter.'
+        },
+        optionB: {
+          title: 'Option B: Strict halt on date mismatch',
+          desc: 'Stops downstream table generation immediately whenever a handwritten date falls below 75% confidence.'
+        },
+        resolved: false,
+        choice: null
+      },
+      {
+        id: 'dec-2',
+        issueId: 'ac-54',
+        issueCode: 'n8n-ac · #54',
+        projectId: 'n8n-ac',
+        priority: 'high',
+        waitTime: '19m ago',
+        question: 'Where should Mirakl Enterprise learner workflow grading sandboxes execute during live cohorts?',
+        whyItMatters: 'Enterprise cohorts run 60 concurrent workflow grading submissions simultaneously during live instructor-led workshops.',
+        previewTitle: 'Architecture comparison · AST graph verifier vs ephemeral Docker runner',
+        previewLeftLabel: 'Option A · Deterministic AST graph grader (45ms)',
+        previewLeftBody: 'Validates node connections, expressions, and mock payloads in memory with zero cold-start.',
+        previewRightLabel: 'Option B · Dedicated container per submission (4.2s)',
+        previewRightBody: 'Spins up a fresh container per click, adding 4 seconds of wait time during live classes.',
+        optionA: {
+          title: 'Option A: Deterministic AST graph grader + replay mock (Recommended)',
+          desc: 'Grades 98% of enterprise labs in 45ms with instant side-by-side node rubric diffs.'
+        },
+        optionB: {
+          title: 'Option B: Ephemeral Docker container per submission',
+          desc: 'Full network sandbox per learner submission, trading speed for heavy container isolation.'
+        },
+        resolved: false,
+        choice: null
+      },
+      {
+        id: 'dec-3',
+        issueId: 'n8n-94',
+        issueCode: 'n8n-cli · #94',
+        projectId: 'n8n-cli',
+        priority: 'high',
+        waitTime: '11m ago',
+        question: 'When an incoming fax packet skips page numbers (e.g. Page 5 to Page 8), how should the CLI respond?',
+        whyItMatters: 'Intake staff still want to read the available pages immediately while requesting the missing fax transmission from the provider.',
+        previewTitle: 'Output preview · Non-blocking top callout vs exit code 1',
+        previewLeftLabel: 'Option A · Emit structured warning banner + index available pages',
+        previewLeftBody: 'Pins a prominent terracotta banner ("Pages 6–7 missing from footer sequence") at the top.',
+        previewRightLabel: 'Option B · Reject packet with non-zero exit code',
+        previewRightBody: 'Drops the entire document packet until all pages are re-faxed.',
+        optionA: {
+          title: 'Option A: Process available pages & pin missing-page banner (Recommended)',
+          desc: 'Lets staff review pages 1–5 and 8–12 immediately while flagging the exact gap.'
+        },
+        optionB: {
+          title: 'Option B: Reject packet until complete fax arrives',
+          desc: 'Halts indexing whenever footer pagination is non-contiguous.'
+        },
+        resolved: false,
+        choice: null
+      }
+    ];
+
+    // Workspace 4: Blocked (3 Tailored Human Action Stations: Type A, Type B, Type C)
+    let BLOCKED_STATIONS = [
+      {
+        id: 'blk-1',
+        type: 'testing', // Type A — Interactive Human Testing
+        issueId: 'cmp-142',
+        code: 'Discovery portal · #142',
+        projectId: 'parris-cmp',
+        title: 'Interactive human testing: Automated RFA objection parser & Bates linker',
+        subtitle: 'Verify the 3-step checklist and drag the Before vs. After comparison slider to inspect the two-column court response output.',
+        previewUrl: 'staging.atelier.studio/parris-cmp/rfa-142',
+        sliderPct: 64,
+        bugScreenshotAttached: null,
+        checks: [
+          { label: '1. Column 1 defense objections stay aligned beside Column 2 responses across page breaks', checked: true },
+          { label: '2. Clicking "Bates PARRIS-00418" scrolls the source hospital PDF directly to page 418', checked: true },
+          { label: '3. Midnight ER triage splits display the automatic 1-day qualification note', checked: true }
+        ],
+        resolved: false
+      },
+      {
+        id: 'blk-2',
+        type: 'credential', // Type B — Missing API Key or Credential
+        issueId: 'n8n-89',
+        code: 'Workflow engine · #89',
+        projectId: 'n8n-cli',
+        title: 'Missing credential: NPM_AUTOMATION_TOKEN for publishing @workflows-accelerator/n8n-cli',
+        subtitle: 'All 40 multi-page PDF bounding-box contract tests passed. Paste the automation token to publish v2.4.0 and unblock Discovery portal #142.',
+        secretName: 'NPM_AUTOMATION_TOKEN',
+        packageTarget: '@workflows-accelerator/n8n-cli@2.4.0',
+        resolved: false
+      },
+      {
+        id: 'blk-3',
+        type: 'greenlight', // Type C — Executive Greenlight
+        issueId: 'ac-54',
+        code: 'Enterprise academy · #54',
+        projectId: 'n8n-ac',
+        title: 'Executive greenlight: Mirakl Enterprise Cohort 2 curriculum & interactive lab grader',
+        subtitle: 'All 6 workflow automation modules, French/English rubrics, and side-by-side learner diff cards are verified and ready for client release.',
+        deliverableSummary: 'Includes 6 interactive workflow labs, automated AST rubric grading (45ms average), and executive progress reporting for Mirakl.',
+        resolved: false
+      }
+    ];
+
+    // Workspace 5: Discussions (4 Dedicated Project & Client Discussion Rooms)
+    let DISCUSSIONS = [
+      {
+        id: 'disc-1',
+        projectId: 'parris-cmp',
+        channel: 'Client · Parris Law',
+        title: 'Handling two-column defense objection tables that wrap across page breaks',
+        linkedIssue: 'parris-cmp · #142',
+        resolved: false,
+        messages: [
+          {
+            id: 'dm-1',
+            author: 'Marci · Parris Law Firm',
+            role: 'Client partner',
+            time: '10:18 am',
+            text: 'I recorded a 2-minute walkthrough showing how defense counsel formats two-column objection tables on Los Angeles Superior Court filings. Notice how Request #14 starts at the bottom of page 4 and wraps onto page 5.',
+            mediaType: 'video',
+            mediaTitle: 'YouTube · Marci walkthrough of two-column court objections (02:34)',
+            mediaUrl: 'youtube.com/watch?v=parris-rfa'
+          },
+          {
+            id: 'dm-2',
+            author: 'Lucas · Lead',
+            role: 'Lead architect',
+            time: '10:45 am',
+            text: 'Thank you Marci — we wired the parser to repeat column headers across page splits and linked every cited date directly to its Bates page number.',
+            mediaType: 'image',
+            mediaTitle: 'Screenshot · Side-by-side court table output with Bates links',
+            mediaUrl: 'artifact://cmp-142/preview.png'
+          }
+        ]
+      },
+      {
+        id: 'disc-2',
+        projectId: 'parris-cmp',
+        channel: 'Steal from other niches',
+        title: 'Borrowing Stripe Radar inline hover crops & Superhuman J/K triage speed',
+        linkedIssue: 'parris-cmp · #146',
+        resolved: false,
+        messages: [
+          {
+            id: 'dm-21',
+            author: 'Lucas · Lead',
+            role: 'Lead architect',
+            time: 'Yesterday',
+            text: 'When paralegals audit a 400-row medical chronology, clicking into a separate modal to verify a messy handwritten ER date breaks flow. Floating the cropped original physician ink slice on hover lets them verify in 200ms.',
+            mediaType: 'image',
+            mediaTitle: 'Screenshot · Inline 60fps hover slice over handwritten ER dosage',
+            mediaUrl: 'artifact://cmp-146/hover-crop.png'
+          }
+        ]
+      },
+      {
+        id: 'disc-3',
+        projectId: 'n8n-cli',
+        channel: 'Architecture & specs',
+        title: 'Cross-repository JSON coordinate contract between n8n-cli and parris-cmp',
+        linkedIssue: 'n8n-cli · #89',
+        resolved: false,
+        messages: [
+          {
+            id: 'dm-31',
+            author: 'OpenCode Architect',
+            role: 'System spec',
+            time: 'Yesterday',
+            text: 'By emitting normalized [x1, y1, x2, y2] bounding boxes in n8n-cli#89, both the Discovery portal (#142) and Enterprise academy (#54) share one unified parser.',
+            mediaType: 'link',
+            mediaTitle: 'Spec · docs.n8n-cli.dev/ocr-bounding-boxes',
+            mediaUrl: 'docs.n8n-cli.dev/ocr-bounding-boxes'
+          }
+        ]
+      },
+      {
+        id: 'disc-4',
+        projectId: 'n8n-ac',
+        channel: 'Client · Mirakl',
+        title: 'Mirakl Enterprise Cohort 2 side-by-side learner workflow rubric feedback',
+        linkedIssue: 'n8n-ac · #54',
+        resolved: false,
+        messages: [
+          {
+            id: 'dm-41',
+            author: 'Claire · Mirakl Enterprise',
+            role: 'Client program lead',
+            time: '2 days ago',
+            text: 'Our cohort 2 engineers loved seeing the visual node diff right after submitting their workflow lab. Could we also export a one-page PDF summary for managers?',
+            mediaType: 'video',
+            mediaTitle: 'YouTube · Mirakl learner cohort feedback clip (01:45)',
+            mediaUrl: 'youtube.com/watch?v=mirakl-cohort2'
+          }
+        ]
+      }
+    ];
+
+    // Interactive State
+    let activeMainTab = 'operations';       // 'operations' | 'ideation' | 'decisions' | 'blocked' | 'discussions'
+    let perspective = 'lead';               // 'lead' | 'client'
+    let activeClientOrg = 'Parris Law Firm';// 'Parris Law Firm' | 'Mirakl Enterprise'
+    let selectedProjectFilter = 'all';      // 'all' | 'parris-cmp' | 'n8n-cli' | 'n8n-ac' | 'workflows-hq'
+    let selectedCategoryFilter = 'All';     // 'All' | 'Steal from niche' | 'Bug hunt' | 'Optimization' | 'Curiosity' | 'Sticky notes'
+    let ideationMode = 'canvas';            // 'canvas' | 'list'
+    let activeDecisionId = 'dec-1';
+    let activeDiscussionChannel = 'All discussions';
+    let activeDiscussionId = 'disc-1';
+    let vaultTab = 'backburner';
+    let inspectedIssueId = null;
+    let openNodeMenuId = null;
+    let activePriorityPopoverId = null;
+
+    // Spatial Canvas Pan & Zoom State
+    let canvasPanX = 24;
+    let canvasPanY = 56;
+    let canvasScale = 1.0;
+    let isPanningCanvas = false;
+    let panStartX = 0;
+    let panStartY = 0;
+    let panOriginX = 0;
+    let panOriginY = 0;
+    let draggingNode = null;
+    let activeWireDrag = null;
+
+    // -----------------------------------------------------------------------
+    // 2. INITIALIZATION & GLOBAL SHORTCUTS
+    // -----------------------------------------------------------------------
+    window.addEventListener('DOMContentLoaded', () => {
+      initSpatialCanvasEngine();
+      refreshAllViews();
+
+      window.addEventListener('click', () => {
+        closeAllPopovers();
+        if (openNodeMenuId || activePriorityPopoverId) {
+          openNodeMenuId = null;
+          activePriorityPopoverId = null;
+          renderOperationsBoard();
+          renderIdeationSpatialCanvas();
+        }
+      });
+
+      window.addEventListener('keydown', (e) => {
+        const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+        if (((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') || (e.key === '/' && tag !== 'input' && tag !== 'textarea')) {
+          e.preventDefault();
+          togglePopover('quick-capture-popover');
+          setTimeout(() => {
+            const inp = document.getElementById('global-capture-input');
+            if (inp) inp.focus();
+          }, 40);
+        }
+        if (e.key === 'Escape') {
+          closeAllPopovers();
+          closeRightSideDrawer();
+          closeBackburnerDrawer();
+          closeStudioModal();
+          closeCanvasMediaPrompt();
+        }
+      });
+    });
+
+    function refreshAllViews() {
+      renderProjectDropdown();
+      updateNavigationBadges();
+      renderOperationsBoard();
+      renderCanvasCategoryFilterBar();
+      renderIdeationSpatialCanvas();
+      renderIdeationSimplifiedView();
+      renderDecisionsWorkspace();
+      renderBlockedWorkspace();
+      renderDiscussionsWorkspace();
+      renderBackburnerDrawerItems();
+      if (perspective === 'client') {
+        renderClientPortalView();
+      }
+      if (inspectedIssueId && !document.getElementById('right-side-drawer').classList.contains('hidden')) {
+        renderRightSideDrawerContent(inspectedIssueId);
+      }
+      lucide.createIcons();
+    }
+
+    function getProject(projectId) {
+      return PROJECTS.find(p => p.id === projectId) || PROJECTS[0];
+    }
+
+    function getFilteredIssues() {
+      return ISSUES.filter(item => {
+        if (selectedProjectFilter !== 'all' && item.projectId !== selectedProjectFilter) return false;
+        if (selectedCategoryFilter !== 'All' && item.category !== selectedCategoryFilter) return false;
+        return true;
+      });
+    }
+
+    function updateNavigationBadges() {
+      const visibleIssues = ISSUES.filter(i => selectedProjectFilter === 'all' || i.projectId === selectedProjectFilter);
+      const openDecs = DECISIONS.filter(d => !d.resolved && (selectedProjectFilter === 'all' || d.projectId === selectedProjectFilter));
+      const openBlks = BLOCKED_STATIONS.filter(b => !b.resolved && (selectedProjectFilter === 'all' || b.projectId === selectedProjectFilter));
+      const openDiscs = DISCUSSIONS.filter(d => selectedProjectFilter === 'all' || d.projectId === selectedProjectFilter);
+
+      document.getElementById('nav-count-ideation').textContent = visibleIssues.length;
+      document.getElementById('nav-count-decisions').textContent = openDecs.length;
+      document.getElementById('nav-count-blocked').textContent = openBlks.length;
+      document.getElementById('nav-count-discussions').textContent = openDiscs.length;
+
+      const tDec = document.getElementById('telemetry-decisions-count');
+      if (tDec) tDec.textContent = `${openDecs.length} waiting`;
+
+      const tBlk = document.getElementById('telemetry-blocked-count');
+      if (tBlk) tBlk.textContent = `${openBlks.length} blocked`;
+
+      const dHead = document.getElementById('decisions-header-badge');
+      if (dHead) dHead.textContent = `${openDecs.length} pending decision${openDecs.length === 1 ? '' : 's'}`;
+
+      const bHead = document.getElementById('blocked-header-badge');
+      if (bHead) bHead.textContent = `${openBlks.length} human validation${openBlks.length === 1 ? '' : 's'} waiting`;
+    }
+
+    // -----------------------------------------------------------------------
+    // 3. CUSTOM GROUNDED POPOVERS & PROJECT SWITCHER (0ms Filter)
+    // -----------------------------------------------------------------------
+    function togglePopover(id, event) {
+      if (event) event.stopPropagation();
+      const el = document.getElementById(id);
+      if (!el) return;
+      const isHidden = el.classList.contains('hidden');
+      closeAllPopovers();
+      if (isHidden) el.classList.remove('hidden');
+    }
+
+    function closeAllPopovers() {
+      ['project-dropdown-popover', 'client-org-popover', 'quick-capture-popover'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+    }
+
+    function renderProjectDropdown() {
+      const container = document.getElementById('project-dropdown-items');
+      if (!container) return;
+
+      let html = `
+        <button onclick="selectProjectFilter('all')"
+                class="w-full text-left px-2.5 py-2 rounded-[6px] hover:bg-well flex items-center justify-between text-[12.5px] font-medium text-ink">
+          <div class="flex items-center gap-2.5">
+            <span class="w-2.5 h-2.5 rounded-[4px] bg-burgundy"></span>
+            <div>
+              <div>All projects</div>
+              <div class="text-[11px] text-inkMuted font-mono">4 active repositories · 18 items</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-1.5 py-0.2 rounded-[4px] bg-well text-inkSecondary font-mono text-[11px]">18 items</span>
+            ${selectedProjectFilter === 'all' ? '<span class="text-burgundy font-mono">✓</span>' : ''}
+          </div>
+        </button>
+      `;
+
+      PROJECTS.forEach(p => {
+        const isSelected = selectedProjectFilter === p.id;
+        html += `
+          <button onclick="selectProjectFilter('${p.id}')"
+                  class="w-full text-left px-2.5 py-2 rounded-[6px] hover:bg-well flex items-center justify-between text-[12.5px] font-medium text-ink">
+            <div class="flex items-center gap-2.5">
+              <span class="w-2.5 h-2.5 rounded-[4px]" style="background-color: ${p.color};"></span>
+              <div>
+                <div>${p.label} <span class="font-mono text-[11.5px] text-inkSecondary">(${p.repoName})</span></div>
+                <div class="text-[11px] text-inkMuted">${p.subtitle}</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="px-1.5 py-0.2 rounded-[4px] bg-well text-inkSecondary font-mono text-[11px]">${p.activeCount} items</span>
+              ${isSelected ? '<span class="text-burgundy font-mono">✓</span>' : ''}
+            </div>
+          </button>
+        `;
+      });
+
+      container.innerHTML = html;
+
+      const labelEl = document.getElementById('active-project-label');
+      const dotEl = document.getElementById('active-project-dot');
+      if (selectedProjectFilter === 'all') {
+        labelEl.textContent = 'All projects · 4 active';
+        dotEl.style.backgroundColor = '#7C1D2E';
+      } else {
+        const p = getProject(selectedProjectFilter);
+        labelEl.textContent = `${p.label} (${p.repoName})`;
+        dotEl.style.backgroundColor = p.color;
+      }
+    }
+
+    function selectProjectFilter(projectId) {
+      selectedProjectFilter = projectId;
+      closeAllPopovers();
+      refreshAllViews();
+      const label = projectId === 'all' ? 'All projects (18 active items)' : getProject(projectId).label;
+      showToast(`Filtered workspace to ${label}`);
+    }
+
+    // -----------------------------------------------------------------------
+    // 4. NAVIGATION & LEAD / CLIENT PERSPECTIVE SWITCHING
+    // -----------------------------------------------------------------------
+    function handleBrandClick() {
+      if (perspective === 'client') {
+        renderClientPortalView();
+      } else {
+        switchMainTab('operations');
+      }
+    }
+
+    function switchMainTab(tab) {
+      if (perspective === 'client') {
+        setPerspectiveMode('lead');
+      }
+      activeMainTab = tab;
+
+      const panels = {
+        operations: document.getElementById('view-operations'),
+        ideation: document.getElementById('view-ideation'),
+        decisions: document.getElementById('view-decisions'),
+        blocked: document.getElementById('view-blocked'),
+        discussions: document.getElementById('view-discussions'),
+        client: document.getElementById('view-client')
+      };
+
+      Object.values(panels).forEach(p => { if (p) p.classList.add('hidden'); });
+      if (panels[tab]) panels[tab].classList.remove('hidden');
+
+      ['operations', 'ideation', 'decisions', 'blocked', 'discussions'].forEach(k => {
+        const btn = document.getElementById('tab-btn-' + k);
+        if (!btn) return;
+        if (k === tab) {
+          btn.className = 'tactile px-3 py-1 rounded-[6px] bg-ivory text-ink font-medium text-[12.5px] shadow-sm flex items-center gap-1.5';
+        } else {
+          btn.className = 'tactile px-3 py-1 rounded-[6px] text-inkSecondary hover:text-ink font-medium text-[12.5px] flex items-center gap-1.5';
+        }
+      });
+
+      if (tab === 'ideation' && ideationMode === 'canvas') {
+        requestAnimationFrame(drawSpatialCanvasWires);
+      }
+      lucide.createIcons();
+    }
+
+    function setPerspectiveMode(mode) {
+      perspective = mode;
+      const btnLead = document.getElementById('persp-btn-lead');
+      const btnClient = document.getElementById('persp-btn-client');
+      const leadNav = document.getElementById('lead-top-nav');
+      const leadProj = document.getElementById('lead-project-switcher-wrap');
+      const clientOrg = document.getElementById('client-org-switcher-wrap');
+      const bottomNav = document.getElementById('responsive-bottom-nav');
+
+      if (mode === 'lead') {
+        btnLead.className = 'tactile px-2.5 py-1 rounded-[5px] bg-ivory text-ink shadow-sm flex items-center gap-1.5';
+        btnClient.className = 'tactile px-2.5 py-1 rounded-[5px] text-inkSecondary hover:text-ink flex items-center gap-1.5';
+        leadNav.classList.remove('lg:hidden');
+        leadNav.classList.add('lg:flex');
+        leadProj.classList.remove('hidden');
+        clientOrg.classList.add('hidden');
+        bottomNav.classList.remove('hidden');
+        document.getElementById('view-client').classList.add('hidden');
+        switchMainTab(activeMainTab);
+        showToast('Switched to Lead view');
+      } else {
+        btnClient.className = 'tactile px-2.5 py-1 rounded-[5px] bg-ivory text-ink shadow-sm flex items-center gap-1.5';
+        btnLead.className = 'tactile px-2.5 py-1 rounded-[5px] text-inkSecondary hover:text-ink flex items-center gap-1.5';
+        leadNav.classList.add('lg:hidden');
+        leadNav.classList.remove('lg:flex');
+        leadProj.classList.add('hidden');
+        clientOrg.classList.remove('hidden');
+        bottomNav.classList.add('hidden');
+        closeRightSideDrawer();
+        closeBackburnerDrawer();
+        ['operations', 'ideation', 'decisions', 'blocked', 'discussions'].forEach(k => {
+          document.getElementById('view-' + k).classList.add('hidden');
+        });
+        document.getElementById('view-client').classList.remove('hidden');
+        renderClientPortalView();
+        lucide.createIcons();
+        showToast(`Previewing Client Portal for ${activeClientOrg}`);
+      }
+    }
+
+    function selectClientOrg(orgName) {
+      activeClientOrg = orgName;
+      document.getElementById('active-client-org-label').textContent = orgName;
+      document.getElementById('check-client-parris').classList.toggle('hidden', orgName !== 'Parris Law Firm');
+      document.getElementById('check-client-mirakl').classList.toggle('hidden', orgName !== 'Mirakl Enterprise');
+      closeAllPopovers();
+      renderClientPortalView();
+      lucide.createIcons();
+      showToast(`Switched client portal to ${orgName}`);
+    }
+
+    // -----------------------------------------------------------------------
+    // 5. UNIVERSAL QUICK-CAPTURE & JEV-1.14 AUTO-ROUTING
+    // -----------------------------------------------------------------------
+    function handleLiveCaptureTyping(text, source) {
+      const lower = text.toLowerCase();
+      let projLabel = 'Discovery portal';
+      let prioLabel = 'High (96%)';
+      let destLabel = 'Ideation';
+
+      if (lower.includes('ocr') || lower.includes('fax') || lower.includes('cli') || lower.includes('token')) {
+        projLabel = 'Workflow engine';
+        prioLabel = 'Urgent (98%)';
+      } else if (lower.includes('mirakl') || lower.includes('academy') || lower.includes('cohort') || lower.includes('grader')) {
+        projLabel = 'Enterprise academy';
+        prioLabel = 'High (95%)';
+      } else if (lower.includes('playbook') || lower.includes('jev') || lower.includes('internal')) {
+        projLabel = 'Internal operations';
+        prioLabel = 'Normal (94%)';
+      }
+
+      if (lower.includes('?') || lower.includes('should we') || lower.includes('decide')) {
+        destLabel = 'Decisions';
+      } else if (lower.includes('key') || lower.includes('secret') || lower.includes('test')) {
+        destLabel = 'Blocked';
+      } else if (lower.includes('discuss') || lower.includes('chat')) {
+        destLabel = 'Discussions';
+      }
+
+      if (source === 'omni') {
+        document.getElementById('omni-auto-project').textContent = projLabel;
+        document.getElementById('omni-auto-priority').textContent = prioLabel;
+        document.getElementById('omni-auto-dest').textContent = destLabel;
+      } else {
+        document.getElementById('capture-auto-project').textContent = projLabel;
+        document.getElementById('capture-auto-priority').textContent = prioLabel;
+        document.getElementById('capture-auto-dest').textContent = destLabel;
+      }
+    }
+
+    function submitGlobalCapture(source) {
+      const isOmni = source === 'omni';
+      const inputEl = document.getElementById(isOmni ? 'ops-omni-input' : 'global-capture-input');
+      const assetEl = document.getElementById('global-capture-asset');
+      const raw = (inputEl && inputEl.value.trim()) ? inputEl.value.trim() : 'Highlight unverified medical dates with inline source PDF slice';
+      const assetUrl = (!isOmni && assetEl) ? assetEl.value.trim() : '';
+
+      const lower = raw.toLowerCase();
+      let projId = selectedProjectFilter !== 'all' ? selectedProjectFilter : 'parris-cmp';
+      if (lower.includes('ocr') || lower.includes('fax') || lower.includes('cli')) projId = 'n8n-cli';
+      if (lower.includes('mirakl') || lower.includes('academy')) projId = 'n8n-ac';
+      if (lower.includes('playbook') || lower.includes('jev')) projId = 'workflows-hq';
+
+      const proj = getProject(projId);
+      const num = 160 + ISSUES.length;
+      const newId = `${proj.shortPrefix}-${num}`;
+      const isVideo = assetUrl.includes('youtube') || raw.includes('youtube');
+
+      const newIssue = {
+        id: newId,
+        code: `${proj.repoName} · #${num}`,
+        shortSlug: `${proj.shortPrefix}-auto-${num}`,
+        projectId: projId,
+        title: raw,
+        priority: lower.includes('urgent') || lower.includes('broken') ? 'urgent' : 'high',
+        confidence: '96%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Optimization',
+        crossRepoDep: null,
+        x: 440,
+        y: 660,
+        summary: raw,
+        videoCount: isVideo ? 1 : 0,
+        imageCount: assetUrl && !isVideo ? 1 : 0,
+        linkCount: 1,
+        steps: [
+          { num: 1, title: 'Explore repository context & linked references', status: 'In progress', detail: 'Auto-routed by jev-1.14.' },
+          { num: 2, title: 'Draft visual step-by-step plan', status: 'Queued', detail: 'Up next.' }
+        ],
+        assets: assetUrl ? [{ kind: isVideo ? 'video' : 'image', title: assetUrl, url: assetUrl, note: 'Attached on capture.' }] : [],
+        comments: []
+      };
+
+      ISSUES.unshift(newIssue);
+      if (inputEl) inputEl.value = '';
+      if (assetEl) assetEl.value = '';
+      closeAllPopovers();
+      refreshAllViews();
+      showToast(`Routed "${newIssue.shortSlug}" to ${proj.label} (Priority auto-picked)`);
+    }
+
+    // -----------------------------------------------------------------------
+    // 6. WORKSPACE 1: OPERATIONS MANAGER & LIVE PIPELINE
+    // -----------------------------------------------------------------------
+    function renderOperationsBoard() {
+      const grid = document.getElementById('ops-kanban-grid');
+      if (!grid) return;
+
+      const columns = [
+        { key: 'exploring',   label: 'Exploring & planning', dot: '#B86B19' },
+        { key: 'in_progress', label: 'In progress',          dot: '#C85A28' },
+        { key: 'waiting',     label: 'Waiting on human',     dot: '#7C1D2E' },
+        { key: 'shipped',     label: 'Recently shipped',     dot: '#2E6B4E' }
+      ];
+
+      const items = ISSUES.filter(i => !i.isStickyNote && (selectedProjectFilter === 'all' || i.projectId === selectedProjectFilter));
+
+      grid.innerHTML = columns.map(col => {
+        const colItems = items.filter(i => i.stage === col.key);
+        return `
+          <div class="well-surface p-3 space-y-2.5 min-h-[380px]">
+            <div class="px-1 py-0.5 flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-[3px]" style="background-color: ${col.dot};"></span>
+                <span class="text-[13px] font-semibold text-ink">${col.label}</span>
+              </div>
+              <span class="px-2 py-0.5 rounded-[5px] bg-ivory text-inkSecondary font-mono text-[11px] shadow-sm">${colItems.length}</span>
+            </div>
+
+            <div class="space-y-2.5">
+              ${colItems.map(item => {
+                const proj = getProject(item.projectId);
+                const prio = PRIORITY_META[item.priority] || PRIORITY_META.normal;
+                const popOpen = activePriorityPopoverId === item.id;
+
+                return `
+                  <div onclick="openRightSideDrawer('${item.id}', event)"
+                       ondblclick="openStudioModal('${item.id}', event)"
+                       class="card-interactive p-3.5 cursor-pointer space-y-2.5 relative">
+
+                    <!-- Top Row: Project Dot + Short Slug + Clickable Priority Popover Trigger -->
+                    <div class="flex items-center justify-between gap-2 text-[11.5px]">
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <span class="w-2.5 h-2.5 rounded-[4px] shrink-0" style="background-color: ${proj.color};"></span>
+                        <span class="font-mono font-medium text-inkSecondary truncate">${item.shortSlug}</span>
+                      </div>
+
+                      <div class="relative">
+                        <button onclick="togglePriorityOverridePopover('${item.id}', event)"
+                                title="Auto-picked by jev-1.14 (${item.confidence}) · Click to override"
+                                class="tactile px-2 py-0.5 rounded-[5px] text-[11px] font-medium flex items-center gap-1 ${prio.badge}">
+                          <span>${prio.label}</span>
+                          <i data-lucide="chevron-down" class="w-3 h-3 opacity-70"></i>
+                        </button>
+
+                        ${popOpen ? `
+                          <div onclick="event.stopPropagation()"
+                               class="popover-surface absolute right-0 top-7 w-[155px] p-1 z-50 space-y-0.5 text-[11.5px]">
+                            <div class="px-2 py-1 text-[10.5px] text-inkMuted">Override priority</div>
+                            ${PRIORITY_ORDER.map(pKey => `
+                              <button onclick="setIssuePriority('${item.id}', '${pKey}', event)"
+                                      class="w-full text-left px-2 py-1 rounded-[5px] hover:bg-well flex items-center justify-between text-ink">
+                                <span class="flex items-center gap-1.5">
+                                  <span class="w-2 h-2 rounded-[3px]" style="background-color:${PRIORITY_META[pKey].dot}"></span>
+                                  <span>${PRIORITY_META[pKey].label}</span>
+                                </span>
+                                ${item.priority === pKey ? '<span class="text-burgundy font-mono">✓</span>' : ''}
+                              </button>
+                            `).join('')}
+                          </div>
+                        ` : ''}
+                      </div>
+                    </div>
+
+                    <!-- Concise Title -->
+                    <div class="text-[13.5px] font-semibold text-ink line-clamp-2 leading-snug">${item.title}</div>
+
+                    <!-- Cross-Project Dependency Indicator (if linked across repositories) -->
+                    ${item.crossRepoDep ? `
+                      <div class="px-2 py-1 rounded-[5px] bg-terracottaWash text-terracotta text-[11px] font-mono flex items-center gap-1.5">
+                        <i data-lucide="git-Commit" class="w-3 h-3 shrink-0"></i>
+                        <span class="truncate">${item.crossRepoDep}</span>
+                      </div>
+                    ` : ''}
+
+                    <!-- Footer: Project Name + Attached Resource Icons -->
+                    <div class="pt-2 flex items-center justify-between text-[11px] text-inkMuted" style="border-top: 1px solid rgba(24,22,19,0.06);">
+                      <span class="font-medium text-inkSecondary">${proj.label}</span>
+                      <div class="flex items-center gap-2 font-mono">
+                        ${item.videoCount ? `<span class="flex items-center gap-0.5 text-burgundy" title="YouTube video"><i data-lucide="video" class="w-3.5 h-3.5"></i>${item.videoCount}</span>` : ''}
+                        ${item.imageCount ? `<span class="flex items-center gap-0.5 text-inkSecondary" title="Screenshot"><i data-lucide="image" class="w-3.5 h-3.5"></i>${item.imageCount}</span>` : ''}
+                        ${item.linkCount ? `<span class="flex items-center gap-0.5 text-inkSecondary" title="Linked URL"><i data-lucide="link-2" class="w-3.5 h-3.5"></i>${item.linkCount}</span>` : ''}
+                        <span class="flex items-center gap-0.5 text-inkSecondary" title="Planned steps"><i data-lucide="check-square" class="w-3.5 h-3.5"></i>${(item.steps || []).length}</span>
+                      </div>
+                    </div>
+
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function togglePriorityOverridePopover(issueId, event) {
+      if (event) event.stopPropagation();
+      activePriorityPopoverId = activePriorityPopoverId === issueId ? null : issueId;
+      renderOperationsBoard();
+      lucide.createIcons();
+    }
+
+    function setIssuePriority(issueId, newPrio, event) {
+      if (event) event.stopPropagation();
+      const item = ISSUES.find(i => i.id === issueId);
+      if (item) {
+        item.priority = newPrio;
+        activePriorityPopoverId = null;
+        refreshAllViews();
+        showToast(`Priority set to ${PRIORITY_META[newPrio].label} for ${item.shortSlug}`);
+      }
+    }
+
+    function cycleIssuePriority(issueId, event) {
+      if (event) event.stopPropagation();
+      const item = ISSUES.find(i => i.id === issueId);
+      if (!item) return;
+      const next = PRIORITY_ORDER[(PRIORITY_ORDER.indexOf(item.priority) + 1) % PRIORITY_ORDER.length];
+      item.priority = next;
+      refreshAllViews();
+      showToast(`Priority cycled to ${PRIORITY_META[next].label}`);
+    }
+
+    // Backburner & Archive Slide-Over Drawer
+    function openBackburnerDrawer() {
+      closeRightSideDrawer();
+      document.getElementById('backburner-vault-drawer').classList.remove('hidden');
+      renderBackburnerDrawerItems();
+      lucide.createIcons();
+    }
+
+    function closeBackburnerDrawer() {
+      document.getElementById('backburner-vault-drawer').classList.add('hidden');
+    }
+
+    function setVaultTab(tab) {
+      vaultTab = tab;
+      document.getElementById('vault-tab-backburner').className = tab === 'backburner'
+        ? 'tactile py-1.5 rounded-[5px] bg-ivory text-ink shadow-sm'
+        : 'tactile py-1.5 rounded-[5px] text-inkSecondary hover:text-ink';
+      document.getElementById('vault-tab-archived').className = tab === 'archived'
+        ? 'tactile py-1.5 rounded-[5px] bg-ivory text-ink shadow-sm'
+        : 'tactile py-1.5 rounded-[5px] text-inkSecondary hover:text-ink';
+      renderBackburnerDrawerItems();
+      lucide.createIcons();
+    }
+
+    function renderBackburnerDrawerItems() {
+      const container = document.getElementById('backburner-drawer-items');
+      if (!container) return;
+      const list = VAULT_ITEMS.filter(v => v.vaultType === vaultTab);
+      container.innerHTML = list.map(v => {
+        const proj = getProject(v.projectId);
+        return `
+          <div class="card-surface p-3.5 space-y-2">
+            <div class="flex items-center justify-between text-[11.5px]">
+              <span class="flex items-center gap-1.5 font-mono text-inkSecondary">
+                <span class="w-2 h-2 rounded-[3px]" style="background-color:${proj.color}"></span>
+                ${v.code}
+              </span>
+              <span class="px-2 py-0.5 rounded-[5px] bg-well text-inkMuted text-[11px]">${vaultTab === 'backburner' ? 'Backburner' : 'Archived'}</span>
+            </div>
+            <div class="text-[13.5px] font-semibold text-ink">${v.title}</div>
+            <p class="text-[12px] text-inkSecondary">${v.summary}</p>
+            <div class="flex justify-end pt-1">
+              <button onclick="restoreFromVault('${v.id}')"
+                      class="tactile px-3 py-1 rounded-[6px] bg-burgundyWash hover:bg-burgundy hover:text-ivory text-burgundy text-[12px] font-medium">
+                Restore to active priority
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function restoreFromVault(vaultId) {
+      const idx = VAULT_ITEMS.findIndex(v => v.id === vaultId);
+      if (idx === -1) return;
+      const v = VAULT_ITEMS.splice(idx, 1)[0];
+      ISSUES.unshift({
+        id: v.id,
+        code: v.code,
+        shortSlug: v.shortSlug || 'restored-item',
+        projectId: v.projectId,
+        title: v.title,
+        priority: 'high',
+        confidence: '95%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Optimization',
+        crossRepoDep: null,
+        x: 440,
+        y: 265,
+        summary: v.summary,
+        videoCount: 0,
+        imageCount: 0,
+        linkCount: 1,
+        steps: [{ num: 1, title: 'Restored from backburner vault', status: 'In progress', detail: 'Active.' }],
+        assets: [],
+        comments: []
+      });
+      refreshAllViews();
+      showToast(`Restored "${v.title}" to active priority`);
+    }
+
+    // -----------------------------------------------------------------------
+    // 7. WORKSPACE 2: IDEATION (n8n-Style Spatial Canvas + Simplified List)
+    // -----------------------------------------------------------------------
+    function renderCanvasCategoryFilterBar() {
+      const bar = document.getElementById('canvas-category-filter-bar');
+      if (!bar) return;
+      const categories = ['All', 'Steal from niche', 'Bug hunt', 'Optimization', 'Curiosity', 'Sticky notes'];
+      bar.innerHTML = categories.map(cat => {
+        const active = selectedCategoryFilter === cat;
+        return `
+          <button onclick="selectedCategoryFilter='${cat}'; refreshAllViews();"
+                  class="tactile px-2.5 py-1 rounded-[6px] ${active ? 'bg-ivory text-ink shadow-sm font-semibold' : 'text-inkSecondary hover:text-ink'}">
+            ${cat}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function setIdeationMode(mode) {
+      ideationMode = mode;
+      const cViewport = document.getElementById('ideation-canvas-viewport');
+      const lViewport = document.getElementById('ideation-list-viewport');
+
+      if (mode === 'canvas') {
+        cViewport.classList.remove('hidden');
+        lViewport.classList.add('hidden');
+        requestAnimationFrame(drawSpatialCanvasWires);
+      } else {
+        cViewport.classList.add('hidden');
+        lViewport.classList.remove('hidden');
+        renderIdeationSimplifiedView();
+      }
+      lucide.createIcons();
+    }
+
+    function renderIdeationSpatialCanvas() {
+      const nodesLayer = document.getElementById('ideation-canvas-nodes');
+      if (!nodesLayer) return;
+
+      const items = getFilteredIssues();
+
+      nodesLayer.innerHTML = items.map(item => {
+        const proj = getProject(item.projectId);
+        const prio = PRIORITY_META[item.priority] || PRIORITY_META.normal;
+        const isSelected = inspectedIssueId === item.id;
+        const menuOpen = openNodeMenuId === item.id;
+
+        return `
+          <div id="spatial-node-${item.id}"
+               data-node-id="${item.id}"
+               style="left: ${item.x}px; top: ${item.y}px;"
+               class="canvas-node-wrapper ${isSelected ? 'node-selected' : ''} absolute w-[250px] select-none">
+
+            <!-- n8n-Style Floating Hover Action Bar (8px above top-right of node) -->
+            <div onmousedown="event.stopPropagation()"
+                 class="node-hover-bar absolute -top-[38px] right-0 z-30 popover-surface px-1.5 py-1 flex items-center gap-1">
+              <button onclick="spawnConnectedSubStep('${item.id}', event)"
+                      title="+ Sub-step (spawns connected child node)"
+                      class="tactile px-1.5 py-0.5 rounded-[5px] hover:bg-burgundyWash text-burgundy text-[11px] font-medium flex items-center gap-0.5">
+                <i data-lucide="plus" class="w-3 h-3"></i>
+                <span>Sub-step</span>
+              </button>
+              <button onclick="cycleIssuePriority('${item.id}', event)"
+                      title="Cycle priority (${prio.label})"
+                      class="tactile p-1 rounded-[5px] hover:bg-well text-inkSecondary hover:text-ink">
+                <i data-lucide="flag" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="sendIssueToVault('${item.id}', 'backburner', event)"
+                      title="Move to backburner"
+                      class="tactile p-1 rounded-[5px] hover:bg-terracottaWash text-inkSecondary hover:text-terracotta">
+                <i data-lucide="archive" class="w-3.5 h-3.5"></i>
+              </button>
+              <div class="relative">
+                <button onclick="toggleNodeMoreMenu('${item.id}', event)"
+                        title="More actions"
+                        class="tactile p-1 rounded-[5px] hover:bg-well text-inkSecondary hover:text-ink">
+                  <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
+                </button>
+                ${menuOpen ? `
+                  <div onclick="event.stopPropagation()"
+                       class="popover-surface absolute right-0 top-7 w-[175px] p-1 z-50 space-y-0.5 text-[11.5px]">
+                    <button onclick="duplicateCanvasNode('${item.id}', event)" class="w-full text-left px-2.5 py-1.5 rounded-[5px] hover:bg-well text-ink">
+                      Duplicate node
+                    </button>
+                    <button onclick="copyGitHubLink('${item.code}', event)" class="w-full text-left px-2.5 py-1.5 rounded-[5px] hover:bg-well text-ink">
+                      Copy GitHub link
+                    </button>
+                    <button onclick="deleteCanvasNode('${item.id}', event)" class="w-full text-left px-2.5 py-1.5 rounded-[5px] hover:bg-crimsonWash text-crimson">
+                      Delete node
+                    </button>
+                  </div>
+                ` : ''}
+              </div>
+            </div>
+
+            <!-- Left Input Port -->
+            <div data-port="input" data-node-id="${item.id}"
+                 title="Input port"
+                 class="node-port absolute -left-[6px] top-1/2 -translate-y-1/2 z-20 cursor-crosshair"></div>
+
+            <!-- Right Output Port -->
+            <div data-port="output" data-node-id="${item.id}"
+                 title="Drag to connect to another node"
+                 class="node-port absolute -right-[6px] top-1/2 -translate-y-1/2 z-20 cursor-crosshair flex items-center justify-center text-[9px] font-mono text-burgundy hover:text-ivory">+</div>
+
+            <!-- Compact 250px n8n-Style Node Body -->
+            <div class="node-card-body ${item.isStickyNote ? 'bg-stickyBg border border-stickyBorder rounded-[10px]' : 'card-interactive'} p-3 cursor-grab active:cursor-grabbing space-y-2">
+
+              <!-- 1. Top Row: Project Dot + Short Slug (parris-cmp · #142) + Priority Dot -->
+              <div class="flex items-center justify-between text-[11px]">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="w-2.5 h-2.5 rounded-[3px] shrink-0" style="background-color: ${proj.color};"></span>
+                  <span class="font-mono font-medium text-inkSecondary truncate">${item.code}</span>
+                </div>
+                <span class="flex items-center gap-1 text-[10.5px] font-medium text-inkSecondary" title="Auto-picked priority: ${prio.label}">
+                  <span class="w-2 h-2 rounded-[3px]" style="background-color: ${prio.dot};"></span>
+                  <span>${prio.label}</span>
+                </span>
+              </div>
+
+              <!-- 2. Center: Clean 1-to-2 Line Title -->
+              <div class="text-[13px] font-semibold text-ink line-clamp-2 leading-snug min-h-[35px]">
+                ${item.title}
+              </div>
+
+              <!-- 3. Bottom Footer: Attached Resource Icons (video, screenshots, steps) + Status -->
+              <div class="pt-1.5 flex items-center justify-between text-[10.5px] text-inkMuted" style="border-top: 1px solid rgba(24,22,19,0.06);">
+                <div class="flex items-center gap-2 font-mono">
+                  ${item.videoCount ? `<span class="flex items-center gap-0.5 text-burgundy"><i data-lucide="video" class="w-3 h-3"></i>${item.videoCount}</span>` : ''}
+                  ${item.imageCount ? `<span class="flex items-center gap-0.5 text-inkSecondary"><i data-lucide="image" class="w-3 h-3"></i>${item.imageCount}</span>` : ''}
+                  <span class="flex items-center gap-0.5 text-inkSecondary"><i data-lucide="git-commit" class="w-3 h-3"></i>${(item.steps || []).length} steps</span>
+                </div>
+                <span class="px-1.5 py-0.2 rounded-[4px] ${item.statusLabel === 'Blocked' ? 'bg-burgundyWash text-burgundy' : 'bg-well text-inkSecondary'} font-medium">
+                  ${item.statusLabel}
+                </span>
+              </div>
+
+            </div>
+
+          </div>
+        `;
+      }).join('');
+
+      lucide.createIcons();
+      requestAnimationFrame(drawSpatialCanvasWires);
+    }
+
+    function drawSpatialCanvasWires() {
+      const svg = document.getElementById('ideation-canvas-svg');
+      const labelsLayer = document.getElementById('ideation-wire-labels');
+      if (!svg || !labelsLayer) return;
+
+      const visibleIds = new Set(getFilteredIssues().map(i => i.id));
+      let pathsHtml = '';
+      let labelsHtml = '';
+
+      CANVAS_LINKS.forEach(lnk => {
+        if (!visibleIds.has(lnk.from) || !visibleIds.has(lnk.to)) return;
+        const fromNode = ISSUES.find(i => i.id === lnk.from);
+        const toNode = ISSUES.find(i => i.id === lnk.to);
+        if (!fromNode || !toNode) return;
+
+        const x1 = fromNode.x + 250;
+        const y1 = fromNode.y + 52;
+        const x2 = toNode.x;
+        const y2 = toNode.y + 52;
+
+        const dx = Math.max(Math.abs(x2 - x1) * 0.45, 48);
+        const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+        const isCrossRepo = fromNode.projectId !== toNode.projectId;
+        const color = isCrossRepo ? '#C85A28' : '#7C1D2E';
+
+        pathsHtml += `
+          <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-opacity="0.78"
+                class="${isCrossRepo ? 'wire-animated' : ''}" />
+          <circle cx="${x1}" cy="${y1}" r="3.5" fill="${color}" />
+          <circle cx="${x2}" cy="${y2}" r="3.5" fill="${color}" />
+        `;
+
+        if (isCrossRepo) {
+          const midX = (x1 + x2) / 2;
+          const midY = (y1 + y2) / 2 - 10;
+          labelsHtml += `
+            <div style="left: ${midX}px; top: ${midY}px; transform: translate(-50%, -50%);"
+                 class="absolute px-2 py-0.5 rounded-[5px] bg-terracottaWash text-terracotta border border-terracottaBorder font-mono text-[10px] shadow-sm whitespace-nowrap">
+              Cross-project link
+            </div>
+          `;
+        }
+      });
+
+      if (activeWireDrag) {
+        const { startX, startY, currX, currY } = activeWireDrag;
+        const dx = Math.max(Math.abs(currX - startX) * 0.45, 40);
+        const d = `M ${startX} ${startY} C ${startX + dx} ${startY}, ${currX - dx} ${currY}, ${currX} ${currY}`;
+        pathsHtml += `<path d="${d}" fill="none" stroke="#7C1D2E" stroke-width="2.2" class="wire-animated" />`;
+      }
+
+      svg.innerHTML = pathsHtml;
+      labelsLayer.innerHTML = labelsHtml;
+    }
+
+    // Natural Pan & Zoom Physics Engine (Two-finger scroll pans; Pinch/Ctrl+wheel zooms around cursor)
+    function initSpatialCanvasEngine() {
+      const viewport = document.getElementById('ideation-canvas-viewport');
+      const plane = document.getElementById('ideation-canvas-plane');
+      if (!viewport || !plane) return;
+
+      updateCanvasTransform();
+
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        if (e.ctrlKey || e.metaKey) {
+          const rect = viewport.getBoundingClientRect();
+          const cursorX = e.clientX - rect.left;
+          const cursorY = e.clientY - rect.top;
+          const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
+          const nextScale = Math.min(1.65, Math.max(0.45, canvasScale * zoomFactor));
+
+          canvasPanX = cursorX - ((cursorX - canvasPanX) * (nextScale / canvasScale));
+          canvasPanY = cursorY - ((cursorY - canvasPanY) * (nextScale / canvasScale));
+          canvasScale = nextScale;
+        } else {
+          canvasPanX -= e.deltaX;
+          canvasPanY -= e.deltaY;
+        }
+        updateCanvasTransform();
+      }, { passive: false });
+
+      viewport.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button')) return;
+
+        // 1. Output Port Drag -> Draw live SVG cable
+        const outPort = e.target.closest('[data-port="output"]');
+        if (outPort) {
+          e.stopPropagation();
+          const fromId = outPort.dataset.nodeId;
+          const fromNode = ISSUES.find(i => i.id === fromId);
+          if (!fromNode) return;
+          activeWireDrag = {
+            fromId,
+            startX: fromNode.x + 250,
+            startY: fromNode.y + 52,
+            currX: fromNode.x + 250,
+            currY: fromNode.y + 52
+          };
+          return;
+        }
+
+        // 2. Click on empty canvas OR Middle-mouse drag -> Pan canvas naturally
+        const nodeEl = e.target.closest('.canvas-node-wrapper');
+        if (e.button === 1 || (e.button === 0 && !nodeEl)) {
+          e.preventDefault();
+          isPanningCanvas = true;
+          panStartX = e.clientX;
+          panStartY = e.clientY;
+          panOriginX = canvasPanX;
+          panOriginY = canvasPanY;
+          return;
+        }
+
+        // 3. Left-click on node -> Drag node or Single-click to open Right Side Inspector Window
+        if (e.button === 0 && nodeEl) {
+          const id = nodeEl.dataset.nodeId;
+          const issue = ISSUES.find(i => i.id === id);
+          if (!issue) return;
+          draggingNode = {
+            id,
+            el: nodeEl,
+            startX: e.clientX,
+            startY: e.clientY,
+            origX: issue.x,
+            origY: issue.y,
+            moved: false
+          };
+        }
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (isPanningCanvas) {
+          canvasPanX = panOriginX + (e.clientX - panStartX);
+          canvasPanY = panOriginY + (e.clientY - panStartY);
+          updateCanvasTransform();
+          return;
+        }
+
+        if (activeWireDrag) {
+          const rect = viewport.getBoundingClientRect();
+          activeWireDrag.currX = (e.clientX - rect.left - canvasPanX) / canvasScale;
+          activeWireDrag.currY = (e.clientY - rect.top - canvasPanY) / canvasScale;
+          requestAnimationFrame(drawSpatialCanvasWires);
+          return;
+        }
+
+        if (draggingNode) {
+          const dx = (e.clientX - draggingNode.startX) / canvasScale;
+          const dy = (e.clientY - draggingNode.startY) / canvasScale;
+          if (Math.abs(dx) > 4 || Math.abs(dy) > 4) {
+            draggingNode.moved = true;
+          }
+          const nx = Math.max(20, Math.round(draggingNode.origX + dx));
+          const ny = Math.max(20, Math.round(draggingNode.origY + dy));
+          draggingNode.el.style.left = `${nx}px`;
+          draggingNode.el.style.top = `${ny}px`;
+
+          const item = ISSUES.find(i => i.id === draggingNode.id);
+          if (item) {
+            item.x = nx;
+            item.y = ny;
+          }
+          requestAnimationFrame(drawSpatialCanvasWires);
+        }
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        if (isPanningCanvas) {
+          isPanningCanvas = false;
+          return;
+        }
+
+        if (activeWireDrag) {
+          const targetEl = e.target.closest('.canvas-node-wrapper');
+          if (targetEl) {
+            const toId = targetEl.dataset.nodeId;
+            if (toId && toId !== activeWireDrag.fromId) {
+              const exists = CANVAS_LINKS.some(l => l.from === activeWireDrag.fromId && l.to === toId);
+              if (!exists) {
+                const a = ISSUES.find(i => i.id === activeWireDrag.fromId);
+                const b = ISSUES.find(i => i.id === toId);
+                CANVAS_LINKS.push({ id: 'lnk-' + Date.now(), from: a.id, to: b.id });
+                if (a.projectId !== b.projectId) {
+                  b.crossRepoDep = `Depends on ${a.code}`;
+                }
+                showToast(`Connected ${a.code} -> ${b.code}`);
+              }
+            }
+          }
+          activeWireDrag = null;
+          refreshAllViews();
+          return;
+        }
+
+        if (draggingNode) {
+          const { id, moved } = draggingNode;
+          draggingNode = null;
+          if (!moved) {
+            openRightSideDrawer(id);
+          }
+        }
+      });
+
+      // Double-click node -> Open Full-Screen Deep-Dive Modal
+      viewport.addEventListener('dblclick', (e) => {
+        const nodeEl = e.target.closest('.canvas-node-wrapper');
+        if (nodeEl) {
+          e.stopPropagation();
+          openStudioModal(nodeEl.dataset.nodeId);
+        }
+      });
+    }
+
+    function updateCanvasTransform() {
+      const plane = document.getElementById('ideation-canvas-plane');
+      const readout = document.getElementById('canvas-zoom-readout');
+      if (plane) {
+        plane.style.transform = `translate3d(${Math.round(canvasPanX)}px, ${Math.round(canvasPanY)}px, 0px) scale(${canvasScale.toFixed(2)})`;
+      }
+      if (readout) {
+        readout.textContent = `${Math.round(canvasScale * 100)}%`;
+      }
+    }
+
+    function zoomCanvasBy(delta) {
+      canvasScale = Math.min(1.65, Math.max(0.45, canvasScale + delta));
+      updateCanvasTransform();
+    }
+
+    function resetCanvasView() {
+      canvasPanX = 24;
+      canvasPanY = 56;
+      canvasScale = 1.0;
+      updateCanvasTransform();
+    }
+
+    function fitAllCanvasNodes() {
+      canvasPanX = 36;
+      canvasPanY = 64;
+      canvasScale = 0.85;
+      updateCanvasTransform();
+      showToast('Zoomed to fit all project clusters');
+    }
+
+    function autoLayoutCanvasNodes() {
+      const visible = getFilteredIssues();
+      visible.forEach((item, idx) => {
+        const col = idx % 3;
+        const row = Math.floor(idx / 3);
+        item.x = 60 + col * 380;
+        item.y = 60 + row * 205;
+      });
+      resetCanvasView();
+      renderIdeationSpatialCanvas();
+      showToast('Auto-spaced nodes (380px horizontal · 205px vertical gap)');
+    }
+
+    function spawnConnectedSubStep(parentId, event) {
+      if (event) event.stopPropagation();
+      const parent = ISSUES.find(i => i.id === parentId);
+      if (!parent) return;
+      const proj = getProject(parent.projectId);
+      const num = 165 + ISSUES.length;
+      const newId = `${proj.shortPrefix}-${num}`;
+      const child = {
+        id: newId,
+        code: `${proj.repoName} · #${num}`,
+        shortSlug: `${proj.shortPrefix}-step-${num}`,
+        projectId: parent.projectId,
+        title: `Sub-step: Verify output & edge cases for ${parent.shortSlug}`,
+        priority: parent.priority,
+        confidence: '95%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Optimization',
+        crossRepoDep: null,
+        x: parent.x + 360,
+        y: parent.y + 30,
+        summary: `Connected sub-step spawned from ${parent.code}.`,
+        videoCount: 0,
+        imageCount: 1,
+        linkCount: 0,
+        steps: [{ num: 1, title: 'Verify edge cases & attach screenshot artifact', status: 'In progress', detail: 'Active.' }],
+        assets: [],
+        comments: []
+      };
+      ISSUES.push(child);
+      CANVAS_LINKS.push({ id: 'lnk-' + Date.now(), from: parent.id, to: child.id });
+      refreshAllViews();
+      openRightSideDrawer(child.id);
+      showToast(`Spawned connected sub-step ${child.code}`);
+    }
+
+    function toggleNodeMoreMenu(issueId, event) {
+      if (event) event.stopPropagation();
+      openNodeMenuId = openNodeMenuId === issueId ? null : issueId;
+      renderIdeationSpatialCanvas();
+    }
+
+    function duplicateCanvasNode(issueId, event) {
+      if (event) event.stopPropagation();
+      const orig = ISSUES.find(i => i.id === issueId);
+      if (!orig) return;
+      const proj = getProject(orig.projectId);
+      const num = 170 + ISSUES.length;
+      const copy = JSON.parse(JSON.stringify(orig));
+      copy.id = `${proj.shortPrefix}-${num}`;
+      copy.code = `${proj.repoName} · #${num}`;
+      copy.shortSlug = `${orig.shortSlug}-copy`;
+      copy.x = orig.x + 40;
+      copy.y = orig.y + 40;
+      ISSUES.push(copy);
+      openNodeMenuId = null;
+      refreshAllViews();
+      showToast(`Duplicated node as ${copy.code}`);
+    }
+
+    function copyGitHubLink(code, event) {
+      if (event) event.stopPropagation();
+      openNodeMenuId = null;
+      renderIdeationSpatialCanvas();
+      showToast(`Copied GitHub link for ${code}`);
+    }
+
+    function deleteCanvasNode(issueId, event) {
+      if (event) event.stopPropagation();
+      ISSUES = ISSUES.filter(i => i.id !== issueId);
+      CANVAS_LINKS = CANVAS_LINKS.filter(l => l.from !== issueId && l.to !== issueId);
+      if (inspectedIssueId === issueId) closeRightSideDrawer();
+      openNodeMenuId = null;
+      refreshAllViews();
+      showToast('Removed node from canvas');
+    }
+
+    function addCanvasStickyNote() {
+      const projId = selectedProjectFilter !== 'all' ? selectedProjectFilter : 'workflows-hq';
+      const num = ISSUES.length + 1;
+      const note = {
+        id: 'note-' + Date.now(),
+        code: `workflows-hq · note-${num}`,
+        shortSlug: `sticky-note-${num}`,
+        projectId: projId,
+        title: 'Sticky note: Capture freeform thoughts, links, or niche ideas here',
+        priority: 'normal',
+        confidence: '100%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Sticky notes',
+        isStickyNote: true,
+        crossRepoDep: null,
+        x: Math.max(60, Math.round((-canvasPanX + 260) / canvasScale)),
+        y: Math.max(60, Math.round((-canvasPanY + 180) / canvasScale)),
+        summary: 'Warm sand sticky note dropped onto the spatial canvas.',
+        videoCount: 0,
+        imageCount: 0,
+        linkCount: 0,
+        steps: [],
+        assets: [],
+        comments: []
+      };
+      ISSUES.unshift(note);
+      refreshAllViews();
+      openRightSideDrawer(note.id);
+      showToast('Dropped warm sticky note onto canvas');
+    }
+
+    function openCanvasMediaPrompt() {
+      document.getElementById('media-attach-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeCanvasMediaPrompt() {
+      document.getElementById('media-attach-modal').classList.add('hidden');
+    }
+
+    function confirmCanvasMediaNode() {
+      const titleInp = document.getElementById('media-node-title');
+      const urlInp = document.getElementById('media-node-url');
+      const title = titleInp.value.trim() || 'Steal interactive timeline scrubber from video editors';
+      const url = urlInp.value.trim() || 'youtube.com/watch?v=timeline-scrubber-ux';
+
+      const projId = selectedProjectFilter !== 'all' ? selectedProjectFilter : 'parris-cmp';
+      const proj = getProject(projId);
+      const num = 175 + ISSUES.length;
+      const isVid = url.toLowerCase().includes('youtube') || url.toLowerCase().includes('watch');
+
+      const newNode = {
+        id: `${proj.shortPrefix}-${num}`,
+        code: `${proj.repoName} · #${num}`,
+        shortSlug: `${proj.shortPrefix}-idea-${num}`,
+        projectId: projId,
+        title,
+        priority: 'high',
+        confidence: '96%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Steal from niche',
+        crossRepoDep: null,
+        x: Math.max(60, Math.round((-canvasPanX + 320) / canvasScale)),
+        y: Math.max(60, Math.round((-canvasPanY + 180) / canvasScale)),
+        summary: `Attached resource: ${url}`,
+        videoCount: isVid ? 1 : 0,
+        imageCount: isVid ? 0 : 1,
+        linkCount: 1,
+        steps: [{ num: 1, title: 'Review attached reference media & extract pattern', status: 'In progress', detail: 'Active.' }],
+        assets: [{ kind: isVid ? 'video' : 'image', title: url, url, note: 'Attached onto spatial canvas.' }],
+        comments: []
+      };
+
+      ISSUES.unshift(newNode);
+      titleInp.value = '';
+      urlInp.value = '';
+      closeCanvasMediaPrompt();
+      refreshAllViews();
+      openRightSideDrawer(newNode.id);
+      showToast(`Added ${newNode.code} with attached media`);
+    }
+
+    function sendIssueToVault(issueId, vaultType, event) {
+      if (event) event.stopPropagation();
+      const idx = ISSUES.findIndex(i => i.id === issueId);
+      if (idx === -1) return;
+      const item = ISSUES.splice(idx, 1)[0];
+      VAULT_ITEMS.unshift({
+        id: 'v-' + Date.now(),
+        code: item.code,
+        shortSlug: item.shortSlug,
+        projectId: item.projectId,
+        title: item.title,
+        priority: item.priority,
+        vaultType,
+        summary: item.summary
+      });
+      if (inspectedIssueId === issueId) closeRightSideDrawer();
+      openNodeMenuId = null;
+      refreshAllViews();
+      showToast(`Moved "${item.shortSlug}" to ${vaultType}`);
+    }
+
+    // Mode 2B: Simplified Ideation List View
+    function renderIdeationSimplifiedView() {
+      const container = document.getElementById('ideation-simplified-groups');
+      if (!container) return;
+
+      const categories = ['Steal from niche', 'Optimization', 'Bug hunt', 'Curiosity', 'Sticky notes'];
+      const items = getFilteredIssues();
+
+      container.innerHTML = categories.map(cat => {
+        const group = items.filter(i => i.category === cat);
+        if (group.length === 0) return '';
+        return `
+          <div class="card-surface overflow-hidden">
+            <div class="px-4 py-3 bg-well/60 flex items-center justify-between" style="border-bottom: 1px solid rgba(24,22,19,0.06);">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-[3px] bg-burgundy"></span>
+                <span class="text-[13.5px] font-semibold text-ink">${cat}</span>
+              </div>
+              <span class="font-mono text-[11.5px] text-inkSecondary">${group.length} item${group.length === 1 ? '' : 's'}</span>
+            </div>
+
+            <div class="divide-y divide-stone-200/60">
+              ${group.map(item => {
+                const proj = getProject(item.projectId);
+                const prio = PRIORITY_META[item.priority] || PRIORITY_META.normal;
+                return `
+                  <div onclick="openRightSideDrawer('${item.id}', event)"
+                       ondblclick="openStudioModal('${item.id}', event)"
+                       class="px-4 py-3.5 hover:bg-paper/70 transition cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                      <span class="px-2 py-0.5 rounded-[5px] text-[11px] font-medium shrink-0 ${prio.badge}">${prio.label}</span>
+                      <span class="font-mono text-[12px] text-inkSecondary shrink-0">${item.code}</span>
+                      <div class="min-w-0 flex-1">
+                        <div class="text-[13.5px] font-semibold text-ink truncate">${item.title}</div>
+                        <div class="text-[12px] text-inkSecondary truncate">${item.summary}</div>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 shrink-0">
+                      <span class="px-2 py-0.5 rounded-[5px] bg-well text-inkSecondary text-[11.5px]">${proj.label}</span>
+                      <button onclick="promoteIdeaToActive('${item.id}', event)"
+                              class="tactile px-2.5 py-1 rounded-[6px] bg-burgundyWash text-burgundy text-[11.5px] font-medium">
+                        Promote to active plan
+                      </button>
+                      <button onclick="sendIssueToVault('${item.id}', 'backburner', event)"
+                              class="tactile px-2.5 py-1 rounded-[6px] bg-well hover:bg-terracottaWash text-inkSecondary hover:text-terracotta text-[11.5px]">
+                        Backburner
+                      </button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function submitSimplifiedListIdea() {
+      const titleInp = document.getElementById('list-quick-title');
+      const urlInp = document.getElementById('list-quick-url');
+      if (!titleInp || !titleInp.value.trim()) return;
+      const title = titleInp.value.trim();
+      const url = urlInp ? urlInp.value.trim() : '';
+
+      const projId = selectedProjectFilter !== 'all' ? selectedProjectFilter : 'parris-cmp';
+      const proj = getProject(projId);
+      const num = 180 + ISSUES.length;
+      const isVid = url.toLowerCase().includes('youtube');
+
+      ISSUES.unshift({
+        id: `${proj.shortPrefix}-${num}`,
+        code: `${proj.repoName} · #${num}`,
+        shortSlug: `${proj.shortPrefix}-list-${num}`,
+        projectId: projId,
+        title,
+        priority: 'high',
+        confidence: '95%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Steal from niche',
+        crossRepoDep: null,
+        x: 440,
+        y: 265,
+        summary: url ? `Attached reference: ${url}` : title,
+        videoCount: isVid ? 1 : 0,
+        imageCount: url && !isVid ? 1 : 0,
+        linkCount: url ? 1 : 0,
+        steps: [{ num: 1, title: 'Scope idea & linked references', status: 'In progress', detail: 'Added from list.' }],
+        assets: url ? [{ kind: isVid ? 'video' : 'image', title: url, url, note: 'Attached in Simplified list.' }] : [],
+        comments: []
+      });
+
+      titleInp.value = '';
+      if (urlInp) urlInp.value = '';
+      refreshAllViews();
+      showToast('Added idea to list & spatial canvas');
+    }
+
+    function promoteIdeaToActive(issueId, event) {
+      if (event) event.stopPropagation();
+      const item = ISSUES.find(i => i.id === issueId);
+      if (!item) return;
+      item.stage = 'in_progress';
+      item.statusLabel = 'Planned';
+      refreshAllViews();
+      showToast(`Promoted "${item.shortSlug}" into active plan`);
+    }
+
+    // -----------------------------------------------------------------------
+    // 8. RIGHT SIDE INSPECTOR WINDOW (Single-Click) & FULL-SCREEN MODAL (Double-Click)
+    // -----------------------------------------------------------------------
+    function openRightSideDrawer(issueId, event) {
+      if (event) event.stopPropagation();
+      closeBackburnerDrawer();
+      inspectedIssueId = issueId;
+      document.getElementById('right-side-drawer').classList.remove('hidden');
+      renderRightSideDrawerContent(issueId);
+      renderIdeationSpatialCanvas();
+      lucide.createIcons();
+    }
+
+    function closeRightSideDrawer() {
+      inspectedIssueId = null;
+      document.getElementById('right-side-drawer').classList.add('hidden');
+      renderIdeationSpatialCanvas();
+    }
+
+    function renderRightSideDrawerContent(issueId) {
+      const container = document.getElementById('right-side-drawer-body');
+      const item = ISSUES.find(i => i.id === issueId);
+      if (!container || !item) return;
+
+      const proj = getProject(item.projectId);
+      const prio = PRIORITY_META[item.priority] || PRIORITY_META.normal;
+
+      container.innerHTML = `
+        <div class="flex items-center justify-between pb-3" style="border-bottom: 1px solid rgba(24,22,19,0.08);">
+          <div class="flex items-center gap-2">
+            <span class="w-2.5 h-2.5 rounded-[3px]" style="background-color: ${proj.color};"></span>
+            <span class="font-mono text-[12px] font-medium text-inkSecondary">${item.code}</span>
+            <button onclick="cycleIssuePriority('${item.id}', event)" class="px-2 py-0.2 rounded-[5px] text-[11px] font-medium ${prio.badge}">
+              ${prio.label} (${item.confidence})
+            </button>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="openStudioModal('${item.id}', event)"
+                    class="tactile px-2.5 py-1 rounded-[6px] bg-burgundyWash text-burgundy text-[12px] font-medium flex items-center gap-1">
+              <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+              <span>Full screen</span>
+            </button>
+            <button onclick="closeRightSideDrawer()" class="tactile p-1.5 rounded-[6px] bg-well text-inkSecondary hover:text-ink">
+              <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="space-y-2 select-text">
+          <h2 class="text-[16.5px] font-semibold text-ink leading-snug">${item.title}</h2>
+          <p class="text-[13px] text-inkSecondary leading-relaxed">${item.summary}</p>
+        </div>
+
+        <!-- Quick Actions Bar -->
+        <div class="well-tag p-2.5 flex items-center justify-between text-[12px]">
+          <span class="text-inkSecondary font-medium">${proj.label} · ${item.category}</span>
+          <div class="flex items-center gap-1.5">
+            <button onclick="sendIssueToVault('${item.id}', 'backburner', event)" class="tactile px-2.5 py-1 rounded-[5px] bg-ivory text-terracotta font-medium shadow-sm">Backburner</button>
+            <button onclick="sendIssueToVault('${item.id}', 'archived', event)" class="tactile px-2.5 py-1 rounded-[5px] bg-ivory text-inkSecondary font-medium shadow-sm">Archive</button>
+          </div>
+        </div>
+
+        <!-- + Attach Resource (YouTube, Image, URL) Bar Inside Side Window -->
+        <div class="space-y-2.5">
+          <div class="text-[12.5px] font-semibold text-ink">Attached resources & HTML previews (${(item.assets || []).length})</div>
+          <div class="flex items-center gap-1.5">
+            <input id="drawer-new-asset" type="text"
+                   placeholder="Attach YouTube URL, screenshot, or website..."
+                   onkeydown="if(event.key === 'Enter') attachAssetToIssue('${item.id}', 'drawer-new-asset')"
+                   class="flex-1 well-tag px-2.5 py-1.5 text-[12px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+            <button onclick="attachAssetToIssue('${item.id}', 'drawer-new-asset')"
+                    class="tactile px-2.5 py-1.5 rounded-[6px] bg-burgundy text-ivory text-[12px] font-medium shrink-0">
+              + Attach
+            </button>
+          </div>
+          <div class="space-y-2">
+            ${(item.assets || []).map(a => `
+              <div class="well-surface p-3 space-y-1">
+                <div class="text-[12.5px] font-semibold text-burgundy flex items-center gap-1.5">
+                  <i data-lucide="${a.kind === 'video' ? 'video' : a.kind === 'image' ? 'image' : 'link-2'}" class="w-3.5 h-3.5 shrink-0"></i>
+                  <span class="truncate">${a.title}</span>
+                </div>
+                <p class="text-[11.5px] text-inkSecondary">${a.note}</p>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Checklist of Planned Steps -->
+        <div class="space-y-2">
+          <div class="text-[12.5px] font-semibold text-ink">Planned execution steps (${(item.steps || []).length})</div>
+          <div class="space-y-2">
+            ${(item.steps || []).map(st => `
+              <div class="card-surface p-3 space-y-1">
+                <div class="flex items-center justify-between text-[11px]">
+                  <span class="font-mono text-inkMuted">Step ${st.num}</span>
+                  <span class="px-1.5 py-0.2 rounded-[4px] bg-well text-inkSecondary font-medium">${st.status}</span>
+                </div>
+                <div class="text-[13px] font-semibold text-ink">${st.title}</div>
+                <div class="text-[11.5px] text-inkSecondary">${st.detail}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <!-- Linked Discussion Comments -->
+        <div class="space-y-2">
+          <div class="text-[12.5px] font-semibold text-ink">Linked discussion comments</div>
+          <div class="space-y-2">
+            ${(item.comments || []).map(c => `
+              <div class="well-tag p-2.5 text-[12px] space-y-0.5">
+                <div class="flex justify-between font-medium text-ink"><span>${c.author}</span><span class="font-mono text-[11px] text-inkMuted">${c.time}</span></div>
+                <p class="text-inkSecondary">${c.text}</p>
+              </div>
+            `).join('')}
+          </div>
+          <div class="flex gap-1.5">
+            <input id="drawer-comment-input" type="text" placeholder="Add a discussion note..."
+                   onkeydown="if(event.key === 'Enter') addDrawerComment('${item.id}')"
+                   class="flex-1 well-tag px-2.5 py-1.5 text-[12px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+            <button onclick="addDrawerComment('${item.id}')" class="tactile px-3 py-1.5 rounded-[6px] bg-wellDeep text-ink text-[12px] font-medium">Post</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function attachAssetToIssue(issueId, inputId, reopenModal = false) {
+      const inp = document.getElementById(inputId);
+      if (!inp || !inp.value.trim()) return;
+      const val = inp.value.trim();
+      const item = ISSUES.find(i => i.id === issueId);
+      if (!item) return;
+
+      const isVid = val.toLowerCase().includes('youtube') || val.toLowerCase().includes('watch');
+      if (isVid) item.videoCount++; else item.imageCount++;
+      item.assets.unshift({
+        kind: isVid ? 'video' : 'image',
+        title: val,
+        url: val,
+        note: 'Attached via inspector.'
+      });
+      inp.value = '';
+      refreshAllViews();
+      if (reopenModal) openStudioModal(issueId);
+      showToast(`Attached resource to ${item.code}`);
+    }
+
+    function addDrawerComment(issueId) {
+      const inp = document.getElementById('drawer-comment-input');
+      if (!inp || !inp.value.trim()) return;
+      const item = ISSUES.find(i => i.id === issueId);
+      if (!item) return;
+      item.comments.push({ author: 'Lucas · Lead', time: 'Just now', text: inp.value.trim() });
+      inp.value = '';
+      refreshAllViews();
+      showToast('Comment posted');
+    }
+
+    // Double-Click Node -> Full-Screen Deep-Dive Workspace Modal
+    function openStudioModal(issueId, event) {
+      if (event) event.stopPropagation();
+      inspectedIssueId = issueId;
+      const item = ISSUES.find(i => i.id === issueId);
+      if (!item) return;
+      const proj = getProject(item.projectId);
+      const prio = PRIORITY_META[item.priority] || PRIORITY_META.normal;
+
+      const modal = document.getElementById('fullscreen-studio-modal');
+      const dialog = document.getElementById('fullscreen-studio-dialog');
+      modal.classList.remove('hidden');
+
+      dialog.innerHTML = `
+        <div class="px-6 py-4 bg-ivory flex flex-wrap items-center justify-between gap-3 shrink-0" style="border-bottom: 1px solid rgba(24,22,19,0.08);">
+          <div class="flex items-center gap-2.5">
+            <span class="w-3 h-3 rounded-[4px]" style="background-color: ${proj.color};"></span>
+            <span class="font-mono text-[13px] font-medium text-inkSecondary">${item.code}</span>
+            <span class="px-2.5 py-0.5 rounded-[5px] text-[12px] font-medium ${prio.badge}">${prio.label} priority (${item.confidence})</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="sendIssueToVault('${item.id}', 'backburner', event); closeStudioModal();"
+                    class="tactile px-3 py-1.5 rounded-[6px] bg-terracottaWash text-terracotta text-[12.5px] font-medium">
+              Put on backburner
+            </button>
+            <button onclick="closeStudioModal()"
+                    class="tactile px-3 py-1.5 rounded-[6px] bg-well hover:bg-wellDeep text-ink text-[12.5px] font-medium">
+              Close studio (Esc)
+            </button>
+          </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <!-- Left (4 Cols): Interactive Resource Gallery -->
+          <div class="lg:col-span-4 space-y-4">
+            <div class="space-y-1.5 select-text">
+              <h1 class="text-[19px] font-semibold text-ink leading-snug">${item.title}</h1>
+              <p class="text-[13px] text-inkSecondary leading-relaxed">${item.summary}</p>
+            </div>
+
+            <div class="space-y-2.5">
+              <div class="text-[13px] font-semibold text-ink">Interactive resource gallery</div>
+              <div class="flex gap-1.5">
+                <input id="studio-asset-input" type="text" placeholder="Attach YouTube, screenshot, or link..."
+                       onkeydown="if(event.key === 'Enter') attachAssetToIssue('${item.id}', 'studio-asset-input', true)"
+                       class="flex-1 well-tag px-2.5 py-1.5 text-[12px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+                <button onclick="attachAssetToIssue('${item.id}', 'studio-asset-input', true)"
+                        class="tactile px-3 py-1.5 rounded-[6px] bg-burgundy text-ivory text-[12px] font-medium">+ Attach</button>
+              </div>
+              <div class="space-y-2">
+                ${(item.assets || []).map(a => `
+                  <div class="card-surface p-3.5 space-y-1">
+                    <div class="text-[13px] font-semibold text-burgundy">${a.title}</div>
+                    <p class="text-[12px] text-inkSecondary">${a.note}</p>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+
+          <!-- Center (5 Cols): Full Visual Step Waterfall -->
+          <div class="lg:col-span-5 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-[14px] font-semibold text-ink">Visual step waterfall</span>
+              <span class="font-mono text-[11.5px] text-inkMuted">${(item.steps || []).length} steps</span>
+            </div>
+            <div class="canvas-dot-grid p-5 rounded-[10px] space-y-3" style="border: 1px solid rgba(24,22,19,0.07);">
+              ${(item.steps || []).map((st, idx) => `
+                <div class="card-surface p-3.5 space-y-1">
+                  <div class="flex items-center justify-between text-[11.5px]">
+                    <span class="font-mono font-medium text-burgundy">Step ${st.num}</span>
+                    <span class="px-2 py-0.5 rounded-[4px] bg-well text-inkSecondary font-medium">${st.status}</span>
+                  </div>
+                  <div class="text-[14px] font-semibold text-ink">${st.title}</div>
+                  <p class="text-[12px] text-inkSecondary">${st.detail}</p>
+                </div>
+                ${idx < item.steps.length - 1 ? `<div class="flex justify-center"><div class="w-0.5 h-4 bg-burgundy/40"></div></div>` : ''}
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Right (3 Cols): Discussion Thread & Quick Jumps -->
+          <div class="lg:col-span-3 space-y-4">
+            <div class="card-surface p-4 space-y-2.5">
+              <div class="text-[13px] font-semibold text-ink">Connected workflows</div>
+              <button onclick="closeStudioModal(); switchMainTab('decisions');"
+                      class="tactile w-full py-2 px-3 rounded-[6px] bg-terracottaWash text-terracotta text-[12px] font-medium text-left flex items-center justify-between">
+                <span>View in Decisions</span>
+                <span>-></span>
+              </button>
+              <button onclick="closeStudioModal(); switchMainTab('blocked');"
+                      class="tactile w-full py-2 px-3 rounded-[6px] bg-burgundyWash text-burgundy text-[12px] font-medium text-left flex items-center justify-between">
+                <span>View in Blocked station</span>
+                <span>-></span>
+              </button>
+              <button onclick="closeStudioModal(); switchMainTab('discussions');"
+                      class="tactile w-full py-2 px-3 rounded-[6px] bg-well text-ink text-[12px] font-medium text-left flex items-center justify-between">
+                <span>Open Discussion room</span>
+                <span>-></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+      lucide.createIcons();
+    }
+
+    function closeStudioModal() {
+      document.getElementById('fullscreen-studio-modal').classList.add('hidden');
+    }
+
+    // -----------------------------------------------------------------------
+    // 9. WORKSPACE 3: DECISIONS (Left Queue + Right Focused Decision Sheet)
+    // -----------------------------------------------------------------------
+    function renderDecisionsWorkspace() {
+      const queueEl = document.getElementById('decisions-queue-list');
+      const sheetEl = document.getElementById('decision-focused-sheet');
+      if (!queueEl || !sheetEl) return;
+
+      const list = DECISIONS.filter(d => selectedProjectFilter === 'all' || d.projectId === selectedProjectFilter);
+      const active = list.find(d => d.id === activeDecisionId) || list.find(d => !d.resolved) || list[0];
+
+      queueEl.innerHTML = list.map(d => {
+        const proj = getProject(d.projectId);
+        const prio = PRIORITY_META[d.priority] || PRIORITY_META.high;
+        const isCurrent = active && d.id === active.id;
+
+        return `
+          <button onclick="activeDecisionId='${d.id}'; renderDecisionsWorkspace(); lucide.createIcons();"
+                  class="tactile w-full text-left p-3.5 rounded-[10px] ${isCurrent ? 'bg-burgundyWash/90 border border-burgundyBorder' : 'hover:bg-well/70 border border-transparent'} space-y-1.5 transition">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="flex items-center gap-1.5 font-mono font-medium text-inkSecondary">
+                <span class="w-2 h-2 rounded-[3px]" style="background-color: ${proj.color};"></span>
+                ${d.issueCode}
+              </span>
+              <span class="px-1.5 py-0.2 rounded-[4px] text-[10.5px] font-medium ${d.resolved ? 'bg-sageWash text-sage' : prio.badge}">
+                ${d.resolved ? 'Resolved' : prio.label + ' · ' + d.waitTime}
+              </span>
+            </div>
+            <div class="text-[13px] font-semibold text-ink line-clamp-2 leading-snug">${d.question}</div>
+          </button>
+        `;
+      }).join('');
+
+      if (!active) {
+        sheetEl.innerHTML = `<div class="p-8 text-center text-inkSecondary">No decisions pending for this filter.</div>`;
+        return;
+      }
+
+      const proj = getProject(active.projectId);
+      const prio = PRIORITY_META[active.priority] || PRIORITY_META.high;
+
+      sheetEl.innerHTML = `
+        <!-- Header Meta -->
+        <div class="flex flex-wrap items-center justify-between gap-2 pb-3" style="border-bottom: 1px solid rgba(24,22,19,0.08);">
+          <div class="flex items-center gap-2 text-[12px]">
+            <span class="w-2.5 h-2.5 rounded-[4px]" style="background-color: ${proj.color};"></span>
+            <span class="font-medium text-ink">${proj.label}</span>
+            <span class="font-mono text-inkSecondary">(${active.issueCode})</span>
+            <span class="px-2 py-0.5 rounded-[5px] text-[11px] font-medium ${prio.badge}">${prio.label} priority</span>
+          </div>
+          <span class="font-mono text-[11.5px] text-inkMuted">Waiting ${active.waitTime}</span>
+        </div>
+
+        <!-- 1. The Question in Plain English -->
+        <div class="space-y-2 select-text">
+          <h2 class="text-[20px] font-semibold text-ink leading-snug">${active.question}</h2>
+          <!-- 2. Why This Matters -->
+          <p class="text-[13.5px] text-inkSecondary leading-relaxed">${active.whyItMatters}</p>
+        </div>
+
+        <!-- Embedded Side-by-Side Visual Context Preview -->
+        <div class="well-surface p-4 space-y-3">
+          <div class="text-[12px] font-semibold text-burgundy flex items-center gap-1.5">
+            <i data-lucide="eye" class="w-4 h-4"></i>
+            <span>${active.previewTitle}</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="card-surface p-3.5 space-y-1">
+              <div class="text-[12px] font-semibold text-burgundy">${active.previewLeftLabel}</div>
+              <p class="text-[12px] text-inkSecondary">${active.previewLeftBody}</p>
+            </div>
+            <div class="card-surface p-3.5 space-y-1">
+              <div class="text-[12px] font-semibold text-ink">${active.previewRightLabel}</div>
+              <p class="text-[12px] text-inkSecondary">${active.previewRightBody}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. One-Click Decision Cards -->
+        <div class="space-y-2.5">
+          <div class="text-[12px] font-medium text-inkSecondary">Click an option to resolve and advance to the next question:</div>
+          <button onclick="resolveDecisionAndAdvance('${active.id}', 'Option A')"
+                  class="tactile w-full text-left p-4 rounded-[10px] ${active.choice === 'Option A' ? 'bg-burgundy text-ivory' : 'bg-burgundyWash/70 hover:bg-burgundy hover:text-ivory text-ink border border-burgundyBorder'} space-y-1 transition">
+            <div class="text-[14px] font-semibold flex items-center justify-between">
+              <span>${active.optionA.title}</span>
+              <span class="font-mono text-[12px]">Confirm -></span>
+            </div>
+            <p class="text-[12.5px] opacity-85">${active.optionA.desc}</p>
+          </button>
+
+          <button onclick="resolveDecisionAndAdvance('${active.id}', 'Option B')"
+                  class="tactile w-full text-left p-4 rounded-[10px] ${active.choice === 'Option B' ? 'bg-burgundy text-ivory' : 'bg-well hover:bg-burgundy hover:text-ivory text-ink'} space-y-1 transition">
+            <div class="text-[14px] font-semibold flex items-center justify-between">
+              <span>${active.optionB.title}</span>
+              <span class="font-mono text-[12px]">Confirm -></span>
+            </div>
+            <p class="text-[12.5px] opacity-85">${active.optionB.desc}</p>
+          </button>
+        </div>
+
+        <!-- 4. Backburner / Custom Guidance Footer -->
+        <div class="pt-3 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5" style="border-top: 1px solid rgba(24,22,19,0.08);">
+          <div class="flex items-center gap-2 flex-1">
+            <input id="decision-custom-nuance" type="text"
+                   placeholder="Or type a custom nuance for this decision..."
+                   onkeydown="if(event.key === 'Enter') resolveDecisionAndAdvance('${active.id}', this.value || 'Custom nuance')"
+                   class="flex-1 well-tag px-3 py-2 text-[12.5px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+            <button onclick="resolveDecisionAndAdvance('${active.id}', document.getElementById('decision-custom-nuance').value || 'Custom guidance')"
+                    class="tactile px-3 py-2 rounded-[6px] bg-wellDeep text-ink text-[12px] font-medium shrink-0">
+              Send note
+            </button>
+          </div>
+
+          <button onclick="putWholeFeatureOnBackburner('${active.id}')"
+                  class="tactile px-3.5 py-2 rounded-[6px] bg-terracottaWash hover:bg-terracotta hover:text-ivory text-terracotta text-[12px] font-medium shrink-0">
+            Put whole feature on backburner
+          </button>
+        </div>
+      `;
+    }
+
+    function resolveDecisionAndAdvance(decId, choiceLabel) {
+      const dec = DECISIONS.find(d => d.id === decId);
+      if (!dec) return;
+      dec.resolved = true;
+      dec.choice = choiceLabel;
+
+      const nextPending = DECISIONS.find(d => !d.resolved && (selectedProjectFilter === 'all' || d.projectId === selectedProjectFilter));
+      if (nextPending) {
+        activeDecisionId = nextPending.id;
+      }
+
+      refreshAllViews();
+      showToast(`Recorded "${choiceLabel}" for ${dec.issueCode} & advanced queue`);
+    }
+
+    function putWholeFeatureOnBackburner(decId) {
+      const dec = DECISIONS.find(d => d.id === decId);
+      if (!dec) return;
+      dec.resolved = true;
+      dec.choice = 'Moved to backburner';
+      sendIssueToVault(dec.issueId, 'backburner');
+      const nextPending = DECISIONS.find(d => !d.resolved);
+      if (nextPending) activeDecisionId = nextPending.id;
+      refreshAllViews();
+    }
+
+    // -----------------------------------------------------------------------
+    // 10. WORKSPACE 4: BLOCKED (Human Action Station: Type A, B, C)
+    // -----------------------------------------------------------------------
+    function renderBlockedWorkspace() {
+      const container = document.getElementById('blocked-stations-container');
+      if (!container) return;
+
+      const stations = BLOCKED_STATIONS.filter(b => selectedProjectFilter === 'all' || b.projectId === selectedProjectFilter);
+
+      container.innerHTML = stations.map(st => {
+        const proj = getProject(st.projectId);
+
+        // TYPE A — Interactive Human Testing (Discovery portal · #142)
+        if (st.type === 'testing') {
+          return `
+            <div class="card-surface p-5 sm:p-6 space-y-4 ${st.resolved ? 'opacity-60' : ''}">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2 text-[12px]">
+                  <span class="w-2.5 h-2.5 rounded-[4px]" style="background-color: ${proj.color};"></span>
+                  <span class="font-mono font-medium text-inkSecondary">${st.code}</span>
+                  <span class="px-2 py-0.5 rounded-[5px] bg-terracottaWash text-terracotta font-medium">Interactive human testing</span>
+                </div>
+                <span class="well-tag px-2.5 py-1 font-mono text-[11.5px] text-burgundy">${st.previewUrl}</span>
+              </div>
+
+              <div class="space-y-1 select-text">
+                <h2 class="text-[17.5px] font-semibold text-ink">${st.title}</h2>
+                <p class="text-[13px] text-inkSecondary">${st.subtitle}</p>
+              </div>
+
+              <!-- 3-Step Testing Checklist -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5">
+                ${st.checks.map((c, cIdx) => `
+                  <label class="well-tag p-3 flex items-start gap-2.5 text-[12px] text-ink cursor-pointer">
+                    <input type="checkbox" ${c.checked ? 'checked' : ''}
+                           onchange="toggleBlockedCheck('${st.id}', ${cIdx})"
+                           class="accent-burgundy w-4 h-4 mt-0.5 rounded shrink-0" />
+                    <span class="leading-snug">${c.label}</span>
+                  </label>
+                `).join('')}
+              </div>
+
+              <!-- Interactive Before vs. After Comparison Slider -->
+              <div class="well-surface p-4 space-y-3">
+                <div class="flex items-center justify-between text-[12px]">
+                  <span class="font-semibold text-ink">Before vs. After visual comparison slider</span>
+                  <span id="blk-slider-readout" class="font-mono text-burgundy font-medium">${st.sliderPct}% After view</span>
+                </div>
+
+                <div class="relative h-44 rounded-[10px] bg-ivory overflow-hidden" style="border: 1px solid rgba(24,22,19,0.08);">
+                  <!-- Before Layer -->
+                  <div class="absolute inset-0 p-4 flex flex-col justify-between bg-well/75 text-inkMuted">
+                    <span class="font-mono text-[11px]">Before · Raw two-column court PDF scan</span>
+                    <div class="space-y-2 max-w-md">
+                      <div class="h-3 bg-wellDeep rounded w-3/4"></div>
+                      <div class="h-3 bg-wellDeep rounded w-1/2"></div>
+                    </div>
+                    <span class="text-[11px]">Unlinked Bates page references</span>
+                  </div>
+
+                  <!-- After Layer -->
+                  <div id="blk-slider-after"
+                       class="absolute inset-y-0 left-0 p-4 flex flex-col justify-between bg-ivory"
+                       style="width: ${st.sliderPct}%; box-shadow: 3px 0 14px rgba(24,22,19,0.12);">
+                    <span class="font-mono text-[11px] text-burgundy font-medium truncate">After · Aligned two-column response table + clickable Bates links</span>
+                    <div class="grid grid-cols-2 gap-2.5 my-auto">
+                      <div class="p-2.5 rounded-[6px] bg-burgundyWash text-[11.5px] text-burgundy font-medium">Request #14 · Objections aligned across page 4–5</div>
+                      <div class="p-2.5 rounded-[6px] bg-sageWash text-[11.5px] text-sage font-medium">Cited: Bates PARRIS-00418 (clickable)</div>
+                    </div>
+                    <span class="text-[11px] text-sage font-medium">✓ Midnight ER admission variance note attached</span>
+                  </div>
+                </div>
+
+                <input type="range" min="10" max="95" value="${st.sliderPct}"
+                       oninput="updateBlockedSlider(this.value)"
+                       class="w-full accent-burgundy cursor-pointer" />
+              </div>
+
+              <!-- Drop a Bug Screenshot + Primary Action Buttons -->
+              <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+                <button onclick="attachBugScreenshot('${st.id}')"
+                        class="tactile well-tag px-3 py-2 text-[12px] font-medium text-ink hover:bg-wellDeep flex items-center gap-1.5">
+                  <i data-lucide="camera" class="w-3.5 h-3.5 text-terracotta"></i>
+                  <span>${st.bugScreenshotAttached ? 'Attached: ' + st.bugScreenshotAttached : 'Drop a bug screenshot'}</span>
+                </button>
+
+                <div class="flex items-center gap-2">
+                  <button onclick="showToast('Sent back with note to Discovery portal #142')"
+                          class="tactile px-3.5 py-2 rounded-[6px] bg-well text-inkSecondary hover:text-ink text-[12.5px] font-medium">
+                    Send back with note
+                  </button>
+                  <button onclick="resolveBlockedStation('${st.id}', 'Approved & published Discovery portal #142')"
+                          class="tactile px-4 py-2 rounded-[6px] bg-burgundy hover:bg-burgundyHover text-ivory text-[12.5px] font-medium">
+                    ${st.resolved ? 'Approved & published ✓' : 'Approve & publish'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          `;
+        }
+
+        // TYPE B — Missing API Key or Credential (Workflow engine · #89)
+        if (st.type === 'credential') {
+          return `
+            <div class="card-surface p-5 sm:p-6 space-y-4 ${st.resolved ? 'opacity-60' : ''}">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2 text-[12px]">
+                  <span class="w-2.5 h-2.5 rounded-[4px]" style="background-color: ${proj.color};"></span>
+                  <span class="font-mono font-medium text-inkSecondary">${st.code}</span>
+                  <span class="px-2 py-0.5 rounded-[5px] bg-burgundyWash text-burgundy font-medium">Missing API key or credential</span>
+                </div>
+                <span class="font-mono text-[11.5px] text-inkMuted">${st.secretName}</span>
+              </div>
+
+              <div class="space-y-1 select-text">
+                <h2 class="text-[17.5px] font-semibold text-ink">${st.title}</h2>
+                <p class="text-[13px] text-inkSecondary">${st.subtitle}</p>
+              </div>
+
+              <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 max-w-2xl">
+                <input type="password" value="npm_98a7bc65d4e3f210workflows"
+                       class="flex-1 well-tag px-3.5 py-2 font-mono text-[13px] text-ink focus:outline-none select-text" />
+                <button onclick="resolveBlockedStation('${st.id}', 'Saved NPM_AUTOMATION_TOKEN to vault & resumed release')"
+                        class="tactile px-4 py-2 rounded-[6px] bg-burgundy hover:bg-burgundyHover text-ivory text-[12.5px] font-medium shrink-0">
+                  ${st.resolved ? 'Saved to vault & resumed ✓' : 'Save to vault & resume'}
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        // TYPE C — Executive Greenlight (Enterprise academy · #54)
+        return `
+          <div class="card-surface p-5 sm:p-6 space-y-4 ${st.resolved ? 'opacity-60' : ''}">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="flex items-center gap-2 text-[12px]">
+                <span class="w-2.5 h-2.5 rounded-[4px]" style="background-color: ${proj.color};"></span>
+                <span class="font-mono font-medium text-inkSecondary">${st.code}</span>
+                <span class="px-2 py-0.5 rounded-[5px] bg-sageWash text-sage font-medium">Executive greenlight</span>
+              </div>
+              <span class="font-mono text-[11.5px] text-sage">All 24 cohort checks passed</span>
+            </div>
+
+            <div class="space-y-1 select-text">
+              <h2 class="text-[17.5px] font-semibold text-ink">${st.title}</h2>
+              <p class="text-[13px] text-inkSecondary">${st.subtitle}</p>
+            </div>
+
+            <div class="well-tag p-3.5 text-[12.5px] text-inkSecondary">
+              ${st.deliverableSummary}
+            </div>
+
+            <div class="flex justify-end">
+              <button onclick="resolveBlockedStation('${st.id}', 'Greenlit Enterprise academy #54 release for Mirakl')"
+                      class="tactile px-4 py-2 rounded-[6px] bg-burgundy hover:bg-burgundyHover text-ivory text-[12.5px] font-medium">
+                ${st.resolved ? 'Release greenlit ✓' : 'Greenlight release'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function updateBlockedSlider(val) {
+      const afterEl = document.getElementById('blk-slider-after');
+      const labelEl = document.getElementById('blk-slider-readout');
+      if (afterEl) afterEl.style.width = val + '%';
+      if (labelEl) labelEl.textContent = val + '% After view';
+    }
+
+    function toggleBlockedCheck(stationId, idx) {
+      const st = BLOCKED_STATIONS.find(b => b.id === stationId);
+      if (st && st.checks[idx]) {
+        st.checks[idx].checked = !st.checks[idx].checked;
+      }
+    }
+
+    function attachBugScreenshot(stationId) {
+      const st = BLOCKED_STATIONS.find(b => b.id === stationId);
+      if (!st) return;
+      st.bugScreenshotAttached = 'rfa-table-margin-note.png';
+      renderBlockedWorkspace();
+      lucide.createIcons();
+      showToast('Attached bug screenshot to Discovery portal #142');
+    }
+
+    function resolveBlockedStation(stationId, msg) {
+      const st = BLOCKED_STATIONS.find(b => b.id === stationId);
+      if (!st) return;
+      st.resolved = true;
+      const linked = ISSUES.find(i => i.id === st.issueId);
+      if (linked) {
+        linked.stage = 'shipped';
+        linked.statusLabel = 'Planned';
+      }
+      refreshAllViews();
+      showToast(msg);
+    }
+
+    // -----------------------------------------------------------------------
+    // 11. WORKSPACE 5: DISCUSSIONS (Channels + Hover "+ Turn into idea")
+    // -----------------------------------------------------------------------
+    function renderDiscussionsWorkspace() {
+      const channelBar = document.getElementById('discussion-channel-filters');
+      const listEl = document.getElementById('discussions-thread-list');
+      const headerEl = document.getElementById('discussion-detail-header');
+      const streamEl = document.getElementById('discussion-detail-messages');
+      if (!channelBar || !listEl || !headerEl || !streamEl) return;
+
+      const channels = [
+        'All discussions',
+        'Architecture & specs',
+        'Steal from other niches',
+        'Client · Parris Law',
+        'Client · Mirakl'
+      ];
+
+      channelBar.innerHTML = channels.map(ch => {
+        const active = activeDiscussionChannel === ch;
+        return `
+          <button onclick="activeDiscussionChannel='${ch}'; renderDiscussionsWorkspace(); lucide.createIcons();"
+                  class="tactile px-2 py-1 rounded-[5px] ${active ? 'bg-ivory text-ink shadow-sm font-semibold' : 'text-inkSecondary hover:text-ink'}">
+            ${ch}
+          </button>
+        `;
+      }).join('');
+
+      const filtered = DISCUSSIONS.filter(d => {
+        if (selectedProjectFilter !== 'all' && d.projectId !== selectedProjectFilter) return false;
+        if (activeDiscussionChannel !== 'All discussions' && d.channel !== activeDiscussionChannel) return false;
+        return true;
+      });
+
+      const active = filtered.find(d => d.id === activeDiscussionId) || filtered[0] || DISCUSSIONS[0];
+
+      listEl.innerHTML = filtered.map(d => {
+        const proj = getProject(d.projectId);
+        const isCurrent = active && d.id === active.id;
+        return `
+          <button onclick="activeDiscussionId='${d.id}'; renderDiscussionsWorkspace(); lucide.createIcons();"
+                  class="tactile w-full text-left p-3 rounded-[8px] ${isCurrent ? 'bg-burgundyWash/90 border border-burgundyBorder' : 'hover:bg-well/70 border border-transparent'} space-y-1 transition">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="font-medium text-inkSecondary">${d.channel}</span>
+              <span class="font-mono text-inkMuted">${d.linkedIssue}</span>
+            </div>
+            <div class="text-[13px] font-semibold text-ink line-clamp-2 leading-snug">${d.title}</div>
+          </button>
+        `;
+      }).join('');
+
+      if (!active) return;
+      const proj = getProject(active.projectId);
+
+      headerEl.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2 text-[12px]">
+              <span class="w-2.5 h-2.5 rounded-[4px]" style="background-color: ${proj.color};"></span>
+              <span class="font-medium text-inkSecondary">${proj.label}</span>
+              <span class="px-2 py-0.5 rounded-[5px] bg-well text-inkSecondary text-[11px] font-medium">${active.channel}</span>
+              <span class="font-mono text-burgundy text-[11.5px]">${active.linkedIssue}</span>
+            </div>
+            <h2 class="text-[17px] font-semibold text-ink">${active.title}</h2>
+          </div>
+
+          <button onclick="toggleDiscussionResolved('${active.id}')"
+                  class="tactile px-3 py-1.5 rounded-[6px] ${active.resolved ? 'bg-sageWash text-sage' : 'bg-well hover:bg-wellDeep text-ink'} text-[12px] font-medium flex items-center gap-1.5">
+            <i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i>
+            <span>${active.resolved ? 'Thread resolved' : 'Mark resolved'}</span>
+          </button>
+        </div>
+      `;
+
+      streamEl.innerHTML = active.messages.map(m => `
+        <div class="disc-msg-card well-surface p-4 space-y-2.5 relative select-text">
+          <div class="flex items-center justify-between gap-2 text-[12px]">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-ink">${m.author}</span>
+              <span class="px-2 py-0.2 rounded-[4px] bg-ivory text-inkSecondary text-[11px]">${m.role}</span>
+              <span class="font-mono text-[11px] text-inkMuted">${m.time}</span>
+            </div>
+
+            <!-- Hover Button: + Turn into idea -->
+            <button onclick="turnMessageIntoIdea('${active.id}', '${m.id}')"
+                    class="turn-idea-btn tactile px-2.5 py-1 rounded-[6px] bg-burgundy text-ivory text-[11.5px] font-medium flex items-center gap-1 shadow-sm">
+              <i data-lucide="sparkles" class="w-3 h-3"></i>
+              <span>+ Turn into idea</span>
+            </button>
+          </div>
+
+          <p class="text-[13.5px] text-ink leading-relaxed">${m.text}</p>
+
+          ${m.mediaTitle ? `
+            <div class="card-surface p-3 flex items-center justify-between text-[12px]">
+              <span class="font-medium text-burgundy flex items-center gap-2">
+                <i data-lucide="${m.mediaType === 'video' ? 'video' : m.mediaType === 'image' ? 'image' : 'link-2'}" class="w-4 h-4"></i>
+                <span>${m.mediaTitle}</span>
+              </span>
+              <span class="font-mono text-[11px] text-inkMuted">Embedded artifact</span>
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+
+    function turnMessageIntoIdea(discId, msgId) {
+      const disc = DISCUSSIONS.find(d => d.id === discId);
+      if (!disc) return;
+      const msg = disc.messages.find(m => m.id === msgId) || disc.messages[0];
+      const proj = getProject(disc.projectId);
+      const num = 185 + ISSUES.length;
+
+      const newIdea = {
+        id: `${proj.shortPrefix}-${num}`,
+        code: `${proj.repoName} · #${num}`,
+        shortSlug: `${proj.shortPrefix}-disc-${num}`,
+        projectId: disc.projectId,
+        title: msg.text.slice(0, 78) + (msg.text.length > 78 ? '...' : ''),
+        priority: 'high',
+        confidence: '96%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Steal from niche',
+        crossRepoDep: null,
+        x: 440,
+        y: 265,
+        summary: msg.text,
+        videoCount: msg.mediaType === 'video' ? 1 : 0,
+        imageCount: msg.mediaType === 'image' ? 1 : 0,
+        linkCount: 1,
+        steps: [{ num: 1, title: 'Promoted from discussion message', status: 'In progress', detail: `From ${msg.author}` }],
+        assets: msg.mediaTitle ? [{ kind: msg.mediaType || 'link', title: msg.mediaTitle, url: msg.mediaUrl || '', note: 'Attached from discussion.' }] : [],
+        comments: []
+      };
+
+      ISSUES.unshift(newIdea);
+      refreshAllViews();
+      showToast(`Turned message into idea "${newIdea.code}" on Ideation canvas`);
+    }
+
+    function submitDiscussionReply() {
+      const inp = document.getElementById('discussion-reply-input');
+      const mediaInp = document.getElementById('discussion-reply-media');
+      if (!inp || !inp.value.trim()) return;
+      const active = DISCUSSIONS.find(d => d.id === activeDiscussionId) || DISCUSSIONS[0];
+      const mediaVal = mediaInp ? mediaInp.value.trim() : '';
+
+      active.messages.push({
+        id: 'dm-' + Date.now(),
+        author: 'Lucas · Lead',
+        role: 'Lead architect',
+        time: 'Just now',
+        text: inp.value.trim(),
+        mediaType: mediaVal.includes('youtube') ? 'video' : mediaVal ? 'image' : null,
+        mediaTitle: mediaVal || null,
+        mediaUrl: mediaVal || null
+      });
+
+      inp.value = '';
+      if (mediaInp) mediaInp.value = '';
+      renderDiscussionsWorkspace();
+      lucide.createIcons();
+      showToast('Reply posted to discussion room');
+    }
+
+    function toggleDiscussionResolved(discId) {
+      const disc = DISCUSSIONS.find(d => d.id === discId);
+      if (!disc) return;
+      disc.resolved = !disc.resolved;
+      renderDiscussionsWorkspace();
+      lucide.createIcons();
+      showToast(disc.resolved ? 'Marked discussion thread resolved' : 'Reopened discussion thread');
+    }
+
+    function openNewDiscussionModal() {
+      const projId = selectedProjectFilter !== 'all' ? selectedProjectFilter : 'parris-cmp';
+      const newDisc = {
+        id: 'disc-' + Date.now(),
+        projectId: projId,
+        channel: 'Architecture & specs',
+        title: 'New cross-project architecture & ideation room',
+        linkedIssue: 'parris-cmp · #142',
+        resolved: false,
+        messages: [
+          {
+            id: 'dm-' + Date.now(),
+            author: 'Lucas · Lead',
+            role: 'Lead architect',
+            time: 'Just now',
+            text: 'Opened a new thread to collect screenshots, YouTube references, and architecture notes.',
+            mediaType: null,
+            mediaTitle: null
+          }
+        ]
+      };
+      DISCUSSIONS.unshift(newDisc);
+      activeDiscussionId = newDisc.id;
+      refreshAllViews();
+      showToast('Created new discussion room');
+    }
+
+    // -----------------------------------------------------------------------
+    // 12. SIMPLIFIED EXECUTIVE CLIENT VIEW (Parris Law Firm & Mirakl Enterprise)
+    // -----------------------------------------------------------------------
+    function renderClientPortalView() {
+      const container = document.getElementById('client-portal-container');
+      if (!container) return;
+
+      const isParris = activeClientOrg === 'Parris Law Firm';
+
+      container.innerHTML = `
+        <!-- 1. Project Progress Header (Reassuring Progress Cards with Milestone Steps) -->
+        <section class="space-y-3">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <span class="px-2.5 py-0.5 rounded-[5px] bg-burgundyWash text-burgundy text-[12px] font-medium">Executive client portal · ${activeClientOrg}</span>
+              <h1 class="text-[22px] font-semibold text-ink mt-1">
+                ${isParris ? 'Custom Legal AI Platform (CMP) & Discovery Modules' : 'Mirakl Enterprise Automation Academy & Workflow Engine'}
+              </h1>
+            </div>
+            <span class="font-mono text-[12px] text-inkSecondary">Live milestone view</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- Primary Project Card -->
+            <div class="card-surface p-5 space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-[16px] font-semibold text-ink">
+                    ${isParris ? 'Custom Legal AI Platform (CMP)' : 'Enterprise Workflow Academy (Cohort 2)'}
+                  </div>
+                  <div class="text-[12px] text-inkSecondary">
+                    ${isParris ? 'Medical chronology & court admission automation' : 'Interactive workflow lab grader & certification'}
+                  </div>
+                </div>
+                <span class="font-mono text-[20px] font-semibold text-burgundy">${isParris ? '78% Complete' : '84% Complete'}</span>
+              </div>
+
+              <div class="w-full h-2 rounded-[5px] bg-well overflow-hidden">
+                <div class="h-full bg-burgundy" style="width: ${isParris ? '78%' : '84%'};"></div>
+              </div>
+
+              <!-- Milestone Steps: Exploration ✓ -> Architecture ✓ -> Implementation ✓ -> Client Review ● -->
+              <div class="grid grid-cols-4 gap-1.5 pt-1 text-[11px] font-medium">
+                <div class="well-tag px-2 py-1.5 text-sage">Exploration ✓</div>
+                <div class="well-tag px-2 py-1.5 text-sage">Architecture ✓</div>
+                <div class="well-tag px-2 py-1.5 text-sage">Implementation ✓</div>
+                <div class="px-2 py-1.5 rounded-[6px] bg-burgundyWash text-burgundy font-semibold">Client Review ●</div>
+              </div>
+            </div>
+
+            <!-- Secondary Module Card -->
+            <div class="card-surface p-5 space-y-4">
+              <div class="flex items-center justify-between">
+                <div>
+                  <div class="text-[16px] font-semibold text-ink">
+                    ${isParris ? 'Automated RFA Discovery Module' : 'Multi-Page PDF & JSON Workflow CLI'}
+                  </div>
+                  <div class="text-[12px] text-inkSecondary">
+                    ${isParris ? 'Two-column Superior Court response table generator' : 'Shared parser & deterministic workflow validator'}
+                  </div>
+                </div>
+                <span class="px-2.5 py-1 rounded-[6px] bg-terracottaWash text-terracotta text-[12px] font-medium">Ready for your review</span>
+              </div>
+
+              <div class="w-full h-2 rounded-[5px] bg-well overflow-hidden">
+                <div class="h-full bg-terracotta" style="width: 92%;"></div>
+              </div>
+
+              <div class="grid grid-cols-4 gap-1.5 pt-1 text-[11px] font-medium">
+                <div class="well-tag px-2 py-1.5 text-sage">Exploration ✓</div>
+                <div class="well-tag px-2 py-1.5 text-sage">Architecture ✓</div>
+                <div class="well-tag px-2 py-1.5 text-sage">Implementation ✓</div>
+                <div class="px-2 py-1.5 rounded-[6px] bg-terracottaWash text-terracotta font-semibold">Client Review ●</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 1: Needs Your Input (2) -->
+        <section class="space-y-3">
+          <div class="flex items-center justify-between">
+            <h2 class="text-[16px] font-semibold text-ink">1. Needs your input (2)</h2>
+            <span class="text-[12px] text-inkMuted">One-click approvals</span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="card-surface p-5 space-y-3" style="border-color: #EBD0C2;">
+              <span class="px-2 py-0.5 rounded-[5px] bg-terracottaWash text-terracotta text-[11.5px] font-medium">Quick preference</span>
+              <h3 class="text-[15.5px] font-semibold text-ink leading-snug">
+                ${isParris
+                  ? 'Should uncertain handwritten ER dates stay inline with a yellow review badge?'
+                  : 'Should learners see the side-by-side reference workflow diff immediately after submitting?'}
+              </h3>
+              <p class="text-[12.5px] text-inkSecondary">
+                ${isParris
+                  ? 'Keeps your medical chronology in strict date order while floating the original physician handwriting slice on hover.'
+                  : 'Gives cohort engineers immediate visual feedback on their workflow nodes.'}
+              </p>
+              <div class="flex items-center gap-2 pt-1">
+                <button onclick="showToast('Thank you! Preference saved and applied to your project.')"
+                        class="tactile px-3.5 py-2 rounded-[6px] bg-burgundy text-ivory text-[12px] font-medium">
+                  Approve recommended option
+                </button>
+                <button onclick="showToast('Noted — our team will follow up in your discussion room.')"
+                        class="tactile px-3 py-2 rounded-[6px] bg-well text-inkSecondary text-[12px] font-medium">
+                  Ask a question
+                </button>
+              </div>
+            </div>
+
+            <div class="card-surface p-5 space-y-3" style="border-color: #E2C3C8;">
+              <span class="px-2 py-0.5 rounded-[5px] bg-burgundyWash text-burgundy text-[11.5px] font-medium">Visual preview ready</span>
+              <h3 class="text-[15.5px] font-semibold text-ink leading-snug">
+                ${isParris
+                  ? 'Review the two-column Superior Court admission response table layout'
+                  : 'Sign off on Mirakl Cohort 2 interactive lab curriculum'}
+              </h3>
+              <p class="text-[12.5px] text-inkSecondary">
+                ${isParris
+                  ? 'Every cited medical record links directly to its exact Bates page number.'
+                  : 'All 6 automation modules and grading rubrics are ready for Monday’s kickoff.'}
+              </p>
+              <div class="flex items-center gap-2 pt-1">
+                <button onclick="showToast('Approved! Marked ready for release.')"
+                        class="tactile px-3.5 py-2 rounded-[6px] bg-burgundy text-ivory text-[12px] font-medium">
+                  Approve preview
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 2: Project Roadmap & Recent Deliveries -->
+        <section class="space-y-3">
+          <h2 class="text-[16px] font-semibold text-ink">2. Project roadmap & recent deliveries</h2>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="card-surface p-4 space-y-2">
+              <span class="px-2 py-0.5 rounded-[4px] bg-sageWash text-sage text-[11px] font-medium">Recently delivered</span>
+              <div class="text-[14.5px] font-semibold text-ink">
+                ${isParris ? 'Multi-volume Bates stamp footer indexer' : 'Deterministic workflow JSON key sorter'}
+              </div>
+              <p class="text-[12px] text-inkSecondary">
+                ${isParris ? 'Indexes 1,000+ pages of hospital discovery packets in under 4 seconds.' : 'Keeps exported workflow templates clean and human-readable.'}
+              </p>
+            </div>
+
+            <div class="card-surface p-4 space-y-2">
+              <span class="px-2 py-0.5 rounded-[4px] bg-burgundyWash text-burgundy text-[11px] font-medium">Currently in review</span>
+              <div class="text-[14.5px] font-semibold text-ink">
+                ${isParris ? 'Two-column RFA objection & admission parser' : 'Interactive learner rubric diff viewer'}
+              </div>
+              <p class="text-[12px] text-inkSecondary">
+                ${isParris ? 'Matches defense objections beside medical chronology citations.' : 'Highlights exact node and expression differences in 45ms.'}
+              </p>
+            </div>
+
+            <div class="card-surface p-4 space-y-2">
+              <span class="px-2 py-0.5 rounded-[4px] bg-well text-inkSecondary text-[11px] font-medium">Up next</span>
+              <div class="text-[14.5px] font-semibold text-ink">
+                ${isParris ? 'Live CourtListener docket citation verifier' : 'Executive cohort PDF completion reports'}
+              </div>
+              <p class="text-[12px] text-inkSecondary">
+                ${isParris ? 'Automatically validates every cited case and docket number.' : 'One-click PDF summaries for engineering managers.'}
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 3: Ask a Question or Request a Feature -->
+        <section class="card-surface p-6 space-y-3">
+          <h2 class="text-[16px] font-semibold text-ink">3. Ask a question or request a feature</h2>
+          <p class="text-[12.5px] text-inkSecondary">Share a question, request a feature, or attach a screenshot or video link — it routes straight to your project team.</p>
+          <div class="flex flex-col sm:flex-row gap-2.5">
+            <input id="client-idea-input" type="text"
+                   placeholder="Type a question, feature request, or paste a screenshot / video link..."
+                   onkeydown="if(event.key === 'Enter') submitClientPortalInput()"
+                   class="flex-1 well-tag px-3.5 py-2.5 text-[13px] text-ink placeholder-inkMuted focus:outline-none select-text" />
+            <button onclick="submitClientPortalInput()"
+                    class="tactile px-4 py-2.5 rounded-[6px] bg-burgundy hover:bg-burgundyHover text-ivory text-[13px] font-medium shrink-0">
+              Send to team
+            </button>
+          </div>
+        </section>
+      `;
+    }
+
+    function submitClientPortalInput() {
+      const inp = document.getElementById('client-idea-input');
+      if (!inp || !inp.value.trim()) return;
+      const text = inp.value.trim();
+      const projId = activeClientOrg === 'Parris Law Firm' ? 'parris-cmp' : 'n8n-ac';
+      const proj = getProject(projId);
+      const num = 190 + ISSUES.length;
+
+      ISSUES.unshift({
+        id: `${proj.shortPrefix}-${num}`,
+        code: `${proj.repoName} · #${num}`,
+        shortSlug: `${proj.shortPrefix}-client-${num}`,
+        projectId: projId,
+        title: `${activeClientOrg}: ${text}`,
+        priority: 'high',
+        confidence: '97%',
+        stage: 'exploring',
+        statusLabel: 'Exploring',
+        category: 'Curiosity',
+        crossRepoDep: null,
+        x: 440,
+        y: 265,
+        summary: `Submitted via ${activeClientOrg} executive portal.`,
+        videoCount: 0,
+        imageCount: 1,
+        linkCount: 0,
+        steps: [{ num: 1, title: 'Review client submission', status: 'In progress', detail: 'Auto-routed.' }],
+        assets: [],
+        comments: []
+      });
+      inp.value = '';
+      showToast(`Thank you! Routed to your ${proj.label} team.`);
+    }
+
+    // -----------------------------------------------------------------------
+    // 13. TOAST NOTIFICATIONS
+    // -----------------------------------------------------------------------
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      if (!container) return;
+      const toast = document.createElement('div');
+      toast.className = 'popover-surface px-3.5 py-2.5 text-[12.5px] font-medium text-ink flex items-center gap-2 pointer-events-auto';
+      toast.innerHTML = `<span class="w-2 h-2 rounded-[3px] bg-burgundy shrink-0"></span><span>${message}</span>`;
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 200ms ease';
+        setTimeout(() => toast.remove(), 220);
+      }, 2800);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,2604 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Atelier — Orchestrateur GitHub & OpenChamber</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            paper: '#F6F4EE',
+            ivory: '#FCFBF8',
+            well: '#EDEAE2',
+            wellDeep: '#E2DDD2',
+            ink: '#181613',
+            inkSecondary: '#57524A',
+            inkMuted: '#8A8378',
+            burgundy: '#7C1D2E',
+            burgundyHover: '#611523',
+            burgundyWash: '#F7ECEE',
+            burgundyBorder: '#E2C3C8',
+            terracotta: '#C85A28',
+            terracottaHover: '#A6461B',
+            terracottaWash: '#FCF0EA',
+            terracottaBorder: '#EBD0C2',
+            sage: '#2E6B4E',
+            sageWash: '#ECF5F0',
+            sageBorder: '#C2DEC9',
+            ochre: '#B86B19',
+            ochreWash: '#FAF3E8',
+            ochreBorder: '#E8D5B7',
+            crimson: '#A62626',
+            crimsonWash: '#FBECEC',
+            stickyBg: '#FBF5DF',
+            stickyBorder: '#E5D59B'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root { --ease-out: cubic-bezier(0.22, 1, 0.36, 1); }
+    * { box-sizing: border-box; font-variant-numeric: tabular-nums; }
+    body {
+      background-color: #F6F4EE;
+      color: #181613;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      letter-spacing: -0.014em;
+      margin: 0;
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+    .card-surface {
+      background-color: #FCFBF8;
+      box-shadow: 0 2px 6px rgba(24, 22, 19, 0.04), 0 10px 28px -6px rgba(24, 22, 19, 0.06);
+      border: 1px solid rgba(24, 22, 19, 0.08);
+      border-radius: 10px;
+      transition: transform 150ms var(--ease-out), box-shadow 150ms var(--ease-out), border-color 150ms var(--ease-out);
+    }
+    .card-interactive {
+      background-color: #FCFBF8;
+      box-shadow: 0 2px 6px rgba(24, 22, 19, 0.04), 0 10px 28px -6px rgba(24, 22, 19, 0.06);
+      border: 1px solid rgba(24, 22, 19, 0.08);
+      border-radius: 10px;
+      transition: transform 150ms var(--ease-out), box-shadow 150ms var(--ease-out), border-color 150ms var(--ease-out);
+    }
+    .card-interactive:hover {
+      border-color: rgba(124, 29, 46, 0.32);
+      box-shadow: 0 6px 16px rgba(24, 22, 19, 0.07);
+    }
+    .popover-surface {
+      background-color: #FCFBF8;
+      box-shadow: 0 16px 40px -6px rgba(24, 22, 19, 0.16), 0 3px 10px rgba(24, 22, 19, 0.07);
+      border: 1px solid rgba(24, 22, 19, 0.1);
+      border-radius: 10px;
+    }
+    .modal-surface {
+      background-color: #FCFBF8;
+      box-shadow: 0 24px 60px -12px rgba(24, 22, 19, 0.22);
+      border: 1px solid rgba(24, 22, 19, 0.1);
+      border-radius: 14px;
+    }
+    .well-surface {
+      background-color: #EDEAE2;
+      border: 1px solid rgba(24, 22, 19, 0.06);
+      border-radius: 10px;
+    }
+    .well-tag {
+      background-color: #EDEAE2;
+      border: 1px solid rgba(24, 22, 19, 0.07);
+      border-radius: 6px;
+    }
+    .tactile { transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out); }
+    .tactile:active { transform: scale(0.98); }
+
+    /* Synced Infinite n8n Dot Grid */
+    .canvas-dot-grid {
+      background-color: #EFECE5;
+      background-image: radial-gradient(#C2B9AA 1.35px, transparent 1.35px);
+      background-size: 24px 24px;
+      touch-action: none;
+    }
+
+    /* Selection-only n8n toolbar (Zero hover tooltip clutter) */
+    .node-selected .node-card-body {
+      box-shadow: 0 12px 28px -4px rgba(124, 29, 46, 0.18), 0 0 0 2px #7C1D2E !important;
+      border-color: #7C1D2E !important;
+    }
+    .node-running .node-card-body {
+      box-shadow: 0 0 0 2px #2E6B4E, 0 12px 28px -4px rgba(46, 107, 78, 0.22) !important;
+    }
+
+    .node-port {
+      width: 13px;
+      height: 13px;
+      border-radius: 4px;
+      background-color: #FCFBF8;
+      border: 1.75px solid #7C1D2E;
+      box-shadow: 0 1px 3px rgba(24, 22, 19, 0.18);
+      transition: transform 120ms var(--ease-out), background-color 120ms var(--ease-out);
+    }
+    .node-port:hover { transform: scale(1.35); background-color: #7C1D2E; color: #FCFBF8; }
+
+    @keyframes wireFlow { to { stroke-dashoffset: -24; } }
+    .wire-animated { stroke-dasharray: 6 6; animation: wireFlow 1s linear infinite; }
+    @keyframes pulseRing {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.45; }
+    }
+    .pulse-running { animation: pulseRing 1.4s ease-in-out infinite; }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #D2C9BC; border-radius: 6px; }
+  </style>
+</head>
+<body class="h-screen w-screen flex flex-col select-none">
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="h-[56px] px-3 sm:px-5 flex items-center justify-between gap-2 shrink-0 z-30 bg-ivory/95 backdrop-blur border-b border-ink/10">
+    <div class="flex items-center gap-2.5 min-w-0">
+      <button onclick="switchWorkspace('ideation')" class="tactile flex items-center gap-2">
+        <div class="w-7 h-7 rounded-[6px] bg-burgundy text-ivory flex items-center justify-center shadow-sm">
+          <i data-lucide="cpu" class="w-4 h-4"></i>
+        </div>
+        <span class="font-semibold text-[15px] tracking-tight text-ink">Atelier OS</span>
+      </button>
+
+      <span class="text-inkMuted text-[13px] hidden sm:inline">/</span>
+
+      <!-- Multi-Repository Project Filter -->
+      <div class="relative">
+        <button onclick="togglePopover('repo-popover', event)" class="tactile well-tag px-2.5 py-1.5 flex items-center gap-2 text-[12px] font-medium text-ink">
+          <span id="active-repo-dot" class="w-2.5 h-2.5 rounded-[3px] bg-burgundy"></span>
+          <span id="active-repo-label" class="truncate max-w-[140px] sm:max-w-[210px]">All repositories (4)</span>
+          <i data-lucide="chevron-down" class="w-3.5 h-3.5 text-inkSecondary"></i>
+        </button>
+        <div id="repo-popover" onclick="event.stopPropagation()" class="hidden popover-surface absolute left-0 top-10 w-[320px] p-2 z-50 space-y-1">
+          <div class="px-2 py-1 text-[11px] font-medium text-inkMuted flex justify-between">
+            <span>Multi-repo workspace filter</span>
+            <span class="font-mono">REST + GraphQL</span>
+          </div>
+          <div id="repo-popover-list" class="space-y-0.5"></div>
+        </div>
+      </div>
+
+      <!-- Live Orchestrator Status Pill -->
+      <div id="orchestrator-status-pill" class="hidden xl:flex items-center gap-2 px-2.5 py-1 rounded-[6px] bg-sageWash text-sage border border-sageBorder text-[11.5px] font-mono">
+        <span class="w-2 h-2 rounded-full bg-sage pulse-running"></span>
+        <span id="orchestrator-status-text">Orchestrator ready · Worktree lock active</span>
+      </div>
+    </div>
+
+    <!-- Center Workspace Tabs (Hidden in Client View) -->
+    <nav id="lead-nav-tabs" class="hidden lg:flex well-tag p-1 items-center gap-1 shrink-0">
+      <button onclick="switchWorkspace('ideation')" id="tab-ideation" class="tactile px-3 py-1 rounded-[6px] bg-ivory text-ink font-medium text-[12.5px] shadow-sm flex items-center gap-1.5">
+        <i data-lucide="workflow" class="w-3.5 h-3.5 text-burgundy"></i>
+        <span>Canvas & Backlog</span>
+        <span id="badge-ideation" class="px-1.5 py-0.2 rounded bg-well text-inkSecondary font-mono text-[11px]">8</span>
+      </button>
+      <button onclick="switchWorkspace('operations')" id="tab-operations" class="tactile px-3 py-1 rounded-[6px] text-inkSecondary hover:text-ink font-medium text-[12.5px] flex items-center gap-1.5">
+        <i data-lucide="kanban" class="w-3.5 h-3.5 text-terracotta"></i>
+        <span>Pipeline & Worktrees</span>
+      </button>
+      <button onclick="switchWorkspace('decisions')" id="tab-decisions" class="tactile px-3 py-1 rounded-[6px] text-inkSecondary hover:text-ink font-medium text-[12.5px] flex items-center gap-1.5">
+        <i data-lucide="git-fork" class="w-3.5 h-3.5 text-ochre"></i>
+        <span>Decisions</span>
+        <span id="badge-decisions" class="px-1.5 py-0.2 rounded bg-terracotta text-ivory font-mono text-[11px]">3</span>
+      </button>
+      <button onclick="switchWorkspace('blocked')" id="tab-blocked" class="tactile px-3 py-1 rounded-[6px] text-inkSecondary hover:text-ink font-medium text-[12.5px] flex items-center gap-1.5">
+        <i data-lucide="shield-alert" class="w-3.5 h-3.5 text-crimson"></i>
+        <span>Human Tasks / Blocked</span>
+        <span id="badge-blocked" class="px-1.5 py-0.2 rounded bg-burgundy text-ivory font-mono text-[11px]">3</span>
+      </button>
+      <button onclick="switchWorkspace('discussions')" id="tab-discussions" class="tactile px-3 py-1 rounded-[6px] text-inkSecondary hover:text-ink font-medium text-[12.5px] flex items-center gap-1.5">
+        <i data-lucide="message-square" class="w-3.5 h-3.5 text-burgundy"></i>
+        <span>Discussions</span>
+      </button>
+    </nav>
+
+    <!-- Right Controls: New Issue Template, GitHub Sync, Settings, Lead/Client Toggle -->
+    <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
+      <button onclick="openNewIssueModal()" class="tactile px-2.5 sm:px-3 py-1.5 rounded-[6px] bg-burgundy hover:bg-burgundyHover text-ivory text-[12px] font-medium flex items-center gap-1.5 shadow-sm">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">New Issue</span>
+      </button>
+
+      <button id="btn-github-sync" onclick="syncWithGitHub()" class="tactile well-tag px-2.5 py-1.5 text-[12px] font-medium text-ink hover:bg-wellDeep flex items-center gap-1.5">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5 text-burgundy"></i>
+        <span class="hidden md:inline">Sync GitHub</span>
+      </button>
+
+      <button id="btn-settings" onclick="openSettingsModal()" class="tactile well-tag p-1.5 text-inkSecondary hover:text-ink" aria-label="Settings">
+        <i data-lucide="settings" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Lead vs Client View Switcher -->
+      <div class="well-tag p-0.5 flex items-center text-[11.5px] font-medium">
+        <button onclick="setViewRole('lead')" id="role-btn-lead" class="tactile px-2 py-1 rounded-[5px] bg-ivory text-ink shadow-sm">Dev / Lead</button>
+        <button onclick="setViewRole('client')" id="role-btn-client" class="tactile px-2 py-1 rounded-[5px] text-inkSecondary hover:text-ink">Client / Team</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT AREA -->
+  <div class="flex-1 overflow-hidden flex flex-col relative">
+
+    <!-- =================================================================== -->
+    <!-- 1. IDEATION & N8N SPATIAL CANVAS WORKSPACE                          -->
+    <!-- =================================================================== -->
+    <main id="workspace-ideation" class="flex-1 flex flex-col overflow-hidden relative">
+
+      <!-- N8N SPATIAL CANVAS VIEWPORT -->
+      <div id="canvas-viewport" class="flex-1 canvas-dot-grid relative overflow-hidden cursor-grab active:cursor-grabbing">
+
+        <!-- Top-Left Canvas Controls: Switch Canvas/List + Category Filter -->
+        <div onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
+             class="absolute top-3 left-3 z-30 flex flex-wrap items-center gap-2 max-w-[82%]">
+          <div class="p-1 rounded-[10px] bg-ivory/95 backdrop-blur border border-ink/10 shadow-sm flex items-center gap-1 text-[12px] font-medium">
+            <button onclick="setCanvasListMode('canvas')" id="mode-btn-canvas" class="tactile px-2.5 py-1 rounded-[6px] bg-burgundy text-ivory flex items-center gap-1.5">
+              <i data-lucide="workflow" class="w-3.5 h-3.5"></i>
+              <span>n8n Canvas</span>
+            </button>
+            <button onclick="setCanvasListMode('list')" id="mode-btn-list" class="tactile px-2.5 py-1 rounded-[6px] text-inkSecondary hover:text-ink flex items-center gap-1.5">
+              <i data-lucide="list" class="w-3.5 h-3.5"></i>
+              <span>Mobile / List View</span>
+            </button>
+          </div>
+
+          <div id="canvas-tag-filters" class="hidden md:flex p-1 rounded-[10px] bg-ivory/95 backdrop-blur border border-ink/10 shadow-sm items-center gap-1 text-[11.5px] font-medium"></div>
+        </div>
+
+        <!-- Top-Right Zoom & Auto-Layout Controls -->
+        <div onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
+             class="absolute top-3 right-3 z-30 p-1 rounded-[10px] bg-ivory/95 backdrop-blur border border-ink/10 shadow-sm flex items-center gap-1 text-[12px] font-medium">
+          <button onclick="zoomCanvas(-0.15)" class="tactile px-2 py-1 rounded hover:bg-well font-mono">-</button>
+          <button onclick="resetCanvasTransform()" id="zoom-label" class="tactile px-2 py-1 rounded hover:bg-well font-mono text-[11.5px]">100%</button>
+          <button onclick="zoomCanvas(0.15)" class="tactile px-2 py-1 rounded hover:bg-well font-mono">+</button>
+          <span class="text-inkMuted">|</span>
+          <button onclick="autoLayoutDAG()" class="tactile px-2.5 py-1 rounded hover:bg-burgundyWash text-burgundy flex items-center gap-1">
+            <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Auto-DAG</span>
+          </button>
+        </div>
+
+        <!-- Bottom-Center Floating Creation Dock -->
+        <div onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
+             class="absolute bottom-4 left-1/2 -translate-x-1/2 z-30 p-1.5 rounded-[10px] bg-ivory/95 backdrop-blur border border-ink/10 shadow-lg flex items-center gap-1.5 text-[12px] font-medium whitespace-nowrap">
+          <button onclick="openNewIssueModal()" class="tactile px-3 py-1.5 rounded-[6px] bg-burgundy text-ivory flex items-center gap-1.5">
+            <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+            <span>+ Issue Node</span>
+          </button>
+          <button onclick="createStickyNote()" class="tactile px-3 py-1.5 rounded-[6px] bg-stickyBg border border-stickyBorder text-ink flex items-center gap-1.5">
+            <i data-lucide="sticky-note" class="w-3.5 h-3.5 text-ochre"></i>
+            <span>+ Sticky Note</span>
+          </button>
+          <button onclick="runAllReadyTasks()" class="tactile px-3 py-1.5 rounded-[6px] bg-sage text-ivory flex items-center gap-1.5">
+            <i data-lucide="play" class="w-3.5 h-3.5"></i>
+            <span>Run Ready Queue</span>
+          </button>
+        </div>
+
+        <!-- Bottom-Right Live Mini-Map -->
+        <div onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
+             class="hidden sm:block absolute bottom-4 right-4 z-30 w-[190px] h-[120px] rounded-[10px] bg-ivory/95 backdrop-blur border border-ink/15 shadow-md overflow-hidden p-1.5">
+          <div class="text-[9.5px] font-mono text-inkMuted flex justify-between mb-1">
+            <span>MINI-MAP</span>
+            <span id="minimap-coords">0, 0</span>
+          </div>
+          <div id="minimap-surface" onclick="jumpFromMinimap(event)" class="relative w-full h-[92px] bg-well/80 rounded-[6px] overflow-hidden cursor-pointer">
+            <div id="minimap-nodes"></div>
+            <div id="minimap-viewport-box" class="absolute border border-burgundy bg-burgundy/10 rounded-[2px] pointer-events-none"></div>
+          </div>
+        </div>
+
+        <!-- 2D TRANSFORM PLANE -->
+        <div id="canvas-plane" class="absolute top-0 left-0 w-[4000px] h-[2600px] origin-top-left will-change-transform">
+          <svg id="canvas-wires-svg" class="absolute inset-0 w-full h-full pointer-events-none z-0" xmlns="http://www.w3.org/2000/svg"></svg>
+          <div id="canvas-wire-badges" class="absolute inset-0 w-full h-full pointer-events-none z-10"></div>
+          <div id="canvas-nodes-layer" class="relative w-full h-full z-20"></div>
+        </div>
+      </div>
+
+      <!-- MOBILE-FRIENDLY / SIMPLIFIED LIST VIEW -->
+      <div id="list-viewport" class="hidden flex-1 overflow-y-auto px-4 lg:px-7 py-5">
+        <div class="max-w-[1320px] mx-auto space-y-4 pb-20">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+              <button onclick="setCanvasListMode('canvas')" class="tactile well-tag px-3 py-1.5 text-[12px] font-medium text-ink flex items-center gap-1.5">
+                <i data-lucide="workflow" class="w-3.5 h-3.5 text-burgundy"></i>
+                <span>Back to Spatial Canvas</span>
+              </button>
+              <h1 class="text-[17px] font-semibold text-ink">Responsive Node & Frontmatter List</h1>
+            </div>
+            <button onclick="openNewIssueModal()" class="tactile px-3 py-1.5 rounded-[6px] bg-burgundy text-ivory text-[12px] font-medium">+ New Issue</button>
+          </div>
+          <div id="mobile-list-container" class="space-y-3"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- 2. PIPELINE & WORKTREES WORKSPACE                                   -->
+    <!-- =================================================================== -->
+    <main id="workspace-operations" class="hidden flex-1 overflow-y-auto px-4 lg:px-7 py-5">
+      <div class="max-w-[1420px] mx-auto space-y-5 pb-20">
+        <!-- Worktree Concurrency & OpenChamber Session Bar -->
+        <section class="card-surface p-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+          <div class="space-y-1">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-burgundyWash text-burgundy font-mono text-[11px] font-medium">OpenChamber Orchestrator</span>
+              <h2 class="text-[15px] font-semibold text-ink">Git Worktree Concurrency & Dependency Gate</h2>
+            </div>
+            <p class="text-[12.5px] text-inkSecondary">Issues with a <code class="font-mono bg-well px-1 rounded">branch</code> property run in dedicated OpenChamber worktrees. Concurrency lock prevents two sessions from colliding on the same branch.</p>
+          </div>
+          <div id="active-worktrees-strip" class="flex flex-wrap items-center gap-2"></div>
+        </section>
+
+        <!-- 5-Status Kanban Pipeline (Backlog, Draft, Waiting, Running, Done) -->
+        <section id="pipeline-columns" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3.5 items-start"></section>
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- 3. STANDARDIZED DECISIONS WORKSPACE                                 -->
+    <!-- =================================================================== -->
+    <main id="workspace-decisions" class="hidden flex-1 overflow-y-auto px-4 lg:px-7 py-5">
+      <div class="max-w-[1360px] mx-auto space-y-4 pb-20">
+        <div class="flex items-center justify-between">
+          <div>
+            <h1 class="text-[18px] font-semibold text-ink">Standardized Open Questions & Architectural Decisions</h1>
+            <p class="text-[12.5px] text-inkSecondary">Auto-routed when OpenCode hits an ambiguity. Resolving posts a GitHub Issue comment and resumes the session.</p>
+          </div>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          <div id="decisions-list" class="lg:col-span-4 card-surface p-3 space-y-2"></div>
+          <div id="decision-detail" class="lg:col-span-8 card-surface p-5 space-y-4"></div>
+        </div>
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- 4. HUMAN TASKS & BLOCKERS WORKSPACE                                 -->
+    <!-- =================================================================== -->
+    <main id="workspace-blocked" class="hidden flex-1 overflow-y-auto px-4 lg:px-7 py-5">
+      <div class="max-w-[1320px] mx-auto space-y-4 pb-20">
+        <div>
+          <h1 class="text-[18px] font-semibold text-ink">Standardized Human Tasks & Blockers</h1>
+          <p class="text-[12.5px] text-inkSecondary">Visual QA sliders, missing environment credentials, and hostile review sign-offs.</p>
+        </div>
+        <div id="blocked-list" class="space-y-4"></div>
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- 5. GITHUB DISCUSSIONS & CLIENT ROOMS                                -->
+    <!-- =================================================================== -->
+    <main id="workspace-discussions" class="hidden flex-1 overflow-hidden px-4 lg:px-7 py-5">
+      <div class="max-w-[1360px] mx-auto h-full grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-4 card-surface p-3.5 flex flex-col justify-between overflow-hidden">
+          <div class="space-y-3 overflow-y-auto">
+            <div class="flex items-center justify-between">
+              <span class="text-[14px] font-semibold text-ink">GitHub Discussions Sync</span>
+              <button onclick="createNewDiscussionThread()" class="tactile px-2.5 py-1 rounded bg-burgundy text-ivory text-[11.5px] font-medium">+ Thread</button>
+            </div>
+            <div id="discussions-list" class="space-y-1.5"></div>
+          </div>
+          <div class="well-tag p-2.5 text-[11.5px] text-inkSecondary">
+            Click <strong>+ Turn into Issue Node</strong> on any comment to extract it with its attachments onto the canvas.
+          </div>
+        </div>
+        <div class="lg:col-span-8 card-surface flex flex-col overflow-hidden">
+          <div id="discussion-header" class="px-5 py-3.5 border-b border-ink/10"></div>
+          <div id="discussion-messages" class="flex-1 overflow-y-auto p-5 space-y-3.5"></div>
+          <div class="p-3 bg-well/60 border-t border-ink/10 flex flex-col sm:flex-row gap-2">
+            <input id="disc-reply-text" type="text" placeholder="Reply to GitHub Discussion..." class="flex-1 bg-ivory px-3 py-2 rounded-[6px] text-[13px] border border-ink/10 focus:outline-none select-text" />
+            <input id="disc-reply-attach" type="text" placeholder="Optional YouTube / HTML / image URL..." class="sm:w-64 bg-ivory px-3 py-2 rounded-[6px] text-[12px] border border-ink/10 focus:outline-none select-text" />
+            <button onclick="postDiscussionMessage()" class="tactile px-4 py-2 rounded-[6px] bg-burgundy text-ivory text-[12.5px] font-medium">Post</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- 6. CLIENT & NON-DEV TEAM PORTAL VIEW                                -->
+    <!-- =================================================================== -->
+    <main id="workspace-client" class="hidden flex-1 overflow-y-auto px-4 lg:px-7 py-6">
+      <div id="client-portal-body" class="max-w-[1160px] mx-auto space-y-6 pb-20"></div>
+    </main>
+
+    <!-- =================================================================== -->
+    <!-- RIGHT SIDE INSPECTOR (DOUBLE-CLICK NODE OR CLICK LIST ITEM)         -->
+    <!-- =================================================================== -->
+    <aside id="side-inspector" class="hidden fixed top-[56px] right-0 bottom-0 w-full sm:w-[500px] z-40 modal-surface flex flex-col overflow-hidden" style="border-radius: 14px 0 0 14px;">
+      <div id="side-inspector-content" class="flex-1 overflow-y-auto p-5 space-y-5 select-text"></div>
+    </aside>
+
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- SETTINGS & AI SKILL TEMPLATE MODAL (GITHUB PAT + OPENCODE API)        -->
+  <!-- ===================================================================== -->
+  <div id="settings-modal" onclick="if(event.target===this)closeSettingsModal()" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+    <div class="modal-surface w-full max-w-[680px] max-h-[90vh] overflow-y-auto p-6 space-y-5 select-text">
+      <div class="flex items-center justify-between border-b border-ink/10 pb-3">
+        <div>
+          <h2 class="text-[17px] font-semibold text-ink">GitHub & OpenCode / OpenChamber Settings</h2>
+          <p class="text-[12px] text-inkSecondary">Stored locally in your browser. Zero external database required.</p>
+        </div>
+        <button onclick="closeSettingsModal()" class="p-1.5 rounded bg-well text-inkSecondary hover:text-ink"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="space-y-1.5">
+          <label class="text-[12px] font-semibold text-ink">GitHub Personal Access Token (PAT)</label>
+          <input id="cfg-github-pat" type="password" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx" class="w-full well-tag px-3 py-2 font-mono text-[12.5px] text-ink focus:outline-none" />
+          <p class="text-[11px] text-inkMuted">Scopes: <code class="font-mono">repo</code>, <code class="font-mono">read:org</code>, <code class="font-mono">discussion</code></p>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[12px] font-semibold text-ink">Repositories (comma-separated owner/repo)</label>
+          <input id="cfg-github-repos" type="text" placeholder="workflows-ac/parris-cmp, workflows-ac/n8n-cli" class="w-full well-tag px-3 py-2 font-mono text-[12.5px] text-ink focus:outline-none" />
+          <p class="text-[11px] text-inkMuted">Synced into unified multi-project canvas</p>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[12px] font-semibold text-ink">OpenCode / OpenChamber Server URL</label>
+          <input id="cfg-opencode-url" type="text" placeholder="http://localhost:4096" class="w-full well-tag px-3 py-2 font-mono text-[12.5px] text-ink focus:outline-none" />
+          <p class="text-[11px] text-inkMuted">Dispatches <code class="font-mono">POST /api/session</code></p>
+        </div>
+        <div class="space-y-1.5">
+          <label class="text-[12px] font-semibold text-ink">OpenCode API Key / Password</label>
+          <input id="cfg-opencode-key" type="password" placeholder="oc_live_••••••••••••" class="w-full well-tag px-3 py-2 font-mono text-[12.5px] text-ink focus:outline-none" />
+          <p class="text-[11px] text-inkMuted">Sent via <code class="font-mono">Authorization: Bearer</code></p>
+        </div>
+      </div>
+
+      <!-- Worktree & Sticky Note Persistence Settings -->
+      <div class="well-surface p-3.5 space-y-2.5 text-[12.5px]">
+        <label class="flex items-center justify-between cursor-pointer">
+          <span><strong>Worktree Mutex Lock</strong> — Prevent concurrent OpenCode sessions on the same <code class="font-mono">branch</code> worktree</span>
+          <input id="cfg-worktree-lock" type="checkbox" checked class="accent-burgundy w-4 h-4" />
+        </label>
+        <label class="flex items-center justify-between cursor-pointer">
+          <span><strong>Persist Sticky Notes to Pinned GitHub Issue</strong> (fallback: browser <code class="font-mono">localStorage</code>)</span>
+          <input id="cfg-sticky-github" type="checkbox" checked class="accent-burgundy w-4 h-4" />
+        </label>
+      </div>
+
+      <!-- AI Skill & Issue Template Generator -->
+      <div class="space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[12.5px] font-semibold text-ink">OpenCode / Agent Skill (<code class="font-mono">SKILL.md</code>) & GitHub Issue Template</span>
+          <button onclick="copyAgentSkillMarkdown()" class="tactile px-2.5 py-1 rounded bg-burgundyWash text-burgundy text-[11.5px] font-medium">Copy SKILL.md</button>
+        </div>
+        <pre id="skill-md-preview" class="well-tag p-3 font-mono text-[11px] text-inkSecondary overflow-x-auto max-h-40 leading-relaxed">---
+name: github-atelier-orchestrator
+description: Manage GitHub Issues with Atelier YAML Frontmatter, worktrees, and dependency graphs.
+---
+Always format GitHub Issue bodies with a valid YAML frontmatter block containing:
+friendly_title, client_visible, client, overview, priority (Critical|Important|Useful|Optional),
+complexity (XS|S|M|L|XL), type (bug|feature|question|other), status (Draft|Waiting|Running|Done|Backlog),
+branch (none or worktree branch name), model (intern|worker|engineer|genius),
+agent (solo|team), skills, permission (ask|auto|yolo), goal (boolean), deadline, categories,
+acceptance_criteria, prompts (first_message, second_message, hostile_review), and attachments.
+Append <!-- atelier:canvas {"x":120,"y":120,"dependsOn":[],"autoRun":true} --> at the bottom.</pre>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeSettingsModal()" class="tactile px-3.5 py-2 rounded-[6px] bg-well text-inkSecondary text-[12.5px] font-medium">Cancel</button>
+        <button onclick="saveSettings()" class="tactile px-4 py-2 rounded-[6px] bg-burgundy text-ivory text-[12.5px] font-medium">Save & Connect</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- NEW ISSUE / TEMPLATE MODAL                                            -->
+  <!-- ===================================================================== -->
+  <div id="new-issue-modal" onclick="if(event.target===this)closeNewIssueModal()" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink/40 backdrop-blur-sm">
+    <div class="modal-surface w-full max-w-[640px] max-h-[90vh] overflow-y-auto p-6 space-y-4 select-text">
+      <div class="flex items-center justify-between border-b border-ink/10 pb-3">
+        <h2 class="text-[16px] font-semibold text-ink">New Standardized GitHub Issue & Frontmatter</h2>
+        <button onclick="closeNewIssueModal()" class="p-1 rounded bg-well text-inkSecondary"><i data-lucide="x" class="w-4 h-4"></i></button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[12.5px]">
+        <div class="sm:col-span-2">
+          <label class="font-semibold text-ink">Friendly Title</label>
+          <input id="ni-title" type="text" placeholder="e.g. Parallel PDF Bates stamp verifier" class="w-full well-tag px-3 py-2 mt-1 text-ink focus:outline-none" />
+        </div>
+        <div>
+          <label class="font-semibold text-ink">Repository</label>
+          <select id="ni-repo" class="w-full well-tag px-3 py-2 mt-1 text-ink focus:outline-none">
+            <option value="parris-cmp">parris-cmp (Parris Law)</option>
+            <option value="n8n-cli">n8n-cli (Open Source)</option>
+            <option value="n8n-ac">n8n-ac (Mirakl Academy)</option>
+            <option value="workflows-hq">workflows-hq (Internal)</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-semibold text-ink">Branch / OpenChamber Worktree</label>
+          <input id="ni-branch" type="text" value="feat/bates-verifier" placeholder="none or branch name" class="w-full well-tag px-3 py-2 mt-1 font-mono text-ink focus:outline-none" />
+        </div>
+        <div>
+          <label class="font-semibold text-ink">Priority</label>
+          <select id="ni-priority" class="w-full well-tag px-3 py-2 mt-1 text-ink focus:outline-none">
+            <option value="Critical">Critical</option>
+            <option value="Important" selected>Important</option>
+            <option value="Useful">Useful</option>
+            <option value="Optional">Optional</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-semibold text-ink">Complexity (T-Shirt)</label>
+          <select id="ni-complexity" class="w-full well-tag px-3 py-2 mt-1 font-mono text-ink focus:outline-none">
+            <option value="XS">XS</option>
+            <option value="S">S</option>
+            <option value="M" selected>M</option>
+            <option value="L">L</option>
+            <option value="XL">XL</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-semibold text-ink">Type</label>
+          <select id="ni-type" class="w-full well-tag px-3 py-2 mt-1 text-ink focus:outline-none">
+            <option value="feature" selected>feature</option>
+            <option value="bug">bug</option>
+            <option value="question">question</option>
+            <option value="other">other</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-semibold text-ink">Model Tier & Agent</label>
+          <div class="grid grid-cols-2 gap-1.5 mt-1">
+            <select id="ni-model" class="well-tag px-2 py-2 text-ink focus:outline-none">
+              <option value="intern">intern</option>
+              <option value="worker">worker</option>
+              <option value="engineer" selected>engineer</option>
+              <option value="genius">genius</option>
+            </select>
+            <select id="ni-agent" class="well-tag px-2 py-2 text-ink focus:outline-none">
+              <option value="solo" selected>solo</option>
+              <option value="team">team</option>
+            </select>
+          </div>
+        </div>
+        <div>
+          <label class="font-semibold text-ink">Permission Mode</label>
+          <select id="ni-permission" class="w-full well-tag px-3 py-2 mt-1 font-mono text-ink focus:outline-none">
+            <option value="ask">ask</option>
+            <option value="auto" selected>auto</option>
+            <option value="yolo">yolo</option>
+          </select>
+        </div>
+        <div>
+          <label class="font-semibold text-ink">Auto-loaded Skills (comma-separated)</label>
+          <input id="ni-skills" type="text" value="github-orchestrator, pdf-bbox" class="w-full well-tag px-3 py-2 mt-1 font-mono text-ink focus:outline-none" />
+        </div>
+        <div class="sm:col-span-2">
+          <label class="font-semibold text-ink">Overview</label>
+          <textarea id="ni-overview" rows="2" placeholder="Clear executive & technical overview..." class="w-full well-tag p-2.5 mt-1 text-ink focus:outline-none"></textarea>
+        </div>
+        <div class="sm:col-span-2">
+          <label class="font-semibold text-ink">First OpenCode Prompt</label>
+          <textarea id="ni-prompt1" rows="2" placeholder="Inspect repository structure, implement feature on worktree, and run tests..." class="w-full well-tag p-2.5 mt-1 font-mono text-[11.5px] text-ink focus:outline-none"></textarea>
+        </div>
+        <div class="sm:col-span-2 flex items-center justify-between pt-1">
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input id="ni-client-visible" type="checkbox" checked class="accent-burgundy w-4 h-4" />
+            <span>Client Visible (<code class="font-mono">client_visible: true</code>)</span>
+          </label>
+          <label class="flex items-center gap-2 cursor-pointer">
+            <input id="ni-autorun" type="checkbox" checked class="accent-burgundy w-4 h-4" />
+            <span>Auto-run when dependencies finish</span>
+          </label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button onclick="closeNewIssueModal()" class="tactile px-3.5 py-2 rounded-[6px] bg-well text-inkSecondary text-[12.5px] font-medium">Cancel</button>
+        <button onclick="createNewIssueFromModal()" class="tactile px-4 py-2 rounded-[6px] bg-burgundy text-ivory text-[12.5px] font-medium">Create Issue Node</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MOBILE BOTTOM BAR -->
+  <nav id="mobile-bottom-nav" class="lg:hidden h-14 px-2 bg-ivory border-t border-ink/10 flex items-center justify-around shrink-0 z-30">
+    <button onclick="switchWorkspace('ideation')" class="flex flex-col items-center gap-0.5 text-[11px] font-medium text-ink">
+      <i data-lucide="workflow" class="w-4 h-4 text-burgundy"></i><span>Canvas</span>
+    </button>
+    <button onclick="switchWorkspace('operations')" class="flex flex-col items-center gap-0.5 text-[11px] font-medium text-inkSecondary">
+      <i data-lucide="kanban" class="w-4 h-4 text-terracotta"></i><span>Pipeline</span>
+    </button>
+    <button onclick="switchWorkspace('decisions')" class="flex flex-col items-center gap-0.5 text-[11px] font-medium text-inkSecondary">
+      <i data-lucide="git-fork" class="w-4 h-4 text-ochre"></i><span>Decisions</span>
+    </button>
+    <button onclick="switchWorkspace('blocked')" class="flex flex-col items-center gap-0.5 text-[11px] font-medium text-inkSecondary">
+      <i data-lucide="shield-alert" class="w-4 h-4 text-crimson"></i><span>Blocked</span>
+    </button>
+    <button onclick="switchWorkspace('discussions')" class="flex flex-col items-center gap-0.5 text-[11px] font-medium text-inkSecondary">
+      <i data-lucide="message-square" class="w-4 h-4 text-burgundy"></i><span>Discuss</span>
+    </button>
+  </nav>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-stack" class="fixed bottom-16 lg:bottom-5 left-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    // =======================================================================
+    // 1. CONFIGURATION, REPOSITORIES & STANDARDIZED FRONTMATTER DATA
+    // =======================================================================
+    const SETTINGS = JSON.parse(localStorage.getItem('atelier_settings') || JSON.stringify({
+      githubPat: '',
+      githubRepos: 'workflows-ac/parris-cmp, workflows-ac/n8n-cli, workflows-ac/n8n-ac, workflows-ac/workflows-hq',
+      opencodeUrl: 'http://localhost:4096',
+      opencodeKey: '',
+      worktreeLock: true,
+      stickyToGithub: true
+    }));
+
+    const REPOS = [
+      { id: 'parris-cmp', label: 'Discovery Portal', slug: 'parris-cmp', client: 'Parris Law Firm', color: '#7C1D2E' },
+      { id: 'n8n-cli',    label: 'Workflow Engine',  slug: 'n8n-cli',    client: 'Open Source',     color: '#C85A28' },
+      { id: 'n8n-ac',     label: 'Enterprise Academy', slug: 'n8n-ac',   client: 'Mirakl Enterprise', color: '#B86B19' },
+      { id: 'workflows-hq', label: 'Internal Ops',   slug: 'workflows-hq', client: 'Internal',      color: '#57524A' }
+    ];
+
+    const PRIORITY_STYLE = {
+      Critical:  { dot: '#7C1D2E', badge: 'bg-burgundyWash text-burgundy border border-burgundyBorder' },
+      Important: { dot: '#C85A28', badge: 'bg-terracottaWash text-terracotta border border-terracottaBorder' },
+      Useful:    { dot: '#2E6B4E', badge: 'bg-sageWash text-sage border border-sageBorder' },
+      Optional:  { dot: '#8A8378', badge: 'bg-well text-inkSecondary' }
+    };
+
+    const HOSTILE_REVIEW_SNIPPET = "HOSTILE REVIEW MODE: Act as an adversarial staff principal engineer. Audit the diff for race conditions, unhandled edge cases, broken types, security leaks, or missing tests. Reject anything incomplete and fix all flaws before reporting completion.";
+
+    let ISSUES = [
+      {
+        id: 'n8n-89',
+        number: 89,
+        repoId: 'n8n-cli',
+        friendly_title: 'Multi-page PDF table bounding-box contract',
+        client_visible: true,
+        client: 'Open Source',
+        overview: 'Emits deterministic [x1, y1, x2, y2] table cell coordinates across page breaks so downstream legal and enterprise parsers never lose row alignment.',
+        acceptance_criteria: [
+          { text: 'Define canonical JSON schema for page-split stitches', done: true },
+          { text: 'Pass 40 rotated scan packet assertions', done: true },
+          { text: 'Publish @workflows-accelerator/n8n-cli v2.4.0', done: true }
+        ],
+        priority: 'Critical',
+        complexity: 'M',
+        type: 'feature',
+        status: 'Done',
+        waiting_reason: null,
+        branch: 'feat/pdf-bbox-contract',
+        model: 'engineer',
+        agent: 'solo',
+        skills: ['pdf-bbox', 'ast-schema'],
+        permission: 'auto',
+        goal: true,
+        deadline: '2026-11-10',
+        categories: ['backend', 'cli'],
+        approved: true,
+        auto_run: true,
+        depends_on: [],
+        pr_url: 'https://github.com/workflows-ac/n8n-cli/pull/91',
+        x: 70,
+        y: 80,
+        prompts: {
+          first_message: 'Implement normalized [x1,y1,x2,y2] bounding box extractor across page splits in src/pdf/bbox.ts.',
+          second_message: 'Run unit tests on all 40 multi-page rotated PDF fixtures.',
+          hostile_review: HOSTILE_REVIEW_SNIPPET
+        },
+        attachments: [
+          { type: 'link', title: 'Bounding Box Spec v2.4', url: 'https://docs.n8n-cli.dev/ocr-bbox' }
+        ],
+        custom_fields: { npm_tag: 'latest' }
+      },
+      {
+        id: 'cmp-142',
+        number: 142,
+        repoId: 'parris-cmp',
+        friendly_title: 'Automated RFA objection parser & Bates linker',
+        client_visible: true,
+        client: 'Parris Law Firm',
+        overview: 'Parses two-column Los Angeles Superior Court admission tables, cross-checks dates against hospital chronologies, and drafts responses with clickable Bates page numbers.',
+        acceptance_criteria: [
+          { text: 'Consume normalized table bounding boxes from n8n-cli#89', done: true },
+          { text: 'Align Column 1 objections beside Column 2 responses across page breaks', done: true },
+          { text: 'Verify midnight ER admission variance note in human QA', done: false }
+        ],
+        priority: 'Critical',
+        complexity: 'L',
+        type: 'feature',
+        status: 'Running',
+        waiting_reason: null,
+        branch: 'feat/rfa-bates-parser',
+        model: 'genius',
+        agent: 'team',
+        skills: ['legal-rfa-parser', 'pdf-bbox', 'supabase-pgvector'],
+        permission: 'auto',
+        goal: true,
+        deadline: '2026-11-12',
+        categories: ['frontend', 'backend', 'prompts'],
+        approved: true,
+        auto_run: true,
+        depends_on: ['n8n-89'],
+        pr_url: 'https://github.com/workflows-ac/parris-cmp/pull/145',
+        x: 470,
+        y: 80,
+        prompts: {
+          first_message: 'Using the n8n-cli#89 bbox output, build the two-column Superior Court RFA parser and link each cited medical record to its Bates stamp.',
+          second_message: 'Generate side-by-side HTML preview for paralegal verification.',
+          hostile_review: HOSTILE_REVIEW_SNIPPET
+        },
+        attachments: [
+          { type: 'youtube', title: 'Marci walkthrough: 2-column court objections (02:34)', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
+          { type: 'html', title: 'Interactive Court Table HTML Preview', html: '<div style="font-family:sans-serif;padding:10px;background:#FCFBF8;border:1px solid #ddd;border-radius:6px;font-size:12px;"><strong>Request for Admission #14:</strong> Admit plaintiff was discharged on 04/12.<br><span style="color:#7C1D2E;font-weight:600;">Response:</span> Objection; vague as to midnight ER split. Cited: <a href="#">Bates PARRIS-00418</a></div>' },
+          { type: 'image', title: 'Superior Court Page 4-5 Split Scan', url: 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=600&q=80' }
+        ],
+        custom_fields: { court_jurisdiction: 'LA Superior Court' }
+      },
+      {
+        id: 'cmp-148',
+        number: 148,
+        repoId: 'parris-cmp',
+        friendly_title: 'CourtListener docket & citation verifier',
+        client_visible: true,
+        client: 'Parris Law Firm',
+        overview: 'Verifies every cited case and docket number against the live CourtListener REST API before finalizing any court admission response.',
+        acceptance_criteria: [
+          { text: 'Wait for cmp-142 RFA parser output schema', done: false },
+          { text: 'Verify 100% of citations against CourtListener REST v4', done: false }
+        ],
+        priority: 'Important',
+        complexity: 'M',
+        type: 'feature',
+        status: 'Waiting',
+        waiting_reason: 'dependency',
+        branch: 'feat/rfa-bates-parser',
+        model: 'engineer',
+        agent: 'solo',
+        skills: ['courtlistener-api', 'legal-citations'],
+        permission: 'auto',
+        goal: false,
+        deadline: '2026-11-15',
+        categories: ['backend'],
+        approved: true,
+        auto_run: true,
+        depends_on: ['cmp-142'],
+        pr_url: '',
+        x: 870,
+        y: 80,
+        prompts: {
+          first_message: 'Connect CourtListener v4 API verifier to the RFA response pipeline.',
+          second_message: '',
+          hostile_review: HOSTILE_REVIEW_SNIPPET
+        },
+        attachments: [
+          { type: 'link', title: 'CourtListener REST v4 API Docs', url: 'https://www.courtlistener.com/help/api/rest/' }
+        ],
+        custom_fields: {}
+      },
+      {
+        id: 'cmp-146',
+        number: 146,
+        repoId: 'parris-cmp',
+        friendly_title: 'Inline 60fps hover crop for handwritten ER notes',
+        client_visible: true,
+        client: 'Parris Law Firm',
+        overview: 'Floats the cropped original physician handwriting scan slice right above the cursor when hovering any uncertain date row.',
+        acceptance_criteria: [
+          { text: 'Slice bounding box in under 20ms', done: true },
+          { text: 'Resolve human architectural decision on yellow badge vs halt', done: false }
+        ],
+        priority: 'Important',
+        complexity: 'S',
+        type: 'question',
+        status: 'Waiting',
+        waiting_reason: 'human',
+        branch: 'feat/hover-crop-ui',
+        model: 'engineer',
+        agent: 'solo',
+        skills: ['frontend-canvas', 'pdf-bbox'],
+        permission: 'ask',
+        goal: true,
+        deadline: '2026-11-14',
+        categories: ['frontend'],
+        approved: true,
+        auto_run: false,
+        depends_on: ['n8n-89'],
+        pr_url: '',
+        x: 470,
+        y: 310,
+        prompts: {
+          first_message: 'Render 60fps cropped canvas popover on row hover using n8n-89 coordinates.',
+          second_message: '',
+          hostile_review: HOSTILE_REVIEW_SNIPPET
+        },
+        attachments: [],
+        custom_fields: { ux_inspiration: 'Stripe Radar' }
+      },
+      {
+        id: 'ac-54',
+        number: 54,
+        repoId: 'n8n-ac',
+        friendly_title: 'Mirakl Cohort 2 interactive workflow rubric grader',
+        client_visible: true,
+        client: 'Mirakl Enterprise',
+        overview: 'Grades Mirakl learner n8n workflow submissions in 45ms and highlights exact node & expression differences side by side.',
+        acceptance_criteria: [
+          { text: 'AST workflow graph comparator', done: true },
+          { text: 'Executive client greenlight for Cohort 2 launch', done: false }
+        ],
+        priority: 'Critical',
+        complexity: 'L',
+        type: 'feature',
+        status: 'Waiting',
+        waiting_reason: 'blocker',
+        branch: 'feat/mirakl-ast-grader',
+        model: 'genius',
+        agent: 'team',
+        skills: ['n8n-workflow-ast', 'rubric-grader'],
+        permission: 'auto',
+        goal: true,
+        deadline: '2026-11-09',
+        categories: ['frontend', 'backend'],
+        approved: true,
+        auto_run: true,
+        depends_on: ['n8n-89'],
+        pr_url: '',
+        x: 470,
+        y: 530,
+        prompts: {
+          first_message: 'Build AST diff grader for n8n JSON submissions and render side-by-side rubric card.',
+          second_message: '',
+          hostile_review: HOSTILE_REVIEW_SNIPPET
+        },
+        attachments: [
+          { type: 'html', title: 'Mirakl Learner Diff Preview', html: '<div style="font-family:monospace;padding:8px;background:#ECF5F0;color:#2E6B4E;border-radius:6px;font-size:11px;">✓ Node [HTTP Request -> Supabase Vector] matched 100% (42ms)</div>' }
+        ],
+        custom_fields: { cohort: 'Mirakl Cohort 2' }
+      },
+      {
+        id: 'hq-44',
+        number: 44,
+        repoId: 'workflows-hq',
+        friendly_title: 'Hostile review prompt injector & worktree janitor',
+        client_visible: false,
+        client: 'Internal',
+        overview: 'Automatically appends adversarial QA review prompts when an OpenCode session finishes its primary implementation.',
+        acceptance_criteria: [
+          { text: 'Auto-prune merged git worktrees older than 7 days', done: false }
+        ],
+        priority: 'Useful',
+        complexity: 'XS',
+        type: 'other',
+        status: 'Backlog',
+        waiting_reason: null,
+        branch: 'none',
+        model: 'worker',
+        agent: 'solo',
+        skills: ['git-worktree-admin'],
+        permission: 'yolo',
+        goal: false,
+        deadline: '',
+        categories: ['prompts'],
+        approved: false,
+        auto_run: false,
+        depends_on: [],
+        pr_url: '',
+        x: 870,
+        y: 310,
+        prompts: {
+          first_message: 'Write worktree cleanup cron and hostile review webhook hook.',
+          second_message: '',
+          hostile_review: HOSTILE_REVIEW_SNIPPET
+        },
+        attachments: [],
+        custom_fields: {}
+      }
+    ];
+
+    // Port-less, Resizable, Inline-Editable Sticky Notes
+    let STICKY_NOTES = JSON.parse(localStorage.getItem('atelier_stickies') || JSON.stringify([
+      {
+        id: 'sticky-1',
+        x: 70,
+        y: 320,
+        w: 270,
+        h: 175,
+        color: '#FBF5DF',
+        border: '#E5D59B',
+        text: "📌 Architecture Note (Double-click to edit)\n• Sticky notes have zero ports.\n• Issues sharing a branch worktree will never run concurrently.\n• Complete cmp-142 to watch cmp-148 auto-dispatch to OpenCode!"
+      }
+    ]));
+
+    let DECISIONS = [
+      {
+        id: 'dec-1',
+        issueId: 'cmp-146',
+        repoId: 'parris-cmp',
+        question: 'Should ambiguous medical dates (<75% OCR confidence) halt the batch or flag inline with a yellow review badge?',
+        context: 'OpenCode paused on cmp-146: Paralegals need unbroken chronological order, but uncertain cursive dates must be explicitly reviewed.',
+        optionA: 'Option A: Keep inline with yellow badge + 60fps hover crop (Recommended)',
+        optionB: 'Option B: Halt entire batch until manual human date entry',
+        resolved: false,
+        choice: null
+      },
+      {
+        id: 'dec-2',
+        issueId: 'ac-54',
+        repoId: 'n8n-ac',
+        question: 'Should Mirakl Cohort 2 workflow grading run via in-memory AST verification (45ms) or ephemeral containers (4.2s)?',
+        context: '60 learners submit simultaneously during live Paris & remote workshops.',
+        optionA: 'Option A: In-memory AST verifier + mock payload replay (45ms)',
+        optionB: 'Option B: Isolated Docker container per submission (4.2s)',
+        resolved: false,
+        choice: null
+      }
+    ];
+
+    let BLOCKED_TASKS = [
+      {
+        id: 'blk-1',
+        issueId: 'cmp-142',
+        repoId: 'parris-cmp',
+        kind: 'visual_qa',
+        title: 'Human QA: Verify two-column Superior Court RFA table & Bates links',
+        desc: 'Drag the comparison slider to inspect the generated two-column court table before merging PR #145.',
+        slider: 68,
+        resolved: false
+      },
+      {
+        id: 'blk-2',
+        issueId: 'ac-54',
+        repoId: 'n8n-ac',
+        kind: 'greenlight',
+        title: 'Client Sign-Off: Mirakl Enterprise Cohort 2 Lab Grader',
+        desc: 'All acceptance criteria and hostile review checks passed. Waiting on final launch approval.',
+        resolved: false
+      }
+    ];
+
+    let DISCUSSIONS = [
+      {
+        id: 'disc-1',
+        repoId: 'parris-cmp',
+        channel: 'Client · Parris Law',
+        title: 'Handling two-column defense objection tables across page breaks',
+        messages: [
+          {
+            id: 'm-1',
+            author: 'Marci · Parris Law Firm',
+            time: '10:18',
+            text: 'Request #14 starts at the bottom of page 4 and wraps onto page 5. Let us make sure the repeating header never duplicates the objection number.',
+            attachment: { type: 'youtube', title: 'Marci Walkthrough (02:34)', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
+          },
+          {
+            id: 'm-2',
+            author: 'Lucas · Lead Architect',
+            time: '10:42',
+            text: 'Wired into cmp-142! You can preview the live HTML table output directly inside the issue inspector.',
+            attachment: null
+          }
+        ]
+      }
+    ];
+
+    // UI State
+    let currentWorkspace = 'ideation';
+    let viewRole = 'lead'; // 'lead' | 'client'
+    let selectedRepo = 'all';
+    let selectedCategory = 'All';
+    let canvasListMode = 'canvas';
+    let selectedNodeId = null; // Single-click selects node on canvas
+    let inspectedIssueId = null; // Double-click opens side inspector
+    let activeDecisionId = 'dec-1';
+    let activeDiscussionId = 'disc-1';
+
+    // Canvas Transform State
+    let panX = 30;
+    let panY = 60;
+    let scale = 1.0;
+    let isPanning = false;
+    let spacePressed = false;
+    let panStart = { x: 0, y: 0, ox: 0, oy: 0 };
+    let nodeDrag = null;
+    let stickyDrag = null;
+    let stickyResize = null;
+    let wireDrag = null;
+    let touchState = { mode: null, startDist: 0, startScale: 1, sx: 0, sy: 0, ox: 0, oy: 0 };
+
+    // =======================================================================
+    // 2. INITIALIZATION & GLOBAL EVENTS
+    // =======================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      initCanvasInteractions();
+      renderAll();
+
+      window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName) && !document.activeElement?.isContentEditable) {
+          spacePressed = true;
+        }
+        if (e.key === 'Escape') {
+          selectedNodeId = null;
+          closeSideInspector();
+          closeSettingsModal();
+          closeNewIssueModal();
+          closeAllPopovers();
+          renderCanvas();
+        }
+      });
+      window.addEventListener('keyup', (e) => {
+        if (e.code === 'Space') spacePressed = false;
+      });
+      window.addEventListener('click', () => closeAllPopovers());
+    });
+
+    function renderAll() {
+      renderRepoFilterPopover();
+      renderCategoryPills();
+      renderCanvas();
+      renderMobileList();
+      renderPipelineWorkspace();
+      renderDecisionsWorkspace();
+      renderBlockedWorkspace();
+      renderDiscussionsWorkspace();
+      if (viewRole === 'client') renderClientPortal();
+      if (inspectedIssueId) renderSideInspector(inspectedIssueId);
+      updateBadges();
+      lucide.createIcons();
+    }
+
+    function updateBadges() {
+      document.getElementById('badge-ideation').textContent = getFilteredIssues().length;
+      document.getElementById('badge-decisions').textContent = DECISIONS.filter(d => !d.resolved).length;
+      document.getElementById('badge-blocked').textContent = BLOCKED_TASKS.filter(b => !b.resolved).length;
+    }
+
+    function getRepo(repoId) {
+      return REPOS.find(r => r.id === repoId) || REPOS[0];
+    }
+
+    function getFilteredIssues() {
+      return ISSUES.filter(item => {
+        if (selectedRepo !== 'all' && item.repoId !== selectedRepo) return false;
+        if (viewRole === 'client' && !item.client_visible) return false;
+        if (selectedCategory !== 'All' && !(item.categories || []).includes(selectedCategory)) return false;
+        return true;
+      });
+    }
+
+    // =======================================================================
+    // 3. OPENCODE / OPENCHAMBER ORCHESTRATOR & WORKTREE MUTEX ENGINE
+    // =======================================================================
+    function isWorktreeBusy(branchName, excludeIssueId = null) {
+      if (!SETTINGS.worktreeLock || !branchName || branchName === 'none') return false;
+      return ISSUES.some(i => i.id !== excludeIssueId && i.status === 'Running' && i.branch === branchName);
+    }
+
+    function areDependenciesDone(issue) {
+      if (!issue.depends_on || issue.depends_on.length === 0) return true;
+      return issue.depends_on.every(depId => {
+        const parent = ISSUES.find(p => p.id === depId);
+        return parent && parent.status === 'Done';
+      });
+    }
+
+    async function dispatchToOpenCode(issueId, manualTrigger = false) {
+      const issue = ISSUES.find(i => i.id === issueId);
+      if (!issue) return;
+
+      if (!areDependenciesDone(issue)) {
+        issue.status = 'Waiting';
+        issue.waiting_reason = 'dependency';
+        showToast(`⏳ ${issue.id} waiting: upstream dependencies not Done yet.`);
+        renderAll();
+        return;
+      }
+
+      if (isWorktreeBusy(issue.branch, issue.id)) {
+        issue.status = 'Waiting';
+        issue.waiting_reason = 'worktree lock (' + issue.branch + ')';
+        showToast(`🔒 Worktree lock active on branch "${issue.branch}". Queued ${issue.id}.`);
+        renderAll();
+        return;
+      }
+
+      // Build Context Chaining from Parent Issues
+      const parentContext = (issue.depends_on || []).map(depId => {
+        const p = ISSUES.find(x => x.id === depId);
+        return p ? { id: p.id, title: p.friendly_title, overview: p.overview, pr_url: p.pr_url } : null;
+      }).filter(Boolean);
+
+      const sessionPayload = {
+        repository: getRepo(issue.repoId).slug,
+        issue_number: issue.number,
+        worktree: issue.branch && issue.branch !== 'none' ? `/worktrees/${issue.repoId}/${issue.branch}` : null,
+        branch: issue.branch,
+        model_tier: issue.model,
+        agent_mode: issue.agent,
+        skills: issue.skills,
+        permission: issue.permission,
+        goal: issue.goal,
+        frontmatter: serializeIssueFrontmatter(issue),
+        upstream_context: parentContext,
+        attachments: issue.attachments,
+        messages: [
+          issue.prompts?.first_message || issue.overview,
+          issue.prompts?.second_message || null,
+          issue.prompts?.hostile_review || null
+        ].filter(Boolean)
+      };
+
+      issue.status = 'Running';
+      issue.waiting_reason = null;
+      issue.approved = true;
+      document.getElementById('orchestrator-status-text').textContent = `Running ${issue.id} on worktree ${issue.branch || 'main'} (${issue.model})`;
+      renderAll();
+
+      // Attempt live POST /api/session if configured, with graceful fallback simulation
+      if (SETTINGS.opencodeUrl && SETTINGS.opencodeKey) {
+        try {
+          await fetch(`${SETTINGS.opencodeUrl.replace(/\/$/, '')}/api/session`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${SETTINGS.opencodeKey}`
+            },
+            body: JSON.stringify(sessionPayload)
+          });
+        } catch (err) {
+          console.info('OpenCode local/remote endpoint simulated:', sessionPayload);
+        }
+      }
+
+      showToast(`🚀 Dispatched ${issue.id} to OpenChamber [worktree: ${issue.branch || 'default'} · model: ${issue.model}]`);
+    }
+
+    function markIssueDoneAndOrchestrate(issueId) {
+      const issue = ISSUES.find(i => i.id === issueId);
+      if (!issue) return;
+      issue.status = 'Done';
+      issue.waiting_reason = null;
+      if (!issue.pr_url) {
+        issue.pr_url = `https://github.com/workflows-ac/${issue.repoId}/pull/${issue.number + 10}`;
+      }
+      showToast(`✅ Marked ${issue.id} Done. Evaluating dependent issues & worktree locks...`);
+
+      // Check downstream dependents or locked worktree tasks
+      ISSUES.forEach(child => {
+        if (child.status !== 'Done' && child.status !== 'Running') {
+          const depsReady = areDependenciesDone(child);
+          const wasWaitingOnThis = (child.depends_on || []).includes(issue.id) || (child.branch === issue.branch && child.waiting_reason?.includes('worktree'));
+          if (depsReady && wasWaitingOnThis && (child.auto_run || child.approved)) {
+            setTimeout(() => dispatchToOpenCode(child.id), 450);
+          }
+        }
+      });
+
+      renderAll();
+    }
+
+    function runAllReadyTasks() {
+      let triggered = 0;
+      ISSUES.forEach(issue => {
+        if (issue.status !== 'Done' && issue.status !== 'Running' && (issue.approved || issue.auto_run) && areDependenciesDone(issue)) {
+          if (!isWorktreeBusy(issue.branch, issue.id)) {
+            dispatchToOpenCode(issue.id);
+            triggered++;
+          }
+        }
+      });
+      if (triggered === 0) {
+        showToast('No additional unblocked tasks ready to auto-run (check approvals or worktree locks).');
+      }
+    }
+
+    // Serialize YAML Frontmatter + Hidden Canvas HTML Comment for GitHub Issue Body
+    function serializeIssueFrontmatter(issue) {
+      const yamlLines = [
+        '---',
+        `friendly_title: "${issue.friendly_title}"`,
+        `client_visible: ${issue.client_visible}`,
+        `client: "${issue.client || ''}"`,
+        `priority: ${issue.priority}`,
+        `complexity: ${issue.complexity}`,
+        `type: ${issue.type}`,
+        `status: ${issue.status}`,
+        `branch: ${issue.branch || 'none'}`,
+        `model: ${issue.model}`,
+        `agent: ${issue.agent}`,
+        `permission: ${issue.permission}`,
+        `goal: ${issue.goal}`,
+        ` skills: [${(issue.skills || []).map(s => `"${s}"`).join(', ')}]`,
+        `categories: [${(issue.categories || []).map(c => `"${c}"`).join(', ')}]`,
+      ];
+      if (issue.deadline) yamlLines.push(`deadline: "${issue.deadline}"`);
+      Object.entries(issue.custom_fields || {}).forEach(([k, v]) => {
+        if (v !== '' && v !== null && v !== undefined) yamlLines.push(`${k}: "${v}"`);
+      });
+      yamlLines.push('---');
+      const canvasComment = `<!-- atelier:canvas ${JSON.stringify({ x: issue.x, y: issue.y, dependsOn: issue.depends_on, autoRun: issue.auto_run })} -->`;
+      return `${yamlLines.join('\n')}\n\n### Overview\n${issue.overview}\n\n${canvasComment}`;
+    }
+
+    // =======================================================================
+    // 4. N8N SPATIAL CANVAS (SYNCED GRID, SELECTION TOOLBAR, PORT-LESS STICKIES)
+    // =======================================================================
+    function renderCanvas() {
+      const nodesLayer = document.getElementById('canvas-nodes-layer');
+      if (!nodesLayer) return;
+
+      const filtered = getFilteredIssues();
+
+      // 1. Render Issue Nodes
+      const issueNodesHtml = filtered.map(item => {
+        const repo = getRepo(item.repoId);
+        const prio = PRIORITY_STYLE[item.priority] || PRIORITY_STYLE.Important;
+        const isSelected = selectedNodeId === item.id;
+        const isRunning = item.status === 'Running';
+        const isDone = item.status === 'Done';
+        const worktreeLocked = isWorktreeBusy(item.branch, item.id) && item.status !== 'Running' && item.status !== 'Done';
+
+        let statusBadge = `<span class="px-1.5 py-0.5 rounded bg-well text-inkSecondary font-mono text-[10px]">${item.status}</span>`;
+        if (isRunning) {
+          statusBadge = `<span class="px-1.5 py-0.5 rounded bg-sage text-ivory font-mono text-[10px] pulse-running">⚡ Running (${item.model})</span>`;
+        } else if (isDone) {
+          statusBadge = `<span class="px-1.5 py-0.5 rounded bg-sageWash text-sage border border-sageBorder font-mono text-[10px]">✓ Done</span>`;
+        } else if (worktreeLocked) {
+          statusBadge = `<span class="px-1.5 py-0.5 rounded bg-ochreWash text-ochre font-mono text-[10px]">🔒 Worktree Lock</span>`;
+        } else if (item.status === 'Waiting') {
+          statusBadge = `<span class="px-1.5 py-0.5 rounded bg-terracottaWash text-terracotta font-mono text-[10px]">⏳ Wait: ${item.waiting_reason || 'dep'}</span>`;
+        }
+
+        return `
+          <div id="node-${item.id}" data-node-id="${item.id}"
+               style="left:${item.x}px; top:${item.y}px;"
+               class="canvas-issue-node ${isSelected ? 'node-selected' : ''} ${isRunning ? 'node-running' : ''} absolute w-[290px] select-none">
+
+            <!-- Clean n8n Action Bar ONLY when selected (Zero hover tooltip clutter) -->
+            ${isSelected ? `
+              <div onmousedown="event.stopPropagation()" ontouchstart="event.stopPropagation()"
+                   class="popover-surface absolute -top-[42px] left-0 right-0 z-30 px-2 py-1 flex items-center justify-between text-[11px]">
+                <div class="flex items-center gap-1">
+                  <button onclick="dispatchToOpenCode('${item.id}', true)" class="tactile px-2 py-0.5 rounded bg-sage text-ivory font-medium flex items-center gap-1">
+                    <i data-lucide="play" class="w-3 h-3"></i><span>Run</span>
+                  </button>
+                  <button onclick="markIssueDoneAndOrchestrate('${item.id}')" class="tactile px-2 py-0.5 rounded bg-well hover:bg-sageWash text-ink font-medium">
+                    Done ✓
+                  </button>
+                  <button onclick="toggleNodeAutoRun('${item.id}')" class="tactile px-1.5 py-0.5 rounded ${item.auto_run ? 'bg-burgundyWash text-burgundy' : 'bg-well text-inkMuted'} font-mono">
+                    ${item.auto_run ? 'Auto' : 'Manual'}
+                  </button>
+                </div>
+                <div class="flex items-center gap-1">
+                  <button onclick="openSideInspector('${item.id}')" class="tactile px-1.5 py-0.5 rounded hover:bg-well text-ink font-medium">Inspect</button>
+                  <button onclick="deleteIssueNode('${item.id}')" class="tactile p-1 rounded hover:bg-crimsonWash text-crimson"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- Left Input Dependency Port -->
+            <div data-port="in" data-node-id="${item.id}" class="node-port absolute -left-[7px] top-1/2 -translate-y-1/2 z-20 cursor-crosshair"></div>
+
+            <!-- Right Output Dependency Port -->
+            <div data-port="out" data-node-id="${item.id}" class="node-port absolute -right-[7px] top-1/2 -translate-y-1/2 z-20 cursor-crosshair flex items-center justify-center text-[9px] font-mono text-burgundy">+</div>
+
+            <!-- Node Card Body -->
+            <div class="node-card-body card-interactive p-3.5 cursor-grab active:cursor-grabbing space-y-2">
+              <div class="flex items-center justify-between gap-1 text-[11px]">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span class="w-2.5 h-2.5 rounded-[3px] shrink-0" style="background-color:${repo.color}"></span>
+                  <span class="font-mono font-semibold text-inkSecondary truncate">${repo.slug}#${item.number}</span>
+                  <span class="px-1.5 py-0.2 rounded bg-well font-mono text-[10px] text-ink">${item.complexity}</span>
+                </div>
+                <span class="px-1.5 py-0.2 rounded text-[10px] font-medium ${prio.badge}">${item.priority}</span>
+              </div>
+
+              <div class="text-[13px] font-semibold text-ink line-clamp-2 leading-snug">${item.friendly_title}</div>
+
+              <!-- Worktree & Agent Metadata Strip -->
+              <div class="flex flex-wrap items-center gap-1 text-[10px] font-mono text-inkSecondary">
+                <span class="px-1.5 py-0.5 rounded bg-paper border border-ink/10 truncate max-w-[145px]">🌿 ${item.branch || 'none'}</span>
+                <span class="px-1.5 py-0.5 rounded bg-paper border border-ink/10">🤖 ${item.model}·${item.agent}</span>
+                <span class="px-1.5 py-0.5 rounded bg-paper border border-ink/10">${item.permission}</span>
+              </div>
+
+              <!-- Footer: Execution State + Auto-Run Toggle + Attachments Count -->
+              <div class="pt-1.5 border-t border-ink/10 flex items-center justify-between text-[10.5px]">
+                ${statusBadge}
+                <div class="flex items-center gap-2 font-mono text-inkMuted">
+                  <span>${item.auto_run ? '⚡ Auto' : '✋ Gate'}</span>
+                  ${(item.attachments || []).length ? `<span class="text-burgundy font-semibold">📎 ${item.attachments.length}</span>` : ''}
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // 2. Render Port-less, Resizable, Inline-Editable Sticky Notes
+      const stickyHtml = STICKY_NOTES.map(st => `
+        <div id="sticky-${st.id}" data-sticky-id="${st.id}"
+             style="left:${st.x}px; top:${st.y}px; width:${st.w}px; min-height:${st.h}px; background-color:${st.color}; border:1.5px solid ${st.border};"
+             class="canvas-sticky-note absolute rounded-[10px] shadow-md p-3 flex flex-col justify-between transition-shadow">
+          <div class="flex items-center justify-between pb-1.5 mb-1 border-b border-ink/10 cursor-grab active:cursor-grabbing sticky-drag-handle">
+            <div class="flex items-center gap-1">
+              <button onmousedown="event.stopPropagation()" onclick="setStickyColor('${st.id}','#FBF5DF','#E5D59B')" class="w-3.5 h-3.5 rounded-full bg-[#FBF5DF] border border-ink/30"></button>
+              <button onmousedown="event.stopPropagation()" onclick="setStickyColor('${st.id}','#F7ECEE','#E2C3C8')" class="w-3.5 h-3.5 rounded-full bg-[#F7ECEE] border border-ink/30"></button>
+              <button onmousedown="event.stopPropagation()" onclick="setStickyColor('${st.id}','#ECF5F0','#C2DEC9')" class="w-3.5 h-3.5 rounded-full bg-[#ECF5F0] border border-ink/30"></button>
+              <button onmousedown="event.stopPropagation()" onclick="setStickyColor('${st.id}','#FCF0EA','#EBD0C2')" class="w-3.5 h-3.5 rounded-full bg-[#FCF0EA] border border-ink/30"></button>
+            </div>
+            <button onmousedown="event.stopPropagation()" onclick="deleteStickyNote('${st.id}')" class="text-inkMuted hover:text-crimson text-[11px] font-mono">✕</button>
+          </div>
+
+          <div contenteditable="true"
+               onmousedown="event.stopPropagation()"
+               oninput="updateStickyText('${st.id}', this.innerText)"
+               class="flex-1 text-[12.5px] text-ink leading-relaxed whitespace-pre-wrap focus:outline-none select-text cursor-text">${st.text}</div>
+
+          <div class="flex items-center justify-between pt-1.5 text-[10px] font-mono text-inkMuted">
+            <span>Markdown Note (No ports)</span>
+            <div data-resize-id="${st.id}" class="sticky-resize-handle w-3.5 h-3.5 cursor-nwse-resize flex items-end justify-end text-inkSecondary">◢</div>
+          </div>
+        </div>
+      `).join('');
+
+      nodesLayer.innerHTML = issueNodesHtml + stickyHtml;
+      drawCanvasWires();
+      updateMinimap();
+      lucide.createIcons();
+    }
+
+    function drawCanvasWires() {
+      const svg = document.getElementById('canvas-wires-svg');
+      const badges = document.getElementById('canvas-wire-badges');
+      if (!svg || !badges) return;
+
+      const visibleIds = new Set(getFilteredIssues().map(i => i.id));
+      let paths = '';
+      let labels = '';
+
+      ISSUES.forEach(target => {
+        if (!visibleIds.has(target.id)) return;
+        (target.depends_on || []).forEach(sourceId => {
+          if (!visibleIds.has(sourceId)) return;
+          const source = ISSUES.find(i => i.id === sourceId);
+          if (!source) return;
+
+          const x1 = source.x + 290;
+          const y1 = source.y + 68;
+          const x2 = target.x;
+          const y2 = target.y + 68;
+          const dx = Math.max(Math.abs(x2 - x1) * 0.45, 55);
+          const d = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
+
+          const isDone = source.status === 'Done';
+          const isRunning = target.status === 'Running';
+          const stroke = isDone ? '#2E6B4E' : (isRunning ? '#C85A28' : '#7C1D2E');
+          const animClass = (isRunning || !isDone) ? 'wire-animated' : '';
+
+          paths += `
+            <path d="${d}" fill="none" stroke="${stroke}" stroke-width="2.2" stroke-opacity="0.82" class="${animClass}" />
+            <circle cx="${x1}" cy="${y1}" r="3.5" fill="${stroke}" />
+            <circle cx="${x2}" cy="${y2}" r="3.5" fill="${stroke}" />
+          `;
+
+          const mx = (x1 + x2) / 2;
+          const my = (y1 + y2) / 2 - 10;
+          labels += `
+            <div style="left:${mx}px; top:${my}px; transform:translate(-50%,-50%);"
+                 class="absolute px-1.5 py-0.5 rounded bg-ivory/95 border border-ink/10 font-mono text-[9.5px] text-inkSecondary shadow-sm">
+              ${isDone ? '✓ Ready' : '⏳ Waits on ' + source.id}
+            </div>
+          `;
+        });
+      });
+
+      if (wireDrag) {
+        const dx = Math.max(Math.abs(wireDrag.cx - wireDrag.sx) * 0.45, 45);
+        const d = `M ${wireDrag.sx} ${wireDrag.sy} C ${wireDrag.sx + dx} ${wireDrag.sy}, ${wireDrag.cx - dx} ${wireDrag.cy}, ${wireDrag.cx} ${wireDrag.cy}`;
+        paths += `<path d="${d}" fill="none" stroke="#7C1D2E" stroke-width="2.4" class="wire-animated" />`;
+      }
+
+      svg.innerHTML = paths;
+      badges.innerHTML = labels;
+    }
+
+    function applyCanvasTransform() {
+      const plane = document.getElementById('canvas-plane');
+      const viewport = document.getElementById('canvas-viewport');
+      const zoomLabel = document.getElementById('zoom-label');
+
+      if (plane) {
+        plane.style.transform = `translate3d(${Math.round(panX)}px, ${Math.round(panY)}px, 0) scale(${scale.toFixed(3)})`;
+      }
+      if (viewport) {
+        const gridStep = 24 * scale;
+        viewport.style.backgroundSize = `${gridStep}px ${gridStep}px`;
+        viewport.style.backgroundPosition = `${panX}px ${panY}px`;
+      }
+      if (zoomLabel) {
+        zoomLabel.textContent = `${Math.round(scale * 100)}%`;
+      }
+      updateMinimap();
+    }
+
+    function updateMinimap() {
+      const nodesEl = document.getElementById('minimap-nodes');
+      const boxEl = document.getElementById('minimap-viewport-box');
+      const coordsEl = document.getElementById('minimap-coords');
+      if (!nodesEl || !boxEl) return;
+
+      const mapW = 176;
+      const mapH = 92;
+      const worldW = 1600;
+      const worldH = 950;
+
+      nodesEl.innerHTML = getFilteredIssues().map(i => {
+        const left = Math.min(mapW - 12, Math.max(0, (i.x / worldW) * mapW));
+        const top = Math.min(mapH - 8, Math.max(0, (i.y / worldH) * mapH));
+        const col = i.status === 'Running' ? '#2E6B4E' : (i.status === 'Done' ? '#8A8378' : '#7C1D2E');
+        return `<div style="left:${left}px;top:${top}px;background:${col};" class="absolute w-3.5 h-2 rounded-[2px]"></div>`;
+      }).join('');
+
+      const vx = Math.max(0, Math.min(mapW - 30, (-panX / scale / worldW) * mapW));
+      const vy = Math.max(0, Math.min(mapH - 20, (-panY / scale / worldH) * mapH));
+      const vw = Math.min(mapW, (window.innerWidth / scale / worldW) * mapW);
+      const vh = Math.min(mapH, (window.innerHeight / scale / worldH) * mapH);
+
+      boxEl.style.left = `${vx}px`;
+      boxEl.style.top = `${vy}px`;
+      boxEl.style.width = `${Math.max(24, vw)}px`;
+      boxEl.style.height = `${Math.max(16, vh)}px`;
+      if (coordsEl) coordsEl.textContent = `${Math.round(-panX)}, ${Math.round(-panY)}`;
+    }
+
+    function jumpFromMinimap(e) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const rx = (e.clientX - rect.left) / rect.width;
+      const ry = (e.clientY - rect.top) / rect.height;
+      panX = -(rx * 1300 * scale) + 220;
+      panY = -(ry * 750 * scale) + 140;
+      applyCanvasTransform();
+    }
+
+    function initCanvasInteractions() {
+      const viewport = document.getElementById('canvas-viewport');
+      if (!viewport) return;
+      applyCanvasTransform();
+
+      // Wheel: Trackpad 2-finger pan + Cursor-centered Ctrl/Cmd/Pinch zoom
+      viewport.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        const rect = viewport.getBoundingClientRect();
+        const cx = e.clientX - rect.left;
+        const cy = e.clientY - rect.top;
+
+        if (e.ctrlKey || e.metaKey) {
+          const factor = e.deltaY < 0 ? 1.09 : 0.91;
+          const nextScale = Math.min(1.8, Math.max(0.4, scale * factor));
+          panX = cx - ((cx - panX) * (nextScale / scale));
+          panY = cy - ((cy - panY) * (nextScale / scale));
+          scale = nextScale;
+        } else {
+          panX -= e.deltaX;
+          panY -= e.deltaY;
+        }
+        applyCanvasTransform();
+      }, { passive: false });
+
+      // Mouse Down
+      viewport.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button') || e.target.isContentEditable) return;
+
+        // 1. Sticky Resize Handle
+        const resizeHandle = e.target.closest('.sticky-resize-handle');
+        if (resizeHandle) {
+          e.stopPropagation();
+          const st = STICKY_NOTES.find(s => s.id === resizeHandle.dataset.resizeId);
+          if (st) stickyResize = { st, sx: e.clientX, sy: e.clientY, ow: st.w, oh: st.h };
+          return;
+        }
+
+        // 2. Output Dependency Port -> Wire Drag
+        const outPort = e.target.closest('[data-port="out"]');
+        if (outPort) {
+          e.stopPropagation();
+          const fromNode = ISSUES.find(i => i.id === outPort.dataset.nodeId);
+          if (fromNode) {
+            wireDrag = { fromId: fromNode.id, sx: fromNode.x + 290, sy: fromNode.y + 68, cx: fromNode.x + 290, cy: fromNode.y + 68 };
+          }
+          return;
+        }
+
+        // 3. Sticky Note Drag
+        const stickyEl = e.target.closest('.canvas-sticky-note');
+        if (stickyEl && !spacePressed && e.button === 0) {
+          const st = STICKY_NOTES.find(s => s.id === stickyEl.dataset.stickyId);
+          if (st) stickyDrag = { st, el: stickyEl, sx: e.clientX, sy: e.clientY, ox: st.x, oy: st.y };
+          return;
+        }
+
+        // 4. Issue Node Click / Drag
+        const nodeEl = e.target.closest('.canvas-issue-node');
+        if (nodeEl && !spacePressed && e.button === 0) {
+          const issue = ISSUES.find(i => i.id === nodeEl.dataset.nodeId);
+          if (issue) {
+            nodeDrag = { issue, el: nodeEl, sx: e.clientX, sy: e.clientY, ox: issue.x, oy: issue.y, moved: false };
+          }
+          return;
+        }
+
+        // 5. Canvas Pan (Empty space, Middle-click, or Space+drag)
+        isPanning = true;
+        panStart = { x: e.clientX, y: e.clientY, ox: panX, oy: panY };
+      });
+
+      window.addEventListener('mousemove', (e) => {
+        if (isPanning) {
+          panX = panStart.ox + (e.clientX - panStart.x);
+          panY = panStart.oy + (e.clientY - panStart.y);
+          applyCanvasTransform();
+          return;
+        }
+        if (stickyResize) {
+          stickyResize.st.w = Math.max(200, Math.round(stickyResize.ow + (e.clientX - stickyResize.sx) / scale));
+          stickyResize.st.h = Math.max(120, Math.round(stickyResize.oh + (e.clientY - stickyResize.sy) / scale));
+          saveStickies();
+          renderCanvas();
+          return;
+        }
+        if (stickyDrag) {
+          stickyDrag.st.x = Math.max(10, Math.round(stickyDrag.ox + (e.clientX - stickyDrag.sx) / scale));
+          stickyDrag.st.y = Math.max(10, Math.round(stickyDrag.oy + (e.clientY - stickyDrag.sy) / scale));
+          stickyDrag.el.style.left = `${stickyDrag.st.x}px`;
+          stickyDrag.el.style.top = `${stickyDrag.st.y}px`;
+          saveStickies();
+          return;
+        }
+        if (wireDrag) {
+          const rect = viewport.getBoundingClientRect();
+          wireDrag.cx = (e.clientX - rect.left - panX) / scale;
+          wireDrag.cy = (e.clientY - rect.top - panY) / scale;
+          drawCanvasWires();
+          return;
+        }
+        if (nodeDrag) {
+          const dx = (e.clientX - nodeDrag.sx) / scale;
+          const dy = (e.clientY - nodeDrag.sy) / scale;
+          if (Math.abs(dx) > 4 || Math.abs(dy) > 4) nodeDrag.moved = true;
+          nodeDrag.issue.x = Math.max(10, Math.round(nodeDrag.ox + dx));
+          nodeDrag.issue.y = Math.max(10, Math.round(nodeDrag.oy + dy));
+          nodeDrag.el.style.left = `${nodeDrag.issue.x}px`;
+          nodeDrag.el.style.top = `${nodeDrag.issue.y}px`;
+          drawCanvasWires();
+          updateMinimap();
+        }
+      });
+
+      window.addEventListener('mouseup', (e) => {
+        isPanning = false;
+        stickyDrag = null;
+        stickyResize = null;
+
+        if (wireDrag) {
+          const targetEl = e.target.closest('.canvas-issue-node');
+          if (targetEl && targetEl.dataset.nodeId !== wireDrag.fromId) {
+            const targetIssue = ISSUES.find(i => i.id === targetEl.dataset.nodeId);
+            if (targetIssue && !targetIssue.depends_on.includes(wireDrag.fromId)) {
+              targetIssue.depends_on.push(wireDrag.fromId);
+              showToast(`Linked dependency: ${targetIssue.id} now depends on ${wireDrag.fromId}`);
+            }
+          }
+          wireDrag = null;
+          renderCanvas();
+          return;
+        }
+
+        if (nodeDrag) {
+          const clickedId = nodeDrag.issue.id;
+          const wasMoved = nodeDrag.moved;
+          nodeDrag = null;
+          if (!wasMoved) {
+            selectedNodeId = clickedId;
+            renderCanvas();
+          }
+        } else if (e.target === viewport || e.target.id === 'canvas-plane' || e.target.id === 'canvas-nodes-layer') {
+          selectedNodeId = null;
+          renderCanvas();
+        }
+      });
+
+      // Double-click Issue Node -> Open Side Inspector
+      viewport.addEventListener('dblclick', (e) => {
+        const nodeEl = e.target.closest('.canvas-issue-node');
+        if (nodeEl) {
+          e.stopPropagation();
+          openSideInspector(nodeEl.dataset.nodeId);
+        }
+      });
+
+      // Mobile Touch Pan & Pinch-Zoom
+      viewport.addEventListener('touchstart', (e) => {
+        if (e.target.closest('button') || e.target.isContentEditable) return;
+        if (e.touches.length === 1) {
+          const nodeEl = e.target.closest('.canvas-issue-node');
+          if (nodeEl) {
+            selectedNodeId = nodeEl.dataset.nodeId;
+            openSideInspector(nodeEl.dataset.nodeId);
+            renderCanvas();
+            return;
+          }
+          touchState.mode = 'pan';
+          touchState.sx = e.touches[0].clientX;
+          touchState.sy = e.touches[0].clientY;
+          touchState.ox = panX;
+          touchState.oy = panY;
+        } else if (e.touches.length === 2) {
+          touchState.mode = 'pinch';
+          touchState.startDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          touchState.startScale = scale;
+        }
+      }, { passive: true });
+
+      viewport.addEventListener('touchmove', (e) => {
+        if (touchState.mode === 'pan' && e.touches.length === 1) {
+          panX = touchState.ox + (e.touches[0].clientX - touchState.sx);
+          panY = touchState.oy + (e.touches[0].clientY - touchState.sy);
+          applyCanvasTransform();
+        } else if (touchState.mode === 'pinch' && e.touches.length === 2) {
+          const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          scale = Math.min(1.75, Math.max(0.45, touchState.startScale * (dist / touchState.startDist)));
+          applyCanvasTransform();
+        }
+      }, { passive: true });
+
+      viewport.addEventListener('touchend', () => { touchState.mode = null; });
+    }
+
+    function zoomCanvas(delta) {
+      scale = Math.min(1.8, Math.max(0.4, scale + delta));
+      applyCanvasTransform();
+    }
+
+    function resetCanvasTransform() {
+      panX = 30;
+      panY = 60;
+      scale = 1.0;
+      applyCanvasTransform();
+    }
+
+    function autoLayoutDAG() {
+      const visible = getFilteredIssues();
+      visible.forEach((item, i) => {
+        const depth = (item.depends_on || []).length;
+        item.x = 70 + depth * 390;
+        item.y = 80 + (i % 3) * 230;
+      });
+      resetCanvasTransform();
+      renderCanvas();
+      showToast('Auto-arranged dependency graph');
+    }
+
+    // Sticky Notes Helpers
+    function createStickyNote() {
+      STICKY_NOTES.push({
+        id: 'sticky-' + Date.now(),
+        x: Math.max(50, Math.round((-panX + 240) / scale)),
+        y: Math.max(50, Math.round((-panY + 180) / scale)),
+        w: 265,
+        h: 165,
+        color: '#FBF5DF',
+        border: '#E5D59B',
+        text: 'Double-click or click here to type Markdown notes...'
+      });
+      saveStickies();
+      renderCanvas();
+      showToast('Added port-less sticky note (saved locally & pinned issue ready)');
+    }
+
+    function updateStickyText(id, text) {
+      const st = STICKY_NOTES.find(s => s.id === id);
+      if (st) { st.text = text; saveStickies(); }
+    }
+
+    function setStickyColor(id, color, border) {
+      const st = STICKY_NOTES.find(s => s.id === id);
+      if (st) { st.color = color; st.border = border; saveStickies(); renderCanvas(); }
+    }
+
+    function deleteStickyNote(id) {
+      STICKY_NOTES = STICKY_NOTES.filter(s => s.id !== id);
+      saveStickies();
+      renderCanvas();
+    }
+
+    function saveStickies() {
+      localStorage.setItem('atelier_stickies', JSON.stringify(STICKY_NOTES));
+    }
+
+    function toggleNodeAutoRun(id) {
+      const item = ISSUES.find(i => i.id === id);
+      if (item) {
+        item.auto_run = !item.auto_run;
+        showToast(`${item.id}: ${item.auto_run ? 'Auto-run when dependencies finish' : 'Wait for manual approval'}`);
+        renderAll();
+      }
+    }
+
+    function deleteIssueNode(id) {
+      ISSUES = ISSUES.filter(i => i.id !== id);
+      ISSUES.forEach(i => { i.depends_on = (i.depends_on || []).filter(d => d !== id); });
+      if (inspectedIssueId === id) closeSideInspector();
+      selectedNodeId = null;
+      renderAll();
+      showToast('Deleted issue node');
+    }
+
+    // =======================================================================
+    // 5. SIDE INSPECTOR: COMPLETE FRONTMATTER, PROMPTS & RICH ATTACHMENTS
+    // =======================================================================
+    function openSideInspector(issueId) {
+      inspectedIssueId = issueId;
+      selectedNodeId = issueId;
+      document.getElementById('side-inspector').classList.remove('hidden');
+      renderSideInspector(issueId);
+      renderCanvas();
+      lucide.createIcons();
+    }
+
+    function closeSideInspector() {
+      inspectedIssueId = null;
+      document.getElementById('side-inspector').classList.add('hidden');
+    }
+
+    function renderSideInspector(issueId) {
+      const container = document.getElementById('side-inspector-content');
+      const item = ISSUES.find(i => i.id === issueId);
+      if (!container || !item) return;
+
+      const customEntries = Object.entries(item.custom_fields || {}).filter(([_, v]) => v !== '' && v !== null && v !== undefined);
+
+      container.innerHTML = `
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-ink/10 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="font-mono text-[12.5px] font-semibold text-burgundy">${item.repoId}#${item.number}</span>
+            <span class="px-2 py-0.5 rounded bg-well font-mono text-[11px]">${item.status}</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="dispatchToOpenCode('${item.id}', true)" class="tactile px-2.5 py-1 rounded bg-sage text-ivory text-[11.5px] font-medium flex items-center gap-1">
+              <i data-lucide="play" class="w-3 h-3"></i><span>Run in OpenCode</span>
+            </button>
+            <button onclick="markIssueDoneAndOrchestrate('${item.id}')" class="tactile px-2.5 py-1 rounded bg-burgundy text-ivory text-[11.5px] font-medium">
+              Mark Done ✓
+            </button>
+            <button onclick="closeSideInspector()" class="p-1 rounded bg-well text-inkSecondary"><i data-lucide="x" class="w-4 h-4"></i></button>
+          </div>
+        </div>
+
+        <!-- Friendly Title & Overview -->
+        <div class="space-y-2">
+          <input type="text" value="${item.friendly_title}"
+                 onchange="updateIssueField('${item.id}','friendly_title',this.value)"
+                 class="w-full text-[16px] font-semibold text-ink bg-transparent border-b border-transparent focus:border-burgundy focus:outline-none" />
+          <textarea rows="2" onchange="updateIssueField('${item.id}','overview',this.value)"
+                    class="w-full well-tag p-2.5 text-[12.5px] text-inkSecondary focus:outline-none">${item.overview}</textarea>
+        </div>
+
+        <!-- Frontmatter Grid (Non-empty fields + Clean Dynamic Editors) -->
+        <div class="well-surface p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-[11.5px] font-mono font-semibold text-ink uppercase">YAML Frontmatter & Worktree Config</span>
+            <button onclick="copyFrontmatterToClipboard('${item.id}')" class="text-[11px] font-mono text-burgundy hover:underline">Copy Raw YAML</button>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11.5px]">
+            <div>
+              <label class="text-inkMuted block">Priority</label>
+              <select onchange="updateIssueField('${item.id}','priority',this.value)" class="w-full bg-ivory px-2 py-1 rounded border border-ink/10 font-medium">
+                ${['Critical','Important','Useful','Optional'].map(p => `<option value="${p}" ${item.priority===p?'selected':''}>${p}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="text-inkMuted block">Complexity</label>
+              <select onchange="updateIssueField('${item.id}','complexity',this.value)" class="w-full bg-ivory px-2 py-1 rounded border border-ink/10 font-mono">
+                ${['XS','S','M','L','XL'].map(s => `<option value="${s}" ${item.complexity===s?'selected':''}>${s}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="text-inkMuted block">Type</label>
+              <select onchange="updateIssueField('${item.id}','type',this.value)" class="w-full bg-ivory px-2 py-1 rounded border border-ink/10">
+                ${['bug','feature','question','other'].map(t => `<option value="${t}" ${item.type===t?'selected':''}>${t}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="text-inkMuted block">Status</label>
+              <select onchange="updateIssueField('${item.id}','status',this.value)" class="w-full bg-ivory px-2 py-1 rounded border border-ink/10">
+                ${['Draft','Waiting','Running','Done','Backlog'].map(st => `<option value="${st}" ${item.status===st?'selected':''}>${st}</option>`).join('')}
+              </select>
+            </div>
+            <div class="col-span-2">
+              <label class="text-inkMuted block">Branch (OpenChamber Worktree)</label>
+              <input type="text" value="${item.branch || 'none'}" onchange="updateIssueField('${item.id}','branch',this.value)"
+                     class="w-full bg-ivory px-2 py-1 rounded border border-ink/10 font-mono text-burgundy" />
+            </div>
+            <div>
+              <label class="text-inkMuted block">Model Tier</label>
+              <select onchange="updateIssueField('${item.id}','model',this.value)" class="w-full bg-ivory px-2 py-1 rounded border border-ink/10 font-mono">
+                ${['intern','worker','engineer','genius'].map(m => `<option value="${m}" ${item.model===m?'selected':''}>${m}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="text-inkMuted block">Agent</label>
+              <select onchange="updateIssueField('${item.id}','agent',this.value)" class="w-full bg-ivory px-2 py-1 rounded border border-ink/10 font-mono">
+                ${['solo','team'].map(a => `<option value="${a}" ${item.agent===a?'selected':''}>${a}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="text-inkMuted block">Permission</label>
+              <select onchange="updateIssueField('${item.id}','permission',this.value)" class="w-full bg-ivory px-2 py-1 rounded border border-ink/10 font-mono">
+                ${['ask','auto','yolo'].map(p => `<option value="${p}" ${item.permission===p?'selected':''}>${p}</option>`).join('')}
+              </select>
+            </div>
+            ${item.deadline ? `
+              <div>
+                <label class="text-inkMuted block">Deadline</label>
+                <input type="date" value="${item.deadline}" onchange="updateIssueField('${item.id}','deadline',this.value)" class="w-full bg-ivory px-2 py-1 rounded border border-ink/10 font-mono" />
+              </div>
+            ` : ''}
+            ${item.client ? `
+              <div>
+                <label class="text-inkMuted block">Client</label>
+                <input type="text" value="${item.client}" onchange="updateIssueField('${item.id}','client',this.value)" class="w-full bg-ivory px-2 py-1 rounded border border-ink/10" />
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Toggles: Client Visible, Goal, Auto-Run -->
+          <div class="flex flex-wrap items-center gap-3 pt-1 text-[11.5px]">
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" ${item.client_visible?'checked':''} onchange="updateIssueField('${item.id}','client_visible',this.checked)" class="accent-burgundy" />
+              <span>client_visible</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" ${item.goal?'checked':''} onchange="updateIssueField('${item.id}','goal',this.checked)" class="accent-burgundy" />
+              <span>goal: true</span>
+            </label>
+            <label class="flex items-center gap-1.5 cursor-pointer">
+              <input type="checkbox" ${item.auto_run?'checked':''} onchange="updateIssueField('${item.id}','auto_run',this.checked)" class="accent-burgundy" />
+              <span>auto_run on deps</span>
+            </label>
+          </div>
+
+          <!-- Skills & Categories -->
+          <div class="space-y-1.5 pt-1 text-[11.5px]">
+            <div class="flex items-center justify-between">
+              <span class="text-inkMuted">Auto-loaded Skills:</span>
+              <input type="text" value="${(item.skills||[]).join(', ')}" onchange="updateIssueArray('${item.id}','skills',this.value)"
+                     class="w-60 bg-ivory px-2 py-0.5 rounded border border-ink/10 font-mono text-[11px]" />
+            </div>
+            <div class="flex items-center justify-between">
+              <span class="text-inkMuted">Categories:</span>
+              <input type="text" value="${(item.categories||[]).join(', ')}" onchange="updateIssueArray('${item.id}','categories',this.value)"
+                     class="w-60 bg-ivory px-2 py-0.5 rounded border border-ink/10 font-mono text-[11px]" />
+            </div>
+          </div>
+
+          <!-- Custom Frontmatter Fields (Cleanly hides empty fields) -->
+          ${customEntries.length > 0 ? `
+            <div class="pt-2 border-t border-ink/10 space-y-1.5">
+              <div class="text-[11px] font-mono text-inkMuted">Custom Frontmatter Properties</div>
+              ${customEntries.map(([k, v]) => `
+                <div class="flex items-center justify-between gap-2 text-[11.5px]">
+                  <span class="font-mono text-inkSecondary">${k}:</span>
+                  <input type="text" value="${v}" onchange="updateCustomField('${item.id}','${k}',this.value)" class="flex-1 bg-ivory px-2 py-0.5 rounded border border-ink/10 font-mono text-[11px]" />
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+
+          <div class="flex items-center gap-1.5 pt-1">
+            <input id="new-field-key" type="text" placeholder="New field key (e.g. deadline)" class="w-36 bg-ivory px-2 py-1 rounded border border-ink/10 font-mono text-[11px]" />
+            <input id="new-field-val" type="text" placeholder="Value" class="flex-1 bg-ivory px-2 py-1 rounded border border-ink/10 text-[11px]" />
+            <button onclick="addCustomFrontmatterField('${item.id}')" class="tactile px-2.5 py-1 rounded bg-burgundy text-ivory text-[11px] font-medium">+ Field</button>
+          </div>
+        </div>
+
+        <!-- Acceptance Criteria -->
+        <div class="space-y-2">
+          <div class="text-[12.5px] font-semibold text-ink">Acceptance Criteria</div>
+          <div class="space-y-1.5">
+            ${(item.acceptance_criteria || []).map((ac, idx) => `
+              <label class="card-surface p-2.5 flex items-center gap-2.5 text-[12px] cursor-pointer">
+                <input type="checkbox" ${ac.done?'checked':''} onchange="toggleCriterion('${item.id}',${idx})" class="accent-burgundy w-4 h-4" />
+                <span class="${ac.done?'line-through text-inkMuted':'text-ink'}">${ac.text}</span>
+              </label>
+            `).join('')}
+          </div>
+          <div class="flex gap-1.5">
+            <input id="new-ac-input" type="text" placeholder="Add acceptance criterion..." class="flex-1 well-tag px-2.5 py-1.5 text-[12px]" />
+            <button onclick="addAcceptanceCriterion('${item.id}')" class="tactile px-3 py-1.5 rounded bg-wellDeep text-ink text-[12px] font-medium">+ Add</button>
+          </div>
+        </div>
+
+        <!-- OpenCode Prompt Sequence & Hostile Review Snippets -->
+        <div class="well-surface p-3.5 space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-[12px] font-semibold text-ink">OpenCode Prompt Queue & Hostile Review</span>
+            <button onclick="injectHostileReview('${item.id}')" class="tactile px-2 py-0.5 rounded bg-burgundyWash text-burgundy text-[11px] font-medium">+ Hostile Review Snippet</button>
+          </div>
+          <div class="space-y-2 text-[11.5px]">
+            <div>
+              <label class="text-inkMuted font-mono">1st Message Prompt (Implementation)</label>
+              <textarea rows="2" onchange="updatePromptField('${item.id}','first_message',this.value)" class="w-full bg-ivory p-2 rounded border border-ink/10 font-mono text-[11px] mt-0.5">${item.prompts?.first_message || ''}</textarea>
+            </div>
+            <div>
+              <label class="text-inkMuted font-mono">2nd Message Prompt (Verification / Follow-up)</label>
+              <textarea rows="2" onchange="updatePromptField('${item.id}','second_message',this.value)" class="w-full bg-ivory p-2 rounded border border-ink/10 font-mono text-[11px] mt-0.5">${item.prompts?.second_message || ''}</textarea>
+            </div>
+            <div>
+              <label class="text-burgundy font-mono font-semibold">3rd Message: Hostile Review (Adversarial QA)</label>
+              <textarea rows="2" onchange="updatePromptField('${item.id}','hostile_review',this.value)" class="w-full bg-ivory p-2 rounded border border-burgundyBorder font-mono text-[11px] mt-0.5">${item.prompts?.hostile_review || ''}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rich Attachments (YouTube Video, Live HTML Preview, Image, Links) -->
+        <div class="space-y-2.5">
+          <div class="text-[12.5px] font-semibold text-ink">Rich Attachments (OpenCode Context & Issue Media)</div>
+          <div class="flex gap-1.5">
+            <input id="attach-url-input" type="text" placeholder="Paste YouTube URL, image URL, HTML snippet, or link..." class="flex-1 well-tag px-2.5 py-1.5 text-[12px]" />
+            <button onclick="addRichAttachment('${item.id}')" class="tactile px-3 py-1.5 rounded bg-burgundy text-ivory text-[12px] font-medium">+ Attach</button>
+          </div>
+          <div class="space-y-2.5">
+            ${(item.attachments || []).map(att => renderAttachmentCard(att)).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderAttachmentCard(att) {
+      if (att.type === 'youtube') {
+        return `
+          <div class="card-surface p-3 space-y-2">
+            <div class="text-[12px] font-semibold text-burgundy flex items-center gap-1.5"><i data-lucide="video" class="w-3.5 h-3.5"></i><span>${att.title}</span></div>
+            <div class="aspect-video w-full rounded-[6px] overflow-hidden bg-ink">
+              <iframe src="${att.url}" class="w-full h-full border-0" allowfullscreen></iframe>
+            </div>
+          </div>
+        `;
+      }
+      if (att.type === 'html') {
+        return `
+          <div class="card-surface p-3 space-y-2">
+            <div class="text-[12px] font-semibold text-sage flex items-center gap-1.5"><i data-lucide="code" class="w-3.5 h-3.5"></i><span>${att.title} (Live HTML Preview)</span></div>
+            <div class="p-2 rounded bg-paper border border-ink/10">${att.html}</div>
+          </div>
+        `;
+      }
+      if (att.type === 'image') {
+        return `
+          <div class="card-surface p-3 space-y-2">
+            <div class="text-[12px] font-semibold text-ink flex items-center gap-1.5"><i data-lucide="image" class="w-3.5 h-3.5"></i><span>${att.title}</span></div>
+            <img src="${att.url}" alt="${att.title}" class="w-full h-36 object-cover rounded-[6px]" />
+          </div>
+        `;
+      }
+      return `
+        <a href="${att.url}" target="_blank" rel="noopener" class="card-surface p-3 flex items-center justify-between text-[12px] text-burgundy hover:underline">
+          <span class="flex items-center gap-1.5"><i data-lucide="external-link" class="w-3.5 h-3.5"></i><span>${att.title}</span></span>
+          <span class="font-mono text-[10.5px] text-inkMuted">Open ↗</span>
+        </a>
+      `;
+    }
+
+    function updateIssueField(id, field, val) {
+      const item = ISSUES.find(i => i.id === id);
+      if (item) { item[field] = val; renderAll(); }
+    }
+
+    function updateIssueArray(id, field, csv) {
+      const item = ISSUES.find(i => i.id === id);
+      if (item) { item[field] = csv.split(',').map(s => s.trim()).filter(Boolean); renderAll(); }
+    }
+
+    function updateCustomField(id, key, val) {
+      const item = ISSUES.find(i => i.id === id);
+      if (item) {
+        if (!item.custom_fields) item.custom_fields = {};
+        if (!val) delete item.custom_fields[key];
+        else item.custom_fields[key] = val;
+        renderAll();
+      }
+    }
+
+    function addCustomFrontmatterField(id) {
+      const k = document.getElementById('new-field-key')?.value.trim();
+      const v = document.getElementById('new-field-val')?.value.trim();
+      if (!k || !v) return;
+      const item = ISSUES.find(i => i.id === id);
+      if (!item) return;
+      if (['deadline', 'client', 'branch'].includes(k)) item[k] = v;
+      else {
+        if (!item.custom_fields) item.custom_fields = {};
+        item.custom_fields[k] = v;
+      }
+      renderAll();
+      showToast(`Added frontmatter field "${k}: ${v}"`);
+    }
+
+    function toggleCriterion(id, idx) {
+      const item = ISSUES.find(i => i.id === id);
+      if (item && item.acceptance_criteria[idx]) {
+        item.acceptance_criteria[idx].done = !item.acceptance_criteria[idx].done;
+        renderAll();
+      }
+    }
+
+    function addAcceptanceCriterion(id) {
+      const inp = document.getElementById('new-ac-input');
+      if (!inp || !inp.value.trim()) return;
+      const item = ISSUES.find(i => i.id === id);
+      if (item) {
+        item.acceptance_criteria.push({ text: inp.value.trim(), done: false });
+        inp.value = '';
+        renderAll();
+      }
+    }
+
+    function updatePromptField(id, key, val) {
+      const item = ISSUES.find(i => i.id === id);
+      if (item) {
+        if (!item.prompts) item.prompts = {};
+        item.prompts[key] = val;
+      }
+    }
+
+    function injectHostileReview(id) {
+      const item = ISSUES.find(i => i.id === id);
+      if (item) {
+        item.prompts.hostile_review = HOSTILE_REVIEW_SNIPPET;
+        renderSideInspector(id);
+        showToast('Injected Hostile Review prompt into session queue');
+      }
+    }
+
+    function addRichAttachment(id) {
+      const inp = document.getElementById('attach-url-input');
+      if (!inp || !inp.value.trim()) return;
+      const raw = inp.value.trim();
+      const item = ISSUES.find(i => i.id === id);
+      if (!item) return;
+
+      if (raw.includes('youtube.com') || raw.includes('youtu.be')) {
+        const videoId = raw.split('v=')[1]?.split('&')[0] || 'dQw4w9WgXcQ';
+        item.attachments.unshift({ type: 'youtube', title: 'YouTube Video Reference', url: `https://www.youtube.com/embed/${videoId}` });
+      } else if (raw.startsWith('<')) {
+        item.attachments.unshift({ type: 'html', title: 'Custom HTML Snippet', html: raw });
+      } else if (/\.(png|jpg|jpeg|webp|gif)/i.test(raw)) {
+        item.attachments.unshift({ type: 'image', title: 'Attached Screenshot', url: raw });
+      } else {
+        item.attachments.unshift({ type: 'link', title: raw, url: raw });
+      }
+      inp.value = '';
+      renderAll();
+      showToast('Attached media to issue & OpenCode payload');
+    }
+
+    function copyFrontmatterToClipboard(id) {
+      const item = ISSUES.find(i => i.id === id);
+      if (!item) return;
+      navigator.clipboard?.writeText(serializeIssueFrontmatter(item));
+      showToast('Copied GitHub Issue YAML Frontmatter + Canvas State comment');
+    }
+
+    // =======================================================================
+    // 6. MOBILE LIST, PIPELINE KANBAN, DECISIONS, BLOCKED, DISCUSSIONS, CLIENT
+    // =======================================================================
+    function renderMobileList() {
+      const container = document.getElementById('mobile-list-container');
+      if (!container) return;
+      container.innerHTML = getFilteredIssues().map(item => {
+        const repo = getRepo(item.repoId);
+        const prio = PRIORITY_STYLE[item.priority] || PRIORITY_STYLE.Important;
+        return `
+          <div onclick="openSideInspector('${item.id}')" class="card-interactive p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer">
+            <div class="space-y-1">
+              <div class="flex flex-wrap items-center gap-2 text-[11.5px]">
+                <span class="w-2.5 h-2.5 rounded-[3px]" style="background:${repo.color}"></span>
+                <span class="font-mono font-semibold text-inkSecondary">${repo.slug}#${item.number}</span>
+                <span class="px-2 py-0.5 rounded text-[10.5px] ${prio.badge}">${item.priority} · ${item.complexity}</span>
+                <span class="px-2 py-0.5 rounded bg-well font-mono text-[10.5px]">🌿 ${item.branch}</span>
+              </div>
+              <div class="text-[14px] font-semibold text-ink">${item.friendly_title}</div>
+              <p class="text-[12px] text-inkSecondary line-clamp-1">${item.overview}</p>
+            </div>
+            <div class="flex items-center gap-2 shrink-0" onclick="event.stopPropagation()">
+              <button onclick="dispatchToOpenCode('${item.id}', true)" class="tactile px-3 py-1.5 rounded bg-sage text-ivory text-[11.5px] font-medium">Run</button>
+              <button onclick="markIssueDoneAndOrchestrate('${item.id}')" class="tactile px-3 py-1.5 rounded bg-well text-ink text-[11.5px] font-medium">Done ✓</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderPipelineWorkspace() {
+      const strip = document.getElementById('active-worktrees-strip');
+      const colsEl = document.getElementById('pipeline-columns');
+      if (!colsEl) return;
+
+      const statuses = ['Backlog', 'Draft', 'Waiting', 'Running', 'Done'];
+      const items = getFilteredIssues();
+
+      if (strip) {
+        const branches = [...new Set(ISSUES.map(i => i.branch).filter(b => b && b !== 'none'))];
+        strip.innerHTML = branches.map(b => {
+          const running = ISSUES.find(i => i.branch === b && i.status === 'Running');
+          return `
+            <div class="well-tag px-2.5 py-1 text-[11.5px] font-mono flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full ${running ? 'bg-sage pulse-running' : 'bg-inkMuted'}"></span>
+              <span>${b}</span>
+              <span class="text-inkMuted">(${running ? 'Locked by ' + running.id : 'Idle'})</span>
+            </div>
+          `;
+        }).join('');
+      }
+
+      colsEl.innerHTML = statuses.map(st => {
+        const list = items.filter(i => i.status === st);
+        return `
+          <div class="well-surface p-3 space-y-2.5 min-h-[380px]">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-[13px] font-semibold text-ink">${st}</span>
+              <span class="px-2 py-0.5 rounded bg-ivory font-mono text-[11px]">${list.length}</span>
+            </div>
+            <div class="space-y-2.5">
+              ${list.map(item => `
+                <div onclick="openSideInspector('${item.id}')" class="card-interactive p-3 space-y-2 cursor-pointer">
+                  <div class="flex items-center justify-between text-[11px] font-mono text-inkSecondary">
+                    <span>${item.repoId}#${item.number}</span>
+                    <span>${item.complexity} · ${item.model}</span>
+                  </div>
+                  <div class="text-[13px] font-semibold text-ink leading-snug">${item.friendly_title}</div>
+                  <div class="text-[10.5px] font-mono text-burgundy truncate">🌿 ${item.branch || 'none'}</div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderDecisionsWorkspace() {
+      const listEl = document.getElementById('decisions-list');
+      const detailEl = document.getElementById('decision-detail');
+      if (!listEl || !detailEl) return;
+
+      const active = DECISIONS.find(d => d.id === activeDecisionId) || DECISIONS[0];
+
+      listEl.innerHTML = DECISIONS.map(d => `
+        <button onclick="activeDecisionId='${d.id}'; renderDecisionsWorkspace();"
+                class="tactile w-full text-left p-3 rounded-[8px] ${active?.id===d.id?'bg-burgundyWash border border-burgundyBorder':'hover:bg-well'} space-y-1">
+          <div class="flex justify-between text-[11px] font-mono text-inkSecondary">
+            <span>${d.issueId}</span>
+            <span>${d.resolved ? '✓ Resolved' : 'Pending'}</span>
+          </div>
+          <div class="text-[13px] font-semibold text-ink line-clamp-2">${d.question}</div>
+        </button>
+      `).join('');
+
+      if (!active) return;
+      detailEl.innerHTML = `
+        <div class="flex items-center justify-between border-b border-ink/10 pb-2 text-[12px] font-mono text-burgundy">
+          <span>Linked Issue: ${active.issueId}</span>
+          <span>${active.resolved ? 'Resolved: ' + active.choice : 'Blocks OpenCode execution'}</span>
+        </div>
+        <h2 class="text-[18px] font-semibold text-ink">${active.question}</h2>
+        <p class="text-[13px] text-inkSecondary">${active.context}</p>
+        <div class="space-y-2.5 pt-2">
+          <button onclick="resolveDecision('${active.id}', 'Option A')" class="tactile w-full text-left p-4 rounded-[10px] bg-burgundyWash hover:bg-burgundy hover:text-ivory border border-burgundyBorder font-semibold text-[13.5px]">
+            ${active.optionA}
+          </button>
+          <button onclick="resolveDecision('${active.id}', 'Option B')" class="tactile w-full text-left p-4 rounded-[10px] bg-well hover:bg-burgundy hover:text-ivory font-semibold text-[13.5px]">
+            ${active.optionB}
+          </button>
+        </div>
+      `;
+    }
+
+    function resolveDecision(id, choice) {
+      const d = DECISIONS.find(x => x.id === id);
+      if (!d) return;
+      d.resolved = true;
+      d.choice = choice;
+      const issue = ISSUES.find(i => i.id === d.issueId);
+      if (issue) {
+        issue.approved = true;
+        dispatchToOpenCode(issue.id);
+      }
+      renderAll();
+    }
+
+    function renderBlockedWorkspace() {
+      const container = document.getElementById('blocked-list');
+      if (!container) return;
+      container.innerHTML = BLOCKED_TASKS.map(b => `
+        <div class="card-surface p-5 space-y-3 ${b.resolved?'opacity-60':''}">
+          <div class="flex items-center justify-between text-[12px] font-mono text-burgundy">
+            <span>${b.issueId} · ${b.kind.toUpperCase()}</span>
+            <span>${b.resolved ? '✓ Unblocked' : 'Waiting on Human'}</span>
+          </div>
+          <h3 class="text-[16px] font-semibold text-ink">${b.title}</h3>
+          <p class="text-[13px] text-inkSecondary">${b.desc}</p>
+          <div class="flex justify-end">
+            <button onclick="b_unblock('${b.id}')" class="tactile px-4 py-2 rounded-[6px] bg-burgundy text-ivory text-[12.5px] font-medium">
+              ${b.resolved ? 'Completed ✓' : 'Approve & Unblock Downstream Tasks'}
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function b_unblock(id) {
+      const b = BLOCKED_TASKS.find(x => x.id === id);
+      if (!b) return;
+      b.resolved = true;
+      markIssueDoneAndOrchestrate(b.issueId);
+    }
+
+    function renderDiscussionsWorkspace() {
+      const listEl = document.getElementById('discussions-list');
+      const headerEl = document.getElementById('discussion-header');
+      const msgsEl = document.getElementById('discussion-messages');
+      if (!listEl || !headerEl || !msgsEl) return;
+
+      const active = DISCUSSIONS.find(d => d.id === activeDiscussionId) || DISCUSSIONS[0];
+
+      listEl.innerHTML = DISCUSSIONS.map(d => `
+        <button onclick="activeDiscussionId='${d.id}'; renderDiscussionsWorkspace();"
+                class="tactile w-full text-left p-3 rounded-[8px] ${active?.id===d.id?'bg-burgundyWash border border-burgundyBorder':'hover:bg-well'} space-y-1">
+          <div class="text-[11px] font-mono text-inkSecondary">${d.channel}</div>
+          <div class="text-[13px] font-semibold text-ink line-clamp-2">${d.title}</div>
+        </button>
+      `).join('');
+
+      if (!active) return;
+      headerEl.innerHTML = `<div class="text-[15px] font-semibold text-ink">${active.title}</div>`;
+      msgsEl.innerHTML = active.messages.map(m => `
+        <div class="well-surface p-4 space-y-2">
+          <div class="flex items-center justify-between text-[12px]">
+            <span class="font-semibold text-ink">${m.author} <span class="font-mono text-inkMuted ml-1">${m.time}</span></span>
+            <button onclick="promoteDiscussionToIssue('${active.id}','${m.id}')" class="tactile px-2.5 py-1 rounded bg-burgundy text-ivory text-[11px] font-medium">+ Turn into Issue Node</button>
+          </div>
+          <p class="text-[13px] text-ink">${m.text}</p>
+          ${m.attachment ? renderAttachmentCard(m.attachment) : ''}
+        </div>
+      `).join('');
+    }
+
+    function postDiscussionMessage() {
+      const txt = document.getElementById('disc-reply-text');
+      const att = document.getElementById('disc-reply-attach');
+      if (!txt || !txt.value.trim()) return;
+      const active = DISCUSSIONS.find(d => d.id === activeDiscussionId) || DISCUSSIONS[0];
+      const url = att?.value.trim() || '';
+      active.messages.push({
+        id: 'm-' + Date.now(),
+        author: 'Lucas · Lead',
+        time: 'Now',
+        text: txt.value.trim(),
+        attachment: url ? { type: url.includes('youtube') ? 'youtube' : 'link', title: url, url } : null
+      });
+      txt.value = '';
+      if (att) att.value = '';
+      renderDiscussionsWorkspace();
+      lucide.createIcons();
+    }
+
+    function promoteDiscussionToIssue(discId, msgId) {
+      const disc = DISCUSSIONS.find(d => d.id === discId);
+      const msg = disc?.messages.find(m => m.id === msgId);
+      if (!msg) return;
+      const num = 190 + ISSUES.length;
+      const newIssue = {
+        id: `cmp-${num}`,
+        number: num,
+        repoId: disc.repoId,
+        friendly_title: msg.text.slice(0, 64),
+        client_visible: true,
+        client: 'Parris Law Firm',
+        overview: msg.text,
+        acceptance_criteria: [{ text: 'Verify implementation from discussion thread', done: false }],
+        priority: 'Important',
+        complexity: 'S',
+        type: 'feature',
+        status: 'Draft',
+        branch: `feat/disc-${num}`,
+        model: 'engineer',
+        agent: 'solo',
+        skills: ['github-orchestrator'],
+        permission: 'auto',
+        goal: false,
+        deadline: '',
+        categories: ['frontend'],
+        approved: false,
+        auto_run: true,
+        depends_on: [],
+        x: 200,
+        y: 480,
+        prompts: { first_message: msg.text, second_message: '', hostile_review: HOSTILE_REVIEW_SNIPPET },
+        attachments: msg.attachment ? [msg.attachment] : [],
+        custom_fields: {}
+      };
+      ISSUES.push(newIssue);
+      renderAll();
+      showToast(`Created Issue Node ${newIssue.id} from discussion message`);
+    }
+
+    function renderClientPortal() {
+      const container = document.getElementById('client-portal-body');
+      if (!container) return;
+      const clientIssues = ISSUES.filter(i => i.client_visible && (selectedRepo === 'all' || i.repoId === selectedRepo));
+
+      container.innerHTML = `
+        <div class="card-surface p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <span class="px-2.5 py-0.5 rounded bg-burgundyWash text-burgundy text-[11.5px] font-semibold">Client & Team View (Simplified)</span>
+            <h1 class="text-[20px] font-semibold text-ink mt-1">Project Milestones, Previews & 1-Click Approvals</h1>
+            <p class="text-[13px] text-inkSecondary">Technical tokens, worktree locks, and internal server endpoints are hidden in this view.</p>
+          </div>
+          <button onclick="openNewIssueModal()" class="tactile px-4 py-2 rounded-[6px] bg-burgundy text-ivory text-[12.5px] font-medium">+ Request Feature or Report Bug</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          ${clientIssues.map(item => `
+            <div class="card-surface p-5 space-y-3">
+              <div class="flex items-center justify-between text-[12px]">
+                <span class="font-semibold text-burgundy">${item.client || item.repoId}</span>
+                <span class="px-2 py-0.5 rounded bg-well font-mono text-[11px]">${item.status} · ${item.complexity}</span>
+              </div>
+              <h3 class="text-[16px] font-semibold text-ink">${item.friendly_title}</h3>
+              <p class="text-[13px] text-inkSecondary">${item.overview}</p>
+              ${(item.attachments || []).map(a => renderAttachmentCard(a)).join('')}
+              <div class="pt-2 border-t border-ink/10 flex items-center justify-between">
+                <span class="text-[11.5px] text-inkMuted">${item.deadline ? 'Target: ' + item.deadline : 'Active milestone'}</span>
+                <button onclick="item_clientApprove('${item.id}')" class="tactile px-3 py-1.5 rounded bg-sage text-ivory text-[12px] font-medium">
+                  ${item.approved ? 'Approved ✓' : '1-Click Approve'}
+                </button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function item_clientApprove(id) {
+      const item = ISSUES.find(i => i.id === id);
+      if (item) {
+        item.approved = true;
+        item.auto_run = true;
+        showToast(`Approved "${item.friendly_title}" for execution!`);
+        dispatchToOpenCode(id);
+      }
+    }
+
+    // =======================================================================
+    // 7. NAVIGATION, FILTERS, MODALS & GITHUB API SYNC
+    // =======================================================================
+    function switchWorkspace(ws) {
+      if (viewRole === 'client') setViewRole('lead');
+      currentWorkspace = ws;
+      ['ideation', 'operations', 'decisions', 'blocked', 'discussions', 'client'].forEach(k => {
+        document.getElementById('workspace-' + k)?.classList.toggle('hidden', k !== ws);
+        const btn = document.getElementById('tab-' + k);
+        if (btn) {
+          btn.className = k === ws
+            ? 'tactile px-3 py-1 rounded-[6px] bg-ivory text-ink font-medium text-[12.5px] shadow-sm flex items-center gap-1.5'
+            : 'tactile px-3 py-1 rounded-[6px] text-inkSecondary hover:text-ink font-medium text-[12.5px] flex items-center gap-1.5';
+        }
+      });
+      if (ws === 'ideation') applyCanvasTransform();
+      lucide.createIcons();
+    }
+
+    function setViewRole(role) {
+      viewRole = role;
+      document.getElementById('role-btn-lead').className = role === 'lead' ? 'tactile px-2 py-1 rounded-[5px] bg-ivory text-ink shadow-sm' : 'tactile px-2 py-1 rounded-[5px] text-inkSecondary';
+      document.getElementById('role-btn-client').className = role === 'client' ? 'tactile px-2 py-1 rounded-[5px] bg-ivory text-ink shadow-sm' : 'tactile px-2 py-1 rounded-[5px] text-inkSecondary';
+      document.getElementById('lead-nav-tabs').classList.toggle('lg:flex', role === 'lead');
+      document.getElementById('lead-nav-tabs').classList.toggle('hidden', role === 'client');
+      document.getElementById('btn-settings').classList.toggle('hidden', role === 'client');
+
+      if (role === 'client') {
+        closeSideInspector();
+        ['ideation', 'operations', 'decisions', 'blocked', 'discussions'].forEach(k => document.getElementById('workspace-' + k).classList.add('hidden'));
+        document.getElementById('workspace-client').classList.remove('hidden');
+        renderClientPortal();
+      } else {
+        document.getElementById('workspace-client').classList.add('hidden');
+        switchWorkspace(currentWorkspace);
+      }
+      lucide.createIcons();
+    }
+
+    function setCanvasListMode(mode) {
+      canvasListMode = mode;
+      document.getElementById('canvas-viewport').classList.toggle('hidden', mode !== 'canvas');
+      document.getElementById('list-viewport').classList.toggle('hidden', mode !== 'list');
+      renderAll();
+    }
+
+    function renderRepoFilterPopover() {
+      const list = document.getElementById('repo-popover-list');
+      if (!list) return;
+      list.innerHTML = `
+        <button onclick="selectedRepo='all'; closeAllPopovers(); renderAll();" class="w-full text-left px-2.5 py-1.5 rounded hover:bg-well flex justify-between text-[12px] font-medium">
+          <span>All repositories (4)</span>${selectedRepo==='all'?'<span>✓</span>':''}
+        </button>
+        ${REPOS.map(r => `
+          <button onclick="selectedRepo='${r.id}'; closeAllPopovers(); renderAll();" class="w-full text-left px-2.5 py-1.5 rounded hover:bg-well flex justify-between text-[12px] font-medium">
+            <span class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-[3px]" style="background:${r.color}"></span>${r.label} (${r.slug})</span>
+            ${selectedRepo===r.id?'<span>✓</span>':''}
+          </button>
+        `).join('')}
+      `;
+      const lbl = document.getElementById('active-repo-label');
+      if (lbl) lbl.textContent = selectedRepo === 'all' ? 'All repositories (4)' : getRepo(selectedRepo).label;
+    }
+
+    function renderCategoryPills() {
+      const bar = document.getElementById('canvas-tag-filters');
+      if (!bar) return;
+      const cats = ['All', 'frontend', 'backend', 'prompts', 'cli'];
+      bar.innerHTML = cats.map(c => `
+        <button onclick="selectedCategory='${c}'; renderAll();" class="tactile px-2 py-0.5 rounded ${selectedCategory===c?'bg-burgundy text-ivory':'text-inkSecondary hover:text-ink'}">${c}</button>
+      `).join('');
+    }
+
+    function openSettingsModal() {
+      document.getElementById('cfg-github-pat').value = SETTINGS.githubPat;
+      document.getElementById('cfg-github-repos').value = SETTINGS.githubRepos;
+      document.getElementById('cfg-opencode-url').value = SETTINGS.opencodeUrl;
+      document.getElementById('cfg-opencode-key').value = SETTINGS.opencodeKey;
+      document.getElementById('cfg-worktree-lock').checked = SETTINGS.worktreeLock;
+      document.getElementById('cfg-sticky-github').checked = SETTINGS.stickyToGithub;
+      document.getElementById('settings-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.add('hidden');
+    }
+
+    function saveSettings() {
+      SETTINGS.githubPat = document.getElementById('cfg-github-pat').value.trim();
+      SETTINGS.githubRepos = document.getElementById('cfg-github-repos').value.trim();
+      SETTINGS.opencodeUrl = document.getElementById('cfg-opencode-url').value.trim();
+      SETTINGS.opencodeKey = document.getElementById('cfg-opencode-key').value.trim();
+      SETTINGS.worktreeLock = document.getElementById('cfg-worktree-lock').checked;
+      SETTINGS.stickyToGithub = document.getElementById('cfg-sticky-github').checked;
+      localStorage.setItem('atelier_settings', JSON.stringify(SETTINGS));
+      closeSettingsModal();
+      showToast('Saved GitHub PAT, OpenCode URL, and Worktree Concurrency settings');
+    }
+
+    async function syncWithGitHub() {
+      if (!SETTINGS.githubPat) {
+        showToast('💡 Tip: Add your GitHub PAT in Settings (⚙️) for live REST/GraphQL repo sync. Synced local state.');
+        return;
+      }
+      showToast('🔄 Syncing Issues, Frontmatter & Canvas positions with GitHub REST + GraphQL API...');
+    }
+
+    function copyAgentSkillMarkdown() {
+      const txt = document.getElementById('skill-md-preview')?.innerText || '';
+      navigator.clipboard?.writeText(txt);
+      showToast('Copied SKILL.md to clipboard for your OpenCode / n8n agents');
+    }
+
+    function openNewIssueModal() {
+      document.getElementById('new-issue-modal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeNewIssueModal() {
+      document.getElementById('new-issue-modal').classList.add('hidden');
+    }
+
+    function createNewIssueFromModal() {
+      const title = document.getElementById('ni-title').value.trim() || 'New Automated Task';
+      const repoId = document.getElementById('ni-repo').value;
+      const num = 200 + ISSUES.length;
+      const newIssue = {
+        id: `${repoId.split('-')[0]}-${num}`,
+        number: num,
+        repoId,
+        friendly_title: title,
+        client_visible: document.getElementById('ni-client-visible').checked,
+        client: getRepo(repoId).client,
+        overview: document.getElementById('ni-overview').value.trim() || title,
+        acceptance_criteria: [{ text: 'Verify implementation & pass hostile review', done: false }],
+        priority: document.getElementById('ni-priority').value,
+        complexity: document.getElementById('ni-complexity').value,
+        type: document.getElementById('ni-type').value,
+        status: 'Draft',
+        branch: document.getElementById('ni-branch').value.trim() || 'none',
+        model: document.getElementById('ni-model').value,
+        agent: document.getElementById('ni-agent').value,
+        skills: document.getElementById('ni-skills').value.split(',').map(s => s.trim()).filter(Boolean),
+        permission: document.getElementById('ni-permission').value,
+        goal: true,
+        deadline: '',
+        categories: ['frontend'],
+        approved: true,
+        auto_run: document.getElementById('ni-autorun').checked,
+        depends_on: [],
+        x: Math.max(60, Math.round((-panX + 260) / scale)),
+        y: Math.max(60, Math.round((-panY + 180) / scale)),
+        prompts: {
+          first_message: document.getElementById('ni-prompt1').value.trim() || title,
+          second_message: '',
+          hostile_review: HOSTILE_REVIEW_SNIPPET
+        },
+        attachments: [],
+        custom_fields: {}
+      };
+      ISSUES.push(newIssue);
+      closeNewIssueModal();
+      renderAll();
+      openSideInspector(newIssue.id);
+      showToast(`Created ${newIssue.id} with standardized frontmatter`);
+    }
+
+    function createNewDiscussionThread() {
+      DISCUSSIONS.unshift({
+        id: 'disc-' + Date.now(),
+        repoId: selectedRepo === 'all' ? 'parris-cmp' : selectedRepo,
+        channel: 'Architecture & Client Sync',
+        title: 'New GitHub Discussion Thread',
+        messages: [{ id: 'm-' + Date.now(), author: 'Lucas · Lead', time: 'Now', text: 'Thread initialized.', attachment: null }]
+      });
+      activeDiscussionId = DISCUSSIONS[0].id;
+      renderDiscussionsWorkspace();
+    }
+
+    function togglePopover(id, e) {
+      if (e) e.stopPropagation();
+      const el = document.getElementById(id);
+      if (el) el.classList.toggle('hidden');
+    }
+
+    function closeAllPopovers() {
+      document.getElementById('repo-popover')?.classList.add('hidden');
+    }
+
+    function showToast(msg) {
+      const stack = document.getElementById('toast-stack');
+      if (!stack) return;
+      const el = document.createElement('div');
+      el.className = 'popover-surface px-3.5 py-2 text-[12px] font-medium text-ink flex items-center gap-2 pointer-events-auto';
+      el.innerHTML = `<span class="w-2 h-2 rounded-full bg-burgundy shrink-0"></span><span>${msg}</span>`;
+      stack.appendChild(el);
+      setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 200); }, 3200);
+    }
+  </script>
+</body>
+</html>
