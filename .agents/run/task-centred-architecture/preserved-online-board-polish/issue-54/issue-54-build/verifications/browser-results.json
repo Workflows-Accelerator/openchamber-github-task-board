@@ -1,0 +1,170 @@
+{
+  "startedAt": "2026-11-02T18:54:54.218Z",
+  "checks": [
+    {
+      "name": "Unauthenticated: login-view is visible after session check",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Unauthenticated: board-view is hidden",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Unauthenticated: tb_auth_hint is not set",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Sign-in: tb_auth_hint is set to 1",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Sign-in: tb_cached_board is saved in localStorage",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Sign-in: task rows rendered",
+      "pass": true,
+      "detail": "count=2"
+    },
+    {
+      "name": "No flash: #login-view.hidden was ALWAYS true throughout reload lifecycle",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Continuity: #board-view.hidden was NEVER true during reload lifecycle",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Flash duration is 0ms",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Sign-out: #login-view is visible after sign out",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Sign-out: #board-view is hidden after sign out",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Sign-out: tb_auth_hint is cleared",
+      "pass": true,
+      "detail": ""
+    },
+    {
+      "name": "Sign-out: tb_cached_board is cleared",
+      "pass": true,
+      "detail": ""
+    }
+  ],
+  "timeline": [
+    {
+      "event": "init_script_start",
+      "time": 54.346923828125,
+      "loginHidden": true,
+      "boardHidden": false
+    },
+    {
+      "event": "fetch_start",
+      "time": 61.346923828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "url": "/api/session"
+    },
+    {
+      "event": "DOMContentLoaded",
+      "time": 62.346923828125,
+      "loginHidden": true,
+      "boardHidden": false
+    },
+    {
+      "event": "window_load",
+      "time": 63.346923828125,
+      "loginHidden": true,
+      "boardHidden": false
+    },
+    {
+      "event": "fetch_end",
+      "time": 66.346923828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "url": "/api/session",
+      "duration": 5,
+      "status": 200
+    },
+    {
+      "event": "fetch_start",
+      "time": 67.346923828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "url": "/api/repos"
+    },
+    {
+      "event": "hidden_attribute_changed",
+      "time": 68.346923828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "id": "login-view",
+      "hidden": true
+    },
+    {
+      "event": "fetch_end",
+      "time": 78.346923828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "url": "/api/repos",
+      "duration": 11,
+      "status": 200
+    },
+    {
+      "event": "fetch_start",
+      "time": 79.346923828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "url": "/api/combined/board"
+    },
+    {
+      "event": "fetch_end",
+      "time": 439.346923828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "url": "/api/combined/board",
+      "duration": 360,
+      "status": 200
+    },
+    {
+      "event": "hidden_attribute_changed",
+      "time": 443.346923828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "id": "login-view",
+      "hidden": true
+    },
+    {
+      "event": "hidden_attribute_changed",
+      "time": 445.346923828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "id": "login-view",
+      "hidden": true
+    }
+  ],
+  "flashDurationMs": 0,
+  "screenshots": [
+    "screenshots/01-unauthenticated-login-view.png",
+    "screenshots/02-signed-in-board-view.png",
+    "screenshots/03-reload-early-shell.png",
+    "screenshots/04-reload-complete-board.png",
+    "screenshots/05-signed-out-login-view.png"
+  ]
+}

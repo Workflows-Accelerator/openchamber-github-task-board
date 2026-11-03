@@ -1,0 +1,136 @@
+{
+  "timestamp": "2026-11-02T15:37:37.944Z",
+  "liveMeasurements": {
+    "health": {
+      "status": 200,
+      "durationMs": 64.74,
+      "contentLength": 48
+    },
+    "session": {
+      "status": 200,
+      "durationMs": 13.17,
+      "contentLength": 23
+    },
+    "rootHtml": {
+      "status": 200,
+      "durationMs": 7.09,
+      "contentLength": 9049
+    },
+    "themeCss": {
+      "status": 200,
+      "durationMs": 9.75,
+      "contentLength": 23451
+    },
+    "appJs": {
+      "status": 200,
+      "durationMs": 12.52,
+      "contentLength": 107166
+    }
+  },
+  "localTimeline": [
+    {
+      "event": "init_script_start",
+      "time": 47.612548828125,
+      "loginHidden": false,
+      "boardHidden": true
+    },
+    {
+      "event": "fetch_start",
+      "time": 50.612548828125,
+      "loginHidden": false,
+      "boardHidden": true,
+      "url": "/api/session"
+    },
+    {
+      "event": "DOMContentLoaded",
+      "time": 51.612548828125,
+      "loginHidden": false,
+      "boardHidden": true
+    },
+    {
+      "event": "window_load",
+      "time": 52.612548828125,
+      "loginHidden": false,
+      "boardHidden": true
+    },
+    {
+      "event": "fetch_end",
+      "time": 56.612548828125,
+      "loginHidden": false,
+      "boardHidden": true,
+      "url": "/api/session",
+      "duration": 6,
+      "status": 200
+    },
+    {
+      "event": "fetch_start",
+      "time": 57.612548828125,
+      "loginHidden": false,
+      "boardHidden": true,
+      "url": "/api/repos"
+    },
+    {
+      "event": "fetch_end",
+      "time": 67.612548828125,
+      "loginHidden": false,
+      "boardHidden": true,
+      "url": "/api/repos",
+      "duration": 10,
+      "status": 200
+    },
+    {
+      "event": "fetch_start",
+      "time": 70.612548828125,
+      "loginHidden": false,
+      "boardHidden": true,
+      "url": "/api/combined/board"
+    },
+    {
+      "event": "fetch_end",
+      "time": 178.612548828125,
+      "loginHidden": false,
+      "boardHidden": true,
+      "url": "/api/combined/board",
+      "duration": 108,
+      "status": 200
+    },
+    {
+      "event": "hidden_attribute_changed",
+      "time": 185.612548828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "id": "login-view",
+      "hidden": true
+    },
+    {
+      "event": "hidden_attribute_changed",
+      "time": 185.612548828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "id": "board-view",
+      "hidden": false
+    },
+    {
+      "event": "hidden_attribute_changed",
+      "time": 189.612548828125,
+      "loginHidden": true,
+      "boardHidden": false,
+      "id": "login-view",
+      "hidden": true
+    }
+  ],
+  "screenshots": [
+    "screenshots/flash-login-visible.png",
+    "screenshots/flash-board-visible.png",
+    "screenshots/panel-1280-dark.png",
+    "screenshots/panel-drawer-1280-dark.png",
+    "screenshots/web-1280-dark.png",
+    "screenshots/web-drawer-1280-dark.png",
+    "screenshots/panel-1280-light.png",
+    "screenshots/web-1280-light.png",
+    "screenshots/panel-360-dark.png",
+    "screenshots/web-360-dark.png",
+    "screenshots/panel-360-light.png",
+    "screenshots/web-360-light.png"
+  ]
+}
