@@ -52,3 +52,10 @@ Round 1 answers:
 - D28 Create parent issue + one issue per step on GitHub now (repo Workflows-Accelerator/openchamber-github-task-board).
 
 alignment: CONFIRMED (2026-11-03, rounds 1-3)
+
+## Autonomy window — 2026-11-03 night
+- D29 User: "Don't stop until it's all done. I'm going to bed, so you have 10h ... go way past 60. Make it count."
+  Interpretation: build all steps #56-#71 sequentially without waiting for batch L5 reviews; batches A-D queue for one morning review (still per-batch verdicts).
+  Still gated on the user's click (D27 + manager rules): merge to master, push master, switching the live board (C4 live switch), any deletion, closing issues. Those steps are built and staged, then parked as needs-human.
+  Unanswered: closing #53/#54 as superseded — left open.
+  Speed: read-only preflight checks (token permissions, OpenChamber API reachability, deploy path) run in parallel with builds because they edit no product files.
