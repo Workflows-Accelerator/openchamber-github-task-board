@@ -18,4 +18,4 @@
 - Extension panel unchanged by this batch (nothing to activate).
 
 ## Human verdict
-- Pending.
+- 2026-11-02: "Release, keep issues open" (D65). Push + deploy approved; #53/#54 stay open (status:needs-human) until user checks live.

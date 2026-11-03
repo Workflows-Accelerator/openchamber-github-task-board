@@ -1,7 +1,7 @@
 # Run work from the task board
 
-## Current checkpoint — 2026-11-02 #54 + #53 Accepted; batched L5 asked
-State: #54 + #53 ACCEPTED; L5 gate `outputs/online-board-polish-l5-gate.md` presented to user (candidate `98261a8`, code `35a23fe`). Nothing pushed/deployed.
+## Current checkpoint — 2026-11-03 #54 + #53 L5 approved (D65); releasing
+State: RELEASING `98261a8` via `tasks/brief-online-board-polish-release.md` (push master, deploy, receipts; issues stay OPEN status:needs-human until user checks live). Next: release audit -> cleanup -> ask user for next portfolio item.
 - #53 audit `ses_4e9e0c8996fb422d0633f2fc` -> `98261a8` Spec PASS / Quality APPROVED. Gate `outputs/issue-53-accepted.md`; receipt comment 6590564625; label status:in-review.
 - #53 build `764bd08` had 7 visual blockers; L4 hostile review (genius, `ses_88b861988e04909b3347357d`) fixed all at `35a23fe` (15/15 #53 tests, 479/479 web, 618/618 root, 48/48 Obscura, #54 no-flash still passes; Chromium NOT VERIFIED, libglib missing). Manager re-inspected screenshots 01/03/04/06/07: acceptable.
 - Dispatched independent read-only audit (`tasks/brief-issue-53-audit.md`, engineer, `ses_4e9e0c8996fb422d0633f2fc`). Next: on PASS -> `outputs/issue-53-accepted.md`, label in-review, combined staging, batched L5.
