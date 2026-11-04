@@ -8,7 +8,7 @@ Step A4 delivers attached Markdown notes on the canvas under cards and a pure au
 4. **Pure Auto-Layout Arrange Engine (`web/public/arrange.js`):** Pure deterministic function that partitions cards by project into horizontal bands stacked vertically, computes DAG topological ranks via longest path from roots over blocker edges, performs two-pass barycenter crossing reduction, and guarantees zero overlaps by construction.
 5. **Interactive Arrange Execution & Batch Save:** Screen-space confirmation modal defaulting to "Only cards without a saved place", live progress bar with batch save queue, error summary, undo capability while the page remains open, and notes moving atomically alongside their parent card. No automatic movements occur on page load, poll, or filter change.
 6. **Carry-Over Nit Resolution from Step A3:** Cross-repo drawer dependency chips display the repository name once only without duplicate prefixing.
-7. **Production Quality & Constraints:** Zero emojis, zero occurrences of "n8n", strict adherence to `script-src 'self'` and `style-src 'self'` CSP policies, full responsive layout across 360px, 768px, and 1280px viewports, and 100% passing test suites.
+7. **Production Quality & Constraints:** Zero emojis, zero occurrences of legacy automation tokens, strict adherence to `script-src 'self'` and `style-src 'self'` CSP policies, full responsive layout across 360px, 768px, and 1280px viewports, and 100% passing test suites.
 
 ---
 
@@ -117,18 +117,18 @@ Step A4 delivers attached Markdown notes on the canvas under cards and a pure au
    ```
 
 2. **Web Tests Integration Suite (`node --test web/tests/*.test.mjs`):**
-   - **527 passing tests** across all unit and integration specs.
+   - **535 passing tests** across all unit and integration specs.
    - Includes:
-     - `web/tests/markdown.test.mjs`: 10 tests covering XSS prevention, protocol filtering, headings, bold/italic, code blocks, task lists, and 4,000-char payloads.
-     - `web/tests/arrange.test.mjs`: 15 tests covering project banding, DAG ranking, barycenter sweeps, cycle breaking, zero overlaps, and determinism.
-     - `web/tests/canvas.test.mjs`: 27 tests covering canvas marker parsing, note updates, note length validation (4000 char cap), save queue concurrency, and UI elements.
+     - `web/tests/markdown.test.mjs`: 14 tests covering XSS prevention, protocol filtering, headings, bold/italic, code blocks, task lists, and hostile 4,000-char payloads.
+     - `web/tests/arrange.test.mjs`: 19 tests covering project banding, DAG ranking, barycenter sweeps, cycle breaking, zero overlaps, determinism, dynamic note extents, and project-scoped aliases.
+     - `web/tests/canvas.test.mjs`: 31 tests covering canvas marker parsing, comment escaping, hostile note schema validation, clearPosition, save queue concurrency, and UI elements.
    ```text
-   1..527
-   # tests 527
+   1..535
+   # tests 535
    # suites 0
-   # pass 527
+   # pass 535
    # fail 0
-   # duration_ms 30025.009965
+   # duration_ms 34422.729188
    ```
 
 3. **TypeScript Typecheck (`npm run typecheck`):**
@@ -149,12 +149,13 @@ Generated via Playwright headless Chromium (`chrome-headless-shell-linux64`) acr
 | `canvas-arrange-dialog-1280.png` | 1280px Desktop (Light) | Arrange modal dialog with radio scope choices defaulting to "Only cards without a saved place". |
 | `canvas-arranged-1280.png` | 1280px Desktop (Light) | Canvas after auto-layout arrange: project bands (`CORE`, `SATELLITE`), topological DAG ranks, zero overlaps, and undo button. |
 | `canvas-arrange-undo-1280.png` | 1280px Desktop (Light) | Canvas after clicking "Undo arrange": all cards and notes restored to their exact prior positions. |
-| `canvas-drawer-add-note-1280.png` | 1280px Desktop (Light) | Issue detail drawer for `#101` showing "+ Note" button in the drawer header. |
+| `canvas-drawer-add-note-1280.png` | 1280px Desktop (Light) | Issue detail drawer for `#101` showing "Add note" button in the drawer header. |
+| `canvas-notes-fr-1280.png` | 1280px Desktop (French) | Canvas view under French localization with localized action buttons and arrange controls. |
 | `canvas-notes-768.png` | 768px Tablet (Light) | Tablet 768px Canvas view with responsive notes layer and connector lines. |
 | `canvas-notes-768-dark.png` | 768px Tablet (Dark) | Tablet 768px Canvas view in dark mode. |
-| `canvas-notes-360.png` | 360px Mobile (Light) | Mobile 360px Canvas view showing cards, notes, and pan/zoom controls. |
-| `canvas-arrange-dialog-360.png` | 360px Mobile (Light) | Mobile 360px Arrange modal dialog centered cleanly with responsive button sizing. |
-| `canvas-notes-360-dark.png` | 360px Mobile (Dark) | Mobile 360px Canvas view in dark mode. |
+| `canvas-notes-360.png` | 360px Compact (Light) | Compact 360px Canvas view showing cards, notes, and pan/zoom controls. |
+| `canvas-arrange-dialog-360.png` | 360px Compact (Light) | Compact 360px Arrange modal dialog centered cleanly with responsive button sizing. |
+| `canvas-notes-360-dark.png` | 360px Compact (Dark) | Compact 360px Canvas view in dark mode. |
 
 ---
 
@@ -166,6 +167,39 @@ Generated via Playwright headless Chromium (`chrome-headless-shell-linux64`) acr
 ---
 
 ## Lexicon & Contract Conformance
-- **Zero occurrences of emojis:** Checked via ripgrep across client and server files.
-- **Zero occurrences of "n8n":** Checked via ripgrep across client and server files.
+- **Zero occurrences of emojis:** Checked across client and server files.
+- **Zero occurrences of legacy automation tokens:** Checked across client and server files.
+- **Purge of prohibited device word:** Fully purged across code, UI labels, tests, and documentation.
 - **Bilingual localization:** French (`dict.fr`) and English (`dict.en`) support for all note actions, color labels, arrange options, and undo triggers.
+
+---
+
+## Hostile Review & Defect Resolution
+
+### Finding 1: Dependency Wire Collisions & Path Routing
+- **Defect:** Dependency wires between vertically separated cards cut directly through intermediate cards in dense columns.
+- **Resolution:** In `web/public/app.js`, `chooseWirePorts` now scans intervening cards along the vertical span between source and target. When intervening cards exist, the wire routes around them via the clear outer side gutter (`cx1 = leftClearX - gutterOffset`).
+
+### Finding 2: Fit-All Clipping on Band Labels and SVG Wires
+- **Defect:** `fitAllCanvasNodes` only measured cards and notes, clipping project band labels at the top or wide curved wires at canvas edges.
+- **Resolution:** Extended `fitAllCanvasNodes` to query `.canvas-card`, `.canvas-sticky-note`, `.canvas-project-band-label`, and SVG wire bounding boxes via `getBBox()`. Added generous edge paddings (60px–80px) to guarantee all canvas elements fit comfortably within viewport.
+
+### Finding 3: Dynamic Arrange Extents with Attached Notes
+- **Defect:** Fixed `columnPitch` and `rowPitch` could cause cards with large attached notes or non-standard card dimensions to overlap adjacent slots.
+- **Resolution:** In `web/public/arrange.js`, `getCardExtents` computes `topExtra`, `bottomExtra`, `leftExtra`, and `rightExtra` for all notes on a card. The coordinate assignment step computes dynamic column widths and row heights per project band, enforcing `colX[c]` and `rowY[r]` offsets that ensure strict non-overlapping bounds.
+
+### Finding 4: Cross-Project Issue Number Scoping in Auto-Layout
+- **Defect:** Alias resolution in `web/public/arrange.js` previously keyed on unqualified issue numbers (`#1`), which allowed cards with duplicate numbers in different repositories to link erroneously across project bands.
+- **Resolution:** Scoped all blocker aliases to their respective project band so `#1` in repo A resolves only against issues in repo A, preserving topological DAG ranking integrity.
+
+### Finding 5: Note Connector Contrast and Port Attachment
+- **Defect:** Faint connector lines lacked contrast in dark theme and connected only to the top of notes, cutting diagonally across the card when notes were moved above or to the side.
+- **Resolution:** In `web/public/theme.css`, updated `.canvas-note-connector` to use `var(--fg-muted)` with `stroke-width: 2`, `opacity: 0.85`, and `stroke-dasharray: 4, 3`. In `web/public/app.js`, `updateNoteConnectorLine` selects the closest boundary port (top, bottom, left, right) depending on the relative spatial orientation between note and card.
+
+### Finding 6: Arrange Undo Clears Unplaced Positions
+- **Defect:** Undoing an Arrange operation on cards that originally had no saved coordinates left them with coordinates because `saveIssueCanvas` did not remove server-side canvas properties.
+- **Resolution:** Arrange Undo records `hadCoordinates` and `saved` status. In `web/server/board.ts` and `web/public/app.js`, supported `clearPosition: true` which strips `x` and `y` from the issue marker, cleanly returning unplaced cards to unplaced state.
+
+### Finding 7: Textarea Editing Blur Race and In-Flight Retention
+- **Defect:** Clicking swatches, delete, or cancel while editing a note could race with the textarea `blur` handler, prematurely firing save or discarding uncommitted text.
+- **Resolution:** Added `mousedown` `preventDefault()` on Save and Cancel buttons to avoid premature textarea blur. Swatch clicks and delete triggers preserve in-progress textarea text. Canceling restores original note text reliably.

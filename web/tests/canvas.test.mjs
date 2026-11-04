@@ -122,6 +122,40 @@ test('setCanvasMarker: preserves CRLF, code fences, board-order, and merges unkn
   assert.throws(() => setCanvasMarker('body', { x: NaN, y: 100 }), BoardError);
   assert.throws(() => setCanvasMarker('body', { x: 100, y: Infinity }), BoardError);
   assert.throws(() => setCanvasMarker('body', null), BoardError);
+
+  // Hostile note validation: non-empty id, unique id, valid color, positive w/h
+  assert.throws(() => setCanvasMarker('body', { notes: [{}] }), (err) => err instanceof BoardError);
+  assert.throws(() => setCanvasMarker('body', { notes: [{ id: '' }] }), (err) => err instanceof BoardError);
+  assert.throws(() => setCanvasMarker('body', { notes: [{ id: 'n1' }, { id: 'n1' }] }), (err) => err instanceof BoardError);
+  assert.throws(() => setCanvasMarker('body', { notes: [{ id: 'n1', color: 'invalid-rainbow' }] }), (err) => err instanceof BoardError);
+  assert.throws(() => setCanvasMarker('body', { notes: [{ id: 'n1', w: -50 }] }), (err) => err instanceof BoardError);
+  assert.throws(() => setCanvasMarker('body', { notes: [{ id: 'n1', h: 0 }] }), (err) => err instanceof BoardError);
+  assert.throws(() => setCanvasMarker('body', { notes: [{ id: 'n1', text: 12345 }] }), (err) => err instanceof BoardError);
+
+  // Literal '-->' inside note text cannot break out of HTML comment
+  const trickyNoteText = 'Literal --> breakout and <!-- board-canvas: fake --> example with `code` & special chars \\u0026 < > "\'\r\nNewline text';
+  const escapedMarkerBody = setCanvasMarker('## Header', {
+    notes: [{ id: 'n-safe', text: trickyNoteText, color: 'blue' }],
+  });
+  // Must contain only ONE HTML comment closing -->
+  assert.equal(escapedMarkerBody.match(/-->/g)?.length, 1);
+  const parsedEscaped = parseCanvasMarker(escapedMarkerBody);
+  assert.equal(parsedEscaped.notes[0].text, trickyNoteText);
+
+  // clearPosition removes x and y while preserving notes and custom keys
+  const beforeClear = '<!-- board-canvas: {"x":100,"y":200,"notes":[{"id":"n1","text":"stay"}],"customKey":"persist"} -->';
+  const afterClear = setCanvasMarker(beforeClear, { clearPosition: true });
+  const parsedAfterClear = parseCanvasMarker(afterClear);
+  assert.equal(parsedAfterClear.x, undefined);
+  assert.equal(parsedAfterClear.y, undefined);
+  assert.equal(parsedAfterClear.notes.length, 1);
+  assert.equal(parsedAfterClear.customKey, 'persist');
+
+  // Empty notes array deletes notes
+  const clearedNotes = setCanvasMarker(afterClear, { notes: [] });
+  const parsedClearedNotes = parseCanvasMarker(clearedNotes);
+  assert.equal(parsedClearedNotes.notes, undefined);
+  assert.equal(parsedClearedNotes.customKey, 'persist');
 });
 
 test('PUT /api/issues/:n/canvas: saves canvas position, preserves order, enforces CSRF and concurrency', async (t) => {

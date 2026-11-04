@@ -16,22 +16,31 @@ export function escapeHtml(str) {
   return str.replace(/[&<>"']/g, (ch) => ESCAPE_CHARS[ch] || ch);
 }
 
-// Allowed protocols for links: http, https, mailto (plus relative path or anchor)
-const ALLOWED_PROTOCOLS = /^(\/|#|https?:\/\/|mailto:)/i;
+// Allowed protocols for links: strictly http, https, mailto (only absolute URLs with these schemes)
+const ALLOWED_PROTOCOLS = /^(https?:\/\/|mailto:)/i;
 
 function isSafeUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return false;
   const trimmed = rawUrl.trim();
-  // Reject javascript:, data:, vbscript:, etc. Even with control chars or whitespace
-  const sanitized = trimmed.replace(/[\x00-\x1f\x7f-\x9f]/g, '');
+  // Strip control characters, zero-width chars, and leading/trailing whitespace
+  const sanitized = trimmed.replace(/[\x00-\x20\x7f-\x9f\u200b-\u200f\uFEFF]/g, '');
+  // Reject protocol-relative URLs (//)
+  if (sanitized.startsWith('//')) {
+    return false;
+  }
+  // Reject dangerous protocols
   if (/^(javascript|data|vbscript|file):/i.test(sanitized)) {
     return false;
   }
   return ALLOWED_PROTOCOLS.test(sanitized);
 }
 
+let parseNonceSeq = 0;
+
 function parseInlines(text) {
   if (!text) return '';
+
+  const nonce = `\x1aMDX${Date.now()}X${++parseNonceSeq}X`;
 
   // 1. Code spans: `code`
   // We extract code spans first to avoid parsing markdown syntax inside them.
@@ -39,7 +48,7 @@ function parseInlines(text) {
   let processed = text.replace(/`([^`\n]+)`/g, (_m, code) => {
     const idx = codeSpans.length;
     codeSpans.push(`<code>${code}</code>`);
-    return `\x1aCODE_${idx}\x1a`;
+    return `${nonce}C${idx}\x1a`;
   });
 
   // 2. Links: [text](url)
@@ -53,9 +62,10 @@ function parseInlines(text) {
     }
     const idx = links.length;
     const parsedLinkText = parseInlines(linkText);
+    const safeHref = escapeHtml(cleanUrl);
     const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
-    links.push(`<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer"${titleAttr}>${parsedLinkText}</a>`);
-    return `\x1aLINK_${idx}\x1a`;
+    links.push(`<a href="${safeHref}" target="_blank" rel="noopener noreferrer"${titleAttr}>${parsedLinkText}</a>`);
+    return `${nonce}L${idx}\x1a`;
   });
 
   // 3. Bold & Italic (support nested combinations)
@@ -68,10 +78,12 @@ function parseInlines(text) {
   processed = processed.replace(/(^|[^\w_])_([^\s_](?:.*?[^\s_])?)_(?!_)/g, '$1<em>$2</em>');
 
   // Restore links
-  processed = processed.replace(/\x1aLINK_(\d+)\x1a/g, (_m, idx) => links[Number(idx)] || '');
+  const linkRestoreRegex = new RegExp(`${nonce}L(\\d+)\x1a`, 'g');
+  processed = processed.replace(linkRestoreRegex, (_m, idx) => links[Number(idx)] || '');
 
   // Restore code spans
-  processed = processed.replace(/\x1aCODE_(\d+)\x1a/g, (_m, idx) => codeSpans[Number(idx)] || '');
+  const codeRestoreRegex = new RegExp(`${nonce}C(\\d+)\x1a`, 'g');
+  processed = processed.replace(codeRestoreRegex, (_m, idx) => codeSpans[Number(idx)] || '');
 
   return processed;
 }
@@ -90,15 +102,18 @@ export function renderMarkdown(source) {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Fenced Code Block: ``` or ~~~
-    const fenceMatch = /^[ \t]*(```|~~~)([a-zA-Z0-9_-]*)[ \t]*$/.exec(line);
+    // Fenced Code Block: ``` or ~~~ (supports fences >= 3 characters)
+    const fenceMatch = /^[ \t]*(`{3,}|~{3,})([a-zA-Z0-9_-]*)[ \t]*$/.exec(line);
     if (fenceMatch) {
       const fenceMarker = fenceMatch[1];
+      const markerChar = fenceMarker[0];
+      const markerLen = fenceMarker.length;
       const lang = fenceMatch[2] ? ` class="language-${escapeHtml(fenceMatch[2])}"` : '';
       const codeLines = [];
       i++;
+      const closingPattern = new RegExp(`^[ \\t]*${markerChar}{${markerLen},}[ \\t]*$`);
       while (i < lines.length) {
-        if (new RegExp(`^[ \\t]*${fenceMarker}[ \\t]*$`).test(lines[i])) {
+        if (closingPattern.test(lines[i])) {
           i++;
           break;
         }

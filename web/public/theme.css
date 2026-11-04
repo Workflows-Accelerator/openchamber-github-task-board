@@ -2560,10 +2560,10 @@ input[type="text"].search-input:focus,
 
 /* Faint Connector Line */
 .canvas-note-connector {
-  stroke: var(--fg-faint);
-  stroke-dasharray: 4, 4;
-  stroke-width: 1.5;
-  opacity: 0.55;
+  stroke: var(--fg-muted, #5a554e);
+  stroke-dasharray: 4, 3;
+  stroke-width: 2;
+  opacity: 0.85;
   fill: none;
   pointer-events: none;
 }

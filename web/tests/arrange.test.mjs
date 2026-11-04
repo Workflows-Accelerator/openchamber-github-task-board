@@ -207,3 +207,117 @@ test('arrangeCards: 300 cards across multiple projects executes in <50ms with ze
 
   checkNoOverlaps(res);
 });
+
+test('hostile arrange: variable card dimensions and attached note extents prevent overlap', () => {
+  const cards = [
+    {
+      id: 'core#101',
+      number: 101,
+      project: 'core',
+      w: 260,
+      h: 160,
+      notes: [
+        { id: 'n1', x: 80, y: 260, w: 240, h: 175 }, // note extends from y=260 to y=435 (195px below card)
+      ],
+      blockers: [],
+    },
+    {
+      id: 'core#104',
+      number: 104,
+      project: 'core',
+      w: 250,
+      h: 150,
+      blockers: [],
+    },
+  ];
+
+  const res = arrangeCards(cards);
+  assert.equal(res.size, 2);
+
+  const p101 = res.get('core#101');
+  const p104 = res.get('core#104');
+
+  // Both are rank 0 (column 0), but p104 must be placed below p101 AND its note
+  assert.equal(p101.rank, 0);
+  assert.equal(p104.rank, 0);
+  assert.ok(p104.y > p101.y, 'p104 is placed below p101');
+
+  // Note on 101: card is at p101.y. Note extends to p101.y + 160 + (435 - 160) = p101.y + 275px
+  // p104 must start strictly below the bottom of note 101
+  const noteBottom = p101.y + 160 + (435 - 160);
+  assert.ok(
+    p104.y >= noteBottom,
+    `Card 104 top (${p104.y}) must be >= Card 101 note bottom (${noteBottom}) to prevent overlap`,
+  );
+
+  checkNoOverlaps(res);
+});
+
+test('hostile arrange: duplicate issue numbers in different repos resolve scoped to project band', () => {
+  const cards = [
+    { id: 'repoA#1', number: 1, project: 'repoA', blockers: [] },
+    { id: 'repoA#2', number: 2, project: 'repoA', blockers: ['1'] }, // blocks on repoA#1
+    { id: 'repoB#1', number: 1, project: 'repoB', blockers: [] },
+    { id: 'repoB#2', number: 2, project: 'repoB', blockers: ['1'] }, // blocks on repoB#1, NOT repoA#1
+  ];
+
+  const res = arrangeCards(cards);
+  assert.equal(res.bands.length, 2);
+
+  const a1 = res.get('repoA#1');
+  const a2 = res.get('repoA#2');
+  const b1 = res.get('repoB#1');
+  const b2 = res.get('repoB#2');
+
+  assert.equal(a1.rank, 0);
+  assert.equal(a2.rank, 1);
+  assert.equal(b1.rank, 0);
+  assert.equal(b2.rank, 1);
+
+  assert.ok(a1.x < a2.x);
+  assert.ok(b1.x < b2.x);
+
+  checkNoOverlaps(res);
+});
+
+test('hostile arrange: cross-project dependencies do not distort intra-project ranks', () => {
+  const cards = [
+    { id: 'Alpha#10', number: 10, project: 'Alpha', blockers: [] },
+    { id: 'Alpha#20', number: 20, project: 'Alpha', blockers: ['Beta#99'] }, // cross-project blocker
+    { id: 'Beta#99', number: 99, project: 'Beta', blockers: [] },
+  ];
+
+  const res = arrangeCards(cards);
+  assert.equal(res.bands.length, 2);
+
+  // Cross-project blocker Beta#99 does not affect Alpha#20's internal rank within Alpha
+  const a10 = res.get('Alpha#10');
+  const a20 = res.get('Alpha#20');
+  const b99 = res.get('Beta#99');
+
+  assert.equal(a10.rank, 0);
+  assert.equal(a20.rank, 0);
+  assert.equal(b99.rank, 0);
+
+  checkNoOverlaps(res);
+});
+
+test('hostile arrange: shuffled inputs yield byte-for-byte identical coordinate mapping', () => {
+  const baseCards = [
+    { id: 'c1', number: 1, project: 'P', blockers: [] },
+    { id: 'c2', number: 2, project: 'P', blockers: ['c1'] },
+    { id: 'c3', number: 3, project: 'P', blockers: ['c1'] },
+    { id: 'c4', number: 4, project: 'P', blockers: ['c2', 'c3'] },
+    { id: 'c5', number: 5, project: 'P', blockers: [] },
+  ];
+
+  const normalRes = arrangeCards(baseCards);
+  const reversedCards = baseCards.slice().reverse();
+  const reversedRes = arrangeCards(reversedCards);
+
+  for (const c of baseCards) {
+    const p1 = normalRes.get(c.id);
+    const p2 = reversedRes.get(c.id);
+    assert.deepEqual(p1, p2, `Coordinates for ${c.id} must be strictly deterministic regardless of input order`);
+  }
+});

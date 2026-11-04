@@ -2158,8 +2158,8 @@
   function fitAllCanvasNodes() {
     var viewport = $('canvas-viewport');
     if (!viewport) return;
-    var cards = viewport.querySelectorAll('.canvas-card, .canvas-sticky-note');
-    if (!cards || cards.length === 0) {
+    var nodes = viewport.querySelectorAll('.canvas-card, .canvas-sticky-note, .canvas-project-band-label');
+    if (!nodes || nodes.length === 0) {
       resetCanvasView();
       return;
     }
@@ -2168,16 +2168,34 @@
     var minY = Infinity;
     var maxY = -Infinity;
 
-    cards.forEach(function (card) {
-      var x = parseFloat(card.style.left) || 0;
-      var y = parseFloat(card.style.top) || 0;
-      var w = card.offsetWidth || 250;
-      var h = card.offsetHeight || 130;
+    nodes.forEach(function (node) {
+      var x = parseFloat(node.style.left) || 0;
+      var y = parseFloat(node.style.top) || 0;
+      var w = node.offsetWidth || 250;
+      var h = node.offsetHeight || 130;
       if (x < minX) minX = x;
       if (x + w > maxX) maxX = x + w;
       if (y < minY) minY = y;
       if (y + h > maxY) maxY = y + h;
     });
+
+    var wiresLayer = $('canvas-wires');
+    if (wiresLayer) {
+      var wires = wiresLayer.querySelectorAll('.canvas-wire');
+      wires.forEach(function (wire) {
+        if (typeof wire.getBBox === 'function') {
+          try {
+            var bbox = wire.getBBox();
+            if (bbox && isFinite(bbox.x) && isFinite(bbox.y) && bbox.width > 0 && bbox.height > 0) {
+              if (bbox.x < minX) minX = bbox.x;
+              if (bbox.x + bbox.width > maxX) maxX = bbox.x + bbox.width;
+              if (bbox.y < minY) minY = bbox.y;
+              if (bbox.y + bbox.height > maxY) maxY = bbox.y + bbox.height;
+            }
+          } catch (_) {}
+        }
+      });
+    }
 
     if (!isFinite(minX) || !isFinite(maxX)) {
       resetCanvasView();
@@ -2189,10 +2207,10 @@
     var vw = viewport.clientWidth || 800;
     var vh = viewport.clientHeight || 600;
 
-    var padLeft = 50;
-    var padRight = 70;
-    var padTop = 64;
-    var padBottom = 40;
+    var padLeft = 60;
+    var padRight = 80;
+    var padTop = 70;
+    var padBottom = 60;
 
     var scaleX = (vw - (padLeft + padRight)) / contentW;
     var scaleY = (vh - (padTop + padBottom)) / contentH;
@@ -2539,8 +2557,16 @@
     var payload = {
       fingerprint: currentIssue.fingerprint,
     };
-    if (currentIssue.canvas.x !== undefined) payload.x = currentIssue.canvas.x;
-    if (currentIssue.canvas.y !== undefined) payload.y = currentIssue.canvas.y;
+    if (canvasUpdates.clearPosition) {
+      payload.clearPosition = true;
+      delete currentIssue.canvas.x;
+      delete currentIssue.canvas.y;
+      delete issue.canvas.x;
+      delete issue.canvas.y;
+    } else {
+      if (currentIssue.canvas.x !== undefined) payload.x = currentIssue.canvas.x;
+      if (currentIssue.canvas.y !== undefined) payload.y = currentIssue.canvas.y;
+    }
     if (currentIssue.canvas.notes !== undefined) payload.notes = currentIssue.canvas.notes;
 
     if (currentIssue.repository && currentIssue.repository.full) {
@@ -2572,8 +2598,10 @@
       setNotice('');
       return response;
     } catch (err) {
-      currentIssue.canvas = prevCanvas;
-      issue.canvas = prevCanvas;
+      if (options.isCardMove) {
+        currentIssue.canvas = prevCanvas;
+        issue.canvas = prevCanvas;
+      }
       var cardEl = options.cardEl;
       var oldPos = options.oldPos;
       if (cardEl && oldPos) {
@@ -2638,18 +2666,44 @@
     var noteX = note.x;
     var noteY = note.y;
 
-    var x1 = cardX + cardW / 2;
-    var y1 = cardY + cardH;
-    if (noteY + noteH < cardY) {
-      y1 = cardY;
-    }
+    var cardCenterX = cardX + cardW / 2;
+    var cardCenterY = cardY + cardH / 2;
+    var noteCenterX = noteX + noteW / 2;
+    var noteCenterY = noteY + noteH / 2;
 
-    var x2 = noteX + noteW / 2;
-    var y2 = noteY;
-    if (noteY > cardY + cardH) {
+    var x1, y1, x2, y2;
+
+    // Check relative placement to select clean boundary ports
+    if (noteY >= cardY + cardH - 10) {
+      // Note is below card
+      x1 = cardCenterX;
+      y1 = cardY + cardH;
+      x2 = noteCenterX;
       y2 = noteY;
-    } else if (noteY + noteH < cardY) {
+    } else if (noteY + noteH <= cardY + 10) {
+      // Note is above card
+      x1 = cardCenterX;
+      y1 = cardY;
+      x2 = noteCenterX;
       y2 = noteY + noteH;
+    } else if (noteX >= cardX + cardW - 10) {
+      // Note is to the right of card
+      x1 = cardX + cardW;
+      y1 = cardCenterY;
+      x2 = noteX;
+      y2 = noteCenterY;
+    } else if (noteX + noteW <= cardX + 10) {
+      // Note is to the left of card
+      x1 = cardX;
+      y1 = cardCenterY;
+      x2 = noteX + noteW;
+      y2 = noteCenterY;
+    } else {
+      // Overlapping: center-to-center
+      x1 = cardCenterX;
+      y1 = cardCenterY;
+      x2 = noteCenterX;
+      y2 = noteCenterY;
     }
 
     line.setAttribute('x1', String(Math.round(x1)));
@@ -2820,6 +2874,10 @@
       });
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
+        var textarea = noteEl.querySelector('textarea.canvas-note-textarea');
+        if (textarea) {
+          note.text = textarea.value;
+        }
         colors.forEach(function (cls) { noteEl.classList.remove('color-' + cls); });
         noteEl.classList.add('color-' + c);
         note.color = c;
@@ -2856,6 +2914,10 @@
 
     delBtn.addEventListener('click', function (e) {
       e.stopPropagation();
+      var textarea = noteEl.querySelector('textarea.canvas-note-textarea');
+      if (textarea) {
+        note.text = textarea.value;
+      }
       metaEl.hidden = true;
       normalActions.hidden = true;
       delConfirmEl.hidden = false;
@@ -2966,6 +3028,18 @@
         if (editor.parentNode) editor.parentNode.removeChild(editor);
         body.hidden = false;
       }
+
+      saveNoteBtn.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        doSave();
+      });
+
+      cancelNoteBtn.addEventListener('mousedown', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        doCancel();
+      });
 
       saveNoteBtn.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -3175,6 +3249,8 @@
     state.lastArrangeUndo = new Map();
     issuesToArrange.forEach(function (c) {
       state.lastArrangeUndo.set(identity(c), {
+        hadCoordinates: !!(c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number' && isFinite(c.canvas.x) && isFinite(c.canvas.y)),
+        saved: false,
         x: c.canvas ? c.canvas.x : undefined,
         y: c.canvas ? c.canvas.y : undefined,
         notes: (c.canvas && Array.isArray(c.canvas.notes)) ? JSON.parse(JSON.stringify(c.canvas.notes)) : [],
@@ -3189,20 +3265,32 @@
     };
     if (scope === 'unplaced') {
       var placed = allIssues.filter(function (c) {
-        return c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number';
+        return c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number' && isFinite(c.canvas.x) && isFinite(c.canvas.y);
       });
       if (placed.length > 0) {
-        var maxX = 0;
+        var maxExtentX = 0;
         var minY = Infinity;
         placed.forEach(function (c) {
-          if (c.canvas.x > maxX) maxX = c.canvas.x;
-          if (c.canvas.y < minY) minY = c.canvas.y;
+          var cardX = c.canvas.x;
+          var cardY = c.canvas.y;
+          var cardW = 250;
+          var cardRight = cardX + cardW;
+          if (Array.isArray(c.canvas.notes)) {
+            c.canvas.notes.forEach(function (n) {
+              var nx = typeof n.x === 'number' ? n.x : cardX + 20;
+              var nw = typeof n.w === 'number' ? n.w : 220;
+              if (nx + nw > cardRight) cardRight = nx + nw;
+            });
+          }
+          if (cardRight > maxExtentX) maxExtentX = cardRight;
+          if (cardY < minY) minY = cardY;
         });
-        options.startX = Math.max(120, maxX + 370);
+        options.startX = Math.max(120, maxExtentX + 120);
         options.startY = Math.max(80, minY);
       }
     }
 
+    var cardsLayer = $('canvas-cards');
     var cardsInput = issuesToArrange.map(function (c) {
       var blockers = [];
       if (Array.isArray(c.blockedBy)) {
@@ -3215,13 +3303,19 @@
           }
         });
       }
+      var cardEl = cardsLayer ? cardsLayer.querySelector('[data-issue-key="' + identity(c) + '"]') : null;
+      var w = cardEl ? (cardEl.offsetWidth || 250) : 250;
+      var h = cardEl ? (cardEl.offsetHeight || 150) : 150;
       return {
         id: identity(c),
         number: c.number,
         project: (c.repository && c.repository.name) ? c.repository.name : 'Default',
         blockers: blockers,
-        w: 250,
-        h: 150,
+        w: w,
+        h: h,
+        x: c.canvas ? c.canvas.x : undefined,
+        y: c.canvas ? c.canvas.y : undefined,
+        notes: (c.canvas && Array.isArray(c.canvas.notes)) ? c.canvas.notes : [],
       };
     });
 
@@ -3288,9 +3382,15 @@
           notes: cur.canvas.notes,
         });
         savedCount++;
+        var snap = state.lastArrangeUndo.get(identity(cur));
+        if (snap) snap.saved = true;
       } catch (e) {
         failedCount++;
       }
+    }
+
+    if (savedCount === 0 && undoBtn) {
+      undoBtn.hidden = true;
     }
 
     if (confirmBtn) confirmBtn.disabled = false;
@@ -3319,18 +3419,27 @@
     for (var i = 0; i < allIssues.length; i++) {
       var issue = allIssues[i];
       var snap = state.lastArrangeUndo.get(identity(issue));
-      if (snap) {
-        issue.canvas = Object.assign({}, issue.canvas || {}, {
-          x: snap.x,
-          y: snap.y,
-          notes: snap.notes,
-        });
+      if (snap && snap.saved) {
+        if (snap.hadCoordinates) {
+          issue.canvas.x = snap.x;
+          issue.canvas.y = snap.y;
+        } else {
+          delete issue.canvas.x;
+          delete issue.canvas.y;
+        }
+        issue.canvas.notes = snap.notes;
+
         try {
-          await saveIssueCanvas(issue, {
-            x: snap.x,
-            y: snap.y,
+          var undoPayload = {
             notes: snap.notes,
-          });
+          };
+          if (snap.hadCoordinates) {
+            undoPayload.x = snap.x;
+            undoPayload.y = snap.y;
+          } else {
+            undoPayload.clearPosition = true;
+          }
+          await saveIssueCanvas(issue, undoPayload);
         } catch (_) {}
       }
     }
@@ -3344,7 +3453,7 @@
     renderCanvasIssues(allIssues);
   }
 
-  function chooseWirePorts(source, target) {
+  function chooseWirePorts(source, target, cardList) {
     var scx = source.x + source.w / 2;
     var scy = source.y + source.h / 2;
     var tcx = target.x + target.w / 2;
@@ -3352,8 +3461,45 @@
 
     var x1, y1, x2, y2, cx1, cy1, cx2, cy2;
 
-    // Check horizontal separation first (Finding 1 & 2: route visibly in open space)
-    if (target.x >= source.x + source.w - 10) {
+    // Check if intervening cards exist between source and target along vertical span
+    var hasIntervening = false;
+    if (Array.isArray(cardList) && cardList.length > 2) {
+      var minY = Math.min(source.y + source.h, target.y + target.h);
+      var maxY = Math.max(source.y, target.y);
+      var minX = Math.min(source.x, target.x) - 15;
+      var maxX = Math.max(source.x + source.w, target.x + target.w) + 15;
+
+      if (maxY > minY) {
+        for (var k = 0; k < cardList.length; k++) {
+          var other = cardList[k];
+          if (!other || other === source || other === target) continue;
+          if (other.x === source.x && other.y === source.y) continue;
+          if (other.x === target.x && other.y === target.y) continue;
+
+          if (other.y + other.h > minY && other.y < maxY) {
+            if (other.x < maxX && other.x + other.w > minX) {
+              hasIntervening = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+
+    if (hasIntervening) {
+      // Route around intervening cards through the open side gutter
+      var leftClearX = Math.min(source.x, target.x);
+      var gutterOffset = Math.max(60, Math.min(180, Math.abs(tcy - scy) * 0.25));
+
+      x1 = source.x;
+      y1 = scy;
+      x2 = target.x;
+      y2 = tcy;
+      cx1 = leftClearX - gutterOffset;
+      cy1 = y1;
+      cx2 = leftClearX - gutterOffset;
+      cy2 = y2;
+    } else if (target.x >= source.x + source.w - 10) {
       // Target is to the right of source: exit source right, enter target left
       x1 = source.x + source.w;
       y1 = scy;
@@ -3546,6 +3692,7 @@
       allPoints.push({ x: pos.x + pos.w, y: pos.y + pos.h });
     });
 
+    var cardList = Array.from(cardMap.values());
     var issues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
     var dict = I18N[getLanguage()] || I18N.en;
 
@@ -3561,7 +3708,7 @@
         var blockerPos = cardMap.get(blocker.number);
         if (!blockerPos) return;
 
-        var curve = chooseWirePorts(blockerPos, targetPos);
+        var curve = chooseWirePorts(blockerPos, targetPos, cardList);
         allPoints.push({ x: curve.x1, y: curve.y1 });
         allPoints.push({ x: curve.cx1, y: curve.cy1 });
         allPoints.push({ x: curve.cx2, y: curve.cy2 });
@@ -3651,7 +3798,7 @@
         var blockerPos = cardMap.get(depNum);
         if (!blockerPos) return;
 
-        var curve = chooseWirePorts(blockerPos, targetPos);
+        var curve = chooseWirePorts(blockerPos, targetPos, cardList);
         allPoints.push({ x: curve.x1, y: curve.y1 });
         allPoints.push({ x: curve.cx1, y: curve.cy1 });
         allPoints.push({ x: curve.cx2, y: curve.cy2 });

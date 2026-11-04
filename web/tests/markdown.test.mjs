@@ -117,3 +117,45 @@ test('Large 4,000-character note payload executes cleanly without backtracking o
   assert.match(rendered, /<h1>Architecture Note<\/h1>/);
   assert.match(rendered, /<pre><code class="language-bash">/);
 });
+
+test('hostile markdown: strictly rejects /, #, and protocol-relative // URLs matching contract', () => {
+  const relativeSlash = renderMarkdown('[Local page](/settings)');
+  assert.ok(!relativeSlash.includes('<a href="/settings"'), 'Relative / link must not render as anchor tag');
+
+  const hashLink = renderMarkdown('[Section](#heading)');
+  assert.ok(!hashLink.includes('<a href="#heading"'), 'Anchor # link must not render as anchor tag');
+
+  const protoRelative = renderMarkdown('[Evil](//evil.com/hack)');
+  assert.ok(!protoRelative.includes('<a href="//evil.com/hack"'), 'Protocol-relative // link must not render as anchor tag');
+
+  const dangerousWhitespace = renderMarkdown('[XSS]( jav&#x09;ascript:alert(1) )');
+  assert.ok(!dangerousWhitespace.includes('<a href'), 'Obfuscated javascript: link must not render as anchor tag');
+});
+
+test('hostile markdown: attribute breakout in URLs is neutralized', () => {
+  const payload = '[Payload](https://example.com/"onmouseover="alert(1))';
+  const html = renderMarkdown(payload);
+  assert.doesNotMatch(html, /<a\s+[^>]*\s+onmouseover\s*=/, 'Attribute breakout must not create onmouseover attribute on tag');
+  assert.match(html, /href="https:\/\/example\.com\/&amp;quot;onmouseover=&amp;quot;alert\(1"/);
+});
+
+test('hostile markdown: multi-backtick code fences (>=4) and nested code syntax', () => {
+  const source = '````ts\nconst x = "```bash\\necho 1\\n```";\n````';
+  const html = renderMarkdown(source);
+  assert.match(html, /<pre><code class="language-ts">/);
+  assert.ok(html.includes('```bash'), 'Inner 3-backtick fence preserved as literal code');
+  assert.ok(!html.endsWith('````'));
+});
+
+test('hostile markdown: inline code preserves markdown syntax and prevents placeholder collisions', () => {
+  const inline = '`*not bold* and [not link](https://test.com)`';
+  const html = renderMarkdown(inline);
+  assert.match(html, /<code>\*not bold\* and \[not link\]\(https:\/\/test\.com\)<\/code>/);
+  assert.ok(!html.includes('<em>'));
+  assert.ok(!html.includes('<a href'));
+
+  // User text that looks like internal placeholder
+  const tricky = 'Literal text with \\x1aMDX123X1XC0\\x1a in body';
+  const trickyHtml = renderMarkdown(tricky);
+  assert.ok(trickyHtml.includes('\\x1aMDX123X1XC0\\x1a'));
+});

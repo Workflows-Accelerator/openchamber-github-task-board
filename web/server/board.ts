@@ -248,32 +248,94 @@ export function stripHiddenMarkers(body: string = ''): string {
   return stripCanvasMarker(stripOrderMarker(body));
 }
 
+const ALLOWED_NOTE_COLORS = new Set(['yellow', 'pink', 'blue', 'green', 'purple']);
+
 export function setCanvasMarker(body: string = '', data: Record<string, any>): string {
   if (!data || typeof data !== 'object' || Array.isArray(data)) {
     throw new BoardError('invalid', 'Canvas data must be a valid JSON object');
   }
-  if (data.x !== undefined && (typeof data.x !== 'number' || !Number.isFinite(data.x))) {
+  if (data.x !== undefined && data.x !== null && (typeof data.x !== 'number' || !Number.isFinite(data.x))) {
     throw new BoardError('invalid', 'Canvas x coordinate must be finite');
   }
-  if (data.y !== undefined && (typeof data.y !== 'number' || !Number.isFinite(data.y))) {
+  if (data.y !== undefined && data.y !== null && (typeof data.y !== 'number' || !Number.isFinite(data.y))) {
     throw new BoardError('invalid', 'Canvas y coordinate must be finite');
   }
   if (data.notes !== undefined) {
     if (!Array.isArray(data.notes)) {
       throw new BoardError('invalid', 'Canvas notes must be an array');
     }
+    const seenNoteIds = new Set<string>();
     for (const note of data.notes) {
       if (!note || typeof note !== 'object' || Array.isArray(note)) {
         throw new BoardError('invalid', 'Canvas note must be an object');
       }
+      if (typeof note.id !== 'string' || !note.id.trim()) {
+        throw new BoardError('invalid', 'Note id must be a non-empty string');
+      }
+      if (seenNoteIds.has(note.id)) {
+        throw new BoardError('invalid', `Duplicate note id: ${note.id}`);
+      }
+      seenNoteIds.add(note.id);
+      if (note.text !== undefined && typeof note.text !== 'string') {
+        throw new BoardError('invalid', 'Note text must be a string');
+      }
       if (typeof note.text === 'string' && note.text.length > 4000) {
         throw new BoardError('note_too_long', 'Note text cannot exceed 4,000 characters');
+      }
+      if (note.x !== undefined && (typeof note.x !== 'number' || !Number.isFinite(note.x))) {
+        throw new BoardError('invalid', 'Note x coordinate must be finite');
+      }
+      if (note.y !== undefined && (typeof note.y !== 'number' || !Number.isFinite(note.y))) {
+        throw new BoardError('invalid', 'Note y coordinate must be finite');
+      }
+      if (note.w !== undefined && (typeof note.w !== 'number' || !Number.isFinite(note.w) || note.w <= 0)) {
+        throw new BoardError('invalid', 'Note width must be a positive number');
+      }
+      if (note.h !== undefined && (typeof note.h !== 'number' || !Number.isFinite(note.h) || note.h <= 0)) {
+        throw new BoardError('invalid', 'Note height must be a positive number');
+      }
+      if (note.color !== undefined) {
+        if (typeof note.color !== 'string' || (!ALLOWED_NOTE_COLORS.has(note.color.toLowerCase()) && !/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(note.color))) {
+          throw new BoardError('invalid', 'Invalid note color');
+        }
       }
     }
   }
   const existing = parseCanvasMarker(body) || {};
-  const merged = { ...existing, ...data };
-  const markerText = `<!-- board-canvas: ${JSON.stringify(merged)} -->`;
+  const merged: Record<string, any> = { ...existing };
+
+  if (data.clearPosition || data.x === null || data.y === null) {
+    delete merged.x;
+    delete merged.y;
+  } else {
+    if (data.x !== undefined) merged.x = data.x;
+    if (data.y !== undefined) merged.y = data.y;
+  }
+
+  if (data.notes !== undefined) {
+    if (Array.isArray(data.notes) && data.notes.length === 0) {
+      delete merged.notes;
+    } else {
+      merged.notes = data.notes;
+    }
+  }
+
+  // Preserve any other incoming custom or unknown keys (excluding control flags)
+  for (const k of Object.keys(data)) {
+    if (k !== 'x' && k !== 'y' && k !== 'notes' && k !== 'clearPosition') {
+      merged[k] = data[k];
+    }
+  }
+
+  // If merged has zero keys remaining, strip the marker completely
+  if (Object.keys(merged).length === 0) {
+    return stripCanvasMarker(body);
+  }
+
+  const jsonStr = JSON.stringify(merged)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e');
+  const markerText = `<!-- board-canvas: ${jsonStr} -->`;
 
   let finalBody = '';
   const lines = scanBodyLines(body);

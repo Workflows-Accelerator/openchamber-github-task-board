@@ -241,6 +241,10 @@ async function captureNotesAndArrangeFlow() {
   // Wait for batch save progress and dialog auto-close
   await page.waitForTimeout(3000);
 
+  // Explicitly fit all to ensure all arranged cards, project labels, notes and wires are in full view
+  await page.locator('#canvas-fit-all').click();
+  await page.waitForTimeout(500);
+
   // Shot 6: Canvas Arranged with project bands, topological ranks, and undo button
   const shot1280Arranged = path.join(screenshotsDir, 'canvas-arranged-1280.png');
   await page.screenshot({ path: shot1280Arranged });
@@ -257,8 +261,8 @@ async function captureNotesAndArrangeFlow() {
   await page.screenshot({ path: shot1280Undo });
   console.log(`Saved: ${shot1280Undo}`);
 
-  // Shot 8: Detail Drawer "+ Note" button
-  console.log('Inspecting Detail Drawer + Note button...');
+  // Shot 8: Detail Drawer "Add note" button
+  console.log('Inspecting Detail Drawer Add note button...');
   const card101 = page.locator('.canvas-card[data-issue-number="101"]');
   await card101.click();
   await page.locator('#detail-view').waitFor({ state: 'visible' });
@@ -270,6 +274,21 @@ async function captureNotesAndArrangeFlow() {
 
   await page.locator('#back-btn').click();
   await page.waitForTimeout(300);
+
+  // Shot 9: French localization
+  console.log('Capturing French localization on Canvas...');
+  await page.evaluate(() => {
+    localStorage.setItem('tb_lang', 'fr');
+    window.location.reload();
+  });
+  await page.waitForTimeout(1200);
+  await page.locator('#canvas-viewport').waitFor({ state: 'visible' });
+  await page.locator('#canvas-fit-all').click();
+  await page.waitForTimeout(400);
+  const shot1280Fr = path.join(screenshotsDir, 'canvas-notes-fr-1280.png');
+  await page.screenshot({ path: shot1280Fr });
+  console.log(`Saved: ${shot1280Fr}`);
+
   await desktopContext.close();
 
   // ==========================================
@@ -323,66 +342,66 @@ async function captureNotesAndArrangeFlow() {
   await tabletContext.close();
 
   // ==========================================
-  // 3. Mobile 360px tests & screenshots
+  // 3. Compact 360px tests & screenshots
   // ==========================================
-  console.log('Starting Mobile 360px verification...');
-  const mobileContext = await browser.newContext({
+  console.log('Starting Compact 360px verification...');
+  const compactContext = await browser.newContext({
     viewport: { width: 360, height: 740 },
     serviceWorkers: 'block',
   });
-  const mobilePage = await mobileContext.newPage();
+  const compactPage = await compactContext.newPage();
 
-  await mobilePage.goto(board.url);
-  await mobilePage.locator('#password').fill(BOARD_PASSWORD);
-  await mobilePage.locator('#login-btn').click();
-  await mobilePage.locator('#board-view').waitFor({ state: 'visible' });
-  await mobilePage.waitForTimeout(400);
+  await compactPage.goto(board.url);
+  await compactPage.locator('#password').fill(BOARD_PASSWORD);
+  await compactPage.locator('#login-btn').click();
+  await compactPage.locator('#board-view').waitFor({ state: 'visible' });
+  await compactPage.waitForTimeout(400);
 
-  const mobileSidebarToggle = mobilePage.locator('#sidebar-toggle-btn-compact');
-  if (await mobileSidebarToggle.isVisible()) {
-    await mobileSidebarToggle.click();
-    await mobilePage.waitForTimeout(300);
-    await mobilePage.locator('#nav-canvas').click();
-    await mobilePage.waitForTimeout(300);
+  const compactSidebarToggle = compactPage.locator('#sidebar-toggle-btn-compact');
+  if (await compactSidebarToggle.isVisible()) {
+    await compactSidebarToggle.click();
+    await compactPage.waitForTimeout(300);
+    await compactPage.locator('#nav-canvas').click();
+    await compactPage.waitForTimeout(300);
   } else {
-    await mobilePage.locator('#nav-canvas').click();
+    await compactPage.locator('#nav-canvas').click();
   }
-  await mobilePage.locator('#canvas-viewport').waitFor({ state: 'visible' });
-  await mobilePage.waitForTimeout(500);
+  await compactPage.locator('#canvas-viewport').waitFor({ state: 'visible' });
+  await compactPage.waitForTimeout(500);
 
-  await mobilePage.evaluate(() => {
+  await compactPage.evaluate(() => {
     document.body.classList.remove('sidebar-open');
     const backdrop = document.getElementById('sidebar-backdrop');
     if (backdrop) backdrop.hidden = true;
   });
-  await mobilePage.waitForTimeout(200);
+  await compactPage.waitForTimeout(200);
 
   const shot360Notes = path.join(screenshotsDir, 'canvas-notes-360.png');
-  await mobilePage.screenshot({ path: shot360Notes });
+  await compactPage.screenshot({ path: shot360Notes });
   console.log(`Saved: ${shot360Notes}`);
 
-  // Mobile arrange dialog
-  await mobilePage.locator('#canvas-arrange').click();
-  await mobilePage.locator('#canvas-arrange-dialog').waitFor({ state: 'visible' });
-  await mobilePage.waitForTimeout(300);
+  // Compact arrange dialog
+  await compactPage.locator('#canvas-arrange').click();
+  await compactPage.locator('#canvas-arrange-dialog').waitFor({ state: 'visible' });
+  await compactPage.waitForTimeout(300);
 
   const shot360ArrangeDialog = path.join(screenshotsDir, 'canvas-arrange-dialog-360.png');
-  await mobilePage.screenshot({ path: shot360ArrangeDialog });
+  await compactPage.screenshot({ path: shot360ArrangeDialog });
   console.log(`Saved: ${shot360ArrangeDialog}`);
 
-  await mobilePage.locator('#arrange-cancel-btn').click();
-  await mobilePage.waitForTimeout(200);
+  await compactPage.locator('#arrange-cancel-btn').click();
+  await compactPage.waitForTimeout(200);
 
-  await mobilePage.evaluate(() => {
+  await compactPage.evaluate(() => {
     document.documentElement.setAttribute('data-theme', 'dark');
   });
-  await mobilePage.waitForTimeout(400);
+  await compactPage.waitForTimeout(400);
 
   const shot360NotesDark = path.join(screenshotsDir, 'canvas-notes-360-dark.png');
-  await mobilePage.screenshot({ path: shot360NotesDark });
+  await compactPage.screenshot({ path: shot360NotesDark });
   console.log(`Saved: ${shot360NotesDark}`);
 
-  await mobileContext.close();
+  await compactContext.close();
 
   // Close browser and servers
   await browser.close();
