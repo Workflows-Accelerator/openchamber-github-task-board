@@ -1,7 +1,7 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `planning`
+- **State:** `proving` (A4 hostile review active; A1-A3 awaiting combined human review)
 - **Alignment:** `CONFIRMED` (rounds 1-3, see decisions.md)
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2`
 - **Branch:** `feat/chamberos-board-v2`
@@ -33,10 +33,12 @@
   - `ses_6c532e6f7ba6d2060a33b733` A3 #58 L4 hostile (engineer, tasks/task-A3-hostile.md) — COMPLETED at 351642d (one commit), 12/12 claimed. 618 + web 506, typecheck PASS. Font stack unchanged in git (headless fonts only). Manager check: wires now visible/routed, picker is search, confirm readable; NEW: "Remove" wraps, 403 shows "Outcome unknown", notice hidden behind drawer, cross-repo chip lacks repo name, wire/count inconsistency between screenshots. #58 -> status:in-review.
   - `ses_9a00c2627c4f13920913aa33` A3 #58 audit (engineer, tasks/task-A3-audit.md, authorised to fix 1-5) — COMPLETED: Spec PASS / Quality APPROVED at d0d5b72 (one commit), 5/5 fixed. 618 + web 506, typecheck 0. Manager check: 403 message plain, Remove not wrapping. Nit carried to A4: repo name shown twice on cross-repo chip.
   - **A3 #58 = AWAITING BATCH A REVIEW** (tip d0d5b72).
-  - A4 #59 dispatch (tasks/task-A4-dispatch.md): delegate returned "aborted / Tool execution interrupted". Session `ses_8ba94bdadca0fa4ca420181a` exists: only the brief message, 25 output tokens, idle, worktree clean at d0d5b72. Possibly a user interrupt. NOT re-dispatched; asked the user. #59 label already set to status:in-progress.
+  - `ses_8ba94bdadca0fa4ca420181a` A4 #59 build — COMPLETED at 9317aa0, despite dispatch returning aborted and the early idle snapshot. No duplicate dispatched. Commits: 27956d6 cross-repo chip, b19a9bf markdown, 8965191 layout, 46180fd validation, 9317aa0 UI/proof. Builder reports legacy 618 + web 527 and typecheck PASS. Tree clean at handover. Model record from the prior one-time check: 9router/engineer.
+  - A4 manager screenshot/diff findings: Arrange hides a note under #104 and routes a wire through #105; variable dimensions/only-unplaced collisions and partial Undo not proven; marker text containing '-->' and server schema not proven; queued note/card writes need lost-update tests; renderer permits relative/anchor protocols beyond contract; missing touch/FR proof and mismatched web test count arithmetic. Details in tasks/task-A4-hostile.md.
+  - `ses_c2ba5ad900ba26e46590a91d` A4 #59 L4 hostile review (engineer, tasks/task-A4-hostile.md, base 9317aa0) — RUNNING. Model fidelity awaiting completion metadata (delegate status returned no result; no repeated check). #59 -> status:in-review. Receipt: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/59#issuecomment-6642761912
   - LESSON: session.status "idle" + no assistant message does NOT prove a worker is dead. Before a resume dispatch, require the delegate wake state=completed/failed, or no worktree file mtime change for 30+ min AND a check of running processes.
     - On both wakes: check git log for interleaved/swept commits, run npm test once, then A2. Never dispatch twice again: if delegate returns "aborted", check session.list before retrying.
   - `ses_dc3caccfc68591839a260337` P1 read-only preflight (engineer) — COMPLETED -> explore/preflight.md
 - **Preflight findings (2026-11-04):** native dependency API works, token is a classic PAT with repo scope (board uses GITHUB_TOKEN fallback); write on all 26 repos; Discussions DISABLED on all 26 repos (enabling = repo setting -> user task, B3 built on fake only); OpenChamber on 127.0.0.1:3000 same container, `POST /api/openchamber/control` session.create or `openchamber session create` CLI; live `current` reported -> 8b7e059-20261102 (summary said 98261a8 — C4 must re-check).
 - **Human tasks for morning:** enable GitHub Discussions on the repos you want (at least this one) so B3 can be checked live.
-- **Next:** after both A1 audits -> reconcile -> A2 (#57). A1 then parked "awaiting batch A review".
+- **Next:** wait for A4 hostile completion (no polling / no duplicates), inspect fixes/screenshots and git tree, dispatch independent A4 audit; then A5 #60 sequentially. D29 authorises continuing A5-D3 without per-step human waits; all live switch/master push/merge/deletion/closure still require the user. A1-A3 are parked awaiting the combined review, not Done.
