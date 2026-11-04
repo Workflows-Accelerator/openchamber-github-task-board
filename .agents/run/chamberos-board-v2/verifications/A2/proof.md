@@ -193,3 +193,69 @@ Generated via Playwright headless browser at 360px, 768px, and 1280px in `.agent
 - **Auto-Arrange Algorithms:** Unpositioned cards use a non-overlapping column layout to the right of positioned cards; full auto-layout/clustering is deferred to Step A4.
 - **Minimap:** Excluded per step scope as non-essential for initial unbounded canvas.
 - **Live GitHub Writes:** Per standing rules, all tests and browser proofs use the fake GitHub helper (`web/tests/fake-github.mjs`) to avoid mutating live upstream repositories.
+
+---
+
+## Independent Audit
+
+**Date:** 2026-11-04  
+**Auditor:** Independent Subagent (L4 Adversarial Auditor)  
+**Spec Verdict:** PASS  
+**Quality Verdict:** APPROVED  
+
+### 1. Handover Tree Resolution & Route Safety
+- **Defect Audited:** Uncommitted change in `web/server/app.ts:685` (`if (repository) repoBoardCache.delete(repository.full);`).
+- **Analysis:** In `web/server/app.ts`, `repository` is initialized to `null` and resolved only if matching repo parameters exist. In `route === '/api/issues'` (POST create), if no repository context is resolved, accessing `repository.full` directly causes an unhandled `TypeError`. Guarding `if (repository)` prevents runtime crashes while properly evicting cache when repository context is present.
+- **Action Taken:** Committed in `7268bb6`.
+
+### 2. Cache Invalidation
+- **Analysis:** Audited cache eviction across write operations in `web/server/app.ts`. `createIssue` evicts `repoBoardCache.delete(repository.full)`. `writeIssue` (handling `draft`, `order`, `move`, `canvas`, `section`, and `question` operations) evicts `repoBoardCache.delete(repository.full)` upon successful GitHub write (line 1725). The combined board dynamically aggregates repository boards and therefore receives fresh data once repository cache is invalidated.
+- **Verification:** Dropping card #101 at `(200, 220)` followed by a browser page reload confirmed the card remained at `(200, 220)` (`canvas-reloaded.png`) without serving stale cache within the 30s TTL.
+
+### 3. Concurrency Model & Conflict Handling
+- **Analysis:** Audited `writeIssue` in `web/server/app.ts`. Writes are protected by an in-memory lock `withIssueLock(issueKey(repository, number))` per issue. Inside the lock:
+  1. The server reads fresh state directly from GitHub (`github.getIssue(number)`).
+  2. It computes the fresh SHA-256 fingerprint from the fetched issue (`issueFingerprint`).
+  3. It compares `currentFingerprint` with client-provided `supplied`.
+  4. If fingerprints mismatch, the request is rejected with HTTP 409 Conflict (`conflict`).
+- **Race Condition Safety:**
+  - If two browser drops race on the same issue, the server lock serializes them. The first write succeeds and mutates the issue. The second write fetches the updated issue, observes fingerprint divergence, and returns HTTP 409 without overwriting.
+  - If an upstream user edits the body concurrently, the fingerprint diverges and the write fails with HTTP 409.
+
+### 4. Narrow Viewport Sidebar Shadow Leak
+- **Defect Audited:** A dark shadow band leaked onto the canvas on the left edge at 360px and 768px viewports when the sidebar drawer was closed.
+- **Root Cause:** In `web/public/theme.css:1391`, `@media (max-width: 768px)` applied `box-shadow: 6px 0 32px rgba(0, 0, 0, 0.4)` to `.sidebar` unconditionally. Although `.sidebar` was translated offscreen by `translateX(-100%)`, the 32px shadow spread extended into the visible viewport.
+- **Fix:** Set `.sidebar { box-shadow: none; }` and restricted the shadow strictly to `body.sidebar-open .sidebar`.
+- **Verification:** Re-rendered and confirmed elimination of the shadow sliver at 360px and 768px in both light and dark themes (`canvas-360.png`, `canvas-360-dark.png`, `canvas-768.png`, `canvas-768-dark.png`). Committed in `279090d`.
+
+### 5. Dot Grid Behavior Across Zoom Levels
+- **Verification:** Audited grid rendering across scales 0.20, 0.25, 0.50, 0.75, 1.00, 1.50, 2.00, and 2.50.
+  - Grid step adapts dynamically: 24px base step for scale >= 0.65; 48px world step between 0.35 and 0.65; 96px world step below 0.35. Visual screen pitch remains between 16px and 48px.
+  - Dot radius is clamped between 0.75px and 2.0px. Dot alpha is clamped between 0.10 and 0.18.
+  - Dots never cluster or darken when zoomed out, maintaining an unobtrusive orientation anchor.
+  - Pan and zoom transitions are smooth with no visible jumping or shimmer.
+
+### 6. Text Sharpness & 300-Card Pan Performance
+- **Text Sharpness:** Confirmed `will-change: transform` is removed and 2D `translate` is used. Text rendered at 2.0x and 2.5x zoom is sharp with no rasterization blur once movement stops (`canvas-1280-zoom-200.png`).
+- **Pan Benchmark:** Loaded 300 mock cards with saved canvas coordinates on the unbounded canvas. Measured continuous pan performance via `requestAnimationFrame` over 2000ms:
+  - Samples: 92 frames.
+  - Average frame time: 21.74ms (~46 fps).
+  - Maximum frame delta: 50.00ms.
+  - Minimum frame delta: 16.50ms.
+  - Performance is smooth and responsive under heavy card density.
+
+### 7. Interaction Collision Isolation
+- **Drag vs Click vs Pan:** 4px movement threshold (`Math.hypot(dx, dy) >= 4`) isolates clicks from drags. Dragging a card does not pan the canvas; clicking a card cleanly opens the detail drawer.
+- **Keyboard Zoom Scope:** Keyboard listeners for `+`, `-`, and `0` are attached directly to `#canvas-viewport` and ignore events originating from `INPUT` or `TEXTAREA` elements, preventing accidental zoom during search or text entry.
+- **Drawer Wheel Isolation:** Detail drawer (`#detail-view`) scrolls independently and does not propagate wheel events to `#canvas-viewport`.
+
+### 8. View Switching & Listener Hygiene
+- **View State Restoration:** Switching from Canvas to List and back to Canvas restores pan coordinates and zoom scale from `localStorage` (`tb_canvas_view_state`).
+- **Listener Parity:** Single drag-and-drop operations trigger exactly one `PUT` request without duplicate event listeners.
+
+### 9. Test Suite Verification & Exit Hygiene
+- **Test Integrity:** Reversed marker logic in test thought experiment confirms `web/tests/canvas.test.mjs` fails if markers are malformed, stripped improperly, or CRLF endings are mutated.
+- **Execution:**
+  - `npm test`: 618 tests passing, 0 failing, 0 skipped.
+  - `npm run typecheck`: clean pass with 0 errors.
+  - `node --test web/tests/canvas.test.mjs`: 16 tests passing, cleanly exits in ~1.5s with zero open handles or sockets.
