@@ -711,10 +711,15 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     if (detailMatch) {
       if (method === 'GET') {
         const number = parseIssueNumberOrThrow(detailMatch[1]);
-        const read = await scopedGithub!.getIssue(number).catch(mapGitHubError);
+        const [read, deps] = await Promise.all([
+          scopedGithub!.getIssue(number).catch(mapGitHubError),
+          scopedGithub!.getIssueDependencies(number).catch(() => ({ blockedBy: [], blocking: [] })),
+        ]);
         if (read.item.pull_request) {
           throw new HttpError(404, 'not_found', 'That number is a pull request, not an issue');
         }
+        read.item.blockedBy = deps.blockedBy;
+        read.item.blocking = deps.blocking;
         return {
           status: 200,
           body: {
@@ -800,6 +805,135 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       });
     }
 
+    const depsMatch = /^\/api\/issues\/([^/]+)\/dependencies$/.exec(route);
+    if (depsMatch) {
+      if (method !== 'GET') return methodNotAllowed('GET');
+      const number = parseIssueNumberOrThrow(depsMatch[1]);
+      const [read, deps] = await Promise.all([
+        scopedGithub!.getIssue(number).catch(mapGitHubError),
+        scopedGithub!.getIssueDependencies(number).catch(mapGitHubError),
+      ]);
+      const detail = buildIssueDetail(read.item, repository);
+      return {
+        status: 200,
+        body: {
+          blockedBy: deps.blockedBy,
+          blocking: deps.blocking,
+          textDependencies: detail.textDependencies || [],
+        },
+      };
+    }
+
+    const depAddMatch = /^\/api\/issues\/([^/]+)\/dependencies\/blocked_by$/.exec(route);
+    if (depAddMatch) {
+      if (method !== 'POST') return methodNotAllowed('POST');
+      requireCsrf(req, record);
+      const targetNumber = parseIssueNumberOrThrow(depAddMatch[1]);
+      const body = await readJsonBody(req);
+      if (!body || typeof body !== 'object' || Array.isArray(body)) {
+        throw new HttpError(400, 'invalid_request', 'A JSON object payload is required');
+      }
+
+      let sourceRepo = repository!;
+      if (typeof body.repo === 'string' && body.repo.includes('/')) {
+        const [o, n] = body.repo.split('/');
+        sourceRepo = await resolveRepository(o, n);
+      }
+
+      let sourceIssue: any = null;
+      if (typeof body.issue_number === 'number' || (typeof body.issue_number === 'string' && /^\d+$/.test(body.issue_number))) {
+        const sourceNum = Number(body.issue_number);
+        const sourceRead = await clientFor(sourceRepo).getIssue(sourceNum).catch(mapGitHubError);
+        sourceIssue = sourceRead.item;
+      } else if (typeof body.issue_id === 'number') {
+        const sourceList = await clientFor(sourceRepo).listIssues().catch(mapGitHubError);
+        sourceIssue = sourceList.items.find((i: any) => i.id === body.issue_id);
+        if (!sourceIssue) {
+          sourceIssue = { id: body.issue_id, number: body.issue_number ?? 0 };
+        }
+      }
+
+      if (!sourceIssue || !sourceIssue.id) {
+        throw new HttpError(400, 'invalid_request', 'Could not resolve the blocker issue');
+      }
+
+      if (repository!.full.toLowerCase() === sourceRepo.full.toLowerCase() && targetNumber === sourceIssue.number) {
+        throw new HttpError(400, 'self_link', 'An issue cannot be blocked by itself');
+      }
+
+      const targetDeps = await scopedGithub!.getIssueDependencies(targetNumber).catch(mapGitHubError);
+      const already = targetDeps.blockedBy.some((b: any) => {
+        const bRepo = (b.repository?.nameWithOwner ?? repository!.full).toLowerCase();
+        return (b.id === sourceIssue.id || b.number === sourceIssue.number) && bRepo === sourceRepo.full.toLowerCase();
+      });
+      if (already) {
+        throw new HttpError(400, 'duplicate_dependency', 'That dependency link already exists');
+      }
+
+      const createsCycle = await checkDependencyCycle(sourceIssue.number, sourceRepo, targetNumber, repository!);
+      if (createsCycle) {
+        throw new HttpError(400, 'cycle_refused', 'Cannot add dependency: this would create a circular dependency');
+      }
+
+      await scopedGithub!.addIssueDependency(targetNumber, sourceIssue.id).catch((err) => {
+        if (err instanceof GitHubError && (err.status === 422 || err.status === 400)) {
+          const msg = typeof err.data?.message === 'string' ? err.data.message : 'Invalid dependency request';
+          throw new HttpError(422, 'invalid_dependency', msg);
+        }
+        mapGitHubError(err);
+      });
+
+      repoBoardCache.delete(repository!.full);
+      if (sourceRepo.full !== repository!.full) {
+        repoBoardCache.delete(sourceRepo.full);
+      }
+
+      return {
+        status: 201,
+        body: {
+          success: true,
+          blockedNumber: targetNumber,
+          blockerNumber: sourceIssue.number,
+          blockerId: sourceIssue.id,
+          blockerRepo: sourceRepo.full,
+        },
+      };
+    }
+
+    const depDeleteMatch = /^\/api\/issues\/([^/]+)\/dependencies\/blocked_by\/([^/]+)$/.exec(route);
+    if (depDeleteMatch) {
+      if (method !== 'DELETE') return methodNotAllowed('DELETE');
+      requireCsrf(req, record);
+      const targetNumber = parseIssueNumberOrThrow(depDeleteMatch[1]);
+      const targetParam = depDeleteMatch[2];
+      if (!/^\d+$/.test(targetParam)) {
+        throw new HttpError(400, 'invalid_request', 'Invalid dependency ID');
+      }
+      const rawTargetId = Number(targetParam);
+
+      const targetDeps = await scopedGithub!.getIssueDependencies(targetNumber).catch(mapGitHubError);
+      const matchDep = targetDeps.blockedBy.find((b: any) => b.id === rawTargetId || b.number === rawTargetId);
+      const issueIdToDelete = matchDep?.id ?? rawTargetId;
+
+      await scopedGithub!.removeIssueDependency(targetNumber, issueIdToDelete).catch((err) => {
+        if (err instanceof GitHubError && err.status === 404) {
+          throw new HttpError(404, 'not_found', 'Dependency link not found');
+        }
+        mapGitHubError(err);
+      });
+
+      repoBoardCache.delete(repository!.full);
+
+      return {
+        status: 200,
+        body: {
+          success: true,
+          number: targetNumber,
+          removedId: issueIdToDelete,
+        },
+      };
+    }
+
     if (url.pathname.startsWith('/api/')) {
       if (!['GET', 'POST', 'PUT', 'DELETE', 'PATCH'].includes(method)) {
         return methodNotAllowed('GET, POST, PUT, DELETE, PATCH');
@@ -818,6 +952,47 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   const repoBoardCache = new Map<string, CachedRepoBoard>();
   const defaultBoardCacheTtlMs = options.boardCacheTtlMs ?? (options.repositoryTtlMs === 0 ? 0 : 30_000);
 
+  async function checkDependencyCycle(
+    startNumber: number,
+    startRepo: RepositoryEntry,
+    targetNumber: number,
+    targetRepo: RepositoryEntry,
+  ): Promise<boolean> {
+    const queue: Array<{ number: number; repo: RepositoryEntry }> = [{ number: startNumber, repo: startRepo }];
+    const visited = new Set<string>();
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      const key = `${current.repo.full.toLowerCase()}#${current.number}`;
+      if (visited.has(key)) continue;
+      visited.add(key);
+
+      if (current.number === targetNumber && current.repo.full.toLowerCase() === targetRepo.full.toLowerCase()) {
+        return true;
+      }
+
+      try {
+        const client = clientFor(current.repo);
+        const deps = await client.getIssueDependencies(current.number);
+        for (const blocker of deps.blockedBy) {
+          const blockerRepoName = blocker.repository?.nameWithOwner ?? current.repo.full;
+          let blockerRepo = current.repo;
+          if (blockerRepoName.toLowerCase() !== current.repo.full.toLowerCase()) {
+            const [o, n] = blockerRepoName.split('/');
+            blockerRepo = await resolveRepository(o, n);
+          }
+          const nextKey = `${blockerRepo.full.toLowerCase()}#${blocker.number}`;
+          if (!visited.has(nextKey)) {
+            queue.push({ number: blocker.number, repo: blockerRepo });
+          }
+        }
+      } catch {
+        // Fallback or ignore if unable to query a node
+      }
+    }
+    return false;
+  }
+
   async function repositoryBoard(repository: RepositoryEntry, timeoutMs?: number) {
     if (!repository.hasIssues) {
       return { scope: 'repo', repository, repo: repository.full, login: config.githubLogin,
@@ -831,7 +1006,18 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         complete: !cached.truncated, partial: cached.truncated, excludedPullRequests: cached.excluded,
         issues: cached.issues };
     }
-    const listed = await clientFor(repository, timeoutMs).listIssues().catch(mapGitHubError);
+    const client = clientFor(repository, timeoutMs);
+    const [listed, repoDeps] = await Promise.all([
+      client.listIssues().catch(mapGitHubError),
+      client.listRepositoryDependencies().catch(() => new Map<number, any[]>()),
+    ]);
+    if (repoDeps.size > 0) {
+      for (const item of listed.items) {
+        if (repoDeps.has(item.number)) {
+          item.blockedBy = repoDeps.get(item.number);
+        }
+      }
+    }
     const { issues, excluded } = buildBoardList(listed.items, repository);
     repoBoardCache.set(repository.full, {
       issues,

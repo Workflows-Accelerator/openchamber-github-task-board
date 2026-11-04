@@ -79,6 +79,9 @@ function repositorySpec(input, index) {
       issueNodeCounter += 1;
       copy.node_id = `I_kwDO_${repo.replace(/[^a-zA-Z0-9]/g, '_')}_${copy.number}_${issueNodeCounter}`;
     }
+    if (typeof copy.id !== 'number') {
+      copy.id = (id * 100000) + copy.number;
+    }
     return copy;
   });
   return {
@@ -92,6 +95,7 @@ function repositorySpec(input, index) {
     failing: Boolean(input.failing),
     issues: clonedIssues,
     maxIssueNumber: clonedIssues.reduce((max, i) => Math.max(max, i.number), 0),
+    dependencies: input.dependencies ? structuredClone(input.dependencies) : [],
   };
 }
 
@@ -285,6 +289,7 @@ export async function startFakeGitHub(options = {}) {
           labels: payload.labels ?? [],
           repo: spec.repo,
         });
+        newIssue.id = (spec.id * 100000) + nextNumber;
         spec.issues.unshift(newIssue);
         return send(201, newIssue, { etag: etagFor(newIssue) });
       }
@@ -298,6 +303,112 @@ export async function startFakeGitHub(options = {}) {
         state.commentCalls.push({ repo: spec.repo, number: Number(parts[4]), payload });
         return send(201, { id: state.commentCalls.length, ...payload });
       }
+      if (parts[3] === 'issues' && parts[5] === 'dependencies') {
+        const number = Number(parts[4]);
+        const issue = spec.issues.find((i) => i.number === number);
+        if (!issue) return send(404, { message: 'Not Found' });
+        const dir = parts[6];
+
+        if (state.dependencyHook) {
+          const resHook = await state.dependencyHook({ method: req.method, repo: spec.repo, number, dir, parts, req, res });
+          if (res.writableEnded) return;
+          if (resHook) return send(resHook.status, resHook.payload ?? {}, resHook.headers ?? {});
+        }
+
+        spec.dependencies = spec.dependencies || [];
+
+        if (req.method === 'GET') {
+          if (dir === 'blocked_by') {
+            const blockers = spec.dependencies
+              .filter((d) => d.blockedNumber === number)
+              .map((d) => {
+                for (const s of specs) {
+                  const found = s.issues.find((i) => i.id === d.blockerId);
+                  if (found) return found;
+                }
+                return { id: d.blockerId, number: d.blockerNumber, title: `Issue ${d.blockerNumber}`, state: 'open' };
+              });
+            return send(200, blockers);
+          }
+          if (dir === 'blocking') {
+            const blockedIssues = [];
+            for (const s of specs) {
+              const deps = (s.dependencies || []).filter((d) => d.blockerId === issue.id);
+              for (const dep of deps) {
+                const found = s.issues.find((i) => i.number === dep.blockedNumber);
+                if (found) blockedIssues.push(found);
+              }
+            }
+            return send(200, blockedIssues);
+          }
+          return send(404, { message: 'Not Found' });
+        }
+
+        if (req.method === 'POST' && dir === 'blocked_by') {
+          let payload;
+          try {
+            payload = await readBody(req);
+          } catch {
+            return send(400, { message: 'Bad Request' });
+          }
+          const issueId = payload?.issue_id;
+          if (!issueId || typeof issueId !== 'number') {
+            return send(422, {
+              message: 'Validation Failed',
+              errors: [{ resource: 'IssueDependency', field: 'issue_id', code: 'missing_field' }],
+            });
+          }
+          if (issueId === issue.id) {
+            return send(422, {
+              message: 'Validation Failed',
+              errors: [{ resource: 'IssueDependency', field: 'issue_id', code: 'invalid', message: 'Cannot block an issue with itself' }],
+            });
+          }
+          let blockerSpec = null;
+          let blockerIssue = null;
+          for (const s of specs) {
+            const found = s.issues.find((i) => i.id === issueId);
+            if (found) {
+              blockerSpec = s;
+              blockerIssue = found;
+              break;
+            }
+          }
+          if (!blockerIssue) {
+            return send(404, { message: 'Not Found' });
+          }
+          const already = spec.dependencies.some((d) => d.blockedNumber === number && d.blockerId === issueId);
+          if (already) {
+            return send(422, {
+              message: 'Validation Failed',
+              errors: [{ resource: 'IssueDependency', field: 'issue_id', code: 'already_exists', message: 'Issue is already a dependency' }],
+            });
+          }
+          spec.dependencies.push({
+            blockedNumber: number,
+            blockerId: blockerIssue.id,
+            blockerNumber: blockerIssue.number,
+            blockerRepo: blockerSpec.repo,
+          });
+          return send(201, blockerIssue);
+        }
+
+        if (req.method === 'DELETE' && dir === 'blocked_by') {
+          const targetId = Number(parts[7]);
+          if (!targetId || isNaN(targetId)) {
+            return send(400, { message: 'Bad Request' });
+          }
+          const idx = spec.dependencies.findIndex((d) => d.blockedNumber === number && d.blockerId === targetId);
+          if (idx === -1) {
+            return send(404, { message: 'Dependency not found' });
+          }
+          spec.dependencies.splice(idx, 1);
+          return send(204, undefined);
+        }
+
+        return send(404, { message: 'Not Found' });
+      }
+
       const issueMatch = new RegExp(`^/repos/${spec.repo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/issues/(\\d+)$`).exec(
         url.pathname,
       );
@@ -460,6 +571,52 @@ export async function startFakeGitHub(options = {}) {
         });
       }
 
+      if (query.includes('ListRepoDependencies') || query.includes('blockedBy')) {
+        const owner = variables.owner;
+        const name = variables.name;
+        const targetRepo = owner && name ? `${owner}/${name}` : specs[0]?.repo;
+        const targetSpec = specs.find((s) => s.repo.toLowerCase() === targetRepo?.toLowerCase()) ?? specs[0];
+        if (!targetSpec) {
+          return send(200, { data: { repository: null }, errors: [{ type: 'NOT_FOUND', message: 'Repository not found' }] });
+        }
+        const nodes = targetSpec.issues.map((issue) => {
+          const blockers = (targetSpec.dependencies || [])
+            .filter((d) => d.blockedNumber === issue.number)
+            .map((d) => {
+              let blockerIssue = null;
+              for (const s of specs) {
+                blockerIssue = s.issues.find((i) => i.id === d.blockerId);
+                if (blockerIssue) break;
+              }
+              return {
+                id: blockerIssue?.node_id ?? `I_dep_${d.blockerId}`,
+                number: d.blockerNumber,
+                title: blockerIssue?.title ?? `Issue ${d.blockerNumber}`,
+                state: String(blockerIssue?.state ?? 'open').toUpperCase(),
+                repository: {
+                  nameWithOwner: d.blockerRepo,
+                },
+              };
+            });
+          return {
+            id: issue.node_id,
+            number: issue.number,
+            blockedBy: {
+              nodes: blockers,
+            },
+          };
+        });
+        return send(200, {
+          data: {
+            repository: {
+              issues: {
+                nodes,
+              },
+            },
+          },
+        });
+      }
+
       return send(200, { errors: [{ type: 'BAD_USER_INPUT', message: 'Unsupported GraphQL operation' }] });
     }
 
@@ -514,6 +671,23 @@ export async function startFakeGitHub(options = {}) {
       const spec = findRepo(repository);
       if (!spec) throw new Error(`no synthetic repository ${repository}`);
       spec.failing = Boolean(value);
+    },
+    setDependencyHook(fn) {
+      state.dependencyHook = fn;
+    },
+    addDependency(blockedNumber, blockerNumber, targetRepo = primary.repo, blockerRepo = primary.repo) {
+      const tSpec = findRepo(targetRepo);
+      const bSpec = findRepo(blockerRepo);
+      if (!tSpec || !bSpec) throw new Error(`unknown repository ${targetRepo} or ${blockerRepo}`);
+      const blockerIssue = bSpec.issues.find((i) => i.number === blockerNumber);
+      if (!blockerIssue) throw new Error(`unknown blocker issue ${blockerNumber}`);
+      tSpec.dependencies = tSpec.dependencies || [];
+      tSpec.dependencies.push({
+        blockedNumber,
+        blockerId: blockerIssue.id,
+        blockerNumber,
+        blockerRepo: bSpec.repo,
+      });
     },
     setArchived(repository, value) {
       const spec = findRepo(repository);

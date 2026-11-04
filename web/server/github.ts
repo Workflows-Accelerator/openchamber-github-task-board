@@ -523,6 +523,103 @@ export class GitHubClient {
     }
     return { item: data, etag: headers.get('etag') };
   }
+
+  async getIssueDependencies(number: unknown): Promise<{ blockedBy: any[]; blocking: any[] }> {
+    const safeNumber = parseIssueNumber(number);
+    const [blockedByRes, blockingRes] = await Promise.all([
+      this.request(`${this.issuesBase()}/issues/${safeNumber}/dependencies/blocked_by`).catch((err) => {
+        if (err instanceof GitHubError && err.status === 404) return { data: [] };
+        throw err;
+      }),
+      this.request(`${this.issuesBase()}/issues/${safeNumber}/dependencies/blocking`).catch((err) => {
+        if (err instanceof GitHubError && err.status === 404) return { data: [] };
+        throw err;
+      }),
+    ]);
+    return {
+      blockedBy: Array.isArray(blockedByRes?.data) ? blockedByRes.data : [],
+      blocking: Array.isArray(blockingRes?.data) ? blockingRes.data : [],
+    };
+  }
+
+  async addIssueDependency(number: unknown, issueId: number): Promise<any> {
+    const safeNumber = parseIssueNumber(number);
+    if (!Number.isSafeInteger(issueId) || issueId <= 0) {
+      throw new GitHubError('invalid', 0, 'Target issue ID must be a positive integer');
+    }
+    const { data } = await this.request(
+      `${this.issuesBase()}/issues/${safeNumber}/dependencies/blocked_by`,
+      {
+        method: 'POST',
+        body: { issue_id: issueId },
+      },
+    );
+    return data;
+  }
+
+  async removeIssueDependency(number: unknown, issueId: number): Promise<void> {
+    const safeNumber = parseIssueNumber(number);
+    if (!Number.isSafeInteger(issueId) || issueId <= 0) {
+      throw new GitHubError('invalid', 0, 'Target issue ID must be a positive integer');
+    }
+    await this.request(
+      `${this.issuesBase()}/issues/${safeNumber}/dependencies/blocked_by/${issueId}`,
+      {
+        method: 'DELETE',
+      },
+    );
+  }
+
+  async listRepositoryDependencies(): Promise<Map<number, any[]>> {
+    const result = new Map<number, any[]>();
+    if (!this.repo) return result;
+    const query = `
+      query ListRepoDependencies($owner: String!, $name: String!) {
+        repository(owner: $owner, name: $name) {
+          issues(first: 100, states: [OPEN, CLOSED]) {
+            nodes {
+              id
+              number
+              blockedBy(first: 50) {
+                nodes {
+                  id
+                  number
+                  title
+                  state
+                  repository {
+                    nameWithOwner
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    `;
+    try {
+      const { data } = await this.request(this.graphqlUrl(), {
+        method: 'POST',
+        body: {
+          query,
+          variables: {
+            owner: this.repo.owner,
+            name: this.repo.name,
+          },
+        },
+      });
+      const nodes = data?.data?.repository?.issues?.nodes;
+      if (Array.isArray(nodes)) {
+        for (const item of nodes) {
+          if (typeof item?.number === 'number' && Array.isArray(item.blockedBy?.nodes)) {
+            result.set(item.number, item.blockedBy.nodes);
+          }
+        }
+      }
+    } catch {
+      // Fallback or ignore if GraphQL endpoint does not support blockedBy
+    }
+    return result;
+  }
 }
 
 export function parseRepositorySummary(item: any): GitHubRepositorySummary {

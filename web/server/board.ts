@@ -318,13 +318,41 @@ function listFields(raw: any, repository: BoardRepository | null) {
       }
     }
   }
+  const textDependencies = [...dependencies];
+  const rawBlockedBy = Array.isArray(raw.blocked_by)
+    ? raw.blocked_by
+    : Array.isArray(raw.blockedBy)
+      ? raw.blockedBy
+      : Array.isArray(raw.blocked_by_issues)
+        ? raw.blocked_by_issues
+        : [];
+  const blockedBy = rawBlockedBy.map((item: any) => ({
+    id: typeof item.id === 'number' ? item.id : Number(item.databaseId) || 0,
+    number: item.number,
+    title: item.title ?? '',
+    state: (item.state ?? 'open').toLowerCase(),
+    repository: item.repository?.nameWithOwner ?? item.repository?.full_name ?? repository?.full,
+  }));
+  const rawBlocking = Array.isArray(raw.blocking) ? raw.blocking : [];
+  const blocking = rawBlocking.map((item: any) => ({
+    id: typeof item.id === 'number' ? item.id : Number(item.databaseId) || 0,
+    number: item.number,
+    title: item.title ?? '',
+    state: (item.state ?? 'open').toLowerCase(),
+    repository: item.repository?.nameWithOwner ?? item.repository?.full_name ?? repository?.full,
+  }));
+
   return {
+    id: typeof raw.id === 'number' ? raw.id : null,
     createdAt: raw.created_at ?? null,
     description,
     order: parseOrderMarker(body),
     canvas: parseCanvasMarker(body),
     fingerprint: issueFingerprint(raw, repository),
     dependencies,
+    textDependencies,
+    blockedBy,
+    blocking,
     pendingItems: [...(normalizedOf(raw)?.humanTasks ?? []), ...parseWebOpenQuestions(body)]
       .map((item) => ({ text: item.text, completed: item.completed })),
   };
@@ -510,7 +538,23 @@ export interface BoardListItem {
   order: number | null;
   canvas: CanvasMarkerData | null;
   fingerprint: string;
+  id?: number | null;
   dependencies: number[];
+  textDependencies?: number[];
+  blockedBy?: Array<{
+    id: number;
+    number: number;
+    title: string;
+    state: string;
+    repository?: string;
+  }>;
+  blocking?: Array<{
+    id: number;
+    number: number;
+    title: string;
+    state: string;
+    repository?: string;
+  }>;
   pendingItems: Array<{ text: string; completed: boolean }>;
   counts: {
     subtasks: { total: number; done: number };
@@ -527,6 +571,7 @@ export interface OpenQuestionView {
 }
 
 export interface IssueDetail {
+  id?: number | null;
   number: number;
   key: string;
   repository: BoardRepository | null;
@@ -544,6 +589,22 @@ export interface IssueDetail {
   column: string | null;
   updatedAt: string | null;
   createdAt: string | null;
+  dependencies: number[];
+  textDependencies?: number[];
+  blockedBy?: Array<{
+    id: number;
+    number: number;
+    title: string;
+    state: string;
+    repository?: string;
+  }>;
+  blocking?: Array<{
+    id: number;
+    number: number;
+    title: string;
+    state: string;
+    repository?: string;
+  }>;
   editableSections: Array<{ id: string; title: string; text: string }>;
   openQuestions: OpenQuestionView[];
   humanTasks: Array<{ text: string; completed: boolean; lineIndex?: number }>;
