@@ -15,7 +15,7 @@
   - `ses_a388df763d4ec90db2441d9c` A1 #56 (engineer, brief tasks/task-A1-shell-real-data.md) — COMPLETED (uncommitted; 6 visual/spec defects caught on screenshot check)
   - `ses_62aad433bd89457151c1bfb0` + `ses_fa4941dabaff08fd4507d76d` (duplicate from an aborted-then-retried delegate call) A1 #56 L4 hostile review — COMPLETED at b2e0c98, 6/6 findings fixed.
   - A1 audits — RUNNING, TWO in the same worktree (manager error: rewrote the brief and re-dispatched instead of only editing it; follow-up to narrow the first one was refused because it was busy):
-    - `ses_155fc39d4b4cb3aabebcaceb` audit v1: real-data D66 measurement (read-only GET on live GitHub via local server) + small fixes.
+    - `ses_155fc39d4b4cb3aabebcaceb` audit v1: COMPLETED — Spec PASS / Quality APPROVED. Commits 1c25da1 (flaky panel-service test), 31246ba (D66 root cause: pagination Link header with numeric /repositories/:id/issues path rejected, github.ts:398), 80027e1 (FR VIEWS/SYSTEM headers), 5e38193 (proof). #56 -> status:in-review.
     - `ses_17a74861a54090923c499e67` audit v2: authorised server fix for /api/combined/board (partial results, time bound, concurrency, cache) + UI checks.
     - On both wakes: check git log for interleaved/swept commits, run npm test once, then A2. Never dispatch twice again: if delegate returns "aborted", check session.list before retrying.
   - `ses_dc3caccfc68591839a260337` P1 read-only preflight (engineer) — COMPLETED -> explore/preflight.md
