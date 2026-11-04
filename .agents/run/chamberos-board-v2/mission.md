@@ -13,8 +13,12 @@
 - **Evidence:** explore/discovery.md
 - **Plan approved by user 2026-11-03** ("Start step #56").
   - `ses_a388df763d4ec90db2441d9c` A1 #56 (engineer, brief tasks/task-A1-shell-real-data.md) — COMPLETED (uncommitted; 6 visual/spec defects caught on screenshot check)
-  - `ses_62aad433bd89457151c1bfb0` A1 #56 L4 hostile review + fixes (engineer, brief tasks/task-A1-hostile.md) — RUNNING
+  - `ses_62aad433bd89457151c1bfb0` + `ses_fa4941dabaff08fd4507d76d` (duplicate from an aborted-then-retried delegate call) A1 #56 L4 hostile review — COMPLETED at b2e0c98, 6/6 findings fixed.
+  - A1 audits — RUNNING, TWO in the same worktree (manager error: rewrote the brief and re-dispatched instead of only editing it; follow-up to narrow the first one was refused because it was busy):
+    - `ses_155fc39d4b4cb3aabebcaceb` audit v1: real-data D66 measurement (read-only GET on live GitHub via local server) + small fixes.
+    - `ses_17a74861a54090923c499e67` audit v2: authorised server fix for /api/combined/board (partial results, time bound, concurrency, cache) + UI checks.
+    - On both wakes: check git log for interleaved/swept commits, run npm test once, then A2. Never dispatch twice again: if delegate returns "aborted", check session.list before retrying.
   - `ses_dc3caccfc68591839a260337` P1 read-only preflight (engineer) — COMPLETED -> explore/preflight.md
 - **Preflight findings (2026-11-04):** native dependency API works, token is a classic PAT with repo scope (board uses GITHUB_TOKEN fallback); write on all 26 repos; Discussions DISABLED on all 26 repos (enabling = repo setting -> user task, B3 built on fake only); OpenChamber on 127.0.0.1:3000 same container, `POST /api/openchamber/control` session.create or `openchamber session create` CLI; live `current` reported -> 8b7e059-20261102 (summary said 98261a8 — C4 must re-check).
 - **Human tasks for morning:** enable GitHub Discussions on the repos you want (at least this one) so B3 can be checked live.
-- **Next:** on A1 wake -> hostile review prompt -> independent audit -> A2 (#57).
+- **Next:** after both A1 audits -> reconcile -> A2 (#57). A1 then parked "awaiting batch A review".
