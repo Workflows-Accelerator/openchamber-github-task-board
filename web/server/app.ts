@@ -682,6 +682,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         body: issueBody,
         labels,
       }).catch(mapGitHubError);
+      repoBoardCache.delete(repository.full);
 
       return {
         status: 201,
@@ -1721,6 +1722,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       }
 
       if (verified) {
+        repoBoardCache.delete(repository.full);
         log(`write issue=${number} fields=${Object.keys(patch).join(',')}`);
         return {
           status: 200,

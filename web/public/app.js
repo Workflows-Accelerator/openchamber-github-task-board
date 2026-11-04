@@ -36,6 +36,7 @@
     canvasPanX: 60,
     canvasPanY: 60,
     canvasScale: 1.0,
+    canvasHasSavedState: false,
   };
 
   function identity(issue) {
@@ -1921,20 +1922,27 @@
   function restoreCanvasViewState() {
     try {
       var raw = localStorage.getItem(CANVAS_VIEW_STATE_KEY);
-      if (!raw) return;
+      if (!raw) return false;
       var parsed = JSON.parse(raw);
       if (parsed && typeof parsed === 'object') {
+        var restored = false;
         if (typeof parsed.panX === 'number' && isFinite(parsed.panX)) {
           state.canvasPanX = parsed.panX;
+          restored = true;
         }
         if (typeof parsed.panY === 'number' && isFinite(parsed.panY)) {
           state.canvasPanY = parsed.panY;
+          restored = true;
         }
         if (typeof parsed.scale === 'number' && isFinite(parsed.scale) && parsed.scale >= 0.2 && parsed.scale <= 2.5) {
           state.canvasScale = parsed.scale;
+          restored = true;
         }
+        state.canvasHasSavedState = restored;
+        return restored;
       }
     } catch (_) {}
+    return false;
   }
 
   function updateCanvasTransform() {
@@ -1943,31 +1951,24 @@
     var viewport = $('canvas-viewport');
     if (!viewport || !plane) return;
 
-    plane.style.transform = 'translate3d(' + Math.round(state.canvasPanX) + 'px, ' + Math.round(state.canvasPanY) + 'px, 0px) scale(' + state.canvasScale.toFixed(3) + ')';
+    plane.style.transform = 'translate(' + Math.round(state.canvasPanX) + 'px, ' + Math.round(state.canvasPanY) + 'px) scale(' + state.canvasScale.toFixed(3) + ')';
 
     if (readout) {
       readout.textContent = Math.round(state.canvasScale * 100) + '%';
     }
 
-    var gridStep = 24 * state.canvasScale;
-    var dotRadius = Math.max(0.35, 1.25 * state.canvasScale);
-    var fadeFactor;
-    if (state.canvasScale >= 0.55) {
-      fadeFactor = 1;
-    } else if (state.canvasScale <= 0.40) {
-      fadeFactor = 0;
-    } else {
-      fadeFactor = (state.canvasScale - 0.40) / 0.15;
+    var baseStep = 24;
+    var worldStep = baseStep;
+    if (state.canvasScale < 0.35) {
+      worldStep = baseStep * 4;
+    } else if (state.canvasScale < 0.65) {
+      worldStep = baseStep * 2;
     }
+    var gridStep = worldStep * state.canvasScale;
+    var dotRadius = Math.max(0.75, Math.min(2.0, 0.85 + 0.4 * state.canvasScale));
+    var alpha = Math.max(0.10, Math.min(0.18, 0.10 + 0.06 * state.canvasScale)).toFixed(4);
 
-    var baseAlpha = 0.16;
-    var alpha = (baseAlpha * fadeFactor).toFixed(4);
-
-    if (fadeFactor <= 0.001) {
-      viewport.style.backgroundImage = 'none';
-    } else {
-      viewport.style.backgroundImage = 'radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), ' + alpha + ') ' + dotRadius.toFixed(2) + 'px, transparent ' + dotRadius.toFixed(2) + 'px)';
-    }
+    viewport.style.backgroundImage = 'radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), ' + alpha + ') ' + dotRadius.toFixed(2) + 'px, transparent ' + dotRadius.toFixed(2) + 'px)';
     viewport.style.backgroundSize = gridStep.toFixed(2) + 'px ' + gridStep.toFixed(2) + 'px';
     viewport.style.backgroundPosition = state.canvasPanX.toFixed(2) + 'px ' + state.canvasPanY.toFixed(2) + 'px';
 
@@ -2052,14 +2053,18 @@
     var contentH = Math.max(100, maxY - minY);
     var vw = viewport.clientWidth || 800;
     var vh = viewport.clientHeight || 600;
-    var pad = 60;
 
-    var scaleX = (vw - pad * 2) / contentW;
-    var scaleY = (vh - pad * 2) / contentH;
-    var targetScale = Math.min(1.2, Math.max(0.2, Math.min(scaleX, scaleY)));
+    var padLeft = 50;
+    var padRight = 70;
+    var padTop = 64;
+    var padBottom = 40;
 
-    state.canvasPanX = (vw - contentW * targetScale) / 2 - minX * targetScale;
-    state.canvasPanY = (vh - contentH * targetScale) / 2 - minY * targetScale;
+    var scaleX = (vw - (padLeft + padRight)) / contentW;
+    var scaleY = (vh - (padTop + padBottom)) / contentH;
+    var targetScale = Math.min(1.0, Math.max(0.2, Math.min(scaleX, scaleY)));
+
+    state.canvasPanX = padLeft + (vw - padLeft - padRight - contentW * targetScale) / 2 - minX * targetScale;
+    state.canvasPanY = padTop + (vh - padTop - padBottom - contentH * targetScale) / 2 - minY * targetScale;
     state.canvasScale = targetScale;
 
     updateCanvasTransform();
@@ -2290,6 +2295,16 @@
       if (response && response.listItem) {
         issue.fingerprint = response.listItem.fingerprint;
         issue.canvas = response.listItem.canvas;
+        if (state.board && Array.isArray(state.board.issues)) {
+          for (var i = 0; i < state.board.issues.length; i++) {
+            if (sameIdentity(state.board.issues[i], issue)) {
+              state.board.issues[i].fingerprint = response.listItem.fingerprint;
+              state.board.issues[i].canvas = response.listItem.canvas;
+              break;
+            }
+          }
+          saveCachedBoard(state.board);
+        }
       }
       setNotice('');
     } catch (err) {
@@ -2301,7 +2316,8 @@
       var l = getLanguage();
       var dict = I18N[l] || I18N.en;
       var msg = (err && err.message) ? err.message : (dict.canvas_save_error || 'Could not save card position.');
-      setNotice(msg + '.', true);
+      var cleanMsg = msg.replace(/\.+$/, '');
+      setNotice(cleanMsg + '.', true);
       if (state.board) renderBoard();
     }
   }
@@ -2321,7 +2337,12 @@
       attachCardDrag(cardEl, issue, pos);
     });
 
-    updateCanvasTransform();
+    if (!state.canvasHasSavedState && issues.length > 0) {
+      state.canvasHasSavedState = true;
+      fitAllCanvasNodes();
+    } else {
+      updateCanvasTransform();
+    }
   }
 
   function switchView(mode) {
@@ -2355,6 +2376,11 @@
       if (boardView && boardView.classList && boardView.classList.remove) boardView.classList.remove('mode-canvas');
       if (canvasViewport) canvasViewport.hidden = true;
     }
+    if (typeof document !== 'undefined' && document.body && document.body.classList) {
+      document.body.classList.remove('sidebar-open');
+    }
+    var backdrop = $('sidebar-backdrop');
+    if (backdrop) backdrop.hidden = true;
     showView('board');
     if (state.board) renderBoard();
   }

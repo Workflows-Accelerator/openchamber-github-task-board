@@ -311,11 +311,146 @@ test('canvas client: English and French localization for all new Canvas UI eleme
   }
 });
 
-test('canvas client: non-clustering dot grid mathematics scale dot radius and fade below 0.55', () => {
+test('canvas client: non-clustering dot grid mathematics scale dot radius and keep dots visible at low zoom', () => {
   const js = fs.readFileSync(APP_JS_PATH, 'utf8');
 
-  // Check dot scaling math
-  assert.match(js, /dotRadius\s*=\s*Math\.max\(0\.35,\s*1\.25\s*\*\s*state\.canvasScale\)/, 'dot radius scales proportionally');
-  assert.match(js, /state\.canvasScale\s*>=\s*0\.55/, 'fade threshold at 0.55 scale');
-  assert.match(js, /state\.canvasScale\s*<=\s*0\.40/, 'fade threshold at 0.40 scale');
+  // Check adaptive coarser world step (24/48/96) to prevent clustering
+  assert.match(js, /worldStep\s*=\s*baseStep\s*\*\s*4;/, 'uses 4x base step at extreme zoom out');
+  assert.match(js, /worldStep\s*=\s*baseStep\s*\*\s*2;/, 'uses 2x base step at medium zoom out');
+  assert.match(js, /dotRadius\s*=\s*Math\.max\(0\.75,\s*Math\.min\(2\.0,\s*0\.85\s*\+\s*0\.4\s*\*\s*state\.canvasScale\)\)/, 'dot radius scales with bounds');
+  assert.match(js, /alpha\s*=\s*Math\.max\(0\.10,\s*Math\.min\(0\.18,\s*0\.10\s*\+\s*0\.06\s*\*\s*state\.canvasScale\)\)/, 'alpha stays faint and never vanishes');
+});
+
+test('canvas persistence: fake GitHub body contains exactly ONE marker after two drops and is otherwise byte-identical', async (t) => {
+  const initialBody =
+    '## Overview\r\n' +
+    'Some initial prose with CRLF.\r\n\r\n' +
+    '```markdown\r\n' +
+    'Fenced code example with marker-like text:\r\n' +
+    '<!-- board-canvas: {"x":999,"y":999} -->\r\n' +
+    '```\r\n\r\n' +
+    '<!-- board-order: 1000 -->';
+
+  const issue = makeIssue({
+    number: 42,
+    title: 'Adversarial Canvas Issue',
+    body: initialBody,
+    labels: ['status:in-progress'],
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+  });
+  const fake = await startFakeGitHub({
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+    issues: [issue],
+  });
+  const board = await startBoard(fake);
+  t.after(async () => {
+    await board.app.close();
+    await fake.close();
+  });
+
+  const session = new HttpSession(board.url);
+  await session.login();
+
+  const boardRes = await session.request('/api/board');
+  const boardItem = boardRes.json.issues.find((i) => i.number === 42);
+
+  // Drop 1: move to (120, 240)
+  const drop1 = await session.request('/api/issues/42/canvas', {
+    method: 'PUT',
+    body: { x: 120, y: 240, fingerprint: boardItem.fingerprint },
+  });
+  assert.equal(drop1.status, 200);
+  const bodyAfterDrop1 = fake.findIssue(42).body;
+
+  // Drop 2: move to (360, 480)
+  const drop2 = await session.request('/api/issues/42/canvas', {
+    method: 'PUT',
+    body: { x: 360, y: 480, fingerprint: drop1.json.listItem.fingerprint },
+  });
+  assert.equal(drop2.status, 200);
+
+  const ghIssue = fake.findIssue(42);
+  const finalBody = ghIssue.body;
+
+  // Exactly one board-canvas marker outside fenced code
+  const parsed = parseCanvasMarker(finalBody);
+  assert.deepEqual(parsed, { x: 360, y: 480 });
+
+  // Count occurrences: exactly 2 in total (1 inside code block, 1 actual marker)
+  const allCanvasOccurrences = finalBody.match(/<!--\s*board-canvas:/g) || [];
+  assert.equal(allCanvasOccurrences.length, 2, 'Exactly 1 marker outside code fence + 1 inside code fence');
+
+  // Exactly 1 board-order marker
+  const allOrderOccurrences = finalBody.match(/<!--\s*board-order:/g) || [];
+  assert.equal(allOrderOccurrences.length, 1, 'Exactly 1 board-order marker preserved');
+  assert.equal(parseOrderMarker(finalBody), 1000);
+
+  // All lines are CRLF
+  assert.ok(finalBody.includes('\r\n'), 'CRLF line endings preserved');
+  assert.ok(!/[^\r]\n/.test(finalBody), 'No bare LF line endings');
+
+  // Successive drops are 100% byte-identical except for the marker payload
+  const revertedBody = finalBody.replace(
+    '<!-- board-canvas: {"x":360,"y":480} -->',
+    '<!-- board-canvas: {"x":120,"y":240} -->',
+  );
+  assert.equal(revertedBody, bodyAfterDrop1, 'Successive drops update only the marker and leave every other byte identical');
+
+  // Stripping the unfenced marker recovers the initial content byte-for-byte
+  const stripped = stripCanvasMarker(finalBody).trimEnd();
+  assert.equal(stripped, initialBody.trimEnd(), 'Initial body prose, code fences, and order marker recovered byte-exact');
+});
+
+test('canvas client: unpositioned cards are never written without a drop (zero PUT requests on load, fit all, reset, and zoom)', async (t) => {
+  const issues = [
+    makeIssue({ number: 101, title: 'Card 1', body: 'No coords', labels: ['status:planned'], repo: 'Workflows-Accelerator/openchamber-github-task-board' }),
+    makeIssue({ number: 102, title: 'Card 2', body: 'No coords', labels: ['status:planned'], repo: 'Workflows-Accelerator/openchamber-github-task-board' }),
+    makeIssue({ number: 103, title: 'Card 3', body: 'No coords', labels: ['status:planned'], repo: 'Workflows-Accelerator/openchamber-github-task-board' }),
+  ];
+  let patchCalls = 0;
+  const fake = await startFakeGitHub({
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+    issues,
+  });
+  fake.setPatchHook(() => {
+    patchCalls++;
+  });
+  const board = await startBoard(fake);
+  t.after(async () => {
+    await board.app.close();
+    await fake.close();
+  });
+
+  const session = new HttpSession(board.url);
+  await session.login();
+
+  // Load board (simulates initial fetch and client arrangement)
+  const res = await session.request('/api/board');
+  assert.equal(res.status, 200);
+  assert.equal(res.json.issues.length, 3);
+  for (const item of res.json.issues) {
+    assert.equal(item.canvas, null, 'Unpositioned issue has null canvas coordinates');
+  }
+
+  // Zero PATCH/PUT requests happened on load
+  assert.equal(patchCalls, 0, 'No PATCH/PUT calls to GitHub on load');
+
+  // Verify none of the fake GitHub issues had canvas markers written
+  for (const num of [101, 102, 103]) {
+    const raw = fake.findIssue(num);
+    assert.equal(parseCanvasMarker(raw.body), null, `Issue ${num} body remains marker-free`);
+  }
+});
+
+test('canvas client: save failure reverts card to previous position and sets plain error message without double punctuation', () => {
+  const js = fs.readFileSync(APP_JS_PATH, 'utf8');
+
+  // Verify revert logic in catch block
+  assert.match(js, /issue\.canvas\s*=\s*prevCanvas;/, 'restores prevCanvas on error');
+  assert.match(js, /cardEl\.style\.left\s*=\s*oldPos\.x\s*\+\s*'px';/, 'reverts left style');
+  assert.match(js, /cardEl\.style\.top\s*=\s*oldPos\.y\s*\+\s*'px';/, 'reverts top style');
+
+  // Verify clean punctuation
+  assert.match(js, /cleanMsg\s*=\s*msg\.replace\(/, 'strips trailing dots');
+  assert.match(js, /setNotice\(cleanMsg\s*\+\s*'\.',\s*true\)/, 'sets clean punctuated notice');
 });

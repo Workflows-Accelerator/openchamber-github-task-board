@@ -553,6 +553,7 @@ export async function startFakeGitHub(options = {}) {
     },
     close() {
       return new Promise((resolve, reject) => {
+        server.closeAllConnections?.();
         server.close((err) => (err ? reject(err) : resolve()));
       });
     },
