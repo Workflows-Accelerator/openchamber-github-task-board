@@ -258,10 +258,24 @@ export function setCanvasMarker(body: string = '', data: Record<string, any>): s
   if (data.y !== undefined && (typeof data.y !== 'number' || !Number.isFinite(data.y))) {
     throw new BoardError('invalid', 'Canvas y coordinate must be finite');
   }
+  if (data.notes !== undefined) {
+    if (!Array.isArray(data.notes)) {
+      throw new BoardError('invalid', 'Canvas notes must be an array');
+    }
+    for (const note of data.notes) {
+      if (!note || typeof note !== 'object' || Array.isArray(note)) {
+        throw new BoardError('invalid', 'Canvas note must be an object');
+      }
+      if (typeof note.text === 'string' && note.text.length > 4000) {
+        throw new BoardError('note_too_long', 'Note text cannot exceed 4,000 characters');
+      }
+    }
+  }
   const existing = parseCanvasMarker(body) || {};
   const merged = { ...existing, ...data };
   const markerText = `<!-- board-canvas: ${JSON.stringify(merged)} -->`;
 
+  let finalBody = '';
   const lines = scanBodyLines(body);
   const canvasIndices: number[] = [];
   for (let i = 0; i < lines.length; i++) {
@@ -274,28 +288,32 @@ export function setCanvasMarker(body: string = '', data: Record<string, any>): s
   if (canvasIndices.length > 0) {
     const lastIdx = canvasIndices[canvasIndices.length - 1];
     const earlierSet = new Set(canvasIndices.slice(0, -1));
-    let result = '';
     for (let i = 0; i < lines.length; i++) {
       if (earlierSet.has(i)) continue;
       if (i === lastIdx) {
         const lineEnding = body.slice(lines[i].contentEnd, lines[i].fullEnd);
-        result += markerText + lineEnding;
+        finalBody += markerText + lineEnding;
       } else {
-        result += body.slice(lines[i].start, lines[i].fullEnd);
+        finalBody += body.slice(lines[i].start, lines[i].fullEnd);
       }
     }
-    return result;
+  } else {
+    const eol = body.includes('\r\n') ? '\r\n' : '\n';
+    if (!body.trim()) {
+      finalBody = markerText;
+    } else if (body.endsWith('\r\n\r\n') || body.endsWith('\n\n')) {
+      finalBody = body + markerText;
+    } else if (body.endsWith('\r\n') || body.endsWith('\n')) {
+      finalBody = body + eol + markerText;
+    } else {
+      finalBody = body + eol + eol + markerText;
+    }
   }
 
-  const eol = body.includes('\r\n') ? '\r\n' : '\n';
-  if (!body.trim()) return markerText;
-  if (body.endsWith('\r\n\r\n') || body.endsWith('\n\n')) {
-    return body + markerText;
+  if (finalBody.length > 65536) {
+    throw new BoardError('body_too_long', 'Issue body cannot exceed 65,536 characters (GitHub limit)');
   }
-  if (body.endsWith('\r\n') || body.endsWith('\n')) {
-    return body + eol + markerText;
-  }
-  return body + eol + eol + markerText;
+  return finalBody;
 }
 
 export function midpointOrder(previous: number | null, next: number | null): number {

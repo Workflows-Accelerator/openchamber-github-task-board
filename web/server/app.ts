@@ -1388,11 +1388,27 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         if (!op.data || typeof op.data !== 'object' || Array.isArray(op.data)) {
           throw new HttpError(400, 'invalid_canvas', 'Canvas data must be a JSON object');
         }
-        if (typeof op.data.x !== 'number' || !Number.isFinite(op.data.x)) {
+        if (op.data.x !== undefined && (typeof op.data.x !== 'number' || !Number.isFinite(op.data.x))) {
           throw new HttpError(400, 'invalid_canvas', 'Canvas x coordinate must be a finite number');
         }
-        if (typeof op.data.y !== 'number' || !Number.isFinite(op.data.y)) {
+        if (op.data.y !== undefined && (typeof op.data.y !== 'number' || !Number.isFinite(op.data.y))) {
           throw new HttpError(400, 'invalid_canvas', 'Canvas y coordinate must be a finite number');
+        }
+        if (op.data.x === undefined && op.data.y === undefined && op.data.notes === undefined) {
+          throw new HttpError(400, 'invalid_canvas', 'Canvas data must include coordinates or notes');
+        }
+        if (op.data.notes !== undefined) {
+          if (!Array.isArray(op.data.notes)) {
+            throw new HttpError(400, 'invalid_canvas', 'Canvas notes must be an array');
+          }
+          for (const note of op.data.notes) {
+            if (!note || typeof note !== 'object' || Array.isArray(note)) {
+              throw new HttpError(400, 'invalid_canvas', 'Canvas note must be an object');
+            }
+            if (typeof note.text === 'string' && note.text.length > 4000) {
+              throw new HttpError(400, 'note_too_long', 'Note cannot exceed 4,000 characters');
+            }
+          }
         }
       }
 
@@ -1872,7 +1888,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           patch = { body: setCanvasMarker(fresh.item.body ?? '', canvasData) };
         }
       } catch (error) {
-        if (error instanceof BoardError) throw new HttpError(400, 'invalid_edit', error.message);
+        if (error instanceof BoardError) {
+          const code = error.code === 'body_too_long' || error.code === 'note_too_long' ? error.code : 'invalid_edit';
+          throw new HttpError(400, code, error.message);
+        }
         if (error instanceof SectionError) throw new HttpError(400, 'invalid_edit', error.message);
         throw error;
       }

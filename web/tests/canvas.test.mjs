@@ -101,9 +101,22 @@ test('setCanvasMarker: preserves CRLF, code fences, board-order, and merges unkn
   assert.equal(updated.match(/board-order/g)?.length, 1);
 
   // Preserves existing unknown keys such as notes
-  const withNotes = '<!-- board-canvas: {"x":10,"y":20,"notes":["n1"]} -->';
+  const withNotes = '<!-- board-canvas: {"x":10,"y":20,"notes":[{"id":"n1","text":"initial"}]} -->';
   const moved = setCanvasMarker(withNotes, { x: 50, y: 60 });
-  assert.deepEqual(parseCanvasMarker(moved), { x: 50, y: 60, notes: ['n1'] });
+  assert.deepEqual(parseCanvasMarker(moved), { x: 50, y: 60, notes: [{ id: 'n1', text: 'initial' }] });
+
+  // Rejects notes exceeding 4,000 characters
+  assert.throws(
+    () => setCanvasMarker('body', { notes: [{ id: 'n1', text: 'x'.repeat(4001) }] }),
+    (err) => err instanceof BoardError && err.code === 'note_too_long',
+  );
+
+  // Rejects final bodies exceeding 65,536 characters
+  const hugeBody = 'x'.repeat(65500);
+  assert.throws(
+    () => setCanvasMarker(hugeBody, { notes: [{ id: 'n1', text: 'x'.repeat(100) }] }),
+    (err) => err instanceof BoardError && err.code === 'body_too_long',
+  );
 
   // Rejects non-finite coordinates
   assert.throws(() => setCanvasMarker('body', { x: NaN, y: 100 }), BoardError);
@@ -195,6 +208,32 @@ test('PUT /api/issues/:n/canvas: saves canvas position, preserves order, enforce
     body: { x: 500, y: 600, fingerprint: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef' },
   });
   assert.equal(staleRes.status, 409);
+
+  // 7. Save notes alongside position
+  const latestFp = secondMoveRes.json.listItem.fingerprint;
+  const noteSaveRes = await session.request('/api/issues/10/canvas', {
+    method: 'PUT',
+    body: {
+      notes: [{ id: 'n1', text: 'Important note on #10', color: '#FBF5DF' }],
+      fingerprint: latestFp,
+    },
+  });
+  assert.equal(noteSaveRes.status, 200, noteSaveRes.text);
+  assert.deepEqual(noteSaveRes.json.issue.canvas.notes, [{ id: 'n1', text: 'Important note on #10', color: '#FBF5DF' }]);
+  assert.equal(noteSaveRes.json.issue.canvas.x, 300);
+  assert.equal(noteSaveRes.json.issue.canvas.y, 400);
+
+  // 8. Rejects note exceeding 4,000 characters
+  const noteFp = noteSaveRes.json.listItem.fingerprint;
+  const longNoteRes = await session.request('/api/issues/10/canvas', {
+    method: 'PUT',
+    body: {
+      notes: [{ id: 'n2', text: 'x'.repeat(4001) }],
+      fingerprint: noteFp,
+    },
+  });
+  assert.equal(longNoteRes.status, 400);
+  assert.match(longNoteRes.text, /cannot exceed 4,000 characters/i);
 });
 
 test('PUT /api/issues/:n/canvas: handles upstream GitHub failure path', async (t) => {
