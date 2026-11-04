@@ -23,6 +23,10 @@
   --warn-subtle: rgba(212, 139, 56, 0.16);
   --err: #e05252;
   --err-subtle: rgba(224, 82, 82, 0.16);
+  --wire-open: #8b949e;
+  --wire-done: #4e9b6f;
+  --wire-warning: #d48b38;
+  --wire-text: #8b949e;
   --rad: 6px;
   --rad-sm: 4px;
   --rad-lg: 10px;
@@ -55,6 +59,10 @@
     --warn-subtle: #fbf3eb;
     --err: #c0392b;
     --err-subtle: rgba(192, 57, 43, 0.08);
+    --wire-open: #78716c;
+    --wire-done: #2c5e43;
+    --wire-warning: #9a5d18;
+    --wire-text: #78716c;
     --canvas-dot-rgb: 24, 22, 19;
     color-scheme: light;
   }
@@ -82,6 +90,10 @@
   --warn-subtle: rgba(212, 139, 56, 0.16);
   --err: #e05252;
   --err-subtle: rgba(224, 82, 82, 0.16);
+  --wire-open: #8b949e;
+  --wire-done: #4e9b6f;
+  --wire-warning: #d48b38;
+  --wire-text: #8b949e;
   --canvas-dot-rgb: 244, 241, 234;
   color-scheme: dark;
 }
@@ -108,6 +120,10 @@
   --warn-subtle: #fbf3eb;
   --err: #c0392b;
   --err-subtle: rgba(192, 57, 43, 0.08);
+  --wire-open: #78716c;
+  --wire-done: #2c5e43;
+  --wire-warning: #9a5d18;
+  --wire-text: #78716c;
   --canvas-dot-rgb: 24, 22, 19;
   color-scheme: light;
 }
@@ -1780,4 +1796,291 @@ input[type="text"].search-input:focus,
   background: var(--err-subtle);
   color: var(--err);
 }
+
+/* Card Ports & Wire Connections */
+.canvas-card-port {
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surf);
+  border: 2px solid var(--border-strong);
+  cursor: crosshair;
+  z-index: 20;
+  transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  box-sizing: border-box;
+}
+
+.canvas-card:hover .canvas-card-port,
+.canvas-card-port:hover,
+.canvas-card-port.is-active {
+  border-color: var(--prim);
+  background: var(--prim-subtle);
+  transform: translateY(-50%) scale(1.25);
+}
+
+.canvas-card.is-drop-target {
+  outline: 2px dashed var(--prim);
+  outline-offset: 4px;
+  box-shadow: 0 0 14px var(--prim-subtle);
+}
+
+.canvas-card.is-drop-invalid {
+  outline: 2px dashed var(--err);
+  outline-offset: 4px;
+}
+
+/* Wires Layer & SVG Curves */
+.canvas-layer-wires {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50000px;
+  height: 50000px;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.canvas-wire-group {
+  pointer-events: auto;
+}
+
+.canvas-wire {
+  fill: none;
+  stroke-linecap: round;
+  transition: stroke-width 0.15s ease, stroke 0.15s ease;
+}
+
+.canvas-wire.wire-open {
+  stroke: var(--wire-open);
+  stroke-width: 2px;
+}
+
+.canvas-wire.wire-done {
+  stroke: var(--wire-done);
+  stroke-width: 2px;
+}
+
+.canvas-wire.wire-warning {
+  stroke: var(--wire-warning);
+  stroke-width: 2px;
+}
+
+.canvas-wire.wire-text {
+  stroke: var(--wire-text);
+  stroke-width: 2px;
+  stroke-dasharray: 6 4;
+}
+
+.canvas-wire.wire-preview {
+  stroke: var(--prim);
+  stroke-width: 2px;
+  stroke-dasharray: 5 4;
+  pointer-events: none;
+}
+
+.canvas-wire-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 22px;
+  cursor: pointer;
+  pointer-events: stroke;
+}
+
+.canvas-wire-group:hover .canvas-wire,
+.canvas-wire-group.is-hovered .canvas-wire {
+  stroke-width: 3.5px;
+}
+
+.canvas-wire-del-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.canvas-wire-group:hover .canvas-wire-del-btn,
+.canvas-wire-group.is-hovered .canvas-wire-del-btn,
+.canvas-wire-del-btn:hover,
+.canvas-wire-del-btn.is-confirming {
+  opacity: 1;
+}
+
+.canvas-wire-del-bg {
+  fill: var(--surf);
+  stroke: var(--border-strong);
+  stroke-width: 1.5px;
+  transition: fill 0.15s ease, stroke 0.15s ease;
+}
+
+.canvas-wire-del-btn:hover .canvas-wire-del-bg,
+.canvas-wire-del-btn.is-confirming .canvas-wire-del-bg {
+  fill: var(--err-subtle);
+  stroke: var(--err);
+}
+
+.canvas-wire-del-cross {
+  stroke: var(--fg-muted);
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+}
+
+.canvas-wire-del-btn:hover .canvas-wire-del-cross,
+.canvas-wire-del-btn.is-confirming .canvas-wire-del-cross {
+  stroke: var(--err);
+}
+
+.wire-marker-open { fill: var(--wire-open); }
+.wire-marker-done { fill: var(--wire-done); }
+.wire-marker-warning { fill: var(--wire-warning); }
+.wire-marker-text { fill: var(--wire-text); }
+.wire-marker-preview { fill: var(--prim); }
+
+/* Canvas Wire Tooltip */
+.canvas-wire-tooltip {
+  position: absolute;
+  pointer-events: none;
+  z-index: 120;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: var(--rad-sm);
+  background: var(--fg);
+  color: var(--bg);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  white-space: nowrap;
+  transform: translate(12px, 12px);
+}
+
+/* List View Blocked Indicator */
+.badge-blocked {
+  background: var(--warn-subtle);
+  color: var(--warn);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: var(--rad-sm);
+}
+
+/* Detail Drawer Dependencies */
+.dependency-block {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.dependency-subheading {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 8px 0;
+  color: var(--fg-muted);
+}
+
+.dependency-chips-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+  min-height: 20px;
+}
+
+.dependency-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-size: 12px;
+  border-radius: var(--rad-md);
+  background: var(--surf-muted);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  line-height: 1.4;
+}
+
+.dependency-chip-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.dependency-chip-status.status-done { background: var(--wire-done); }
+.dependency-chip-status.status-in-progress,
+.dependency-chip-status.status-planned { background: var(--wire-open); }
+.dependency-chip-status.status-needs-human { background: var(--wire-warning); }
+
+.dependency-chip-link {
+  color: inherit;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.dependency-chip-link:hover {
+  text-decoration: underline;
+  color: var(--prim);
+}
+
+.dependency-chip-remove {
+  background: none;
+  border: none;
+  padding: 0 2px;
+  cursor: pointer;
+  color: var(--fg-muted);
+  font-size: 15px;
+  line-height: 1;
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dependency-chip-remove:hover {
+  color: var(--err);
+  background: var(--err-subtle);
+}
+
+.dependency-chip-convert {
+  margin-left: 4px;
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: var(--rad-sm);
+  border: 1px solid var(--border);
+  background: var(--surf);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.dependency-chip-convert:hover {
+  border-color: var(--prim);
+  color: var(--prim);
+  background: var(--prim-subtle);
+}
+
+.add-blocker-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 8px;
+}
+
+.add-blocker-select {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  padding: 4px 8px;
+  height: 32px;
+  background: var(--surf);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-sm);
+}
+
 

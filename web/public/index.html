@@ -208,11 +208,30 @@
             <button id="canvas-reset-view" class="canvas-control-btn text-btn" type="button" title="Reset view" aria-label="Reset view" data-i18n-title="canvas_reset_view" data-i18n="canvas_reset_view">Reset</button>
           </div>
           <div id="canvas-plane" class="canvas-plane">
-            <svg id="canvas-wires" class="canvas-layer canvas-layer-wires" width="14" height="14" aria-hidden="true"></svg>
+            <svg id="canvas-wires" class="canvas-layer canvas-layer-wires" width="14" height="14" aria-hidden="true">
+              <defs>
+                <marker id="wire-arrow-open" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
+                  <polygon points="0 0, 7 3.5, 0 7" class="wire-marker-open" />
+                </marker>
+                <marker id="wire-arrow-done" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
+                  <polygon points="0 0, 7 3.5, 0 7" class="wire-marker-done" />
+                </marker>
+                <marker id="wire-arrow-warning" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
+                  <polygon points="0 0, 7 3.5, 0 7" class="wire-marker-warning" />
+                </marker>
+                <marker id="wire-arrow-text" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
+                  <polygon points="0 0, 7 3.5, 0 7" class="wire-marker-text" />
+                </marker>
+                <marker id="wire-arrow-preview" markerWidth="8" markerHeight="8" refX="7" refY="3.5" orient="auto">
+                  <polygon points="0 0, 7 3.5, 0 7" class="wire-marker-preview" />
+                </marker>
+              </defs>
+            </svg>
             <div id="canvas-notes" class="canvas-layer canvas-layer-notes" aria-hidden="true"></div>
             <div id="canvas-cards" class="canvas-layer canvas-layer-cards" role="region" aria-label="Task cards"></div>
             <div id="canvas-overlay" class="canvas-layer canvas-layer-overlay" aria-hidden="true"></div>
           </div>
+          <div id="canvas-wire-tooltip" class="canvas-wire-tooltip" aria-hidden="true" hidden></div>
         </div>
 
         <h1 id="board-title" class="sr-only" tabindex="-1">Tasks</h1>
@@ -303,6 +322,36 @@
           <h2 id="human-title" data-i18n="drawer_human_title">Human tasks</h2>
           <p id="no-human" class="muted" data-i18n="drawer_no_human" hidden>No human tasks.</p>
           <ul id="human-list" class="checklist"></ul>
+        </section>
+
+        <section class="panel" aria-labelledby="dependencies-title">
+          <h2 id="dependencies-title" data-i18n="drawer_dependencies_title">Dependencies</h2>
+          
+          <div class="dependency-block">
+            <h3 class="dependency-subheading" data-i18n="drawer_blocked_by_title">Blocked by</h3>
+            <p id="no-blocked-by" class="muted small" data-i18n="drawer_no_blocked_by">Not blocked by any tasks.</p>
+            <div id="blocked-by-list" class="dependency-chips-list"></div>
+            
+            <div class="add-blocker-row">
+              <label for="add-blocker-select" class="sr-only" data-i18n="drawer_add_blocker_label">Add blocker task</label>
+              <select id="add-blocker-select" class="add-blocker-select">
+                <option value="" data-i18n="drawer_select_blocker_prompt">Select task to block this…</option>
+              </select>
+              <button id="add-blocker-btn" class="button" type="button" data-i18n="drawer_add_blocker_btn">Add blocker</button>
+            </div>
+          </div>
+
+          <div class="dependency-block">
+            <h3 class="dependency-subheading" data-i18n="drawer_blocking_title">Blocking</h3>
+            <p id="no-blocking" class="muted small" data-i18n="drawer_no_blocking">Not blocking any tasks.</p>
+            <div id="blocking-list" class="dependency-chips-list"></div>
+          </div>
+
+          <div id="text-dependencies-block" class="dependency-block" hidden>
+            <h3 class="dependency-subheading" data-i18n="drawer_text_links_title">Text links (Markdown)</h3>
+            <p class="muted small" data-i18n="drawer_text_links_hint">Detected from issue description markdown. Convert to make them native GitHub dependencies.</p>
+            <div id="text-dependencies-list" class="dependency-chips-list"></div>
+          </div>
         </section>
       </section>
     </main>

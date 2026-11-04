@@ -337,6 +337,9 @@
 
     if (isMutation) {
       if (response.ok) {
+        if (path.includes('/dependencies/')) {
+          return payload;
+        }
         var numMatch = /^\/api\/(?:repos\/([^/]+)\/([^/]+)\/)?issues\/(\d+)(?:\/|$)/.exec(path);
         if (!numMatch && !options.expected) {
           return payload;
@@ -623,6 +626,29 @@
       canvas_fit_all: 'Fit all',
       canvas_reset_view: 'Reset view',
       canvas_save_error: 'Could not save card position.',
+      canvas_drag_to_block: 'Drag to block another task',
+      canvas_wire_blocks: 'Blocks #{n}',
+      canvas_wire_self_link: 'Cannot block itself',
+      canvas_wire_duplicate: 'Already blocks #{n}',
+      canvas_wire_delete: 'Delete dependency',
+      canvas_wire_delete_confirm: 'Click again to confirm delete',
+      canvas_wire_text_dep_info: 'Defined in Markdown. Edit description to remove.',
+      drawer_dependencies_title: 'Dependencies',
+      drawer_blocked_by_title: 'Blocked by',
+      drawer_no_blocked_by: 'Not blocked by any tasks.',
+      drawer_blocking_title: 'Blocking',
+      drawer_no_blocking: 'Not blocking any tasks.',
+      drawer_text_links_title: 'Text links (Markdown)',
+      drawer_text_links_hint: 'Detected from issue description markdown. Convert to make them native GitHub dependencies.',
+      drawer_convert_to_native: 'Convert',
+      drawer_add_blocker_label: 'Add blocker task',
+      drawer_select_blocker_prompt: 'Select task to block this…',
+      drawer_add_blocker_btn: 'Add blocker',
+      drawer_remove_dep: 'Remove dependency',
+      dep_blocked_by_n: 'blocked by {n}',
+      err_cycle_refused: 'Cannot add dependency: this would create a circular dependency.',
+      err_duplicate_dependency: 'That dependency link already exists.',
+      err_self_link: 'An issue cannot be blocked by itself.',
     },
     fr: {
       section_views: 'Vues',
@@ -685,6 +711,29 @@
       canvas_fit_all: 'Ajuster tout',
       canvas_reset_view: 'Réinitialiser la vue',
       canvas_save_error: 'Impossible d’enregistrer la position de la carte.',
+      canvas_drag_to_block: 'Glisser pour bloquer une autre tâche',
+      canvas_wire_blocks: 'Bloque #{n}',
+      canvas_wire_self_link: 'Ne peut pas se bloquer elle-même',
+      canvas_wire_duplicate: 'Bloque déjà #{n}',
+      canvas_wire_delete: 'Supprimer la dépendance',
+      canvas_wire_delete_confirm: 'Cliquer à nouveau pour confirmer la suppression',
+      canvas_wire_text_dep_info: 'Défini dans le Markdown. Modifier la description pour supprimer.',
+      drawer_dependencies_title: 'Dépendances',
+      drawer_blocked_by_title: 'Bloqué par',
+      drawer_no_blocked_by: 'Aucune tâche ne bloque cette tâche.',
+      drawer_blocking_title: 'Bloque',
+      drawer_no_blocking: 'Ne bloque aucune tâche.',
+      drawer_text_links_title: 'Liens texte (Markdown)',
+      drawer_text_links_hint: 'Détectés dans la description markdown. Convertir pour créer une dépendance GitHub native.',
+      drawer_convert_to_native: 'Convertir',
+      drawer_add_blocker_label: 'Ajouter une tâche bloquante',
+      drawer_select_blocker_prompt: 'Sélectionner une tâche bloquante…',
+      drawer_add_blocker_btn: 'Ajouter bloquant',
+      drawer_remove_dep: 'Retirer la dépendance',
+      dep_blocked_by_n: 'bloqué par {n}',
+      err_cycle_refused: 'Impossible d’ajouter la dépendance : cela créerait une dépendance circulaire.',
+      err_duplicate_dependency: 'Ce lien de dépendance existe déjà.',
+      err_self_link: 'Une tâche ne peut pas être bloquée par elle-même.',
     },
   };
 
@@ -1873,6 +1922,12 @@
     if (countOf(issue, 'humanTasks')) {
       metaChildren.push(el('span', { class: 'badge attention', text: countOf(issue, 'humanTasks') + ' human' }));
     }
+    var blockedCount = (issue.blockedBy && issue.blockedBy.length) || (issue.dependencies && issue.dependencies.length) || 0;
+    if (blockedCount > 0) {
+      var dict = I18N[getLanguage()] || I18N.en;
+      var label = (dict.dep_blocked_by_n || 'blocked by {n}').replace('{n}', blockedCount);
+      metaChildren.push(el('span', { class: 'badge badge-blocked', text: label }));
+    }
     metaChildren.push(el('span', { class: 'task-number simple-row-number muted', text: issue.offline ? '(offline)' : '#' + issue.number }));
     var meta = el('div', { class: 'simple-row-meta' }, metaChildren);
 
@@ -1893,9 +1948,17 @@
     var friendly = resolveFriendlyTitle(issue);
     var children = [el('div', { class: 'task-top' }, [el('span', { class: 'task-title', text: friendly.title }), el('span', { class: 'task-number', text: issue.offline ? '(offline)' : '#' + issue.number })])];
     if (friendly.subtitle) children.push(el('span', { class: 'task-subtitle muted small', text: friendly.subtitle }));
+    var blockedCount = (issue.blockedBy && issue.blockedBy.length) || (issue.dependencies && issue.dependencies.length) || 0;
+    var blockedBadge = null;
+    if (blockedCount > 0) {
+      var dict = I18N[getLanguage()] || I18N.en;
+      var label = (dict.dep_blocked_by_n || 'blocked by {n}').replace('{n}', blockedCount);
+      blockedBadge = badge(label, 'badge-blocked');
+    }
     children.push(el('div', { class: 'badges' }, [issue.repository ? projectBadge(issue.repository) : null,
       badge(statusText('status:' + stageOf(issue)), 'status'), priorityOf(issue) ? badge(priorityOf(issue), 'badge-priority') : null,
       issue.offline ? badge('(offline)', 'badge-offline') : null,
+      blockedBadge,
       countOf(issue, 'openQuestions') ? badge(countOf(issue, 'openQuestions') + ' questions', 'attention') : null,
       countOf(issue, 'humanTasks') ? badge(countOf(issue, 'humanTasks') + ' human tasks', 'attention') : null]));
     children.push(el('p', { class: 'muted small', text: 'Updated ' + relative(issue.updatedAt) }));
@@ -2147,12 +2210,27 @@
     if (humanCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: humanCount + ' human' }));
     if (questionCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: questionCount + ' q' }));
 
+    var dict = I18N[getLanguage()] || I18N.en;
+    var blockedCount = (issue.blockedBy && issue.blockedBy.length) || (issue.dependencies && issue.dependencies.length) || 0;
+    if (blockedCount > 0) {
+      metaChildren.push(el('span', { class: 'canvas-card-badge badge-blocked', text: (dict.dep_blocked_by_n || 'blocked by {n}').replace('{n}', blockedCount) }));
+    }
+
     if (metaChildren.length > 0) {
       var footer = el('div', { class: 'canvas-card-footer' }, [
         el('div', { class: 'canvas-card-meta' }, metaChildren),
       ]);
       children.push(footer);
     }
+
+    var port = el('div', {
+      class: 'canvas-card-port',
+      title: dict.canvas_drag_to_block || 'Drag to block another task',
+      'aria-label': dict.canvas_drag_to_block || 'Drag to block another task',
+      role: 'button',
+      tabindex: '0',
+    });
+    children.push(port);
 
     var card = el('div', {
       class: 'canvas-card',
@@ -2182,6 +2260,7 @@
 
     function onPointerDown(e) {
       if (e.button !== undefined && e.button !== 0) return;
+      if (e.target && e.target.closest && e.target.closest('.canvas-card-port')) return;
       e.stopPropagation();
 
       startClientX = e.clientX;
@@ -2211,6 +2290,7 @@
         currentCardY = Math.round(cardStartY + dy);
         cardEl.style.left = currentCardX + 'px';
         cardEl.style.top = currentCardY + 'px';
+        renderCanvasWires();
       }
     }
 
@@ -2222,6 +2302,7 @@
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerCancel);
+      renderCanvasWires();
 
       if (hasMoved) {
         suppressClick = true;
@@ -2244,11 +2325,13 @@
       currentCardY = cardStartY;
       cardEl.style.left = cardStartX + 'px';
       cardEl.style.top = cardStartY + 'px';
+      renderCanvasWires();
     }
 
     cardEl.addEventListener('pointerdown', onPointerDown);
 
     cardEl.addEventListener('click', function (e) {
+      if (e.target && e.target.closest && e.target.closest('.canvas-card-port')) return;
       if (suppressClick) {
         e.preventDefault();
         e.stopPropagation();
@@ -2262,6 +2345,7 @@
     });
 
     cardEl.addEventListener('keydown', function (e) {
+      if (e.target && e.target.closest && e.target.closest('.canvas-card-port')) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (issue.offline) {
@@ -2341,6 +2425,7 @@
       if (cardEl) {
         cardEl.style.left = oldPos.x + 'px';
         cardEl.style.top = oldPos.y + 'px';
+        renderCanvasWires();
       }
       var l = getLanguage();
       var dict = I18N[l] || I18N.en;
@@ -2352,7 +2437,447 @@
     }
   }
 
+  function computeBezierPath(x1, y1, x2, y2) {
+    var dx = Math.abs(x2 - x1);
+    var cx1, cy1, cx2, cy2;
+    if (x2 >= x1) {
+      var curvature = Math.max(40, dx * 0.45);
+      cx1 = x1 + curvature;
+      cy1 = y1;
+      cx2 = x2 - curvature;
+      cy2 = y2;
+    } else {
+      var curvature = Math.max(60, dx * 0.5);
+      cx1 = x1 + curvature;
+      cy1 = y1;
+      cx2 = x2 - curvature;
+      cy2 = y2;
+    }
+    var d = 'M ' + x1 + ' ' + y1 + ' C ' + cx1 + ' ' + cy1 + ', ' + cx2 + ' ' + cy2 + ', ' + x2 + ' ' + y2;
+    var midX = 0.125 * x1 + 0.375 * cx1 + 0.375 * cx2 + 0.125 * x2;
+    var midY = 0.125 * y1 + 0.375 * cy1 + 0.375 * cy2 + 0.125 * y2;
+    return { d: d, midX: Math.round(midX), midY: Math.round(midY) };
+  }
+
+  function renderCanvasWires() {
+    var wiresLayer = $('canvas-wires');
+    var cardsLayer = $('canvas-cards');
+    if (!wiresLayer || !cardsLayer) return;
+
+    var existingGroups = wiresLayer.querySelectorAll('.canvas-wire-group');
+    existingGroups.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); });
+
+    var cardElements = cardsLayer.querySelectorAll('.canvas-card');
+    if (cardElements.length === 0) return;
+
+    var cardMap = new Map();
+    cardElements.forEach(function (card) {
+      var num = Number(card.getAttribute('data-issue-number'));
+      cardMap.set(num, {
+        element: card,
+        x: card.offsetLeft,
+        y: card.offsetTop,
+        w: card.offsetWidth || 250,
+        h: card.offsetHeight || 110,
+      });
+    });
+
+    var issues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
+    var dict = I18N[getLanguage()] || I18N.en;
+
+    issues.forEach(function (targetIssue) {
+      var targetPos = cardMap.get(targetIssue.number);
+      if (!targetPos) return;
+
+      var nativeBlockers = Array.isArray(targetIssue.blockedBy) ? targetIssue.blockedBy : [];
+      var nativeNums = new Set();
+
+      nativeBlockers.forEach(function (blocker) {
+        nativeNums.add(blocker.number);
+        var blockerPos = cardMap.get(blocker.number);
+        if (!blockerPos) return;
+
+        var x1 = blockerPos.x + blockerPos.w;
+        var y1 = blockerPos.y + blockerPos.h / 2;
+        var x2 = targetPos.x;
+        var y2 = targetPos.y + targetPos.h / 2;
+
+        var curve = computeBezierPath(x1, y1, x2, y2);
+        var fullBlocker = issues.find(function (i) { return i.number === blocker.number; }) || blocker;
+        var blockerStage = stageOf(fullBlocker);
+        var isBlockerDone = fullBlocker.state === 'closed' || fullBlocker.state === 'done' || blockerStage === 'done';
+        var wireClass = 'wire-open';
+        var markerUrl = 'url(#wire-arrow-open)';
+
+        if (isBlockerDone) {
+          wireClass = 'wire-done';
+          markerUrl = 'url(#wire-arrow-done)';
+        } else if (blockerStage === 'needs-human') {
+          wireClass = 'wire-warning';
+          markerUrl = 'url(#wire-arrow-warning)';
+        }
+
+        var group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('class', 'canvas-wire-group');
+        group.setAttribute('data-target', String(targetIssue.number));
+        group.setAttribute('data-blocker', String(blocker.number));
+
+        var hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        hitPath.setAttribute('class', 'canvas-wire-hit');
+        hitPath.setAttribute('d', curve.d);
+
+        var visualPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        visualPath.setAttribute('class', 'canvas-wire ' + wireClass);
+        visualPath.setAttribute('d', curve.d);
+        visualPath.setAttribute('marker-end', markerUrl);
+
+        var delBtn = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        delBtn.setAttribute('class', 'canvas-wire-del-btn');
+        delBtn.setAttribute('role', 'button');
+        delBtn.setAttribute('tabindex', '0');
+        delBtn.setAttribute('aria-label', dict.canvas_wire_delete || 'Delete dependency');
+        delBtn.setAttribute('transform', 'translate(' + curve.midX + ',' + curve.midY + ')');
+
+        var delBg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        delBg.setAttribute('r', '10');
+        delBg.setAttribute('class', 'canvas-wire-del-bg');
+
+        var delCross = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        delCross.setAttribute('d', 'M -3.5 -3.5 L 3.5 3.5 M 3.5 -3.5 L -3.5 3.5');
+        delCross.setAttribute('class', 'canvas-wire-del-cross');
+
+        delBtn.appendChild(delBg);
+        delBtn.appendChild(delCross);
+
+        var confirmTimer = null;
+        delBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (!delBtn.classList.contains('is-confirming')) {
+            delBtn.classList.add('is-confirming');
+            setNotice(dict.canvas_wire_delete_confirm || 'Click again to confirm delete');
+            confirmTimer = setTimeout(function () {
+              delBtn.classList.remove('is-confirming');
+            }, 3000);
+          } else {
+            if (confirmTimer) clearTimeout(confirmTimer);
+            delBtn.classList.remove('is-confirming');
+            deleteIssueDependencyAction(targetIssue.number, blocker.id || blocker.number);
+          }
+        });
+
+        group.appendChild(hitPath);
+        group.appendChild(visualPath);
+        group.appendChild(delBtn);
+        wiresLayer.appendChild(group);
+      });
+
+      var textDeps = Array.isArray(targetIssue.textDependencies) ? targetIssue.textDependencies : [];
+      textDeps.forEach(function (depNum) {
+        if (nativeNums.has(depNum)) return;
+        var blockerPos = cardMap.get(depNum);
+        if (!blockerPos) return;
+
+        var x1 = blockerPos.x + blockerPos.w;
+        var y1 = blockerPos.y + blockerPos.h / 2;
+        var x2 = targetPos.x;
+        var y2 = targetPos.y + targetPos.h / 2;
+
+        var curve = computeBezierPath(x1, y1, x2, y2);
+
+        var group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('class', 'canvas-wire-group wire-group-text');
+        group.setAttribute('data-target', String(targetIssue.number));
+        group.setAttribute('data-blocker', String(depNum));
+
+        var hitPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        hitPath.setAttribute('class', 'canvas-wire-hit');
+        hitPath.setAttribute('d', curve.d);
+
+        var visualPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        visualPath.setAttribute('class', 'canvas-wire wire-text');
+        visualPath.setAttribute('d', curve.d);
+        visualPath.setAttribute('marker-end', 'url(#wire-arrow-text)');
+
+        var delBtn = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        delBtn.setAttribute('class', 'canvas-wire-del-btn');
+        delBtn.setAttribute('role', 'button');
+        delBtn.setAttribute('tabindex', '0');
+        delBtn.setAttribute('aria-label', dict.canvas_wire_text_dep_info || 'Defined in Markdown');
+        delBtn.setAttribute('transform', 'translate(' + curve.midX + ',' + curve.midY + ')');
+
+        var delBg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        delBg.setAttribute('r', '10');
+        delBg.setAttribute('class', 'canvas-wire-del-bg');
+
+        var delCross = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        delCross.setAttribute('d', 'M -3.5 -3.5 L 3.5 3.5 M 3.5 -3.5 L -3.5 3.5');
+        delCross.setAttribute('class', 'canvas-wire-del-cross');
+
+        delBtn.appendChild(delBg);
+        delBtn.appendChild(delCross);
+
+        delBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          setNotice(dict.canvas_wire_text_dep_info || 'Defined in Markdown. Edit description to remove.');
+        });
+
+        group.appendChild(hitPath);
+        group.appendChild(visualPath);
+        group.appendChild(delBtn);
+        wiresLayer.appendChild(group);
+      });
+    });
+  }
+
+  function attachPortDrag(portEl, cardEl, issue) {
+    function onPortPointerDown(e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      e.stopPropagation();
+      e.preventDefault();
+
+      var dict = I18N[getLanguage()] || I18N.en;
+      var tooltip = $('canvas-wire-tooltip');
+      var wiresLayer = $('canvas-wires');
+      if (!wiresLayer) return;
+
+      portEl.classList.add('is-active');
+
+      var scale = state.canvasScale || 1;
+      var cardX = cardEl.offsetLeft;
+      var cardY = cardEl.offsetTop;
+      var cardW = cardEl.offsetWidth || 250;
+      var cardH = cardEl.offsetHeight || 110;
+      var sourceX = cardX + cardW;
+      var sourceY = cardY + cardH / 2;
+
+      var previewPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      previewPath.setAttribute('class', 'canvas-wire wire-preview');
+      previewPath.setAttribute('marker-end', 'url(#wire-arrow-preview)');
+      wiresLayer.appendChild(previewPath);
+
+      if (tooltip) {
+        tooltip.hidden = false;
+        tooltip.textContent = dict.canvas_drag_to_block || 'Drag to block another task';
+        tooltip.style.left = (e.clientX + 14) + 'px';
+        tooltip.style.top = (e.clientY + 14) + 'px';
+      }
+
+      var currentDropTarget = null;
+
+      function onPointerMove(moveEvent) {
+        scale = state.canvasScale || 1;
+        var planeX = (moveEvent.clientX - state.canvasPanX) / scale;
+        var planeY = (moveEvent.clientY - state.canvasPanY) / scale;
+        var curve = computeBezierPath(sourceX, sourceY, planeX, planeY);
+        previewPath.setAttribute('d', curve.d);
+
+        if (tooltip) {
+          tooltip.style.left = (moveEvent.clientX + 14) + 'px';
+          tooltip.style.top = (moveEvent.clientY + 14) + 'px';
+        }
+
+        if (currentDropTarget) {
+          currentDropTarget.classList.remove('is-drop-target', 'is-drop-invalid');
+          currentDropTarget = null;
+        }
+
+        var elem = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+        var targetCard = elem ? elem.closest('.canvas-card') : null;
+        if (targetCard && targetCard !== cardEl) {
+          var targetNum = Number(targetCard.getAttribute('data-issue-number'));
+          if (targetNum === issue.number) {
+            targetCard.classList.add('is-drop-invalid');
+            if (tooltip) tooltip.textContent = dict.canvas_wire_self_link || 'Cannot block itself';
+          } else {
+            var targetIss = (state.board && state.board.issues)
+              ? state.board.issues.find(function (i) { return i.number === targetNum; })
+              : null;
+            var alreadyBlocked = targetIss && targetIss.blockedBy && targetIss.blockedBy.some(function (b) { return b.number === issue.number; });
+            if (alreadyBlocked) {
+              targetCard.classList.add('is-drop-invalid');
+              if (tooltip) tooltip.textContent = (dict.canvas_wire_duplicate || 'Already blocks #{n}').replace('{n}', targetNum);
+            } else {
+              targetCard.classList.add('is-drop-target');
+              if (tooltip) tooltip.textContent = (dict.canvas_wire_blocks || 'Blocks #{n}').replace('{n}', targetNum);
+            }
+          }
+          currentDropTarget = targetCard;
+        } else if (targetCard === cardEl) {
+          cardEl.classList.add('is-drop-invalid');
+          if (tooltip) tooltip.textContent = dict.canvas_wire_self_link || 'Cannot block itself';
+          currentDropTarget = cardEl;
+        } else {
+          if (tooltip) tooltip.textContent = dict.canvas_drag_to_block || 'Drag to block another task';
+        }
+      }
+
+      function onPointerUp(upEvent) {
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerCancel);
+
+        portEl.classList.remove('is-active');
+        if (previewPath.parentNode) previewPath.parentNode.removeChild(previewPath);
+        if (tooltip) tooltip.hidden = true;
+        if (currentDropTarget) {
+          currentDropTarget.classList.remove('is-drop-target', 'is-drop-invalid');
+        }
+
+        var elem = document.elementFromPoint(upEvent.clientX, upEvent.clientY);
+        var targetCard = elem ? elem.closest('.canvas-card') : null;
+        if (targetCard) {
+          var targetNum = Number(targetCard.getAttribute('data-issue-number'));
+          if (targetNum && targetNum !== issue.number) {
+            addIssueDependencyAction(targetNum, issue);
+          }
+        }
+      }
+
+      function onPointerCancel() {
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerCancel);
+        portEl.classList.remove('is-active');
+        if (previewPath.parentNode) previewPath.parentNode.removeChild(previewPath);
+        if (tooltip) tooltip.hidden = true;
+        if (currentDropTarget) {
+          currentDropTarget.classList.remove('is-drop-target', 'is-drop-invalid');
+        }
+      }
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerCancel);
+    }
+
+    portEl.addEventListener('pointerdown', onPortPointerDown);
+  }
+
+  async function addIssueDependencyAction(targetNumber, sourceIssue) {
+    var dict = I18N[getLanguage()] || I18N.en;
+    if (targetNumber === sourceIssue.number) {
+      setNotice(dict.err_self_link || 'An issue cannot be blocked by itself.', true);
+      return;
+    }
+    var targetIssue = (state.board && state.board.issues)
+      ? state.board.issues.find(function (i) { return i.number === targetNumber; })
+      : null;
+    if (targetIssue && targetIssue.blockedBy && targetIssue.blockedBy.some(function (b) { return b.number === sourceIssue.number; })) {
+      setNotice(dict.err_duplicate_dependency || 'That dependency link already exists.', true);
+      return;
+    }
+
+    try {
+      var body = {
+        issue_number: sourceIssue.number,
+      };
+      if (sourceIssue.repository && sourceIssue.repository.full) {
+        body.repo = sourceIssue.repository.full;
+      }
+      var endpoint = '/api/issues/' + targetNumber + '/dependencies/blocked_by';
+      if (targetIssue && targetIssue.repository && targetIssue.repository.full) {
+        var parts = targetIssue.repository.full.split('/');
+        endpoint = '/api/repos/' + parts[0] + '/' + parts[1] + '/issues/' + targetNumber + '/dependencies/blocked_by';
+      }
+      var res = await api(endpoint, {
+        method: 'POST',
+        body: body,
+      });
+
+      if (targetIssue) {
+        targetIssue.blockedBy = targetIssue.blockedBy || [];
+        targetIssue.blockedBy.push({
+          id: sourceIssue.id || (res && res.blockerId),
+          number: sourceIssue.number,
+          title: sourceIssue.title || ('#' + sourceIssue.number),
+          state: sourceIssue.state || 'open',
+          repository: sourceIssue.repository ? sourceIssue.repository.full : undefined,
+        });
+      }
+      if (sourceIssue) {
+        sourceIssue.blocking = sourceIssue.blocking || [];
+        if (targetIssue) {
+          sourceIssue.blocking.push({
+            id: targetIssue.id,
+            number: targetIssue.number,
+            title: targetIssue.title,
+            state: targetIssue.state,
+            repository: targetIssue.repository ? targetIssue.repository.full : undefined,
+          });
+        }
+      }
+      if (state.detail && state.detail.number === targetNumber) {
+        state.detail.blockedBy = targetIssue ? targetIssue.blockedBy : state.detail.blockedBy;
+        renderDetail(false);
+      } else if (state.detail && state.detail.number === sourceIssue.number) {
+        state.detail.blocking = sourceIssue ? sourceIssue.blocking : state.detail.blocking;
+        renderDetail(false);
+      }
+
+      renderCanvasWires();
+      if (state.board) renderBoard();
+      announce('Task #' + targetNumber + ' is now blocked by #' + sourceIssue.number + '.');
+      setNotice('');
+    } catch (err) {
+      var msg = err.message || 'Could not add dependency.';
+      if (err.error === 'cycle_refused') {
+        msg = dict.err_cycle_refused || 'Cannot add dependency: this would create a circular dependency.';
+      } else if (err.error === 'duplicate_dependency') {
+        msg = dict.err_duplicate_dependency || 'That dependency link already exists.';
+      } else if (err.error === 'self_link') {
+        msg = dict.err_self_link || 'An issue cannot be blocked by itself.';
+      }
+      setNotice(msg, true);
+    }
+  }
+
+  async function deleteIssueDependencyAction(targetNumber, blockerIdOrNumber) {
+    var targetIssue = (state.board && state.board.issues)
+      ? state.board.issues.find(function (i) { return i.number === targetNumber; })
+      : null;
+
+    try {
+      var endpoint = '/api/issues/' + targetNumber + '/dependencies/blocked_by/' + blockerIdOrNumber;
+      if (targetIssue && targetIssue.repository && targetIssue.repository.full) {
+        var parts = targetIssue.repository.full.split('/');
+        endpoint = '/api/repos/' + parts[0] + '/' + parts[1] + '/issues/' + targetNumber + '/dependencies/blocked_by/' + blockerIdOrNumber;
+      }
+      await api(endpoint, {
+        method: 'DELETE',
+      });
+
+      if (targetIssue && targetIssue.blockedBy) {
+        targetIssue.blockedBy = targetIssue.blockedBy.filter(function (b) {
+          return b.id !== blockerIdOrNumber && b.number !== blockerIdOrNumber;
+        });
+      }
+      if (state.board && state.board.issues) {
+        state.board.issues.forEach(function (iss) {
+          if (iss.blocking) {
+            iss.blocking = iss.blocking.filter(function (blk) {
+              return blk.number !== targetNumber;
+            });
+          }
+        });
+      }
+      if (state.detail && state.detail.number === targetNumber && state.detail.blockedBy) {
+        state.detail.blockedBy = state.detail.blockedBy.filter(function (b) {
+          return b.id !== blockerIdOrNumber && b.number !== blockerIdOrNumber;
+        });
+        renderDetail(false);
+      }
+
+      renderCanvasWires();
+      if (state.board) renderBoard();
+      announce('Dependency removed.');
+      setNotice('');
+    } catch (err) {
+      setNotice(err.message || 'Could not remove dependency.', true);
+    }
+  }
+
   function renderCanvasIssues(issues) {
+    state.currentCanvasIssues = issues;
     var cardsLayer = $('canvas-cards');
     if (!cardsLayer) return;
     cardsLayer.textContent = '';
@@ -2365,7 +2890,11 @@
       var cardEl = createIssueCanvasCard(issue, pos);
       cardsLayer.appendChild(cardEl);
       attachCardDrag(cardEl, issue, pos);
+      var portEl = cardEl.querySelector('.canvas-card-port');
+      if (portEl) attachPortDrag(portEl, cardEl, issue);
     });
+
+    renderCanvasWires();
 
     if (!state.canvasHasSavedState && issues.length > 0) {
       state.canvasHasSavedState = true;
@@ -3006,6 +3535,185 @@
     renderChecklist('human-list', 'no-human', issue.humanTasks || [], false);
   }
 
+  function renderDependencies(issue) {
+    var dict = I18N[getLanguage()] || I18N.en;
+
+    // 1. Blocked by list
+    var blockedByContainer = $('blocked-by-list');
+    var noBlockedByEl = $('no-blocked-by');
+    if (blockedByContainer && noBlockedByEl) {
+      blockedByContainer.textContent = '';
+      var blockedByList = Array.isArray(issue.blockedBy) ? issue.blockedBy : [];
+      noBlockedByEl.hidden = blockedByList.length > 0;
+
+      blockedByList.forEach(function (dep) {
+        var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
+        var friendly = resolveFriendlyTitle(dep);
+        var chip = el('div', { class: 'dependency-chip', 'data-blocker-id': String(dep.id || dep.number) }, [
+          el('span', { class: 'dependency-chip-status status-' + stage, title: statusText('status:' + stage) }),
+          el('a', {
+            class: 'dependency-chip-link',
+            href: '#/issue/' + dep.number,
+            text: '#' + dep.number + ' ' + (friendly.title || dep.title || ''),
+            onclick: function (e) {
+              e.preventDefault();
+              var targetRepo = (dep.repository && state.repositories)
+                ? state.repositories.repositories.find(function (r) { return r.full === dep.repository; })
+                : issue.repository;
+              openIssue({ number: dep.number, repository: targetRepo || issue.repository });
+            }
+          }),
+          el('button', {
+            type: 'button',
+            class: 'dependency-chip-remove',
+            title: dict.drawer_remove_dep || 'Remove dependency',
+            'aria-label': (dict.drawer_remove_dep || 'Remove dependency') + ' #' + dep.number,
+            text: '×',
+            onclick: function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              deleteIssueDependencyAction(issue.number, dep.id || dep.number);
+            }
+          })
+        ]);
+        blockedByContainer.appendChild(chip);
+      });
+    }
+
+    // 2. Add Blocker Select Picker
+    var addSelect = $('add-blocker-select');
+    var addBtn = $('add-blocker-btn');
+    if (addSelect) {
+      addSelect.textContent = '';
+      var defaultOpt = el('option', { value: '', text: dict.drawer_select_blocker_prompt || 'Select task to block this…' });
+      addSelect.appendChild(defaultOpt);
+
+      var existingBlockerNums = new Set((issue.blockedBy || []).map(function (b) { return b.number; }));
+      var availableIssues = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
+
+      availableIssues
+        .filter(function (candidate) {
+          return candidate.number !== issue.number && !existingBlockerNums.has(candidate.number);
+        })
+        .sort(function (a, b) { return a.number - b.number; })
+        .forEach(function (candidate) {
+          var friendly = resolveFriendlyTitle(candidate);
+          var opt = el('option', {
+            value: String(candidate.number),
+            text: '#' + candidate.number + ' ' + (friendly.title || candidate.title || ''),
+          });
+          addSelect.appendChild(opt);
+        });
+    }
+
+    var isBound = addBtn && (addBtn['data-bound'] || (typeof addBtn.hasAttribute === 'function' && addBtn.hasAttribute('data-bound')));
+    if (addBtn && !isBound) {
+      addBtn['data-bound'] = 'true';
+      if (typeof addBtn.setAttribute === 'function') {
+        addBtn.setAttribute('data-bound', 'true');
+      }
+      if (typeof addBtn.addEventListener === 'function') {
+        addBtn.addEventListener('click', function () {
+          if (!state.detail) return;
+          var select = $('add-blocker-select');
+          var val = select ? select.value : '';
+          if (!val) return;
+          var blockerNum = Number(val);
+          var sourceCandidate = (state.board && state.board.issues)
+            ? state.board.issues.find(function (i) { return i.number === blockerNum; })
+            : { number: blockerNum };
+          addIssueDependencyAction(state.detail.number, sourceCandidate);
+        });
+      }
+    }
+
+    // 3. Blocking list
+    var blockingContainer = $('blocking-list');
+    var noBlockingEl = $('no-blocking');
+    if (blockingContainer && noBlockingEl) {
+      blockingContainer.textContent = '';
+      var blockingList = Array.isArray(issue.blocking) ? issue.blocking : [];
+      noBlockingEl.hidden = blockingList.length > 0;
+
+      blockingList.forEach(function (dep) {
+        var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
+        var friendly = resolveFriendlyTitle(dep);
+        var chip = el('div', { class: 'dependency-chip', 'data-blocked-id': String(dep.id || dep.number) }, [
+          el('span', { class: 'dependency-chip-status status-' + stage, title: statusText('status:' + stage) }),
+          el('a', {
+            class: 'dependency-chip-link',
+            href: '#/issue/' + dep.number,
+            text: '#' + dep.number + ' ' + (friendly.title || dep.title || ''),
+            onclick: function (e) {
+              e.preventDefault();
+              var targetRepo = (dep.repository && state.repositories)
+                ? state.repositories.repositories.find(function (r) { return r.full === dep.repository; })
+                : issue.repository;
+              openIssue({ number: dep.number, repository: targetRepo || issue.repository });
+            }
+          }),
+          el('button', {
+            type: 'button',
+            class: 'dependency-chip-remove',
+            title: dict.drawer_remove_dep || 'Remove dependency',
+            'aria-label': (dict.drawer_remove_dep || 'Remove dependency') + ' from #' + dep.number,
+            text: '×',
+            onclick: function (e) {
+              e.preventDefault();
+              e.stopPropagation();
+              deleteIssueDependencyAction(dep.number, issue.id || issue.number);
+            }
+          })
+        ]);
+        blockingContainer.appendChild(chip);
+      });
+    }
+
+    // 4. Text Dependencies (Markdown detected links)
+    var textBlock = $('text-dependencies-block');
+    var textContainer = $('text-dependencies-list');
+    if (textBlock && textContainer) {
+      textContainer.textContent = '';
+      var textDeps = Array.isArray(issue.textDependencies) ? issue.textDependencies : [];
+      if (textDeps.length > 0) {
+        textBlock.hidden = false;
+        var nativeBlockerNums = new Set((issue.blockedBy || []).map(function (b) { return b.number; }));
+
+        textDeps.forEach(function (depNum) {
+          var isNative = nativeBlockerNums.has(depNum);
+          var chipChildren = [
+            el('span', { text: '#' + depNum, class: 'dependency-chip-link', onclick: function (e) {
+              e.preventDefault();
+              openIssue(depNum);
+            } })
+          ];
+          if (!isNative) {
+            chipChildren.push(el('button', {
+              type: 'button',
+              class: 'dependency-chip-convert',
+              text: dict.drawer_convert_to_native || 'Convert',
+              title: dict.drawer_convert_to_native || 'Convert to native dependency',
+              onclick: function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var sourceCandidate = (state.board && state.board.issues)
+                  ? state.board.issues.find(function (i) { return i.number === depNum; })
+                  : { number: depNum };
+                addIssueDependencyAction(issue.number, sourceCandidate);
+              }
+            }));
+          } else {
+            chipChildren.push(el('span', { class: 'badge badge-success', text: 'Converted' }));
+          }
+          var chip = el('div', { class: 'dependency-chip text-dep-chip' }, chipChildren);
+          textContainer.appendChild(chip);
+        });
+      } else {
+        textBlock.hidden = true;
+      }
+    }
+  }
+
   function renderDetail(focusHeading) {
     var issue = state.detail;
     if (!issue) return;
@@ -3059,6 +3767,7 @@
     renderQuestions(issue);
     renderStatus(issue);
     renderHumanTasks(issue);
+    renderDependencies(issue);
     $('save-status').textContent = '';
     restoreDraft();
 
@@ -3758,6 +4467,11 @@
       setCanvasZoom: setCanvasZoom,
       resetCanvasView: resetCanvasView,
       fitAllCanvasNodes: fitAllCanvasNodes,
+      renderCanvasWires: renderCanvasWires,
+      renderDependencies: renderDependencies,
+      addIssueDependencyAction: addIssueDependencyAction,
+      deleteIssueDependencyAction: deleteIssueDependencyAction,
+      computeBezierPath: computeBezierPath,
     };
   }
 
