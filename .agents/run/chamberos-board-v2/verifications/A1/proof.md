@@ -109,3 +109,38 @@ Generated via Playwright headless browser at 360px, 768px, and 1280px in `.agent
 - **Console & CSP Health:**
   - 0 console errors.
   - 0 CSP violations.
+
+---
+
+## Independent Audit
+
+### Audit Verdicts
+- **Spec Verdict:** PASS (Step A1 brief and decisions.md criteria U1–U13, D1, D2 fully satisfied).
+- **Quality Verdict:** APPROVED (all scoped defects verified, patched, and proven clean).
+
+### Test Suite & Typecheck Reproduction
+- `npm test`: **618/618 PASS** (0 failed, 0 skipped).
+- `node --test web/tests/*.test.mjs`: **481/481 PASS** (including 2 new tests for numeric repository pagination Link headers).
+- `npm run typecheck`: **PASS** (0 errors).
+- `npx tsc --noEmit -p web/tsconfig.json`: **PASS** (0 errors).
+
+### Live GitHub Verification & D66 Root Cause Autopsy
+- **Investigation:** Measured live GitHub API behavior on loopback port against all 26 token-visible repositories.
+- **Root Cause Identified (D66 / Repo Failure):** In `web/server/github.ts:400`, Link header pagination validation strictly enforced `parsedNext.pathname === '/repos/:owner/:name/issues'`. For repositories with over 100 issues (specifically `Workflows-Accelerator/case-management-platform`), GitHub's REST API emits Link headers using the internal numeric repository ID (`/repositories/<id>/issues`), throwing `GitHubError: GitHub pagination left the configured repository path` and failing the repository.
+- **Audit Remediation:**
+  - Updated `web/server/github.ts` to allow `/repositories/:id/issues` matching `repo.id` (or valid numeric repository issue path).
+  - Added unit regression tests in `web/tests/github.test.mjs`.
+  - Re-measured live GitHub on loopback: 26/26 repositories requested, 26/26 loaded, 306 issues returned, 0 failures, 100% complete in 3971ms.
+
+### Visual & Localization Audit
+- **Defect Fixed:** Sidebar section headers "Views" and "System" lacked `data-i18n` attributes in `web/public/index.html`. Added `data-i18n="section_views"` and `data-i18n="section_system"`, mapped to English ("Views", "System") and French ("Vues", "Système") in `web/public/app.js`.
+- **Proof Re-generated:** Headless Playwright test suite re-executed; screenshots verified across 360/768/1280px viewports (light/dark/FR). Page log clean with 0 console errors and 0 CSP violations.
+
+### Standing Invariant Confirmations
+- Grep `web/public`: 0 matches for "n8n", 0 matches for "mobile" (case-insensitive).
+- Zero external CDN URLs; strict CSP compliance.
+- No buttons with both plus icon and "+" text prefix.
+- Confirmed `#view-btn` is completely inert (hidden, `display: none !important;`, no event handlers).
+- Confirmed "Core" and "Studio" project badges exist only as synthetic test data in `generate-screenshots.mjs`.
+- Working tree clean, linear git commit history.
+
