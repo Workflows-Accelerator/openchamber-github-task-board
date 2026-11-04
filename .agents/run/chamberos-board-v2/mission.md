@@ -13,4 +13,7 @@
 - **Evidence:** explore/discovery.md
 - **Plan approved by user 2026-11-03** ("Start step #56").
   - `ses_a388df763d4ec90db2441d9c` A1 #56 (engineer, brief tasks/task-A1-shell-real-data.md) — RUNNING
+  - `ses_dc3caccfc68591839a260337` P1 read-only preflight (engineer) — COMPLETED -> explore/preflight.md
+- **Preflight findings (2026-11-04):** native dependency API works, token is a classic PAT with repo scope (board uses GITHUB_TOKEN fallback); write on all 26 repos; Discussions DISABLED on all 26 repos (enabling = repo setting -> user task, B3 built on fake only); OpenChamber on 127.0.0.1:3000 same container, `POST /api/openchamber/control` session.create or `openchamber session create` CLI; live `current` reported -> 8b7e059-20261102 (summary said 98261a8 — C4 must re-check).
+- **Human tasks for morning:** enable GitHub Discussions on the repos you want (at least this one) so B3 can be checked live.
 - **Next:** on A1 wake -> hostile review prompt -> independent audit -> A2 (#57).
