@@ -2273,31 +2273,58 @@
     });
   }
 
-  async function saveCardPosition(issue, newX, newY, oldPos, cardEl) {
-    var prevCanvas = issue.canvas ? Object.assign({}, issue.canvas) : null;
-    issue.canvas = Object.assign({}, issue.canvas || {}, { x: newX, y: newY });
+  var cardSaveQueues = new Map();
+
+  function saveCardPosition(issue, newX, newY, oldPos, cardEl) {
+    var key = identity(issue);
+    var previous = cardSaveQueues.get(key) || Promise.resolve();
+
+    var nextSave = previous.then(function () {
+      return executeSaveCardPosition(issue, newX, newY, oldPos, cardEl);
+    }, function () {
+      return executeSaveCardPosition(issue, newX, newY, oldPos, cardEl);
+    }).finally(function () {
+      if (cardSaveQueues.get(key) === nextSave) {
+        cardSaveQueues.delete(key);
+      }
+    });
+
+    cardSaveQueues.set(key, nextSave);
+    return nextSave;
+  }
+
+  async function executeSaveCardPosition(issue, newX, newY, oldPos, cardEl) {
+    var currentIssue = (state.board && Array.isArray(state.board.issues))
+      ? state.board.issues.find(function (i) { return sameIdentity(i, issue); }) || issue
+      : issue;
+
+    var prevCanvas = currentIssue.canvas ? Object.assign({}, currentIssue.canvas) : null;
+    currentIssue.canvas = Object.assign({}, currentIssue.canvas || {}, { x: newX, y: newY });
+    issue.canvas = currentIssue.canvas;
 
     var payload = {
       x: newX,
       y: newY,
-      fingerprint: issue.fingerprint,
+      fingerprint: currentIssue.fingerprint,
     };
-    if (issue.repository && issue.repository.full) {
-      payload.repo = issue.repository.full;
+    if (currentIssue.repository && currentIssue.repository.full) {
+      payload.repo = currentIssue.repository.full;
     }
 
     try {
-      var endpoint = issuePath(issue) + '/canvas';
+      var endpoint = issuePath(currentIssue) + '/canvas';
       var response = await api(endpoint, {
         method: 'PUT',
         body: payload,
       });
       if (response && response.listItem) {
+        currentIssue.fingerprint = response.listItem.fingerprint;
+        currentIssue.canvas = response.listItem.canvas;
         issue.fingerprint = response.listItem.fingerprint;
         issue.canvas = response.listItem.canvas;
         if (state.board && Array.isArray(state.board.issues)) {
           for (var i = 0; i < state.board.issues.length; i++) {
-            if (sameIdentity(state.board.issues[i], issue)) {
+            if (sameIdentity(state.board.issues[i], currentIssue)) {
               state.board.issues[i].fingerprint = response.listItem.fingerprint;
               state.board.issues[i].canvas = response.listItem.canvas;
               break;
@@ -2307,7 +2334,9 @@
         }
       }
       setNotice('');
+      return response;
     } catch (err) {
+      currentIssue.canvas = prevCanvas;
       issue.canvas = prevCanvas;
       if (cardEl) {
         cardEl.style.left = oldPos.x + 'px';
@@ -2319,6 +2348,7 @@
       var cleanMsg = msg.replace(/\.+$/, '');
       setNotice(cleanMsg + '.', true);
       if (state.board) renderBoard();
+      throw err;
     }
   }
 

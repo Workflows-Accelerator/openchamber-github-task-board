@@ -454,3 +454,51 @@ test('canvas client: save failure reverts card to previous position and sets pla
   assert.match(js, /cleanMsg\s*=\s*msg\.replace\(/, 'strips trailing dots');
   assert.match(js, /setNotice\(cleanMsg\s*\+\s*'\.',\s*true\)/, 'sets clean punctuated notice');
 });
+
+test('canvas client: rapid successive drops on the same card queue per-issue and adopt the updated fingerprint without false 409 conflict', async (t) => {
+  const js = fs.readFileSync(APP_JS_PATH, 'utf8');
+  assert.match(js, /var\s+cardSaveQueues\s*=\s*new\s+Map\(\);/, 'defines per-issue save queue map');
+  assert.match(js, /cardSaveQueues\.get\(key\)/, 'retrieves previous save promise for the issue');
+  assert.match(js, /cardSaveQueues\.set\(key,\s*nextSave\)/, 'queues next save promise for the issue');
+
+  // End-to-end server verification: Two rapid successive PUTs simulating client queue adoption
+  const issue = makeIssue({
+    number: 77,
+    title: 'Double-drop card',
+    body: '## Overview\r\nCard content\r\n',
+    labels: ['status:planned'],
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+  });
+  const fake = await startFakeGitHub({
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+    issues: [issue],
+  });
+  const board = await startBoard(fake);
+  t.after(async () => {
+    await board.app.close();
+    await fake.close();
+  });
+
+  const session = new HttpSession(board.url);
+  await session.login();
+
+  const boardRes = await session.request('/api/board');
+  const boardItem = boardRes.json.issues.find((i) => i.number === 77);
+
+  // First drop at (100, 150)
+  const drop1 = await session.request('/api/issues/77/canvas', {
+    method: 'PUT',
+    body: { x: 100, y: 150, fingerprint: boardItem.fingerprint },
+  });
+  assert.equal(drop1.status, 200);
+  assert.ok(drop1.json.listItem.fingerprint);
+  assert.notEqual(drop1.json.listItem.fingerprint, boardItem.fingerprint, 'Fingerprint updated after first drop');
+
+  // Second drop at (250, 300) adopting the updated fingerprint from first drop
+  const drop2 = await session.request('/api/issues/77/canvas', {
+    method: 'PUT',
+    body: { x: 250, y: 300, fingerprint: drop1.json.listItem.fingerprint },
+  });
+  assert.equal(drop2.status, 200, 'Second drop succeeds without 409 conflict');
+  assert.deepEqual(parseCanvasMarker(fake.findIssue(77).body), { x: 250, y: 300 });
+});
