@@ -225,7 +225,7 @@ function createRealPanelApp(options = {}) {
     elements,
     logs,
     serviceRequests,
-    waitForReady: () => new Promise((resolve) => setTimeout(resolve, 40)),
+    waitForReady: () => new Promise((resolve) => setTimeout(resolve, 120)),
   };
 }
 
