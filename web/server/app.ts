@@ -682,7 +682,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         body: issueBody,
         labels,
       }).catch(mapGitHubError);
-      repoBoardCache.delete(repository.full);
+      if (repository) repoBoardCache.delete(repository.full);
 
       return {
         status: 201,
