@@ -192,15 +192,30 @@
 
   function setNotice(message, isError) {
     var notice = $('notice');
+    var drawerNotice = $('drawer-notice');
     if (!message) {
-      notice.hidden = true;
-      notice.textContent = '';
-      notice.className = 'notice';
+      if (notice) {
+        notice.hidden = true;
+        notice.textContent = '';
+        notice.className = 'notice';
+      }
+      if (drawerNotice) {
+        drawerNotice.hidden = true;
+        drawerNotice.textContent = '';
+        drawerNotice.className = 'notice';
+      }
       return;
     }
-    notice.textContent = message;
-    notice.className = isError ? 'notice error' : 'notice';
-    notice.hidden = false;
+    if (notice) {
+      notice.textContent = message;
+      notice.className = isError ? 'notice error' : 'notice';
+      notice.hidden = false;
+    }
+    if (drawerNotice) {
+      drawerNotice.textContent = message;
+      drawerNotice.className = isError ? 'notice error' : 'notice';
+      drawerNotice.hidden = false;
+    }
   }
 
   function ApiError(code, status, payload) {
@@ -365,6 +380,13 @@
         throw new ApiError('discovery_unavailable', response.status, {
           error: 'discovery_unavailable',
           message: 'Discovery failed; nothing was sent. Refresh to try again',
+        });
+      }
+
+      if (response.status === 403 || (payload && (payload.error === 'github_forbidden' || payload.error === 'forbidden'))) {
+        throw new ApiError('github_forbidden', response.status, {
+          error: 'github_forbidden',
+          message: (payload && payload.message) || 'You do not have permission to change links on this repository.',
         });
       }
 
@@ -652,7 +674,7 @@
       err_cycle_refused: 'Cannot add dependency: this would create a circular dependency.',
       err_duplicate_dependency: 'That dependency link already exists.',
       err_self_link: 'An issue cannot be blocked by itself.',
-      err_github_forbidden: 'GitHub token does not have permission to modify issue dependencies.',
+      err_github_forbidden: 'You do not have permission to change links on this repository.',
       notice_dependencies_degraded: 'Dependency wires unavailable (GitHub GraphQL error). Showing board without wires.',
     },
     fr: {
@@ -743,7 +765,7 @@
       err_cycle_refused: 'Impossible d’ajouter la dépendance : cela créerait une dépendance circulaire.',
       err_duplicate_dependency: 'Ce lien de dépendance existe déjà.',
       err_self_link: 'Une tâche ne peut pas être bloquée par elle-même.',
-      err_github_forbidden: 'Le jeton GitHub n’a pas la permission de modifier les dépendances.',
+      err_github_forbidden: 'Vous n’avez pas la permission de modifier les liens sur ce dépôt.',
       notice_dependencies_degraded: 'Fils de dépendance indisponibles (erreur GraphQL GitHub). Affichage du tableau sans fils.',
     },
   };
@@ -1933,7 +1955,7 @@
     if (countOf(issue, 'humanTasks')) {
       metaChildren.push(el('span', { class: 'badge attention', text: countOf(issue, 'humanTasks') + ' human' }));
     }
-    var blockedCount = (issue.blockedBy && issue.blockedBy.length) || (issue.dependencies && issue.dependencies.length) || 0;
+    var blockedCount = Array.isArray(issue.blockedBy) ? issue.blockedBy.length : 0;
     if (blockedCount > 0) {
       var dict = I18N[getLanguage()] || I18N.en;
       var label = (dict.dep_blocked_by_n || 'blocked by {n}').replace('{n}', blockedCount);
@@ -1959,7 +1981,7 @@
     var friendly = resolveFriendlyTitle(issue);
     var children = [el('div', { class: 'task-top' }, [el('span', { class: 'task-title', text: friendly.title }), el('span', { class: 'task-number', text: issue.offline ? '(offline)' : '#' + issue.number })])];
     if (friendly.subtitle) children.push(el('span', { class: 'task-subtitle muted small', text: friendly.subtitle }));
-    var blockedCount = (issue.blockedBy && issue.blockedBy.length) || (issue.dependencies && issue.dependencies.length) || 0;
+    var blockedCount = Array.isArray(issue.blockedBy) ? issue.blockedBy.length : 0;
     var blockedBadge = null;
     if (blockedCount > 0) {
       var dict = I18N[getLanguage()] || I18N.en;
@@ -2222,7 +2244,7 @@
     if (questionCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: questionCount + ' q' }));
 
     var dict = I18N[getLanguage()] || I18N.en;
-    var blockedCount = (issue.blockedBy && issue.blockedBy.length) || (issue.dependencies && issue.dependencies.length) || 0;
+    var blockedCount = Array.isArray(issue.blockedBy) ? issue.blockedBy.length : 0;
     if (blockedCount > 0) {
       metaChildren.push(el('span', { class: 'canvas-card-badge badge-blocked', text: (dict.dep_blocked_by_n || 'blocked by {n}').replace('{n}', blockedCount) }));
     }
@@ -3037,13 +3059,13 @@
       setNotice('');
     } catch (err) {
       var msg = err.message || 'Could not add dependency.';
-      if (err.status === 403 || err.error === 'github_forbidden') {
-        msg = dict.err_github_forbidden || 'GitHub token does not have permission to modify issue dependencies.';
-      } else if (err.error === 'cycle_refused') {
+      if (err.status === 403 || err.status === 502 || err.error === 'github_forbidden' || err.code === 'github_forbidden') {
+        msg = dict.err_github_forbidden || 'You do not have permission to change links on this repository.';
+      } else if (err.error === 'cycle_refused' || err.code === 'cycle_refused') {
         msg = dict.err_cycle_refused || 'Cannot add dependency: this would create a circular dependency.';
-      } else if (err.error === 'duplicate_dependency') {
+      } else if (err.error === 'duplicate_dependency' || err.code === 'duplicate_dependency') {
         msg = dict.err_duplicate_dependency || 'That dependency link already exists.';
-      } else if (err.error === 'self_link') {
+      } else if (err.error === 'self_link' || err.code === 'self_link') {
         msg = dict.err_self_link || 'An issue cannot be blocked by itself.';
       }
       setNotice(msg, true);
@@ -3100,8 +3122,8 @@
     } catch (err) {
       var dict = I18N[getLanguage()] || I18N.en;
       var msg = err.message || 'Could not remove dependency.';
-      if (err.status === 403 || err.error === 'github_forbidden') {
-        msg = dict.err_github_forbidden || 'GitHub token does not have permission to modify issue dependencies.';
+      if (err.status === 403 || err.status === 502 || err.error === 'github_forbidden' || err.code === 'github_forbidden') {
+        msg = dict.err_github_forbidden || 'You do not have permission to change links on this repository.';
       }
       setNotice(msg, true);
     }
@@ -3812,16 +3834,33 @@
     var dict = I18N[getLanguage()] || I18N.en;
     searchInput.placeholder = dict.drawer_search_blocker_prompt || 'Add a blocker: search issues…';
 
-    var existingBlockerNums = new Set((issue.blockedBy || []).map(function (b) { return b.number; }));
-    var availableIssues = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
-
-    var candidates = availableIssues.filter(function (candidate) {
-      return candidate.number !== issue.number && !existingBlockerNums.has(candidate.number);
-    });
-
     var activeIndex = -1;
 
-    function renderSuggestions(filtered) {
+    function updateSuggestions() {
+      var currentIssue = state.detail;
+      if (!currentIssue) return;
+
+      var existingBlockerNums = new Set((currentIssue.blockedBy || []).map(function (b) { return b.number; }));
+      var availableIssues = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
+
+      var candidates = availableIssues.filter(function (candidate) {
+        return candidate.number !== currentIssue.number && !existingBlockerNums.has(candidate.number);
+      });
+
+      var query = searchInput.value.trim();
+      var filtered = candidates;
+      if (query) {
+        var q = query.toLowerCase();
+        filtered = candidates.filter(function (c) {
+          var friendly = resolveFriendlyTitle(c);
+          var title = (friendly.title || c.title || '').toLowerCase();
+          var numStr = String(c.number);
+          var repoStr = c.repository ? (c.repository.full || c.repository).toLowerCase() : '';
+          return numStr.indexOf(q) !== -1 || ('#' + numStr).indexOf(q) !== -1 || title.indexOf(q) !== -1 || repoStr.indexOf(q) !== -1;
+        });
+      }
+      filtered = filtered.slice(0, 15);
+
       suggestionsList.textContent = '';
       activeIndex = -1;
       if (filtered.length === 0) {
@@ -3832,14 +3871,17 @@
         });
         suggestionsList.appendChild(emptyItem);
       } else {
-        var currentRepo = issue.repository ? (issue.repository.full || issue.repository) : '';
+        var currentRepo = currentIssue.repository ? (currentIssue.repository.full || currentIssue.repository) : '';
         filtered.forEach(function (candidate) {
           var friendly = resolveFriendlyTitle(candidate);
+          var candRepo = candidate.repository ? (candidate.repository.full || candidate.repository.full_name || (typeof candidate.repository === 'string' ? candidate.repository : '')) : '';
+          var isCrossRepo = candRepo && currentRepo && candRepo.toLowerCase() !== currentRepo.toLowerCase();
+          var repoPrefix = isCrossRepo ? (shortName(candRepo) || candRepo) + ' ' : '';
+          var optText = repoPrefix + '#' + candidate.number + ' ' + (friendly.title || candidate.title || '');
           var optChildren = [
-            el('span', { class: 'option-text', text: '#' + candidate.number + ' ' + (friendly.title || candidate.title || '') }),
+            el('span', { class: 'option-text', text: optText }),
           ];
-          var candRepo = candidate.repository ? (candidate.repository.full || candidate.repository) : '';
-          if (candRepo && candRepo !== currentRepo) {
+          if (isCrossRepo) {
             optChildren.push(el('span', { class: 'option-repo', text: shortName(candRepo) || candRepo }));
           }
           var opt = el('li', {
@@ -3852,7 +3894,8 @@
           opt.addEventListener('click', function (e) {
             e.preventDefault();
             e.stopPropagation();
-            addIssueDependencyAction(issue.number, candidate);
+            var targetNumber = state.detail ? state.detail.number : currentIssue.number;
+            addIssueDependencyAction(targetNumber, candidate);
             searchInput.value = '';
             suggestionsList.hidden = true;
           });
@@ -3860,18 +3903,6 @@
         });
       }
       suggestionsList.hidden = false;
-    }
-
-    function getFiltered(query) {
-      if (!query) return candidates.slice(0, 10);
-      var q = query.toLowerCase();
-      return candidates.filter(function (c) {
-        var friendly = resolveFriendlyTitle(c);
-        var title = (friendly.title || c.title || '').toLowerCase();
-        var numStr = String(c.number);
-        var repoStr = c.repository ? (c.repository.full || c.repository).toLowerCase() : '';
-        return numStr.indexOf(q) !== -1 || ('#' + numStr).indexOf(q) !== -1 || title.indexOf(q) !== -1 || repoStr.indexOf(q) !== -1;
-      }).slice(0, 15);
     }
 
     function highlightOption(index) {
@@ -3894,23 +3925,18 @@
 
       if (typeof searchInput.addEventListener === 'function') {
         searchInput.addEventListener('input', function () {
-          if (!state.detail) return;
-          var query = searchInput.value.trim();
-          renderSuggestions(getFiltered(query));
+          updateSuggestions();
         });
 
         searchInput.addEventListener('focus', function () {
-          if (!state.detail) return;
-          var query = searchInput.value.trim();
-          renderSuggestions(getFiltered(query));
+          updateSuggestions();
         });
 
         searchInput.addEventListener('keydown', function (e) {
           if (suggestionsList.hidden) {
             if (e.key === 'ArrowDown') {
               e.preventDefault();
-              var query = searchInput.value.trim();
-              renderSuggestions(getFiltered(query));
+              updateSuggestions();
             }
             return;
           }
@@ -3974,14 +4000,17 @@
       blockedByList.forEach(function (dep) {
         var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
         var friendly = resolveFriendlyTitle(dep);
-        var depRepoName = dep.repository ? (dep.repository.full || dep.repository) : '';
+        var depRepoName = dep.repository ? (dep.repository.full || dep.repository.full_name || dep.repository.nameWithOwner || (typeof dep.repository === 'string' ? dep.repository : '')) : '';
+        var isCrossRepo = depRepoName && currentRepoName && depRepoName.toLowerCase() !== currentRepoName.toLowerCase();
+        var repoPrefix = isCrossRepo ? (shortName(depRepoName) || depRepoName) + ' ' : '';
+        var chipText = repoPrefix + '#' + dep.number + ' ' + (friendly.title || dep.title || '');
 
         var chipChildren = [
           el('span', { class: 'dependency-chip-status status-' + stage, title: statusText('status:' + stage) }),
           el('a', {
             class: 'dependency-chip-link',
             href: '#/issue/' + dep.number,
-            text: '#' + dep.number + ' ' + (friendly.title || dep.title || ''),
+            text: chipText,
             onclick: function (e) {
               e.preventDefault();
               var targetRepo = (dep.repository && state.repositories)
@@ -3992,7 +4021,7 @@
           }),
         ];
 
-        if (depRepoName && depRepoName !== currentRepoName) {
+        if (isCrossRepo) {
           chipChildren.push(el('span', { class: 'dependency-chip-repo', text: shortName(depRepoName) || depRepoName }));
         }
 
@@ -4030,14 +4059,17 @@
       blockingList.forEach(function (dep) {
         var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
         var friendly = resolveFriendlyTitle(dep);
-        var depRepoName = dep.repository ? (dep.repository.full || dep.repository) : '';
+        var depRepoName = dep.repository ? (dep.repository.full || dep.repository.full_name || dep.repository.nameWithOwner || (typeof dep.repository === 'string' ? dep.repository : '')) : '';
+        var isCrossRepo = depRepoName && currentRepoName && depRepoName.toLowerCase() !== currentRepoName.toLowerCase();
+        var repoPrefix = isCrossRepo ? (shortName(depRepoName) || depRepoName) + ' ' : '';
+        var chipText = repoPrefix + '#' + dep.number + ' ' + (friendly.title || dep.title || '');
 
         var chipChildren = [
           el('span', { class: 'dependency-chip-status status-' + stage, title: statusText('status:' + stage) }),
           el('a', {
             class: 'dependency-chip-link',
             href: '#/issue/' + dep.number,
-            text: '#' + dep.number + ' ' + (friendly.title || dep.title || ''),
+            text: chipText,
             onclick: function (e) {
               e.preventDefault();
               var targetRepo = (dep.repository && state.repositories)
@@ -4048,7 +4080,7 @@
           }),
         ];
 
-        if (depRepoName && depRepoName !== currentRepoName) {
+        if (isCrossRepo) {
           chipChildren.push(el('span', { class: 'dependency-chip-repo', text: shortName(depRepoName) || depRepoName }));
         }
 

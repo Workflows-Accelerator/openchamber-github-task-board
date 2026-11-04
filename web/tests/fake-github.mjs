@@ -82,6 +82,9 @@ function repositorySpec(input, index) {
     if (typeof copy.id !== 'number') {
       copy.id = (id * 100000) + copy.number;
     }
+    if (!copy.repository) {
+      copy.repository = { full_name: repo, name: repo.split('/')[1] || repo };
+    }
     return copy;
   });
   return {
@@ -324,9 +327,20 @@ export async function startFakeGitHub(options = {}) {
               .map((d) => {
                 for (const s of specs) {
                   const found = s.issues.find((i) => i.id === d.blockerId);
-                  if (found) return found;
+                  if (found) {
+                    return {
+                      ...found,
+                      repository: found.repository || { full_name: s.repo, name: s.repo.split('/')[1] || s.repo },
+                    };
+                  }
                 }
-                return { id: d.blockerId, number: d.blockerNumber, title: `Issue ${d.blockerNumber}`, state: 'open' };
+                return {
+                  id: d.blockerId,
+                  number: d.blockerNumber,
+                  title: `Issue ${d.blockerNumber}`,
+                  state: 'open',
+                  repository: { full_name: d.blockerRepo, name: (d.blockerRepo || '').split('/')[1] || d.blockerRepo },
+                };
               });
             return send(200, blockers);
           }
@@ -336,7 +350,12 @@ export async function startFakeGitHub(options = {}) {
               const deps = (s.dependencies || []).filter((d) => d.blockerId === issue.id);
               for (const dep of deps) {
                 const found = s.issues.find((i) => i.number === dep.blockedNumber);
-                if (found) blockedIssues.push(found);
+                if (found) {
+                  blockedIssues.push({
+                    ...found,
+                    repository: found.repository || { full_name: s.repo, name: s.repo.split('/')[1] || s.repo },
+                  });
+                }
               }
             }
             return send(200, blockedIssues);

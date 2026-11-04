@@ -179,3 +179,49 @@ Generated via Playwright headless browser at 360px, 768px, and 1280px in `.agent
 
 ## Conclusion
 All 12 hostile review findings have been resolved with clean, performant, accessible code. Full test suites pass cleanly (506/506 test runner, 618/618 npm test, 0 TypeScript errors), and all 19 visual verification screenshots stand recorded in `.agents/run/chamberos-board-v2/verifications/A3/`.
+
+---
+
+## Independent Audit
+
+### Executive Verdicts
+- **Spec Verdict:** PASS
+- **Quality Verdict:** APPROVED
+
+### Audit Scope & Verification
+An independent audit of Step A3 (issue #58, parent #55: Issue Dependencies & Canvas Wires) was conducted on branch `feat/chamberos-board-v2`. The audit verified full specification adherence and production quality across all required components:
+1. **Interactive Canvas Wires & Bézier Curves:** Smooth cubic Bézier paths correctly route between card connection ports (`port-right` to `port-left`) with dynamic curvature, arrowheads at `marker-end`, and blocker-state-based CSS color tokens (`wire-done`, `wire-warning`, `wire-open`, `wire-text`).
+2. **Interactive Port Dragging:** 14px connection ports support mouse and touch drag interactions (`touch-action: none; pointerdown` with pointer capture), rendering real-time dashed preview curves and directional cursor tooltips ("Drag to block another task", "Blocks #N", "Cannot block itself", "Already blocks #N").
+3. **Wide Hit Path & Inline Deletion:** Invisible 22px stroke overlay paths capture hover events, highlight wires to 3.5px, and display delete buttons at exact curve midpoints. Screen-space confirmation pill supports keyboard Escape dismissal and auto-dismissal.
+4. **Detail Drawer Dependency Blocks:** Complete blocked-by and blocking chip collections with colored status dots, title links, cross-repo short names, and `×` removal controls; Markdown text links block with non-destructive native conversion; type-to-search accessible combobox blocker picker with keyboard navigation.
+5. **List View Badges:** Warm amber `blocked by N` badges on cards in all list layouts.
+6. **Backend Endpoints & Graph Cycle Refusal:** REST endpoints (`GET /api/issues/:number/dependencies`, `POST .../dependencies/blocked_by`, `DELETE .../dependencies/blocked_by/:id`) enforce CSRF validation, validate mutation payloads, and reject dependency cycles via BFS with `400 cycle_refused`. Batched GraphQL fetching and rate-limit degradation handling prevent N+1 queries.
+7. **Constraints & Policies:** Zero CDN dependencies, strict CSP compliance (`script-src 'self'`, `style-src 'self'`), bilingual localization (English/French), and zero occurrences of forbidden terms "n8n" or "mobile".
+
+### Resolution of Audit Findings (Items 1–5)
+During the audit, 5 defects were identified and remediated under authorization:
+1. **Wire Delete Confirm Button Wrapping:**
+   - *Defect:* Confirmation pill buttons wrapped text awkwardly on narrow displays.
+   - *Fix:* Added `width: max-content; min-width: 160px;` to `.canvas-wire-confirm` (`web/public/theme.css:1981`) and `flex: 1 0 auto; white-space: nowrap;` to `.wire-confirm-actions .button` (`web/public/theme.css:2004`).
+2. **403 Forbidden Permission Notice:**
+   - *Defect:* 403 / `github_forbidden` responses from GitHub were intercepted by generic mutation error handling as `write_outcome_unknown`.
+   - *Fix:* Added explicit 403 handling in `api()` (`web/public/app.js:386`) and updated error notices with user-friendly English ("You do not have permission to change links on this repository.") and French ("Vous n’avez pas la permission de modifier les liens sur ce dépôt.") strings (`web/public/app.js:677`, `web/public/app.js:768`, `web/public/app.js:3062`, `web/public/app.js:3125`).
+3. **Drawer Notice Visibility:**
+   - *Defect:* Notice element was obscured behind drawer backdrop or inside drawer container.
+   - *Fix:* Set `.notice { position: relative; z-index: 950; }` in `web/public/theme.css:554` (above backdrop 900, below drawer 1000), added `#drawer-notice` inside `#detail-view` (`web/public/index.html:280`), and updated `setNotice()` (`web/public/app.js:195`) to update both targets.
+4. **Cross-Repository Dependency Attribution:**
+   - *Defect:* Cross-repo dependency chips and blocker picker suggestions omitted repository prefixes when mock server omitted repo metadata.
+   - *Fix:* Attached repository metadata in `web/tests/fake-github.mjs:85`, `web/tests/fake-github.mjs:330`, and `web/tests/fake-github.mjs:353`. Updated `web/public/app.js:3876`, `web/public/app.js:4003`, and `web/public/app.js:4062` to prefix short repository names (e.g. `Satellite #201`) on cross-repo dependencies.
+5. **Card Badge Blocker Count & Picker Closure Bug:**
+   - *Defect:* Card badges double-counted markdown text links alongside native blockers, and `setupBlockerPicker()` closed over stale `issue` references instead of current `state.detail`.
+   - *Fix:* Card badge counts strictly count native blockers `issue.blockedBy.length` (`web/public/app.js:1958`, `web/public/app.js:1984`, `web/public/app.js:2247`). `setupBlockerPicker()` dynamically reads current `state.detail` (`web/public/app.js:3839`), avoiding stale closure state on successive drawer openings.
+
+### Screenshot Observations Resolved
+- **Typography Stack Parity:** Font rendering variances between local environments and headless screenshots reflect Debian container fontconfig mapping system fonts to DejaVu Sans. `web/public/theme.css` uses identical native system font declarations throughout.
+- **Visual Graph Consistency:** Screenshot data progression in `generate-screenshots.mjs` intentionally executes an automated drag-and-drop linking #105 to #104 in shot 4, correctly transitioning #104 from 1 blocker to 2 blockers across subsequent captures.
+
+### Verification Test Summary
+- `npm test`: 618 passing, 0 failing.
+- `node --test web/tests/*.test.mjs`: 506 passing, 0 failing.
+- `npm run typecheck`: 0 errors.
+- All 19 visual verification screenshots generated and verified in `.agents/run/chamberos-board-v2/verifications/A3/`.
