@@ -4002,8 +4002,7 @@
         var friendly = resolveFriendlyTitle(dep);
         var depRepoName = dep.repository ? (dep.repository.full || dep.repository.full_name || dep.repository.nameWithOwner || (typeof dep.repository === 'string' ? dep.repository : '')) : '';
         var isCrossRepo = depRepoName && currentRepoName && depRepoName.toLowerCase() !== currentRepoName.toLowerCase();
-        var repoPrefix = isCrossRepo ? (shortName(depRepoName) || depRepoName) + ' ' : '';
-        var chipText = repoPrefix + '#' + dep.number + ' ' + (friendly.title || dep.title || '');
+        var chipText = '#' + dep.number + ' ' + (friendly.title || dep.title || '');
 
         var chipChildren = [
           el('span', { class: 'dependency-chip-status status-' + stage, title: statusText('status:' + stage) }),
@@ -4061,8 +4060,7 @@
         var friendly = resolveFriendlyTitle(dep);
         var depRepoName = dep.repository ? (dep.repository.full || dep.repository.full_name || dep.repository.nameWithOwner || (typeof dep.repository === 'string' ? dep.repository : '')) : '';
         var isCrossRepo = depRepoName && currentRepoName && depRepoName.toLowerCase() !== currentRepoName.toLowerCase();
-        var repoPrefix = isCrossRepo ? (shortName(depRepoName) || depRepoName) + ' ' : '';
-        var chipText = repoPrefix + '#' + dep.number + ' ' + (friendly.title || dep.title || '');
+        var chipText = '#' + dep.number + ' ' + (friendly.title || dep.title || '');
 
         var chipChildren = [
           el('span', { class: 'dependency-chip-status status-' + stage, title: statusText('status:' + stage) }),
