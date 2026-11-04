@@ -1388,11 +1388,12 @@ input[type="text"].search-input:focus,
     min-width: 250px;
     transform: translateX(-100%);
     z-index: 950;
-    box-shadow: 6px 0 32px rgba(0, 0, 0, 0.4);
+    box-shadow: none;
   }
 
   body.sidebar-open .sidebar {
     transform: translateX(0);
+    box-shadow: 6px 0 32px rgba(0, 0, 0, 0.4);
   }
 
   body.sidebar-open .sidebar-backdrop {
