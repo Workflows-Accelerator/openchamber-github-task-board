@@ -2209,4 +2209,513 @@ input[type="text"].search-input:focus,
   font-style: italic;
 }
 
+/* ==========================================================================
+   Step A4: Canvas Notes & Auto-Layout Arrange
+   ========================================================================== */
+
+/* Note Color Tokens (Muted V1 palette with dark mode adaptation) */
+:root {
+  --note-yellow-bg: #fbf5df;
+  --note-yellow-border: #e5d59b;
+  --note-yellow-fg: #2c2514;
+
+  --note-pink-bg: #f7ecee;
+  --note-pink-border: #e2c3c8;
+  --note-pink-fg: #3d1b22;
+
+  --note-blue-bg: #e8f0fe;
+  --note-blue-border: #bfd3f8;
+  --note-blue-fg: #1a2f50;
+
+  --note-green-bg: #e6f4ea;
+  --note-green-border: #ceead6;
+  --note-green-fg: #133a20;
+
+  --note-purple-bg: #f1eafd;
+  --note-purple-border: #d7aefb;
+  --note-purple-fg: #2c1a45;
+}
+
+[data-theme="dark"] {
+  --note-yellow-bg: #2d281a;
+  --note-yellow-border: #5c4e28;
+  --note-yellow-fg: #f5eed3;
+
+  --note-pink-bg: #2d1c20;
+  --note-pink-border: #5c353d;
+  --note-pink-fg: #f5dfe3;
+
+  --note-blue-bg: #1c2738;
+  --note-blue-border: #354e70;
+  --note-blue-fg: #d9e6fb;
+
+  --note-green-bg: #172a1e;
+  --note-green-border: #2e573a;
+  --note-green-fg: #d6f2dc;
+
+  --note-purple-bg: #261c36;
+  --note-purple-border: #4d3570;
+  --note-purple-fg: #eddffc;
+}
+
+/* Canvas Sticky Note */
+.canvas-sticky-note {
+  position: absolute;
+  min-width: 180px;
+  min-height: 120px;
+  border-radius: var(--rad-md);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px 10px;
+  box-sizing: border-box;
+  user-select: text;
+  transition: box-shadow 0.15s ease;
+  pointer-events: auto;
+}
+
+.canvas-sticky-note:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18);
+}
+
+.canvas-sticky-note.is-dragging {
+  opacity: 0.92;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.25);
+  cursor: grabbing !important;
+}
+
+/* Palette Variations */
+.canvas-sticky-note.color-yellow { background-color: var(--note-yellow-bg); border: 1.5px solid var(--note-yellow-border); color: var(--note-yellow-fg); }
+.canvas-sticky-note.color-pink   { background-color: var(--note-pink-bg);   border: 1.5px solid var(--note-pink-border);   color: var(--note-pink-fg); }
+.canvas-sticky-note.color-blue   { background-color: var(--note-blue-bg);   border: 1.5px solid var(--note-blue-border);   color: var(--note-blue-fg); }
+.canvas-sticky-note.color-green  { background-color: var(--note-green-bg);  border: 1.5px solid var(--note-green-border);  color: var(--note-green-fg); }
+.canvas-sticky-note.color-purple { background-color: var(--note-purple-bg); border: 1.5px solid var(--note-purple-border); color: var(--note-purple-fg); }
+
+/* Note Header */
+.canvas-note-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid rgba(128, 128, 128, 0.2);
+  cursor: grab;
+  touch-action: none;
+}
+
+.canvas-note-header:active {
+  cursor: grabbing;
+}
+
+.canvas-note-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  opacity: 0.75;
+}
+
+.canvas-note-badge {
+  font-weight: 600;
+}
+
+.canvas-note-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Palette Swatches */
+.canvas-note-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  padding: 0;
+  cursor: pointer;
+}
+
+.canvas-note-swatch.swatch-yellow { background-color: #fbf5df; }
+.canvas-note-swatch.swatch-pink   { background-color: #f7ecee; }
+.canvas-note-swatch.swatch-blue   { background-color: #e8f0fe; }
+.canvas-note-swatch.swatch-green  { background-color: #e6f4ea; }
+.canvas-note-swatch.swatch-purple { background-color: #f1eafd; }
+
+/* Note Action Buttons */
+.canvas-note-btn {
+  background: transparent;
+  border: none;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--rad-sm);
+  color: inherit;
+  opacity: 0.7;
+}
+
+.canvas-note-btn:hover {
+  opacity: 1;
+  background: rgba(128, 128, 128, 0.15);
+}
+
+.canvas-note-btn.btn-delete:hover {
+  color: var(--err);
+  background: var(--err-subtle);
+}
+
+/* Inline Delete Confirmation */
+.canvas-note-del-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  gap: 4px;
+  font-size: 11px;
+  background: var(--surf);
+  padding: 2px 6px;
+  border-radius: var(--rad-sm);
+  border: 1px solid var(--border);
+}
+
+.canvas-note-del-confirm .confirm-yes {
+  background: var(--err);
+  color: #fff;
+  border: none;
+  padding: 1px 6px;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 10px;
+}
+
+.canvas-note-del-confirm .confirm-no {
+  background: transparent;
+  border: none;
+  padding: 1px 4px;
+  cursor: pointer;
+  font-size: 10px;
+  color: var(--fg);
+}
+
+/* Note Body (Rendered Markdown) */
+.canvas-note-body {
+  flex: 1;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.45;
+  cursor: text;
+}
+
+.canvas-note-body h1,
+.canvas-note-body h2,
+.canvas-note-body h3,
+.canvas-note-body h4 {
+  margin: 4px 0 2px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.canvas-note-body h1 { font-size: 14px; }
+.canvas-note-body p { margin: 2px 0 4px; }
+.canvas-note-body p:last-child { margin-bottom: 0; }
+
+.canvas-note-body ul,
+.canvas-note-body ol {
+  margin: 2px 0 4px;
+  padding-left: 18px;
+}
+
+.canvas-note-body li {
+  margin: 1px 0;
+}
+
+.canvas-note-body li.task-list-item {
+  list-style-type: none;
+  margin-left: -14px;
+}
+
+.canvas-note-body input[type="checkbox"] {
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.canvas-note-body a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.canvas-note-body code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 1px 3px;
+  background: rgba(128, 128, 128, 0.15);
+  border-radius: 3px;
+}
+
+.canvas-note-body pre {
+  margin: 4px 0;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: var(--rad-sm);
+  overflow-x: auto;
+}
+
+.canvas-note-body pre code {
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+}
+
+/* Note Edit Area */
+.canvas-note-editor {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: 4px;
+}
+
+.canvas-note-textarea {
+  flex: 1;
+  width: 100%;
+  min-height: 70px;
+  resize: none;
+  border: 1px solid rgba(128, 128, 128, 0.3);
+  border-radius: var(--rad-sm);
+  background: rgba(255, 255, 255, 0.6);
+  padding: 6px;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  color: inherit;
+  box-sizing: border-box;
+}
+
+[data-theme="dark"] .canvas-note-textarea {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.canvas-note-textarea:focus {
+  outline: none;
+  border-color: var(--prim);
+}
+
+.canvas-note-edit-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+.canvas-note-counter {
+  font-family: var(--font-mono);
+}
+
+.canvas-note-counter.is-limit {
+  color: var(--err);
+  font-weight: 600;
+}
+
+.canvas-note-editor-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.canvas-note-editor-actions button {
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+/* Note Resize Handle */
+.canvas-note-resize {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 12px;
+  height: 12px;
+  cursor: se-resize;
+  opacity: 0.4;
+  touch-action: none;
+}
+
+.canvas-note-resize:hover {
+  opacity: 0.9;
+}
+
+.canvas-note-resize::after {
+  content: '';
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+}
+
+/* Faint Connector Line */
+.canvas-note-connector {
+  stroke: var(--fg-faint);
+  stroke-dasharray: 4, 4;
+  stroke-width: 1.5;
+  opacity: 0.55;
+  fill: none;
+  pointer-events: none;
+}
+
+/* Project Band Labels */
+.canvas-project-band-label {
+  position: absolute;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--fg-muted);
+  text-transform: uppercase;
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.canvas-project-band-label::after {
+  content: '';
+  display: inline-block;
+  width: 120px;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Card Hover Add-Note Action */
+.card-action-add-note {
+  position: absolute;
+  top: 6px;
+  right: 28px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border-radius: var(--rad-sm);
+  background: var(--surf);
+  border: 1px solid var(--border);
+  color: var(--fg-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  z-index: 5;
+}
+
+.canvas-card-node:hover .card-action-add-note {
+  opacity: 1;
+}
+
+.card-action-add-note:hover {
+  color: var(--prim);
+  border-color: var(--prim);
+  background: var(--prim-subtle);
+}
+
+/* Drawer Add Note Button */
+.detail-head-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.drawer-add-note-btn {
+  flex-shrink: 0;
+  font-size: 11px;
+}
+
+/* Arrange Modal Dialog */
+.canvas-arrange-dialog {
+  position: absolute;
+  top: 60px;
+  right: 14px;
+  z-index: 60;
+  width: 320px;
+  background: var(--surf);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--rad-lg);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.22);
+  padding: 14px 16px;
+  box-sizing: border-box;
+}
+
+.canvas-arrange-dialog-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg);
+  margin-bottom: 6px;
+}
+
+.canvas-arrange-dialog-message {
+  font-size: 12px;
+  color: var(--fg-muted);
+  margin: 0 0 10px;
+  line-height: 1.4;
+}
+
+.canvas-arrange-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.canvas-arrange-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--fg);
+  cursor: pointer;
+  user-select: none;
+}
+
+.canvas-arrange-option input {
+  margin-top: 2px;
+}
+
+.canvas-arrange-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.arrange-progress-container {
+  margin: 8px 0;
+}
+
+.arrange-progress-bar {
+  height: 4px;
+  background: var(--prim);
+  border-radius: 2px;
+  transition: width 0.2s ease;
+  margin-bottom: 4px;
+}
+
+.arrange-summary {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border-radius: var(--rad-sm);
+  background: var(--surf-muted);
+  border: 1px solid var(--border);
+  color: var(--fg);
+  line-height: 1.4;
+}
+
+
 

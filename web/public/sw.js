@@ -11,6 +11,8 @@ var SHELL_ASSETS = [
   '/index.html',
   '/theme.css',
   '/app.js',
+  '/markdown.js',
+  '/arrange.js',
   '/manifest.json',
   '/icon.svg',
   '/icon-192.png',

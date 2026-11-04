@@ -450,6 +450,8 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     '/': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
     '/index.html': { body: loadStatic('index.html'), type: 'text/html; charset=utf-8' },
     '/app.js': { body: loadStatic('app.js'), type: 'text/javascript; charset=utf-8' },
+    '/markdown.js': { body: loadStatic('markdown.js'), type: 'text/javascript; charset=utf-8' },
+    '/arrange.js': { body: loadStatic('arrange.js'), type: 'text/javascript; charset=utf-8' },
     '/theme.css': { body: loadStatic('theme.css'), type: 'text/css; charset=utf-8' },
     '/manifest.json': { body: loadStatic('manifest.json'), type: 'application/manifest+json; charset=utf-8' },
     '/sw.js': {

@@ -40,7 +40,12 @@
   };
 
   function identity(issue) {
-    return issue && issue.repository ? issue.repository.full + '#' + issue.number : '#' + (issue && issue.number);
+    if (!issue) return '#';
+    var repo = issue.repository;
+    var repoStr = '';
+    if (typeof repo === 'string') repoStr = repo;
+    else if (repo && typeof repo.full === 'string') repoStr = repo.full;
+    return repoStr ? repoStr + '#' + issue.number : '#' + issue.number;
   }
   function issuePath(issue) {
     return issue.repository
@@ -671,6 +676,23 @@
       canvas_wire_remove_btn: 'Remove',
       canvas_wire_cancel_btn: 'Cancel',
       dep_blocked_by_n: 'blocked by {n}',
+      canvas_arrange: 'Arrange',
+      canvas_arrange_undo: 'Undo arrange',
+      arrange_dialog_title: 'Arrange cards',
+      arrange_scope_unplaced: 'Only cards without a saved place',
+      arrange_scope_all: 'All cards (cards you placed by hand will also move)',
+      arrange_confirm: 'Arrange',
+      arrange_cancel: 'Cancel',
+      drawer_add_note: 'Add note',
+      note_add: 'Add note',
+      note_delete: 'Delete note',
+      note_delete_confirm: 'Delete note?',
+      note_edit: 'Edit',
+      note_save: 'Save',
+      note_cancel: 'Cancel',
+      note_empty: '(Empty note - double-click to edit)',
+      note_limit_exceeded: 'Note exceeds 4,000 character limit.',
+      note_body_limit_exceeded: 'Issue body limit reached (65,536 characters). Cannot save note.',
       err_cycle_refused: 'Cannot add dependency: this would create a circular dependency.',
       err_duplicate_dependency: 'That dependency link already exists.',
       err_self_link: 'An issue cannot be blocked by itself.',
@@ -762,6 +784,23 @@
       canvas_wire_remove_btn: 'Supprimer',
       canvas_wire_cancel_btn: 'Annuler',
       dep_blocked_by_n: 'bloqué par {n}',
+      canvas_arrange: 'Organiser',
+      canvas_arrange_undo: 'Annuler l’organisation',
+      arrange_dialog_title: 'Organiser les cartes',
+      arrange_scope_unplaced: 'Uniquement les cartes non positionnées',
+      arrange_scope_all: 'Toutes les cartes (les cartes déplacées manuellement bougeront aussi)',
+      arrange_confirm: 'Organiser',
+      arrange_cancel: 'Annuler',
+      drawer_add_note: 'Ajouter une note',
+      note_add: 'Ajouter une note',
+      note_delete: 'Supprimer la note',
+      note_delete_confirm: 'Supprimer la note ?',
+      note_edit: 'Modifier',
+      note_save: 'Enregistrer',
+      note_cancel: 'Annuler',
+      note_empty: '(Note vide - double-cliquer pour modifier)',
+      note_limit_exceeded: 'La note dépasse la limite de 4 000 caractères.',
+      note_body_limit_exceeded: 'Limite du corps de tâche atteinte (65 536 caractères).',
       err_cycle_refused: 'Impossible d’ajouter la dépendance : cela créerait une dépendance circulaire.',
       err_duplicate_dependency: 'Ce lien de dépendance existe déjà.',
       err_self_link: 'Une tâche ne peut pas être bloquée par elle-même.',
@@ -2119,7 +2158,7 @@
   function fitAllCanvasNodes() {
     var viewport = $('canvas-viewport');
     if (!viewport) return;
-    var cards = viewport.querySelectorAll('.canvas-card');
+    var cards = viewport.querySelectorAll('.canvas-card, .canvas-sticky-note');
     if (!cards || cards.length === 0) {
       resetCanvasView();
       return;
@@ -2273,6 +2312,20 @@
     children.push(portRight);
     children.push(portLeft);
 
+    var addNoteBtn = el('button', {
+      class: 'card-action-add-note',
+      type: 'button',
+      title: dict.note_add || 'Add note',
+      'aria-label': dict.note_add || 'Add note',
+      text: 'Note',
+    });
+    addNoteBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      createNoteForIssue(issue);
+    });
+    children.push(addNoteBtn);
+
     var card = el('div', {
       class: 'canvas-card',
       'data-issue-number': String(issue.number),
@@ -2301,7 +2354,7 @@
 
     function onPointerDown(e) {
       if (e.button !== undefined && e.button !== 0) return;
-      if (e.target && e.target.closest && e.target.closest('.canvas-card-port')) return;
+      if (e.target && e.target.closest && (e.target.closest('.canvas-card-port') || e.target.closest('.card-action-add-note'))) return;
       e.stopPropagation();
 
       startClientX = e.clientX;
@@ -2332,6 +2385,7 @@
         cardEl.style.left = currentCardX + 'px';
         cardEl.style.top = currentCardY + 'px';
         renderCanvasWires();
+        updateAttachedNotesAndConnectors(issue, dx, dy);
       }
     }
 
@@ -2344,6 +2398,7 @@
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerCancel);
       renderCanvasWires();
+      renderCanvasNotes();
 
       if (hasMoved) {
         suppressClick = true;
@@ -2372,7 +2427,7 @@
     cardEl.addEventListener('pointerdown', onPointerDown);
 
     cardEl.addEventListener('click', function (e) {
-      if (e.target && e.target.closest && e.target.closest('.canvas-card-port')) return;
+      if (e.target && e.target.closest && (e.target.closest('.canvas-card-port') || e.target.closest('.card-action-add-note'))) return;
       if (suppressClick) {
         e.preventDefault();
         e.stopPropagation();
@@ -2400,14 +2455,40 @@
 
   var cardSaveQueues = new Map();
 
-  function saveCardPosition(issue, newX, newY, oldPos, cardEl) {
+  function escapeHtml(str) {
+    if (str === null || str === undefined) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function safeRenderMarkdown(text) {
+    if (typeof window !== 'undefined' && typeof window.renderMarkdown === 'function') {
+      return window.renderMarkdown(text);
+    }
+    return escapeHtml(text || '').replace(/\n/g, '<br>');
+  }
+
+  function safeArrangeCards(cards, options) {
+    if (typeof window !== 'undefined' && typeof window.arrangeCards === 'function') {
+      return window.arrangeCards(cards, options);
+    }
+    var map = new Map();
+    map.bands = [];
+    return map;
+  }
+
+  function saveIssueCanvas(issue, canvasUpdates, options) {
     var key = identity(issue);
     var previous = cardSaveQueues.get(key) || Promise.resolve();
 
     var nextSave = previous.then(function () {
-      return executeSaveCardPosition(issue, newX, newY, oldPos, cardEl);
+      return executeSaveIssueCanvas(issue, canvasUpdates, options);
     }, function () {
-      return executeSaveCardPosition(issue, newX, newY, oldPos, cardEl);
+      return executeSaveIssueCanvas(issue, canvasUpdates, options);
     }).finally(function () {
       if (cardSaveQueues.get(key) === nextSave) {
         cardSaveQueues.delete(key);
@@ -2418,20 +2499,50 @@
     return nextSave;
   }
 
-  async function executeSaveCardPosition(issue, newX, newY, oldPos, cardEl) {
+  function saveCardPosition(issue, newX, newY, oldPos, cardEl) {
+    var deltaX = (oldPos && typeof oldPos.x === 'number') ? (newX - oldPos.x) : 0;
+    var deltaY = (oldPos && typeof oldPos.y === 'number') ? (newY - oldPos.y) : 0;
+
+    var updatedNotes = undefined;
+    if (issue.canvas && Array.isArray(issue.canvas.notes) && issue.canvas.notes.length > 0) {
+      updatedNotes = issue.canvas.notes.map(function (n) {
+        var nx = typeof n.x === 'number' ? n.x + deltaX : (newX + 20);
+        var ny = typeof n.y === 'number' ? n.y + deltaY : (newY + 160);
+        return Object.assign({}, n, { x: Math.round(nx), y: Math.round(ny) });
+      });
+    }
+
+    var updates = { x: newX, y: newY };
+    if (updatedNotes !== undefined) {
+      updates.notes = updatedNotes;
+    }
+
+    return saveIssueCanvas(issue, updates, {
+      oldPos: oldPos,
+      cardEl: cardEl,
+      isCardMove: true,
+      deltaX: deltaX,
+      deltaY: deltaY,
+    });
+  }
+
+  async function executeSaveIssueCanvas(issue, canvasUpdates, options) {
+    options = options || {};
     var currentIssue = (state.board && Array.isArray(state.board.issues))
       ? state.board.issues.find(function (i) { return sameIdentity(i, issue); }) || issue
       : issue;
 
-    var prevCanvas = currentIssue.canvas ? Object.assign({}, currentIssue.canvas) : null;
-    currentIssue.canvas = Object.assign({}, currentIssue.canvas || {}, { x: newX, y: newY });
+    var prevCanvas = currentIssue.canvas ? JSON.parse(JSON.stringify(currentIssue.canvas)) : null;
+    currentIssue.canvas = Object.assign({}, currentIssue.canvas || {}, canvasUpdates);
     issue.canvas = currentIssue.canvas;
 
     var payload = {
-      x: newX,
-      y: newY,
       fingerprint: currentIssue.fingerprint,
     };
+    if (currentIssue.canvas.x !== undefined) payload.x = currentIssue.canvas.x;
+    if (currentIssue.canvas.y !== undefined) payload.y = currentIssue.canvas.y;
+    if (currentIssue.canvas.notes !== undefined) payload.notes = currentIssue.canvas.notes;
+
     if (currentIssue.repository && currentIssue.repository.full) {
       payload.repo = currentIssue.repository.full;
     }
@@ -2463,19 +2574,774 @@
     } catch (err) {
       currentIssue.canvas = prevCanvas;
       issue.canvas = prevCanvas;
-      if (cardEl) {
+      var cardEl = options.cardEl;
+      var oldPos = options.oldPos;
+      if (cardEl && oldPos) {
         cardEl.style.left = oldPos.x + 'px';
         cardEl.style.top = oldPos.y + 'px';
         renderCanvasWires();
+        renderCanvasNotes();
       }
       var l = getLanguage();
       var dict = I18N[l] || I18N.en;
-      var msg = (err && err.message) ? err.message : (dict.canvas_save_error || 'Could not save card position.');
+      var msg = '';
+      if (err && (err.code === 'note_too_long' || (err.message && err.message.includes('4,000')))) {
+        msg = dict.note_limit_exceeded || 'Note exceeds 4,000 character limit.';
+      } else if (err && (err.code === 'body_too_long' || (err.message && err.message.includes('65,536')))) {
+        msg = dict.note_body_limit_exceeded || 'Issue body limit reached (65,536 characters). Cannot save note.';
+      } else if (err && err.message) {
+        msg = err.message;
+      } else {
+        msg = dict.canvas_save_error || 'Could not save card position.';
+      }
       var cleanMsg = msg.replace(/\.+$/, '');
       setNotice(cleanMsg + '.', true);
-      if (state.board) renderBoard();
+      if (options.isCardMove && state.board) renderBoard();
       throw err;
     }
+  }
+
+  function updateAttachedNotesAndConnectors(issue, dx, dy) {
+    var notesLayer = $('canvas-notes');
+    if (!notesLayer) return;
+    var noteEls = notesLayer.querySelectorAll('[data-issue-key="' + identity(issue) + '"]');
+    noteEls.forEach(function (noteEl) {
+      var noteId = noteEl.getAttribute('data-note-id');
+      var note = (issue.canvas && Array.isArray(issue.canvas.notes))
+        ? issue.canvas.notes.find(function (n) { return n.id === noteId; })
+        : null;
+      if (!note) return;
+      var curX = Math.round((note.x || 0) + dx);
+      var curY = Math.round((note.y || 0) + dy);
+      noteEl.style.left = curX + 'px';
+      noteEl.style.top = curY + 'px';
+
+      if (noteEl._connectorLine && noteEl._cardInfo) {
+        var cardX = noteEl._cardInfo.cardX + dx;
+        var cardY = noteEl._cardInfo.cardY + dy;
+        updateNoteConnectorLine(
+          noteEl._connectorLine,
+          cardX,
+          cardY,
+          noteEl._cardInfo.cardW,
+          noteEl._cardInfo.cardH,
+          { x: curX, y: curY, w: note.w, h: note.h }
+        );
+      }
+    });
+  }
+
+  function updateNoteConnectorLine(line, cardX, cardY, cardW, cardH, note) {
+    if (!line) return;
+    var noteW = note.w || 220;
+    var noteH = note.h || 130;
+    var noteX = note.x;
+    var noteY = note.y;
+
+    var x1 = cardX + cardW / 2;
+    var y1 = cardY + cardH;
+    if (noteY + noteH < cardY) {
+      y1 = cardY;
+    }
+
+    var x2 = noteX + noteW / 2;
+    var y2 = noteY;
+    if (noteY > cardY + cardH) {
+      y2 = noteY;
+    } else if (noteY + noteH < cardY) {
+      y2 = noteY + noteH;
+    }
+
+    line.setAttribute('x1', String(Math.round(x1)));
+    line.setAttribute('y1', String(Math.round(y1)));
+    line.setAttribute('x2', String(Math.round(x2)));
+    line.setAttribute('y2', String(Math.round(y2)));
+  }
+
+  function attachNoteDrag(headerEl, noteEl, note, issue) {
+    var isDragging = false;
+    var startClientX = 0;
+    var startClientY = 0;
+    var startNoteX = note.x;
+    var startNoteY = note.y;
+    var currentX = note.x;
+    var currentY = note.y;
+    var hasMoved = false;
+
+    headerEl.addEventListener('pointerdown', function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      if (e.target && e.target.closest('button')) return;
+      e.stopPropagation();
+
+      isDragging = true;
+      hasMoved = false;
+      startClientX = e.clientX;
+      startClientY = e.clientY;
+      startNoteX = note.x;
+      startNoteY = note.y;
+      currentX = note.x;
+      currentY = note.y;
+
+      noteEl.classList.add('is-dragging');
+
+      function onPointerMove(ev) {
+        if (!isDragging) return;
+        var scale = state.canvasScale || 1;
+        var dx = (ev.clientX - startClientX) / scale;
+        var dy = (ev.clientY - startClientY) / scale;
+        if (!hasMoved && Math.hypot(ev.clientX - startClientX, ev.clientY - startClientY) >= 4) {
+          hasMoved = true;
+        }
+        if (hasMoved) {
+          currentX = Math.round(startNoteX + dx);
+          currentY = Math.round(startNoteY + dy);
+          noteEl.style.left = currentX + 'px';
+          noteEl.style.top = currentY + 'px';
+          note.x = currentX;
+          note.y = currentY;
+          if (noteEl._connectorLine && noteEl._cardInfo) {
+            updateNoteConnectorLine(
+              noteEl._connectorLine,
+              noteEl._cardInfo.cardX,
+              noteEl._cardInfo.cardY,
+              noteEl._cardInfo.cardW,
+              noteEl._cardInfo.cardH,
+              note
+            );
+          }
+        }
+      }
+
+      async function onPointerUp() {
+        if (!isDragging) return;
+        isDragging = false;
+        noteEl.classList.remove('is-dragging');
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerUp);
+
+        if (hasMoved) {
+          note.x = currentX;
+          note.y = currentY;
+          await saveIssueCanvas(issue, { notes: issue.canvas.notes });
+        }
+      }
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+    });
+  }
+
+  function attachNoteResize(handleEl, noteEl, note, issue) {
+    handleEl.addEventListener('pointerdown', function (e) {
+      if (e.button !== undefined && e.button !== 0) return;
+      e.stopPropagation();
+
+      var startX = e.clientX;
+      var startY = e.clientY;
+      var startW = noteEl.offsetWidth;
+      var startH = noteEl.offsetHeight;
+      var currentW = startW;
+      var currentH = startH;
+      var hasResized = false;
+
+      function onPointerMove(ev) {
+        var scale = state.canvasScale || 1;
+        var dw = (ev.clientX - startX) / scale;
+        var dh = (ev.clientY - startY) / scale;
+        if (!hasResized && Math.hypot(ev.clientX - startX, ev.clientY - startY) >= 4) {
+          hasResized = true;
+        }
+        if (hasResized) {
+          currentW = Math.max(180, Math.round(startW + dw));
+          currentH = Math.max(100, Math.round(startH + dh));
+          noteEl.style.width = currentW + 'px';
+          noteEl.style.minHeight = currentH + 'px';
+          note.w = currentW;
+          note.h = currentH;
+          if (noteEl._connectorLine && noteEl._cardInfo) {
+            updateNoteConnectorLine(
+              noteEl._connectorLine,
+              noteEl._cardInfo.cardX,
+              noteEl._cardInfo.cardY,
+              noteEl._cardInfo.cardW,
+              noteEl._cardInfo.cardH,
+              note
+            );
+          }
+        }
+      }
+
+      async function onPointerUp() {
+        window.removeEventListener('pointermove', onPointerMove);
+        window.removeEventListener('pointerup', onPointerUp);
+        window.removeEventListener('pointercancel', onPointerUp);
+
+        if (hasResized) {
+          note.w = currentW;
+          note.h = currentH;
+          await saveIssueCanvas(issue, { notes: issue.canvas.notes });
+        }
+      }
+
+      window.addEventListener('pointermove', onPointerMove);
+      window.addEventListener('pointerup', onPointerUp);
+      window.addEventListener('pointercancel', onPointerUp);
+    });
+  }
+
+  function createStickyNoteElement(note, issue, cardEl) {
+    var l = getLanguage();
+    var dict = I18N[l] || I18N.en;
+
+    var noteEl = el('div', {
+      class: 'canvas-sticky-note color-' + (note.color || 'yellow'),
+      'data-note-id': note.id,
+      'data-issue-key': identity(issue),
+      role: 'region',
+      'aria-label': 'Note on #' + issue.number,
+    });
+    noteEl.style.left = (note.x || 0) + 'px';
+    noteEl.style.top = (note.y || 0) + 'px';
+    noteEl.style.width = (note.w || 220) + 'px';
+    noteEl.style.minHeight = (note.h || 130) + 'px';
+
+    var metaBadge = el('span', { class: 'canvas-note-badge', text: '#' + issue.number });
+    var metaEl = el('div', { class: 'canvas-note-meta' }, [metaBadge]);
+
+    var colors = ['yellow', 'pink', 'blue', 'green', 'purple'];
+    var swatchBtns = colors.map(function (c) {
+      var btn = el('button', {
+        type: 'button',
+        class: 'canvas-note-swatch swatch-' + c,
+        title: c,
+        'aria-label': c + ' note color',
+      });
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        colors.forEach(function (cls) { noteEl.classList.remove('color-' + cls); });
+        noteEl.classList.add('color-' + c);
+        note.color = c;
+        saveIssueCanvas(issue, { notes: issue.canvas.notes });
+      });
+      return btn;
+    });
+    var swatchesEl = el('div', { class: 'canvas-note-swatches' }, swatchBtns);
+
+    var editBtn = el('button', {
+      type: 'button',
+      class: 'canvas-note-btn btn-edit',
+      title: dict.note_edit || 'Edit',
+      'aria-label': dict.note_edit || 'Edit',
+      text: 'Edit',
+    });
+
+    var delBtn = el('button', {
+      type: 'button',
+      class: 'canvas-note-btn btn-delete',
+      title: dict.note_delete || 'Delete note',
+      'aria-label': dict.note_delete || 'Delete note',
+      text: '×',
+    });
+
+    var normalActions = el('div', { class: 'canvas-note-controls' }, [swatchesEl, editBtn, delBtn]);
+
+    var delConfirmEl = el('div', { class: 'canvas-note-del-confirm' }, [
+      el('span', { text: dict.note_delete_confirm || 'Delete note?' }),
+      el('button', { type: 'button', class: 'confirm-yes', text: dict.canvas_wire_remove_btn || 'Delete' }),
+      el('button', { type: 'button', class: 'confirm-no', text: dict.canvas_wire_cancel_btn || 'Cancel' }),
+    ]);
+    delConfirmEl.hidden = true;
+
+    delBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      metaEl.hidden = true;
+      normalActions.hidden = true;
+      delConfirmEl.hidden = false;
+    });
+
+    delConfirmEl.querySelector('.confirm-yes').addEventListener('click', async function (e) {
+      e.stopPropagation();
+      if (issue.canvas && Array.isArray(issue.canvas.notes)) {
+        issue.canvas.notes = issue.canvas.notes.filter(function (n) { return n.id !== note.id; });
+      }
+      if (noteEl.parentNode) noteEl.parentNode.removeChild(noteEl);
+      if (noteEl._connectorLine && noteEl._connectorLine.parentNode) {
+        noteEl._connectorLine.parentNode.removeChild(noteEl._connectorLine);
+      }
+      try {
+        await saveIssueCanvas(issue, { notes: issue.canvas.notes });
+      } catch (_) {}
+    });
+
+    delConfirmEl.querySelector('.confirm-no').addEventListener('click', function (e) {
+      e.stopPropagation();
+      delConfirmEl.hidden = true;
+      metaEl.hidden = false;
+      normalActions.hidden = false;
+    });
+
+    var header = el('div', { class: 'canvas-note-header' }, [metaEl, normalActions, delConfirmEl]);
+    noteEl.appendChild(header);
+
+    var body = el('div', { class: 'canvas-note-body' });
+    function renderBodyHtml() {
+      if (!note.text || !note.text.trim()) {
+        body.innerHTML = '<span class="muted" style="opacity:0.6;font-style:italic;">' + (dict.note_empty || '(Empty note - double-click to edit)') + '</span>';
+      } else {
+        body.innerHTML = safeRenderMarkdown(note.text);
+      }
+    }
+    renderBodyHtml();
+    noteEl.appendChild(body);
+
+    function enterEditMode() {
+      if (noteEl.classList.contains('is-editing')) return;
+      noteEl.classList.add('is-editing');
+      body.hidden = true;
+
+      var textarea = el('textarea', {
+        class: 'canvas-note-textarea',
+        maxlength: '4000',
+        placeholder: 'Note in Markdown…',
+      });
+      textarea.value = note.text || '';
+
+      var counter = el('span', { class: 'canvas-note-counter', text: (note.text || '').length + ' / 4000' });
+      var saveNoteBtn = el('button', { type: 'button', class: 'button primary small', text: dict.note_save || 'Save' });
+      var cancelNoteBtn = el('button', { type: 'button', class: 'button small', text: dict.note_cancel || 'Cancel' });
+
+      var footer = el('div', { class: 'canvas-note-edit-footer' }, [
+        counter,
+        el('div', { class: 'canvas-note-editor-actions' }, [saveNoteBtn, cancelNoteBtn]),
+      ]);
+
+      var editor = el('div', { class: 'canvas-note-editor' }, [textarea, footer]);
+      noteEl.appendChild(editor);
+
+      textarea.focus();
+      textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+
+      var isFinishing = false;
+
+      function updateCounter() {
+        var len = textarea.value.length;
+        counter.textContent = len + ' / 4000';
+        if (len >= 4000) {
+          counter.classList.add('is-limit');
+        } else {
+          counter.classList.remove('is-limit');
+        }
+      }
+
+      textarea.addEventListener('input', updateCounter);
+
+      async function doSave() {
+        if (isFinishing) return;
+        isFinishing = true;
+        var val = textarea.value;
+        if (val.length > 4000) {
+          setNotice(dict.note_limit_exceeded || 'Note exceeds 4,000 character limit.', true);
+          isFinishing = false;
+          return;
+        }
+        note.text = val;
+        exitEdit();
+        renderBodyHtml();
+        try {
+          await saveIssueCanvas(issue, { notes: issue.canvas.notes });
+        } catch (_) {}
+      }
+
+      function doCancel() {
+        if (isFinishing) return;
+        isFinishing = true;
+        exitEdit();
+        renderBodyHtml();
+      }
+
+      function exitEdit() {
+        noteEl.classList.remove('is-editing');
+        if (editor.parentNode) editor.parentNode.removeChild(editor);
+        body.hidden = false;
+      }
+
+      saveNoteBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        doSave();
+      });
+
+      cancelNoteBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        doCancel();
+      });
+
+      textarea.addEventListener('keydown', function (e) {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+          e.preventDefault();
+          doSave();
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          doCancel();
+        }
+      });
+
+      textarea.addEventListener('blur', function () {
+        setTimeout(function () {
+          if (!isFinishing && noteEl.classList.contains('is-editing')) {
+            doSave();
+          }
+        }, 120);
+      });
+    }
+
+    body.addEventListener('dblclick', function (e) {
+      e.stopPropagation();
+      enterEditMode();
+    });
+
+    editBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      enterEditMode();
+    });
+
+    var resizeHandle = el('div', { class: 'canvas-note-resize', title: 'Resize note' });
+    noteEl.appendChild(resizeHandle);
+    attachNoteResize(resizeHandle, noteEl, note, issue);
+
+    attachNoteDrag(header, noteEl, note, issue);
+
+    return noteEl;
+  }
+
+  function renderCanvasNotes() {
+    var notesLayer = $('canvas-notes');
+    var cardsLayer = $('canvas-cards');
+    if (!notesLayer) return;
+    notesLayer.textContent = '';
+
+    if (Array.isArray(state.canvasProjectBands) && state.canvasProjectBands.length > 0) {
+      state.canvasProjectBands.forEach(function (band) {
+        var bandLabel = el('div', {
+          class: 'canvas-project-band-label',
+          text: band.label,
+        });
+        bandLabel.style.left = band.labelX + 'px';
+        bandLabel.style.top = band.labelY + 'px';
+        notesLayer.appendChild(bandLabel);
+      });
+    }
+
+    var issues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
+    if (!issues || issues.length === 0) return;
+
+    var svgNS = 'http://www.w3.org/2000/svg';
+    var svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('class', 'canvas-notes-connectors-svg');
+    svg.style.position = 'absolute';
+    svg.style.top = '0';
+    svg.style.left = '0';
+    svg.style.width = '100%';
+    svg.style.height = '100%';
+    svg.style.pointerEvents = 'none';
+    svg.style.overflow = 'visible';
+    notesLayer.appendChild(svg);
+
+    issues.forEach(function (issue) {
+      if (!issue.canvas || !Array.isArray(issue.canvas.notes) || issue.canvas.notes.length === 0) return;
+
+      var cardEl = cardsLayer ? cardsLayer.querySelector('[data-issue-key="' + identity(issue) + '"]') : null;
+      var cardX = (issue.canvas && typeof issue.canvas.x === 'number') ? issue.canvas.x : (cardEl ? cardEl.offsetLeft : 100);
+      var cardY = (issue.canvas && typeof issue.canvas.y === 'number') ? issue.canvas.y : (cardEl ? cardEl.offsetTop : 100);
+      var cardW = cardEl ? (cardEl.offsetWidth || 250) : 250;
+      var cardH = cardEl ? (cardEl.offsetHeight || 130) : 130;
+
+      issue.canvas.notes.forEach(function (note, idx) {
+        if (typeof note.x !== 'number') note.x = cardX + 20 + (idx % 3) * 20;
+        if (typeof note.y !== 'number') note.y = cardY + 160 + idx * 30;
+        if (typeof note.w !== 'number') note.w = 220;
+        if (typeof note.h !== 'number') note.h = 130;
+        if (!note.color) note.color = 'yellow';
+
+        var noteEl = createStickyNoteElement(note, issue, cardEl);
+        notesLayer.appendChild(noteEl);
+
+        var line = document.createElementNS(svgNS, 'line');
+        line.setAttribute('class', 'canvas-note-connector');
+        updateNoteConnectorLine(line, cardX, cardY, cardW, cardH, note);
+        svg.appendChild(line);
+        noteEl._connectorLine = line;
+        noteEl._cardInfo = { cardX: cardX, cardY: cardY, cardW: cardW, cardH: cardH };
+      });
+    });
+  }
+
+  function createNoteForIssue(issue) {
+    var currentIssue = (state.board && Array.isArray(state.board.issues))
+      ? state.board.issues.find(function (i) { return sameIdentity(i, issue); }) || issue
+      : issue;
+
+    if (state.activeViewMode !== 'canvas') {
+      switchView('canvas');
+    }
+
+    var cardsLayer = $('canvas-cards');
+    var cardEl = cardsLayer ? cardsLayer.querySelector('[data-issue-key="' + identity(currentIssue) + '"]') : null;
+    var cardX = (currentIssue.canvas && typeof currentIssue.canvas.x === 'number') ? currentIssue.canvas.x : (cardEl ? cardEl.offsetLeft : 100);
+    var cardY = (currentIssue.canvas && typeof currentIssue.canvas.y === 'number') ? currentIssue.canvas.y : (cardEl ? cardEl.offsetTop : 100);
+
+    var existingNotes = (currentIssue.canvas && Array.isArray(currentIssue.canvas.notes)) ? currentIssue.canvas.notes : [];
+    var count = existingNotes.length;
+    var noteX = cardX + 20 + (count % 3) * 20;
+    var noteY = cardY + 160 + count * 30;
+
+    var newNote = {
+      id: 'n_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+      text: '',
+      color: 'yellow',
+      x: Math.round(noteX),
+      y: Math.round(noteY),
+      w: 220,
+      h: 130,
+    };
+
+    currentIssue.canvas = Object.assign({}, currentIssue.canvas || {}, {
+      notes: existingNotes.concat([newNote]),
+    });
+    issue.canvas = currentIssue.canvas;
+
+    renderCanvasNotes();
+
+    var notesLayer = $('canvas-notes');
+    if (notesLayer) {
+      var noteEl = notesLayer.querySelector('[data-note-id="' + newNote.id + '"]');
+      if (noteEl) {
+        var editBtn = noteEl.querySelector('.btn-edit');
+        if (editBtn) editBtn.click();
+      }
+    }
+  }
+
+  function openArrangeDialog() {
+    var dlg = $('canvas-arrange-dialog');
+    if (!dlg) return;
+    var progressContainer = $('arrange-progress-container');
+    var summaryEl = $('arrange-summary');
+    var confirmBtn = $('arrange-confirm-btn');
+    var cancelBtn = $('arrange-cancel-btn');
+    var unplacedRadio = $('arrange-scope-unplaced');
+
+    if (progressContainer) progressContainer.hidden = true;
+    if (summaryEl) summaryEl.hidden = true;
+    if (confirmBtn) confirmBtn.disabled = false;
+    if (cancelBtn) cancelBtn.disabled = false;
+    if (unplacedRadio) unplacedRadio.checked = true;
+    dlg.hidden = false;
+  }
+
+  function closeArrangeDialog() {
+    var dlg = $('canvas-arrange-dialog');
+    if (dlg) dlg.hidden = true;
+  }
+
+  async function executeArrange() {
+    var scopeAll = $('arrange-scope-all');
+    var scope = (scopeAll && scopeAll.checked) ? 'all' : 'unplaced';
+    var allIssues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
+    if (!allIssues || allIssues.length === 0) {
+      closeArrangeDialog();
+      return;
+    }
+
+    var issuesToArrange = [];
+    if (scope === 'all') {
+      issuesToArrange = allIssues.slice();
+    } else {
+      issuesToArrange = allIssues.filter(function (c) {
+        return !(c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number' && isFinite(c.canvas.x) && isFinite(c.canvas.y));
+      });
+    }
+
+    if (issuesToArrange.length === 0) {
+      var summaryEl = $('arrange-summary');
+      if (summaryEl) {
+        summaryEl.hidden = false;
+        summaryEl.textContent = 'All cards already placed. Choose "All cards" to re-arrange.';
+      }
+      return;
+    }
+
+    state.lastArrangeUndo = new Map();
+    issuesToArrange.forEach(function (c) {
+      state.lastArrangeUndo.set(identity(c), {
+        x: c.canvas ? c.canvas.x : undefined,
+        y: c.canvas ? c.canvas.y : undefined,
+        notes: (c.canvas && Array.isArray(c.canvas.notes)) ? JSON.parse(JSON.stringify(c.canvas.notes)) : [],
+      });
+    });
+    var undoBtn = $('canvas-arrange-undo');
+    if (undoBtn) undoBtn.hidden = false;
+
+    var options = {
+      startX: 120,
+      startY: 80,
+    };
+    if (scope === 'unplaced') {
+      var placed = allIssues.filter(function (c) {
+        return c.canvas && typeof c.canvas.x === 'number' && typeof c.canvas.y === 'number';
+      });
+      if (placed.length > 0) {
+        var maxX = 0;
+        var minY = Infinity;
+        placed.forEach(function (c) {
+          if (c.canvas.x > maxX) maxX = c.canvas.x;
+          if (c.canvas.y < minY) minY = c.canvas.y;
+        });
+        options.startX = Math.max(120, maxX + 370);
+        options.startY = Math.max(80, minY);
+      }
+    }
+
+    var cardsInput = issuesToArrange.map(function (c) {
+      var blockers = [];
+      if (Array.isArray(c.blockedBy)) {
+        c.blockedBy.forEach(function (b) {
+          if (b && typeof b === 'object') {
+            blockers.push(identity(b));
+            if (b.number !== undefined) blockers.push(String(b.number));
+          } else if (b !== null && b !== undefined) {
+            blockers.push(String(b));
+          }
+        });
+      }
+      return {
+        id: identity(c),
+        number: c.number,
+        project: (c.repository && c.repository.name) ? c.repository.name : 'Default',
+        blockers: blockers,
+        w: 250,
+        h: 150,
+      };
+    });
+
+    var arrangeFn = (typeof window !== 'undefined' && typeof window.arrangeCards === 'function')
+      ? window.arrangeCards
+      : safeArrangeCards;
+    var layoutResult = arrangeFn(cardsInput, options);
+
+    issuesToArrange.forEach(function (issue) {
+      var key = identity(issue);
+      var pos = layoutResult.get(key) || layoutResult[key];
+      if (pos) {
+        var oldX = (issue.canvas && typeof issue.canvas.x === 'number') ? issue.canvas.x : pos.x;
+        var oldY = (issue.canvas && typeof issue.canvas.y === 'number') ? issue.canvas.y : pos.y;
+        var deltaX = pos.x - oldX;
+        var deltaY = pos.y - oldY;
+
+        issue.canvas = Object.assign({}, issue.canvas || {}, {
+          x: pos.x,
+          y: pos.y,
+        });
+
+        if (issue.canvas && Array.isArray(issue.canvas.notes)) {
+          issue.canvas.notes.forEach(function (n) {
+            var nx = typeof n.x === 'number' ? n.x + deltaX : (pos.x + 20);
+            var ny = typeof n.y === 'number' ? n.y + deltaY : (pos.y + 160);
+            n.x = Math.round(nx);
+            n.y = Math.round(ny);
+          });
+        }
+      }
+    });
+
+    if (Array.isArray(layoutResult.bands)) {
+      state.canvasProjectBands = layoutResult.bands;
+    }
+
+    renderCanvasIssues(allIssues);
+
+    var progressContainer = $('arrange-progress-container');
+    var progressBar = $('arrange-progress-bar');
+    var progressText = $('arrange-progress-text');
+    var arrangeSummaryEl = $('arrange-summary');
+    var confirmBtn = $('arrange-confirm-btn');
+    var cancelBtn = $('arrange-cancel-btn');
+
+    if (progressContainer) progressContainer.hidden = false;
+    if (arrangeSummaryEl) arrangeSummaryEl.hidden = true;
+    if (confirmBtn) confirmBtn.disabled = true;
+    if (cancelBtn) cancelBtn.disabled = true;
+
+    var total = issuesToArrange.length;
+    var savedCount = 0;
+    var failedCount = 0;
+
+    for (var i = 0; i < issuesToArrange.length; i++) {
+      var cur = issuesToArrange[i];
+      if (progressText) progressText.textContent = 'Saving ' + (i + 1) + ' of ' + total + '...';
+      if (progressBar) progressBar.style.width = Math.round(((i + 1) / total) * 100) + '%';
+      try {
+        await saveIssueCanvas(cur, {
+          x: cur.canvas.x,
+          y: cur.canvas.y,
+          notes: cur.canvas.notes,
+        });
+        savedCount++;
+      } catch (e) {
+        failedCount++;
+      }
+    }
+
+    if (confirmBtn) confirmBtn.disabled = false;
+    if (cancelBtn) cancelBtn.disabled = false;
+    if (progressContainer) progressContainer.hidden = true;
+    if (arrangeSummaryEl) {
+      arrangeSummaryEl.hidden = false;
+      if (failedCount === 0) {
+        arrangeSummaryEl.textContent = savedCount + ' cards arranged.';
+      } else {
+        arrangeSummaryEl.textContent = savedCount + ' cards arranged, ' + failedCount + ' failed.';
+      }
+    }
+
+    setTimeout(function () {
+      closeArrangeDialog();
+    }, 1200);
+  }
+
+  async function undoLastArrange() {
+    if (!state.lastArrangeUndo) return;
+    var undoBtn = $('canvas-arrange-undo');
+    if (undoBtn) undoBtn.disabled = true;
+
+    var allIssues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
+    for (var i = 0; i < allIssues.length; i++) {
+      var issue = allIssues[i];
+      var snap = state.lastArrangeUndo.get(identity(issue));
+      if (snap) {
+        issue.canvas = Object.assign({}, issue.canvas || {}, {
+          x: snap.x,
+          y: snap.y,
+          notes: snap.notes,
+        });
+        try {
+          await saveIssueCanvas(issue, {
+            x: snap.x,
+            y: snap.y,
+            notes: snap.notes,
+          });
+        } catch (_) {}
+      }
+    }
+
+    state.canvasProjectBands = null;
+    state.lastArrangeUndo = null;
+    if (undoBtn) {
+      undoBtn.hidden = true;
+      undoBtn.disabled = false;
+    }
+    renderCanvasIssues(allIssues);
   }
 
   function chooseWirePorts(source, target) {
@@ -3148,6 +4014,7 @@
     });
 
     renderCanvasWires();
+    renderCanvasNotes();
 
     if (!state.canvasHasSavedState && issues.length > 0) {
       state.canvasHasSavedState = true;
@@ -3224,9 +4091,9 @@
       if (activeWireConfirmData && (!e.target || !e.target.closest || !e.target.closest('#canvas-wire-confirm'))) {
         hideWireDeleteConfirm();
       }
-      if (e.target && e.target.closest && e.target.closest('#canvas-wire-confirm')) return;
+      if (e.target && e.target.closest && (e.target.closest('#canvas-wire-confirm') || e.target.closest('#canvas-arrange-dialog'))) return;
       if (e.button !== undefined && e.button !== 0) return;
-      if (e.target.closest('.canvas-card') || e.target.closest('.canvas-floating-controls') || e.target.closest('.canvas-wire-group')) return;
+      if (e.target.closest('.canvas-card') || e.target.closest('.canvas-sticky-note') || e.target.closest('.canvas-floating-controls') || e.target.closest('.canvas-wire-group') || e.target.closest('.canvas-arrange-dialog')) return;
 
       isPanning = true;
       viewport.classList.add('is-panning');
@@ -3260,7 +4127,7 @@
     var touchState = { mode: null, startX: 0, startY: 0, initPanX: 0, initPanY: 0, startDist: 0, startScale: 1, midX: 0, midY: 0 };
 
     viewport.addEventListener('touchstart', function (e) {
-      if (e.target.closest('.canvas-card') || e.target.closest('.canvas-floating-controls') || e.target.closest('button')) return;
+      if (e.target.closest('.canvas-card') || e.target.closest('.canvas-sticky-note') || e.target.closest('.canvas-floating-controls') || e.target.closest('.canvas-arrange-dialog') || e.target.closest('button')) return;
 
       if (e.touches.length === 1) {
         touchState.mode = 'pan';
@@ -3347,6 +4214,26 @@
       resetViewBtn.addEventListener('click', resetCanvasView);
     }
 
+    var arrangeBtn = $('canvas-arrange');
+    if (arrangeBtn) {
+      arrangeBtn.addEventListener('click', openArrangeDialog);
+    }
+
+    var arrangeUndoBtn = $('canvas-arrange-undo');
+    if (arrangeUndoBtn) {
+      arrangeUndoBtn.addEventListener('click', undoLastArrange);
+    }
+
+    var arrangeConfirmBtn = $('arrange-confirm-btn');
+    if (arrangeConfirmBtn) {
+      arrangeConfirmBtn.addEventListener('click', executeArrange);
+    }
+
+    var arrangeCancelBtn = $('arrange-cancel-btn');
+    if (arrangeCancelBtn) {
+      arrangeCancelBtn.addEventListener('click', closeArrangeDialog);
+    }
+
     var wireConfirmBtn = $('wire-confirm-btn');
     if (wireConfirmBtn && !wireConfirmBtn['data-bound']) {
       wireConfirmBtn['data-bound'] = true;
@@ -3371,8 +4258,14 @@
 
     if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
       document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && activeWireConfirmData) {
-          hideWireDeleteConfirm();
+        if (e.key === 'Escape') {
+          if (activeWireConfirmData) {
+            hideWireDeleteConfirm();
+          }
+          var arrangeDlg = $('canvas-arrange-dialog');
+          if (arrangeDlg && !arrangeDlg.hidden) {
+            closeArrangeDialog();
+          }
         }
       });
     }
@@ -4648,6 +5541,18 @@
     $('back-btn').addEventListener('click', function () {
       closeDrawer();
     });
+    var drawerAddNoteBtn = $('drawer-add-note-btn');
+    if (drawerAddNoteBtn) {
+      drawerAddNoteBtn.addEventListener('click', function () {
+        if (!state.detail) return;
+        var issue = state.detail;
+        closeDrawer();
+        switchView('canvas');
+        setTimeout(function () {
+          createNoteForIssue(issue);
+        }, 80);
+      });
+    }
     $('save-overview').addEventListener('click', saveOverview);
     $('apply-status').addEventListener('click', saveStatus);
     $('conflict-reload').addEventListener('click', function () {

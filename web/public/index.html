@@ -206,6 +206,9 @@
             <span class="canvas-control-sep" aria-hidden="true">|</span>
             <button id="canvas-fit-all" class="canvas-control-btn text-btn" type="button" title="Fit all" aria-label="Fit all" data-i18n-title="canvas_fit_all" data-i18n="canvas_fit_all">Fit all</button>
             <button id="canvas-reset-view" class="canvas-control-btn text-btn" type="button" title="Reset view" aria-label="Reset view" data-i18n-title="canvas_reset_view" data-i18n="canvas_reset_view">Reset</button>
+            <span class="canvas-control-sep" aria-hidden="true">|</span>
+            <button id="canvas-arrange" class="canvas-control-btn text-btn" type="button" title="Auto-arrange cards by dependency" aria-label="Auto-arrange cards" data-i18n-title="canvas_arrange" data-i18n="canvas_arrange">Arrange</button>
+            <button id="canvas-arrange-undo" class="canvas-control-btn text-btn" type="button" title="Undo last arrange" aria-label="Undo last arrange" data-i18n-title="canvas_arrange_undo" data-i18n="canvas_arrange_undo" hidden>Undo arrange</button>
           </div>
           <div id="canvas-plane" class="canvas-plane">
             <svg id="canvas-wires" class="canvas-layer canvas-layer-wires" width="14" height="14" aria-hidden="true">
@@ -227,7 +230,7 @@
                 </marker>
               </defs>
             </svg>
-            <div id="canvas-notes" class="canvas-layer canvas-layer-notes" aria-hidden="true"></div>
+            <div id="canvas-notes" class="canvas-layer canvas-layer-notes" role="region" aria-label="Canvas notes"></div>
             <div id="canvas-cards" class="canvas-layer canvas-layer-cards" role="region" aria-label="Task cards"></div>
             <div id="canvas-overlay" class="canvas-layer canvas-layer-overlay" aria-hidden="true"></div>
           </div>
@@ -237,6 +240,31 @@
             <div class="wire-confirm-actions">
               <button type="button" id="wire-confirm-btn" class="button danger small">Remove</button>
               <button type="button" id="wire-cancel-btn" class="button small">Cancel</button>
+            </div>
+          </div>
+          <div id="canvas-arrange-dialog" class="canvas-arrange-dialog" role="dialog" aria-modal="true" aria-label="Arrange cards" hidden>
+            <div class="canvas-arrange-dialog-content">
+              <span class="canvas-arrange-dialog-title" id="arrange-dialog-title">Arrange cards</span>
+              <p class="canvas-arrange-dialog-message" id="arrange-dialog-message">Arrange cards by dependency? Cards you placed by hand will also move if you choose all cards.</p>
+              <div class="canvas-arrange-options">
+                <label class="canvas-arrange-option">
+                  <input type="radio" name="arrange-scope" value="unplaced" id="arrange-scope-unplaced" checked>
+                  <span data-i18n="arrange_scope_unplaced">Only cards without a saved place</span>
+                </label>
+                <label class="canvas-arrange-option">
+                  <input type="radio" name="arrange-scope" value="all" id="arrange-scope-all">
+                  <span data-i18n="arrange_scope_all">All cards (cards you placed by hand will also move)</span>
+                </label>
+              </div>
+              <div id="arrange-progress-container" class="arrange-progress-container" hidden>
+                <div id="arrange-progress-bar" class="arrange-progress-bar"></div>
+                <span id="arrange-progress-text" class="arrange-progress-text small muted"></span>
+              </div>
+              <div id="arrange-summary" class="arrange-summary small" hidden></div>
+              <div class="canvas-arrange-actions">
+                <button type="button" id="arrange-confirm-btn" class="button primary small" data-i18n="arrange_confirm">Arrange</button>
+                <button type="button" id="arrange-cancel-btn" class="button small" data-i18n="arrange_cancel">Cancel</button>
+              </div>
             </div>
           </div>
         </div>
@@ -271,7 +299,10 @@
         <button id="back-btn" class="button back" type="button" data-i18n="drawer_back">Back to board</button>
 
         <div class="detail-head">
-          <h1 id="detail-title" tabindex="-1"></h1>
+          <div class="detail-head-title-row">
+            <h1 id="detail-title" tabindex="-1"></h1>
+            <button id="drawer-add-note-btn" class="button small drawer-add-note-btn" type="button" data-i18n="drawer_add_note" title="Add note on canvas">Add note</button>
+          </div>
           <p id="detail-subtitle" class="task-subtitle muted small" hidden></p>
           <div id="detail-meta" class="badges"></div>
           <p id="detail-freshness" class="muted small"></p>
@@ -367,6 +398,8 @@
   </div>
 
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
+  <script type="module" src="/markdown.js"></script>
+  <script type="module" src="/arrange.js"></script>
   <script src="/app.js" defer></script>
 </body>
 </html>

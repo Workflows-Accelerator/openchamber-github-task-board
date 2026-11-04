@@ -593,3 +593,107 @@ test('canvas client: card drop queue recovers from failure without deadlocking s
   assert.equal(recoveredDrop.status, 200, 'Subsequent drop succeeds after failure without deadlock');
   assert.deepEqual(parseCanvasMarker(fake.findIssue(88).body), { x: 120, y: 180 });
 });
+
+test('canvas client: HTML and CSS define Arrange controls, modal dialog, and sticky note palette', () => {
+  const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
+  const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
+
+  // Floating arrange button and undo button
+  assert.match(html, /id="canvas-arrange"/, 'arrange button exists');
+  assert.match(html, /id="canvas-arrange-undo"/, 'arrange undo button exists');
+  assert.match(html, /id="canvas-arrange-dialog"/, 'arrange dialog exists');
+  assert.match(html, /id="arrange-scope-unplaced"/, 'arrange unplaced scope option exists');
+  assert.match(html, /id="arrange-scope-all"/, 'arrange all scope option exists');
+  assert.match(html, /id="arrange-confirm-btn"/, 'arrange confirm button exists');
+  assert.match(html, /id="arrange-cancel-btn"/, 'arrange cancel button exists');
+  assert.match(html, /id="drawer-add-note-btn"/, 'drawer add note button exists');
+
+  // Sticky note styling and muted V1 palettes
+  assert.match(css, /--note-yellow-bg:/, 'yellow note palette defined');
+  assert.match(css, /--note-pink-bg:/, 'pink note palette defined');
+  assert.match(css, /--note-blue-bg:/, 'blue note palette defined');
+  assert.match(css, /--note-green-bg:/, 'green note palette defined');
+  assert.match(css, /--note-purple-bg:/, 'purple note palette defined');
+  assert.match(css, /\.canvas-sticky-note/, 'sticky note class defined');
+  assert.match(css, /\.canvas-note-connector/, 'connector line class defined');
+  assert.match(css, /\.canvas-project-band-label/, 'project band label class defined');
+});
+
+test('canvas server: stores and updates notes in canvas marker and preserves x, y, and notes', async (t) => {
+  const issue = makeIssue({
+    number: 99,
+    title: 'Note test card',
+    body: '## Overview\r\nCard content\r\n',
+    labels: ['status:planned'],
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+  });
+  const fake = await startFakeGitHub({
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+    issues: [issue],
+  });
+  const board = await startBoard(fake);
+  t.after(async () => {
+    await board.app.close();
+    await fake.close();
+  });
+
+  const session = new HttpSession(board.url);
+  await session.login();
+
+  const boardRes = await session.request('/api/board');
+  const boardItem = boardRes.json.issues.find((i) => i.number === 99);
+
+  const notesPayload = [
+    { id: 'note-1', text: 'Important requirement', color: 'yellow', x: 120, y: 300, w: 220, h: 130 },
+  ];
+
+  const putRes = await session.request('/api/issues/99/canvas', {
+    method: 'PUT',
+    body: { x: 100, y: 150, notes: notesPayload, fingerprint: boardItem.fingerprint },
+  });
+  assert.equal(putRes.status, 200);
+  assert.deepEqual(putRes.json.listItem.canvas.notes, notesPayload);
+  assert.equal(putRes.json.listItem.canvas.x, 100);
+  assert.equal(putRes.json.listItem.canvas.y, 150);
+
+  const parsedMarker = parseCanvasMarker(fake.findIssue(99).body);
+  assert.equal(parsedMarker.x, 100);
+  assert.equal(parsedMarker.y, 150);
+  assert.deepEqual(parsedMarker.notes, notesPayload);
+});
+
+test('canvas server: rejects note exceeding 4000 characters with 400 note_too_long', async (t) => {
+  const issue = makeIssue({
+    number: 100,
+    title: 'Long note card',
+    body: '## Overview\r\nCard content\r\n',
+    labels: ['status:planned'],
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+  });
+  const fake = await startFakeGitHub({
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+    issues: [issue],
+  });
+  const board = await startBoard(fake);
+  t.after(async () => {
+    await board.app.close();
+    await fake.close();
+  });
+
+  const session = new HttpSession(board.url);
+  await session.login();
+
+  const boardRes = await session.request('/api/board');
+  const boardItem = boardRes.json.issues.find((i) => i.number === 100);
+
+  const longText = 'x'.repeat(4001);
+  const putRes = await session.request('/api/issues/100/canvas', {
+    method: 'PUT',
+    body: {
+      notes: [{ id: 'note-long', text: longText }],
+      fingerprint: boardItem.fingerprint,
+    },
+  });
+  assert.equal(putRes.status, 400);
+  assert.equal(putRes.json.error, 'note_too_long');
+});
