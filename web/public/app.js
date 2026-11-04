@@ -264,6 +264,8 @@
       return option && typeof option === 'object' && !Array.isArray(option) &&
         typeof option.value === 'string' && typeof option.label === 'string';
     })) return false;
+    if (payload.blockedBy !== undefined && !Array.isArray(payload.blockedBy)) return false;
+    if (payload.blocking !== undefined && !Array.isArray(payload.blocking)) return false;
     return true;
   }
 
@@ -337,9 +339,6 @@
 
     if (isMutation) {
       if (response.ok) {
-        if (path.includes('/dependencies/')) {
-          return payload;
-        }
         var numMatch = /^\/api\/(?:repos\/([^/]+)\/([^/]+)\/)?issues\/(\d+)(?:\/|$)/.exec(path);
         if (!numMatch && !options.expected) {
           return payload;
@@ -641,14 +640,20 @@
       drawer_text_links_title: 'Text links (Markdown)',
       drawer_text_links_hint: 'Detected from issue description markdown. Convert to make them native GitHub dependencies.',
       drawer_convert_to_native: 'Convert',
-      drawer_add_blocker_label: 'Add blocker task',
-      drawer_select_blocker_prompt: 'Select task to block this…',
+      drawer_add_blocker_label: 'Add a blocker: search issues',
+      drawer_search_blocker_prompt: 'Add a blocker: search issues…',
+      drawer_no_matching_issues: 'No matching issues found',
       drawer_add_blocker_btn: 'Add blocker',
       drawer_remove_dep: 'Remove dependency',
+      canvas_wire_remove_prompt: 'Remove link?',
+      canvas_wire_remove_btn: 'Remove',
+      canvas_wire_cancel_btn: 'Cancel',
       dep_blocked_by_n: 'blocked by {n}',
       err_cycle_refused: 'Cannot add dependency: this would create a circular dependency.',
       err_duplicate_dependency: 'That dependency link already exists.',
       err_self_link: 'An issue cannot be blocked by itself.',
+      err_github_forbidden: 'GitHub token does not have permission to modify issue dependencies.',
+      notice_dependencies_degraded: 'Dependency wires unavailable (GitHub GraphQL error). Showing board without wires.',
     },
     fr: {
       section_views: 'Vues',
@@ -726,14 +731,20 @@
       drawer_text_links_title: 'Liens texte (Markdown)',
       drawer_text_links_hint: 'Détectés dans la description markdown. Convertir pour créer une dépendance GitHub native.',
       drawer_convert_to_native: 'Convertir',
-      drawer_add_blocker_label: 'Ajouter une tâche bloquante',
-      drawer_select_blocker_prompt: 'Sélectionner une tâche bloquante…',
+      drawer_add_blocker_label: 'Ajouter un bloqueur : rechercher des tâches',
+      drawer_search_blocker_prompt: 'Ajouter un bloqueur : rechercher des tâches…',
+      drawer_no_matching_issues: 'Aucune tâche correspondante trouvée',
       drawer_add_blocker_btn: 'Ajouter bloquant',
       drawer_remove_dep: 'Retirer la dépendance',
+      canvas_wire_remove_prompt: 'Supprimer le lien ?',
+      canvas_wire_remove_btn: 'Supprimer',
+      canvas_wire_cancel_btn: 'Annuler',
       dep_blocked_by_n: 'bloqué par {n}',
       err_cycle_refused: 'Impossible d’ajouter la dépendance : cela créerait une dépendance circulaire.',
       err_duplicate_dependency: 'Ce lien de dépendance existe déjà.',
       err_self_link: 'Une tâche ne peut pas être bloquée par elle-même.',
+      err_github_forbidden: 'Le jeton GitHub n’a pas la permission de modifier les dépendances.',
+      notice_dependencies_degraded: 'Fils de dépendance indisponibles (erreur GraphQL GitHub). Affichage du tableau sans fils.',
     },
   };
 
@@ -2223,14 +2234,22 @@
       children.push(footer);
     }
 
-    var port = el('div', {
-      class: 'canvas-card-port',
+    var portRight = el('div', {
+      class: 'canvas-card-port port-right',
       title: dict.canvas_drag_to_block || 'Drag to block another task',
       'aria-label': dict.canvas_drag_to_block || 'Drag to block another task',
       role: 'button',
       tabindex: '0',
     });
-    children.push(port);
+    var portLeft = el('div', {
+      class: 'canvas-card-port port-left',
+      title: dict.canvas_drag_to_block || 'Drag to block another task',
+      'aria-label': dict.canvas_drag_to_block || 'Drag to block another task',
+      role: 'button',
+      tabindex: '0',
+    });
+    children.push(portRight);
+    children.push(portLeft);
 
     var card = el('div', {
       class: 'canvas-card',
@@ -2437,26 +2456,178 @@
     }
   }
 
-  function computeBezierPath(x1, y1, x2, y2) {
-    var dx = Math.abs(x2 - x1);
-    var cx1, cy1, cx2, cy2;
-    if (x2 >= x1) {
-      var curvature = Math.max(40, dx * 0.45);
-      cx1 = x1 + curvature;
+  function chooseWirePorts(source, target) {
+    var scx = source.x + source.w / 2;
+    var scy = source.y + source.h / 2;
+    var tcx = target.x + target.w / 2;
+    var tcy = target.y + target.h / 2;
+
+    var x1, y1, x2, y2, cx1, cy1, cx2, cy2;
+
+    // Check horizontal separation first (Finding 1 & 2: route visibly in open space)
+    if (target.x >= source.x + source.w - 10) {
+      // Target is to the right of source: exit source right, enter target left
+      x1 = source.x + source.w;
+      y1 = scy;
+      x2 = target.x;
+      y2 = tcy;
+      var dx = Math.max(30, (x2 - x1) * 0.5);
+      cx1 = x1 + dx;
       cy1 = y1;
-      cx2 = x2 - curvature;
+      cx2 = x2 - dx;
+      cy2 = y2;
+    } else if (target.x + target.w <= source.x + 10) {
+      // Target is to the left of source: exit source left, enter target right
+      x1 = source.x;
+      y1 = scy;
+      x2 = target.x + target.w;
+      y2 = tcy;
+      var dx = Math.max(30, (x1 - x2) * 0.5);
+      cx1 = x1 - dx;
+      cy1 = y1;
+      cx2 = x2 + dx;
       cy2 = y2;
     } else {
-      var curvature = Math.max(60, dx * 0.5);
-      cx1 = x1 + curvature;
+      // Horizontally overlapping: connect vertically without looping
+      if (tcy >= scy) {
+        // Target is below source: exit source bottom, enter target top
+        x1 = scx;
+        y1 = source.y + source.h;
+        x2 = tcx;
+        y2 = target.y;
+        var dy = Math.max(30, (y2 - y1) * 0.5);
+        cx1 = x1;
+        cy1 = y1 + dy;
+        cx2 = x2;
+        cy2 = y2 - dy;
+      } else {
+        // Target is above source: exit source top, enter target bottom
+        x1 = scx;
+        y1 = source.y;
+        x2 = tcx;
+        y2 = target.y + target.h;
+        var dy = Math.max(30, (y1 - y2) * 0.5);
+        cx1 = x1;
+        cy1 = y1 - dy;
+        cx2 = x2;
+        cy2 = y2 + dy;
+      }
+    }
+
+    var d = 'M ' + x1 + ' ' + y1 + ' C ' + cx1 + ' ' + cy1 + ', ' + cx2 + ' ' + cy2 + ', ' + x2 + ' ' + y2;
+    var midX = 0.125 * x1 + 0.375 * cx1 + 0.375 * cx2 + 0.125 * x2;
+    var midY = 0.125 * y1 + 0.375 * cy1 + 0.375 * cy2 + 0.125 * y2;
+    return {
+      d: d,
+      midX: Math.round(midX),
+      midY: Math.round(midY),
+      x1: x1, y1: y1,
+      x2: x2, y2: y2,
+      cx1: cx1, cy1: cy1,
+      cx2: cx2, cy2: cy2,
+    };
+  }
+
+  function computeBezierPath(x1, y1, x2, y2) {
+    var cx1, cy1, cx2, cy2;
+    if (x2 >= x1) {
+      var dx = Math.max(30, (x2 - x1) * 0.5);
+      cx1 = x1 + dx;
       cy1 = y1;
-      cx2 = x2 - curvature;
+      cx2 = x2 - dx;
+      cy2 = y2;
+    } else {
+      var dx = Math.max(30, (x1 - x2) * 0.5);
+      cx1 = x1 - dx;
+      cy1 = y1;
+      cx2 = x2 + dx;
       cy2 = y2;
     }
     var d = 'M ' + x1 + ' ' + y1 + ' C ' + cx1 + ' ' + cy1 + ', ' + cx2 + ' ' + cy2 + ', ' + x2 + ' ' + y2;
     var midX = 0.125 * x1 + 0.375 * cx1 + 0.375 * cx2 + 0.125 * x2;
     var midY = 0.125 * y1 + 0.375 * cy1 + 0.375 * cy2 + 0.125 * y2;
     return { d: d, midX: Math.round(midX), midY: Math.round(midY) };
+  }
+
+  function updateWireLayerBounds(points) {
+    var wiresLayer = $('canvas-wires');
+    if (!wiresLayer) return;
+    var minX = Infinity;
+    var minY = Infinity;
+    var maxX = -Infinity;
+    var maxY = -Infinity;
+
+    if (Array.isArray(points) && points.length > 0) {
+      for (var i = 0; i < points.length; i++) {
+        var pt = points[i];
+        if (pt.x < minX) minX = pt.x;
+        if (pt.x > maxX) maxX = pt.x;
+        if (pt.y < minY) minY = pt.y;
+        if (pt.y > maxY) maxY = pt.y;
+      }
+    } else {
+      minX = 0;
+      minY = 0;
+      maxX = 800;
+      maxY = 600;
+    }
+
+    var pad = 100;
+    var left = Math.floor(minX - pad);
+    var top = Math.floor(minY - pad);
+    var width = Math.max(100, Math.ceil(maxX - minX + pad * 2));
+    var height = Math.max(100, Math.ceil(maxY - minY + pad * 2));
+
+    wiresLayer.style.left = left + 'px';
+    wiresLayer.style.top = top + 'px';
+    wiresLayer.style.width = width + 'px';
+    wiresLayer.style.height = height + 'px';
+    wiresLayer.setAttribute('viewBox', left + ' ' + top + ' ' + width + ' ' + height);
+  }
+
+  var activeWireConfirmData = null;
+
+  function showWireDeleteConfirm(wireData) {
+    activeWireConfirmData = wireData;
+    var confirmEl = $('canvas-wire-confirm');
+    var promptEl = $('wire-confirm-title');
+    var removeBtn = $('wire-confirm-btn');
+    var cancelBtn = $('wire-cancel-btn');
+    if (!confirmEl || !promptEl || !removeBtn || !cancelBtn) return;
+
+    var dict = I18N[getLanguage()] || I18N.en;
+
+    if (wireData.isText) {
+      promptEl.textContent = dict.canvas_wire_text_dep_info || 'Defined in Markdown. Edit description to remove.';
+      removeBtn.hidden = true;
+      cancelBtn.textContent = dict.close || 'Close';
+    } else {
+      promptEl.textContent = dict.canvas_wire_remove_prompt || 'Remove link?';
+      removeBtn.hidden = false;
+      removeBtn.textContent = dict.canvas_wire_remove_btn || 'Remove';
+      cancelBtn.textContent = dict.canvas_wire_cancel_btn || 'Cancel';
+    }
+
+    var scale = state.canvasScale || 1;
+    var screenX = Math.round(wireData.midX * scale + state.canvasPanX);
+    var screenY = Math.round(wireData.midY * scale + state.canvasPanY);
+
+    confirmEl.style.left = screenX + 'px';
+    confirmEl.style.top = screenY + 'px';
+    confirmEl.classList.toggle('flip-below', screenY < 80);
+    confirmEl.hidden = false;
+
+    if (!wireData.isText) {
+      removeBtn.focus();
+    } else {
+      cancelBtn.focus();
+    }
+  }
+
+  function hideWireDeleteConfirm() {
+    activeWireConfirmData = null;
+    var confirmEl = $('canvas-wire-confirm');
+    if (confirmEl) confirmEl.hidden = true;
   }
 
   function renderCanvasWires() {
@@ -2471,15 +2642,20 @@
     if (cardElements.length === 0) return;
 
     var cardMap = new Map();
+    var allPoints = [];
+
     cardElements.forEach(function (card) {
       var num = Number(card.getAttribute('data-issue-number'));
-      cardMap.set(num, {
+      var pos = {
         element: card,
         x: card.offsetLeft,
         y: card.offsetTop,
         w: card.offsetWidth || 250,
         h: card.offsetHeight || 110,
-      });
+      };
+      cardMap.set(num, pos);
+      allPoints.push({ x: pos.x, y: pos.y });
+      allPoints.push({ x: pos.x + pos.w, y: pos.y + pos.h });
     });
 
     var issues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
@@ -2497,12 +2673,12 @@
         var blockerPos = cardMap.get(blocker.number);
         if (!blockerPos) return;
 
-        var x1 = blockerPos.x + blockerPos.w;
-        var y1 = blockerPos.y + blockerPos.h / 2;
-        var x2 = targetPos.x;
-        var y2 = targetPos.y + targetPos.h / 2;
+        var curve = chooseWirePorts(blockerPos, targetPos);
+        allPoints.push({ x: curve.x1, y: curve.y1 });
+        allPoints.push({ x: curve.cx1, y: curve.cy1 });
+        allPoints.push({ x: curve.cx2, y: curve.cy2 });
+        allPoints.push({ x: curve.x2, y: curve.y2 });
 
-        var curve = computeBezierPath(x1, y1, x2, y2);
         var fullBlocker = issues.find(function (i) { return i.number === blocker.number; }) || blocker;
         var blockerStage = stageOf(fullBlocker);
         var isBlockerDone = fullBlocker.state === 'closed' || fullBlocker.state === 'done' || blockerStage === 'done';
@@ -2539,7 +2715,7 @@
         delBtn.setAttribute('transform', 'translate(' + curve.midX + ',' + curve.midY + ')');
 
         var delBg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        delBg.setAttribute('r', '10');
+        delBg.setAttribute('r', '11');
         delBg.setAttribute('class', 'canvas-wire-del-bg');
 
         var delCross = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -2549,19 +2725,29 @@
         delBtn.appendChild(delBg);
         delBtn.appendChild(delCross);
 
-        var confirmTimer = null;
-        delBtn.addEventListener('click', function (e) {
+        var wireData = {
+          targetNumber: targetIssue.number,
+          blockerId: blocker.id || blocker.number,
+          blockerNumber: blocker.number,
+          midX: curve.midX,
+          midY: curve.midY,
+          isText: false,
+        };
+
+        function onWireClick(e) {
           e.stopPropagation();
-          if (!delBtn.classList.contains('is-confirming')) {
-            delBtn.classList.add('is-confirming');
-            setNotice(dict.canvas_wire_delete_confirm || 'Click again to confirm delete');
-            confirmTimer = setTimeout(function () {
-              delBtn.classList.remove('is-confirming');
-            }, 3000);
-          } else {
-            if (confirmTimer) clearTimeout(confirmTimer);
-            delBtn.classList.remove('is-confirming');
-            deleteIssueDependencyAction(targetIssue.number, blocker.id || blocker.number);
+          showWireDeleteConfirm(wireData);
+        }
+
+        hitPath.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+        hitPath.addEventListener('click', onWireClick);
+        delBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+        delBtn.addEventListener('click', onWireClick);
+        delBtn.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            e.stopPropagation();
+            showWireDeleteConfirm(wireData);
           }
         });
 
@@ -2577,12 +2763,11 @@
         var blockerPos = cardMap.get(depNum);
         if (!blockerPos) return;
 
-        var x1 = blockerPos.x + blockerPos.w;
-        var y1 = blockerPos.y + blockerPos.h / 2;
-        var x2 = targetPos.x;
-        var y2 = targetPos.y + targetPos.h / 2;
-
-        var curve = computeBezierPath(x1, y1, x2, y2);
+        var curve = chooseWirePorts(blockerPos, targetPos);
+        allPoints.push({ x: curve.x1, y: curve.y1 });
+        allPoints.push({ x: curve.cx1, y: curve.cy1 });
+        allPoints.push({ x: curve.cx2, y: curve.cy2 });
+        allPoints.push({ x: curve.x2, y: curve.y2 });
 
         var group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         group.setAttribute('class', 'canvas-wire-group wire-group-text');
@@ -2606,7 +2791,7 @@
         delBtn.setAttribute('transform', 'translate(' + curve.midX + ',' + curve.midY + ')');
 
         var delBg = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        delBg.setAttribute('r', '10');
+        delBg.setAttribute('r', '11');
         delBg.setAttribute('class', 'canvas-wire-del-bg');
 
         var delCross = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -2616,10 +2801,24 @@
         delBtn.appendChild(delBg);
         delBtn.appendChild(delCross);
 
-        delBtn.addEventListener('click', function (e) {
+        var wireData = {
+          targetNumber: targetIssue.number,
+          blockerId: depNum,
+          blockerNumber: depNum,
+          midX: curve.midX,
+          midY: curve.midY,
+          isText: true,
+        };
+
+        function onTextWireClick(e) {
           e.stopPropagation();
-          setNotice(dict.canvas_wire_text_dep_info || 'Defined in Markdown. Edit description to remove.');
-        });
+          showWireDeleteConfirm(wireData);
+        }
+
+        hitPath.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+        hitPath.addEventListener('click', onTextWireClick);
+        delBtn.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+        delBtn.addEventListener('click', onTextWireClick);
 
         group.appendChild(hitPath);
         group.appendChild(visualPath);
@@ -2627,6 +2826,8 @@
         wiresLayer.appendChild(group);
       });
     });
+
+    updateWireLayerBounds(allPoints);
   }
 
   function attachPortDrag(portEl, cardEl, issue) {
@@ -2642,12 +2843,17 @@
 
       portEl.classList.add('is-active');
 
+      if (portEl.setPointerCapture && e.pointerId !== undefined) {
+        try { portEl.setPointerCapture(e.pointerId); } catch (_) {}
+      }
+
       var scale = state.canvasScale || 1;
       var cardX = cardEl.offsetLeft;
       var cardY = cardEl.offsetTop;
       var cardW = cardEl.offsetWidth || 250;
       var cardH = cardEl.offsetHeight || 110;
-      var sourceX = cardX + cardW;
+      var isLeft = portEl.classList.contains('port-left');
+      var sourceX = isLeft ? cardX : (cardX + cardW);
       var sourceY = cardY + cardH / 2;
 
       var previewPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -2715,6 +2921,10 @@
         window.removeEventListener('pointermove', onPointerMove);
         window.removeEventListener('pointerup', onPointerUp);
         window.removeEventListener('pointercancel', onPointerCancel);
+
+        if (portEl.releasePointerCapture && upEvent.pointerId !== undefined) {
+          try { portEl.releasePointerCapture(upEvent.pointerId); } catch (_) {}
+        }
 
         portEl.classList.remove('is-active');
         if (previewPath.parentNode) previewPath.parentNode.removeChild(previewPath);
@@ -2784,14 +2994,17 @@
         body: body,
       });
 
-      if (targetIssue) {
+      if (res && res.blockedBy && targetIssue) {
+        targetIssue.blockedBy = res.blockedBy;
+        if (res.blocking) targetIssue.blocking = res.blocking;
+      } else if (targetIssue) {
         targetIssue.blockedBy = targetIssue.blockedBy || [];
         targetIssue.blockedBy.push({
           id: sourceIssue.id || (res && res.blockerId),
           number: sourceIssue.number,
           title: sourceIssue.title || ('#' + sourceIssue.number),
           state: sourceIssue.state || 'open',
-          repository: sourceIssue.repository ? sourceIssue.repository.full : undefined,
+          repository: sourceIssue.repository ? (sourceIssue.repository.full || sourceIssue.repository) : undefined,
         });
       }
       if (sourceIssue) {
@@ -2802,12 +3015,16 @@
             number: targetIssue.number,
             title: targetIssue.title,
             state: targetIssue.state,
-            repository: targetIssue.repository ? targetIssue.repository.full : undefined,
+            repository: targetIssue.repository ? (targetIssue.repository.full || targetIssue.repository) : undefined,
           });
         }
       }
       if (state.detail && state.detail.number === targetNumber) {
-        state.detail.blockedBy = targetIssue ? targetIssue.blockedBy : state.detail.blockedBy;
+        if (res && res.issue) {
+          state.detail = res.issue;
+        } else {
+          state.detail.blockedBy = targetIssue ? targetIssue.blockedBy : state.detail.blockedBy;
+        }
         renderDetail(false);
       } else if (state.detail && state.detail.number === sourceIssue.number) {
         state.detail.blocking = sourceIssue ? sourceIssue.blocking : state.detail.blocking;
@@ -2820,7 +3037,9 @@
       setNotice('');
     } catch (err) {
       var msg = err.message || 'Could not add dependency.';
-      if (err.error === 'cycle_refused') {
+      if (err.status === 403 || err.error === 'github_forbidden') {
+        msg = dict.err_github_forbidden || 'GitHub token does not have permission to modify issue dependencies.';
+      } else if (err.error === 'cycle_refused') {
         msg = dict.err_cycle_refused || 'Cannot add dependency: this would create a circular dependency.';
       } else if (err.error === 'duplicate_dependency') {
         msg = dict.err_duplicate_dependency || 'That dependency link already exists.';
@@ -2842,11 +3061,14 @@
         var parts = targetIssue.repository.full.split('/');
         endpoint = '/api/repos/' + parts[0] + '/' + parts[1] + '/issues/' + targetNumber + '/dependencies/blocked_by/' + blockerIdOrNumber;
       }
-      await api(endpoint, {
+      var res = await api(endpoint, {
         method: 'DELETE',
       });
 
-      if (targetIssue && targetIssue.blockedBy) {
+      if (res && res.blockedBy && targetIssue) {
+        targetIssue.blockedBy = res.blockedBy;
+        if (res.blocking) targetIssue.blocking = res.blocking;
+      } else if (targetIssue && targetIssue.blockedBy) {
         targetIssue.blockedBy = targetIssue.blockedBy.filter(function (b) {
           return b.id !== blockerIdOrNumber && b.number !== blockerIdOrNumber;
         });
@@ -2860,10 +3082,14 @@
           }
         });
       }
-      if (state.detail && state.detail.number === targetNumber && state.detail.blockedBy) {
-        state.detail.blockedBy = state.detail.blockedBy.filter(function (b) {
-          return b.id !== blockerIdOrNumber && b.number !== blockerIdOrNumber;
-        });
+      if (state.detail && state.detail.number === targetNumber) {
+        if (res && res.issue) {
+          state.detail = res.issue;
+        } else if (state.detail.blockedBy) {
+          state.detail.blockedBy = state.detail.blockedBy.filter(function (b) {
+            return b.id !== blockerIdOrNumber && b.number !== blockerIdOrNumber;
+          });
+        }
         renderDetail(false);
       }
 
@@ -2872,7 +3098,12 @@
       announce('Dependency removed.');
       setNotice('');
     } catch (err) {
-      setNotice(err.message || 'Could not remove dependency.', true);
+      var dict = I18N[getLanguage()] || I18N.en;
+      var msg = err.message || 'Could not remove dependency.';
+      if (err.status === 403 || err.error === 'github_forbidden') {
+        msg = dict.err_github_forbidden || 'GitHub token does not have permission to modify issue dependencies.';
+      }
+      setNotice(msg, true);
     }
   }
 
@@ -2890,8 +3121,8 @@
       var cardEl = createIssueCanvasCard(issue, pos);
       cardsLayer.appendChild(cardEl);
       attachCardDrag(cardEl, issue, pos);
-      var portEl = cardEl.querySelector('.canvas-card-port');
-      if (portEl) attachPortDrag(portEl, cardEl, issue);
+      var portEls = cardEl.querySelectorAll('.canvas-card-port');
+      portEls.forEach(function (portEl) { attachPortDrag(portEl, cardEl, issue); });
     });
 
     renderCanvasWires();
@@ -2968,8 +3199,12 @@
     var initialPanY = 0;
 
     viewport.addEventListener('pointerdown', function (e) {
+      if (activeWireConfirmData && (!e.target || !e.target.closest || !e.target.closest('#canvas-wire-confirm'))) {
+        hideWireDeleteConfirm();
+      }
+      if (e.target && e.target.closest && e.target.closest('#canvas-wire-confirm')) return;
       if (e.button !== undefined && e.button !== 0) return;
-      if (e.target.closest('.canvas-card') || e.target.closest('.canvas-floating-controls')) return;
+      if (e.target.closest('.canvas-card') || e.target.closest('.canvas-floating-controls') || e.target.closest('.canvas-wire-group')) return;
 
       isPanning = true;
       viewport.classList.add('is-panning');
@@ -3088,6 +3323,36 @@
     var resetViewBtn = $('canvas-reset-view');
     if (resetViewBtn) {
       resetViewBtn.addEventListener('click', resetCanvasView);
+    }
+
+    var wireConfirmBtn = $('wire-confirm-btn');
+    if (wireConfirmBtn && !wireConfirmBtn['data-bound']) {
+      wireConfirmBtn['data-bound'] = true;
+      wireConfirmBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (activeWireConfirmData) {
+          var data = activeWireConfirmData;
+          hideWireDeleteConfirm();
+          deleteIssueDependencyAction(data.targetNumber, data.blockerId || data.blockerNumber);
+        }
+      });
+    }
+
+    var wireCancelBtn = $('wire-cancel-btn');
+    if (wireCancelBtn && !wireCancelBtn['data-bound']) {
+      wireCancelBtn['data-bound'] = true;
+      wireCancelBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        hideWireDeleteConfirm();
+      });
+    }
+
+    if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && activeWireConfirmData) {
+          hideWireDeleteConfirm();
+        }
+      });
     }
   }
   function renderBoard() {
@@ -3380,6 +3645,9 @@
         var loadedCount = board.repositoriesLoaded || 0;
         var totalReq = board.repositoriesRequested || (loadedCount + failCount);
         setNotice('Partial board: ' + failCount + ' of ' + totalReq + ' repositories could not be reached. Showing ' + loadedCount + ' repositories.', true);
+      } else if (board && board.dependenciesDegraded) {
+        var dict = I18N[getLanguage()] || I18N.en;
+        setNotice(dict.notice_dependencies_degraded || 'Dependency wires unavailable (GitHub GraphQL error). Showing board without wires.', true);
       } else {
         setNotice('');
       }
@@ -3535,12 +3803,169 @@
     renderChecklist('human-list', 'no-human', issue.humanTasks || [], false);
   }
 
+  function setupBlockerPicker(issue) {
+    var searchInput = $('add-blocker-search');
+    var suggestionsList = $('add-blocker-suggestions');
+    var picker = $('add-blocker-picker');
+    if (!searchInput || !suggestionsList || !picker) return;
+
+    var dict = I18N[getLanguage()] || I18N.en;
+    searchInput.placeholder = dict.drawer_search_blocker_prompt || 'Add a blocker: search issues…';
+
+    var existingBlockerNums = new Set((issue.blockedBy || []).map(function (b) { return b.number; }));
+    var availableIssues = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
+
+    var candidates = availableIssues.filter(function (candidate) {
+      return candidate.number !== issue.number && !existingBlockerNums.has(candidate.number);
+    });
+
+    var activeIndex = -1;
+
+    function renderSuggestions(filtered) {
+      suggestionsList.textContent = '';
+      activeIndex = -1;
+      if (filtered.length === 0) {
+        var emptyItem = el('li', {
+          class: 'add-blocker-option is-empty',
+          role: 'option',
+          text: dict.drawer_no_matching_issues || 'No matching issues found',
+        });
+        suggestionsList.appendChild(emptyItem);
+      } else {
+        var currentRepo = issue.repository ? (issue.repository.full || issue.repository) : '';
+        filtered.forEach(function (candidate) {
+          var friendly = resolveFriendlyTitle(candidate);
+          var optChildren = [
+            el('span', { class: 'option-text', text: '#' + candidate.number + ' ' + (friendly.title || candidate.title || '') }),
+          ];
+          var candRepo = candidate.repository ? (candidate.repository.full || candidate.repository) : '';
+          if (candRepo && candRepo !== currentRepo) {
+            optChildren.push(el('span', { class: 'option-repo', text: shortName(candRepo) || candRepo }));
+          }
+          var opt = el('li', {
+            class: 'add-blocker-option',
+            role: 'option',
+            tabindex: '-1',
+            'data-number': String(candidate.number),
+          }, optChildren);
+
+          opt.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+            addIssueDependencyAction(issue.number, candidate);
+            searchInput.value = '';
+            suggestionsList.hidden = true;
+          });
+          suggestionsList.appendChild(opt);
+        });
+      }
+      suggestionsList.hidden = false;
+    }
+
+    function getFiltered(query) {
+      if (!query) return candidates.slice(0, 10);
+      var q = query.toLowerCase();
+      return candidates.filter(function (c) {
+        var friendly = resolveFriendlyTitle(c);
+        var title = (friendly.title || c.title || '').toLowerCase();
+        var numStr = String(c.number);
+        var repoStr = c.repository ? (c.repository.full || c.repository).toLowerCase() : '';
+        return numStr.indexOf(q) !== -1 || ('#' + numStr).indexOf(q) !== -1 || title.indexOf(q) !== -1 || repoStr.indexOf(q) !== -1;
+      }).slice(0, 15);
+    }
+
+    function highlightOption(index) {
+      var options = typeof suggestionsList.querySelectorAll === 'function'
+        ? suggestionsList.querySelectorAll('.add-blocker-option:not(.is-empty)')
+        : [];
+      options.forEach(function (opt, i) {
+        if (i === index) {
+          opt.classList.add('is-active');
+          if (typeof opt.scrollIntoView === 'function') opt.scrollIntoView({ block: 'nearest' });
+        } else {
+          opt.classList.remove('is-active');
+        }
+      });
+      activeIndex = index;
+    }
+
+    if (!searchInput['data-picker-bound']) {
+      searchInput['data-picker-bound'] = true;
+
+      if (typeof searchInput.addEventListener === 'function') {
+        searchInput.addEventListener('input', function () {
+          if (!state.detail) return;
+          var query = searchInput.value.trim();
+          renderSuggestions(getFiltered(query));
+        });
+
+        searchInput.addEventListener('focus', function () {
+          if (!state.detail) return;
+          var query = searchInput.value.trim();
+          renderSuggestions(getFiltered(query));
+        });
+
+        searchInput.addEventListener('keydown', function (e) {
+          if (suggestionsList.hidden) {
+            if (e.key === 'ArrowDown') {
+              e.preventDefault();
+              var query = searchInput.value.trim();
+              renderSuggestions(getFiltered(query));
+            }
+            return;
+          }
+
+          var options = typeof suggestionsList.querySelectorAll === 'function'
+            ? suggestionsList.querySelectorAll('.add-blocker-option:not(.is-empty)')
+            : [];
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (options.length === 0) return;
+            var next = activeIndex + 1;
+            if (next >= options.length) next = 0;
+            highlightOption(next);
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (options.length === 0) return;
+            var prev = activeIndex - 1;
+            if (prev < 0) prev = options.length - 1;
+            highlightOption(prev);
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (activeIndex >= 0 && activeIndex < options.length) {
+              options[activeIndex].click();
+            } else if (options.length === 1) {
+              options[0].click();
+            }
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            suggestionsList.hidden = true;
+            if (typeof searchInput.blur === 'function') searchInput.blur();
+          }
+        });
+      }
+
+      if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+        document.addEventListener('pointerdown', function (e) {
+          if (picker && typeof picker.contains === 'function' && !picker.contains(e.target)) {
+            suggestionsList.hidden = true;
+          }
+        });
+      }
+    }
+
+    searchInput.value = '';
+    suggestionsList.hidden = true;
+  }
+
   function renderDependencies(issue) {
     var dict = I18N[getLanguage()] || I18N.en;
 
     // 1. Blocked by list
     var blockedByContainer = $('blocked-by-list');
     var noBlockedByEl = $('no-blocked-by');
+    var currentRepoName = issue.repository ? (issue.repository.full || issue.repository) : '';
+
     if (blockedByContainer && noBlockedByEl) {
       blockedByContainer.textContent = '';
       var blockedByList = Array.isArray(issue.blockedBy) ? issue.blockedBy : [];
@@ -3549,7 +3974,9 @@
       blockedByList.forEach(function (dep) {
         var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
         var friendly = resolveFriendlyTitle(dep);
-        var chip = el('div', { class: 'dependency-chip', 'data-blocker-id': String(dep.id || dep.number) }, [
+        var depRepoName = dep.repository ? (dep.repository.full || dep.repository) : '';
+
+        var chipChildren = [
           el('span', { class: 'dependency-chip-status status-' + stage, title: statusText('status:' + stage) }),
           el('a', {
             class: 'dependency-chip-link',
@@ -3558,11 +3985,18 @@
             onclick: function (e) {
               e.preventDefault();
               var targetRepo = (dep.repository && state.repositories)
-                ? state.repositories.repositories.find(function (r) { return r.full === dep.repository; })
+                ? state.repositories.repositories.find(function (r) { return r.full === depRepoName; })
                 : issue.repository;
               openIssue({ number: dep.number, repository: targetRepo || issue.repository });
             }
           }),
+        ];
+
+        if (depRepoName && depRepoName !== currentRepoName) {
+          chipChildren.push(el('span', { class: 'dependency-chip-repo', text: shortName(depRepoName) || depRepoName }));
+        }
+
+        chipChildren.push(
           el('button', {
             type: 'button',
             class: 'dependency-chip-remove',
@@ -3575,57 +4009,15 @@
               deleteIssueDependencyAction(issue.number, dep.id || dep.number);
             }
           })
-        ]);
+        );
+
+        var chip = el('div', { class: 'dependency-chip', 'data-blocker-id': String(dep.id || dep.number) }, chipChildren);
         blockedByContainer.appendChild(chip);
       });
     }
 
-    // 2. Add Blocker Select Picker
-    var addSelect = $('add-blocker-select');
-    var addBtn = $('add-blocker-btn');
-    if (addSelect) {
-      addSelect.textContent = '';
-      var defaultOpt = el('option', { value: '', text: dict.drawer_select_blocker_prompt || 'Select task to block this…' });
-      addSelect.appendChild(defaultOpt);
-
-      var existingBlockerNums = new Set((issue.blockedBy || []).map(function (b) { return b.number; }));
-      var availableIssues = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
-
-      availableIssues
-        .filter(function (candidate) {
-          return candidate.number !== issue.number && !existingBlockerNums.has(candidate.number);
-        })
-        .sort(function (a, b) { return a.number - b.number; })
-        .forEach(function (candidate) {
-          var friendly = resolveFriendlyTitle(candidate);
-          var opt = el('option', {
-            value: String(candidate.number),
-            text: '#' + candidate.number + ' ' + (friendly.title || candidate.title || ''),
-          });
-          addSelect.appendChild(opt);
-        });
-    }
-
-    var isBound = addBtn && (addBtn['data-bound'] || (typeof addBtn.hasAttribute === 'function' && addBtn.hasAttribute('data-bound')));
-    if (addBtn && !isBound) {
-      addBtn['data-bound'] = 'true';
-      if (typeof addBtn.setAttribute === 'function') {
-        addBtn.setAttribute('data-bound', 'true');
-      }
-      if (typeof addBtn.addEventListener === 'function') {
-        addBtn.addEventListener('click', function () {
-          if (!state.detail) return;
-          var select = $('add-blocker-select');
-          var val = select ? select.value : '';
-          if (!val) return;
-          var blockerNum = Number(val);
-          var sourceCandidate = (state.board && state.board.issues)
-            ? state.board.issues.find(function (i) { return i.number === blockerNum; })
-            : { number: blockerNum };
-          addIssueDependencyAction(state.detail.number, sourceCandidate);
-        });
-      }
-    }
+    // 2. Add Blocker Type-to-Search Picker
+    setupBlockerPicker(issue);
 
     // 3. Blocking list
     var blockingContainer = $('blocking-list');
@@ -3638,7 +4030,9 @@
       blockingList.forEach(function (dep) {
         var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
         var friendly = resolveFriendlyTitle(dep);
-        var chip = el('div', { class: 'dependency-chip', 'data-blocked-id': String(dep.id || dep.number) }, [
+        var depRepoName = dep.repository ? (dep.repository.full || dep.repository) : '';
+
+        var chipChildren = [
           el('span', { class: 'dependency-chip-status status-' + stage, title: statusText('status:' + stage) }),
           el('a', {
             class: 'dependency-chip-link',
@@ -3647,11 +4041,18 @@
             onclick: function (e) {
               e.preventDefault();
               var targetRepo = (dep.repository && state.repositories)
-                ? state.repositories.repositories.find(function (r) { return r.full === dep.repository; })
+                ? state.repositories.repositories.find(function (r) { return r.full === depRepoName; })
                 : issue.repository;
               openIssue({ number: dep.number, repository: targetRepo || issue.repository });
             }
           }),
+        ];
+
+        if (depRepoName && depRepoName !== currentRepoName) {
+          chipChildren.push(el('span', { class: 'dependency-chip-repo', text: shortName(depRepoName) || depRepoName }));
+        }
+
+        chipChildren.push(
           el('button', {
             type: 'button',
             class: 'dependency-chip-remove',
@@ -3664,7 +4065,9 @@
               deleteIssueDependencyAction(dep.number, issue.id || issue.number);
             }
           })
-        ]);
+        );
+
+        var chip = el('div', { class: 'dependency-chip', 'data-blocked-id': String(dep.id || dep.number) }, chipChildren);
         blockingContainer.appendChild(chip);
       });
     }

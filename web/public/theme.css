@@ -1800,7 +1800,6 @@ input[type="text"].search-input:focus,
 /* Card Ports & Wire Connections */
 .canvas-card-port {
   position: absolute;
-  right: -7px;
   top: 50%;
   transform: translateY(-50%);
   width: 14px;
@@ -1810,8 +1809,17 @@ input[type="text"].search-input:focus,
   border: 2px solid var(--border-strong);
   cursor: crosshair;
   z-index: 20;
+  touch-action: none;
   transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
   box-sizing: border-box;
+}
+
+.canvas-card-port.port-right {
+  right: -7px;
+}
+
+.canvas-card-port.port-left {
+  left: -7px;
 }
 
 .canvas-card:hover .canvas-card-port,
@@ -1836,10 +1844,6 @@ input[type="text"].search-input:focus,
 /* Wires Layer & SVG Curves */
 .canvas-layer-wires {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 50000px;
-  height: 50000px;
   overflow: visible;
   pointer-events: none;
   z-index: 10;
@@ -1940,7 +1944,7 @@ input[type="text"].search-input:focus,
 .wire-marker-text { fill: var(--wire-text); }
 .wire-marker-preview { fill: var(--prim); }
 
-/* Canvas Wire Tooltip */
+/* Canvas Wire Tooltip & Screen-Space Confirmation */
 .canvas-wire-tooltip {
   position: absolute;
   pointer-events: none;
@@ -1954,6 +1958,50 @@ input[type="text"].search-input:focus,
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
   white-space: nowrap;
   transform: translate(12px, 12px);
+}
+
+.canvas-wire-confirm {
+  position: absolute;
+  z-index: 150;
+  background: var(--surf);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--rad);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.45);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  transform: translate(-50%, -100%);
+  margin-top: -12px;
+  pointer-events: auto;
+  font-family: var(--font-sans);
+  min-width: 150px;
+}
+
+.canvas-wire-confirm.flip-below {
+  transform: translate(-50%, 0);
+  margin-top: 12px;
+}
+
+.wire-confirm-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--fg);
+  white-space: nowrap;
+}
+
+.wire-confirm-actions {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+.wire-confirm-actions .button {
+  flex: 1;
+  font-size: 11px;
+  padding: 4px 8px;
+  text-align: center;
 }
 
 /* List View Blocked Indicator */
@@ -2001,6 +2049,16 @@ input[type="text"].search-input:focus,
   border: 1px solid var(--border);
   color: var(--fg);
   line-height: 1.4;
+}
+
+.dependency-chip-repo {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--fg-faint);
+  background: var(--surf-subtle);
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 2px;
 }
 
 .dependency-chip-status {
@@ -2065,22 +2123,86 @@ input[type="text"].search-input:focus,
 }
 
 .add-blocker-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
   margin-top: 8px;
+  position: relative;
 }
 
-.add-blocker-select {
-  flex: 1;
-  min-width: 0;
+.add-blocker-picker {
+  position: relative;
+  width: 100%;
+}
+
+.add-blocker-search {
+  width: 100%;
   font-size: 12px;
-  padding: 4px 8px;
+  padding: 6px 10px;
   height: 32px;
   background: var(--surf);
   color: var(--fg);
   border: 1px solid var(--border);
   border-radius: var(--rad-sm);
+  box-sizing: border-box;
+}
+
+.add-blocker-search:focus {
+  outline: none;
+  border-color: var(--prim);
+}
+
+.add-blocker-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--surf);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--rad-sm);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+
+.add-blocker-option {
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--fg);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.add-blocker-option:hover,
+.add-blocker-option.is-active {
+  background: var(--surf-hover);
+  color: var(--prim-fg);
+}
+
+.add-blocker-option .option-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.add-blocker-option .option-repo {
+  font-size: 10px;
+  font-family: var(--font-mono);
+  color: var(--fg-faint);
+  background: var(--surf-subtle);
+  padding: 1px 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.add-blocker-option.is-empty {
+  color: var(--fg-muted);
+  cursor: default;
+  font-style: italic;
 }
 
 

@@ -101,6 +101,18 @@ const fake = await startFakeGitHub({
       repo: 'chamberos/core',
       issues: coreIssues,
     },
+    {
+      repo: 'chamberos/satellite',
+      issues: [
+        makeIssue({
+          number: 201,
+          title: 'Distributed pub/sub event bus',
+          labels: ['status:in-progress', 'priority:high'],
+          repo: 'chamberos/satellite',
+          body: `## Overview\r\nEvent bus distribution for multi-repo orchestration.\r\n\r\n<!-- board-order: 700 -->\r\n<!-- board-canvas: {"x":80,"y":560} -->\r\n`,
+        }),
+      ],
+    },
   ],
   honorIfMatch: true,
 });
@@ -114,6 +126,9 @@ fake.addDependency(103, 102, 'chamberos/core', 'chamberos/core');
 
 // 103 blocks 106 (warning wire: blocker 103 is needs-human)
 fake.addDependency(106, 103, 'chamberos/core', 'chamberos/core');
+
+// Cross-repo dependency: 201 in satellite blocks 104 in core
+fake.addDependency(104, 201, 'chamberos/core', 'chamberos/satellite');
 
 const board = await startBoard(fake);
 
@@ -177,7 +192,9 @@ async function captureDependenciesFlow() {
   // Shot 2: Hover over wire 102 -> 103 (showing hit area, thickened stroke, delete X button)
   console.log('Hovering over wire to inspect hit area and delete button...');
   const wireGroup103 = page.locator('.canvas-wire-group[data-target="103"]');
-  await wireGroup103.hover();
+  const hit103 = wireGroup103.locator('.canvas-wire-hit');
+  const delBtn103 = wireGroup103.locator('.canvas-wire-del-btn');
+  await hit103.hover({ force: true });
   await page.waitForTimeout(300);
 
   const shot1280Hover = path.join(screenshotsDir, 'canvas-wire-hover-1280.png');
@@ -186,13 +203,18 @@ async function captureDependenciesFlow() {
 
   // Shot 3: Wire delete inline confirmation
   console.log('Clicking delete button once to trigger inline confirmation...');
-  const delBtn103 = wireGroup103.locator('.canvas-wire-del-btn');
-  await delBtn103.click();
+  await delBtn103.click({ force: true });
+  await page.locator('#canvas-wire-confirm').waitFor({ state: 'visible' });
   await page.waitForTimeout(300);
 
   const shot1280Confirm = path.join(screenshotsDir, 'canvas-wire-del-confirm-1280.png');
   await page.screenshot({ path: shot1280Confirm });
   console.log(`Saved: ${shot1280Confirm}`);
+
+  // Test keyboard Escape dismissal
+  await page.keyboard.press('Escape');
+  await page.locator('#canvas-wire-confirm').waitFor({ state: 'hidden' });
+  await page.waitForTimeout(200);
 
   // Reset notice
   await page.evaluate(() => {
@@ -204,7 +226,7 @@ async function captureDependenciesFlow() {
   // Drag port from card 105 towards card 104
   console.log('Emulating port drag from card #105 towards card #104...');
   const card105 = page.locator('.canvas-card[data-issue-number="105"]');
-  const port105 = card105.locator('.canvas-card-port');
+  const port105 = card105.locator('.canvas-card-port.port-right');
   const port105Box = await port105.boundingBox();
   const card104 = page.locator('.canvas-card[data-issue-number="104"]');
   const card104Box = await card104.boundingBox();
@@ -247,10 +269,42 @@ async function captureDependenciesFlow() {
   });
   await page.waitForTimeout(200);
 
-  // Shot 7: Detail Drawer Dependencies
-  // Click card 104 to open drawer
-  console.log('Opening Issue #104 detail drawer to inspect dependencies section...');
-  await card104.click();
+  // Shot 7: Canvas Zoom 0.25 (Min scale)
+  console.log('Testing Canvas Zoom 0.25 (Min scale)...');
+  await page.evaluate(() => {
+    if (window.__app && window.__app.setCanvasZoom) {
+      window.__app.setCanvasZoom(0.25);
+    }
+  });
+  await page.waitForTimeout(300);
+  const shot1280Zoom025 = path.join(screenshotsDir, 'canvas-wires-zoom-025-1280.png');
+  await page.screenshot({ path: shot1280Zoom025 });
+  console.log(`Saved: ${shot1280Zoom025}`);
+
+  // Shot 8: Canvas Zoom 2.0 (Max scale)
+  console.log('Testing Canvas Zoom 2.0 (Max scale)...');
+  await page.evaluate(() => {
+    if (window.__app && window.__app.setCanvasZoom) {
+      window.__app.setCanvasZoom(2.0);
+    }
+  });
+  await page.waitForTimeout(300);
+  const shot1280Zoom20 = path.join(screenshotsDir, 'canvas-wires-zoom-20-1280.png');
+  await page.screenshot({ path: shot1280Zoom20 });
+  console.log(`Saved: ${shot1280Zoom20}`);
+
+  // Reset zoom to 1.0
+  await page.evaluate(() => {
+    if (window.__app && window.__app.setCanvasZoom) {
+      window.__app.setCanvasZoom(1.0);
+    }
+  });
+  await page.waitForTimeout(200);
+
+  // Shot 9: Detail Drawer Dependencies (Cross-Repo blocker chip)
+  console.log('Opening Issue #104 detail drawer to inspect cross-repo dependency...');
+  const card104Detail = page.locator('.canvas-card[data-issue-number="104"]');
+  await card104Detail.click();
   await page.locator('#detail-view').waitFor({ state: 'visible' });
   await page.waitForTimeout(400);
 
@@ -264,6 +318,37 @@ async function captureDependenciesFlow() {
   const shot1280Drawer = path.join(screenshotsDir, 'canvas-drawer-dependencies-1280.png');
   await page.screenshot({ path: shot1280Drawer });
   console.log(`Saved: ${shot1280Drawer}`);
+
+  // Shot 10: Blocker Type-to-Search Picker
+  console.log('Testing Blocker Type-to-Search Picker with filter...');
+  const searchInput = page.locator('#add-blocker-search');
+  await searchInput.fill('audit');
+  await page.locator('#add-blocker-suggestions').waitFor({ state: 'visible' });
+  await page.waitForTimeout(300);
+
+  const shot1280Picker = path.join(screenshotsDir, 'canvas-drawer-picker-search-1280.png');
+  await page.screenshot({ path: shot1280Picker });
+  console.log(`Saved: ${shot1280Picker}`);
+
+  // Shot 11: 403 Forbidden Permission Notice
+  console.log('Testing 403 Forbidden permission error handling...');
+  fake.setDependencyHook(async () => {
+    return { status: 403, payload: { message: 'Must have push access to repository' } };
+  });
+
+  const firstOption = page.locator('.add-blocker-option:not(.is-empty)').first();
+  await firstOption.click();
+  await page.waitForTimeout(400);
+
+  const shot1280403 = path.join(screenshotsDir, 'canvas-dependency-403-notice-1280.png');
+  await page.screenshot({ path: shot1280403 });
+  console.log(`Saved: ${shot1280403}`);
+
+  fake.setDependencyHook(null);
+  await page.evaluate(() => {
+    const notice = document.getElementById('board-notice');
+    if (notice) notice.textContent = '';
+  });
 
   // Close drawer
   await page.locator('#back-btn').click();
@@ -287,6 +372,7 @@ async function captureDependenciesFlow() {
   console.log('Capturing Tablet 768px Canvas Wires...');
   const tabletContext = await browser.newContext({
     viewport: { width: 768, height: 1024 },
+    hasTouch: true,
     serviceWorkers: 'block',
   });
   const tabletPage = await tabletContext.newPage();
@@ -321,12 +407,12 @@ async function captureDependenciesFlow() {
   });
   await tabletPage.waitForTimeout(200);
 
-  // Shot 9: Tablet 768px Light
+  // Shot 12: Tablet 768px Light
   const shot768 = path.join(screenshotsDir, 'canvas-wires-768.png');
   await tabletPage.screenshot({ path: shot768 });
   console.log(`Saved: ${shot768}`);
 
-  // Shot 10: Tablet 768px Dark
+  // Shot 13: Tablet 768px Dark
   await tabletPage.evaluate(() => {
     document.documentElement.setAttribute('data-theme', 'dark');
   });
@@ -334,6 +420,30 @@ async function captureDependenciesFlow() {
   const shot768Dark = path.join(screenshotsDir, 'canvas-wires-768-dark.png');
   await tabletPage.screenshot({ path: shot768Dark });
   console.log(`Saved: ${shot768Dark}`);
+
+  await tabletPage.evaluate(() => {
+    document.documentElement.removeAttribute('data-theme');
+  });
+  await tabletPage.waitForTimeout(200);
+
+  // Shot 14: Tablet Touch port drag preview
+  console.log('Testing Touch port drag on Tablet 768px...');
+  const card105Tab = tabletPage.locator('.canvas-card[data-issue-number="105"]');
+  const port105Tab = card105Tab.locator('.canvas-card-port.port-right');
+  const card104Tab = tabletPage.locator('.canvas-card[data-issue-number="104"]');
+  const port105BoxTab = await port105Tab.boundingBox();
+  const card104BoxTab = await card104Tab.boundingBox();
+  if (port105BoxTab && card104BoxTab) {
+    await tabletPage.mouse.move(port105BoxTab.x + port105BoxTab.width / 2, port105BoxTab.y + port105BoxTab.height / 2);
+    await tabletPage.mouse.down();
+    await tabletPage.mouse.move(card104BoxTab.x + card104BoxTab.width / 2, card104BoxTab.y + card104BoxTab.height / 2, { steps: 8 });
+    await tabletPage.waitForTimeout(300);
+    const shot768TouchDrag = path.join(screenshotsDir, 'canvas-touch-port-drag-768.png');
+    await tabletPage.screenshot({ path: shot768TouchDrag });
+    console.log(`Saved: ${shot768TouchDrag}`);
+    await tabletPage.mouse.up();
+    await tabletPage.waitForTimeout(200);
+  }
 
   await tabletContext.close();
 

@@ -71,6 +71,11 @@ test('dependencies API: list, add, remove, duplicate, cycle refusal, and error p
   assert.equal(addRes.json.success, true);
   assert.equal(addRes.json.blockedNumber, 2);
   assert.equal(addRes.json.blockerNumber, 1);
+  assert.ok(addRes.json.issue, 'addRes includes full issue detail');
+  assert.equal(addRes.json.issue.number, 2);
+  assert.ok(addRes.json.listItem, 'addRes includes full listItem');
+  assert.ok(Array.isArray(addRes.json.blockedBy), 'addRes includes blockedBy array');
+  assert.ok(Array.isArray(addRes.json.statusOptions), 'addRes includes statusOptions array');
 
   // 5. Board payload includes native dependency without N+1 calls
   const boardRes = await session.request('/api/board');
@@ -133,6 +138,11 @@ test('dependencies API: list, add, remove, duplicate, cycle refusal, and error p
   });
   assert.equal(delRes.status, 200);
   assert.equal(delRes.json.success, true);
+  assert.ok(delRes.json.issue, 'delRes includes full issue detail');
+  assert.equal(delRes.json.issue.number, 2);
+  assert.ok(delRes.json.listItem, 'delRes includes full listItem');
+  assert.ok(Array.isArray(delRes.json.blockedBy), 'delRes includes blockedBy array');
+  assert.ok(Array.isArray(delRes.json.statusOptions), 'delRes includes statusOptions array');
 
   // 12. Verify dependency is removed from board payload
   const boardAfterDel = await session.request('/api/board');
@@ -172,4 +182,136 @@ test('dependencies API: list, add, remove, duplicate, cycle refusal, and error p
   });
   assert.equal(invalidAdd.status, 422);
   assert.equal(invalidAdd.json.error, 'invalid_dependency');
+});
+
+test('cross-repo dependencies: add, list on both boards, and delete across repository boundaries', async (t) => {
+  const issueA = makeIssue({
+    number: 101,
+    title: 'Alpha task',
+    body: '## Overview\r\nAlpha\r\n',
+    labels: ['status:planned'],
+    repo: 'chamberos/alpha',
+  });
+  const issueB = makeIssue({
+    number: 201,
+    title: 'Beta blocker task',
+    body: '## Overview\r\nBeta\r\n',
+    labels: ['status:in-progress'],
+    repo: 'chamberos/beta',
+  });
+
+  const fake = await startFakeGitHub({
+    repositories: [
+      { repo: 'chamberos/alpha', issues: [issueA] },
+      { repo: 'chamberos/beta', issues: [issueB] },
+    ],
+  });
+  const board = await startBoard(fake);
+  t.after(async () => {
+    await board.app.close();
+    await fake.close();
+  });
+
+  const session = new HttpSession(board.url);
+  await session.login();
+
+  // 1. Add cross-repo dependency: alpha #101 is blocked by beta #201
+  const addRes = await session.request('/api/repos/chamberos/alpha/issues/101/dependencies/blocked_by', {
+    method: 'POST',
+    body: { repo: 'chamberos/beta', issue_number: 201 },
+  });
+  assert.equal(addRes.status, 201);
+  assert.equal(addRes.json.success, true);
+  assert.equal(addRes.json.blockedNumber, 101);
+  assert.equal(addRes.json.blockerNumber, 201);
+  assert.equal(addRes.json.blockerRepo, 'chamberos/beta');
+
+  // 2. Alpha board: issue 101 has blockedBy entry with beta repository
+  const alphaBoard = await session.request('/api/repos/chamberos/alpha/board');
+  assert.equal(alphaBoard.status, 200);
+  const alphaIssue = alphaBoard.json.issues.find((i) => i.number === 101);
+  assert.ok(alphaIssue.blockedBy && alphaIssue.blockedBy.length === 1);
+  assert.equal(alphaIssue.blockedBy[0].number, 201);
+  assert.equal(alphaIssue.blockedBy[0].repository, 'chamberos/beta');
+
+  // 3. Delete cross-repo dependency
+  const delRes = await session.request('/api/repos/chamberos/alpha/issues/101/dependencies/blocked_by/201', {
+    method: 'DELETE',
+  });
+  assert.equal(delRes.status, 200);
+  assert.equal(delRes.json.success, true);
+
+  // 4. Alpha board reflects removal
+  const alphaAfterDel = await session.request('/api/repos/chamberos/alpha/board');
+  const alphaIssueAfter = alphaAfterDel.json.issues.find((i) => i.number === 101);
+  assert.deepEqual(alphaIssueAfter.blockedBy, []);
+});
+
+test('GraphQL degradation: board loads issues cleanly with degraded status when dependencies query fails', async (t) => {
+  const issue = makeIssue({
+    number: 1,
+    title: 'Resilient issue',
+    body: '## Overview\r\nContent\r\n',
+    labels: ['status:in-progress'],
+    repo: 'chamberos/core',
+  });
+  const fake = await startFakeGitHub({
+    repo: 'chamberos/core',
+    issues: [issue],
+  });
+  fake.setGraphqlHook(() => {
+    return { status: 502, payload: { message: 'Upstream GraphQL Gateway Timeout' } };
+  });
+
+  const board = await startBoard(fake);
+  t.after(async () => {
+    await board.app.close();
+    await fake.close();
+  });
+
+  const session = new HttpSession(board.url);
+  await session.login();
+
+  const boardRes = await session.request('/api/board');
+  assert.equal(boardRes.status, 200, 'Board load succeeds despite GraphQL failure');
+  assert.equal(boardRes.json.dependenciesDegraded, true, 'Board flags degraded dependencies');
+  assert.equal(boardRes.json.issues.length, 1, 'All issues returned on degraded board');
+  assert.equal(boardRes.json.issues[0].number, 1);
+});
+
+test('multi-repo board batching: 26 repositories load with exactly 1 REST and 1 GraphQL query each (52 total)', async (t) => {
+  const letters = 'abcdefghijklmnopqrstuvwxyz'.split('');
+  const repos = letters.map((letter, idx) => ({
+    repo: `chamberos/repo-${letter}`,
+    issues: [
+      makeIssue({ number: 1, title: `Task in repo ${letter} A`, labels: ['status:planned'], repo: `chamberos/repo-${letter}` }),
+      makeIssue({ number: 2, title: `Task in repo ${letter} B`, labels: ['status:in-progress'], repo: `chamberos/repo-${letter}` }),
+    ],
+  }));
+
+  const fake = await startFakeGitHub({
+    repositories: repos,
+  });
+  const board = await startBoard(fake);
+  t.after(async () => {
+    await board.app.close();
+    await fake.close();
+  });
+
+  const session = new HttpSession(board.url);
+  await session.login();
+
+  // Reset requests log prior to combined board fetch
+  fake.requests.length = 0;
+
+  const combinedRes = await session.request('/api/combined/board');
+  assert.equal(combinedRes.status, 200);
+  assert.equal(combinedRes.json.issues.length, 52); // 26 repos * 2 issues
+
+  const restIssuesQueries = fake.requests.filter((r) => r.path.endsWith('/issues'));
+  const graphqlQueries = fake.requests.filter((r) => r.path === '/graphql');
+
+  assert.equal(restIssuesQueries.length, 26, 'Exactly 26 REST issue queries (1 per repo)');
+  assert.equal(graphqlQueries.length, 26, 'Exactly 26 batched GraphQL queries (1 per repo)');
+  assert.equal(restIssuesQueries.length + graphqlQueries.length, 52, 'Exactly 52 queries total for 26 repos (zero N+1)');
 });

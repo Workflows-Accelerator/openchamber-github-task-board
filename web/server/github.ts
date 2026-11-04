@@ -583,6 +583,7 @@ export class GitHubClient {
               blockedBy(first: 50) {
                 nodes {
                   id
+                  databaseId
                   number
                   title
                   state
@@ -611,12 +612,20 @@ export class GitHubClient {
       if (Array.isArray(nodes)) {
         for (const item of nodes) {
           if (typeof item?.number === 'number' && Array.isArray(item.blockedBy?.nodes)) {
-            result.set(item.number, item.blockedBy.nodes);
+            const mapped = item.blockedBy.nodes.map((n: any) => ({
+              id: typeof n.databaseId === 'number' ? n.databaseId : n.id,
+              databaseId: n.databaseId,
+              number: n.number,
+              title: n.title,
+              state: typeof n.state === 'string' ? n.state.toLowerCase() : 'open',
+              repository: n.repository?.nameWithOwner,
+            }));
+            result.set(item.number, mapped);
           }
         }
       }
-    } catch {
-      // Fallback or ignore if GraphQL endpoint does not support blockedBy
+    } catch (err) {
+      throw err;
     }
     return result;
   }

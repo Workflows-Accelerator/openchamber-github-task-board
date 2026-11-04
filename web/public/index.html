@@ -232,6 +232,13 @@
             <div id="canvas-overlay" class="canvas-layer canvas-layer-overlay" aria-hidden="true"></div>
           </div>
           <div id="canvas-wire-tooltip" class="canvas-wire-tooltip" aria-hidden="true" hidden></div>
+          <div id="canvas-wire-confirm" class="canvas-wire-confirm" role="dialog" aria-modal="true" aria-label="Confirm dependency removal" hidden>
+            <span class="wire-confirm-title" id="wire-confirm-title">Remove link?</span>
+            <div class="wire-confirm-actions">
+              <button type="button" id="wire-confirm-btn" class="button danger small">Remove</button>
+              <button type="button" id="wire-cancel-btn" class="button small">Cancel</button>
+            </div>
+          </div>
         </div>
 
         <h1 id="board-title" class="sr-only" tabindex="-1">Tasks</h1>
@@ -333,11 +340,11 @@
             <div id="blocked-by-list" class="dependency-chips-list"></div>
             
             <div class="add-blocker-row">
-              <label for="add-blocker-select" class="sr-only" data-i18n="drawer_add_blocker_label">Add blocker task</label>
-              <select id="add-blocker-select" class="add-blocker-select">
-                <option value="" data-i18n="drawer_select_blocker_prompt">Select task to block this…</option>
-              </select>
-              <button id="add-blocker-btn" class="button" type="button" data-i18n="drawer_add_blocker_btn">Add blocker</button>
+              <label for="add-blocker-search" class="sr-only" data-i18n="drawer_add_blocker_label">Add a blocker: search issues</label>
+              <div class="add-blocker-picker" id="add-blocker-picker">
+                <input id="add-blocker-search" class="add-blocker-search" type="text" placeholder="Add a blocker: search issues…" data-i18n-placeholder="drawer_search_blocker_prompt" autocomplete="off" />
+                <ul id="add-blocker-suggestions" class="add-blocker-suggestions" role="listbox" aria-label="Blocker suggestions" hidden></ul>
+              </div>
             </div>
           </div>
 

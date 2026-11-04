@@ -888,10 +888,26 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         repoBoardCache.delete(sourceRepo.full);
       }
 
+      const [freshTarget, updatedDeps] = await Promise.all([
+        scopedGithub!.getIssue(targetNumber).catch(mapGitHubError),
+        scopedGithub!.getIssueDependencies(targetNumber).catch(mapGitHubError),
+      ]);
+      const detail = buildIssueDetail(freshTarget.item, repository);
+      detail.blockedBy = updatedDeps.blockedBy;
+      detail.blocking = updatedDeps.blocking;
+      const listItem = buildBoardListItem(freshTarget.item, repository);
+      listItem.blockedBy = updatedDeps.blockedBy;
+      listItem.blocking = updatedDeps.blocking;
+
       return {
         status: 201,
         body: {
           success: true,
+          issue: detail,
+          listItem,
+          blockedBy: updatedDeps.blockedBy,
+          blocking: updatedDeps.blocking,
+          statusOptions: statusOptions(),
           blockedNumber: targetNumber,
           blockerNumber: sourceIssue.number,
           blockerId: sourceIssue.id,
@@ -924,10 +940,26 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
       repoBoardCache.delete(repository!.full);
 
+      const [freshTarget, updatedDeps] = await Promise.all([
+        scopedGithub!.getIssue(targetNumber).catch(mapGitHubError),
+        scopedGithub!.getIssueDependencies(targetNumber).catch(mapGitHubError),
+      ]);
+      const detail = buildIssueDetail(freshTarget.item, repository);
+      detail.blockedBy = updatedDeps.blockedBy;
+      detail.blocking = updatedDeps.blocking;
+      const listItem = buildBoardListItem(freshTarget.item, repository);
+      listItem.blockedBy = updatedDeps.blockedBy;
+      listItem.blocking = updatedDeps.blocking;
+
       return {
         status: 200,
         body: {
           success: true,
+          issue: detail,
+          listItem,
+          blockedBy: updatedDeps.blockedBy,
+          blocking: updatedDeps.blocking,
+          statusOptions: statusOptions(),
           number: targetNumber,
           removedId: issueIdToDelete,
         },
@@ -1007,9 +1039,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         issues: cached.issues };
     }
     const client = clientFor(repository, timeoutMs);
+    let dependenciesDegraded = false;
     const [listed, repoDeps] = await Promise.all([
       client.listIssues().catch(mapGitHubError),
-      client.listRepositoryDependencies().catch(() => new Map<number, any[]>()),
+      client.listRepositoryDependencies().catch(() => {
+        dependenciesDegraded = true;
+        return new Map<number, any[]>();
+      }),
     ]);
     if (repoDeps.size > 0) {
       for (const item of listed.items) {
@@ -1027,7 +1063,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     });
     return { scope: 'repo', repository, repo: repository.full, login: config.githubLogin,
       fetchedAt: new Date(now()).toISOString(), truncated: listed.truncated,
-      complete: !listed.truncated, partial: listed.truncated, excludedPullRequests: excluded, issues };
+      complete: !listed.truncated, partial: listed.truncated, excludedPullRequests: excluded, issues, dependenciesDegraded };
   }
 
   let aggregateInFlight: Promise<unknown> | null = null;
@@ -1044,6 +1080,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     let loaded = 0;
     let truncated = false;
     let excluded = 0;
+    let dependenciesDegraded = false;
     const aggregateStart = now();
     const aggregateTimeoutMs = options.aggregateTimeoutMs ?? 12_000;
     const perRepoTimeoutMs = options.perRepoTimeoutMs ?? 5_000;
@@ -1090,6 +1127,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           issues.push(...board.issues);
           excluded += board.excludedPullRequests;
           truncated ||= board.truncated;
+          dependenciesDegraded ||= Boolean((board as any).dependenciesDegraded);
           if (board.truncated) failures.push({ repository, message: 'Issue page bound reached; incomplete' });
           loaded++;
         } catch (error: any) {
@@ -1119,7 +1157,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       fetchedAt: new Date(now()).toISOString(), partial, complete: !partial, truncated: limited,
       truncatedByIssueCap, issueCap: MAX_AGGREGATE_ISSUES,
       repositoriesRequested: discovery.repositories.length, repositoriesLoaded: loaded,
-      concurrency, maxPagesPerRepository: 10, excludedPullRequests: excluded };
+      concurrency, maxPagesPerRepository: 10, excludedPullRequests: excluded, dependenciesDegraded };
   }
 
   function methodNotAllowed(allow: string): HandlerResponse {

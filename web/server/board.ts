@@ -331,7 +331,7 @@ function listFields(raw: any, repository: BoardRepository | null) {
     number: item.number,
     title: item.title ?? '',
     state: (item.state ?? 'open').toLowerCase(),
-    repository: item.repository?.nameWithOwner ?? item.repository?.full_name ?? repository?.full,
+    repository: typeof item.repository === 'string' ? item.repository : (item.repository?.nameWithOwner ?? item.repository?.full_name ?? repository?.full),
   }));
   const rawBlocking = Array.isArray(raw.blocking) ? raw.blocking : [];
   const blocking = rawBlocking.map((item: any) => ({
@@ -339,7 +339,7 @@ function listFields(raw: any, repository: BoardRepository | null) {
     number: item.number,
     title: item.title ?? '',
     state: (item.state ?? 'open').toLowerCase(),
-    repository: item.repository?.nameWithOwner ?? item.repository?.full_name ?? repository?.full,
+    repository: typeof item.repository === 'string' ? item.repository : (item.repository?.nameWithOwner ?? item.repository?.full_name ?? repository?.full),
   }));
 
   return {

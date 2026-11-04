@@ -398,7 +398,7 @@ export async function startFakeGitHub(options = {}) {
           if (!targetId || isNaN(targetId)) {
             return send(400, { message: 'Bad Request' });
           }
-          const idx = spec.dependencies.findIndex((d) => d.blockedNumber === number && d.blockerId === targetId);
+          const idx = spec.dependencies.findIndex((d) => d.blockedNumber === number && (d.blockerId === targetId || d.blockerNumber === targetId));
           if (idx === -1) {
             return send(404, { message: 'Dependency not found' });
           }
@@ -590,6 +590,7 @@ export async function startFakeGitHub(options = {}) {
               }
               return {
                 id: blockerIssue?.node_id ?? `I_dep_${d.blockerId}`,
+                databaseId: blockerIssue?.id ?? d.blockerId,
                 number: d.blockerNumber,
                 title: blockerIssue?.title ?? `Issue ${d.blockerNumber}`,
                 state: String(blockerIssue?.state ?? 'open').toUpperCase(),

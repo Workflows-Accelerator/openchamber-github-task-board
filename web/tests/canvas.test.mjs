@@ -502,3 +502,55 @@ test('canvas client: rapid successive drops on the same card queue per-issue and
   assert.equal(drop2.status, 200, 'Second drop succeeds without 409 conflict');
   assert.deepEqual(parseCanvasMarker(fake.findIssue(77).body), { x: 250, y: 300 });
 });
+
+test('canvas client: card drop queue recovers from failure without deadlocking subsequent drops', async (t) => {
+  const js = fs.readFileSync(APP_JS_PATH, 'utf8');
+  assert.match(js, /previous\.then\(/, 'chains off previous save');
+  assert.match(js, /cardSaveQueues\.delete\(key\)/, 'queue key removed in finally');
+
+  const issue = makeIssue({
+    number: 88,
+    title: 'Failure recovery card',
+    body: '## Overview\r\nCard content\r\n',
+    labels: ['status:planned'],
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+  });
+  const fake = await startFakeGitHub({
+    repo: 'Workflows-Accelerator/openchamber-github-task-board',
+    issues: [issue],
+  });
+  let shouldFail = true;
+  fake.setPatchHook(() => {
+    if (shouldFail) {
+      return { status: 500, payload: { message: 'Upstream 500 simulated' } };
+    }
+  });
+
+  const board = await startBoard(fake);
+  t.after(async () => {
+    await board.app.close();
+    await fake.close();
+  });
+
+  const session = new HttpSession(board.url);
+  await session.login();
+
+  const boardRes = await session.request('/api/board');
+  const boardItem = boardRes.json.issues.find((i) => i.number === 88);
+
+  // First drop fails due to simulated 500
+  const failedDrop = await session.request('/api/issues/88/canvas', {
+    method: 'PUT',
+    body: { x: 50, y: 50, fingerprint: boardItem.fingerprint },
+  });
+  assert.equal(failedDrop.status, 502);
+
+  // Subsequent drop succeeds without deadlock
+  shouldFail = false;
+  const recoveredDrop = await session.request('/api/issues/88/canvas', {
+    method: 'PUT',
+    body: { x: 120, y: 180, fingerprint: boardItem.fingerprint },
+  });
+  assert.equal(recoveredDrop.status, 200, 'Subsequent drop succeeds after failure without deadlock');
+  assert.deepEqual(parseCanvasMarker(fake.findIssue(88).body), { x: 120, y: 180 });
+});
