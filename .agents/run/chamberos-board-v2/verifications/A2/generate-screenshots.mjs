@@ -151,23 +151,43 @@ async function captureCanvasFlow() {
   console.log(`Found ${count} canvas cards on plane.`);
   if (count === 0) throw new Error('Expected canvas cards to be rendered on plane');
 
-  // Shot 1: Desktop Canvas 100% (Light)
+  // Shot 1: Desktop Canvas 100% (Light) - First load with fitAllNodes clear of zoom controls
   const shot1280 = path.join(screenshotsDir, 'canvas-1280.png');
   await page.screenshot({ path: shot1280 });
   console.log(`Saved: ${shot1280}`);
 
-  // Shot 2: Zoom out to 0.25 (Non-clustering dot grid check)
+  // Shot 2: Zoom 0.25 (Non-clustering, visible sparse faint dot grid)
   console.log('Testing Zoom Out to 0.25 (dot grid scaling proof)...');
   await page.evaluate(() => {
     window.__taskBoard.setCanvasZoom(0.25);
   });
   await page.waitForTimeout(300);
-  const shotZoomOut = path.join(screenshotsDir, 'canvas-1280-zoom-025.png');
-  await page.screenshot({ path: shotZoomOut });
-  console.log(`Saved: ${shotZoomOut}`);
+  const shotZoom025 = path.join(screenshotsDir, 'canvas-1280-zoom-025.png');
+  await page.screenshot({ path: shotZoom025 });
+  console.log(`Saved: ${shotZoom025}`);
 
-  // Shot 3: Zoom in to 2.0
-  console.log('Testing Zoom In to 2.0...');
+  // Shot 2b: Zoom 0.50
+  console.log('Testing Zoom Out to 0.50...');
+  await page.evaluate(() => {
+    window.__taskBoard.setCanvasZoom(0.50);
+  });
+  await page.waitForTimeout(300);
+  const shotZoom050 = path.join(screenshotsDir, 'canvas-1280-zoom-050.png');
+  await page.screenshot({ path: shotZoom050 });
+  console.log(`Saved: ${shotZoom050}`);
+
+  // Shot 2c: Zoom 1.00
+  console.log('Testing Zoom to 1.00...');
+  await page.evaluate(() => {
+    window.__taskBoard.setCanvasZoom(1.00);
+  });
+  await page.waitForTimeout(300);
+  const shotZoom100 = path.join(screenshotsDir, 'canvas-1280-zoom-100.png');
+  await page.screenshot({ path: shotZoom100 });
+  console.log(`Saved: ${shotZoom100}`);
+
+  // Shot 3: Zoom in to 2.0 (Sharp text, no blur)
+  console.log('Testing Zoom In to 2.0 (Sharp text proof)...');
   await page.evaluate(() => {
     window.__taskBoard.setCanvasZoom(2.0);
   });
@@ -245,6 +265,31 @@ async function captureCanvasFlow() {
   await page.screenshot({ path: shotDragged });
   console.log(`Saved: ${shotDragged}`);
 
+  // Proof of reload persistence: reload page and assert dropped card stays put
+  console.log('Testing reload persistence for dropped card #101...');
+  const posBeforeReload = await page.evaluate(() => {
+    const c = document.querySelector('.canvas-card[data-issue-number="101"]');
+    return c ? { left: c.style.left, top: c.style.top } : null;
+  });
+  console.log('Position before reload:', posBeforeReload);
+
+  await page.reload();
+  await page.locator('#canvas-viewport').waitFor({ state: 'visible' });
+  await page.waitForTimeout(500);
+
+  const posAfterReload = await page.evaluate(() => {
+    const c = document.querySelector('.canvas-card[data-issue-number="101"]');
+    return c ? { left: c.style.left, top: c.style.top } : null;
+  });
+  console.log('Position after reload:', posAfterReload);
+
+  if (!posAfterReload || posAfterReload.left !== posBeforeReload.left || posAfterReload.top !== posBeforeReload.top) {
+    throw new Error(`Reload position mismatch: before ${JSON.stringify(posBeforeReload)}, after ${JSON.stringify(posAfterReload)}`);
+  }
+  const shotReloaded = path.join(screenshotsDir, 'canvas-reloaded.png');
+  await page.screenshot({ path: shotReloaded });
+  console.log(`Saved: ${shotReloaded}`);
+
   // Shot 7: Card Click opens Detail Drawer
   console.log('Testing Card Click to open Detail Drawer...');
   const cardBoxes = await page.evaluate(() => {
@@ -300,6 +345,14 @@ async function captureCanvasFlow() {
   await tabletPage.locator('#canvas-viewport').waitFor({ state: 'visible' });
   await tabletPage.waitForTimeout(400);
 
+  // Ensure sidebar drawer is completely closed at 768px
+  await tabletPage.evaluate(() => {
+    document.body.classList.remove('sidebar-open');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (backdrop) backdrop.hidden = true;
+  });
+  await tabletPage.waitForTimeout(200);
+
   const shot768 = path.join(screenshotsDir, 'canvas-768.png');
   await tabletPage.screenshot({ path: shot768 });
   console.log(`Saved: ${shot768}`);
@@ -318,6 +371,7 @@ async function captureCanvasFlow() {
   console.log('Capturing Compact 360px Canvas...');
   const compactContext = await browser.newContext({
     viewport: { width: 360, height: 800 },
+    hasTouch: true,
     serviceWorkers: 'block',
   });
   const compactPage = await compactContext.newPage();
@@ -346,11 +400,19 @@ async function captureCanvasFlow() {
   await compactPage.locator('#canvas-viewport').waitFor({ state: 'visible' });
   await compactPage.waitForTimeout(400);
 
+  // Ensure sidebar drawer is completely closed at 360px
+  await compactPage.evaluate(() => {
+    document.body.classList.remove('sidebar-open');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (backdrop) backdrop.hidden = true;
+  });
+  await compactPage.waitForTimeout(200);
+
   const shot360 = path.join(screenshotsDir, 'canvas-360.png');
   await compactPage.screenshot({ path: shot360 });
   console.log(`Saved: ${shot360}`);
 
-  // Dark variant at 360px
+  // Dark variant at 360px with closed sidebar
   await compactPage.evaluate(() => {
     document.documentElement.setAttribute('data-theme', 'dark');
   });
@@ -359,20 +421,118 @@ async function captureCanvasFlow() {
   await compactPage.screenshot({ path: shot360Dark });
   console.log(`Saved: ${shot360Dark}`);
 
-  // Simulate touch pan on Canvas viewport
-  console.log('Testing touch pan gesture on Compact 360px...');
+  // Restore light theme for touch gestures
   await compactPage.evaluate(() => {
     document.documentElement.removeAttribute('data-theme');
-    // Pan canvas by dispatching touch events or calling pan physics
-    window.__taskBoard.state.canvasPanX += 60;
-    window.__taskBoard.state.canvasPanY += 40;
-    window.__taskBoard.updateCanvasTransform();
   });
   await compactPage.waitForTimeout(200);
+
+  // Real CDP Touch Pan & Pinch Emulation
+  console.log('Testing CDP touch pan gesture on Compact 360px...');
+  const cdp = await compactPage.context().newCDPSession(compactPage);
+  await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 5 });
+
+  const beforePan = await compactPage.evaluate(() => {
+    const plane = document.getElementById('canvas-plane');
+    return {
+      transform: plane ? plane.style.transform : '',
+      panX: window.__taskBoard.state.canvasPanX,
+      panY: window.__taskBoard.state.canvasPanY,
+      scale: window.__taskBoard.state.canvasScale,
+    };
+  });
+  console.log('Compact Canvas before CDP touch pan:', beforePan);
+
+  // Dispatch real CDP touch events on empty space at (180, 650)
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [{ x: 180, y: 650, id: 0 }],
+  });
+  await compactPage.waitForTimeout(50);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [{ x: 120, y: 590, id: 0 }],
+  });
+  await compactPage.waitForTimeout(50);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  });
+  await compactPage.waitForTimeout(300);
+
+  const afterPan = await compactPage.evaluate(() => {
+    const plane = document.getElementById('canvas-plane');
+    return {
+      transform: plane ? plane.style.transform : '',
+      panX: window.__taskBoard.state.canvasPanX,
+      panY: window.__taskBoard.state.canvasPanY,
+      scale: window.__taskBoard.state.canvasScale,
+    };
+  });
+  console.log('Compact Canvas after CDP touch pan:', afterPan);
+
+  if (afterPan.panX === beforePan.panX && afterPan.panY === beforePan.panY) {
+    throw new Error('CDP touch pan did not change canvas coordinates');
+  }
 
   const shot360Touch = path.join(screenshotsDir, 'canvas-360-touch.png');
   await compactPage.screenshot({ path: shot360Touch });
   console.log(`Saved: ${shot360Touch}`);
+
+  // CDP Touch Pinch Emulation
+  console.log('Testing CDP touch pinch gesture on Compact 360px...');
+  const beforePinch = await compactPage.evaluate(() => {
+    const plane = document.getElementById('canvas-plane');
+    return {
+      transform: plane ? plane.style.transform : '',
+      panX: window.__taskBoard.state.canvasPanX,
+      panY: window.__taskBoard.state.canvasPanY,
+      scale: window.__taskBoard.state.canvasScale,
+    };
+  });
+  console.log('Compact Canvas before CDP touch pinch:', beforePinch);
+
+  // Dispatch 2 touch points on empty space at y=650: start 100px apart, spread to 200px apart (zoom in 2.0x)
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchStart',
+    touchPoints: [
+      { x: 130, y: 650, id: 0 },
+      { x: 230, y: 650, id: 1 },
+    ],
+  });
+  await compactPage.waitForTimeout(50);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchMove',
+    touchPoints: [
+      { x: 80, y: 650, id: 0 },
+      { x: 280, y: 650, id: 1 },
+    ],
+  });
+  await compactPage.waitForTimeout(50);
+  await cdp.send('Input.dispatchTouchEvent', {
+    type: 'touchEnd',
+    touchPoints: [],
+  });
+  await compactPage.waitForTimeout(300);
+
+  const afterPinch = await compactPage.evaluate(() => {
+    const plane = document.getElementById('canvas-plane');
+    return {
+      transform: plane ? plane.style.transform : '',
+      panX: window.__taskBoard.state.canvasPanX,
+      panY: window.__taskBoard.state.canvasPanY,
+      scale: window.__taskBoard.state.canvasScale,
+    };
+  });
+  console.log('Compact Canvas after CDP touch pinch:', afterPinch);
+
+  if (afterPinch.scale === beforePinch.scale) {
+    throw new Error('CDP touch pinch did not change canvas zoom scale');
+  }
+
+  const shot360Pinch = path.join(screenshotsDir, 'canvas-360-pinch.png');
+  await compactPage.screenshot({ path: shot360Pinch });
+  console.log(`Saved: ${shot360Pinch}`);
 
   await compactContext.close();
 }

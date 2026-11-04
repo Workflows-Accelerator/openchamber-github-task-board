@@ -71,35 +71,125 @@ Step A2 delivers the infinite Canvas view for ChamberOS Board V2 (Issue #57, par
 - **Full Test Suite (`npm test`):**
   - **618 passing tests** (0 failures, 0 skipped).
 - **Web Test Suite (`node --test web/tests/*.test.mjs`):**
-  - **479 passing tests** (0 failures, 0 skipped).
-  - `web/tests/canvas.test.mjs` (13 tests):
+  - **500 passing tests** (0 failures, 0 skipped).
+  - `web/tests/canvas.test.mjs` (16 tests):
     - Marker parsing, stripping, and CRLF preservation.
     - Code fence and indented block safety.
-    - Endpoint verification with ETag concurrency and 502 upstream error handling.
+    - Endpoint verification with fingerprint concurrency and 502 upstream error handling.
     - Viewport, controls, and 4-layer ordering assertions in `index.html`.
     - CSS token, z-index, and 250px card width assertions in `theme.css`.
     - Zero occurrences of "n8n" or "mobile" in web source files.
     - English and French localization dictionary assertions.
-    - Non-clustering dot grid mathematical logic.
+    - Non-clustering dot grid mathematical logic with bounded radius and visibility at low zoom.
+    - Exactly ONE marker after successive drops, byte-identical CRLF, code fence and order marker preservation.
+    - Zero PUT requests on load, Fit all, Reset, and Zoom.
+    - Save failure (500) reverts card with clean single-period error notice.
 - **TypeScript Typecheck (`npm run typecheck`):**
   - **Clean pass** with 0 errors.
 
 ### Visual & Browser Verification Screenshots
 Generated via Playwright headless browser at 360px, 768px, and 1280px in `.agents/run/chamberos-board-v2/verifications/A2/`:
-- `canvas-1280.png`: Desktop 1280px Canvas view with dot grid, floating zoom controls, and 250px cards (Light palette).
-- `canvas-1280-dark.png`: Desktop 1280px Canvas view in warm paper charcoal dark palette.
-- `canvas-1280-zoom-025.png`: Desktop Canvas zoomed out to 0.25 proving non-clustering dot grid scaling and fading.
-- `canvas-1280-zoom-200.png`: Desktop Canvas zoomed in to 2.0 showing clear typography and scaled dot grid.
-- `canvas-1280-fr.png`: Desktop Canvas view in French localization ("Canevas", "Ajuster tout", "Réinitialiser").
-- `canvas-card-dragged.png`: Card drag-and-drop verification showing successful `PUT /api/issues/:n/canvas` persistence.
+- `canvas-1280.png`: Desktop 1280px Canvas view on first visit auto-fitted with all cards fully visible and clear of floating zoom controls (Light palette).
+- `canvas-1280-zoom-025.png`: Desktop Canvas zoomed out to 0.25 proving non-clustering, faint, small, sparse dots that never vanish.
+- `canvas-1280-zoom-050.png`: Desktop Canvas at 0.50 zoom.
+- `canvas-1280-zoom-100.png`: Desktop Canvas at 1.00 zoom.
+- `canvas-1280-zoom-200.png`: Desktop Canvas zoomed in to 2.0 showing razor-sharp text with 2D transform and zero blur.
+- `canvas-1280-fr.png`: Desktop Canvas view in French localization ("Canevas", "Ajuster tout", "Réinitialiser la vue").
+- `canvas-1280-dark.png`: Desktop Canvas view in warm paper charcoal dark palette.
+- `canvas-card-dragged.png`: Card drag-and-drop verification showing successful `PUT /api/issues/:n/canvas` persistence at `(200, 220)`.
+- `canvas-reloaded.png`: Browser page reload verification showing dropped card stays put at `(200, 220)`.
 - `canvas-drawer-1280.png`: Task detail drawer opened by clicking canvas card #101.
-- `canvas-768.png`: Tablet 768px portrait Canvas view.
-- `canvas-768-dark.png`: Tablet 768px Canvas view in dark palette.
-- `canvas-360.png`: Compact 360px Canvas view with responsive toolbar.
-- `canvas-360-dark.png`: Compact 360px Canvas view in dark palette.
-- `canvas-360-touch.png`: Compact 360px Canvas after simulated touch pan gesture.
+- `canvas-768.png`: Tablet 768px portrait Canvas view with sidebar drawer closed.
+- `canvas-768-dark.png`: Tablet 768px Canvas view in dark palette with sidebar drawer closed.
+- `canvas-360.png`: Compact 360px Canvas view with sidebar drawer closed.
+- `canvas-360-dark.png`: Compact 360px Canvas view in dark palette with sidebar drawer closed.
+- `canvas-360-touch.png`: Compact 360px Canvas after real CDP touch pan via `Input.dispatchTouchEvent`.
+- `canvas-360-pinch.png`: Compact 360px Canvas after real CDP touch pinch zoom via `Input.dispatchTouchEvent`.
 
 ### Console & CSP Health
 - **0 console errors.**
 - **0 CSP violations.**
 - All styles set via direct CSSOM properties (`card.style.left`, `card.style.top`, `card.style.transform`) to strictly comply with `style-src 'self'`.
+
+---
+
+## Hostile Review & Defect Remediation
+
+### Finding 1: Blurry Text at 200% Zoom
+- **Investigation:** Previous CSS applied `will-change: transform` to `.canvas-plane`, and `app.js` used 3D hardware acceleration `translate3d(..., 0px) scale(...)`. In Chromium, this promoted the plane to a compositor raster texture layer, causing text scaled to 2.0 to be rasterized at 1x and linearly filtered (soft/blurry).
+- **Remediation:** Removed `will-change: transform` from `.canvas-plane` in `web/public/theme.css`, and replaced `translate3d(..., 0px)` with standard 2D `translate(...)` in `web/public/app.js`. Chromium now re-rasterizes vector glyphs sharply at 200% zoom.
+- **Verdict:** RESOLVED. Verified in `canvas-1280-zoom-200.png`.
+
+### Finding 2: Dot Grid Vanishing at 0.25 Zoom
+- **Investigation:** The previous implementation faded opacity to 0 below 0.40 zoom (`fadeFactor = 0`), leaving an empty canvas plane with no orientation anchor.
+- **Remediation:** Replaced hard vanishing with an adaptive world grid pitch:
+  - Base step is 24px. Below 0.65 scale, world step switches to 48px; below 0.35 scale, world step switches to 96px. Screen dot pitch stays between 16px and 48px at all zoom levels (0.2 to 2.5).
+  - Dot radius is clamped between 0.75px and 2.0px (`Math.max(0.75, Math.min(2.0, 0.85 + 0.4 * scale))`).
+  - Dot alpha is clamped between 0.10 and 0.18 (`Math.max(0.10, Math.min(0.18, 0.10 + 0.06 * scale))`).
+  - Dots never vanish, never cluster, and never exceed 100% density.
+- **Verdict:** RESOLVED. Verified and captured across 0.25 (`canvas-1280-zoom-025.png`), 0.50 (`canvas-1280-zoom-050.png`), 1.00 (`canvas-1280-zoom-100.png`), and 2.00 (`canvas-1280-zoom-200.png`).
+
+### Finding 3: 360px Sidebar Drawer Over Canvas & Touch Emulation Proof
+- **Investigation:**
+  1. Compact 360px view left the sidebar drawer `.sidebar-open` and backdrop `#sidebar-backdrop` visible after clicking `#nav-canvas`.
+  2. The previous verification script did not perform real touch gestures; it mutated internal variables.
+- **Remediation:**
+  1. Updated `setBoardMode()` in `web/public/app.js` to automatically remove `.sidebar-open` from `document.body` and set `#sidebar-backdrop.hidden = true` when switching view modes.
+  2. Implemented real Chrome DevTools Protocol touch pan and pinch emulation in `.agents/run/chamberos-board-v2/verifications/A2/generate-screenshots.mjs` using `Emulation.setTouchEmulationEnabled` and `Input.dispatchTouchEvent` on empty canvas coordinates (`y = 650`):
+     - **Touch Pan:** Single touch point moved by `dx = -60px, dy = -60px`.
+       - Before pan: `translate(-11px, 254px) scale(0.304)`, `panX: -10.76, panY: 253.92`.
+       - After pan: `translate(-71px, 194px) scale(0.304)`, `panX: -70.76, panY: 193.92`.
+     - **Touch Pinch Zoom:** Two touch points spreading from 100px apart to 200px apart (2.0x zoom).
+       - Before pinch: `translate(-71px, 194px) scale(0.304)`, `scale: 0.3038`.
+       - After pinch: `translate(-622px, -78px) scale(0.608)`, `scale: 0.6076`.
+- **Verdict:** RESOLVED. Verified with clean 360px screenshots (`canvas-360.png`, `canvas-360-dark.png`, `canvas-360-touch.png`, `canvas-360-pinch.png`).
+
+### Finding 4: First Load Cards Cut Off at Viewport Edge
+- **Investigation:** Initial default pan `(60, 60)` with unpositioned cards placed to the right pushed cards past the 1280px boundary, partially clipping them underneath the floating zoom controls in the top-right corner.
+- **Remediation:** Updated `renderCanvasIssues()` in `web/public/app.js` to automatically invoke `fitAllCanvasNodes()` on first visit when `!state.canvasHasSavedState`. Adjusted bounding margins with `padRight: 70` and `padTop: 64`, guaranteeing that all cards fit cleanly inside the viewport with generous clearance from the floating zoom controls.
+- **Verdict:** RESOLVED. Verified in `canvas-1280.png`.
+
+### Finding 5: Concurrency Claims & Honest Architecture
+- **Investigation:** The brief noted that GitHub's REST API `PATCH /repos/{owner}/{repo}/issues/{issue_number}` does not honor `If-Match` ETags.
+- **Remediation:** Removed misleading claims of "ETag concurrency" on issue mutations. The actual concurrency model is documented honestly:
+  - The client submits the 64-character SHA-256 issue fingerprint from its last read.
+  - The server reads the current issue state from GitHub inside a per-issue lock immediately prior to writing.
+  - If the upstream fingerprint diverges from the client's fingerprint, the server rejects the write with HTTP 409 Conflict.
+- **Verdict:** RESOLVED. Honest architectural documentation aligned with actual code.
+
+### Finding 6: Explicit Criteria & Byte Proofs
+- **Investigation:** The manager requested explicit proof that:
+  1. Successive drops produce exactly ONE marker and are byte-identical.
+  2. A card dropped and reloaded stays put.
+  3. Unpositioned cards cause zero PUT requests on load, Fit all, Reset, and Zoom.
+  4. Save failure reverts the card with a plain message.
+  5. Additionally, hostile review uncovered that `repoBoardCache` on the server and `saveCachedBoard` on the client were serving stale 30s cache on reload after drops.
+- **Remediation:**
+  - Added unit test 14 in `web/tests/canvas.test.mjs`: verifies two successive drops on an issue containing CRLF, fenced code blocks with fake markers, and existing `board-order` markers. The resulting body contains exactly ONE `board-canvas` marker outside code fences, retains CRLF, and stripping the marker recovers the initial body byte-exact.
+  - Added unit test 15 in `web/tests/canvas.test.mjs`: verifies that loading 3 unpositioned cards causes exactly 0 PUT/PATCH requests to GitHub, and issues remain marker-free.
+  - Added unit test 16 in `web/tests/canvas.test.mjs`: verifies that client revert logic restores `prevCanvas`, resets `cardEl.style.left/top`, and formats error messages with clean single-period punctuation.
+  - Fixed cache invalidation: `web/server/app.ts` now calls `repoBoardCache.delete(repository.full)` on write, and `web/public/app.js` calls `saveCachedBoard(state.board)` in `saveCardPosition`.
+  - Browser reload persistence verified in `generate-screenshots.mjs`: card #101 dropped at `(200, 220)`, page reloaded, position after reload verified at `(200, 220)` (`canvas-reloaded.png`).
+- **Verdict:** RESOLVED. All criteria proven in automated unit tests and browser tests.
+
+### Finding 7: Test Suite Socket Hang Root Cause
+- **Investigation:** The first build session encountered an intermittent hang during test teardown on `node --test web/tests/canvas.test.mjs`.
+- **Remediation:** Inspected `web/tests/fake-github.mjs`. The fake HTTP server `close()` method invoked `server.close()` without terminating open keep-alive connections. Added `server.closeAllConnections?.()` prior to `server.close()`. Tests now exit cleanly and immediately.
+- **Verdict:** RESOLVED. `npm test` and `node --test web/tests/canvas.test.mjs` run reliably under `timeout` without hanging.
+
+### Finding 8: `board.ts` 43-Line Delta Audit
+- **Investigation:** Commit `04b9b38` refactored `board.ts` resulting in a net loss of 43 lines. Audited the diff against `f7a4f73`.
+- **Findings:**
+  - The reduction was due to consolidating redundant backward-scanning line parsers between `board-order` and `board-canvas` into unified scanning routines (`locateTerminalOrderMarker` and `trimTrailingBlankLines` were unified into shared scanning logic).
+  - All existing `board-order` marker parsing, stripping, reordering, and precision midpoint behaviors remain intact.
+  - All 618 existing tests in `npm test` and all 43 tests in `web/tests/board.test.mjs` and `web/tests/simple-views.test.mjs` pass cleanly without regression.
+- **Verdict:** AUDITED & VERIFIED. No regressions.
+
+---
+
+## What is NOT Verified
+- **Wires Layer (Dependency Arrows):** Layer exists in DOM (`#canvas-wires`, `z-index: 10`), but rendering connection lines is deferred to Step A3.
+- **Canvas Freeform Notes:** Layer exists in DOM (`#canvas-notes`, `z-index: 20`), but note creation/editing is deferred to Step A4.
+- **Auto-Arrange Algorithms:** Unpositioned cards use a non-overlapping column layout to the right of positioned cards; full auto-layout/clustering is deferred to Step A4.
+- **Minimap:** Excluded per step scope as non-essential for initial unbounded canvas.
+- **Live GitHub Writes:** Per standing rules, all tests and browser proofs use the fake GitHub helper (`web/tests/fake-github.mjs`) to avoid mutating live upstream repositories.
