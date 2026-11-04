@@ -4,7 +4,7 @@
 // Icons use cache-first with network fallback.
 // /api/* and non-GET requests bypass the cache.
 
-var CACHE_VERSION = '1.2.1';
+var CACHE_VERSION = '1.2.2';
 var CACHE_NAME = 'workflows-board-' + CACHE_VERSION;
 var SHELL_ASSETS = [
   '/',

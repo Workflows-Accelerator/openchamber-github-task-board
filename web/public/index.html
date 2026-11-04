@@ -4,189 +4,291 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
   <meta name="color-scheme" content="dark light">
-  <meta name="theme-color" content="#0f1012">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Task Board">
-  <title>Task Board</title>
+  <meta name="theme-color" content="#151412">
+  <title>Atelier — Task Board</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="stylesheet" href="/theme.css">
-  <script>
-    try {
-      var m = localStorage.getItem('tb_theme_mode');
-      if (m === 'light' || m === 'dark') document.documentElement.setAttribute('data-theme', m);
-    } catch (_) {}
-  </script>
-  <noscript><style>#login-view { display: block !important; } #board-view { display: none !important; }</style></noscript>
+  <noscript><style>#login-view { display: block !important; } #board-view { display: none !important; } #app-sidebar { display: none !important; }</style></noscript>
 </head>
 <body>
   <a class="skip-link" href="#main">Skip to content</a>
 
-  <header class="topbar" id="app-topbar">
-    <div class="topbar-main">
-      <span class="brand">Task Board</span>
+  <div class="compact-header" id="compact-header">
+    <button id="sidebar-toggle-btn-compact" class="sidebar-toggle-btn compact-toggle" type="button" aria-label="Toggle navigation" title="Toggle navigation">
+      <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+    </button>
+    <div class="compact-brand">
+      <span class="compact-logo" aria-hidden="true">
+        <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg>
+      </span>
+      <span class="compact-title">Atelier</span>
     </div>
-  </header>
+  </div>
 
-  <main id="main" tabindex="-1">
-    <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+  <div class="app-layout">
+    <aside id="app-sidebar" class="sidebar" aria-label="Sidebar navigation" hidden>
+      <div class="sidebar-header">
+        <div class="sidebar-brand">
+          <div class="sidebar-logo" aria-hidden="true">
+            <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg>
+          </div>
+          <span class="sidebar-brand-title">Atelier</span>
+        </div>
+        <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+        </button>
+      </div>
 
-    <section id="login-view" class="view" aria-labelledby="login-title" hidden>
-      <h1 id="login-title">Sign in</h1>
-      <p class="muted">This board is private. Enter the board password to continue.</p>
-      <form id="login-form" class="login-form" method="post" action="/api/session">
-        <label for="username" class="sr-only">Username</label>
-        <input id="username" name="username" type="text" autocomplete="username" value="board" readonly tabindex="-1" class="sr-only">
-        <label for="password">Password</label>
-        <input id="password" name="password" type="password" autocomplete="current-password" required>
-        <button id="login-btn" class="button primary" type="submit">Sign in</button>
-        <p id="login-error" class="form-error" role="alert" hidden></p>
-      </form>
-    </section>
+      <nav class="sidebar-nav" aria-label="Primary navigation">
+        <div class="sidebar-section-label"><span>Views</span></div>
 
-    <section id="board-view" class="view" aria-labelledby="board-title">
-      <div id="board-toolbar" class="board-toolbar toolbar" role="toolbar" aria-label="Board controls" hidden>
-        <div class="toolbar-left">
-          <div id="repository-picker" class="repository-picker" hidden>
-            <label id="repo-picker-label" for="repo-select-btn" class="sr-only">Project</label>
-            <div class="repo-picker-wrapper">
-              <button id="repo-select-btn" class="button repo-select-btn repo-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="repo-picker-label repo-select-btn" title="All Projects">
-                <svg class="icon icon-sm" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
-                <span id="repo-label" class="repo-label">All Projects</span>
-                <span id="repo-select-btn-text" class="sr-only">All Projects</span>
-                <span class="repo-select-chevron" aria-hidden="true">&#x25BE;</span>
-              </button>
-              <div id="repo-popover" class="repo-popover" role="dialog" aria-modal="true" aria-label="Select Project" hidden>
-                <div class="repo-popover-header">
-                  <input id="repo-search-input" class="repo-search-input" type="search" placeholder="Search projects..." autocomplete="off" />
-                </div>
-                <div id="repo-options-list" class="repo-options-list" role="listbox"></div>
+        <!-- 1. Canvas -->
+        <button id="nav-canvas" class="sidebar-item" type="button" data-view="canvas" title="Canvas">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-4.5-6h9L12 17zm-5-8l2.5-3.5L12 9H7z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_canvas">Canvas</span>
+        </button>
+
+        <!-- 2. List (active) -->
+        <button id="nav-list" class="sidebar-item active" type="button" data-view="list" title="List">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_list">List</span>
+        </button>
+
+        <!-- 3. Decisions -->
+        <button id="nav-decisions" class="sidebar-item" type="button" data-view="decisions" title="Decisions">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_decisions">Decisions</span>
+        </button>
+
+        <!-- 4. Blocked -->
+        <button id="nav-blocked" class="sidebar-item" type="button" data-view="blocked" title="Blocked">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_blocked">Blocked</span>
+        </button>
+
+        <!-- 5. Discussions -->
+        <button id="nav-discussions" class="sidebar-item" type="button" data-view="discussions" title="Discussions">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_discussions">Discussions</span>
+        </button>
+
+        <!-- 6. Operations overview -->
+        <button id="nav-operations" class="sidebar-item" type="button" data-view="operations" title="Operations overview">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_operations">Operations overview</span>
+        </button>
+
+        <!-- 7. Archive -->
+        <button id="nav-archive" class="sidebar-item" type="button" data-view="archive" title="Archive">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.54 5.23l-1.39-1.68C18.88 3.21 18.47 3 18 3H6c-.47 0-.88.21-1.16.55L3.46 5.23C3.17 5.57 3 6.02 3 6.5V19c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6.5c0-.48-.17-.93-.46-1.27zM12 17.5L6.5 12H10v-2h4v2h3.5L12 17.5zM5.12 5l.81-1h12l.82 1H5.12z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_archive">Archive</span>
+        </button>
+
+        <!-- 8. Client view -->
+        <button id="nav-client" class="sidebar-item" type="button" data-view="client" title="Client view">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_client">Client view</span>
+        </button>
+
+        <div class="sidebar-section-label"><span>System</span></div>
+
+        <!-- 9. Repo filter -->
+        <div id="repository-picker" class="repository-picker sidebar-item-wrap" hidden>
+          <label id="repo-picker-label" for="repo-select-btn" class="sr-only">Project</label>
+          <div class="repo-picker-wrapper">
+            <button id="repo-select-btn" class="sidebar-item repo-select-btn" type="button" aria-haspopup="dialog" aria-expanded="false" aria-labelledby="repo-picker-label repo-select-btn" title="All Projects">
+              <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7.05 13.05C6.46 12.4 5.54 12 4.5 12 2.57 12 1 13.57 1 15.5S2.57 19 4.5 19c1.04 0 1.96-.4 2.55-1.05l7.9 4.05V24h2v-4.5l-7.9-4.05c.59-.65 1.45-1.05 2.45-1.05 1.04 0 1.96.4 2.55 1.05L19.5 11.4V14h2V8h-6v2h2.6l-5.65 3.95c-.59-.65-1.45-1.05-2.45-1.05-1.04 0-1.96.4-2.55 1.05L7.05 13.05z"/></svg>
+              <span id="repo-label" class="sidebar-label repo-label">All Projects</span>
+              <span id="repo-select-btn-text" class="sr-only">All Projects</span>
+              <span class="repo-select-chevron" aria-hidden="true">&#x25BE;</span>
+            </button>
+            <div id="repo-popover" class="repo-popover" role="dialog" aria-modal="true" aria-label="Select Project" hidden>
+              <div class="repo-popover-header">
+                <input id="repo-search-input" class="repo-search-input" type="search" placeholder="Search projects..." autocomplete="off" />
               </div>
+              <div id="repo-options-list" class="repo-options-list" role="listbox"></div>
             </div>
-            <p id="discovery-status" class="muted small" hidden></p>
-            <p id="refresh-policy" class="muted small" hidden></p>
+          </div>
+          <p id="discovery-status" class="muted small" hidden></p>
+          <p id="refresh-policy" class="muted small" hidden></p>
+        </div>
+
+        <!-- 10. Refresh -->
+        <button id="refresh-btn" class="sidebar-item toolbar-refresh-btn" type="button" title="Refresh Issues & Sessions" aria-label="Refresh">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_refresh">Refresh</span>
+        </button>
+
+        <!-- 11. Settings -->
+        <button id="settings-btn" class="sidebar-item toolbar-settings-btn" type="button" aria-label="Settings" title="Settings" aria-haspopup="dialog">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_settings">Settings</span>
+        </button>
+
+        <!-- 12. Language switch -->
+        <button id="lang-switch-btn" class="sidebar-item" type="button" aria-label="Switch language" title="Switch language">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12.87 15.07l-2.54-2.51.03-.08c1.74-1.94 2.98-4.17 3.71-6.49H17V4h-7V2H8v2H1v1.99h11.17C11.5 7.92 10.44 9.75 9 11.35 8.07 10.32 7.3 9.19 6.69 8h-2c.73 1.63 1.73 3.17 2.98 4.56l-5.09 5.02L4 19l5-5 3.11 3.11.76-2.04zM18.5 10h-2L12 22h2l1.12-3h4.75L21 22h2l-4.5-12zm-2.62 7l1.62-4.33L19.12 17h-3.24z"/></svg>
+          <span class="sidebar-label"><span id="lang-label" class="lang-pill">FR</span></span>
+        </button>
+
+        <!-- 13. Sign out -->
+        <button id="signout-btn" class="sidebar-item toolbar-signout-btn" type="button" aria-label="Sign out" title="Sign out">
+          <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10.09 15.59L11.5 17l5-5-5-5-1.41 1.41L12.67 11H3v2h9.67l-2.58 2.59zM19 3H5c-1.11 0-2 .9-2 2v4h2V5h14v14H5v-4H3v4c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+          <span class="sidebar-label" data-i18n="nav_signout">Sign out</span>
+        </button>
+      </nav>
+    </aside>
+
+    <div id="sidebar-backdrop" class="sidebar-backdrop" hidden></div>
+
+    <main id="main" tabindex="-1">
+      <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
+
+      <section id="login-view" class="view" aria-labelledby="login-title" hidden>
+        <h1 id="login-title">Sign in</h1>
+        <p class="muted">This board is private. Enter the board password to continue.</p>
+        <form id="login-form" class="login-form" method="post" action="/api/session">
+          <label for="username" class="sr-only">Username</label>
+          <input id="username" name="username" type="text" autocomplete="username" value="board" readonly tabindex="-1" class="sr-only">
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required>
+          <button id="login-btn" class="button primary" type="submit">Sign in</button>
+          <p id="login-error" class="form-error" role="alert" hidden></p>
+        </form>
+      </section>
+
+      <!-- Inactive Views Placeholder Container -->
+      <section id="placeholder-view" class="view placeholder-view" hidden>
+        <div class="placeholder-card card-surface">
+          <div class="placeholder-icon" aria-hidden="true">
+            <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          </div>
+          <h2 id="placeholder-title" class="placeholder-title">Canvas</h2>
+          <p id="placeholder-desc" class="placeholder-desc muted" data-i18n="placeholder_notice">This view is currently in development. List view is active and connected to GitHub.</p>
+          <button id="placeholder-back-btn" class="button primary" type="button" data-i18n="placeholder_back">Back to List</button>
+        </div>
+      </section>
+
+      <section id="board-view" class="view" aria-labelledby="board-title">
+        <div id="board-toolbar" class="board-toolbar toolbar" role="toolbar" aria-label="Board controls" hidden>
+          <div class="toolbar-left">
+            <div class="search-wrap">
+              <svg class="icon icon-sm search-icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+              <input type="text" id="board-search" class="search-input" placeholder="Search..." data-i18n-placeholder="search_placeholder" autocomplete="off" />
+            </div>
+          </div>
+          <div class="toolbar-right">
+            <button id="view-btn" class="button btn toolbar-view-btn" type="button" aria-haspopup="dialog" hidden>View: Simple list</button>
+            <button id="filter-btn" class="button btn toolbar-filter-btn" type="button" aria-haspopup="dialog">Filter</button>
+            <button id="sort-btn" class="button btn toolbar-sort-btn" type="button" aria-haspopup="dialog">Sort: Priority</button>
           </div>
         </div>
-        <div class="toolbar-right">
-          <div class="search-wrap">
-            <svg class="icon icon-sm search-icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
-            <input type="text" id="board-search" class="search-input" placeholder="Search..." autocomplete="off" />
+
+        <div class="status-strip" id="status-strip">
+          <span class="status-strip-brand" data-i18n="brand_title">Task Board</span>
+          <span class="status-strip-sep" aria-hidden="true">·</span>
+          <span id="scope-status" role="status" class="status-strip-scope"></span>
+          <span class="status-strip-sep" aria-hidden="true">·</span>
+          <span id="board-count" class="status-strip-count"></span>
+          <span class="status-strip-sep" aria-hidden="true">·</span>
+          <span id="freshness" class="freshness status-strip-freshness"></span>
+        </div>
+
+        <h1 id="board-title" class="sr-only" tabindex="-1">Tasks</h1>
+        <div id="filter-chips" class="filter-chips" aria-label="Active filters"></div>
+        <p id="view-hint" class="muted small"></p>
+        <p id="capture-hint" class="muted small" hidden>Capture ideas here. Enter adds a draft, never starts an agent.</p>
+        <div id="empty-state" class="empty" hidden>
+          <p>No tasks in this repository.</p>
+          <p class="muted">Open issues appear here when they are created on GitHub.</p>
+        </div>
+        <ul id="task-list" class="task-list" aria-label="Tasks"></ul>
+        <form id="quick-add-form" class="quick-add-bar capture-row" hidden>
+          <label for="quick-add-input" class="sr-only">New draft title</label>
+          <input id="quick-add-input" class="quick-add-input" type="text" maxlength="256" placeholder="Add a draft…" data-i18n-placeholder="draft_placeholder" autocomplete="off" required />
+          <label for="quick-add-description" class="sr-only">Optional description</label>
+          <input id="quick-add-description" type="text" placeholder="Optional description or inspiration" autocomplete="off" />
+          <label for="quick-add-project" class="sr-only">Project for new draft</label>
+          <select id="quick-add-project" aria-label="Project for new draft"></select>
+          <button class="button primary" type="submit" data-i18n="quick_add_btn">Add draft</button>
+        </form>
+        <dialog id="board-sheet" class="board-sheet" aria-labelledby="sheet-title">
+          <div class="sheet-head"><h2 id="sheet-title"></h2><button id="sheet-close" class="button" type="button">Done</button></div>
+          <div id="sheet-content" class="sheet-content"></div>
+        </dialog>
+      </section>
+
+      <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
+
+      <section id="detail-view" class="view task-drawer" aria-labelledby="detail-title" hidden>
+        <button id="back-btn" class="button back" type="button" data-i18n="drawer_back">Back to board</button>
+
+        <div class="detail-head">
+          <h1 id="detail-title" tabindex="-1"></h1>
+          <p id="detail-subtitle" class="task-subtitle muted small" hidden></p>
+          <div id="detail-meta" class="badges"></div>
+          <p id="detail-freshness" class="muted small"></p>
+        </div>
+
+        <div id="conflict-banner" class="banner warn" role="alert" hidden>
+          <p id="conflict-message" data-i18n="drawer_conflict_message">This task changed on GitHub after you opened it. Nothing was written.</p>
+          <button id="conflict-reload" class="button" type="button" data-i18n="drawer_conflict_reload">Reload this task</button>
+        </div>
+
+        <p id="edit-warning" class="muted small edit-warning" data-i18n="drawer_edit_warning">Best-effort editing: a simultaneous edit on GitHub or by an agent can still be overwritten.</p>
+
+        <pre id="recoverable-drafts" class="notice" hidden></pre>
+
+        <section class="panel" id="ac-section" aria-labelledby="ac-title">
+          <h2 id="ac-title" data-i18n="drawer_ac_title">Acceptance criteria</h2>
+          <p id="no-ac" class="muted" data-i18n="drawer_no_ac" hidden>No acceptance criteria.</p>
+          <ul id="ac-list" class="checklist"></ul>
+        </section>
+
+        <section class="panel" id="subtasks-section" aria-labelledby="subtasks-title">
+          <h2 id="subtasks-title" data-i18n="drawer_subtasks_title">Actionable subtasks</h2>
+          <p id="no-subtasks" class="muted" data-i18n="drawer_no_subtasks" hidden>No actionable subtasks.</p>
+          <ul id="subtasks-list" class="checklist"></ul>
+        </section>
+
+        <section class="panel" aria-labelledby="overview-title">
+          <h2 id="overview-title" data-i18n="drawer_overview_title">Overview</h2>
+          <p id="overview-empty" class="muted" data-i18n="drawer_overview_empty" hidden>This issue has no editable overview section.</p>
+          <label class="sr-only" for="overview-text">Overview text</label>
+          <textarea id="overview-text" rows="8"></textarea>
+          <div class="row">
+            <button id="save-overview" class="button primary" type="button" data-i18n="drawer_save_overview">Save overview</button>
+            <span id="save-status" class="muted small" role="status"></span>
           </div>
-          <button id="view-btn" class="button btn toolbar-view-btn" type="button" aria-haspopup="dialog">View: Simple list</button>
-          <button id="filter-btn" class="button btn toolbar-filter-btn" type="button" aria-haspopup="dialog">Filter</button>
-          <button id="sort-btn" class="button btn toolbar-sort-btn" type="button" aria-haspopup="dialog">Sort: Priority</button>
-          <button id="refresh-btn" class="button btn btn-icon toolbar-refresh-btn" type="button" title="Refresh Issues & Sessions" aria-label="Refresh">
-            <svg class="icon icon-sm" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5.463 4.433A9.961 9.961 0 0 1 12 2c5.523 0 10 4.477 10 10 0 2.136-.67 4.116-1.81 5.74L17 12h3A8 8 0 0 0 6.46 6.228l-.997-1.795zm13.074 15.134A9.961 9.961 0 0 1 12 22C6.477 22 2 17.523 2 12c0-2.136.67-4.116 1.81-5.74L7 12H4a8 8 0 0 0 13.54 5.772l.997 1.795z"/></svg>
-          </button>
-          <button id="settings-btn" class="button btn toolbar-settings-btn" type="button" aria-label="Settings" title="Settings" aria-haspopup="dialog">Settings</button>
-          <button id="signout-btn" class="button btn toolbar-signout-btn" type="button" aria-label="Sign out" title="Sign out">Sign out</button>
-        </div>
-      </div>
+        </section>
 
-      <div class="status-strip" id="status-strip">
-        <span class="status-strip-brand">Task Board</span>
-        <span class="status-strip-sep" aria-hidden="true">·</span>
-        <span id="scope-status" role="status" class="status-strip-scope"></span>
-        <span class="status-strip-sep" aria-hidden="true">·</span>
-        <span id="board-count" class="status-strip-count"></span>
-        <span class="status-strip-sep" aria-hidden="true">·</span>
-        <span id="freshness" class="freshness status-strip-freshness"></span>
-      </div>
+        <section class="panel" aria-labelledby="questions-title">
+          <h2 id="questions-title" data-i18n="drawer_questions_title">Open questions</h2>
+          <p id="no-questions" class="muted" data-i18n="drawer_no_questions" hidden>No open questions.</p>
+          <ul id="question-list" class="question-list"></ul>
+        </section>
 
-      <h1 id="board-title" class="sr-only" tabindex="-1">Tasks</h1>
-      <div id="filter-chips" class="filter-chips" aria-label="Active filters"></div>
-      <p id="view-hint" class="muted small"></p>
-      <p id="capture-hint" class="muted small" hidden>Capture ideas here. Enter adds a draft, never starts an agent.</p>
-      <div id="empty-state" class="empty" hidden>
-        <p>No tasks in this repository.</p>
-        <p class="muted">Open issues appear here when they are created on GitHub.</p>
-      </div>
-      <ul id="task-list" class="task-list" aria-label="Tasks"></ul>
-      <form id="quick-add-form" class="quick-add-bar capture-row" hidden>
-        <label for="quick-add-input" class="sr-only">New draft title</label>
-        <input id="quick-add-input" class="quick-add-input" type="text" maxlength="256" placeholder="+ Add a draft…" autocomplete="off" required />
-        <label for="quick-add-description" class="sr-only">Optional description</label>
-        <input id="quick-add-description" type="text" placeholder="Optional description or inspiration" autocomplete="off" />
-        <label for="quick-add-project" class="sr-only">Project for new draft</label>
-        <select id="quick-add-project" aria-label="Project for new draft"></select>
-        <button class="button primary" type="submit">Add draft</button>
-      </form>
-      <dialog id="board-sheet" class="board-sheet" aria-labelledby="sheet-title">
-        <div class="sheet-head"><h2 id="sheet-title"></h2><button id="sheet-close" class="button" type="button">Done</button></div>
-        <div id="sheet-content" class="sheet-content"></div>
-      </dialog>
-    </section>
+        <section class="panel" aria-labelledby="status-title">
+          <h2 id="status-title" data-i18n="drawer_status_title">Status</h2>
+          <div class="row">
+            <label for="status-select" data-i18n="drawer_status_label">Status label</label>
+            <select id="status-select"></select>
+            <button id="apply-status" class="button primary" type="button" data-i18n="drawer_apply_status">Apply status</button>
+            <button id="mark-done-btn" class="button" type="button" data-i18n="drawer_mark_done">Mark Done</button>
+          </div>
+        </section>
 
-    <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
-
-    <section id="detail-view" class="view task-drawer" aria-labelledby="detail-title" hidden>
-      <button id="back-btn" class="button back" type="button">Back to board</button>
-
-      <div class="detail-head">
-        <h1 id="detail-title" tabindex="-1"></h1>
-        <p id="detail-subtitle" class="task-subtitle muted small" hidden></p>
-        <div id="detail-meta" class="badges"></div>
-        <p id="detail-freshness" class="muted small"></p>
-      </div>
-
-      <div id="conflict-banner" class="banner warn" role="alert" hidden>
-        <p id="conflict-message">This task changed on GitHub after you opened it. Nothing was written.</p>
-        <button id="conflict-reload" class="button" type="button">Reload this task</button>
-      </div>
-
-      <p id="edit-warning" class="muted small edit-warning">Best-effort editing: a simultaneous edit on GitHub or by an agent can still be overwritten.</p>
-
-      <pre id="recoverable-drafts" class="notice" hidden></pre>
-
-      <section class="panel" id="ac-section" aria-labelledby="ac-title">
-        <h2 id="ac-title">Acceptance criteria</h2>
-        <p id="no-ac" class="muted" hidden>No acceptance criteria.</p>
-        <ul id="ac-list" class="checklist"></ul>
+        <section class="panel" aria-labelledby="human-title">
+          <h2 id="human-title" data-i18n="drawer_human_title">Human tasks</h2>
+          <p id="no-human" class="muted" data-i18n="drawer_no_human" hidden>No human tasks.</p>
+          <ul id="human-list" class="checklist"></ul>
+        </section>
       </section>
-
-      <section class="panel" id="subtasks-section" aria-labelledby="subtasks-title">
-        <h2 id="subtasks-title">Actionable subtasks</h2>
-        <p id="no-subtasks" class="muted" hidden>No actionable subtasks.</p>
-        <ul id="subtasks-list" class="checklist"></ul>
-      </section>
-
-      <section class="panel" aria-labelledby="overview-title">
-        <h2 id="overview-title">Overview</h2>
-        <p id="overview-empty" class="muted" hidden>This issue has no editable overview section.</p>
-        <label class="sr-only" for="overview-text">Overview text</label>
-        <textarea id="overview-text" rows="8"></textarea>
-        <div class="row">
-          <button id="save-overview" class="button primary" type="button">Save overview</button>
-          <span id="save-status" class="muted small" role="status"></span>
-        </div>
-      </section>
-
-      <section class="panel" aria-labelledby="questions-title">
-        <h2 id="questions-title">Open questions</h2>
-        <p id="no-questions" class="muted" hidden>No open questions.</p>
-        <ul id="question-list" class="question-list"></ul>
-      </section>
-
-      <section class="panel" aria-labelledby="status-title">
-        <h2 id="status-title">Status</h2>
-        <div class="row">
-          <label for="status-select">Status label</label>
-          <select id="status-select"></select>
-          <button id="apply-status" class="button primary" type="button">Apply status</button>
-          <button id="mark-done-btn" class="button" type="button">Mark Done</button>
-        </div>
-      </section>
-
-      <section class="panel" aria-labelledby="human-title">
-        <h2 id="human-title">Human tasks</h2>
-        <p id="no-human" class="muted" hidden>No human tasks.</p>
-        <ul id="human-list" class="checklist"></ul>
-      </section>
-    </section>
-  </main>
+    </main>
+  </div>
 
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
   <script src="/app.js" defer></script>

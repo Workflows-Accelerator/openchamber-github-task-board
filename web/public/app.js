@@ -421,6 +421,8 @@
     state.drafts.clear();
     state.uncertain.clear();
     $('repository-picker').hidden = true;
+    if ($('app-sidebar')) $('app-sidebar').hidden = true;
+    if ($('compact-header')) $('compact-header').hidden = true;
     if ($('board-toolbar')) $('board-toolbar').hidden = true;
     if ($('repo-select')) $('repo-select').textContent = '';
     state.projectNames = {};
@@ -474,6 +476,9 @@
 
   function showBoard() {
     var shouldRestoreFocus = Boolean(state.drawerOpenerKey);
+    activateNavList();
+    if ($('app-sidebar')) $('app-sidebar').hidden = false;
+    if ($('compact-header')) $('compact-header').hidden = false;
     showView('board');
     setNotice('');
     if (state.board) renderBoard();
@@ -532,6 +537,234 @@
         document.documentElement.removeAttribute('data-theme');
       }
     }
+  }
+
+  var I18N = {
+    en: {
+      nav_canvas: 'Canvas',
+      nav_list: 'List',
+      nav_decisions: 'Decisions',
+      nav_blocked: 'Blocked',
+      nav_discussions: 'Discussions',
+      nav_operations: 'Operations overview',
+      nav_archive: 'Archive',
+      nav_client: 'Client view',
+      nav_refresh: 'Refresh',
+      nav_settings: 'Settings',
+      nav_signout: 'Sign out',
+      placeholder_title_canvas: 'Canvas',
+      placeholder_notice: 'This view is currently in development. List view is active and connected to GitHub.',
+      placeholder_back: 'Back to List',
+      brand_title: 'Task Board',
+      search_placeholder: 'Search...',
+      btn_filter: 'Filter',
+      btn_sort: 'Sort',
+      sort_priority: 'Priority',
+      sort_updated: 'Recently updated',
+      sort_created: 'Recently created',
+      sort_manual: 'Manual order',
+      quick_add_title_placeholder: 'Add a draft…',
+      quick_add_desc_placeholder: 'Optional description or inspiration',
+      quick_add_btn: 'Add draft',
+      all_projects: 'All Projects',
+      task_singular: 'task',
+      task_plural: 'tasks',
+      loaded_just_now: 'just now',
+      loaded_prefix: 'Loaded ',
+      ago_minutes: 'm ago',
+      ago_hours: 'h ago',
+      ago_days: 'd ago',
+      drawer_back: 'Back to board',
+      drawer_ac_title: 'Acceptance criteria',
+      drawer_no_ac: 'No acceptance criteria.',
+      drawer_subtasks_title: 'Actionable subtasks',
+      drawer_no_subtasks: 'No actionable subtasks.',
+      drawer_overview_title: 'Overview',
+      drawer_overview_empty: 'This issue has no editable overview section.',
+      drawer_save_overview: 'Save overview',
+      drawer_questions_title: 'Open questions',
+      drawer_no_questions: 'No open questions.',
+      drawer_status_title: 'Status',
+      drawer_status_label: 'Status label',
+      drawer_apply_status: 'Apply status',
+      drawer_mark_done: 'Mark Done',
+      drawer_human_title: 'Human tasks',
+      drawer_no_human: 'No human tasks.',
+      drawer_conflict_message: 'This task changed on GitHub after you opened it. Nothing was written.',
+      drawer_conflict_reload: 'Reload this task',
+      drawer_edit_warning: 'Best-effort editing: a simultaneous edit on GitHub or by an agent can still be overwritten.',
+    },
+    fr: {
+      nav_canvas: 'Canevas',
+      nav_list: 'Liste',
+      nav_decisions: 'Décisions',
+      nav_blocked: 'Bloqué',
+      nav_discussions: 'Discussions',
+      nav_operations: 'Opérations',
+      nav_archive: 'Archives',
+      nav_client: 'Vue client',
+      nav_refresh: 'Actualiser',
+      nav_settings: 'Paramètres',
+      nav_signout: 'Se déconnecter',
+      placeholder_title_canvas: 'Canevas',
+      placeholder_notice: 'Cette vue est en cours de développement. La vue Liste est active et connectée à GitHub.',
+      placeholder_back: 'Retour à la vue Liste',
+      brand_title: 'Tableau des tâches',
+      search_placeholder: 'Rechercher...',
+      btn_filter: 'Filtrer',
+      btn_sort: 'Tri',
+      sort_priority: 'Priorité',
+      sort_updated: 'Récemment mis à jour',
+      sort_created: 'Récemment créé',
+      sort_manual: 'Ordre manuel',
+      quick_add_title_placeholder: 'Ajouter un brouillon…',
+      quick_add_desc_placeholder: 'Description ou inspiration optionnelle',
+      quick_add_btn: 'Ajouter un brouillon',
+      all_projects: 'Tous les projets',
+      task_singular: 'tâche',
+      task_plural: 'tâches',
+      loaded_just_now: 'à l’instant',
+      loaded_prefix: 'Chargé ',
+      ago_minutes: ' min',
+      ago_hours: ' h',
+      ago_days: ' j',
+      drawer_back: 'Retour au tableau',
+      drawer_ac_title: 'Critères d’acceptation',
+      drawer_no_ac: 'Aucun critère d’acceptation.',
+      drawer_subtasks_title: 'Sous-tâches réalisables',
+      drawer_no_subtasks: 'Aucune sous-tâche.',
+      drawer_overview_title: 'Aperçu',
+      drawer_overview_empty: 'Cette tâche n’a pas de section aperçu modifiable.',
+      drawer_save_overview: 'Enregistrer l’aperçu',
+      drawer_questions_title: 'Questions ouvertes',
+      drawer_no_questions: 'Aucune question ouverte.',
+      drawer_status_title: 'Statut',
+      drawer_status_label: 'Étiquette de statut',
+      drawer_apply_status: 'Appliquer le statut',
+      drawer_mark_done: 'Marquer comme terminé',
+      drawer_human_title: 'Tâches humaines',
+      drawer_no_human: 'Aucune tâche humaine.',
+      drawer_conflict_message: 'Cette tâche a été modifiée sur GitHub après ouverture. Rien n’a été écrit.',
+      drawer_conflict_reload: 'Recharger cette tâche',
+      drawer_edit_warning: 'Édition au mieux : une modification simultanée sur GitHub ou par un agent peut être écrasée.',
+    },
+  };
+
+  function getLanguage() {
+    try {
+      var l = localStorage.getItem('tb_lang');
+      if (l === 'fr' || l === 'en') return l;
+    } catch (_) {}
+    return 'en';
+  }
+
+  function setLanguage(lang) {
+    try {
+      localStorage.setItem('tb_lang', lang);
+    } catch (_) {}
+    applyLanguage(lang);
+  }
+
+  function applyLanguage(lang) {
+    var l = lang || getLanguage();
+    var dict = I18N[l] || I18N.en;
+    if (typeof document !== 'undefined') {
+      var elements = document.querySelectorAll ? document.querySelectorAll('[data-i18n]') : [];
+      if (elements && elements.forEach) {
+        elements.forEach(function (element) {
+          var key = element.getAttribute('data-i18n');
+          if (dict[key]) element.textContent = dict[key];
+        });
+      }
+      var searchInput = $('board-search');
+      if (searchInput && dict.search_placeholder) {
+        searchInput.placeholder = dict.search_placeholder;
+      }
+      var quickAddInput = $('quick-add-input');
+      if (quickAddInput && dict.quick_add_title_placeholder) {
+        quickAddInput.placeholder = dict.quick_add_title_placeholder;
+      }
+      var quickAddDesc = $('quick-add-description');
+      if (quickAddDesc && dict.quick_add_desc_placeholder) {
+        quickAddDesc.placeholder = dict.quick_add_desc_placeholder;
+      }
+      var langLabel = $('lang-label');
+      if (langLabel) {
+        langLabel.textContent = l === 'en' ? 'FR' : 'EN';
+      }
+      if (state.board) {
+        renderBoard();
+      }
+    }
+  }
+
+  function applySidebarState() {
+    try {
+      var collapsed = localStorage.getItem('tb_sidebar_collapsed') === '1';
+      if (collapsed && typeof document !== 'undefined' && document.body && document.body.classList) {
+        document.body.classList.add('sidebar-collapsed');
+      }
+    } catch (_) {}
+  }
+
+  function toggleSidebarCollapse() {
+    if (typeof document === 'undefined' || !document.body || !document.body.classList) return;
+    var isCollapsed = document.body.classList.toggle('sidebar-collapsed');
+    try {
+      localStorage.setItem('tb_sidebar_collapsed', isCollapsed ? '1' : '0');
+    } catch (_) {}
+  }
+
+  function renderSkeleton() {
+    var list = $('task-list');
+    if (!list) return;
+    list.textContent = '';
+    for (var i = 0; i < 5; i++) {
+      var dot = el('div', { class: 'skeleton-dot' });
+      var titleBar = el('div', { class: 'skeleton-bar skeleton-title-bar' });
+      var descBar = el('div', { class: 'skeleton-bar skeleton-desc-bar' });
+      var content = el('div', { class: 'skeleton-content' }, [titleBar, descBar]);
+      var row = el('li', { class: 'skeleton-row' }, [dot, content]);
+      list.appendChild(row);
+    }
+  }
+
+  function openPlaceholderView(viewName) {
+    if (state.detail) closeDrawer();
+    var btn = $('nav-' + viewName);
+    var label = btn ? btn.querySelector('.sidebar-label') : null;
+    var title = label ? label.textContent : (btn ? (btn.getAttribute('title') || viewName) : viewName);
+    var titleEl = $('placeholder-title');
+    if (titleEl) titleEl.textContent = title;
+    var navItems = typeof document !== 'undefined' && document.querySelectorAll ? document.querySelectorAll('.sidebar-item[data-view]') : [];
+    if (navItems && navItems.forEach) {
+      navItems.forEach(function (item) {
+        if (item.classList && item.classList.remove) item.classList.remove('active');
+      });
+    }
+    if (btn && btn.classList && btn.classList.add) btn.classList.add('active');
+    showView('placeholder');
+    if (typeof document !== 'undefined' && document.body && document.body.classList) {
+      document.body.classList.remove('sidebar-open');
+    }
+    var backdrop = $('sidebar-backdrop');
+    if (backdrop) backdrop.hidden = true;
+  }
+
+  function activateNavList() {
+    var navItems = typeof document !== 'undefined' && document.querySelectorAll ? document.querySelectorAll('.sidebar-item[data-view]') : [];
+    if (navItems && navItems.forEach) {
+      navItems.forEach(function (item) {
+        if (item.classList && item.classList.remove) item.classList.remove('active');
+      });
+    }
+    var listBtn = $('nav-list');
+    if (listBtn && listBtn.classList && listBtn.classList.add) listBtn.classList.add('active');
+    if (typeof document !== 'undefined' && document.body && document.body.classList) {
+      document.body.classList.remove('sidebar-open');
+    }
+    var backdrop = $('sidebar-backdrop');
+    if (backdrop) backdrop.hidden = true;
   }
 
   function matchesSearch(issue, q) {
@@ -1017,13 +1250,15 @@
       if (boardSec) boardSec.hidden = false;
       var loginSec = document.getElementById('login-view');
       if (loginSec) loginSec.hidden = true;
+      var placeholderSec = document.getElementById('placeholder-view');
+      if (placeholderSec) placeholderSec.hidden = true;
       var backdrop = $('drawer-backdrop');
       if (backdrop) backdrop.hidden = false;
       if (typeof document !== 'undefined' && document.body && document.body.classList) {
         document.body.classList.add('drawer-open');
       }
     } else {
-      ['login', 'board', 'detail'].forEach(function (view) {
+      ['login', 'board', 'detail', 'placeholder'].forEach(function (view) {
         var section = document.getElementById(view + '-view');
         if (section) section.hidden = view !== name;
       });
@@ -1038,18 +1273,20 @@
     }
   }
 
-  function relative(iso) {
+  function relative(iso, lang) {
     if (!iso) return 'unknown time';
     var then = Date.parse(iso);
     if (Number.isNaN(then)) return 'unknown time';
     var diff = Date.now() - then;
-    if (diff < 45 * 1000) return 'just now';
+    var l = lang || getLanguage();
+    var dict = I18N[l] || I18N.en;
+    if (diff < 45 * 1000) return dict.loaded_just_now || 'just now';
     var minutes = Math.floor(diff / 60000);
-    if (minutes < 60) return minutes + 'm ago';
+    if (minutes < 60) return l === 'fr' ? 'il y a ' + minutes + dict.ago_minutes : minutes + dict.ago_minutes;
     var hours = Math.floor(minutes / 60);
-    if (hours < 24) return hours + 'h ago';
+    if (hours < 24) return l === 'fr' ? 'il y a ' + hours + dict.ago_hours : hours + dict.ago_hours;
     var days = Math.floor(hours / 24);
-    return days + 'd ago';
+    return l === 'fr' ? 'il y a ' + days + dict.ago_days : days + dict.ago_days;
   }
 
   function badge(text, kind) {
@@ -1074,15 +1311,18 @@
 
   function renderFreshness() {
     var node = $('freshness');
+    if (!node) return;
+    var l = getLanguage();
+    var dict = I18N[l] || I18N.en;
     if (state.stale) {
       node.textContent = state.loadedAt
-        ? 'Showing data loaded ' + relative(new Date(state.loadedAt).toISOString()) + ' — refresh failed'
-        : 'Refresh failed';
+        ? (l === 'fr' ? 'Données chargées ' : 'Showing data loaded ') + relative(new Date(state.loadedAt).toISOString(), l) + (l === 'fr' ? ' — échec' : ' — refresh failed')
+        : (l === 'fr' ? 'Échec de l’actualisation' : 'Refresh failed');
       node.className = 'freshness stale';
       return;
     }
     node.className = 'freshness';
-    node.textContent = state.loadedAt ? 'Loaded ' + relative(new Date(state.loadedAt).toISOString()) : '';
+    node.textContent = state.loadedAt ? (dict.loaded_prefix || 'Loaded ') + relative(new Date(state.loadedAt).toISOString(), l) : '';
   }
 
   var VIEW_LABELS = { simple: 'Simple list', cards: 'Cards', kanban: 'Kanban board', graph: 'Graph', pending: 'Pending items' };
@@ -1157,10 +1397,14 @@
     return KIND_LABELS[token] || (token.startsWith('stage:') ? statusText(token.slice(6)) : shortName(token.slice(8)));
   }
   function renderControls() {
+    var l = getLanguage();
+    var dict = I18N[l] || I18N.en;
     if ($('board-toolbar')) $('board-toolbar').hidden = false;
-    $('view-btn').textContent = 'View: ' + VIEW_LABELS[state.viewState.view];
-    $('filter-btn').textContent = 'Filter' + (state.viewState.filters.length ? ' (' + state.viewState.filters.length + ')' : '');
-    $('sort-btn').textContent = 'Sort: ' + SORT_LABELS[state.viewState.sort];
+    if ($('view-btn')) $('view-btn').textContent = 'View: ' + VIEW_LABELS[state.viewState.view];
+    if ($('filter-btn')) $('filter-btn').textContent = (dict.btn_filter || 'Filter') + (state.viewState.filters.length ? ' (' + state.viewState.filters.length + ')' : '');
+    var sortLabel = (l === 'fr' ? dict['sort_' + state.viewState.sort] : null) || SORT_LABELS[state.viewState.sort];
+    var sortSep = l === 'fr' ? ' : ' : ': ';
+    if ($('sort-btn')) $('sort-btn').textContent = (dict.btn_sort || 'Sort') + sortSep + sortLabel;
     var chips = $('filter-chips');
     chips.textContent = '';
     state.viewState.filters.forEach(function (token) {
@@ -1555,10 +1799,8 @@
   function simpleTaskRow(issue) {
     var friendly = resolveFriendlyTitle(issue);
     var stage = stageOf(issue);
-    var dotColor = STAGE_COLORS[stage] || '#8b949e';
     var dot = el('span', {
       class: 'simple-dot status-dot stage-' + stage,
-      style: 'background-color: ' + dotColor + ';',
       title: statusText('status:' + stage),
       'aria-hidden': 'true'
     });
@@ -1613,10 +1855,12 @@
   function renderBoard() {
     var board = state.board;
     if (!board) return;
-    var name = board.repository ? shortName(board.repository.full) : 'All Projects';
+    var l = getLanguage();
+    var dict = I18N[l] || I18N.en;
+    var name = board.repository ? shortName(board.repository.full) : (dict.all_projects || 'All Projects');
     $('repo-label').textContent = name;
     $('repo-label').setAttribute('title', board.repo);
-    document.title = 'Task Board · ' + name;
+    document.title = (dict.brand_title || 'Task Board') + ' · ' + name;
     renderControls(); renderFreshness();
     var allRows = (board.issues || []).concat(offlineRows());
     if (state.searchQuery) {
@@ -1627,7 +1871,8 @@
     var issues = filterSort(allRows, state.viewState);
     var pending = state.viewState.view === 'pending';
     if (pending) issues = issues.filter(function (issue) { return stageOf(issue) !== 'done' && (needsMe(issue) || countOf(issue, 'humanTasks', true) || countOf(issue, 'openQuestions', true)); });
-    $('board-count').textContent = issues.length + (issues.length === 1 ? ' task' : ' tasks');
+    var unit = issues.length === 1 ? (dict.task_singular || 'task') : (dict.task_plural || 'tasks');
+    $('board-count').textContent = issues.length + ' ' + unit;
     var scopeStatus = $('scope-status');
     if (scopeStatus) {
       var reasons = (board.failures || []).map(function (failure) { return shortName(failure.repository.full) + ': ' + failure.message; });
@@ -1850,6 +2095,11 @@
     $('refresh-btn').disabled = true;
     $('refresh-btn').hidden = false;
     $('signout-btn').hidden = false;
+    if ($('app-sidebar')) $('app-sidebar').hidden = false;
+    if ($('compact-header')) $('compact-header').hidden = false;
+    if (!state.board) {
+      renderSkeleton();
+    }
     try {
       var view = await api('/api/repos');
       if (generation !== state.boardGeneration) return;
@@ -2539,6 +2789,59 @@
       if (state.detail) openIssue(state.detail);
     });
 
+    var sidebarToggleBtn = $('sidebar-toggle-btn');
+    if (sidebarToggleBtn) {
+      sidebarToggleBtn.addEventListener('click', toggleSidebarCollapse);
+    }
+
+    var sidebarToggleBtnCompact = $('sidebar-toggle-btn-compact');
+    if (sidebarToggleBtnCompact) {
+      sidebarToggleBtnCompact.addEventListener('click', function () {
+        if (typeof document !== 'undefined' && document.body && document.body.classList) {
+          var open = document.body.classList.toggle('sidebar-open');
+          var backdrop = $('sidebar-backdrop');
+          if (backdrop) backdrop.hidden = !open;
+        }
+      });
+    }
+
+    var sidebarBackdrop = $('sidebar-backdrop');
+    if (sidebarBackdrop) {
+      sidebarBackdrop.addEventListener('click', function () {
+        if (typeof document !== 'undefined' && document.body && document.body.classList) {
+          document.body.classList.remove('sidebar-open');
+        }
+        sidebarBackdrop.hidden = true;
+      });
+    }
+
+    var langSwitchBtn = $('lang-switch-btn');
+    if (langSwitchBtn) {
+      langSwitchBtn.addEventListener('click', function () {
+        setLanguage(getLanguage() === 'en' ? 'fr' : 'en');
+      });
+    }
+
+    ['canvas', 'list', 'decisions', 'blocked', 'discussions', 'operations', 'archive', 'client'].forEach(function (viewName) {
+      var btn = $('nav-' + viewName);
+      if (btn) {
+        btn.addEventListener('click', function () {
+          if (viewName === 'list') {
+            showBoard();
+          } else {
+            openPlaceholderView(viewName);
+          }
+        });
+      }
+    });
+
+    var placeholderBackBtn = $('placeholder-back-btn');
+    if (placeholderBackBtn) {
+      placeholderBackBtn.addEventListener('click', function () {
+        showBoard();
+      });
+    }
+
     if (typeof window !== 'undefined' && typeof window.addEventListener === 'function') {
       window.addEventListener('hashchange', route);
     }
@@ -2599,6 +2902,8 @@
 
   async function boot() {
     applyThemeMode();
+    applySidebarState();
+    applyLanguage();
     initServiceWorker();
     bind();
 
@@ -2614,6 +2919,8 @@
         renderBoard();
         showView('board');
         if ($('board-toolbar')) $('board-toolbar').hidden = false;
+        if ($('app-sidebar')) $('app-sidebar').hidden = false;
+        if ($('compact-header')) $('compact-header').hidden = false;
       } catch (cacheError) {
         clearAuthHint();
         state.board = null;
@@ -2628,6 +2935,8 @@
         state.csrf = session.csrfToken;
         showView('board');
         if ($('board-toolbar')) $('board-toolbar').hidden = false;
+        if ($('app-sidebar')) $('app-sidebar').hidden = false;
+        if ($('compact-header')) $('compact-header').hidden = false;
         $('refresh-btn').hidden = false;
         $('signout-btn').hidden = false;
         await loadBoard();
