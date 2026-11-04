@@ -20,6 +20,8 @@
   - **A1 #56 = AWAITING BATCH A REVIEW** (tip f7a4f73, tree clean).
   - `ses_b48c1bd6840a9fa336998a5f` A2 #57 build (engineer, tasks/task-A2-infinite-canvas.md, base f7a4f73) — RUNNING. #57 -> status:in-progress.
     - Stall notice ~5m40s quiet on `node --test web/tests/canvas.test.mjs` (likely a hanging test / open handle). No pending permission or question. Uncommitted: app.ts, board.ts, canvas.test.mjs. Waiting for its report; no duplicate. If it ends without a report: fresh engineer in same worktree pointing at this uncommitted state, warn about the hanging test.
+    - 25m54s: session idle, no assistant message -> DEAD. Uncommitted diff app.ts +34, board.ts +230/-43, canvas.test.mjs.
+  - `ses_91f8cd86486bc4f6f8470396` A2 #57 RESUME (engineer, tasks/task-A2-resume.md) — RUNNING.
     - On both wakes: check git log for interleaved/swept commits, run npm test once, then A2. Never dispatch twice again: if delegate returns "aborted", check session.list before retrying.
   - `ses_dc3caccfc68591839a260337` P1 read-only preflight (engineer) — COMPLETED -> explore/preflight.md
 - **Preflight findings (2026-11-04):** native dependency API works, token is a classic PAT with repo scope (board uses GITHUB_TOKEN fallback); write on all 26 repos; Discussions DISABLED on all 26 repos (enabling = repo setting -> user task, B3 built on fake only); OpenChamber on 127.0.0.1:3000 same container, `POST /api/openchamber/control` session.create or `openchamber session create` CLI; live `current` reported -> 8b7e059-20261102 (summary said 98261a8 — C4 must re-check).
