@@ -373,20 +373,20 @@ test('4.b D63.4 theme.css styles slide-over drawer with 480px width on desktop',
 // ============================================================================
 // 5. OpenChamber Color Tokens & Theme Mode Auto / Dark / Light (D64)
 // ============================================================================
-test('5.a D64 theme.css defines OpenChamber dark and light color tokens', () => {
+test('5.a D64 theme.css defines ChamberOS warm paper dark and light color tokens', () => {
   const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
   // Dark tokens
-  assert.ok(css.includes('#0f1012'), 'theme.css must declare dark --bg #0f1012');
-  assert.ok(css.includes('#16181b'), 'theme.css must declare dark --surf #16181b');
-  assert.ok(css.includes('#1c1f24'), 'theme.css must declare dark --surf-muted #1c1f24');
-  assert.ok(css.includes('#f0f2f5'), 'theme.css must declare dark --fg #f0f2f5');
+  assert.ok(css.includes('#151412'), 'theme.css must declare dark --bg #151412');
+  assert.ok(css.includes('#1d1b18'), 'theme.css must declare dark --surf #1d1b18');
+  assert.ok(css.includes('#262320'), 'theme.css must declare dark --surf-muted #262320');
+  assert.ok(css.includes('#f4f1ea'), 'theme.css must declare dark --fg #f4f1ea');
 
   // Light tokens
-  assert.ok(css.includes('#f4f5f7'), 'theme.css must declare light --bg #f4f5f7');
-  assert.ok(css.includes('#ffffff'), 'theme.css must declare light --surf #ffffff');
-  assert.ok(css.includes('#eaedf0'), 'theme.css must declare light --surf-muted #eaedf0');
-  assert.ok(css.includes('#d0d5dd'), 'theme.css must declare light --border #d0d5dd');
-  assert.ok(css.includes('#1f2328'), 'theme.css must declare light --fg #1f2328');
+  assert.ok(css.includes('#f6f4ee'), 'theme.css must declare light --bg #f6f4ee');
+  assert.ok(css.includes('#fcfbf8'), 'theme.css must declare light --surf #fcfbf8');
+  assert.ok(css.includes('#efece4'), 'theme.css must declare light --surf-muted #efece4');
+  assert.ok(css.includes('#181613'), 'theme.css must declare light --fg #181613');
+  assert.ok(css.includes('#7c1d2e'), 'theme.css must declare light --prim #7c1d2e');
 });
 
 test('5.b D64 app.js supports Theme mode Auto / Dark / Light persisted to localStorage tb_theme_mode', () => {
@@ -503,7 +503,7 @@ test('6.c Blocker 3: theme.css enforces display: none !important on closed dialo
   );
 });
 
-test('6.d Blocker 4: theme.css places explicit [data-theme="dark"] and [data-theme="light"] rules AFTER @media (prefers-color-scheme: light) and index.html sets theme-color #0f1012', () => {
+test('6.d Blocker 4: theme.css places explicit [data-theme="dark"] and [data-theme="light"] rules AFTER @media (prefers-color-scheme: light) and index.html sets theme-color #151412', () => {
   const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
   const mediaIdx = css.indexOf('@media (prefers-color-scheme: light)');
   const darkIdx = css.indexOf(':root[data-theme="dark"]');
@@ -513,7 +513,7 @@ test('6.d Blocker 4: theme.css places explicit [data-theme="dark"] and [data-the
   assert.ok(lightIdx > mediaIdx, ':root[data-theme="light"] must appear AFTER @media (prefers-color-scheme: light)');
 
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
-  assert.match(html, /<meta name="theme-color" content="#0f1012">/, 'index.html must set theme-color to #0f1012');
+  assert.match(html, /<meta name="theme-color" content="#151412">/, 'index.html must set theme-color to #151412');
 });
 
 test('6.e Blocker 5: theme.css positions #drawer-backdrop at z-index 900 and #detail-view at z-index 1000 and constrains body.drawer-open #board-view', () => {
