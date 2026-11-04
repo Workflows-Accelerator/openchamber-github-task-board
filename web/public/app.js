@@ -279,6 +279,14 @@
     if (method !== 'GET' && state.csrf) headers['x-csrf-token'] = state.csrf;
     var response;
     var text;
+    var timeoutMs = options.timeoutMs || 25000;
+    var controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timeoutTimer = null;
+    if (controller) {
+      timeoutTimer = setTimeout(function () {
+        controller.abort();
+      }, timeoutMs);
+    }
     try {
       response = await fetch(path, {
         method: method,
@@ -286,9 +294,16 @@
         body: options.body === undefined ? undefined : JSON.stringify(options.body),
         credentials: 'same-origin',
         cache: 'no-store',
+        signal: controller ? controller.signal : undefined,
       });
       text = await response.text();
     } catch (networkError) {
+      if (controller && controller.signal.aborted) {
+        throw new ApiError('network_timeout', 0, {
+          error: 'network_timeout',
+          message: 'Request timed out — server took too long to respond. Use Refresh to try again.',
+        });
+      }
       if (isMutation) {
         throw new ApiError('write_outcome_unknown', 0, {
           error: 'write_outcome_unknown',
@@ -299,6 +314,8 @@
         error: 'network_error',
         message: networkError && networkError.message ? networkError.message : 'Network request failed',
       });
+    } finally {
+      if (timeoutTimer) clearTimeout(timeoutTimer);
     }
 
     var payload = null;
@@ -2135,22 +2152,30 @@
       state.loadedAt = Date.now();
       state.stale = false;
       renderBoard();
-      setNotice('');
+      if (board && board.partial && Array.isArray(board.failures) && board.failures.length > 0) {
+        var failCount = board.failures.length;
+        var loadedCount = board.repositoriesLoaded || 0;
+        var totalReq = board.repositoriesRequested || (loadedCount + failCount);
+        setNotice('Partial board: ' + failCount + ' of ' + totalReq + ' repositories could not be reached. Showing ' + loadedCount + ' repositories.', true);
+      } else {
+        setNotice('');
+      }
       showView('board');
     } catch (error) {
       if (error.status === 401 || generation !== state.boardGeneration) return;
       if (state.board && previousScope === (state.selected === 'all' ? 'All repositories' : state.selected)) {
         state.stale = true;
         renderFreshness();
-        setNotice('Could not refresh. Showing the last board loaded in this browser.', true);
+        setNotice('Could not refresh (' + (error.message || 'network error') + '). Showing the last board loaded in this browser.', true);
       } else {
         state.board = null;
         $('task-list').textContent = '';
         $('board-count').textContent = '';
         $('repo-label').textContent = state.selected === 'all' ? 'All Projects' : shortName(state.selected);
         $('empty-state').hidden = false;
-        $('empty-state').querySelector('p').textContent = 'The board could not be loaded — unavailable, not empty.';
-        setNotice(error.message + '. Use Refresh to try again.', true);
+        var failureDetails = error.message ? 'The board could not be loaded: ' + error.message : 'The board could not be loaded — unavailable, not empty.';
+        $('empty-state').querySelector('p').textContent = failureDetails;
+        setNotice((error.message || 'Could not load board') + '. Use Refresh to try again.', true);
       }
       showView('board');
     } finally {
@@ -2642,7 +2667,7 @@
       finally { input.disabled = false; input.focus(); }
     });
 
-    ['view', 'filter', 'sort', 'settings'].forEach(function (kind) {
+    ['filter', 'sort', 'settings'].forEach(function (kind) {
       var button = $(kind + '-btn');
       if (button) button.addEventListener('click', function () { openSheet(kind, button); });
     });

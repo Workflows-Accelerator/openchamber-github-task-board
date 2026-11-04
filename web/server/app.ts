@@ -58,6 +58,10 @@ export interface BoardServerOptions {
   logger?: (line: string) => void;
   packageJsonUrl?: URL | string;
   repositoryTtlMs?: number;
+  aggregateConcurrency?: number;
+  aggregateTimeoutMs?: number;
+  boardCacheTtlMs?: number;
+  perRepoTimeoutMs?: number;
 }
 
 export interface BoardServer {
@@ -384,9 +388,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   }
   const repositories = new RepositoryRegistry({ client: github, now, ttlMs: options.repositoryTtlMs });
   await repositories.view(); // Nonfatal: sign-in can disclose discovery failure distinctly.
-  function clientFor(repository: RepositoryEntry): GitHubClient {
+  function clientFor(repository: RepositoryEntry, timeoutMs?: number): GitHubClient {
     return new GitHubClient({ apiBase: options.githubApiBase ?? config.githubApiBase,
-      token: config.githubToken, repo: repository, fetchImpl: options.fetchImpl });
+      token: config.githubToken, repo: repository, fetchImpl: options.fetchImpl,
+      timeoutMs: timeoutMs ?? 15_000 });
   }
   async function resolveRepository(owner: string, name: string): Promise<RepositoryEntry> {
     try { return await repositories.resolve(owner, name); }
@@ -785,9 +790,36 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     return { status: 404, body: { error: 'not_found', message: 'Not found' } };
   }
 
-  async function repositoryBoard(repository: RepositoryEntry) {
-    const listed = repository.hasIssues ? await clientFor(repository).listIssues().catch(mapGitHubError) : { items: [], truncated: false };
+  interface CachedRepoBoard {
+    issues: ReturnType<typeof buildBoardList>['issues'];
+    excluded: number;
+    truncated: boolean;
+    cachedAt: number;
+  }
+  const repoBoardCache = new Map<string, CachedRepoBoard>();
+  const defaultBoardCacheTtlMs = options.boardCacheTtlMs ?? (options.repositoryTtlMs === 0 ? 0 : 30_000);
+
+  async function repositoryBoard(repository: RepositoryEntry, timeoutMs?: number) {
+    if (!repository.hasIssues) {
+      return { scope: 'repo', repository, repo: repository.full, login: config.githubLogin,
+        fetchedAt: new Date(now()).toISOString(), truncated: false,
+        complete: true, partial: false, excludedPullRequests: 0, issues: [] };
+    }
+    const cached = repoBoardCache.get(repository.full);
+    if (cached && defaultBoardCacheTtlMs > 0 && now() - cached.cachedAt < defaultBoardCacheTtlMs) {
+      return { scope: 'repo', repository, repo: repository.full, login: config.githubLogin,
+        fetchedAt: new Date(cached.cachedAt).toISOString(), truncated: cached.truncated,
+        complete: !cached.truncated, partial: cached.truncated, excludedPullRequests: cached.excluded,
+        issues: cached.issues };
+    }
+    const listed = await clientFor(repository, timeoutMs).listIssues().catch(mapGitHubError);
     const { issues, excluded } = buildBoardList(listed.items, repository);
+    repoBoardCache.set(repository.full, {
+      issues,
+      excluded,
+      truncated: listed.truncated,
+      cachedAt: now(),
+    });
     return { scope: 'repo', repository, repo: repository.full, login: config.githubLogin,
       fetchedAt: new Date(now()).toISOString(), truncated: listed.truncated,
       complete: !listed.truncated, partial: listed.truncated, excludedPullRequests: excluded, issues };
@@ -807,6 +839,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     let loaded = 0;
     let truncated = false;
     let excluded = 0;
+    const aggregateStart = now();
+    const aggregateTimeoutMs = options.aggregateTimeoutMs ?? 12_000;
+    const perRepoTimeoutMs = options.perRepoTimeoutMs ?? 5_000;
+    let rateLimitedUntil = 0;
+
     async function worker() {
       while (cursor < discovery.repositories.length) {
         const repository = discovery.repositories[cursor++];
@@ -814,19 +851,61 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           failures.push({ repository, message: discovery.discoveryFailed ? 'Discovery failed; not refreshed' : 'Unavailable' });
           continue;
         }
+
+        // Bounded total time check
+        if (now() - aggregateStart >= aggregateTimeoutMs) {
+          const cached = repoBoardCache.get(repository.full);
+          if (cached) {
+            issues.push(...cached.issues);
+            excluded += cached.excluded;
+            failures.push({ repository, message: 'Aggregation time bound reached; showing cached tasks' });
+            loaded++;
+          } else {
+            failures.push({ repository, message: 'Aggregation time bound reached; skipped' });
+          }
+          continue;
+        }
+
+        // Rate limit backoff check
+        if (now() < rateLimitedUntil) {
+          const cached = repoBoardCache.get(repository.full);
+          if (cached) {
+            issues.push(...cached.issues);
+            excluded += cached.excluded;
+            failures.push({ repository, message: 'Rate limited by GitHub; showing cached tasks' });
+            loaded++;
+          } else {
+            failures.push({ repository, message: 'Rate limited by GitHub; refresh backed off' });
+          }
+          continue;
+        }
+
         try {
-          const board = await repositoryBoard(repository);
+          const board = await repositoryBoard(repository, perRepoTimeoutMs);
           issues.push(...board.issues);
           excluded += board.excludedPullRequests;
           truncated ||= board.truncated;
           if (board.truncated) failures.push({ repository, message: 'Issue page bound reached; incomplete' });
           loaded++;
-        } catch {
-          failures.push({ repository, message: 'Unavailable or refresh failed' });
+        } catch (error: any) {
+          const isRateLimited = error instanceof HttpError && error.status === 503 && error.code === 'github_rate_limited';
+          if (isRateLimited) {
+            rateLimitedUntil = now() + 60_000;
+          }
+          const cached = repoBoardCache.get(repository.full);
+          if (cached) {
+            issues.push(...cached.issues);
+            excluded += cached.excluded;
+            failures.push({ repository, message: isRateLimited ? 'Rate limited by GitHub; showing cached tasks' : 'Unavailable or refresh failed; showing cached tasks' });
+            loaded++;
+          } else {
+            failures.push({ repository, message: isRateLimited ? 'Rate limited by GitHub' : 'Unavailable or refresh failed' });
+          }
         }
       }
     }
-    await Promise.all(Array.from({ length: 3 }, () => worker()));
+    const concurrency = options.aggregateConcurrency ?? (discovery.repositories.length <= 5 ? 3 : 6);
+    await Promise.all(Array.from({ length: concurrency }, () => worker()));
     const truncatedByIssueCap = issues.length > MAX_AGGREGATE_ISSUES;
     if (truncatedByIssueCap) issues.length = MAX_AGGREGATE_ISSUES;
     const limited = truncated || truncatedByIssueCap;
@@ -835,7 +914,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       fetchedAt: new Date(now()).toISOString(), partial, complete: !partial, truncated: limited,
       truncatedByIssueCap, issueCap: MAX_AGGREGATE_ISSUES,
       repositoriesRequested: discovery.repositories.length, repositoriesLoaded: loaded,
-      concurrency: 3, maxPagesPerRepository: 10, excludedPullRequests: excluded };
+      concurrency, maxPagesPerRepository: 10, excludedPullRequests: excluded };
   }
 
   function methodNotAllowed(allow: string): HandlerResponse {

@@ -120,27 +120,30 @@ Generated via Playwright headless browser at 360px, 768px, and 1280px in `.agent
 
 ### Test Suite & Typecheck Reproduction
 - `npm test`: **618/618 PASS** (0 failed, 0 skipped).
-- `node --test web/tests/*.test.mjs`: **481/481 PASS** (including 2 new tests for numeric repository pagination Link headers).
+- `node --test web/tests/*.test.mjs`: **484/484 PASS** (including numeric repository Link pagination tests and D66 resilience tests).
 - `npm run typecheck`: **PASS** (0 errors).
 - `npx tsc --noEmit -p web/tsconfig.json`: **PASS** (0 errors).
 
-### Live GitHub Verification & D66 Root Cause Autopsy
-- **Investigation:** Measured live GitHub API behavior on loopback port against all 26 token-visible repositories.
-- **Root Cause Identified (D66 / Repo Failure):** In `web/server/github.ts:400`, Link header pagination validation strictly enforced `parsedNext.pathname === '/repos/:owner/:name/issues'`. For repositories with over 100 issues (specifically `Workflows-Accelerator/case-management-platform`), GitHub's REST API emits Link headers using the internal numeric repository ID (`/repositories/<id>/issues`), throwing `GitHubError: GitHub pagination left the configured repository path` and failing the repository.
-- **Audit Remediation:**
-  - Updated `web/server/github.ts` to allow `/repositories/:id/issues` matching `repo.id` (or valid numeric repository issue path).
-  - Added unit regression tests in `web/tests/github.test.mjs`.
-  - Re-measured live GitHub on loopback: 26/26 repositories requested, 26/26 loaded, 306 issues returned, 0 failures, 100% complete in 3971ms.
+### Live GitHub Verification & D66 Root Cause Autopsy and Server/Client Hardening
+- **Root Causes Identified (D66 / Issues Never Load):**
+  1. *Upstream pagination path mismatch*: In `web/server/github.ts:400`, Link header pagination validation strictly enforced `parsedNext.pathname === '/repos/:owner/:name/issues'`. Repositories with >100 issues (e.g. `Workflows-Accelerator/case-management-platform`) emit Link headers with numeric repository IDs (`/repositories/<id>/issues`), causing `GitHubError: GitHub pagination left the configured repository path` and failing repository fetch.
+  2. *Unbounded total latency & client hang risk*: When querying 26 repositories under latency spikes or transient rate limits, `/api/combined/board` could exceed gateway timeouts without bounds, while the client had no fetch abort timeout.
+- **Audit Remediation & Hardening:**
+  - `web/server/github.ts`: Permitted `/repositories/:id/issues` matching `repo.id` or valid repository identifiers.
+  - `web/server/app.ts`: Implemented bounded aggregate runtime (`aggregateTimeoutMs: 12_000`, `perRepoTimeoutMs: 5_000`), in-memory `repoBoardCache` (30s TTL fallback), GitHub rate-limit detection with 60s backoff, and adaptive concurrency (6 for >5 repos, 3 for <=5 repos).
+  - `web/public/app.js`: Added 25s `AbortController` timeout on client fetch with timeout error messages, and partial failure notifications when repositories fail or time out.
+  - `web/tests/d66-resilience.test.mjs`: Added automated test suite verifying single repo failure isolation, aggregate time bounding, and in-memory board cache (3/3 passing).
 
-### Visual & Localization Audit
-- **Defect Fixed:** Sidebar section headers "Views" and "System" lacked `data-i18n` attributes in `web/public/index.html`. Added `data-i18n="section_views"` and `data-i18n="section_system"`, mapped to English ("Views", "System") and French ("Vues", "Système") in `web/public/app.js`.
-- **Proof Re-generated:** Headless Playwright test suite re-executed; screenshots verified across 360/768/1280px viewports (light/dark/FR). Page log clean with 0 console errors and 0 CSP violations.
+### Visual & Responsive Audit
+- **Sidebar Localization:** Added `data-i18n="section_views"` and `data-i18n="section_system"` with EN ("Views", "System") and FR ("Vues", "Système") translations in `web/public/index.html` and `web/public/app.js`.
+- **Inert View Button:** Added `disabled inert` to `#view-btn` in `web/public/index.html` and removed `'view'` from `openSheet` click binders in `web/public/app.js`.
+- **360px Viewport Hygiene:** Switched `.capture-row` to flex-direction column with 100% box-sizing, and pinned `.task-drawer` / `#detail-view` to full 100vw width to prevent horizontal overflow.
+- **Visual Proof Screenshots:** Headless Playwright suite re-executed against fake GitHub; 12 screenshots verified across 360/768/1280px viewports (light/dark/FR). Page log clean with 0 console errors and 0 CSP violations.
 
 ### Standing Invariant Confirmations
 - Grep `web/public`: 0 matches for "n8n", 0 matches for "mobile" (case-insensitive).
-- Zero external CDN URLs; strict CSP compliance.
+- Zero external CDN URLs; strict CSP compliance (`script-src 'self'`).
 - No buttons with both plus icon and "+" text prefix.
-- Confirmed `#view-btn` is completely inert (hidden, `display: none !important;`, no event handlers).
 - Confirmed "Core" and "Studio" project badges exist only as synthetic test data in `generate-screenshots.mjs`.
 - Working tree clean, linear git commit history.
 
