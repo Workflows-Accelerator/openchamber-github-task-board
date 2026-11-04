@@ -33,6 +33,7 @@ import { findSections, replaceSectionText, SectionError } from './sections.ts';
 import {
   BoardError,
   hasUnfencedOrderMarkerComment, parseOrderMarker, stripOrderMarker, setOrderMarker, midpointOrder,
+  setCanvasMarker, parseCanvasMarker,
   applyQuestionAnswer,
   applySectionEdit,
   applyStatusChange,
@@ -736,6 +737,23 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       return methodNotAllowed('GET, PATCH');
     }
 
+    const canvasMatch = /^\/api\/issues\/([^/]+)\/canvas$/.exec(route);
+    if (canvasMatch) {
+      if (method !== 'PUT') return methodNotAllowed('PUT');
+      requireCsrf(req, record);
+      const number = parseIssueNumberOrThrow(canvasMatch[1]);
+      const body = await readJsonBody(req);
+      let targetRepo = repository;
+      if (body && typeof body.repo === 'string' && body.repo.includes('/')) {
+        const [o, n] = body.repo.split('/');
+        targetRepo = await resolveRepository(o, n);
+      }
+      return writeIssue(targetRepo!, number, body, {
+        kind: 'canvas',
+        data: body,
+      });
+    }
+
     const sectionMatch = /^\/api\/issues\/([^/]+)\/section$/.exec(route);
     if (sectionMatch) {
       if (method !== 'PUT') return methodNotAllowed('PUT');
@@ -935,6 +953,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
   type WriteOp =
     | { kind: 'draft' | 'order' | 'move'; data: any }
+    | { kind: 'canvas'; data: any }
     | { kind: 'section'; sectionId: unknown; text: unknown }
     | { kind: 'question'; index: number; answer: unknown }
     | { kind: 'status'; status: unknown }
@@ -1139,6 +1158,16 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         }
         if (op.state !== undefined && op.state !== 'open' && op.state !== 'closed') {
           throw new HttpError(400, 'invalid_edit', 'State must be open or closed');
+        }
+      } else if (op.kind === 'canvas') {
+        if (!op.data || typeof op.data !== 'object' || Array.isArray(op.data)) {
+          throw new HttpError(400, 'invalid_canvas', 'Canvas data must be a JSON object');
+        }
+        if (typeof op.data.x !== 'number' || !Number.isFinite(op.data.x)) {
+          throw new HttpError(400, 'invalid_canvas', 'Canvas x coordinate must be a finite number');
+        }
+        if (typeof op.data.y !== 'number' || !Number.isFinite(op.data.y)) {
+          throw new HttpError(400, 'invalid_canvas', 'Canvas y coordinate must be a finite number');
         }
       }
 
@@ -1589,7 +1618,15 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           patch = {};
           if (typeof op.body === 'string') {
             const order = parseOrderMarker(fresh.item.body ?? '');
-            patch.body = order !== null ? setOrderMarker(op.body, order) : op.body;
+            const canvas = parseCanvasMarker(fresh.item.body ?? '');
+            let b = op.body;
+            if (canvas !== null && parseCanvasMarker(b) === null) {
+              b = setCanvasMarker(b, canvas);
+            }
+            if (order !== null && parseOrderMarker(b) === null) {
+              b = setOrderMarker(b, order);
+            }
+            patch.body = b;
           }
           if (typeof op.status === 'string') {
             patch.labels = applyStatusChange(fresh.item, op.status);
@@ -1605,6 +1642,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           if (!bodyChanged && !statusChanged && !stateChanged) {
             throw new HttpError(400, 'invalid_edit', 'That change would leave the issue unchanged');
           }
+        } else if (op.kind === 'canvas') {
+          const { fingerprint: _fp, repo: _repo, ...canvasData } = (op.data ?? {}) as any;
+          patch = { body: setCanvasMarker(fresh.item.body ?? '', canvasData) };
         }
       } catch (error) {
         if (error instanceof BoardError) throw new HttpError(400, 'invalid_edit', error.message);
@@ -1638,7 +1678,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       const currentItem = reread.item;
       let verified = false;
 
-      if (op.kind === 'draft' || op.kind === 'order') {
+      if (op.kind === 'draft' || op.kind === 'order' || op.kind === 'canvas') {
         verified = Object.entries(patch).every(([key, value]) => currentItem[key] === value);
       } else if (op.kind === 'section') {
         const curSec = findSections(currentItem.body ?? '').find((s) => s.id === op.sectionId);
@@ -1686,6 +1726,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           status: 200,
           body: {
             issue: buildIssueDetail(currentItem, repository),
+            listItem: buildBoardListItem(currentItem, repository),
             savedAt: new Date(now()).toISOString(),
             statusOptions: statusOptions(),
           },

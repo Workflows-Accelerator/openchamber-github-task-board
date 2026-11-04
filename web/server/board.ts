@@ -40,6 +40,14 @@ const closeFencePattern = /^ {0,3}(`{3,}|~{3,})[ \t]*$/;
 // four leading spaces already reach code indentation, regardless of what follows.
 const indentedCodeLinePattern = /^(?: {4}| {0,3}\t)/;
 const orderMarkerSingleLine = /^ {0,3}<!--\s*board-order:\s*(-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[-+]?\d+)?)\s*-->[ \t]*$/i;
+const canvasMarkerLinePattern = /^ {0,3}<!--\s*board-canvas:/i;
+const canvasMarkerSingleLine = /^ {0,3}<!--\s*board-canvas:\s*(\{[\s\S]*\})\s*-->[ \t]*$/i;
+
+export interface CanvasMarkerData {
+  x?: number;
+  y?: number;
+  [key: string]: any;
+}
 
 interface ScannedLine {
   start: number;
@@ -101,33 +109,6 @@ function parseMarkerLineValue(line: ScannedLine): number | null {
   return Number.isFinite(num) ? num : null;
 }
 
-function locateTerminalOrderMarker(body: string): { order: number; cutOffset: number } | null {
-  if (!body) return null;
-  const lines = scanBodyLines(body);
-  let idx = lines.length - 1;
-  while (idx >= 0 && !lines[idx].fenced && /^[ \t]*$/.test(lines[idx].text)) {
-    idx -= 1;
-  }
-  if (idx < 0) return null;
-  const order = parseMarkerLineValue(lines[idx]);
-  if (order === null) return null;
-  let firstMarkerIdx = idx;
-  let probe = idx - 1;
-  while (probe >= 0) {
-    let blankProbe = probe;
-    while (blankProbe >= 0 && !lines[blankProbe].fenced && /^[ \t]*$/.test(lines[blankProbe].text)) {
-      blankProbe -= 1;
-    }
-    if (blankProbe >= 0 && parseMarkerLineValue(lines[blankProbe]) !== null) {
-      firstMarkerIdx = blankProbe;
-      probe = blankProbe - 1;
-    } else {
-      break;
-    }
-  }
-  return { order, cutOffset: lines[firstMarkerIdx].start };
-}
-
 function trimTrailingBlankLines(value: string): string {
   const lines = scanBodyLines(value);
   let idx = lines.length - 1;
@@ -144,21 +125,177 @@ export function hasUnfencedOrderMarkerComment(body: string = ''): boolean {
 }
 
 export function parseOrderMarker(body: string = ''): number | null {
-  const located = locateTerminalOrderMarker(body);
-  return located ? located.order : null;
+  if (!body) return null;
+  const lines = scanBodyLines(body);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i];
+    if (line.fenced || line.indentedCode) continue;
+    const match = orderMarkerSingleLine.exec(line.text);
+    if (match) {
+      const num = Number(match[1]);
+      return Number.isFinite(num) ? num : null;
+    }
+  }
+  return null;
 }
 
 export function stripOrderMarker(body: string = ''): string {
-  // Strip only the terminal unfenced marker line(s), leaving every non-marker byte untouched.
-  const located = locateTerminalOrderMarker(body);
-  return located ? body.slice(0, located.cutOffset) : body;
+  if (!body) return '';
+  const lines = scanBodyLines(body);
+  const orderIndices = new Set<number>();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.fenced && !line.indentedCode && orderMarkerSingleLine.test(line.text)) {
+      orderIndices.add(i);
+    }
+  }
+  if (orderIndices.size === 0) return body;
+  let result = '';
+  for (let i = 0; i < lines.length; i++) {
+    if (orderIndices.has(i)) continue;
+    result += body.slice(lines[i].start, lines[i].fullEnd);
+  }
+  return result;
 }
 
 export function setOrderMarker(body: string, order: number): string {
   if (!Number.isFinite(order)) throw new BoardError('invalid', 'Order must be finite');
-  const base = trimTrailingBlankLines(stripOrderMarker(body));
+  const markerText = `<!-- board-order: ${order} -->`;
+  const lines = scanBodyLines(body);
+  const orderIndices: number[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.fenced && !line.indentedCode && orderMarkerSingleLine.test(line.text)) {
+      orderIndices.push(i);
+    }
+  }
+
+  if (orderIndices.length > 0) {
+    const lastIdx = orderIndices[orderIndices.length - 1];
+    const earlierSet = new Set(orderIndices.slice(0, -1));
+    let result = '';
+    for (let i = 0; i < lines.length; i++) {
+      if (earlierSet.has(i)) continue;
+      if (i === lastIdx) {
+        const lineEnding = body.slice(lines[i].contentEnd, lines[i].fullEnd);
+        result += markerText + lineEnding;
+      } else {
+        result += body.slice(lines[i].start, lines[i].fullEnd);
+      }
+    }
+    return result;
+  }
+
   const eol = body.includes('\r\n') ? '\r\n' : '\n';
-  return (base ? base + eol + eol : '') + `<!-- board-order: ${order} -->`;
+  if (!body.trim()) return markerText;
+  if (body.endsWith('\r\n\r\n') || body.endsWith('\n\n')) {
+    return body + markerText;
+  }
+  if (body.endsWith('\r\n') || body.endsWith('\n')) {
+    return body + eol + markerText;
+  }
+  return body + eol + eol + markerText;
+}
+
+const canvasMarkerCommentPattern = /^ {0,3}<!--\s*board-canvas:\s*(.*?)\s*-->[ \t]*$/i;
+
+export function hasUnfencedCanvasMarkerComment(body: string = ''): boolean {
+  return scanBodyLines(body).some(
+    (line) => !line.fenced && !line.indentedCode && canvasMarkerLinePattern.test(line.text),
+  );
+}
+
+export function parseCanvasMarker(body: string = ''): Record<string, any> | null {
+  if (!body || typeof body !== 'string') return null;
+  const lines = scanBodyLines(body);
+  for (let i = lines.length - 1; i >= 0; i--) {
+    const line = lines[i];
+    if (line.fenced || line.indentedCode) continue;
+    const match = canvasMarkerCommentPattern.exec(line.text);
+    if (!match) continue;
+    try {
+      const parsed = JSON.parse(match[1]);
+      if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch {
+      // Malformed JSON comment; keep scanning earlier lines
+    }
+  }
+  return null;
+}
+
+export function stripCanvasMarker(body: string = ''): string {
+  if (!body) return '';
+  const lines = scanBodyLines(body);
+  const canvasIndices = new Set<number>();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.fenced && !line.indentedCode && canvasMarkerLinePattern.test(line.text)) {
+      canvasIndices.add(i);
+    }
+  }
+  if (canvasIndices.size === 0) return body;
+  let result = '';
+  for (let i = 0; i < lines.length; i++) {
+    if (canvasIndices.has(i)) continue;
+    result += body.slice(lines[i].start, lines[i].fullEnd);
+  }
+  return result;
+}
+
+export function stripHiddenMarkers(body: string = ''): string {
+  return stripCanvasMarker(stripOrderMarker(body));
+}
+
+export function setCanvasMarker(body: string = '', data: Record<string, any>): string {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    throw new BoardError('invalid', 'Canvas data must be a valid JSON object');
+  }
+  if (data.x !== undefined && (typeof data.x !== 'number' || !Number.isFinite(data.x))) {
+    throw new BoardError('invalid', 'Canvas x coordinate must be finite');
+  }
+  if (data.y !== undefined && (typeof data.y !== 'number' || !Number.isFinite(data.y))) {
+    throw new BoardError('invalid', 'Canvas y coordinate must be finite');
+  }
+  const existing = parseCanvasMarker(body) || {};
+  const merged = { ...existing, ...data };
+  const markerText = `<!-- board-canvas: ${JSON.stringify(merged)} -->`;
+
+  const lines = scanBodyLines(body);
+  const canvasIndices: number[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.fenced && !line.indentedCode && canvasMarkerLinePattern.test(line.text)) {
+      canvasIndices.push(i);
+    }
+  }
+
+  if (canvasIndices.length > 0) {
+    const lastIdx = canvasIndices[canvasIndices.length - 1];
+    const earlierSet = new Set(canvasIndices.slice(0, -1));
+    let result = '';
+    for (let i = 0; i < lines.length; i++) {
+      if (earlierSet.has(i)) continue;
+      if (i === lastIdx) {
+        const lineEnding = body.slice(lines[i].contentEnd, lines[i].fullEnd);
+        result += markerText + lineEnding;
+      } else {
+        result += body.slice(lines[i].start, lines[i].fullEnd);
+      }
+    }
+    return result;
+  }
+
+  const eol = body.includes('\r\n') ? '\r\n' : '\n';
+  if (!body.trim()) return markerText;
+  if (body.endsWith('\r\n\r\n') || body.endsWith('\n\n')) {
+    return body + markerText;
+  }
+  if (body.endsWith('\r\n') || body.endsWith('\n')) {
+    return body + eol + markerText;
+  }
+  return body + eol + eol + markerText;
 }
 
 export function midpointOrder(previous: number | null, next: number | null): number {
@@ -168,7 +305,7 @@ export function midpointOrder(previous: number | null, next: number | null): num
 
 function listFields(raw: any, repository: BoardRepository | null) {
   const body = typeof raw.body === 'string' ? raw.body : '';
-  const description = trimTrailingBlankLines(stripOrderMarker(body));
+  const description = trimTrailingBlankLines(stripHiddenMarkers(body));
   const dependencies: number[] = [];
   for (const line of scanBodyLines(description)) {
     if (line.fenced || line.indentedCode) continue;
@@ -181,10 +318,16 @@ function listFields(raw: any, repository: BoardRepository | null) {
       }
     }
   }
-  return { createdAt: raw.created_at ?? null, description, order: parseOrderMarker(body),
-    fingerprint: issueFingerprint(raw, repository), dependencies,
+  return {
+    createdAt: raw.created_at ?? null,
+    description,
+    order: parseOrderMarker(body),
+    canvas: parseCanvasMarker(body),
+    fingerprint: issueFingerprint(raw, repository),
+    dependencies,
     pendingItems: [...(normalizedOf(raw)?.humanTasks ?? []), ...parseWebOpenQuestions(body)]
-      .map((item) => ({ text: item.text, completed: item.completed })) };
+      .map((item) => ({ text: item.text, completed: item.completed })),
+  };
 }
 
 export type BoardErrorCode = 'not_an_issue' | 'not_editable' | 'invalid';
@@ -365,6 +508,7 @@ export interface BoardListItem {
   createdAt: string | null;
   description: string;
   order: number | null;
+  canvas: CanvasMarkerData | null;
   fingerprint: string;
   dependencies: number[];
   pendingItems: Array<{ text: string; completed: boolean }>;
@@ -391,6 +535,7 @@ export interface IssueDetail {
   state: 'open' | 'closed';
   htmlUrl: string;
   body: string;
+  canvas: CanvasMarkerData | null;
   fingerprint: string;
   labels: string[];
   statusLabel: string | null;
@@ -458,7 +603,7 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
   const metadata = resolveV2Metadata(issue);
   const labels = labelNames(issue);
   const questions = parseWebOpenQuestions(issue.body ?? '');
-  const friendly = parseFriendlyTitle(stripOrderMarker(issue.body), issue.title);
+  const friendly = parseFriendlyTitle(stripHiddenMarkers(issue.body), issue.title);
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
   return {
     ...listFields(rawItem, repository),
@@ -512,7 +657,7 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     return view;
   });
   const testPlan = parseTestPlan(issue.body);
-  const friendly = parseFriendlyTitle(stripOrderMarker(issue.body), issue.title);
+  const friendly = parseFriendlyTitle(stripHiddenMarkers(issue.body), issue.title);
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
 
   return {
@@ -524,7 +669,8 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     friendlyTitle,
     state: issue.state,
     htmlUrl: issue.html_url,
-    body: stripOrderMarker(issue.body),
+    body: stripHiddenMarkers(issue.body),
+    canvas: parseCanvasMarker(issue.body ?? ''),
     fingerprint: issueFingerprint(raw, repository),
     labels,
     statusLabel: statusLabelOf(labels),
@@ -533,7 +679,7 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     column: resolveIssueColumn(issue),
     updatedAt: issue.updated_at ?? null,
     createdAt: issue.created_at ?? null,
-    editableSections: editableSections(stripOrderMarker(issue.body)),
+    editableSections: editableSections(stripHiddenMarkers(issue.body)),
     openQuestions,
     humanTasks: (issue.humanTasks ?? []).map((task) => ({
       text: task.text,
