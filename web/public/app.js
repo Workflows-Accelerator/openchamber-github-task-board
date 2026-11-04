@@ -541,6 +541,8 @@
 
   var I18N = {
     en: {
+      section_views: 'Views',
+      section_system: 'System',
       nav_canvas: 'Canvas',
       nav_list: 'List',
       nav_decisions: 'Decisions',
@@ -595,6 +597,8 @@
       drawer_edit_warning: 'Best-effort editing: a simultaneous edit on GitHub or by an agent can still be overwritten.',
     },
     fr: {
+      section_views: 'Vues',
+      section_system: 'Système',
       nav_canvas: 'Canevas',
       nav_list: 'Liste',
       nav_decisions: 'Décisions',
