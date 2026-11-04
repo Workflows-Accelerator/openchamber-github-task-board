@@ -23,7 +23,8 @@
     - 25m54s: session idle, no assistant message -> DEAD. Uncommitted diff app.ts +34, board.ts +230/-43, canvas.test.mjs.
   - `ses_91f8cd86486bc4f6f8470396` A2 #57 RESUME (engineer, tasks/task-A2-resume.md) — COMPLETED at b9163a4 (04b9b38 server, 0d8c44a client, b9163a4 proof). 618/618, canvas 13/13.
     - Manager screenshot check: 8 findings (blurry text at 200%, dots vanish at 25%, 360 proof has drawer open, first-load cards cut off, ETag claim suspect, byte-identity/reload/no-write/revert not explicitly proven, hang root cause, board.ts -43 lines).
-  - `ses_a25b467880c9d34eb3a479d4` A2 #57 L4 hostile (engineer, tasks/task-A2-hostile.md) — RUNNING.
+  - `ses_a25b467880c9d34eb3a479d4` A2 #57 L4 hostile (engineer, tasks/task-A2-hostile.md) — COMPLETED at af6f066 (2eeccd1 fixes), 8/8 findings resolved; left 1 uncommitted line in app.ts (handed to audit). Manager re-check: 200% sharp, 25% dots visible, 360 drawer closed, 1280 first-load fits. #57 -> status:in-review.
+  - `ses_42435bc310ffbdcf87fdf773` A2 #57 audit (engineer, tasks/task-A2-audit.md) — RUNNING.
     - On both wakes: check git log for interleaved/swept commits, run npm test once, then A2. Never dispatch twice again: if delegate returns "aborted", check session.list before retrying.
   - `ses_dc3caccfc68591839a260337` P1 read-only preflight (engineer) — COMPLETED -> explore/preflight.md
 - **Preflight findings (2026-11-04):** native dependency API works, token is a classic PAT with repo scope (board uses GITHUB_TOKEN fallback); write on all 26 repos; Discussions DISABLED on all 26 repos (enabling = repo setting -> user task, B3 built on fake only); OpenChamber on 127.0.0.1:3000 same container, `POST /api/openchamber/control` session.create or `openchamber session create` CLI; live `current` reported -> 8b7e059-20261102 (summary said 98261a8 — C4 must re-check).
