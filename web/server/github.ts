@@ -37,6 +37,7 @@ export class GitHubError extends Error {
 }
 
 export interface GitHubRepoRef {
+  id?: number | null;
   owner: string;
   name: string;
   full: string;
@@ -395,8 +396,15 @@ export class GitHubClient {
         if (parsedNext.origin !== apiOrigin) {
           throw new GitHubError('server', 200, 'GitHub pagination left the configured API origin');
         }
-        const expectedPath = `${new URL(this.issuesBase()).pathname}/issues`;
-        if (parsedNext.pathname !== expectedPath) {
+        const expectedNamedPath = `${new URL(this.issuesBase()).pathname}/issues`;
+        const expectedNumericPath = typeof this.repo?.id === 'number' && this.repo.id > 0
+          ? `/repositories/${this.repo.id}/issues`
+          : null;
+        const isNamedMatch = parsedNext.pathname === expectedNamedPath;
+        const isNumericMatch = expectedNumericPath !== null
+          ? parsedNext.pathname === expectedNumericPath
+          : /^\/repositories\/\d+\/issues$/.test(parsedNext.pathname);
+        if (!isNamedMatch && !isNumericMatch) {
           throw new GitHubError('server', 200, 'GitHub pagination left the configured repository path');
         }
         nextUrl = parsedNext.toString();

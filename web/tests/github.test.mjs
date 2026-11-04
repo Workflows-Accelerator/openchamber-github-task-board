@@ -178,6 +178,64 @@ test('listIssues rejects a Link header naming a different repository path (R8)',
   );
 });
 
+test('listIssues accepts a numeric /repositories/:id/issues Link header matching repo.id', async () => {
+  const paths = [];
+  const mockFetch = async (url) => {
+    paths.push(url);
+    return new Response(
+      JSON.stringify([{ number: paths.length, title: `Issue ${paths.length}` }]),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+          link:
+            paths.length === 1
+              ? '<https://api.github.com/repositories/12345/issues?page=2>; rel="next"'
+              : '',
+        },
+      },
+    );
+  };
+
+  const client = new GitHubClient({
+    apiBase: 'https://api.github.com',
+    token: TOKEN,
+    repo: { id: 12345, owner: 'owner', name: 'repo', full: 'owner/repo' },
+    fetchImpl: mockFetch,
+  });
+
+  const result = await client.listIssues();
+  assert.equal(result.items.length, 2);
+  assert.equal(paths.length, 2);
+  assert.equal(paths[1], 'https://api.github.com/repositories/12345/issues?page=2');
+});
+
+test('listIssues rejects a numeric /repositories/:id/issues Link header when id does not match repo.id', async () => {
+  const mockFetch = async () =>
+    new Response(
+      JSON.stringify([{ number: 1, title: 'Allowed' }]),
+      {
+        status: 200,
+        headers: {
+          'content-type': 'application/json',
+          link: '<https://api.github.com/repositories/99999/issues?page=2>; rel="next"',
+        },
+      },
+    );
+
+  const client = new GitHubClient({
+    apiBase: 'https://api.github.com',
+    token: TOKEN,
+    repo: { id: 12345, owner: 'owner', name: 'repo', full: 'owner/repo' },
+    fetchImpl: mockFetch,
+  });
+
+  await assert.rejects(
+    () => client.listIssues(),
+    (err) => err instanceof GitHubError && /repository path/i.test(err.message),
+  );
+});
+
 test('listIssues dedupes issues and stops when a page adds nothing new', async () => {
   let callCount = 0;
   const mockFetch = async () => {
