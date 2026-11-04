@@ -26,6 +26,9 @@
   - `ses_a25b467880c9d34eb3a479d4` A2 #57 L4 hostile (engineer, tasks/task-A2-hostile.md) — COMPLETED at af6f066 (2eeccd1 fixes), 8/8 findings resolved; left 1 uncommitted line in app.ts (handed to audit). Manager re-check: 200% sharp, 25% dots visible, 360 drawer closed, 1280 first-load fits. #57 -> status:in-review.
   - `ses_42435bc310ffbdcf87fdf773` A2 #57 audit (engineer, tasks/task-A2-audit.md) — RUNNING.
   - CORRECTION: `ses_b48c1bd6840a9fa336998a5f` (first A2 worker, judged DEAD on idle status + empty messages) was ALIVE. It ran concurrently with the resume and hostile sessions and reported completed at 7268bb6 (09:25, it committed the stray app.ts null-guard line). Up to 3 sessions shared the worktree 05:51-09:25. Tree clean now. The audit (dispatched before 7268bb6) must be checked on wake: git log coherence, npm test once more by a small worker if the audit did not run it on top of 7268bb6.
+  - A2 audit COMPLETED: Spec PASS / Quality APPROVED at dd9e8ac (279090d sidebar shadow leak fix; confirmed 7268bb6; 618/618 after 7268bb6; pan 300 cards ~46fps avg, 50ms max). Concurrency = per-issue lock + fingerprint 409 (follow-up given to A3: same-card double-drop must not false-409).
+  - **A2 #57 = AWAITING BATCH A REVIEW** (tip dd9e8ac).
+  - `ses_1deb63bd71765f05e4f6d858` A3 #58 build (engineer, tasks/task-A3-dispatch.md -> task-A3-links.md, base dd9e8ac) — RUNNING. #58 -> status:in-progress.
   - LESSON: session.status "idle" + no assistant message does NOT prove a worker is dead. Before a resume dispatch, require the delegate wake state=completed/failed, or no worktree file mtime change for 30+ min AND a check of running processes.
     - On both wakes: check git log for interleaved/swept commits, run npm test once, then A2. Never dispatch twice again: if delegate returns "aborted", check session.list before retrying.
   - `ses_dc3caccfc68591839a260337` P1 read-only preflight (engineer) — COMPLETED -> explore/preflight.md
