@@ -197,6 +197,24 @@
           <span id="freshness" class="freshness status-strip-freshness"></span>
         </div>
 
+        <!-- Canvas Viewport -->
+        <div id="canvas-viewport" class="canvas-viewport" tabindex="0" role="region" aria-label="Task Canvas" hidden>
+          <div id="canvas-controls" class="canvas-floating-controls" role="toolbar" aria-label="Canvas zoom controls">
+            <button id="canvas-zoom-out" class="canvas-control-btn" type="button" title="Zoom out" aria-label="Zoom out" data-i18n-title="canvas_zoom_out">-</button>
+            <button id="canvas-zoom-readout" class="canvas-control-btn readout-btn" type="button" title="Reset zoom (100%)" aria-label="Reset zoom (100%)" data-i18n-title="canvas_zoom_reset">100%</button>
+            <button id="canvas-zoom-in" class="canvas-control-btn" type="button" title="Zoom in" aria-label="Zoom in" data-i18n-title="canvas_zoom_in">+</button>
+            <span class="canvas-control-sep" aria-hidden="true">|</span>
+            <button id="canvas-fit-all" class="canvas-control-btn text-btn" type="button" title="Fit all" aria-label="Fit all" data-i18n-title="canvas_fit_all" data-i18n="canvas_fit_all">Fit all</button>
+            <button id="canvas-reset-view" class="canvas-control-btn text-btn" type="button" title="Reset view" aria-label="Reset view" data-i18n-title="canvas_reset_view" data-i18n="canvas_reset_view">Reset</button>
+          </div>
+          <div id="canvas-plane" class="canvas-plane">
+            <svg id="canvas-wires" class="canvas-layer canvas-layer-wires" width="14" height="14" aria-hidden="true"></svg>
+            <div id="canvas-notes" class="canvas-layer canvas-layer-notes" aria-hidden="true"></div>
+            <div id="canvas-cards" class="canvas-layer canvas-layer-cards" role="region" aria-label="Task cards"></div>
+            <div id="canvas-overlay" class="canvas-layer canvas-layer-overlay" aria-hidden="true"></div>
+          </div>
+        </div>
+
         <h1 id="board-title" class="sr-only" tabindex="-1">Tasks</h1>
         <div id="filter-chips" class="filter-chips" aria-label="Active filters"></div>
         <p id="view-hint" class="muted small"></p>

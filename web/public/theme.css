@@ -28,6 +28,7 @@
   --rad-lg: 10px;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Plus Jakarta Sans", sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, "JetBrains Mono", monospace;
+  --canvas-dot-rgb: 244, 241, 234;
   color-scheme: dark;
 }
 
@@ -54,6 +55,7 @@
     --warn-subtle: #fbf3eb;
     --err: #c0392b;
     --err-subtle: rgba(192, 57, 43, 0.08);
+    --canvas-dot-rgb: 24, 22, 19;
     color-scheme: light;
   }
 }
@@ -80,6 +82,7 @@
   --warn-subtle: rgba(212, 139, 56, 0.16);
   --err: #e05252;
   --err-subtle: rgba(224, 82, 82, 0.16);
+  --canvas-dot-rgb: 244, 241, 234;
   color-scheme: dark;
 }
 
@@ -105,6 +108,7 @@
   --warn-subtle: #fbf3eb;
   --err: #c0392b;
   --err-subtle: rgba(192, 57, 43, 0.08);
+  --canvas-dot-rgb: 24, 22, 19;
   color-scheme: light;
 }
 
@@ -1484,3 +1488,296 @@ input[type="text"].search-input:focus,
   .task-row { width: 100%; min-width: 0; }
   .task-top { flex-wrap: wrap; }
 }
+
+/* ==========================================================================
+   ChamberOS Canvas Viewport & Dot Grid
+   ========================================================================== */
+#board-view.mode-canvas {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: 0;
+}
+
+#board-view.mode-canvas #canvas-viewport {
+  display: flex;
+}
+
+#board-view.mode-canvas #task-list,
+#board-view.mode-canvas #quick-add-form,
+#board-view.mode-canvas #empty-state,
+#board-view.mode-canvas #filter-chips,
+#board-view.mode-canvas #view-hint,
+#board-view.mode-canvas #capture-hint {
+  display: none !important;
+}
+
+.canvas-viewport {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  overflow: hidden;
+  user-select: none;
+  touch-action: none;
+  outline: none;
+  cursor: grab;
+  background-color: var(--bg);
+}
+
+.canvas-viewport:active,
+.canvas-viewport.is-panning {
+  cursor: grabbing;
+}
+
+.canvas-plane {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.canvas-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+}
+
+.canvas-layer-wires {
+  z-index: 10;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.canvas-layer-notes {
+  z-index: 20;
+}
+
+.canvas-layer-cards {
+  z-index: 30;
+}
+
+.canvas-layer-overlay {
+  z-index: 40;
+  pointer-events: none;
+}
+
+/* Floating Zoom & View Controls */
+.canvas-floating-controls {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 50;
+  padding: 4px 6px;
+  border-radius: var(--rad-lg);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: var(--surf);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 16px rgba(24, 22, 19, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  user-select: none;
+}
+
+.canvas-control-btn {
+  background: transparent;
+  border: none;
+  color: var(--fg);
+  border-radius: var(--rad-sm);
+  padding: 4px 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  transition: background-color 0.12s ease;
+}
+
+.canvas-control-btn:hover {
+  background-color: var(--surf-hover);
+}
+
+.canvas-control-btn.readout-btn {
+  font-size: 11.5px;
+  min-width: 48px;
+}
+
+.canvas-control-btn.text-btn {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  color: var(--fg-muted);
+}
+
+.canvas-control-btn.text-btn:hover {
+  color: var(--fg);
+}
+
+.canvas-control-sep {
+  color: var(--border-strong);
+  padding: 0 2px;
+  user-select: none;
+}
+
+/* 250px V1 Card Node */
+.canvas-card {
+  position: absolute;
+  width: 250px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  border-radius: var(--rad-lg);
+  box-shadow: 0 2px 8px rgba(24, 22, 19, 0.06);
+  cursor: grab;
+  padding: 10px 12px;
+  box-sizing: border-box;
+  user-select: none;
+  touch-action: none;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.canvas-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: 0 4px 16px rgba(24, 22, 19, 0.1);
+}
+
+.canvas-card.is-dragging {
+  cursor: grabbing;
+  z-index: 100 !important;
+  box-shadow: 0 10px 28px rgba(24, 22, 19, 0.2);
+  border-color: var(--prim);
+}
+
+.canvas-card:focus-visible {
+  outline: 2px solid var(--prim);
+  outline-offset: 2px;
+}
+
+.canvas-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.canvas-card-repo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.canvas-card-repo-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background-color: var(--prim);
+  flex-shrink: 0;
+}
+
+.canvas-card-repo-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--fg-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.canvas-card-status-chip {
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: var(--surf-muted);
+  color: var(--fg-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.canvas-card-status-chip.status-in-progress,
+.canvas-card-status-chip.status-planned {
+  background: var(--prim-subtle);
+  color: var(--prim);
+}
+
+.canvas-card-status-chip.status-done {
+  background: var(--succ-subtle);
+  color: var(--succ);
+}
+
+.canvas-card-status-chip.status-needs-human {
+  background: var(--warn-subtle);
+  color: var(--warn);
+}
+
+.canvas-card-title {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--fg);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 28px;
+}
+
+.canvas-card-subtitle {
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.canvas-card-footer {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10.5px;
+}
+
+.canvas-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.canvas-card-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--fg-faint);
+}
+
+.canvas-card-prio {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.canvas-card-prio.prio-urgent,
+.canvas-card-prio.prio-high {
+  background: var(--err-subtle);
+  color: var(--err);
+}
+

@@ -1,5 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   parseCanvasMarker,
   stripCanvasMarker,
@@ -13,6 +16,12 @@ import {
 } from '../server/board.ts';
 import { startFakeGitHub, makeIssue } from './fake-github.mjs';
 import { startBoard, HttpSession } from './helpers.mjs';
+
+const HERE = path.dirname(fileURLToPath(import.meta.url));
+const ROOT_DIR = path.resolve(HERE, '../..');
+const INDEX_HTML_PATH = path.join(ROOT_DIR, 'web/public/index.html');
+const THEME_CSS_PATH = path.join(ROOT_DIR, 'web/public/theme.css');
+const APP_JS_PATH = path.join(ROOT_DIR, 'web/public/app.js');
 
 test('canvas marker parse: parses valid JSON, handles floats and negative numbers', () => {
   assert.equal(parseCanvasMarker('No marker here'), null);
@@ -221,4 +230,92 @@ test('PUT /api/issues/:n/canvas: handles upstream GitHub failure path', async (t
     body: { x: 100, y: 200, fingerprint: boardItem.fingerprint },
   });
   assert.equal(failRes.status, 502);
+});
+
+test('canvas client: index.html defines viewport, plane, controls and 4 distinct layers', () => {
+  const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
+
+  assert.match(html, /<div\s+id="canvas-viewport"/, 'viewport container must exist');
+  assert.match(html, /<div\s+id="canvas-controls"/, 'floating controls container must exist');
+  assert.match(html, /<div\s+id="canvas-plane"/, 'infinite plane container must exist');
+
+  // Floating controls buttons
+  assert.match(html, /id="canvas-zoom-out"/, 'zoom out button exists');
+  assert.match(html, /id="canvas-zoom-readout"/, 'zoom readout button exists');
+  assert.match(html, /id="canvas-zoom-in"/, 'zoom in button exists');
+  assert.match(html, /id="canvas-fit-all"/, 'fit all button exists');
+  assert.match(html, /id="canvas-reset-view"/, 'reset view button exists');
+
+  // Verify the 4 layers exist in exact order
+  const wiresPos = html.indexOf('id="canvas-wires"');
+  const notesPos = html.indexOf('id="canvas-notes"');
+  const cardsPos = html.indexOf('id="canvas-cards"');
+  const overlayPos = html.indexOf('id="canvas-overlay"');
+
+  assert.ok(wiresPos > 0, 'wires layer exists');
+  assert.ok(notesPos > wiresPos, 'notes layer comes after wires');
+  assert.ok(cardsPos > notesPos, 'cards layer comes after notes');
+  assert.ok(overlayPos > cardsPos, 'overlay layer comes after cards');
+});
+
+test('canvas client: theme.css enforces z-indices, 250px V1 cards, and unbounded plane', () => {
+  const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
+
+  // 4 layers z-indices
+  assert.match(css, /\.canvas-layer-wires\s*\{[^}]*z-index:\s*10;/s, 'wires z-index is 10');
+  assert.match(css, /\.canvas-layer-notes\s*\{[^}]*z-index:\s*20;/s, 'notes z-index is 20');
+  assert.match(css, /\.canvas-layer-cards\s*\{[^}]*z-index:\s*30;/s, 'cards z-index is 30');
+  assert.match(css, /\.canvas-layer-overlay\s*\{[^}]*z-index:\s*40;/s, 'overlay z-index is 40');
+  assert.match(css, /\.canvas-floating-controls\s*\{[^}]*z-index:\s*50;/s, 'controls z-index is 50');
+
+  // Unbounded plane: width 0, height 0, position absolute
+  assert.match(css, /\.canvas-plane\s*\{[^}]*width:\s*0;[^}]*height:\s*0;/s, 'canvas plane has width 0, height 0');
+
+  // 250px V1 card style
+  assert.match(css, /\.canvas-card\s*\{[^}]*width:\s*250px;/s, 'card has 250px fixed width');
+  assert.match(css, /\.canvas-card\s*\{[^}]*position:\s*absolute;/s, 'card is positioned absolutely');
+
+  // Dot color token
+  assert.match(css, /--canvas-dot-rgb:\s*244,\s*241,\s*234;/, 'dark dot token defined');
+  assert.match(css, /--canvas-dot-rgb:\s*24,\s*22,\s*19;/, 'light dot token defined');
+});
+
+test('canvas client: zero occurrences of "n8n" or "mobile" in web/public source files', () => {
+  const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
+  const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
+  const js = fs.readFileSync(APP_JS_PATH, 'utf8');
+
+  for (const [filename, content] of [['index.html', html], ['theme.css', css], ['app.js', js]]) {
+    assert.doesNotMatch(content, /\bn8n\b/i, `Forbidden token "n8n" found in ${filename}`);
+    assert.doesNotMatch(content, /\bmobile\b/i, `Forbidden token "mobile" found in ${filename}`);
+  }
+});
+
+test('canvas client: English and French localization for all new Canvas UI elements', () => {
+  const js = fs.readFileSync(APP_JS_PATH, 'utf8');
+
+  // Check required i18n keys
+  const requiredKeys = [
+    'canvas_zoom_in',
+    'canvas_zoom_out',
+    'canvas_zoom_reset',
+    'canvas_fit_all',
+    'canvas_reset_view',
+    'canvas_save_error',
+    'nav_canvas',
+    'nav_list',
+  ];
+
+  for (const key of requiredKeys) {
+    assert.ok(js.includes(`${key}:`), `Missing key ${key} in i18n dictionaries`);
+  }
+});
+
+test('canvas client: non-clustering dot grid mathematics scale dot radius and fade below 0.55', () => {
+  const js = fs.readFileSync(APP_JS_PATH, 'utf8');
+
+  // Check dot scaling math
+  assert.match(js, /dotRadius\s*=\s*Math\.max\(0\.35,\s*1\.25\s*\*\s*state\.canvasScale\)/, 'dot radius scales proportionally');
+  assert.match(js, /state\.canvasScale\s*>=\s*0\.55/, 'fade threshold at 0.55 scale');
+  assert.match(js, /state\.canvasScale\s*<=\s*0\.40/, 'fade threshold at 0.40 scale');
 });
