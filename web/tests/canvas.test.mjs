@@ -779,3 +779,16 @@ test('PUT /api/issues/:n/canvas: Arrange undo payload clears position of a previ
   assert.equal(empty.status, 400);
   assert.equal(fake.patchCalls.length, patchesBefore, 'invalid canvas payloads must not reach GitHub');
 });
+
+test('canvas client: note connector svg has a paintable box and note Edit label is localized', () => {
+  const js = fs.readFileSync(APP_JS_PATH, 'utf8');
+  const start = js.indexOf("svg.setAttribute('class', 'canvas-notes-connectors-svg')");
+  assert.ok(start > 0, 'connector svg is created in renderCanvasNotes');
+  const block = js.slice(start, start + 600);
+  // The notes layer is 0x0; a 100% sized svg is 0x0 and Chromium paints none of its lines.
+  assert.doesNotMatch(block, /svg\.style\.width\s*=\s*'100%'/);
+  assert.match(block, /svg\.style\.width\s*=\s*'1px'/);
+  assert.match(block, /svg\.style\.overflow\s*=\s*'visible'/);
+  assert.doesNotMatch(js, /class: 'canvas-note-btn btn-edit',[\s\S]{0,200}text: 'Edit'/);
+  assert.match(js, /class: 'canvas-note-btn btn-edit',[\s\S]{0,200}text: dict\.note_edit \|\| 'Edit'/);
+});

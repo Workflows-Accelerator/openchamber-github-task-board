@@ -2892,7 +2892,7 @@
       class: 'canvas-note-btn btn-edit',
       title: dict.note_edit || 'Edit',
       'aria-label': dict.note_edit || 'Edit',
-      text: 'Edit',
+      text: dict.note_edit || 'Edit',
     });
 
     var delBtn = el('button', {
@@ -3116,8 +3116,10 @@
     svg.style.position = 'absolute';
     svg.style.top = '0';
     svg.style.left = '0';
-    svg.style.width = '100%';
-    svg.style.height = '100%';
+    // The notes layer is 0x0, so 100% would give a 0x0 svg that Chromium never paints.
+    // A 1px box with overflow visible lets connectors draw anywhere on the plane.
+    svg.style.width = '1px';
+    svg.style.height = '1px';
     svg.style.pointerEvents = 'none';
     svg.style.overflow = 'visible';
     notesLayer.appendChild(svg);
