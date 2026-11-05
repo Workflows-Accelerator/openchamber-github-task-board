@@ -136,7 +136,15 @@ test('hostile markdown: attribute breakout in URLs is neutralized', () => {
   const payload = '[Payload](https://example.com/"onmouseover="alert(1))';
   const html = renderMarkdown(payload);
   assert.doesNotMatch(html, /<a\s+[^>]*\s+onmouseover\s*=/, 'Attribute breakout must not create onmouseover attribute on tag');
-  assert.match(html, /href="https:\/\/example\.com\/&amp;quot;onmouseover=&amp;quot;alert\(1"/);
+  assert.match(html, /href="https:\/\/example\.com\/&quot;onmouseover=&quot;alert\(1"/);
+  assert.ok(!html.includes('&amp;quot;'), 'URL must be escaped exactly once');
+});
+
+test('hostile markdown: ampersands and quotes in URLs are escaped exactly once', () => {
+  const html = renderMarkdown('[q](https://example.com/?a=1&b="2"&c=\'3\')');
+  assert.match(html, /<a href="https:\/\/example\.com\/\?a=1&amp;b=&quot;2&quot;&amp;c=&#39;3&#39;" target="_blank" rel="noopener noreferrer">q<\/a>/);
+  assert.ok(!html.includes('&amp;amp;'), 'Ampersand must not be double-escaped');
+  assert.ok(!html.includes('&amp;quot;'), 'Quote must not be double-escaped');
 });
 
 test('hostile markdown: multi-backtick code fences (>=4) and nested code syntax', () => {

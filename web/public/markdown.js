@@ -62,8 +62,10 @@ function parseInlines(text) {
     }
     const idx = links.length;
     const parsedLinkText = parseInlines(linkText);
-    const safeHref = escapeHtml(cleanUrl);
-    const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+    // renderMarkdown escapes the whole source before inline parsing, so cleanUrl and
+    // title are already HTML-escaped; escaping again would turn & into &amp;amp;.
+    const safeHref = cleanUrl;
+    const titleAttr = title ? ` title="${title}"` : '';
     links.push(`<a href="${safeHref}" target="_blank" rel="noopener noreferrer"${titleAttr}>${parsedLinkText}</a>`);
     return `${nonce}L${idx}\x1a`;
   });
