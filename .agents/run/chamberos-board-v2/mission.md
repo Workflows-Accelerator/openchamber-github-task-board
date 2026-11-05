@@ -1,7 +1,7 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `proving` (A4 hostile review active; A1-A3 awaiting combined human review)
+- **State:** `proving` (A4 audit active; A1-A3 awaiting combined human review)
 - **Alignment:** `CONFIRMED` (rounds 1-3, see decisions.md)
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2`
 - **Branch:** `feat/chamberos-board-v2`
@@ -35,7 +35,8 @@
   - **A3 #58 = AWAITING BATCH A REVIEW** (tip d0d5b72).
   - `ses_8ba94bdadca0fa4ca420181a` A4 #59 build — COMPLETED at 9317aa0, despite dispatch returning aborted and the early idle snapshot. No duplicate dispatched. Commits: 27956d6 cross-repo chip, b19a9bf markdown, 8965191 layout, 46180fd validation, 9317aa0 UI/proof. Builder reports legacy 618 + web 527 and typecheck PASS. Tree clean at handover. Model record from the prior one-time check: 9router/engineer.
   - A4 manager screenshot/diff findings: Arrange hides a note under #104 and routes a wire through #105; variable dimensions/only-unplaced collisions and partial Undo not proven; marker text containing '-->' and server schema not proven; queued note/card writes need lost-update tests; renderer permits relative/anchor protocols beyond contract; missing touch/FR proof and mismatched web test count arithmetic. Details in tasks/task-A4-hostile.md.
-  - `ses_c2ba5ad900ba26e46590a91d` A4 #59 L4 hostile review (engineer, tasks/task-A4-hostile.md, base 9317aa0) — RUNNING. Model fidelity awaiting completion metadata (delegate status returned no result; no repeated check). #59 -> status:in-review. Receipt: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/59#issuecomment-6642761912
+  - `ses_c2ba5ad900ba26e46590a91d` A4 #59 L4 hostile review (engineer, tasks/task-A4-hostile.md, base 9317aa0) — COMPLETED (9router/engineer confirmed via session.list): PASS at 1c21069, claims 7/7 fixed, legacy 618 + web 535, typecheck PASS. Manager screenshots: Arrange keeps notes clear, Satellite->Core wire routed around #105. Tree clean.
+  - A4 independent audit (engineer, tasks/task-A4-audit.md, base 1c21069) — dispatching. #59 -> status:in-review. Receipt: https://github.com/Workflows-Accelerator/openchamber-github-task-board/issues/59#issuecomment-6642761912
   - LESSON: session.status "idle" + no assistant message does NOT prove a worker is dead. Before a resume dispatch, require the delegate wake state=completed/failed, or no worktree file mtime change for 30+ min AND a check of running processes.
     - On both wakes: check git log for interleaved/swept commits, run npm test once, then A2. Never dispatch twice again: if delegate returns "aborted", check session.list before retrying.
   - `ses_dc3caccfc68591839a260337` P1 read-only preflight (engineer) — COMPLETED -> explore/preflight.md
