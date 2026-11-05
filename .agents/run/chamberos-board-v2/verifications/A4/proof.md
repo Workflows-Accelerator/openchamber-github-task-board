@@ -203,3 +203,54 @@ Generated via Playwright headless Chromium (`chrome-headless-shell-linux64`) acr
 ### Finding 7: Textarea Editing Blur Race and In-Flight Retention
 - **Defect:** Clicking swatches, delete, or cancel while editing a note could race with the textarea `blur` handler, prematurely firing save or discarding uncommitted text.
 - **Resolution:** Added `mousedown` `preventDefault()` on Save and Cancel buttons to avoid premature textarea blur. Swatch clicks and delete triggers preserve in-progress textarea text. Canceling restores original note text reliably.
+
+---
+
+## Independent audit (2026-11-05, base 1c21069)
+
+Auditor reproduced everything below against the fake GitHub (`web/tests/fake-github.mjs`) and headless Chromium. No live GitHub writes. Probe scripts lived in `/tmp/opencode/a4audit/` (not committed).
+
+### Defects found and fixed (each commit has a test that fails on the old code)
+1. `e7b4ec0` Markdown double escape. `web/public/markdown.js:65` re-escaped an already-escaped URL. Real DOM href for `[amp](https://example.com/?a=1&b="2")` was `https://example.com/?a=1&amp;b=&quot;2&quot;` (literal `&amp;` in the link). Now escaped once. New test `hostile markdown: ampersands and quotes in URLs are escaped exactly once`; old code fails 2 tests.
+2. `df0d5e9` Undo in default "only unplaced" mode was silently broken for the common case. The client sent `{clearPosition:true, notes:[]}`. The server accepted it only because of `notes:[]`, and that also wiped notes added after Arrange. The bare `{clearPosition:true}` contract was rejected with 400 `invalid_canvas` and no write (`web/server/app.ts:1399`). Fix: the server accepts `clearPosition:true` (rejects any other value). Undo restores only the positions of notes that existed at Arrange time and keeps newer notes. A card whose Arrange save failed returns on screen to its saved place. New test `Arrange undo payload clears position of a previously unplaced card` (fails on old server). Zero PATCH calls for invalid payloads.
+3. `f1a8a40` Note connectors were never painted. The connector `<svg>` was `width:100%` of a 0x0 layer, so Chromium painted 0 pixels inside the line's box (measured 0 before, 154 after). The note Edit button hard-coded `text: 'Edit'`, so French showed "Edit". It is now localized ("Modifier"). Source-level test added.
+4. `4fb1c9d` Marker data loss. Note text containing U+2028 or U+2029 was written raw. The marker line then split and `parseCanvasMarker` returned null, so all canvas data for that issue (x, y, notes) disappeared on the next read. Now escaped. The round-trip test fails on the old code.
+5. `d2bd9dc` All 14 A4 screenshots re-shot with `generate-screenshots.mjs` (Console Errors: [], CSP Violations: []). Added `audit-note-connectors-1280.png` and `audit-note-connectors-fr-1280.png`: a note below, a note to the right, and a note at negative coordinates, all with visible dashed connectors and "Modifier" in French.
+
+### Request traces (browser to board to fake GitHub, after the fixes)
+- Arrange, default mode, cards #2 and #3 unplaced plus #4 (notes only), #1 placed: 3 PUT `{x,y[,notes]}` all 200. #1 body is byte-identical. Undo sends 3 PUT `{clearPosition:true[,notes]}` all 200. #2 and #3 have no marker, #4 keeps `k:1` and its note.
+- Arrange with a 500 on #3 (middle): summary "2 cards arranged, 1 failed.". Undo PUTs only #4 and #2 (only successful writes are undone). #3 body is byte-identical.
+- Note races: Save click then immediate Escape: 1 PUT. Ctrl+Enter: 1 PUT. Ctrl+Enter then Escape then blur: 1 PUT. Escape: 0. Cancel click: 0. Blur: 1. Touch tap Save: 1. Touch tap Cancel: 0. Swatch while editing: 2 PUT, GitHub ends with text "v-swatch", colour blue.
+- 500 from GitHub: browser gets 502, notice "Outcome unknown — check the issue on GitHub.", GitHub text unchanged, draft text still shown.
+- 409 (issue edited elsewhere): 0 PATCH, notice "This task changed on GitHub after you opened it; nothing was written.", draft text still shown on the note.
+- Invalid input with zero PATCH each: text type, duplicate id, bad colour, string x, missing id, 4001 chars, 4000 emoji. Note length is counted in UTF-16 units (an emoji counts 2).
+- Body cap: `finalBody.length > 65536` counts UTF-16 code units. That is never looser than GitHub's 65,536-character limit, but it is stricter for astral characters: 32,800 emoji = 65,600 units are rejected. Live GitHub limit behaviour NOT VERIFIED.
+- Marker round trip exact for `-->`, `<!-- board-canvas: ... -->`, CRLF, accents, emoji, quotes, backslash, a code fence holding a marker, and U+2028/U+2029 (after the fix). One marker line, one `-->`.
+- Markdown DOM (real browser): only 2 anchors (https ones), no `img`, no `b`, no `on*` attributes. `javascript:`, `data:`, `vbscript:` and `" onmouseover=` stay as plain text. Nested `[[nest](https://n.com)](https://o.com)` gives one anchor to n.com.
+- Determinism: 80 cards in 2 projects with cycles, variable heights and notes. 20 shuffled inputs produce identical positions (20/20), with 0 card-card overlaps.
+
+### Hostile categories coverage
+1. Arrange overlap/size: PASS for unit tests (`hostile arrange: variable card dimensions and attached note extents prevent overlap`) and the determinism probe. Wire routing around cards: screenshot only.
+2. Only unplaced + Undo: PASS (traces above, new test). Poll/filter causing no movement: NOT RUN. Load: 0 PUT observed in browser probes.
+3. Marker escaping/limits: PASS after fix 4. Chars vs bytes documented above.
+4. Save queue/user intent: PASS for individual races, touch, 500 and 409. Combined edit, drag, resize, Arrange with mid-way failure: NOT RUN.
+5. Markdown safety: PASS after fix 1 (unit tests plus browser DOM).
+6. UX/proof: connectors and French Edit fixed and re-shot. Touch note drag/resize, edit at 200%: NOT RUN.
+7. Test accounting: PASS (below).
+
+### Test accounting
+- 506 to 527 (+21): arrange +8 (chain, diamond, cycles, isolated, multi-project, 300 cards, determinism, empty input), markdown +10, canvas +3 (Arrange/notes HTML+CSS, note_too_long 400, notes stored/updated).
+- 527 to 535 (+8): arrange +4 (`hostile arrange:` cross-project ranks, duplicate numbers, shuffled inputs, variable dimensions), markdown +4 (`hostile markdown:` /,# and // links, attribute breakout, long fences, inline code/placeholder).
+- 535 to 538 (audit +3): 1 markdown, 2 canvas. Unicode assertions were added inside the existing setCanvasMarker test.
+- No test names removed (comm of test names d0d5b72 vs HEAD). One builder-era assertion changed from `notes:["n1"]` to object notes in 9317aa0. The audit changed one assertion that encoded the double-escape bug (`&amp;quot;`) to the correct single escape. No `.skip`/`.todo` in web/tests or test/.
+
+### Final runs (exit codes)
+- `timeout 900 npm test`: tests 618, pass 618, fail 0, skipped 0, exit 0.
+- `timeout 900 node --test web/tests/*.test.mjs`: tests 538, pass 538, fail 0, skipped 0, exit 0.
+- `timeout 600 npm run typecheck`: exit 0.
+
+### Left open (not fixed: outside small-fix scope or needs a decision)
+- Undo of a previously unplaced card leaves the blank-line separator added when the marker was first appended (`web/server/board.ts` strip path). Bodies end `...\r\n\r\n` instead of matching the original exactly. Whitespace only.
+- 409/500 on a note save: the draft stays visible but is not stored anywhere, and the editor closes. A board refresh replaces it with the GitHub text. There is no retry button.
+- Proof line 52 still says "interactive display checkboxes". The markup is `disabled` (display only), so the wording is wrong, not the code.
+- Live GitHub writes: NOT VERIFIED.
