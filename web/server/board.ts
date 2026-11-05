@@ -332,9 +332,13 @@ export function setCanvasMarker(body: string = '', data: Record<string, any>): s
     return stripCanvasMarker(body);
   }
 
+  // U+2028/U+2029 are line terminators for the marker regex, so leaving them raw would
+  // write a marker that can never be parsed back (all canvas data lost on next read).
   const jsonStr = JSON.stringify(merged)
     .replace(/</g, '\\u003c')
-    .replace(/>/g, '\\u003e');
+    .replace(/>/g, '\\u003e')
+    .replace(/\u2028/g, '\\u2028')
+    .replace(/\u2029/g, '\\u2029');
   const markerText = `<!-- board-canvas: ${jsonStr} -->`;
 
   let finalBody = '';

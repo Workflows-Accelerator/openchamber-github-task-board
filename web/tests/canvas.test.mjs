@@ -142,6 +142,16 @@ test('setCanvasMarker: preserves CRLF, code fences, board-order, and merges unkn
   const parsedEscaped = parseCanvasMarker(escapedMarkerBody);
   assert.equal(parsedEscaped.notes[0].text, trickyNoteText);
 
+  // Unicode line/paragraph separators, CRLF, emoji and accents round-trip exactly
+  const unicodeText = 'a\u2028b\u2029c\r\nd \u00e9 \u{1F680}';
+  const unicodeBody = setCanvasMarker('Body\r\n', { x: 5, y: 6, notes: [{ id: 'u', text: unicodeText }] });
+  assert.equal(unicodeBody.includes('\u2028'), false, 'raw U+2028 must not reach the issue body');
+  assert.equal(unicodeBody.includes('\u2029'), false, 'raw U+2029 must not reach the issue body');
+  const parsedUnicode = parseCanvasMarker(unicodeBody);
+  assert.ok(parsedUnicode, 'marker with separators must stay parseable');
+  assert.equal(parsedUnicode.notes[0].text, unicodeText);
+  assert.equal(parsedUnicode.x, 5);
+
   // clearPosition removes x and y while preserving notes and custom keys
   const beforeClear = '<!-- board-canvas: {"x":100,"y":200,"notes":[{"id":"n1","text":"stay"}],"customKey":"persist"} -->';
   const afterClear = setCanvasMarker(beforeClear, { clearPosition: true });
