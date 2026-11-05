@@ -49,7 +49,7 @@ Step A4 delivers attached Markdown notes on the canvas under cards and a pure au
   - Bold (`**` or `__`) and Italic (`*` or `_`), including nested emphasis.
   - Inline code (`` `code` ``) and multi-line fenced code blocks (`` ```ts ... ``` ``) with syntax language tags.
   - Unordered lists (`-` or `*`) and Ordered lists (`1.`).
-  - Task lists with interactive display checkboxes (`- [ ]` and `- [x]`).
+  - Task lists with display-only checkboxes (`- [ ]` and `- [x]`).
   - Hard line breaks and paragraph grouping.
 
 ### 4. Sticky Note UI & Muted V1 Color Tokens
