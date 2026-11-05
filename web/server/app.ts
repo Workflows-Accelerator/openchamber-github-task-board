@@ -1396,8 +1396,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         if (op.data.y !== undefined && (typeof op.data.y !== 'number' || !Number.isFinite(op.data.y))) {
           throw new HttpError(400, 'invalid_canvas', 'Canvas y coordinate must be a finite number');
         }
-        if (op.data.x === undefined && op.data.y === undefined && op.data.notes === undefined) {
-          throw new HttpError(400, 'invalid_canvas', 'Canvas data must include coordinates or notes');
+        if (op.data.clearPosition !== undefined && op.data.clearPosition !== true) {
+          throw new HttpError(400, 'invalid_canvas', 'clearPosition must be true when present');
+        }
+        if (op.data.x === undefined && op.data.y === undefined && op.data.notes === undefined && op.data.clearPosition !== true) {
+          throw new HttpError(400, 'invalid_canvas', 'Canvas data must include coordinates, notes or clearPosition');
         }
         if (op.data.notes !== undefined) {
           if (!Array.isArray(op.data.notes)) {

@@ -731,3 +731,51 @@ test('canvas server: rejects note exceeding 4000 characters with 400 note_too_lo
   assert.equal(putRes.status, 400);
   assert.equal(putRes.json.error, 'note_too_long');
 });
+
+test('PUT /api/issues/:n/canvas: Arrange undo payload clears position of a previously unplaced card', async (t) => {
+  const repo = 'Workflows-Accelerator/openchamber-github-task-board';
+  const original = '## Overview\r\nProse line\r\n\r\n<!-- board-order: 1000 -->';
+  const fake = await startFakeGitHub({
+    repo,
+    issues: [makeIssue({ number: 30, title: 'Unplaced', body: original, labels: ['status:todo'], repo })],
+    honorIfMatch: true,
+  });
+  const board = await startBoard(fake);
+  t.after(async () => {
+    await board.app.close();
+    await fake.close();
+  });
+  const session = new HttpSession(board.url);
+  await session.login();
+  const fingerprint = async () => (await session.request('/api/board')).json.issues.find((i) => i.number === 30).fingerprint;
+
+  const arranged = await session.request('/api/issues/30/canvas', {
+    method: 'PUT',
+    body: { x: 500, y: 80, fingerprint: await fingerprint(), repo },
+  });
+  assert.equal(arranged.status, 200, arranged.text);
+
+  // Exactly what the client sends on Undo for a card with no notes and no saved place before Arrange
+  const undone = await session.request('/api/issues/30/canvas', {
+    method: 'PUT',
+    body: { clearPosition: true, fingerprint: await fingerprint(), repo },
+  });
+  assert.equal(undone.status, 200, undone.text);
+  assert.equal(undone.json.issue.canvas, null);
+  assert.equal(parseCanvasMarker(fake.findIssue(30).body), null);
+  assert.equal(parseOrderMarker(fake.findIssue(30).body), 1000);
+  assert.ok(fake.findIssue(30).body.startsWith('## Overview\r\nProse line'));
+
+  const patchesBefore = fake.patchCalls.length;
+  const badFlag = await session.request('/api/issues/30/canvas', {
+    method: 'PUT',
+    body: { clearPosition: 'yes', fingerprint: await fingerprint(), repo },
+  });
+  assert.equal(badFlag.status, 400);
+  const empty = await session.request('/api/issues/30/canvas', {
+    method: 'PUT',
+    body: { fingerprint: await fingerprint(), repo },
+  });
+  assert.equal(empty.status, 400);
+  assert.equal(fake.patchCalls.length, patchesBefore, 'invalid canvas payloads must not reach GitHub');
+});

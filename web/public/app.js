@@ -3386,9 +3386,22 @@
         if (snap) snap.saved = true;
       } catch (e) {
         failedCount++;
+        // Keep the screen honest: a card whose save failed returns to its saved place.
+        var failedSnap = state.lastArrangeUndo.get(identity(cur));
+        if (failedSnap && cur.canvas) {
+          if (failedSnap.hadCoordinates) {
+            cur.canvas.x = failedSnap.x;
+            cur.canvas.y = failedSnap.y;
+          } else {
+            delete cur.canvas.x;
+            delete cur.canvas.y;
+          }
+          if (failedSnap.notes.length > 0) cur.canvas.notes = JSON.parse(JSON.stringify(failedSnap.notes));
+        }
       }
     }
 
+    if (failedCount > 0) renderCanvasIssues(allIssues);
     if (savedCount === 0 && undoBtn) {
       undoBtn.hidden = true;
     }
@@ -3420,6 +3433,7 @@
       var issue = allIssues[i];
       var snap = state.lastArrangeUndo.get(identity(issue));
       if (snap && snap.saved) {
+        if (!issue.canvas) issue.canvas = {};
         if (snap.hadCoordinates) {
           issue.canvas.x = snap.x;
           issue.canvas.y = snap.y;
@@ -3427,12 +3441,20 @@
           delete issue.canvas.x;
           delete issue.canvas.y;
         }
-        issue.canvas.notes = snap.notes;
+        // Restore only the positions of notes that existed at Arrange time; keep notes
+        // added or edited since then instead of overwriting them with the old snapshot.
+        var snapNotesById = new Map();
+        (snap.notes || []).forEach(function (sn) { snapNotesById.set(sn.id, sn); });
+        var currentNotes = Array.isArray(issue.canvas.notes) ? issue.canvas.notes : [];
+        var restoredNotes = currentNotes.map(function (n) {
+          var sn = snapNotesById.get(n.id);
+          return sn ? Object.assign({}, n, { x: sn.x, y: sn.y }) : n;
+        });
+        if (currentNotes.length > 0) issue.canvas.notes = restoredNotes;
 
         try {
-          var undoPayload = {
-            notes: snap.notes,
-          };
+          var undoPayload = {};
+          if (currentNotes.length > 0) undoPayload.notes = restoredNotes;
           if (snap.hadCoordinates) {
             undoPayload.x = snap.x;
             undoPayload.y = snap.y;
