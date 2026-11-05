@@ -10,7 +10,7 @@ User approved sequential A1-D3 with one combined human review (D29). Built/revie
 | A2 | #57 | Infinite canvas and position persistence | engineer | AWAITING BATCH | verifications/A2/proof.md; audited dd9e8ac |
 | A3 | #58 | Native dependency links | engineer | AWAITING BATCH | verifications/A3/proof.md; audited d0d5b72 |
 | A4 | #59 | Markdown notes and Arrange | engineer build/hostile; genius audit | AWAITING BATCH | verifications/A4/proof.md; build 9317aa0, hostile 1c21069, audit 341ff45 (manager verified all 6 SHAs, diffs, FR connector screenshot). 618 + web 538, typecheck 0. Open carry-overs moved to A5: undo whitespace, unsaved-draft retry, proof wording. NOT RUN: poll/filter stability, combined edit+drag+arrange failure, touch note drag/resize, 200% zoom, live GitHub. |
-| A5 | #60 | Remaining sidebar sections | engineer | DISPATCHING | tasks/task-A5-dispatch.md -> task-A5-sidebar-sections.md; base 341ff45 |
+| A5 | #60 | Remaining sidebar sections | engineer | BLOCKED (OpenChamber 401 on dispatch) | tasks/task-A5-dispatch.md -> task-A5-sidebar-sections.md; base 341ff45 |
 | B1-B4 | #61-64 | Batch B per PLAN.md | engineer | PENDING | PLAN.md |
 | C1-C4 | #65-68 | Batch C; C4 staging only | engineer | PENDING | PLAN.md |
 | D1-D3 | #69-71 | Worktree management | engineer | PENDING | tasks/task-D-worktrees.md |
