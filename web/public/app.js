@@ -689,6 +689,7 @@
       note_delete_confirm: 'Delete note?',
       note_edit: 'Edit',
       note_save: 'Save',
+      note_retry: 'Retry',
       note_cancel: 'Cancel',
       note_empty: '(Empty note - double-click to edit)',
       note_limit_exceeded: 'Note exceeds 4,000 character limit.',
@@ -797,6 +798,7 @@
       note_delete_confirm: 'Supprimer la note ?',
       note_edit: 'Modifier',
       note_save: 'Enregistrer',
+      note_retry: 'Réessayer',
       note_cancel: 'Annuler',
       note_empty: '(Note vide - double-cliquer pour modifier)',
       note_limit_exceeded: 'La note dépasse la limite de 4 000 caractères.',
@@ -2472,6 +2474,7 @@
   }
 
   var cardSaveQueues = new Map();
+  var activeNoteDrafts = new Map();
 
   function escapeHtml(str) {
     if (str === null || str === undefined) return '';
@@ -2598,6 +2601,10 @@
       setNotice('');
       return response;
     } catch (err) {
+      if (err && err.payload && typeof err.payload.fingerprint === 'string') {
+        currentIssue.fingerprint = err.payload.fingerprint;
+        issue.fingerprint = err.payload.fingerprint;
+      }
       if (options.isCardMove) {
         currentIssue.canvas = prevCanvas;
         issue.canvas = prevCanvas;
@@ -2958,20 +2965,27 @@
     renderBodyHtml();
     noteEl.appendChild(body);
 
-    function enterEditMode() {
+    var draftKey = identity(issue) + ':' + note.id;
+
+    function enterEditMode(initialDraft, isFailed) {
       if (noteEl.classList.contains('is-editing')) return;
       noteEl.classList.add('is-editing');
       body.hidden = true;
 
+      var currentDraft = (typeof initialDraft === 'string') ? initialDraft : (note.text || '');
       var textarea = el('textarea', {
         class: 'canvas-note-textarea',
         maxlength: '4000',
         placeholder: 'Note in Markdown…',
       });
-      textarea.value = note.text || '';
+      textarea.value = currentDraft;
 
-      var counter = el('span', { class: 'canvas-note-counter', text: (note.text || '').length + ' / 4000' });
-      var saveNoteBtn = el('button', { type: 'button', class: 'button primary small', text: dict.note_save || 'Save' });
+      var counter = el('span', { class: 'canvas-note-counter', text: currentDraft.length + ' / 4000' });
+      var saveNoteBtn = el('button', {
+        type: 'button',
+        class: 'button primary small' + (isFailed ? ' is-retry' : ''),
+        text: isFailed ? (dict.note_retry || 'Retry') : (dict.note_save || 'Save'),
+      });
       var cancelNoteBtn = el('button', { type: 'button', class: 'button small', text: dict.note_cancel || 'Cancel' });
 
       var footer = el('div', { class: 'canvas-note-edit-footer' }, [
@@ -2995,30 +3009,45 @@
         } else {
           counter.classList.remove('is-limit');
         }
+        activeNoteDrafts.set(draftKey, { draftText: textarea.value, failed: false });
+        if (saveNoteBtn.textContent !== (dict.note_save || 'Save')) {
+          saveNoteBtn.textContent = dict.note_save || 'Save';
+          saveNoteBtn.classList.remove('is-retry');
+        }
       }
 
       textarea.addEventListener('input', updateCounter);
 
       async function doSave() {
         if (isFinishing) return;
-        isFinishing = true;
         var val = textarea.value;
         if (val.length > 4000) {
           setNotice(dict.note_limit_exceeded || 'Note exceeds 4,000 character limit.', true);
-          isFinishing = false;
           return;
         }
+        isFinishing = true;
+        saveNoteBtn.disabled = true;
+        var prevText = note.text;
         note.text = val;
-        exitEdit();
-        renderBodyHtml();
         try {
           await saveIssueCanvas(issue, { notes: issue.canvas.notes });
-        } catch (_) {}
+          activeNoteDrafts.delete(draftKey);
+          exitEdit();
+          renderBodyHtml();
+        } catch (err) {
+          note.text = prevText;
+          activeNoteDrafts.set(draftKey, { draftText: val, failed: true });
+          saveNoteBtn.disabled = false;
+          saveNoteBtn.textContent = dict.note_retry || 'Retry';
+          saveNoteBtn.classList.add('is-retry');
+          isFinishing = false;
+        }
       }
 
       function doCancel() {
         if (isFinishing) return;
         isFinishing = true;
+        activeNoteDrafts.delete(draftKey);
         exitEdit();
         renderBodyHtml();
       }
@@ -3063,21 +3092,29 @@
 
       textarea.addEventListener('blur', function () {
         setTimeout(function () {
-          if (!isFinishing && noteEl.classList.contains('is-editing')) {
+          var draft = activeNoteDrafts.get(draftKey);
+          if (!isFinishing && noteEl.classList.contains('is-editing') && (!draft || !draft.failed)) {
             doSave();
           }
         }, 120);
       });
     }
 
+    var existingDraft = activeNoteDrafts.get(draftKey);
+    if (existingDraft) {
+      enterEditMode(existingDraft.draftText, !!existingDraft.failed);
+    }
+
     body.addEventListener('dblclick', function (e) {
       e.stopPropagation();
-      enterEditMode();
+      var draft = activeNoteDrafts.get(draftKey);
+      enterEditMode(draft ? draft.draftText : undefined, draft ? !!draft.failed : false);
     });
 
     editBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      enterEditMode();
+      var draft = activeNoteDrafts.get(draftKey);
+      enterEditMode(draft ? draft.draftText : undefined, draft ? !!draft.failed : false);
     });
 
     var resizeHandle = el('div', { class: 'canvas-note-resize', title: 'Resize note' });

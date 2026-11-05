@@ -816,3 +816,23 @@ test('canvas client: note connector svg has a paintable box and note Edit label 
   assert.doesNotMatch(js, /class: 'canvas-note-btn btn-edit',[\s\S]{0,200}text: 'Edit'/);
   assert.match(js, /class: 'canvas-note-btn btn-edit',[\s\S]{0,200}text: dict\.note_edit \|\| 'Edit'/);
 });
+
+test('canvas client: note save failure retains draft with localized retry and shields draft from poll overwrite', () => {
+  const js = fs.readFileSync(APP_JS_PATH, 'utf8');
+
+  // 1. Localization keys for Retry in EN and FR
+  assert.match(js, /note_retry:\s*'Retry'/, 'EN dictionary defines note_retry');
+  assert.match(js, /note_retry:\s*'Réessayer'/, 'FR dictionary defines note_retry');
+
+  // 2. Draft map tracking
+  assert.match(js, /var\s+activeNoteDrafts\s*=\s*new\s+Map\(\);/, 'activeNoteDrafts map is defined');
+
+  // 3. Draft retention and Retry action on error
+  assert.match(js, /activeNoteDrafts\.set\(draftKey,\s*\{\s*draftText:\s*val,\s*failed:\s*true\s*\}\);/, 'saves draft in activeNoteDrafts on failure');
+  assert.match(js, /saveNoteBtn\.textContent\s*=\s*dict\.note_retry\s*\|\|\s*'Retry';/, 'sets button text to localized Retry on failure');
+  assert.match(js, /saveNoteBtn\.classList\.add\('is-retry'\);/, 'adds is-retry class on failure');
+
+  // 4. Poll/refresh shielding: restores active draft on note render
+  assert.match(js, /var\s+existingDraft\s*=\s*activeNoteDrafts\.get\(draftKey\);/, 'looks up active draft during renderNote');
+  assert.match(js, /if\s*\(existingDraft\)\s*\{\s*enterEditMode\(existingDraft\.draftText,\s*!!existingDraft\.failed\);/, 're-enters edit mode with active draft during renderNote');
+});
