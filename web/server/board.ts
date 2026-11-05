@@ -56,6 +56,7 @@ interface ScannedLine {
   text: string;
   fenced: boolean;
   indentedCode: boolean;
+  hasBom?: boolean;
 }
 
 function scanBodyLines(body: string): ScannedLine[] {
@@ -79,7 +80,8 @@ function scanBodyLines(body: string): ScannedLine[] {
     }
     const fullEnd = i;
     const rawText = body.slice(start, contentEnd);
-    const cleanText = start === 0 && rawText.startsWith('\uFEFF') ? rawText.slice(1) : rawText;
+    const hasBom = start === 0 && rawText.startsWith('\uFEFF');
+    const cleanText = hasBom ? rawText.slice(1) : rawText;
     let fenced = inCodeFence;
     if (!inCodeFence) {
       const m = fencePattern.exec(cleanText);
@@ -96,7 +98,7 @@ function scanBodyLines(body: string): ScannedLine[] {
       }
     }
     const indentedCode = !fenced && indentedCodeLinePattern.test(cleanText);
-    lines.push({ start, contentEnd, fullEnd, text: cleanText, fenced, indentedCode });
+    lines.push({ start, contentEnd, fullEnd, text: cleanText, fenced, indentedCode, hasBom });
   }
   return lines;
 }
@@ -590,6 +592,82 @@ export function parseWebOpenQuestions(body: string | null | undefined): Array<{
   return questions;
 }
 
+export interface WebHumanTask {
+  index: number;
+  lineIndex: number;
+  completed: boolean;
+  text: string;
+  rawLine: string;
+  charOffset: number;
+}
+
+export function parseWebHumanTasks(body: string | null | undefined): WebHumanTask[] {
+  if (!body || typeof body !== 'string' || !body.includes('[')) return [];
+  const cleanBody = body.startsWith('\uFEFF') ? body.slice(1) : body;
+  if (!/human/i.test(cleanBody)) return [];
+  const lines = scanBodyLines(body);
+  let inHumanTasks = false;
+  const tasks: WebHumanTask[] = [];
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
+    if (line.fenced || line.indentedCode) continue;
+
+    if (line.text.includes('#')) {
+      const isHuman = humanTasksSectionRegex.test(line.text);
+      if (isHuman || questionsSectionRegex.test(line.text) || headingRegex.test(line.text)) {
+        inHumanTasks = isHuman;
+        continue;
+      }
+    }
+
+    if (inHumanTasks) {
+      const m = checklistRegex.exec(line.text);
+      if (m) {
+        const charOffset = line.start + (line.hasBom ? 1 : 0) + m[1].length;
+        tasks.push({
+          index: tasks.length,
+          lineIndex: i,
+          completed: m[2].toLowerCase() === 'x',
+          text: m[4].trim(),
+          rawLine: line.text,
+          charOffset,
+        });
+      }
+    }
+  }
+
+  return tasks;
+}
+
+export function toggleHumanTaskInMarkdown(
+  body: string,
+  taskIndex: number,
+  targetCompleted?: boolean,
+): { newBody: string; task: WebHumanTask } {
+  const tasks = parseWebHumanTasks(body);
+  if (taskIndex < 0 || taskIndex >= tasks.length) {
+    throw new BoardError('invalid', `Human task at index ${taskIndex} not found`);
+  }
+  const task = tasks[taskIndex];
+  const nextCompleted = targetCompleted !== undefined ? Boolean(targetCompleted) : !task.completed;
+  const nextChar = nextCompleted ? 'x' : ' ';
+
+  if (
+    task.charOffset < 0 ||
+    task.charOffset >= body.length ||
+    (body[task.charOffset] !== ' ' && body[task.charOffset] !== 'x' && body[task.charOffset] !== 'X')
+  ) {
+    throw new BoardError('invalid', 'Task checkbox character offset could not be validated safely');
+  }
+
+  const newBody = body.slice(0, task.charOffset) + nextChar + body.slice(task.charOffset + 1);
+  return {
+    newBody,
+    task: { ...task, completed: nextCompleted },
+  };
+}
+
 export interface BoardRepository {
   owner: string;
   name: string;
@@ -648,6 +726,8 @@ export interface BoardListItem {
     openQuestions: { total: number; open: number };
     humanTasks: { total: number; open: number };
   };
+  openQuestions?: OpenQuestionView[];
+  humanTasks?: Array<{ index: number; text: string; completed: boolean; lineIndex?: number }>;
 }
 
 export interface OpenQuestionView {
@@ -694,7 +774,7 @@ export interface IssueDetail {
   }>;
   editableSections: Array<{ id: string; title: string; text: string }>;
   openQuestions: OpenQuestionView[];
-  humanTasks: Array<{ text: string; completed: boolean; lineIndex?: number }>;
+  humanTasks: Array<{ index: number; text: string; completed: boolean; lineIndex?: number }>;
   acceptanceCriteria: Array<{ text: string; completed: boolean; lineIndex?: number }>;
   subtasks: Array<{ text: string; completed: boolean; lineIndex?: number }>;
   testPlan: {
@@ -750,7 +830,26 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
   const issue = normalized[0];
   const metadata = resolveV2Metadata(issue);
   const labels = labelNames(issue);
-  const questions = parseWebOpenQuestions(issue.body ?? '');
+  const rawBody = issue.body ?? '';
+  const questions = parseWebOpenQuestions(rawBody);
+  let answerIndex = 0;
+  const openQuestions: OpenQuestionView[] = questions.map((question, index) => {
+    const view: OpenQuestionView = {
+      index,
+      answerIndex: question.completed ? null : answerIndex,
+      text: question.text,
+      completed: question.completed,
+    };
+    if (!question.completed) answerIndex += 1;
+    return view;
+  });
+  const parsedHumanTasks = parseWebHumanTasks(rawBody);
+  const humanTasks = (parsedHumanTasks.length > 0 ? parsedHumanTasks : (issue.humanTasks ?? [])).map((task, idx) => ({
+    index: typeof (task as any).index === 'number' ? (task as any).index : idx,
+    text: task.text,
+    completed: task.completed,
+    lineIndex: task.lineIndex,
+  }));
   const friendly = parseFriendlyTitle(stripHiddenMarkers(issue.body), issue.title);
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
   return {
@@ -771,8 +870,10 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
     counts: {
       subtasks: countsOf(issue.subtasks),
       openQuestions: countsOf(questions),
-      humanTasks: countsOf(issue.humanTasks ?? []),
+      humanTasks: countsOf(humanTasks),
     },
+    openQuestions,
+    humanTasks,
   };
 }
 
@@ -829,7 +930,8 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     createdAt: issue.created_at ?? null,
     editableSections: editableSections(stripHiddenMarkers(issue.body)),
     openQuestions,
-    humanTasks: (issue.humanTasks ?? []).map((task) => ({
+    humanTasks: (parseWebHumanTasks(issue.body ?? '').length > 0 ? parseWebHumanTasks(issue.body ?? '') : (issue.humanTasks ?? [])).map((task, idx) => ({
+      index: typeof (task as any).index === 'number' ? (task as any).index : idx,
       text: task.text,
       completed: task.completed,
       lineIndex: task.lineIndex,

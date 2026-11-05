@@ -37,6 +37,10 @@
     canvasPanY: 60,
     canvasScale: 1.0,
     canvasHasSavedState: false,
+    activeSectionView: null,
+    archive: { backburner: [], closed: [], totalClosed: 0, hasMore: false, offset: 0, limit: 50, activeTab: 'backburner' },
+    operations: null,
+    clientPresentationMode: false,
   };
 
   function identity(issue) {
@@ -181,9 +185,15 @@
       }
       else node.setAttribute(key, value);
     });
-    (children || []).forEach(function (child) {
-      if (child) node.appendChild(child);
-    });
+    if (typeof children === 'string') {
+      node.textContent = children;
+    } else if (Array.isArray(children)) {
+      children.forEach(function (child) {
+        if (child) node.appendChild(child);
+      });
+    } else if (children && children.nodeType) {
+      node.appendChild(children);
+    }
     return node;
   }
 
@@ -699,6 +709,47 @@
       err_self_link: 'An issue cannot be blocked by itself.',
       err_github_forbidden: 'You do not have permission to change links on this repository.',
       notice_dependencies_degraded: 'Dependency wires unavailable (GitHub GraphQL error). Showing board without wires.',
+      decisions_title: 'Decisions',
+      decisions_desc: 'Every unanswered open question across repositories, grouped by issue, newest activity first.',
+      decisions_no_items: 'No open questions requiring decisions.',
+      decisions_answer_placeholder: 'Type answer…',
+      decisions_btn_answer: 'Answer',
+      decisions_answering: 'Saving…',
+      decisions_answered_notice: 'Question answered.',
+      blocked_title: 'Blocked',
+      blocked_desc: 'Issues requiring human action or blocked by open dependencies.',
+      blocked_no_items: 'No blocked tasks.',
+      blocked_needs_human_label: 'Status: Needs Human',
+      blocked_by_dependencies: 'Blocked by',
+      blocked_human_tasks_title: 'Human Tasks',
+      operations_title: 'Operations overview',
+      operations_desc: 'Real system metrics and distribution across all connected projects.',
+      operations_open: 'Open',
+      operations_closed: 'Closed',
+      operations_needs_human: 'Needs human',
+      operations_blocked: 'Blocked',
+      operations_closed_7days: 'Closed (last 7 days)',
+      operations_oldest_in_progress: 'Oldest open in-progress',
+      operations_status_breakdown: 'Status breakdown per project',
+      operations_project: 'Project',
+      archive_title: 'Archive & Backburner',
+      archive_desc: 'Browse backburner tasks and historical closed issues.',
+      archive_tab_backburner: 'Backburner',
+      archive_tab_closed: 'Archived (closed)',
+      archive_no_backburner: 'No tasks on the backburner.',
+      archive_no_closed: 'No archived closed tasks.',
+      archive_load_more: 'Load more closed tasks',
+      archive_reopen_btn: 'Reopen',
+      archive_remove_backburner_btn: 'Remove from backburner',
+      client_title: 'Client view',
+      client_desc: 'Curated view suitable for client presentations and high-level progress reviews.',
+      client_disclaimer: 'Presentation filter only; not a security boundary',
+      client_filter_active: 'Active (hiding internal drafts and raw notes)',
+      client_filter_inactive: 'Inactive (showing full task list)',
+      client_switch_btn_enable: 'Enable presentation mode',
+      client_switch_btn_disable: 'Disable presentation mode',
+      discussions_placeholder_title: 'Discussions',
+      discussions_placeholder_desc: 'GitHub Discussions are not enabled for this repository. Open questions and decision workflows are managed through task issues.',
     },
     fr: {
       section_views: 'Vues',
@@ -808,6 +859,47 @@
       err_self_link: 'Une tâche ne peut pas être bloquée par elle-même.',
       err_github_forbidden: 'Vous n’avez pas la permission de modifier les liens sur ce dépôt.',
       notice_dependencies_degraded: 'Fils de dépendance indisponibles (erreur GraphQL GitHub). Affichage du tableau sans fils.',
+      decisions_title: 'Décisions',
+      decisions_desc: 'Toutes les questions ouvertes sans réponse entre les dépôts, groupées par tâche, activité récente en premier.',
+      decisions_no_items: 'Aucune question ouverte nécessitant une décision.',
+      decisions_answer_placeholder: 'Saisir une réponse…',
+      decisions_btn_answer: 'Répondre',
+      decisions_answering: 'Enregistrement…',
+      decisions_answered_notice: 'Question répondue.',
+      blocked_title: 'Tâches bloquées',
+      blocked_desc: 'Tâches nécessitant une action humaine ou bloquées par des dépendances ouvertes.',
+      blocked_no_items: 'Aucune tâche bloquée.',
+      blocked_needs_human_label: 'Statut : Action humaine requise',
+      blocked_by_dependencies: 'Bloqué par',
+      blocked_human_tasks_title: 'Tâches humaines',
+      operations_title: 'Vue opérationnelle',
+      operations_desc: 'Métriques réelles du système et répartition sur tous les projets connectés.',
+      operations_open: 'Ouvertes',
+      operations_closed: 'Fermées',
+      operations_needs_human: 'Action humaine',
+      operations_blocked: 'Bloquées',
+      operations_closed_7days: 'Fermées (7 derniers jours)',
+      operations_oldest_in_progress: 'Plus ancienne tâche en cours',
+      operations_status_breakdown: 'Répartition des statuts par projet',
+      operations_project: 'Projet',
+      archive_title: 'Archives & En attente',
+      archive_desc: 'Consulter les tâches en attente et l’historique des tâches fermées.',
+      archive_tab_backburner: 'En attente',
+      archive_tab_closed: 'Archivées (fermées)',
+      archive_no_backburner: 'Aucune tâche en attente.',
+      archive_no_closed: 'Aucune tâche archivée.',
+      archive_load_more: 'Charger plus de tâches fermées',
+      archive_reopen_btn: 'Rouvrir',
+      archive_remove_backburner_btn: 'Retirer de l’attente',
+      client_title: 'Vue client',
+      client_desc: 'Vue épurée adaptée aux présentations clients et aux revues d’avancement de haut niveau.',
+      client_disclaimer: 'Filtre de présentation uniquement ; pas une frontière de sécurité',
+      client_filter_active: 'Actif (masque les brouillons internes et notes brutes)',
+      client_filter_inactive: 'Inactif (affichage de toutes les tâches)',
+      client_switch_btn_enable: 'Activer le mode présentation',
+      client_switch_btn_disable: 'Désactiver le mode présentation',
+      discussions_placeholder_title: 'Discussions',
+      discussions_placeholder_desc: 'Les discussions GitHub ne sont pas configurées pour ce dépôt. Les questions ouvertes et les arbitrages sont gérés dans les tâches.',
     },
   };
 
@@ -868,6 +960,11 @@
       if (state.board) {
         renderBoard();
       }
+      if (state.activeSectionView === 'decisions') renderDecisionsView();
+      else if (state.activeSectionView === 'blocked') renderBlockedView();
+      else if (state.activeSectionView === 'operations') loadAndRenderOperationsView();
+      else if (state.activeSectionView === 'archive') renderArchiveTabs();
+      else if (state.activeSectionView === 'client') renderClientView();
     }
   }
 
@@ -1417,22 +1514,19 @@
   }
 
   function showView(name) {
+    var allViews = ['login', 'board', 'detail', 'placeholder', 'decisions', 'blocked', 'operations', 'archive', 'client'];
     if (name === 'detail') {
-      var detailSec = document.getElementById('detail-view');
-      if (detailSec) detailSec.hidden = false;
-      var boardSec = document.getElementById('board-view');
-      if (boardSec) boardSec.hidden = false;
-      var loginSec = document.getElementById('login-view');
-      if (loginSec) loginSec.hidden = true;
-      var placeholderSec = document.getElementById('placeholder-view');
-      if (placeholderSec) placeholderSec.hidden = true;
+      allViews.forEach(function (v) {
+        var sec = document.getElementById(v + '-view');
+        if (sec) sec.hidden = (v !== 'detail' && v !== 'board');
+      });
       var backdrop = $('drawer-backdrop');
       if (backdrop) backdrop.hidden = false;
       if (typeof document !== 'undefined' && document.body && document.body.classList) {
         document.body.classList.add('drawer-open');
       }
     } else {
-      ['login', 'board', 'detail', 'placeholder'].forEach(function (view) {
+      allViews.forEach(function (view) {
         var section = document.getElementById(view + '-view');
         if (section) section.hidden = view !== name;
       });
@@ -4242,6 +4336,7 @@
 
   function setBoardMode(mode) {
     state.activeViewMode = mode;
+    state.activeSectionView = null;
     var boardView = $('board-view');
     var canvasViewport = $('canvas-viewport');
     var navList = $('nav-list');
@@ -4487,7 +4582,10 @@
     $('repo-label').textContent = name;
     $('repo-label').setAttribute('title', board.repo);
     document.title = (dict.brand_title || 'Task Board') + ' · ' + name;
-    renderControls(); renderFreshness();
+    renderControls(); renderFreshness(); updateSidebarBadges();
+    if (state.activeSectionView === 'decisions') renderDecisionsView();
+    else if (state.activeSectionView === 'blocked') renderBlockedView();
+    else if (state.activeSectionView === 'client') renderClientView();
     var allRows = (board.issues || []).concat(offlineRows());
     if (state.searchQuery) {
       allRows = allRows.filter(function (issue) {
@@ -5531,6 +5629,760 @@
     announce('Signed out.');
   }
 
+  /* ==========================================================================
+     Step A5: Sidebar Views & Real Operations Overview
+     ========================================================================== */
+
+  function updateSidebarBadges() {
+    var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
+    var decisionsCount = 0;
+    var blockedCount = 0;
+
+    items.forEach(function (item) {
+      if (Array.isArray(item.openQuestions)) {
+        item.openQuestions.forEach(function (q) {
+          if (!q.completed) decisionsCount++;
+        });
+      }
+      var isNeedsHuman = item.statusLabel === 'status:needs-human';
+      var hasUncheckedTasks = Array.isArray(item.humanTasks) && item.humanTasks.some(function (t) { return !t.completed; });
+      var hasOpenBlockers = Array.isArray(item.blockedBy) && item.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
+      if (isNeedsHuman || hasUncheckedTasks || hasOpenBlockers) {
+        blockedCount++;
+      }
+    });
+
+    var dBadge = $('decisions-nav-badge');
+    if (dBadge) {
+      dBadge.textContent = String(decisionsCount);
+      dBadge.hidden = decisionsCount === 0;
+    }
+    var bBadge = $('blocked-nav-badge');
+    if (bBadge) {
+      bBadge.textContent = String(blockedCount);
+      bBadge.hidden = blockedCount === 0;
+    }
+
+    var dCountBadge = $('decisions-count-badge');
+    if (dCountBadge) dCountBadge.textContent = String(decisionsCount);
+
+    var bCountBadge = $('blocked-count-badge');
+    if (bCountBadge) bCountBadge.textContent = String(blockedCount);
+  }
+
+  async function openSectionView(viewName) {
+    if (state.detail) closeDrawer();
+    state.activeSectionView = viewName;
+
+    var btn = $('nav-' + viewName);
+    var navItems = typeof document !== 'undefined' && document.querySelectorAll ? document.querySelectorAll('.sidebar-item[data-view]') : [];
+    if (navItems && navItems.forEach) {
+      navItems.forEach(function (item) {
+        if (item.classList && item.classList.remove) item.classList.remove('active');
+      });
+    }
+    if (btn && btn.classList && btn.classList.add) btn.classList.add('active');
+
+    if (typeof document !== 'undefined' && document.body && document.body.classList) {
+      document.body.classList.remove('sidebar-open');
+    }
+    var backdrop = $('sidebar-backdrop');
+    if (backdrop) backdrop.hidden = true;
+
+    showView(viewName);
+
+    if (viewName === 'operations') {
+      loadAndRenderOperationsView();
+      return;
+    }
+    if (viewName === 'archive') {
+      loadAndRenderArchiveView();
+      return;
+    }
+
+    if (!state.board) {
+      await loadBoard();
+    }
+
+    if (viewName === 'decisions') {
+      renderDecisionsView();
+    } else if (viewName === 'blocked') {
+      renderBlockedView();
+    } else if (viewName === 'client') {
+      renderClientView();
+    }
+  }
+
+  function openDiscussionsPlaceholder() {
+    if (state.detail) closeDrawer();
+    state.activeSectionView = 'discussions';
+
+    var btn = $('nav-discussions');
+    var navItems = typeof document !== 'undefined' && document.querySelectorAll ? document.querySelectorAll('.sidebar-item[data-view]') : [];
+    if (navItems && navItems.forEach) {
+      navItems.forEach(function (item) {
+        if (item.classList && item.classList.remove) item.classList.remove('active');
+      });
+    }
+    if (btn && btn.classList && btn.classList.add) btn.classList.add('active');
+
+    var dict = I18N[getLanguage()] || I18N.en;
+    var titleEl = $('placeholder-title');
+    if (titleEl) titleEl.textContent = dict.discussions_placeholder_title || 'Discussions';
+    var descEl = $('placeholder-desc');
+    if (descEl) descEl.textContent = dict.discussions_placeholder_desc || 'GitHub Discussions are not enabled for this repository. Open questions and decision workflows are managed through task issues.';
+
+    showView('placeholder');
+    if (typeof document !== 'undefined' && document.body && document.body.classList) {
+      document.body.classList.remove('sidebar-open');
+    }
+    var backdrop = $('sidebar-backdrop');
+    if (backdrop) backdrop.hidden = true;
+  }
+
+  function renderDecisionsView() {
+    var list = $('decisions-list');
+    var loading = $('decisions-loading');
+    var empty = $('decisions-empty');
+    if (!list) return;
+
+    if (loading) loading.hidden = true;
+
+    var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
+    var decisionIssues = items.filter(function (it) {
+      return Array.isArray(it.openQuestions) && it.openQuestions.some(function (q) { return !q.completed; });
+    });
+
+    decisionIssues.sort(function (a, b) {
+      var timeA = a.updatedAt ? Date.parse(a.updatedAt) : 0;
+      var timeB = b.updatedAt ? Date.parse(b.updatedAt) : 0;
+      return timeB - timeA;
+    });
+
+    var dict = I18N[getLanguage()] || I18N.en;
+    var totalQuestions = 0;
+    decisionIssues.forEach(function (it) {
+      it.openQuestions.forEach(function (q) {
+        if (!q.completed) totalQuestions++;
+      });
+    });
+
+    var countBadge = $('decisions-count-badge');
+    if (countBadge) countBadge.textContent = String(totalQuestions);
+
+    if (decisionIssues.length === 0) {
+      list.textContent = '';
+      if (empty) empty.hidden = false;
+      return;
+    }
+
+    if (empty) empty.hidden = true;
+    list.textContent = '';
+
+    decisionIssues.forEach(function (issue) {
+      var card = el('div', { class: 'section-card card-surface' });
+      var header = el('div', { class: 'section-card-header' });
+      var titleRow = el('div', { class: 'section-card-title-row' });
+
+      if (issue.repository) {
+        titleRow.appendChild(projectBadge(issue.repository));
+      }
+      var num = el('span', { class: 'section-card-num' }, '#' + issue.number);
+      titleRow.appendChild(num);
+
+      var titleLink = el('a', { class: 'section-card-title', href: '#/issue/' + issue.number }, issue.friendlyTitle || issue.title);
+      titleLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        openIssue(issue.number, issue.repository);
+      });
+      titleRow.appendChild(titleLink);
+      header.appendChild(titleRow);
+
+      var meta = el('div', { class: 'section-card-meta' });
+      meta.appendChild(badge(statusText(issue.statusLabel), 'status'));
+      if (issue.updatedAt) {
+        meta.appendChild(el('span', { class: 'muted' }, relative(issue.updatedAt)));
+      }
+      header.appendChild(meta);
+      card.appendChild(header);
+
+      var qContainer = el('div', { class: 'decision-questions' });
+      issue.openQuestions.forEach(function (q) {
+        if (q.completed) return;
+        var qItem = el('div', { class: 'decision-question-item' });
+        var qText = el('div', { class: 'decision-question-text' }, q.text);
+        qItem.appendChild(qText);
+
+        var form = el('form', { class: 'decision-answer-form' });
+        var input = el('input', {
+          class: 'decision-answer-input',
+          type: 'text',
+          placeholder: dict.decisions_answer_placeholder || 'Type answer…',
+          required: 'required',
+        });
+        var btn = el('button', {
+          class: 'button primary small',
+          type: 'submit',
+        }, dict.decisions_btn_answer || 'Answer');
+
+        form.appendChild(input);
+        form.appendChild(btn);
+
+        form.addEventListener('submit', async function (e) {
+          e.preventDefault();
+          var ans = input.value.trim();
+          if (!ans) return;
+          input.disabled = true;
+          btn.disabled = true;
+          btn.textContent = dict.decisions_answering || 'Saving…';
+          try {
+            var endpoint = issuePath(issue) + '/questions/' + q.answerIndex + '/answer';
+            var response = await api(endpoint, {
+              method: 'POST',
+              body: { answer: ans, fingerprint: issue.fingerprint },
+            });
+            if (response && response.listItem) {
+              var idx = state.board.issues.findIndex(function (it) {
+                return sameIdentity(it, issue);
+              });
+              if (idx !== -1) {
+                state.board.issues[idx] = response.listItem;
+              }
+            } else {
+              await loadBoard();
+            }
+            updateSidebarBadges();
+            renderDecisionsView();
+            setNotice(dict.decisions_answered_notice || 'Question answered.');
+          } catch (err) {
+            input.disabled = false;
+            btn.disabled = false;
+            btn.textContent = dict.decisions_btn_answer || 'Answer';
+            setNotice(err.message || 'Could not save answer', true);
+          }
+        });
+
+        qItem.appendChild(form);
+        qContainer.appendChild(qItem);
+      });
+
+      card.appendChild(qContainer);
+      list.appendChild(card);
+    });
+  }
+
+  function renderBlockedView() {
+    var list = $('blocked-list');
+    var loading = $('blocked-loading');
+    var empty = $('blocked-empty');
+    if (!list) return;
+
+    if (loading) loading.hidden = true;
+
+    var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
+    var blockedIssues = items.filter(function (it) {
+      var isNeedsHuman = it.statusLabel === 'status:needs-human';
+      var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) { return !t.completed; });
+      var hasOpenBlockers = Array.isArray(it.blockedBy) && it.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
+      return isNeedsHuman || hasUncheckedTasks || hasOpenBlockers;
+    });
+
+    blockedIssues.sort(function (a, b) {
+      var timeA = a.updatedAt ? Date.parse(a.updatedAt) : 0;
+      var timeB = b.updatedAt ? Date.parse(b.updatedAt) : 0;
+      return timeB - timeA;
+    });
+
+    var countBadge = $('blocked-count-badge');
+    if (countBadge) countBadge.textContent = String(blockedIssues.length);
+
+    if (blockedIssues.length === 0) {
+      list.textContent = '';
+      if (empty) empty.hidden = false;
+      return;
+    }
+
+    if (empty) empty.hidden = true;
+    list.textContent = '';
+
+    var dict = I18N[getLanguage()] || I18N.en;
+
+    blockedIssues.forEach(function (issue) {
+      var card = el('div', { class: 'section-card card-surface' });
+      var header = el('div', { class: 'section-card-header' });
+      var titleRow = el('div', { class: 'section-card-title-row' });
+
+      if (issue.repository) {
+        titleRow.appendChild(projectBadge(issue.repository));
+      }
+      var num = el('span', { class: 'section-card-num' }, '#' + issue.number);
+      titleRow.appendChild(num);
+
+      var titleLink = el('a', { class: 'section-card-title', href: '#/issue/' + issue.number }, issue.friendlyTitle || issue.title);
+      titleLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        openIssue(issue.number, issue.repository);
+      });
+      titleRow.appendChild(titleLink);
+      header.appendChild(titleRow);
+
+      var meta = el('div', { class: 'section-card-meta' });
+      meta.appendChild(badge(statusText(issue.statusLabel), 'status'));
+      if (issue.updatedAt) {
+        meta.appendChild(el('span', { class: 'muted' }, relative(issue.updatedAt)));
+      }
+      header.appendChild(meta);
+      card.appendChild(header);
+
+      // Human tasks section
+      if (Array.isArray(issue.humanTasks) && issue.humanTasks.length > 0) {
+        var tasksContainer = el('div', { class: 'blocked-human-tasks' });
+        var taskHeading = el('div', { class: 'blocked-deps-label' }, dict.blocked_human_tasks_title || 'Human Tasks');
+        tasksContainer.appendChild(taskHeading);
+
+        issue.humanTasks.forEach(function (t, idx) {
+          var row = el('label', { class: 'human-task-row' });
+          var checkbox = el('input', {
+            type: 'checkbox',
+            class: 'human-task-checkbox',
+          });
+          if (t.completed) checkbox.checked = true;
+
+          var labelSpan = el('span', { class: 'human-task-label' }, t.text);
+          row.appendChild(checkbox);
+          row.appendChild(labelSpan);
+
+          checkbox.addEventListener('change', async function () {
+            checkbox.disabled = true;
+            try {
+              var endpoint = issuePath(issue) + '/human-tasks/' + idx + '/toggle';
+              var response = await api(endpoint, {
+                method: 'POST',
+                body: { completed: checkbox.checked, fingerprint: issue.fingerprint },
+              });
+              if (response && response.listItem) {
+                var boardIdx = state.board.issues.findIndex(function (it) {
+                  return sameIdentity(it, issue);
+                });
+                if (boardIdx !== -1) {
+                  state.board.issues[boardIdx] = response.listItem;
+                }
+              } else {
+                await loadBoard();
+              }
+              updateSidebarBadges();
+              renderBlockedView();
+            } catch (err) {
+              checkbox.checked = !checkbox.checked;
+              checkbox.disabled = false;
+              setNotice(err.message || 'Could not toggle human task', true);
+            }
+          });
+
+          tasksContainer.appendChild(row);
+        });
+        card.appendChild(tasksContainer);
+      }
+
+      // Dependencies (blocked by) section
+      var openBlockers = Array.isArray(issue.blockedBy) ? issue.blockedBy.filter(function (dep) {
+        return dep.state === 'open' || dep.state === undefined;
+      }) : [];
+      if (openBlockers.length > 0) {
+        var depsContainer = el('div', { class: 'blocked-dependencies' });
+        var depsLabel = el('div', { class: 'blocked-deps-label' }, dict.blocked_by_dependencies || 'Blocked by');
+        depsContainer.appendChild(depsLabel);
+
+        openBlockers.forEach(function (dep) {
+          var depRow = el('div', { class: 'dependency-chip' });
+          var statusDot = el('span', { class: 'dependency-chip-status status-planned' });
+          var link = el('a', { class: 'dependency-chip-link' }, '#' + dep.number + (dep.title ? ' ' + dep.title : ''));
+          link.addEventListener('click', function (e) {
+            e.preventDefault();
+            openIssue(dep.number);
+          });
+          depRow.appendChild(statusDot);
+          depRow.appendChild(link);
+          depsContainer.appendChild(depRow);
+        });
+        card.appendChild(depsContainer);
+      }
+
+      list.appendChild(card);
+    });
+  }
+
+  async function loadAndRenderOperationsView() {
+    var loading = $('operations-loading');
+    var grid = $('operations-grid');
+    if (loading) loading.hidden = false;
+    if (grid) grid.hidden = true;
+
+    try {
+      var selected = state.repositories && state.repositories.repositories
+        ? state.repositories.repositories.find(function (r) { return r.full === state.selected; })
+        : null;
+      var path = (state.selected !== 'all' && selected)
+        ? '/api/repos/' + encodeURIComponent(selected.owner) + '/' + encodeURIComponent(selected.name) + '/operations'
+        : '/api/operations';
+
+      var data = await api(path);
+      state.operations = data;
+
+      if (loading) loading.hidden = true;
+      if (grid) grid.hidden = false;
+
+      var ts = $('operations-timestamp');
+      if (ts && data.fetchedAt) {
+        var d = new Date(data.fetchedAt);
+        ts.textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      }
+
+      var openCountEl = $('stat-open-count');
+      if (openCountEl) openCountEl.textContent = String(data.openClosed ? data.openClosed.open : 0);
+
+      var closedCountEl = $('stat-closed-count');
+      if (closedCountEl) closedCountEl.textContent = String(data.openClosed ? data.openClosed.closed : 0);
+
+      var humanCountEl = $('stat-human-count');
+      if (humanCountEl) humanCountEl.textContent = String(data.needsHuman || 0);
+
+      var blockedCountEl = $('stat-blocked-count');
+      if (blockedCountEl) blockedCountEl.textContent = String(data.blocked || 0);
+
+      var closed7DaysEl = $('stat-closed-7days-count');
+      if (closed7DaysEl) closed7DaysEl.textContent = String(data.closed7Days || 0);
+
+      var oldestTitleEl = $('stat-oldest-title');
+      var oldestMetaEl = $('stat-oldest-meta');
+      if (data.oldestOpenInProgress) {
+        if (oldestTitleEl) {
+          oldestTitleEl.textContent = '#' + data.oldestOpenInProgress.number + ' ' + data.oldestOpenInProgress.title;
+        }
+        if (oldestMetaEl) {
+          oldestMetaEl.textContent = data.oldestOpenInProgress.repository + ' · ' + relative(data.oldestOpenInProgress.createdAt);
+        }
+      } else {
+        if (oldestTitleEl) oldestTitleEl.textContent = '—';
+        if (oldestMetaEl) oldestMetaEl.textContent = '';
+      }
+
+      var tbody = $('operations-project-rows');
+      if (tbody && data.statusPerProject) {
+        tbody.textContent = '';
+        Object.entries(data.statusPerProject).forEach(function (pair) {
+          var repo = pair[0];
+          var counts = pair[1];
+          var tr = el('tr');
+          var tdRepo = el('td', { class: 'repo-name' }, repo);
+          tr.appendChild(tdRepo);
+          ['draft', 'backlog', 'todo', 'in-progress', 'needs-human', 'in-review', 'done', 'cancelled'].forEach(function (st) {
+            var val = counts[st] || 0;
+            var td = el('td', { class: 'num' }, String(val));
+            tr.appendChild(td);
+          });
+          tbody.appendChild(tr);
+        });
+      }
+    } catch (err) {
+      if (loading) loading.textContent = 'Could not load operations data: ' + (err.message || 'error');
+    }
+  }
+
+  async function loadAndRenderArchiveView(isLoadMore) {
+    var loading = $('archive-loading');
+    if (!isLoadMore) {
+      if (loading) loading.hidden = false;
+      state.archive.offset = 0;
+    }
+
+    try {
+      var selected = state.repositories && state.repositories.repositories
+        ? state.repositories.repositories.find(function (r) { return r.full === state.selected; })
+        : null;
+      var basePath = (state.selected !== 'all' && selected)
+        ? '/api/repos/' + encodeURIComponent(selected.owner) + '/' + encodeURIComponent(selected.name) + '/archive'
+        : '/api/archive';
+
+      var url = basePath + '?limit=' + state.archive.limit + '&offset=' + state.archive.offset;
+      var data = await api(url);
+
+      if (!isLoadMore) {
+        state.archive.backburner = data.backburner || [];
+        state.archive.closed = data.closed || [];
+      } else {
+        state.archive.closed = state.archive.closed.concat(data.closed || []);
+      }
+      state.archive.totalClosed = data.totalClosed || 0;
+      state.archive.hasMore = Boolean(data.hasMore);
+
+      if (loading) loading.hidden = true;
+
+      renderArchiveTabs();
+    } catch (err) {
+      if (loading) loading.textContent = 'Could not load archive: ' + (err.message || 'error');
+    }
+  }
+
+  function renderArchiveTabs() {
+    var activeTab = state.archive.activeTab || 'backburner';
+    var paneBackburner = $('archive-pane-backburner');
+    var paneClosed = $('archive-pane-closed');
+    var tabBackburner = $('archive-tab-backburner');
+    var tabClosed = $('archive-tab-closed');
+
+    if (tabBackburner) {
+      tabBackburner.classList.toggle('active', activeTab === 'backburner');
+      tabBackburner.setAttribute('aria-selected', String(activeTab === 'backburner'));
+    }
+    if (tabClosed) {
+      tabClosed.classList.toggle('active', activeTab === 'closed');
+      tabClosed.setAttribute('aria-selected', String(activeTab === 'closed'));
+    }
+
+    if (paneBackburner) paneBackburner.hidden = activeTab !== 'backburner';
+    if (paneClosed) paneClosed.hidden = activeTab !== 'closed';
+
+    if (activeTab === 'backburner') {
+      renderArchiveBackburner();
+    } else {
+      renderArchiveClosed();
+    }
+  }
+
+  function renderArchiveBackburner() {
+    var list = $('archive-backburner-list');
+    var empty = $('archive-backburner-empty');
+    if (!list) return;
+    list.textContent = '';
+
+    var items = state.archive.backburner || [];
+    if (items.length === 0) {
+      if (empty) empty.hidden = false;
+      return;
+    }
+    if (empty) empty.hidden = true;
+
+    var dict = I18N[getLanguage()] || I18N.en;
+
+    items.forEach(function (issue) {
+      var card = el('div', { class: 'section-card card-surface' });
+      var header = el('div', { class: 'section-card-header' });
+      var titleRow = el('div', { class: 'section-card-title-row' });
+
+      if (issue.repository) titleRow.appendChild(projectBadge(issue.repository));
+      titleRow.appendChild(el('span', { class: 'section-card-num' }, '#' + issue.number));
+
+      var titleLink = el('a', { class: 'section-card-title', href: '#/issue/' + issue.number }, issue.friendlyTitle || issue.title);
+      titleLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        openIssue(issue.number, issue.repository);
+      });
+      titleRow.appendChild(titleLink);
+      header.appendChild(titleRow);
+
+      var actions = el('div', { class: 'section-card-meta' });
+      var removeBtn = el('button', {
+        class: 'button secondary small',
+        type: 'button',
+      }, dict.archive_remove_backburner_btn || 'Remove from backburner');
+
+      removeBtn.addEventListener('click', async function () {
+        removeBtn.disabled = true;
+        try {
+          var endpoint = issuePath(issue) + '/labels/remove';
+          await api(endpoint, {
+            method: 'POST',
+            body: { label: 'backburner', fingerprint: issue.fingerprint },
+          });
+          state.archive.backburner = state.archive.backburner.filter(function (it) {
+            return !sameIdentity(it, issue);
+          });
+          renderArchiveBackburner();
+          await loadBoard();
+          setNotice('Removed from backburner.');
+        } catch (err) {
+          removeBtn.disabled = false;
+          setNotice(err.message || 'Could not remove backburner label', true);
+        }
+      });
+
+      actions.appendChild(removeBtn);
+      header.appendChild(actions);
+      card.appendChild(header);
+      list.appendChild(card);
+    });
+  }
+
+  function renderArchiveClosed() {
+    var list = $('archive-closed-list');
+    var empty = $('archive-closed-empty');
+    var loadMoreBtn = $('archive-load-more-btn');
+    if (!list) return;
+    list.textContent = '';
+
+    var items = state.archive.closed || [];
+    if (items.length === 0) {
+      if (empty) empty.hidden = false;
+      if (loadMoreBtn) loadMoreBtn.hidden = true;
+      return;
+    }
+    if (empty) empty.hidden = true;
+    if (loadMoreBtn) loadMoreBtn.hidden = !state.archive.hasMore;
+
+    var dict = I18N[getLanguage()] || I18N.en;
+
+    items.forEach(function (issue) {
+      var card = el('div', { class: 'section-card card-surface' });
+      var header = el('div', { class: 'section-card-header' });
+      var titleRow = el('div', { class: 'section-card-title-row' });
+
+      if (issue.repository) titleRow.appendChild(projectBadge(issue.repository));
+      titleRow.appendChild(el('span', { class: 'section-card-num' }, '#' + issue.number));
+
+      var titleLink = el('a', { class: 'section-card-title', href: '#/issue/' + issue.number }, issue.friendlyTitle || issue.title);
+      titleLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        openIssue(issue.number, issue.repository);
+      });
+      titleRow.appendChild(titleLink);
+      header.appendChild(titleRow);
+
+      var actions = el('div', { class: 'section-card-meta' });
+      var reopenBtn = el('button', {
+        class: 'button secondary small',
+        type: 'button',
+      }, dict.archive_reopen_btn || 'Reopen');
+
+      reopenBtn.addEventListener('click', async function () {
+        reopenBtn.disabled = true;
+        try {
+          var endpoint = issuePath(issue) + '/reopen';
+          await api(endpoint, {
+            method: 'POST',
+            body: { fingerprint: issue.fingerprint },
+          });
+          state.archive.closed = state.archive.closed.filter(function (it) {
+            return !sameIdentity(it, issue);
+          });
+          renderArchiveClosed();
+          await loadBoard();
+          setNotice('Issue reopened.');
+        } catch (err) {
+          reopenBtn.disabled = false;
+          setNotice(err.message || 'Could not reopen issue', true);
+        }
+      });
+
+      actions.appendChild(reopenBtn);
+      header.appendChild(actions);
+      card.appendChild(header);
+      list.appendChild(card);
+    });
+  }
+
+  function initArchiveView() {
+    var tabBackburner = $('archive-tab-backburner');
+    var tabClosed = $('archive-tab-closed');
+    var loadMoreBtn = $('archive-load-more-btn');
+
+    if (tabBackburner) {
+      tabBackburner.addEventListener('click', function () {
+        state.archive.activeTab = 'backburner';
+        renderArchiveTabs();
+      });
+    }
+    if (tabClosed) {
+      tabClosed.addEventListener('click', function () {
+        state.archive.activeTab = 'closed';
+        renderArchiveTabs();
+      });
+    }
+    if (loadMoreBtn) {
+      loadMoreBtn.addEventListener('click', function () {
+        state.archive.offset = state.archive.closed.length;
+        loadAndRenderArchiveView(true);
+      });
+    }
+  }
+
+  function initClientView() {
+    try {
+      state.clientPresentationMode = localStorage.getItem('chamberos_client_presentation_mode') === '1';
+    } catch (_) {
+      state.clientPresentationMode = false;
+    }
+    var toggleBtn = $('client-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', function () {
+        state.clientPresentationMode = !state.clientPresentationMode;
+        try {
+          localStorage.setItem('chamberos_client_presentation_mode', state.clientPresentationMode ? '1' : '0');
+        } catch (_) {}
+        renderClientView();
+      });
+    }
+  }
+
+  function renderClientView() {
+    var dict = I18N[getLanguage()] || I18N.en;
+    var statusDesc = $('client-filter-status-desc');
+    var toggleBtn = $('client-toggle-btn');
+    var list = $('client-list');
+    if (!list) return;
+
+    if (statusDesc) {
+      statusDesc.textContent = state.clientPresentationMode
+        ? (dict.client_filter_active || 'Active (hiding internal drafts and raw notes)')
+        : (dict.client_filter_inactive || 'Inactive (showing full task list)');
+    }
+
+    if (toggleBtn) {
+      toggleBtn.textContent = state.clientPresentationMode
+        ? (dict.client_switch_btn_disable || 'Disable presentation mode')
+        : (dict.client_switch_btn_enable || 'Enable presentation mode');
+    }
+
+    list.textContent = '';
+    var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
+
+    var filtered = items.filter(function (it) {
+      if (state.clientPresentationMode) {
+        if (it.column === 'draft' || it.statusLabel === 'status:cancelled') return false;
+      }
+      return true;
+    });
+
+    filtered.forEach(function (issue) {
+      var card = el('div', { class: 'section-card card-surface' });
+      var header = el('div', { class: 'section-card-header' });
+      var titleRow = el('div', { class: 'section-card-title-row' });
+
+      if (issue.repository) titleRow.appendChild(projectBadge(issue.repository));
+      titleRow.appendChild(el('span', { class: 'section-card-num' }, '#' + issue.number));
+
+      var titleLink = el('a', { class: 'section-card-title', href: '#/issue/' + issue.number }, issue.friendlyTitle || issue.title);
+      titleLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        openIssue(issue.number, issue.repository);
+      });
+      titleRow.appendChild(titleLink);
+      header.appendChild(titleRow);
+
+      var meta = el('div', { class: 'section-card-meta' });
+      meta.appendChild(badge(statusText(issue.statusLabel), 'status'));
+      header.appendChild(meta);
+      card.appendChild(header);
+
+      if (issue.description) {
+        var descP = el('p', { class: 'small muted', style: 'margin: 0; line-height: 1.4;' }, issue.description.slice(0, 160) + (issue.description.length > 160 ? '…' : ''));
+        card.appendChild(descP);
+      }
+
+      list.appendChild(card);
+    });
+  }
+
   function bind() {
     if (state.bound) return;
     state.bound = true;
@@ -5808,12 +6660,17 @@
             switchView('list');
           } else if (viewName === 'canvas') {
             switchView('canvas');
+          } else if (viewName === 'discussions') {
+            openDiscussionsPlaceholder();
           } else {
-            openPlaceholderView(viewName);
+            openSectionView(viewName);
           }
         });
       }
     });
+
+    initArchiveView();
+    initClientView();
 
     var placeholderBackBtn = $('placeholder-back-btn');
     if (placeholderBackBtn) {

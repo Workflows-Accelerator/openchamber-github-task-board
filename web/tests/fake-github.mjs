@@ -262,7 +262,12 @@ export async function startFakeGitHub(options = {}) {
         const requestedPerPage = Number(url.searchParams.get('per_page') ?? perPage);
         const size = requestedPerPage > 0 ? requestedPerPage : perPage;
         const page = Math.max(1, Number(url.searchParams.get('page') ?? 1));
-        const all = spec.issues;
+        const stateFilter = url.searchParams.get('state');
+        const all = spec.issues.filter((i) => {
+          if (stateFilter === 'open') return i.state === 'open';
+          if (stateFilter === 'closed') return i.state === 'closed';
+          return true;
+        });
         const start = (page - 1) * size;
         const items = all.slice(start, start + size);
         const headers = {};

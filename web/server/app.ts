@@ -43,7 +43,9 @@ import {
   issueFingerprint,
   issueKey,
   labelNames,
+  parseWebHumanTasks,
   statusLabelOf,
+  toggleHumanTaskInMarkdown,
 } from './board.ts';
 
 export interface BoardServerOptions {
@@ -635,6 +637,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       if (method !== 'GET') return methodNotAllowed('GET');
       return { status: 200, body: await combinedBoard() };
     }
+    if (url.pathname === '/api/combined/archive' || (url.pathname === '/api/archive' && !config.repo)) {
+      if (method !== 'GET') return methodNotAllowed('GET');
+      return { status: 200, body: await archiveData(null, url) };
+    }
+    if (url.pathname === '/api/combined/operations' || (url.pathname === '/api/operations' && !config.repo)) {
+      if (method !== 'GET') return methodNotAllowed('GET');
+      return { status: 200, body: await operationsData(null) };
+    }
 
     // Legacy single-repository routes resolve the same allowlist. No fallback.
     let route = url.pathname;
@@ -645,7 +655,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       route = '/api' + qualified[3];
     } else if (route.startsWith('/api/repos/')) {
       throw new HttpError(400, 'repository_not_allowed', 'An exact discovered owner/name is required');
-    } else if (route === '/api/board' || route === '/api/issues' || route.startsWith('/api/issues/')) {
+    } else if (
+      route === '/api/board' ||
+      route === '/api/archive' ||
+      route === '/api/operations' ||
+      route === '/api/issues' ||
+      route.startsWith('/api/issues/')
+    ) {
       if (!config.repo) throw new HttpError(400, 'repository_not_allowed', 'Select a discovered repository');
       repository = await resolveRepository(config.repo.owner, config.repo.name);
     }
@@ -653,6 +669,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     if (route === '/api/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
       return { status: 200, body: await repositoryBoard(repository!) };
+    }
+    if (route === '/api/archive') {
+      if (method !== 'GET') return methodNotAllowed('GET');
+      return { status: 200, body: await archiveData(repository, url) };
+    }
+    if (route === '/api/operations') {
+      if (method !== 'GET') return methodNotAllowed('GET');
+      return { status: 200, body: await operationsData(repository) };
     }
 
     if (route === '/api/issues' && method === 'POST') {
@@ -804,6 +828,71 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       return writeIssue(repository!, number, body, {
         kind: 'status',
         status: body.status,
+      });
+    }
+
+    const humanTaskToggleMatch = /^\/api\/issues\/([^/]+)\/human-tasks\/([^/]+)\/toggle$/.exec(route);
+    if (humanTaskToggleMatch) {
+      if (method !== 'POST') return methodNotAllowed('POST');
+      requireCsrf(req, record);
+      const number = parseIssueNumberOrThrow(humanTaskToggleMatch[1]);
+      if (!/^\d{1,4}$/.test(humanTaskToggleMatch[2])) {
+        throw new HttpError(400, 'invalid_request', 'The human task index is not valid');
+      }
+      const index = Number(humanTaskToggleMatch[2]);
+      const body = await readJsonBody(req);
+      return writeIssue(repository!, number, body, {
+        kind: 'human-task',
+        index,
+        completed: typeof body?.completed === 'boolean' ? body.completed : undefined,
+      });
+    }
+
+    const reopenMatch = /^\/api\/issues\/([^/]+)\/reopen$/.exec(route);
+    if (reopenMatch) {
+      if (method !== 'POST') return methodNotAllowed('POST');
+      requireCsrf(req, record);
+      const number = parseIssueNumberOrThrow(reopenMatch[1]);
+      const body = await readJsonBody(req);
+      return writeIssue(repository!, number, body, {
+        kind: 'reopen',
+      });
+    }
+
+    const removeLabelPostMatch = /^\/api\/issues\/([^/]+)\/labels\/remove$/.exec(route);
+    if (removeLabelPostMatch) {
+      if (method !== 'POST') return methodNotAllowed('POST');
+      requireCsrf(req, record);
+      const number = parseIssueNumberOrThrow(removeLabelPostMatch[1]);
+      const body = await readJsonBody(req);
+      const label = typeof body?.label === 'string' ? body.label.trim() : '';
+      if (!label) {
+        throw new HttpError(400, 'invalid_edit', 'A label name is required');
+      }
+      return writeIssue(repository!, number, body, {
+        kind: 'remove-label',
+        label,
+      });
+    }
+
+    const removeLabelDeleteMatch = /^\/api\/issues\/([^/]+)\/labels\/([^/]+)$/.exec(route);
+    if (removeLabelDeleteMatch) {
+      if (method !== 'DELETE') return methodNotAllowed('DELETE');
+      requireCsrf(req, record);
+      const number = parseIssueNumberOrThrow(removeLabelDeleteMatch[1]);
+      let label = '';
+      try {
+        label = decodeURIComponent(removeLabelDeleteMatch[2]).trim();
+      } catch {
+        throw new HttpError(400, 'invalid_request', 'Invalid label encoding');
+      }
+      if (!label) {
+        throw new HttpError(400, 'invalid_edit', 'A label name is required');
+      }
+      const body = (await readJsonBody(req).catch(() => null)) || {};
+      return writeIssue(repository!, number, body, {
+        kind: 'remove-label',
+        label,
       });
     }
 
@@ -1162,6 +1251,182 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       concurrency, maxPagesPerRepository: 10, excludedPullRequests: excluded, dependenciesDegraded };
   }
 
+  async function archiveData(repository: RepositoryEntry | null, requestUrl: URL) {
+    let allIssues: ReturnType<typeof buildBoardList>['issues'] = [];
+    if (repository) {
+      const board = await repositoryBoard(repository);
+      allIssues = board.issues;
+    } else {
+      const board = (await combinedBoard()) as any;
+      allIssues = board.issues || [];
+    }
+
+    const limit = Math.max(1, Math.min(200, Number(requestUrl.searchParams.get('limit') ?? 100)));
+    const offset = Math.max(0, Number(requestUrl.searchParams.get('offset') ?? 0));
+
+    const backburner = allIssues.filter(
+      (issue) => issue.state === 'open' && (issue.labels || []).some((l) => l.toLowerCase() === 'backburner')
+    );
+    const closed = allIssues.filter((issue) => issue.state === 'closed');
+
+    const pagedClosed = closed.slice(offset, offset + limit);
+
+    return {
+      scope: repository ? 'repo' : 'all',
+      repository: repository ? repository.full : null,
+      backburner,
+      closed: pagedClosed,
+      totalBackburner: backburner.length,
+      totalClosed: closed.length,
+      limit,
+      offset,
+      hasMore: offset + limit < closed.length,
+      fetchedAt: new Date(now()).toISOString(),
+    };
+  }
+
+  async function operationsData(repository: RepositoryEntry | null) {
+    let allIssues: ReturnType<typeof buildBoardList>['issues'] = [];
+    let repos: Array<{ full: string; name: string }> = [];
+
+    if (repository) {
+      const board = await repositoryBoard(repository);
+      allIssues = board.issues;
+      repos = [{ full: repository.full, name: repository.name }];
+    } else {
+      const board = (await combinedBoard()) as any;
+      allIssues = board.issues || [];
+      const discovery = await repositories.view();
+      repos = discovery.repositories.map((r) => ({ full: r.full, name: r.name }));
+    }
+
+    const currentTime = now();
+    const sevenDaysAgo = currentTime - 7 * 24 * 60 * 60 * 1000;
+
+    let openCount = 0;
+    let closedCount = 0;
+    let needsHumanCount = 0;
+    let blockedCount = 0;
+    let closed7DaysCount = 0;
+
+    type OldestInProgress = {
+      number: number;
+      title: string;
+      repository: string;
+      createdAt: string;
+      ageDays: number;
+    } | null;
+
+    let oldestInProgress: OldestInProgress = null;
+    let oldestInProgressTimestamp = Infinity;
+
+    const statusPerProject: Record<string, Record<string, number>> = {};
+
+    for (const repo of repos) {
+      statusPerProject[repo.full] = {
+        draft: 0,
+        backlog: 0,
+        todo: 0,
+        'in-progress': 0,
+        review: 0,
+        done: 0,
+        cancelled: 0,
+        'needs-human': 0,
+      };
+    }
+
+    for (const issue of allIssues) {
+      const repoFull = issue.repository?.full || (repository ? repository.full : 'unknown');
+      if (!statusPerProject[repoFull]) {
+        statusPerProject[repoFull] = {
+          draft: 0,
+          backlog: 0,
+          todo: 0,
+          'in-progress': 0,
+          review: 0,
+          done: 0,
+          cancelled: 0,
+          'needs-human': 0,
+        };
+      }
+
+      const isOpen = issue.state === 'open';
+      if (isOpen) {
+        openCount++;
+      } else {
+        closedCount++;
+      }
+
+      const stage = (issue.column || 'draft').toLowerCase();
+      if (statusPerProject[repoFull][stage] !== undefined) {
+        statusPerProject[repoFull][stage]++;
+      } else {
+        statusPerProject[repoFull][stage] = 1;
+      }
+
+      const labels = (issue.labels || []).map((l) => l.toLowerCase());
+      const isNeedsHuman =
+        labels.includes('status:needs-human') ||
+        labels.includes('needs-human') ||
+        (issue.counts?.humanTasks?.open ?? 0) > 0;
+
+      if (isOpen && isNeedsHuman) {
+        needsHumanCount++;
+      }
+
+      const isBlocked =
+        isOpen &&
+        ((issue.blockedBy && issue.blockedBy.length > 0) ||
+          isNeedsHuman ||
+          issue.attention === 'blocked');
+
+      if (isBlocked) {
+        blockedCount++;
+      }
+
+      if (!isOpen && issue.updatedAt) {
+        const updatedTime = Date.parse(issue.updatedAt);
+        if (!Number.isNaN(updatedTime) && updatedTime >= sevenDaysAgo) {
+          closed7DaysCount++;
+        }
+      }
+
+      if (isOpen && (stage === 'in-progress' || labels.includes('status:in-progress'))) {
+        const createdStr = issue.createdAt || issue.updatedAt;
+        if (createdStr) {
+          const createdTime = Date.parse(createdStr);
+          if (!Number.isNaN(createdTime) && createdTime < oldestInProgressTimestamp) {
+            oldestInProgressTimestamp = createdTime;
+            const ageDays = Math.max(0, Math.floor((currentTime - createdTime) / (24 * 60 * 60 * 1000)));
+            oldestInProgress = {
+              number: issue.number,
+              title: issue.friendlyTitle || issue.title,
+              repository: repoFull,
+              createdAt: createdStr,
+              ageDays,
+            };
+          }
+        }
+      }
+    }
+
+    return {
+      scope: repository ? 'repo' : 'all',
+      repository: repository ? repository.full : null,
+      openClosed: {
+        open: openCount,
+        closed: closedCount,
+        total: openCount + closedCount,
+      },
+      needsHuman: needsHumanCount,
+      blocked: blockedCount,
+      closed7Days: closed7DaysCount,
+      oldestOpenInProgress: oldestInProgress,
+      statusPerProject,
+      fetchedAt: new Date(currentTime).toISOString(),
+    };
+  }
+
   function methodNotAllowed(allow: string): HandlerResponse {
     return {
       status: 405,
@@ -1183,6 +1448,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     | { kind: 'canvas'; data: any }
     | { kind: 'section'; sectionId: unknown; text: unknown }
     | { kind: 'question'; index: number; answer: unknown }
+    | { kind: 'human-task'; index: number; completed?: boolean }
+    | { kind: 'reopen' }
+    | { kind: 'remove-label'; label: string }
     | { kind: 'status'; status: unknown }
     | { kind: 'patch'; body?: unknown; status?: unknown; state?: unknown };
 
@@ -1294,7 +1562,16 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     op: WriteOp,
   ): Promise<HandlerResponse> {
     const supplied = body && typeof body.fingerprint === 'string' ? body.fingerprint : '';
-    if (!/^[a-f0-9]{64}$/.test(supplied)) {
+    const fingerprintRequired = op.kind !== 'reopen' && op.kind !== 'remove-label' && op.kind !== 'human-task';
+    if (supplied) {
+      if (!/^[a-f0-9]{64}$/.test(supplied)) {
+        throw new HttpError(
+          400,
+          'invalid_request',
+          'The provided fingerprint is not valid',
+        );
+      }
+    } else if (fingerprintRequired) {
       throw new HttpError(
         400,
         'fingerprint_required',
@@ -1312,7 +1589,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       }
 
       const currentFingerprint = issueFingerprint(fresh.item, repository);
-      if (currentFingerprint !== supplied) {
+      if (supplied && currentFingerprint !== supplied) {
         throw new HttpError(409, 'conflict', 'This task changed on GitHub after you opened it; nothing was written', {
           issue: buildIssueDetail(fresh.item, repository),
           statusOptions: statusOptions(),
@@ -1327,6 +1604,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       let targetAnswer = '';
       let baseStatus: string | null = null;
       let targetStatus = '';
+      let baseHumanTaskIndex = -1;
+      let targetHumanTaskCompleted: boolean | undefined = undefined;
+      let baseRemoveLabel = '';
 
       if (op.kind === 'section') {
         if (typeof op.sectionId !== 'string') {
@@ -1386,6 +1666,29 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         if (op.state !== undefined && op.state !== 'open' && op.state !== 'closed') {
           throw new HttpError(400, 'invalid_edit', 'State must be open or closed');
         }
+      } else if (op.kind === 'human-task') {
+        const tasks = parseWebHumanTasks(fresh.item.body ?? '');
+        if (op.index < 0 || op.index >= tasks.length) {
+          throw new HttpError(400, 'invalid_edit', 'That human task is no longer available');
+        }
+        const currentTask = tasks[op.index];
+        if (op.completed !== undefined && op.completed === currentTask.completed) {
+          throw new HttpError(400, 'invalid_edit', 'That change would leave the issue unchanged');
+        }
+        baseHumanTaskIndex = op.index;
+        targetHumanTaskCompleted = op.completed !== undefined ? op.completed : !currentTask.completed;
+      } else if (op.kind === 'reopen') {
+        if (fresh.item.state === 'open') {
+          throw new HttpError(400, 'invalid_edit', 'That change would leave the issue unchanged');
+        }
+      } else if (op.kind === 'remove-label') {
+        const targetLabelNorm = op.label.trim().toLowerCase();
+        const existingLabels = labelNames(fresh.item);
+        const hasLabel = existingLabels.some((l) => l.trim().toLowerCase() === targetLabelNorm);
+        if (!hasLabel) {
+          throw new HttpError(400, 'invalid_edit', `Label "${op.label}" is not present on this issue`);
+        }
+        baseRemoveLabel = targetLabelNorm;
       } else if (op.kind === 'canvas') {
         if (!op.data || typeof op.data !== 'object' || Array.isArray(op.data)) {
           throw new HttpError(400, 'invalid_canvas', 'Canvas data must be a JSON object');
@@ -1860,6 +2163,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           patch = { body: applyQuestionAnswer(fresh.item, answerIdx, op.answer) };
         } else if (op.kind === 'status') {
           patch = { labels: applyStatusChange(fresh.item, op.status) };
+        } else if (op.kind === 'human-task') {
+          const toggled = toggleHumanTaskInMarkdown(fresh.item.body ?? '', baseHumanTaskIndex, targetHumanTaskCompleted);
+          patch = { body: toggled.newBody };
+        } else if (op.kind === 'reopen') {
+          patch = { state: 'open' };
+        } else if (op.kind === 'remove-label') {
+          patch = { labels: labelNames(fresh.item).filter((l) => l.trim().toLowerCase() !== baseRemoveLabel) };
         } else if (op.kind === 'patch') {
           patch = {};
           if (typeof op.body === 'string') {
@@ -1949,6 +2259,21 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       } else if (op.kind === 'status') {
         const curStatus = statusLabelOf(labelNames(currentItem));
         if (curStatus === targetStatus) {
+          verified = true;
+        }
+      } else if (op.kind === 'human-task') {
+        const curTasks = parseWebHumanTasks(currentItem.body ?? '');
+        const curTask = curTasks[baseHumanTaskIndex];
+        if (curTask && curTask.completed === targetHumanTaskCompleted) {
+          verified = true;
+        }
+      } else if (op.kind === 'reopen') {
+        if (currentItem.state === 'open') {
+          verified = true;
+        }
+      } else if (op.kind === 'remove-label') {
+        const curLabels = labelNames(currentItem);
+        if (!curLabels.some((l) => l.trim().toLowerCase() === baseRemoveLabel)) {
           verified = true;
         }
       } else if (op.kind === 'patch') {

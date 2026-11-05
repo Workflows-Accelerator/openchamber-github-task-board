@@ -61,12 +61,14 @@
         <button id="nav-decisions" class="sidebar-item" type="button" data-view="decisions" title="Decisions">
           <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
           <span class="sidebar-label" data-i18n="nav_decisions">Decisions</span>
+          <span id="decisions-nav-badge" class="sidebar-badge" hidden>0</span>
         </button>
 
         <!-- 4. Blocked -->
         <button id="nav-blocked" class="sidebar-item" type="button" data-view="blocked" title="Blocked">
           <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
           <span class="sidebar-label" data-i18n="nav_blocked">Blocked</span>
+          <span id="blocked-nav-badge" class="sidebar-badge" hidden>0</span>
         </button>
 
         <!-- 5. Discussions -->
@@ -169,6 +171,167 @@
           <h2 id="placeholder-title" class="placeholder-title">Canvas</h2>
           <p id="placeholder-desc" class="placeholder-desc muted" data-i18n="placeholder_notice">This view is currently in development. List view is active and connected to GitHub.</p>
           <button id="placeholder-back-btn" class="button primary" type="button" data-i18n="placeholder_back">Back to List</button>
+        </div>
+      </section>
+
+      <!-- Decisions View -->
+      <section id="decisions-view" class="view section-view" aria-labelledby="decisions-title" hidden>
+        <div class="view-header">
+          <div class="view-header-main">
+            <h1 id="decisions-title" class="view-title" data-i18n="decisions_title">Decisions</h1>
+            <p class="view-subtitle muted" data-i18n="decisions_desc">Every unanswered open question across repositories, grouped by issue, newest activity first.</p>
+          </div>
+          <div class="view-header-stats">
+            <span id="decisions-count-badge" class="badge">0</span>
+          </div>
+        </div>
+        <div id="decisions-content" class="view-body">
+          <div id="decisions-loading" class="view-loading muted">Loading…</div>
+          <div id="decisions-list" class="decisions-list"></div>
+          <div id="decisions-empty" class="view-empty muted" data-i18n="decisions_no_items" hidden>No open questions requiring decisions.</div>
+        </div>
+      </section>
+
+      <!-- Blocked View -->
+      <section id="blocked-view" class="view section-view" aria-labelledby="blocked-title" hidden>
+        <div class="view-header">
+          <div class="view-header-main">
+            <h1 id="blocked-title" class="view-title" data-i18n="blocked_title">Blocked</h1>
+            <p class="view-subtitle muted" data-i18n="blocked_desc">Issues requiring human action or blocked by open dependencies.</p>
+          </div>
+          <div class="view-header-stats">
+            <span id="blocked-count-badge" class="badge">0</span>
+          </div>
+        </div>
+        <div id="blocked-content" class="view-body">
+          <div id="blocked-loading" class="view-loading muted">Loading…</div>
+          <div id="blocked-list" class="blocked-list"></div>
+          <div id="blocked-empty" class="view-empty muted" data-i18n="blocked_no_items" hidden>No blocked tasks.</div>
+        </div>
+      </section>
+
+      <!-- Operations Overview View -->
+      <section id="operations-view" class="view section-view" aria-labelledby="operations-title" hidden>
+        <div class="view-header">
+          <div class="view-header-main">
+            <h1 id="operations-title" class="view-title" data-i18n="operations_title">Operations overview</h1>
+            <p class="view-subtitle muted" data-i18n="operations_desc">Real system metrics and distribution across all connected projects.</p>
+          </div>
+          <div class="view-header-stats">
+            <span id="operations-timestamp" class="small muted"></span>
+          </div>
+        </div>
+        <div id="operations-content" class="view-body">
+          <div id="operations-loading" class="view-loading muted">Loading…</div>
+          <div id="operations-grid" class="operations-grid" hidden>
+            <div class="operations-stat-row">
+              <div class="stat-card card-surface">
+                <span class="stat-label" data-i18n="operations_open">Open</span>
+                <span id="stat-open-count" class="stat-value">0</span>
+                <span id="stat-open-desc" class="stat-sub muted"></span>
+              </div>
+              <div class="stat-card card-surface">
+                <span class="stat-label" data-i18n="operations_closed">Closed</span>
+                <span id="stat-closed-count" class="stat-value">0</span>
+                <span id="stat-closed-desc" class="stat-sub muted"></span>
+              </div>
+              <div class="stat-card card-surface">
+                <span class="stat-label" data-i18n="operations_needs_human">Needs human</span>
+                <span id="stat-human-count" class="stat-value">0</span>
+              </div>
+              <div class="stat-card card-surface">
+                <span class="stat-label" data-i18n="operations_blocked">Blocked</span>
+                <span id="stat-blocked-count" class="stat-value">0</span>
+              </div>
+              <div class="stat-card card-surface">
+                <span class="stat-label" data-i18n="operations_closed_7days">Closed (last 7 days)</span>
+                <span id="stat-closed-7days-count" class="stat-value">0</span>
+              </div>
+            </div>
+            <div class="stat-card card-surface stat-card-wide">
+              <span class="stat-label" data-i18n="operations_oldest_in_progress">Oldest open in-progress</span>
+              <div id="stat-oldest-container" class="stat-oldest-container">
+                <span id="stat-oldest-title" class="stat-oldest-title">—</span>
+                <span id="stat-oldest-meta" class="stat-sub muted"></span>
+              </div>
+            </div>
+            <div class="operations-table-wrap card-surface">
+              <h2 class="operations-table-title" data-i18n="operations_status_breakdown">Status breakdown per project</h2>
+              <div class="table-responsive">
+                <table id="operations-project-table" class="operations-table">
+                  <thead>
+                    <tr>
+                      <th data-i18n="operations_project">Project</th>
+                      <th>Draft</th>
+                      <th>Backlog</th>
+                      <th>Todo</th>
+                      <th>In Progress</th>
+                      <th>Needs Human</th>
+                      <th>Review</th>
+                      <th>Done</th>
+                      <th>Cancelled</th>
+                    </tr>
+                  </thead>
+                  <tbody id="operations-project-rows"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Archive View -->
+      <section id="archive-view" class="view section-view" aria-labelledby="archive-title" hidden>
+        <div class="view-header">
+          <div class="view-header-main">
+            <h1 id="archive-title" class="view-title" data-i18n="archive_title">Archive & Backburner</h1>
+            <p class="view-subtitle muted" data-i18n="archive_desc">Browse backburner tasks and historical closed issues.</p>
+          </div>
+        </div>
+        <div class="archive-tabs-bar" role="tablist">
+          <button id="archive-tab-backburner" class="archive-tab active" type="button" role="tab" aria-selected="true" data-i18n="archive_tab_backburner">Backburner</button>
+          <button id="archive-tab-closed" class="archive-tab" type="button" role="tab" aria-selected="false" data-i18n="archive_tab_closed">Archived (closed)</button>
+        </div>
+        <div id="archive-content" class="view-body">
+          <div id="archive-loading" class="view-loading muted">Loading…</div>
+          <!-- Backburner Pane -->
+          <div id="archive-pane-backburner" class="archive-pane">
+            <div id="archive-backburner-list" class="archive-list"></div>
+            <div id="archive-backburner-empty" class="view-empty muted" data-i18n="archive_no_backburner" hidden>No tasks on the backburner.</div>
+          </div>
+          <!-- Closed Pane -->
+          <div id="archive-pane-closed" class="archive-pane" hidden>
+            <div id="archive-closed-list" class="archive-list"></div>
+            <div id="archive-closed-empty" class="view-empty muted" data-i18n="archive_no_closed" hidden>No archived closed tasks.</div>
+            <div class="archive-load-more-wrap">
+              <button id="archive-load-more-btn" class="button secondary" type="button" data-i18n="archive_load_more" hidden>Load more closed tasks</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Client View -->
+      <section id="client-view" class="view section-view" aria-labelledby="client-title" hidden>
+        <div class="view-header">
+          <div class="view-header-main">
+            <h1 id="client-title" class="view-title" data-i18n="client_title">Client view</h1>
+            <p class="view-subtitle muted" data-i18n="client_desc">Curated view suitable for client presentations and high-level progress reviews.</p>
+          </div>
+        </div>
+        <div class="client-disclaimer-banner card-surface" role="note">
+          <div class="disclaimer-icon" aria-hidden="true">
+            <svg class="icon" width="14" height="14" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+          </div>
+          <div class="disclaimer-text">
+            <strong data-i18n="client_disclaimer">Presentation filter only; not a security boundary</strong>
+            <p class="small muted" id="client-filter-status-desc" data-i18n="client_filter_inactive">Inactive (showing full task list)</p>
+          </div>
+          <div class="disclaimer-action">
+            <button id="client-toggle-btn" class="button primary small" type="button" data-i18n="client_switch_btn_enable">Enable presentation mode</button>
+          </div>
+        </div>
+        <div id="client-content" class="view-body">
+          <div id="client-list" class="client-tasks-list"></div>
         </div>
       </section>
 
