@@ -74,16 +74,30 @@ test('canvas marker parse: safely skips malformed JSON or non-object payloads', 
   assert.deepEqual(parseCanvasMarker(earlierValid), { x: 10, y: 20 });
 });
 
-test('canvas marker strip: removes unfenced markers and preserves other content', () => {
+test('canvas marker strip: removes unfenced markers and preceding blank line separator', () => {
   const text = 'Line 1\r\n\r\n<!-- board-canvas: {"x":10,"y":20} -->\r\n';
-  assert.equal(stripCanvasMarker(text), 'Line 1\r\n\r\n');
+  assert.equal(stripCanvasMarker(text), 'Line 1\r\n');
 
   const fenced = '```\n<!-- board-canvas: {"x":10,"y":20} -->\n```\n';
   assert.equal(stripCanvasMarker(fenced), fenced);
 
   const bothMarkers = 'Overview text\n\n<!-- board-order: 500 -->\n\n<!-- board-canvas: {"x":10,"y":20} -->';
-  assert.equal(stripCanvasMarker(bothMarkers), 'Overview text\n\n<!-- board-order: 500 -->\n\n');
+  assert.equal(stripCanvasMarker(bothMarkers), 'Overview text\n\n<!-- board-order: 500 -->\n');
   assert.equal(stripHiddenMarkers(bothMarkers).trim(), 'Overview text');
+});
+
+test('canvas marker set+strip: preserves original body byte-for-byte', () => {
+  const bodies = [
+    'Line 1\r\n\r\n<!-- board-order: 1000 -->\r\n',
+    'Line 1\n\n<!-- board-order: 1000 -->\n',
+    '# Heading\r\n\r\nParagraph\r\n```ts\n<!-- board-canvas: stay -->\n```\r\n',
+    'Simple single line\n',
+  ];
+  for (const body of bodies) {
+    const withMarker = setCanvasMarker(body, { x: 120, y: 340, notes: [{ id: 'n1', text: 'temp' }] });
+    const stripped = stripCanvasMarker(withMarker);
+    assert.equal(stripped, body, `Body must match byte-for-byte after set+strip: ${JSON.stringify(body)}`);
+  }
 });
 
 test('setCanvasMarker: preserves CRLF, code fences, board-order, and merges unknown keys', () => {
@@ -744,7 +758,7 @@ test('canvas server: rejects note exceeding 4000 characters with 400 note_too_lo
 
 test('PUT /api/issues/:n/canvas: Arrange undo payload clears position of a previously unplaced card', async (t) => {
   const repo = 'Workflows-Accelerator/openchamber-github-task-board';
-  const original = '## Overview\r\nProse line\r\n\r\n<!-- board-order: 1000 -->';
+  const original = '## Overview\r\nProse line\r\n\r\n<!-- board-order: 1000 -->\r\n';
   const fake = await startFakeGitHub({
     repo,
     issues: [makeIssue({ number: 30, title: 'Unplaced', body: original, labels: ['status:todo'], repo })],
@@ -774,7 +788,7 @@ test('PUT /api/issues/:n/canvas: Arrange undo payload clears position of a previ
   assert.equal(undone.json.issue.canvas, null);
   assert.equal(parseCanvasMarker(fake.findIssue(30).body), null);
   assert.equal(parseOrderMarker(fake.findIssue(30).body), 1000);
-  assert.ok(fake.findIssue(30).body.startsWith('## Overview\r\nProse line'));
+  assert.equal(fake.findIssue(30).body, original, 'Undoing Arrange on previously unplaced card restores original body byte-for-byte');
 
   const patchesBefore = fake.patchCalls.length;
   const badFlag = await session.request('/api/issues/30/canvas', {

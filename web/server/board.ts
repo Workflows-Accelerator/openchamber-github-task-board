@@ -233,6 +233,9 @@ export function stripCanvasMarker(body: string = ''): string {
     const line = lines[i];
     if (!line.fenced && !line.indentedCode && canvasMarkerLinePattern.test(line.text)) {
       canvasIndices.add(i);
+      if (i > 0 && lines[i - 1].text === '' && !lines[i - 1].fenced) {
+        canvasIndices.add(i - 1);
+      }
     }
   }
   if (canvasIndices.size === 0) return body;
