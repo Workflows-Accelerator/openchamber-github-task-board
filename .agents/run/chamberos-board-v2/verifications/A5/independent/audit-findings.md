@@ -97,3 +97,68 @@ Independent `presentation-operations.png` is pre-47bda6d and still has wrong sta
 - DIDN'T WORK: Page.captureScreenshot intermittently timed out on Canvas/List/drawer/narrow combinations; later Runtime.evaluate could also time out. FINALLY WORKED: retain six earlier authentic images, disable shots for completed native DOM/action matrix, regenerate selected original Operations/Client assets independently.
 - DIDN'T WORK: matrix reload after note/Canvas run produced `Error: Wait failed: reload matrix`. FINALLY WORKED: navigate List before reload; repeated final harness exit 0.
 - DIDN'T WORK: overlapping auditor's earlier question success request returned 400 instead of expected 200 in untrusted log. FINALLY WORKED: do not claim that run; fresh refusal tests plus native double-Answer prove current question path, final suites rerun. Original overlapping source cannot be recovered, so exact earlier cause remains unverified.
+
+---
+
+## Final independent repair audit (2026-11-06, 81ed5b6..ddfaa2c)
+
+Final verdicts after independent audit of repair range `81ed5b6..175af85` and contained defect fixes in `ddfaa2c` (`ddfaa2c92819e5851b2579065570630cf28609bd`):
+- **A5 Spec Verdict:** `PASS`
+- **A5 Quality Verdict:** `APPROVED`
+- **A4 Spec Verdict:** `PASS`
+- **A4 Quality Verdict:** `APPROVED`
+
+Historical failed logs (`raw/data-final.log`, `raw/browser-final.log`, `raw/status-before-fix.log`, `raw/overlap-untrusted-added.log`, and `raw/browser-175af85-historical.json`) are preserved in `.agents/run/chamberos-board-v2/verifications/A5/independent/raw/`.
+
+### Resolution of original 9 findings + 7 additional defects uncovered at `175af85` and fixed in `ddfaa2c`
+
+1. **Finding 1 (P1 FIXED — Global presentation mode & `isDraftIssue` status preservation):**
+   - `f2439fd` + `ddfaa2c` (`web/public/app.js:1705-1713`, `6822-6896`): Client Presentation Mode strips YAML front matter via `stripFrontMatter`, renders overview through `window.renderMarkdown`, hides open questions, human tasks, internal labels (`ready-to-run`), worktree metadata, and canvas notes across all views (`list`, `canvas`, `drawer`, `decisions`, `blocked`, `operations`, `archive`, `client`), and re-applies localized strings when switching EN/FR.
+   - At `175af85`, `isDraftIssue` still tested `issue.column === 'draft'`, which hid `status:planned` and `status:todo` tasks because `buildBoardIssue` projects those into coarse `column: 'draft'`. Fixed in `ddfaa2c` (`web/public/app.js:1705-1713`) so only explicit `status:draft` (or unlabelled draft-column items) are treated as draft. Verified in `scripts/audit-a5.mjs` (`leaked: []` across all views, `plannedVisible: true`, `todoVisible: true`).
+2. **Finding 2 (P1 FIXED — A4 note 409 conflict retention, refresh persistence, and explicit Overwrite):**
+   - At `175af85`, `f2439fd` added `Use remote` / `Overwrite` buttons on initial 409, but refreshing the board while `LOCAL_DRAFT` was open cleared `hasConflict` and adopted the remote fingerprint, so clicking `Retry` still overwrote `REMOTE_NOTE` with `1 PATCH` (`raw/browser-175af85-historical.json`: `remoteRetained: false, localSaved: true`). Additionally, detaching `.canvas-note-textarea` during `refresh()` fired a synthetic `blur` event that triggered `commitSave(false)`.
+   - Fixed in `ddfaa2c` (`web/public/app.js:3280-3355`, `3380`, `3386-3435`): `state.noteDraftEdits` persists `{ text, baseText, conflict, conflictFingerprint }` across refreshes, blocking `Retry` (`PATCH: 0`, `remoteRetained: true`, `localSaved: false`) until explicit `Overwrite` (`PATCH: 1`, `overwrittenText: "LOCAL_DRAFT"`), and `blur` ignores detached `noteEl`.
+3. **Finding 3 (P2 FIXED — Rapid consecutive human-task checkbox toggles):**
+   - At `175af85`, `f2439fd` added `humanTaskQueues[key]` but disabled all `.human-task-checkbox` inputs synchronously on the first click and closed over `issue.fingerprint` outside the queue callback, so a synchronous second click in the browser was ignored (`PATCH: 1`, `checked: [true, false]` in `raw/browser-175af85-historical.json`).
+   - Fixed in `ddfaa2c` (`web/public/app.js:6188-6252`): only the clicked checkbox is disabled before its queued turn and `currentIssue.fingerprint` is read inside the serialized queue task. Browser probe `two quick task toggles` now records `PATCH: 2`, `checked: [true, true]`, `notice: ""`.
+4. **Finding 4 (P2 FIXED — Combined cached timestamp accuracy):**
+   - Fixed in `19bc8c9` (`web/server/app.ts:1208`, `1299`, `1506`): combined board and operations `fetchedAt` compute `new Date(Math.min(...repoFetchedTimestamps)).toISOString()` from contributing repository caches rather than `now()`. Verified PASS in `node scripts/audit-a5-data.mjs` (`advancedWithoutUpstreamFetch: false`, `failureFabricatedFreshFetchTime: false`).
+5. **Finding 5 (P2 FIXED — Dedicated closed archive fetch and partial/truncated warning banners):**
+   - Fixed in `19bc8c9` (`web/server/app.ts:1178-1197`, `1311-1335` and `web/public/app.js:6595-6607`, `6674-6686`): `repositoryClosedIssues` issues dedicated `state=closed` queries so closed issue `#1001` is reached beyond 1,000 open issues (`totalClosed: 1`, `closedNumbers: [1001]`), and `#operations-warning` / `#archive-warning` display localized warning banners when `partial`, `truncated`, or `failures` are present.
+6. **Finding 6 (P2 FIXED — Blocked/Decisions predicates and closed-issue filtering):**
+   - Fixed in `f2439fd` (`web/public/app.js:1715-1725`): `isIssueBlocked` and `isIssueDecision` strictly exclude `issue.state === 'closed'`, and sidebar badge counts match section card counts (`sidebarBlocked: 2`, `headingBlocked: "2"`, `closedInBlocked: false`, `closedInDecisions: false`).
+7. **Finding 7 (P2 FIXED — Exact byte identity in `setCanvasMarker` / `stripCanvasMarker`):**
+   - Fixed in `b7f1517` (`web/server/board.ts:242-265`, `395-413`): `;sep=N` records exact preceding newline separator count so `stripCanvasMarker` restores all 5 test classes (`"Plain"`, `"Plain\n"`, `"Plain\n\n"`, `"Plain\r\n\r\n"`, `" \n\n"`) byte-for-byte (`equal: true` in `node scripts/audit-a5-data.mjs`).
+8. **Finding 8 (P2 FIXED — French localization and 360px Client disclaimer layout):**
+   - Fixed in `f2439fd` + `ddfaa2c` (`web/public/index.html`, `web/public/theme.css:3140-3175`, `web/public/app.js:6822-6896`): all 8 workflow status headers/cells and 401/403/500/offline error messages are localized in French, and at 360px `.disclaimer-text` wraps cleanly on whitespace without mid-word splitting (`disclaimerSplit: false`, `englishStatus: []`, `overflow: false` across all 24 French section/viewport/theme combinations).
+9. **Finding 9 (P2 FIXED — Non-finite archive pagination normalization):**
+   - Fixed in `19bc8c9` (`web/server/app.ts:1338-1344`): `!Number.isFinite` normalizes `Infinity` and `NaN` to finite `limit: 100` and `offset: 0`. Verified PASS in `node scripts/audit-a5-data.mjs`.
+10. **Additional defects fixed in `ddfaa2c` (`web/server/board.ts:195-232`, `web/public/app.js:5054-5057`, `5140`, `5728-5780`, `7067`, `7370-7383`, `7406-7412`):**
+    - `extractDependencyRepository` parses `repository.full_name` and `repository_url` from GitHub REST dependency payloads so real-shaped cross-repository blockers retain `owner/repo` identity.
+    - `openIssue` resolves issues across `state.board.issues`, `state.archive.backburner`, `state.archive.closed`, and `GET /api/repos/:owner/:repo/issues/:number`.
+    - `boot()`, `route()`, `selectProject()`, `#refresh-btn`, and `loadBoard()` preserve `state.activeSectionView` (`tb_active_section`) across reloads, refreshes, and project switches.
+
+### Updated coverage matrix after `ddfaa2c` and packaged release audit
+
+| Item | Post-repair Verdict | Evidence |
+|---|---|---|
+| 1a–1f Answer/Human-task/Reopen/Label-remove fingerprints, malformed JSON, double-click Answer | PASS | Unchanged PASS (`web/tests/a5-audit.test.mjs`, `scripts/audit-a5.mjs`). |
+| 1g Two quick distinct task toggles | PASS | `ddfaa2c` `web/public/app.js:6188-6252`; `browser.json` `two quick task toggles`: `PATCH: 2`, `checked: [true, true]`. |
+| 2a–2e Global presentation filter across all views, `planned`/`todo` preservation, Markdown parser reuse, hidden controls | PASS | `ddfaa2c` `web/public/app.js:1705-1713`; `browser.json` `leaked: []` across all views, `plannedVisible: true`, `todoVisible: true`. |
+| 3a–3i Operations & Archive cached `fetchedAt`, warning banners, dedicated `state=closed` fetch, non-finite paging, cross-repo links | PASS | `data.json` 14/14 PASS; `packaged-browser.json` cross-repo badge & drawer navigation (`owner/other-repo#10`) PASS. |
+| 4 Reopen contract review | PASS | Flagged for human decision (`status:backlog` in `web/server/app.ts:2191` unchanged). |
+| 5a–5c Human-task byte preservation & label removal | PASS | `data.json` & `web/tests/a5-audit.test.mjs` PASS. |
+| 6a–6f A4 marker byte identity, note 500/network/409 retention, refresh retry protection, explicit Overwrite, timed poll & full reload over unsaved draft | PASS | `data.json` 5/5 byte-identical; `browser.json` & `packaged-browser.json` PASS (`PATCH: 0` on refresh retry, `PATCH: 1` on Overwrite, `PATCH: 0` on timed poll, clean reload). |
+| 7 Test inventory (573 web tests, 618 legacy tests, 0 `.skip`/`.todo`) | PASS | `raw/web-test-repair-final.log` (573/573), `raw/npm-test-repair-final.log` (618/618). |
+| 8a–8l Regenerated 24 A5 screenshots + 24 French matrix screenshots + empty sections + 401/403/500/offline error handling + 200% zoom & touch note drag/resize + partial Arrange failure & Undo | PASS | `raw/generate-a5-screenshots-repair-final.log`, `raw/browser-repair-final.log`, `raw/packaged-browser-final.log` (12/12 PASS). |
+| Browser `Network.emulateNetworkConditions` offline toggle / Live GitHub writes / Live release switch | NOT RUN | `Network.emulateNetworkConditions` unsupported in headless shell (offline tested via socket destruction & `fetch` network rejection); live GitHub writes and production cutover forbidden by task brief. |
+
+### Final repair audit commands and logs
+
+- `timeout 900 npm test`: exit 0, 618/618 (`raw/npm-test-repair-final.log`).
+- `timeout 900 node --test --test-timeout=30000 web/tests/*.test.mjs`: exit 0, 573/573 (`raw/web-test-repair-final.log`).
+- `timeout 600 npm run typecheck`: exit 0, 0 errors (`raw/typecheck-repair-final.log`).
+- `timeout 120 node scripts/audit-a5-data.mjs`: exit 0, 14/14 PASS (`raw/data-repair-final.log`, `data.json`).
+- `timeout 240 env AUDIT_NO_SHOTS=1 node scripts/audit-a5.mjs`: exit 0, all probes PASS (`raw/browser-repair-final.log`, `browser.json`).
+- `timeout 240 node scripts/generate-a5-screenshots.mjs`: exit 0, 24/24 screenshots regenerated (`raw/generate-a5-screenshots-repair-final.log`).
+- `timeout 180 env PACKAGED_RELEASE_DIR=/tmp/opencode/board-v2-staging/ddfaa2c-foundation node scripts/audit-a5-packaged.mjs`: exit 0, 12/12 packaged probes PASS (`raw/packaged-browser-final.log`, `packaged-browser.json`).

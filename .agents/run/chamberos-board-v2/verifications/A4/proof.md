@@ -275,3 +275,38 @@ Hostile review of canvas note conflict handling and body byte preservation:
 - **Canvas note 409 conflict handling and non-note remote modification:** Verified safe retry. When a 409 conflict is caused by non-note modifications (e.g. issue title/metadata changes), the client adopts the remote fingerprint without triggering a spurious conflict prompt. On explicit note overwrite, remote canvas card geometry (x, y) and concurrent modifications to other notes are merged and preserved. Verified in unit tests (`web/tests/a5-presentation-audit.test.mjs`) and CDP audit (`scripts/audit-a5.mjs`).
 - **Canvas marker set/strip exact byte identity:** Verified byte-for-byte fidelity across all 5 trailing whitespace and newline variations (`"Plain"`, `"Plain\n"`, `"Plain\n\n"`, `"Plain\r\n\r\n"`, `" \n\n"`). All five cases PASS in `node scripts/audit-a5-data.mjs`.
 - **Test suite results:** `node --test --test-timeout=30000 web/tests/*.test.mjs` (569/569 PASS), `npm test` (618/618 PASS), `npm run typecheck` (exit 0).
+
+---
+
+## Final independent repair audit
+
+**A4 Spec Verdict:** `PASS` | **A4 Quality Verdict:** `APPROVED` (verified code commit `ddfaa2c` / `ddfaa2c92819e5851b2579065570630cf28609bd`).
+
+### Defects uncovered and fixed during final independent repair audit (`ddfaa2c`)
+
+1. **Refresh after note 409 cleared conflict protection and allowed Retry to overwrite remote note (`web/public/app.js:3280-3355`, `3386-3435`):**
+   - **Defect:** In `175af85`, `state.noteDraftEdits` stored `{ text }` without tracking conflict state across board refreshes. When a background poll (`refresh()`) or explicit Refresh loaded the updated remote issue after a 409, `openNoteInlineEditor` re-rendered the note using the new `issue.fingerprint` while clearing `hasConflict`. Clicking `Retry` then overwrote the remote note with `1 PATCH` and no explicit `Overwrite` confirmation (`browser-175af85-historical.json`: `"note 409 refresh retry": { "PATCH": 1, "remoteRetained": false, "localSaved": true }`).
+   - **Fix:** `state.noteDraftEdits` now stores `{ text, baseText, conflict, conflictFingerprint }`. When a refresh arrives while an unsaved note draft is open, if the remote note text diverged from `baseText`, `conflict: true` and `conflictFingerprint: issue.fingerprint` are preserved and the editor renders `Use remote` (`Utiliser distant`) + `Overwrite` (`Écraser`) while `Retry` (`Réessayer`) remains blocked with `0 PATCH` until the user explicitly chooses `Overwrite` or `Use remote`.
+   - **Regression tests & browser proof:** `web/tests/a5-presentation-audit.test.mjs` (`audit A4/A5 note 409: refresh preserves conflict state so Retry refuses overwrite until explicit Overwrite`) and native CDP probes `note 409 refresh retry` (`PATCH: 0`, `remoteRetained: true`, `localSaved: false`) + `note explicit Overwrite` (`PATCH: 1`, `overwrittenText: "LOCAL_DRAFT"`) in `scripts/audit-a5.mjs` and `scripts/audit-a5-packaged.mjs`.
+
+2. **Detached note textarea blur during background poll/refresh triggered unintended save (`web/public/app.js:3380`):**
+   - **Defect:** Re-rendering the canvas during `refresh()` detached the active `.canvas-note-textarea` from the DOM, firing a synthetic `blur` event in Chromium that invoked `commitSave(false)` and sent an unintended `PUT /api/issues/:n/canvas` request while the user was still editing.
+   - **Fix:** Guarded the `blur` listener with `if (!noteEl.isConnected) return;` (`web/public/app.js:3380`) so DOM detachment during poll/refresh re-renders preserves the draft in `state.noteDraftEdits` and re-opens the inline editor with `0 PATCH`.
+   - **Browser proof:** Verified in `scripts/audit-a5-packaged.mjs` probe `refresh/poll over unsaved note draft preserves draft without premature save` (`draftAfterPoll: "UNSAVED_DURING_POLL"`, `PATCH: 0`).
+
+### Previously open / `NOT RUN` A4 scenarios reproduced in real browser (`scripts/audit-a5.mjs` & `scripts/audit-a5-packaged.mjs`)
+
+- **Timed poll over unsaved note draft:** `window.__taskBoard.refresh()` while `.canvas-note-textarea` holds `"UNSAVED_DURING_POLL"` keeps the inline editor open with `"UNSAVED_DURING_POLL"` and `0 PATCH`.
+- **Full page reload over unsaved note draft:** Reloading the page clears bounded in-memory `state.noteDraftEdits` / `state.draftEdits`, restores the committed GitHub note text (`"INTERNAL_NOTE body"`), and leaks zero draft keys to `localStorage`.
+- **200% zoom and touch/pointer note drag & resize:** `zoomToPoint(640, 450, 2)` sets `#canvas-zoom-readout` to `200%`; touch `PointerEvent` (`pointerType: 'touch'`) drag on `.canvas-note-header` moves the sticky note to `(200px, 300px)` (`1 PATCH`), and touch `PointerEvent` resize on `.canvas-note-resize` resizes the note to `(260px, 180px)` (`1 PATCH`).
+- **Partial Arrange failure and Undo:** Injecting HTTP 500 on issue `#4` during `Arrange` (All cards) shows `"4 cards arranged, 1 failed."` in `#arrange-summary`, reveals `#canvas-arrange-undo`, and clicking `Undo Arrange` sends `4 PATCH` requests restoring only the 4 succeeded cards while leaving `#4` untouched.
+- **Exact byte identity on `setCanvasMarker` + `stripCanvasMarker`:** All 5 trailing whitespace/newline cases (`"Plain"`, `"Plain\n"`, `"Plain\n\n"`, `"Plain\r\n\r\n"`, `" \n\n"`) verified `equal: true` in `node scripts/audit-a5-data.mjs` (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/data-repair-final.log`).
+
+### Final suite and packaged verification evidence
+
+- `timeout 900 npm test`: 618/618 PASS (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/npm-test-repair-final.log`)
+- `timeout 900 node --test --test-timeout=30000 web/tests/*.test.mjs`: 573/573 PASS (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/web-test-repair-final.log`)
+- `timeout 600 npm run typecheck`: exit 0, 0 errors (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/typecheck-repair-final.log`)
+- `timeout 120 node scripts/audit-a5-data.mjs`: 14/14 PASS (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/data-repair-final.log`)
+- `timeout 240 env AUDIT_NO_SHOTS=1 node scripts/audit-a5.mjs`: all probes PASS, 0 exceptions, 0 console errors, 0 CSP violations (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/browser-repair-final.log`)
+- `timeout 180 env PACKAGED_RELEASE_DIR=/tmp/opencode/board-v2-staging/ddfaa2c-foundation node scripts/audit-a5-packaged.mjs`: 12/12 packaged probes PASS against `/tmp/opencode/board-v2-staging/ddfaa2c-foundation/web/dist/server.mjs` (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/packaged-browser-final.log`)

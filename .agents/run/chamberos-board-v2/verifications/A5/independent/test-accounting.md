@@ -59,3 +59,19 @@ Behavioral VM tests execute actual client boot/render/event handlers with a mini
 Manager reported concurrent auditors; earlier `web/tests/a5-audit.test.mjs` content was replaced during overlap. Its original source is not reconstructable from Git. Preserved `raw/overlap-untrusted-added.log` reports 6 pass/2 fail (question request 400 versus expected 200, Operations 0 versus 1). Do not count those as final tests or infer product correctness from them. Final eight-test file was read in full, committed in 47bda6d, and rerun after overlap. Combined final run includes all 559 current tests. No tests were deleted to address known product failures: failing exploration records remain in `data.json` and `browser.json`, whose scripts finish normally after recording observations rather than asserting suite success.
 
 `.skip` / `.todo` scan over `test/` and `web/tests/`: zero matching lines; final TAP also reports zero skipped/todo. Scan evidence: `raw/scans.log`.
+
+---
+
+## Post-repair test accounting (`81ed5b6..ddfaa2c`)
+
+Final fresh web run at `ddfaa2c`: **573 tests, 573 pass, 0 fail, 0 skipped, 0 todo** (`raw/web-test-repair-final.log`). Legacy `npm test` remains **618/618 pass** (`raw/npm-test-repair-final.log`).
+
+Tests added after `81ed5b6` (559 -> 569 in repair range -> 573 in `ddfaa2c`):
+- `web/tests/canvas.test.mjs` (+2 in `b7f1517`): exact byte-identity round-trip coverage across no-final-newline and whitespace-only bodies (`"Plain"`, `"Plain\n"`, `"Plain\n\n"`, `"Plain\r\n\r\n"`, `" \n\n"`).
+- `web/tests/a5-sections.test.mjs` (+3 in `19bc8c9`): combined cached `fetchedAt` stability, dedicated `state=closed` archive pagination beyond 1,000 open issues, and non-finite `Infinity` pagination normalization.
+- `web/tests/a5-presentation-audit.test.mjs` (+5 in `f2439fd` / `175af85`, +4 in `ddfaa2c`):
+  - Global presentation filtering across views, note 409 conflict recovery, serialized human-task toggles, and Closed-issue exclusion from Decisions/Blocked (`f2439fd` / `175af85`).
+  - `audit A4/A5 note 409: refresh preserves conflict state so Retry refuses overwrite until explicit Overwrite` (`ddfaa2c`).
+  - `audit A5 presentation: planned and todo issues remain visible while explicit draft issues are hidden` (`ddfaa2c`).
+  - `audit A5 cross-repo dependencies: parseRestDependencies preserves repository full_name and repository_url` (`ddfaa2c`).
+  - `audit A5 navigation: boot and refresh preserve active section view` (`ddfaa2c`).

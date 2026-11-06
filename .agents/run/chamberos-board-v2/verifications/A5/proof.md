@@ -407,3 +407,66 @@ Hostile review of repairs across all 9 audit defects between `81ed5b6` and HEAD:
 - `env AUDIT_NO_SHOTS=1 node scripts/audit-a5.mjs`: all PASS, `leaked: []` across all views, 0 exceptions, 0 console errors
 - Screenshots regenerated via Obscura CDP (`scripts/generate-a5-screenshots.mjs`): 24/24 captured, `20-client-360-dark.png` inspected and verified clean
 
+---
+
+## Final independent repair audit
+
+**A5 Spec Verdict:** `PASS` | **A5 Quality Verdict:** `APPROVED` | **A4 Spec Verdict:** `PASS` | **A4 Quality Verdict:** `APPROVED` (verified code commit `ddfaa2c` / `ddfaa2c92819e5851b2579065570630cf28609bd`).
+
+### Defects uncovered at `175af85` and fixed in `ddfaa2c` (7 total, 7 fixed, 0 open)
+
+1. **`isDraftIssue` hid non-draft tasks (`status:planned`, `status:todo`, unlabelled) in Client Presentation Mode (`web/public/app.js:1705-1713`):**
+   - **Defect:** `isDraftIssue(issue)` returned `stageOf(issue) === 'draft' || issue.column === 'draft'`. Because server `buildBoardIssue` maps `status:planned`, `status:todo`, and unlabelled issues into coarse `issue.column = 'draft'`, Client Presentation Mode hid legitimate planned/todo tasks across List, Canvas, Archive, and Client views.
+   - **Fix:** `isDraftIssue` now checks explicit `issue.statusLabel === 'status:draft'` (or absence of `statusLabel` when `issue.column === 'draft'` and no `status:*` label is present), preserving `status:planned` and `status:todo` tasks while hiding `status:draft`.
+2. **Refresh after note 409 cleared conflict state and allowed Retry to overwrite remote note (`web/public/app.js:3280-3355`, `3386-3435`):**
+   - **Defect:** `state.noteDraftEdits` did not persist `baseText` or `conflict` across `refresh()`, so refreshing after a 409 adopted the remote fingerprint and allowed `Retry` to overwrite `REMOTE_NOTE` with `LOCAL_DRAFT` in 1 PATCH without explicit `Overwrite` confirmation (`browser-175af85-historical.json`).
+   - **Fix:** `state.noteDraftEdits` tracks `{ text, baseText, conflict, conflictFingerprint }`, preserving the conflict prompt (`Use remote` / `Overwrite`) across refreshes and blocking `Retry` (`0 PATCH`) until explicit `Overwrite`.
+3. **Detached note textarea blur during background poll/refresh triggered premature save (`web/public/app.js:3380`):**
+   - **Defect:** Canvas re-render during `refresh()` detached `.canvas-note-textarea`, firing `blur` -> `commitSave(false)`.
+   - **Fix:** Guarded `blur` handler with `if (!noteEl.isConnected) return;`.
+4. **Rapid consecutive human-task checkbox toggles disappeared during first in-flight request (`web/public/app.js:6188-6252`):**
+   - **Defect:** `toggleHumanTask` disabled all `.human-task-checkbox` controls synchronously before `humanTaskQueues[key]` executed, causing the second synchronous click in the browser to be ignored (`PATCH: 1`, `checked: [true, false]` in `browser-175af85-historical.json`).
+   - **Fix:** Moved `issue.fingerprint` read inside the serialized queue task and disabled only the clicked checkbox when queued, allowing rapid clicks on distinct checkboxes of the same issue to serialize cleanly (`PATCH: 2`, `checked: [true, true]`).
+5. **Switching language while in Client Presentation Mode left stale toggle/section strings (`web/public/app.js:6822-6896`):**
+   - **Defect:** `applyLanguage()` did not re-invoke `applyClientPresentationMode(true)` or re-render active Operations/Archive sections when `state.clientPresentationMode` was active.
+   - **Fix:** `applyLanguage()` now calls `applyClientPresentationMode(true)` and re-renders active `operations`/`archive` views.
+6. **Real-shaped cross-repository dependency links lost repository identity and could not open across projects (`web/server/board.ts:195-232`, `web/public/app.js:5728-5780`):**
+   - **Defect:** `parseRestDependencies` hardcoded `repository: undefined` when GitHub REST dependency payloads provided `repository.full_name` or `repository_url`, and `openIssue` only searched `state.board.issues`.
+   - **Fix:** Added `extractDependencyRepository` in `web/server/board.ts:195-232` to parse cross-repo dependency identity (`owner/repo`), and updated `openIssue` in `web/public/app.js:5728-5780` to search `state.archive.backburner`, `state.archive.closed`, and fall back to `GET /api/repos/:owner/:repo/issues/:number`.
+7. **Active section view reset on page reload, project switching, and `loadBoard()` (`web/public/app.js:5054-5057`, `5140`, `7067`, `7370-7383`, `7406-7412`):**
+   - **Defect:** `boot()` did not restore `tb_active_section`, `loadBoard()` hardcoded `showView('board')` on line 5138 (hiding the active section whenever switching projects or refreshing), and `#refresh-btn` did not reload `operations`/`archive`.
+   - **Fix:** Restored `tb_active_section` on boot, preserved `state.activeSectionView` in `route()`, `selectProject()`, `#refresh-btn`, and `loadBoard()` (`showView(state.activeSectionView || 'board')`).
+
+### Verification of all 9 repair scenarios and previously `NOT RUN` browser probes
+
+- **Source browser audit (`scripts/audit-a5.mjs`) & Data audit (`scripts/audit-a5-data.mjs`):**
+  - Presentation mode leak check across all 7 views (`list`, `canvas`, `drawer`, `decisions`, `blocked`, `operations`, `archive`, `client`) + `planned`/`todo` preservation: `leaked: []`, `plannedVisible: true`, `todoVisible: true`.
+  - Note 500/network failure retention (EN/FR), 409 retention, 409 refresh retry (`PATCH: 0`, `remoteRetained: true`, `localSaved: false`), and explicit Overwrite (`PATCH: 1`, `overwrittenText: "LOCAL_DRAFT"`).
+  - Rapid two-task toggle: `PATCH: 2`, `checked: [true, true]`, `notice: ""`.
+  - Combined cached `fetchedAt` stability, dedicated `state=closed` archive pagination (`totalClosed: 1`, `closedNumbers: [1001]`), non-finite archive pagination (`offset=Infinity` -> `offset: 0`, `limit=Infinity` -> `limit: 100`), and exact 5-case canvas marker byte identity: all 14/14 data probes PASS.
+  - 24-combination French section layout matrix (`decisions`, `blocked`, `operations`, `archive` × `360`, `768`, `1280` × `light`, `dark`): `overflow: false`, `englishStatus: []`, `disclaimerSplit: false`, and all 24 French screenshots saved to `.agents/run/chamberos-board-v2/verifications/A5/independent/screenshots/`.
+- **Packaged release browser audit (`scripts/audit-a5-packaged.mjs` against `/tmp/opencode/board-v2-staging/ddfaa2c-foundation/`):**
+  - All 12 packaged probes PASS (`packaged-browser-final.log` / `packaged-browser.json`):
+    1. `packaged /health`: HTTP 200 `{ status: "ok", version: "1.2.1" }`.
+    2. `empty sections & project switching (owner/empty-repo)`: Decisions, Blocked, Archive Backburner, and Archive Closed render localized empty states.
+    3. `per-project switching preserves section and filters issues (owner/other-repo)`: `stayedOnArchive: true`, `otherRepoIssueKey: "owner/other-repo#10"`.
+    4. `real-shaped cross-repo dependency badge and navigation`: `hasCrossRepoBlocker: true`, `hasOtherRepoBadge: true`, `openedCrossRepoIdentity: "owner/other-repo#10"`.
+    5. `refresh/poll over unsaved note draft preserves draft without premature save`: `draftAfterPoll: "UNSAVED_DURING_POLL"`, `PATCH: 0`.
+    6. `full reload over unsaved draft clears bounded-memory draft without localStorage leak`: `noteTextAfterReload: "INTERNAL_NOTE body"`, 0 draft keys in `localStorage`.
+    7. `200% zoom and touch/pointer note drag and resize`: `zoomReadout: "200%"`, `afterDragPos: { left: "200px", top: "300px" }`, `afterResizeDim: { width: "260px", height: "180px" }`, `dragPatches: 1`, `resizePatches: 1`.
+    8. `partial Arrange failure and Undo`: `arrangeSummary: "4 cards arranged, 1 failed."`, `undoVisibleAfterArrange: true`, `undoPatches: 4`.
+    9. `403 error handling on Operations and Archive`: renders `"Could not load operations: Resource not accessible by integration"` and `"Could not load archive: Resource not accessible by integration"`.
+    10. `offline / network failure handling on Operations and Archive`: renders `"Could not load operations: Offline network error"` and `"Could not load archive: Offline network error"`.
+    11. `401 unauthorized handling on Operations and Archive`: returns to `#login-view` (`loginVisibleAfter401: true`).
+    12. `browser diagnostics (console, pageerror, CSP)`: `exceptions: []`, `consoleErrors: []`, `cspViolations: []`.
+
+### Final command execution summary
+
+- `timeout 900 npm test`: 618/618 PASS (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/npm-test-repair-final.log`)
+- `timeout 900 node --test --test-timeout=30000 web/tests/*.test.mjs`: 573/573 PASS (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/web-test-repair-final.log`)
+- `timeout 600 npm run typecheck`: exit 0, 0 errors (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/typecheck-repair-final.log`)
+- `timeout 120 node scripts/audit-a5-data.mjs`: 14/14 PASS (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/data-repair-final.log`)
+- `timeout 240 env AUDIT_NO_SHOTS=1 node scripts/audit-a5.mjs`: all probes PASS (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/browser-repair-final.log`)
+- `timeout 240 node scripts/generate-a5-screenshots.mjs`: 24/24 screenshots regenerated (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/generate-a5-screenshots-repair-final.log`)
+- `timeout 180 env PACKAGED_RELEASE_DIR=/tmp/opencode/board-v2-staging/ddfaa2c-foundation node scripts/audit-a5-packaged.mjs`: 12/12 PASS (`.agents/run/chamberos-board-v2/verifications/A5/independent/raw/packaged-browser-final.log`)
+

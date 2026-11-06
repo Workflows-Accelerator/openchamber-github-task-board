@@ -18,9 +18,9 @@
   },
   {
     "name": "two quick task toggles",
-    "PATCH": 1,
+    "PATCH": 2,
     "notice": "Question answered.",
-    "humanBody": "\n- [x] INTERNAL_TASK approve release\n- [ ] INTERNAL_TASK confirm records\n\n"
+    "humanBody": "\n- [x] INTERNAL_TASK approve release\n- [x] INTERNAL_TASK confirm records\n\n"
   },
   {
     "name": "presentation disclaimer EN",
@@ -66,7 +66,7 @@
   },
   {
     "name": "presentation disclaimer FR",
-    "text": "Filtre de présentation uniquement ; pas une frontière de sécurité\n\nInactif (affichage de toutes les tâches)\n\nActiver le mode présentation",
+    "text": "Filtre de présentation uniquement ; pas une frontière de sécurité\n\nActif (masque les brouillons internes et notes brutes)\n\nDésactiver le mode présentation",
     "active": true,
     "persisted": "1"
   },
@@ -296,10 +296,16 @@
   },
   {
     "name": "note Retry after refresh",
-    "PATCH": 1,
-    "remoteRetained": false,
-    "localSaved": true,
+    "PATCH": 0,
+    "remoteRetained": true,
+    "localSaved": false,
     "notice": ""
+  },
+  {
+    "name": "note explicit Overwrite",
+    "PATCH": 1,
+    "localSaved": true,
+    "remoteReplaced": true
   },
   {
     "name": "browser diagnostics",
@@ -356,6 +362,14 @@
         "status": 200
       },
       {
+        "path": "/api/repos/owner/repo/issues/1/human-tasks/1/toggle",
+        "status": 200
+      },
+      {
+        "path": "/api/repos/owner/repo/issues/1/human-tasks/1/toggle",
+        "status": 200
+      },
+      {
         "path": "/api/operations",
         "status": 200
       },
@@ -388,15 +402,15 @@
         "status": 200
       },
       {
+        "path": "/api/combined/board",
+        "status": 200
+      },
+      {
         "path": "/api/session",
         "status": 200
       },
       {
         "path": "/api/repos",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
         "status": 200
       },
       {
@@ -440,14 +454,6 @@
         "status": 200
       },
       {
-        "path": "/api/repos",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
-        "status": 200
-      },
-      {
         "path": "/api/session",
         "status": 200
       },
@@ -464,43 +470,11 @@
         "status": 200
       },
       {
-        "path": "/api/operations",
-        "status": 200
-      },
-      {
-        "path": "/api/archive",
-        "status": 200
-      },
-      {
-        "path": "/api/archive",
-        "status": 200
-      },
-      {
-        "path": "/api/session",
-        "status": 200
-      },
-      {
         "path": "/api/repos",
         "status": 200
       },
       {
         "path": "/api/combined/board",
-        "status": 200
-      },
-      {
-        "path": "/api/session",
-        "status": 200
-      },
-      {
-        "path": "/api/repos",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
-        "status": 200
-      },
-      {
-        "path": "/api/operations",
         "status": 200
       },
       {
@@ -532,31 +506,7 @@
         "status": 200
       },
       {
-        "path": "/api/repos",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
-        "status": 200
-      },
-      {
         "path": "/api/operations",
-        "status": 200
-      },
-      {
-        "path": "/api/operations",
-        "status": 200
-      },
-      {
-        "path": "/api/archive",
-        "status": 200
-      },
-      {
-        "path": "/api/archive",
-        "status": 200
-      },
-      {
-        "path": "/api/session",
         "status": 200
       },
       {
@@ -565,62 +515,6 @@
       },
       {
         "path": "/api/combined/board",
-        "status": 200
-      },
-      {
-        "path": "/api/session",
-        "status": 200
-      },
-      {
-        "path": "/api/repos",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
-        "status": 200
-      },
-      {
-        "path": "/api/operations",
-        "status": 200
-      },
-      {
-        "path": "/api/operations",
-        "status": 200
-      },
-      {
-        "path": "/api/archive",
-        "status": 200
-      },
-      {
-        "path": "/api/archive",
-        "status": 200
-      },
-      {
-        "path": "/api/session",
-        "status": 200
-      },
-      {
-        "path": "/api/repos",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
-        "status": 200
-      },
-      {
-        "path": "/api/session",
-        "status": 200
-      },
-      {
-        "path": "/api/repos",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
-        "status": 200
-      },
-      {
-        "path": "/api/operations",
         "status": 200
       },
       {
@@ -652,6 +546,10 @@
         "status": 200
       },
       {
+        "path": "/api/operations",
+        "status": 200
+      },
+      {
         "path": "/api/repos",
         "status": 200
       },
@@ -661,6 +559,122 @@
       },
       {
         "path": "/api/operations",
+        "status": 200
+      },
+      {
+        "path": "/api/archive",
+        "status": 200
+      },
+      {
+        "path": "/api/archive",
+        "status": 200
+      },
+      {
+        "path": "/api/session",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
+        "status": 200
+      },
+      {
+        "path": "/api/combined/board",
+        "status": 200
+      },
+      {
+        "path": "/api/operations",
+        "status": 200
+      },
+      {
+        "path": "/api/session",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
+        "status": 200
+      },
+      {
+        "path": "/api/combined/board",
+        "status": 200
+      },
+      {
+        "path": "/api/operations",
+        "status": 200
+      },
+      {
+        "path": "/api/archive",
+        "status": 200
+      },
+      {
+        "path": "/api/archive",
+        "status": 200
+      },
+      {
+        "path": "/api/session",
+        "status": 200
+      },
+      {
+        "path": "/api/session",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
+        "status": 200
+      },
+      {
+        "path": "/api/combined/board",
+        "status": 200
+      },
+      {
+        "path": "/api/operations",
+        "status": 200
+      },
+      {
+        "path": "/api/combined/board",
+        "status": 200
+      },
+      {
+        "path": "/api/operations",
+        "status": 200
+      },
+      {
+        "path": "/api/archive",
+        "status": 200
+      },
+      {
+        "path": "/api/archive",
+        "status": 200
+      },
+      {
+        "path": "/api/session",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
+        "status": 200
+      },
+      {
+        "path": "/api/combined/board",
+        "status": 200
+      },
+      {
+        "path": "/api/operations",
+        "status": 200
+      },
+      {
+        "path": "/api/session",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
+        "status": 200
+      },
+      {
+        "path": "/api/combined/board",
         "status": 200
       },
       {
@@ -706,14 +720,6 @@
       {
         "path": "/api/archive",
         "status": 502
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/canvas",
-        "status": 409
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/canvas",
-        "status": 409
       },
       {
         "path": "/api/repos/owner/repo/issues/1/canvas",
@@ -749,6 +755,12 @@
       }
     ],
     "PATCH": [
+      {
+        "number": 1,
+        "keys": [
+          "body"
+        ]
+      },
       {
         "number": 1,
         "keys": [
