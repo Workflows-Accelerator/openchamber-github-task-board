@@ -191,7 +191,7 @@
           </div>
         </div>
         <div id="decisions-content" class="view-body">
-          <div id="decisions-loading" class="view-loading muted">Loading…</div>
+          <div id="decisions-loading" class="view-loading muted" data-i18n="view_loading">Loading…</div>
           <div id="decisions-list" class="decisions-list"></div>
           <div id="decisions-empty" class="view-empty muted" data-i18n="decisions_no_items" hidden>No open questions requiring decisions.</div>
         </div>
@@ -209,7 +209,7 @@
           </div>
         </div>
         <div id="blocked-content" class="view-body">
-          <div id="blocked-loading" class="view-loading muted">Loading…</div>
+          <div id="blocked-loading" class="view-loading muted" data-i18n="view_loading">Loading…</div>
           <div id="blocked-list" class="blocked-list"></div>
           <div id="blocked-empty" class="view-empty muted" data-i18n="blocked_no_items" hidden>No blocked tasks.</div>
         </div>
@@ -228,7 +228,7 @@
         </div>
         <div id="operations-content" class="view-body">
           <div id="operations-warning" class="banner warn" role="alert" hidden></div>
-          <div id="operations-loading" class="view-loading muted">Loading…</div>
+          <div id="operations-loading" class="view-loading muted" data-i18n="view_loading">Loading…</div>
           <div id="operations-grid" class="operations-grid" hidden>
             <div class="operations-stat-row">
               <div class="stat-card card-surface">
@@ -268,14 +268,14 @@
                   <thead>
                     <tr>
                       <th data-i18n="operations_project">Project</th>
-                      <th>Draft</th>
-                      <th>Backlog</th>
-                      <th>Todo</th>
-                      <th>Planned</th>
-                      <th>In Progress</th>
-                      <th>Needs Human</th>
-                      <th>In Review</th>
-                      <th>Done</th>
+                      <th data-i18n="status_draft">Draft</th>
+                      <th data-i18n="status_backlog">Backlog</th>
+                      <th data-i18n="status_todo">Todo</th>
+                      <th data-i18n="status_planned">Planned</th>
+                      <th data-i18n="status_in_progress">In Progress</th>
+                      <th data-i18n="status_needs_human">Needs Human</th>
+                      <th data-i18n="status_in_review">In Review</th>
+                      <th data-i18n="status_done">Done</th>
                     </tr>
                   </thead>
                   <tbody id="operations-project-rows"></tbody>
@@ -300,7 +300,7 @@
         </div>
         <div id="archive-content" class="view-body">
           <div id="archive-warning" class="banner warn" role="alert" hidden></div>
-          <div id="archive-loading" class="view-loading muted">Loading…</div>
+          <div id="archive-loading" class="view-loading muted" data-i18n="view_loading">Loading…</div>
           <!-- Backburner Pane -->
           <div id="archive-pane-backburner" class="archive-pane">
             <div id="archive-backburner-list" class="archive-list"></div>

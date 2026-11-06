@@ -3155,9 +3155,10 @@ input[type="text"].search-input:focus,
 /* Client Disclaimer Banner */
 .client-disclaimer-banner {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 12px 16px;
   padding: 12px 16px;
   border-left: 3px solid var(--warn);
   margin-bottom: 16px;
@@ -3172,7 +3173,11 @@ input[type="text"].search-input:focus,
 }
 
 .client-disclaimer-banner .disclaimer-text {
-  flex: 1;
+  flex: 1 1 200px;
+  min-width: 0;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: manual;
 }
 
 .client-disclaimer-banner .disclaimer-text strong {
@@ -3180,6 +3185,9 @@ input[type="text"].search-input:focus,
   font-size: 13px;
   color: var(--fg);
   margin-bottom: 2px;
+  word-break: normal;
+  overflow-wrap: break-word;
+  hyphens: manual;
 }
 
 .client-disclaimer-banner .disclaimer-action {
@@ -3189,6 +3197,21 @@ input[type="text"].search-input:focus,
 .client-disclaimer-banner .disclaimer-action .button {
   white-space: nowrap;
   flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .client-disclaimer-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .client-disclaimer-banner .disclaimer-action {
+    width: 100%;
+    margin-top: 4px;
+  }
+  .client-disclaimer-banner .disclaimer-action .button {
+    width: 100%;
+    text-align: center;
+  }
 }
 
 /* Client presentation mode active state */

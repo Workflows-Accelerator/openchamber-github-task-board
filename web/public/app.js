@@ -759,6 +759,20 @@
       discussions_placeholder_desc: 'GitHub Discussions are not enabled for this repository. Open questions and decision workflows are managed through task issues.',
       warning_partial_or_truncated: 'Showing partial or truncated results; some data could not be fully loaded.',
       warning_repository_failures: 'Some repositories failed to load or were unavailable',
+      view_loading: 'Loading…',
+      status_draft: 'Draft',
+      status_backlog: 'Backlog',
+      status_todo: 'Todo',
+      status_planned: 'Planned',
+      status_in_progress: 'In Progress',
+      status_needs_human: 'Needs Human',
+      status_in_review: 'In Review',
+      status_done: 'Done',
+      operations_load_error: 'Could not load operations data',
+      archive_load_error: 'Could not load archive',
+      error_unauthorized: 'Authentication required. Please sign in again.',
+      error_server: 'Server error. Please try again later.',
+      note_save_error: 'Could not save note.',
     },
     fr: {
       section_views: 'Vues',
@@ -918,6 +932,20 @@
       discussions_placeholder_desc: 'Les discussions GitHub ne sont pas configurées pour ce dépôt. Les questions ouvertes et les arbitrages sont gérés dans les tâches.',
       warning_partial_or_truncated: 'Affichage de résultats partiels ou tronqués ; certaines données n’ont pu être chargées complètement.',
       warning_repository_failures: 'Certains dépôts n’ont pas pu être chargés ou étaient indisponibles',
+      view_loading: 'Chargement…',
+      status_draft: 'Brouillon',
+      status_backlog: 'Backlog',
+      status_todo: 'À faire',
+      status_planned: 'Planifié',
+      status_in_progress: 'En cours',
+      status_needs_human: 'Action humaine',
+      status_in_review: 'En revue',
+      status_done: 'Terminé',
+      operations_load_error: 'Impossible de charger les données opérationnelles',
+      archive_load_error: 'Impossible de charger les archives',
+      error_unauthorized: 'Authentification requise. Veuillez vous reconnecter.',
+      error_server: 'Erreur serveur. Veuillez réessayer plus tard.',
+      note_save_error: 'Impossible d’enregistrer la note.',
     },
   };
 
@@ -2741,7 +2769,9 @@
         msg = dict.note_limit_exceeded || 'Note exceeds 4,000 character limit.';
       } else if (err && (err.code === 'body_too_long' || (err.message && err.message.includes('65,536')))) {
         msg = dict.note_body_limit_exceeded || 'Issue body limit reached (65,536 characters). Cannot save note.';
-      } else if (err && err.message) {
+      } else if (!options.isCardMove) {
+        msg = (l === 'fr' || !err || !err.message) ? (dict.note_save_error || 'Could not save note.') : err.message;
+      } else if (err && err.message && l === 'en') {
         msg = err.message;
       } else {
         msg = dict.canvas_save_error || 'Could not save card position.';
@@ -6271,7 +6301,13 @@
         });
       }
     } catch (err) {
-      if (loading) loading.textContent = 'Could not load operations data: ' + (err.message || 'error');
+      var dict = I18N[getLanguage()] || I18N.en;
+      var errDetail = (err && err.status === 401)
+        ? (dict.error_unauthorized || 'Authentication required.')
+        : (err && err.status >= 500)
+          ? (dict.error_server || 'Server error.')
+          : ((err && err.message) || 'error');
+      if (loading) loading.textContent = (dict.operations_load_error || 'Could not load operations data') + ': ' + errDetail;
     }
   }
 
@@ -6311,7 +6347,13 @@
 
       renderArchiveTabs();
     } catch (err) {
-      if (loading) loading.textContent = 'Could not load archive: ' + (err.message || 'error');
+      var dict = I18N[getLanguage()] || I18N.en;
+      var errDetail = (err && err.status === 401)
+        ? (dict.error_unauthorized || 'Authentication required.')
+        : (err && err.status >= 500)
+          ? (dict.error_server || 'Server error.')
+          : ((err && err.message) || 'error');
+      if (loading) loading.textContent = (dict.archive_load_error || 'Could not load archive') + ': ' + errDetail;
     }
   }
 
