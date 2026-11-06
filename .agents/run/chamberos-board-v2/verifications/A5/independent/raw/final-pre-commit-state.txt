@@ -1,0 +1,17 @@
+$ pwd
+/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2
+$ git rev-parse --abbrev-ref HEAD
+feat/chamberos-board-v2
+$ git rev-parse HEAD
+47bda6ddfa235a290177051b498fb450f35e7eff
+$ git status --short
+ M .agents/run/chamberos-board-v2/verifications/A5/screenshots/09-operations-1280-dark.png
+ M .agents/run/chamberos-board-v2/verifications/A5/screenshots/10-operations-1280-light.png
+ M .agents/run/chamberos-board-v2/verifications/A5/screenshots/11-operations-768-dark.png
+ M .agents/run/chamberos-board-v2/verifications/A5/screenshots/12-operations-360-dark.png
+ M .agents/run/chamberos-board-v2/verifications/A5/screenshots/24-bilingual-fr-operations-1280-dark.png
+ M scripts/generate-a5-screenshots.mjs
+?? .agents/run/chamberos-board-v2/verifications/A5/independent/
+?? scripts/audit-a5-data.mjs
+?? scripts/audit-a5.mjs
+?? web/tests/a5-presentation-audit.test.mjs

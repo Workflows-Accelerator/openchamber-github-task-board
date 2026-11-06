@@ -1,0 +1,74 @@
+TAP version 13
+# {"route":"/api/issues/1/questions/0/answer","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/questions/0/answer","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/questions/0/answer","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 answer: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 1 - audit A5 answer: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 440.594927
+  type: 'test'
+  ...
+# {"route":"/api/issues/1/human-tasks/0/toggle","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/human-tasks/0/toggle","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/human-tasks/0/toggle","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 human task: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 2 - audit A5 human task: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 289.549805
+  type: 'test'
+  ...
+# {"route":"/api/issues/2/reopen","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/2/reopen","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/2/reopen","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 reopen: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 3 - audit A5 reopen: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 313.055174
+  type: 'test'
+  ...
+# {"route":"/api/issues/1/labels/remove","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/labels/remove","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/labels/remove","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 remove label POST: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 4 - audit A5 remove label POST: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 249.442567
+  type: 'test'
+  ...
+# {"route":"/api/issues/1/labels/backburner","method":"DELETE","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/labels/backburner","method":"DELETE","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/labels/backburner","method":"DELETE","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 remove label DELETE: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 5 - audit A5 remove label DELETE: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 238.401643
+  type: 'test'
+  ...
+# Subtest: audit A5 human task: BOM, LF, CRLF, fences, indented code, duplicate text and two-space nested list preserve exact bytes
+ok 6 - audit A5 human task: BOM, LF, CRLF, fences, indented code, duplicate text and two-space nested list preserve exact bytes
+  ---
+  duration_ms: 3.616476
+  type: 'test'
+  ...
+# Subtest: audit A5 operations: old closure edited today excluded; unlabelled/planned/review issues counted once; repository-qualified identity
+ok 7 - audit A5 operations: old closure edited today excluded; unlabelled/planned/review issues counted once; repository-qualified identity
+  ---
+  duration_ms: 225.056442
+  type: 'test'
+  ...
+# Subtest: audit A5 label removal preserves unrelated labels and refuses absent assignment with zero PATCH
+ok 8 - audit A5 label removal preserves unrelated labels and refuses absent assignment with zero PATCH
+  ---
+  duration_ms: 213.908144
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 8
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2373.144332
+exit 0

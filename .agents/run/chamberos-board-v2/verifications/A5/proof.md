@@ -226,3 +226,151 @@ Generated via Obscura headless browser in `.agents/run/chamberos-board-v2/verifi
 - Obscura CDP native screenshots: 24/24 captured at authentic viewports (PASS)
 - Forbidden lexicon scan: 0 occurrences of prohibited terms or `n8n` in proof/code (PASS)
 
+---
+
+## Independent audit — 2026-11-06 (base 6e189c3; concurrency correction applied)
+
+**A5 Spec: FAIL. A5 Quality: NEEDS-FIXES. A4 final: FAIL / NEEDS-FIXES.** Prior builder/hostile PASS claims above are historical, not this verdict. Specifically, global presentation, complete closed history, truthful combined fetch time, full localization, and safe note conflict recovery are disproven. Automated green is not acceptance.
+
+### Provenance and boundary
+
+Work only in `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2`, branch `feat/chamberos-board-v2`. Required original base was `6e189c3caa8551b85d09d6ba6f357d5b5368aea3`. Original clean preflight was confirmed in earlier session context, but a standalone raw capture of that first clean check is not retained; it cannot be newly reconstructed by claiming current HEAD is the old one.
+
+Manager's `task-A5-audit-concurrency-correction.md` disclosed two active auditors, not a trustworthy single-worker start. At correction, HEAD still 6e189c3 and three untracked contributions existed: `independent/`, `scripts/audit-a5.mjs`, `web/tests/a5-audit.test.mjs`. These were inspected and preserved, not blindly reset. Earlier test file was replaced during overlap; original source is not recoverable from Git. Its raw `independent/raw/overlap-untrusted-added.log` (6 pass/2 fail) is retained but excluded from final test accounting and acceptance. Baseline 618/549/typecheck logs likewise remain explicitly overlap-era, not proof of final state. No earlier screenshot is silently promoted to post-fix evidence.
+
+Current eight-test file was read, committed in 47bda6d and rerun. Final three mandatory suites and both exploratory harnesses were rerun on current product/tests after correction, without the first auditor editing them. `independent/raw/final-pre-commit-state.txt` records actual path/branch/HEAD/dirty artifact state before final evidence commit. No production processes, releases, platform state/configuration, credentials, `.env*`, panel or service edits; no live GitHub writes, push, dependency addition or broader refactor. Audit-owned fake servers and separate browser targets only.
+
+### Defects fixed / left open
+
+1. **P1 OPEN, presentation leaks:** `web/public/app.js:6374–6387,2058–2071,5771–5772,6006–6012`; `web/public/theme.css:3171–3174`. Client/List/drawer expose YAML agent/model/worktree sentinels; drawer/Decisions/Blocked expose raw questions/tasks in active mode. Preview path trusts server preamble and adds regex cleaners rather than reusing existing section/Markdown pipeline. Canvas/Operations/Archive had no visible fixture sentinels; not a universal security claim. Saved global toggle and EN/FR disclaimer work.
+2. **P1 OPEN, A4 note conflict:** `web/public/app.js:2706,3123–3145`, server `web/server/app.ts:1611–1615`. Immediate Retry after 409 repeats refusal with zero PATCH; explicit Refresh retains LOCAL_DRAFT then Retry silently overwrites REMOTE_NOTE (one PATCH). Response fingerprint nesting differs from client catch. Draft retention is not conflict reconciliation.
+3. **P2 OPEN, own-action task race:** `web/public/app.js:5938–5945`. Two distinct quick toggles produce one PATCH and visible 409; only clicked checkbox disabled and old issue fingerprint reused. Double-click Answer correctly produces one PATCH.
+4. **P2 OPEN, false freshness:** `web/server/app.ts:1257`. Combined cached fetchedAt advances one second while issue-list count remains 1. Failed-repository cached result also reports current time. Repo-scoped timestamp test passes.
+5. **P2 OPEN, incomplete Archive / hidden warnings:** `web/server/app.ts:1263–1294`; `web/public/app.js:6080–6153,6157–6188`. Bounded state=all subset is sliced without dedicated closed fetch; closed #1001 behind 1000 open returns totalClosed:0, hasMore:false, truncated:true. API preserves flags/failures; clients ignore them. Sorted pages within subset are correct.
+6. **P2 OPEN, inconsistent Blocked / closed controls:** `web/public/app.js:5655–5670,5771–5772,6006–6012`. Sidebar 3 versus section heading 4 (question-only item included only in latter). Closed issue remains answerable/toggleable in visible controls; no write to that closed fixture attempted.
+7. **P2 OPEN, A4 body identity:** `web/server/board.ts:230–249,372–378`. `"Plain"` restores `"Plain\n"`; `" \n\n"` restores empty. Existing LF/CRLF trailing blank lines pass. Prior carry-over test changed original fixture to end CRLF while strengthening equality, leaving original no-final-newline case uncovered.
+8. **P2 OPEN, French/compact UX:** `web/public/index.html:194,212,230,270–277,301`; `web/public/app.js:6153,6188`; `web/public/theme.css:3139–3167`. French status headers/loading/errors stay English. Screenshot 20 at 360px splits “Presentation” midword; authentic repeat capture is byte-identical. Zero document overflow is not full visual acceptance.
+9. **P2 OPEN, nonfinite paging:** `web/server/app.ts:1278–1280`. offset=Infinity returns status 200 with offset:null; NaN/negative/huge finite/fractional cases normalize.
+10. **P2 FIXED, wrong Operations grouping:** `web/server/app.ts:1376` now prefers explicit workflow statusLabel over projected column. Regression planned 0 versus expected 1 before fix, unchanged test green after. Commit `47bda6ddfa235a290177051b498fb450f35e7eff`; eight independent tests included. No wider status projection/presentation repair attempted.
+
+Reopen policy: A5 explicitly approves a manual Reopen action. General lifecycle Done-terminal rule governs autonomous progression; it does not revoke that user-facing action. Exact destination `status:backlog` (`web/server/app.ts:2191`) was not specified in A5/D18 or a reopening transition, so destination needs owner/morning review. Unchanged; no owner approval invented; fake-only reopen exercised.
+
+Full traces, severities, limits and command interpretation: [independent/audit-findings.md](independent/audit-findings.md). All findings above were independently reproduced by final browser/API probes or explicitly identified as source inspection.
+
+### Coverage matrix (PASS means only the stated subcase)
+
+| Extra-focus item | Verdict | Evidence / boundary |
+|---|---|---|
+| 1 Answer refusal matrix | PASS | Missing fingerprint 400, stale 409, malformed JSON 400; each zero PATCH, real HTTP. |
+| 1 Human-task refusal matrix | PASS | Same; six malformed completed types and stale index after insertion also zero PATCH. |
+| 1 Reopen refusal matrix | PASS | Same 400/409/400, zero PATCH. |
+| 1 Label POST refusal matrix | PASS | Same 400/409/400, zero PATCH. |
+| 1 Label DELETE refusal matrix | PASS | Same, malformed JSON plus current query fingerprint. |
+| 1 Double-click Answer | PASS | Two native DOM clicks; one actual fake PATCH, answer saved. |
+| 1 Two quick distinct task toggles | FAIL | One PATCH, own-action 409, second task unchanged. |
+| 2 Presentation all seven requested destinations | FAIL | Client/List/drawer/Decisions/Blocked leak fixture internals; Canvas/Operations/Archive sentinel-clear in observed run. |
+| 2 Toggle persistence, reload, exit | PASS | Native reload and behavioral EN/FR VM tests; issue data unchanged. |
+| 2 Disclaimer EN/FR | PASS | Both visible texts explicitly say not a security boundary. |
+| 2 Existing Markdown/section parser reuse | FAIL | Existing note renderer remains, but presentation preview uses independent regex/trust paths. |
+| 2 Exhaustive marker/internal-label/Run/worktree controls inventory | NOT RUN | Only supplied sentinel fixtures/controls observed; Run integration not part of shipped A5. |
+| 3 Cached fetch time | FAIL | Combined advances with no new upstream issue-list request; repository-scoped cache PASS. |
+| 3 Partial/truncated/failed-repo warnings | FAIL | API metadata preserved (PASS subcase); section clients discard warning fields by source inspection. |
+| 3 Dedicated closed fetch / reachable older history | FAIL | Closed #1001 unreachable behind all-issues page bound; no state=closed request. |
+| 3 Newest closed / no duplicate pages | PASS | Within fetched subset, page IDs [2,3,1]. |
+| 3 Invalid paging | FAIL | NaN/negative/huge/fractional normalized; Infinity offset serializes null. |
+| 3 Closed7Days closure-only | PASS | Independent old closure edited today fixture excluded. |
+| 3 Status count, no-label, qualified identity | PASS | After fix, alpha totals 4, beta 1, each same-number issue retained; planned/review asserted. |
+| 3 Oldest-in-progress wording | PASS | Label describes oldest open issue in that status; relative createdAt age does not claim duration in status. |
+| 3 Cross-repository browser links | NOT RUN | Qualified aggregation tested, drawer link scoping concern not browser-reproduced. |
+| 4 Reopen policy review | PASS | Manual action approved; exact backlog destination unresolved and unchanged. |
+| 5 Human-task body safety | PASS | BOM/LF/CRLF/fenced/indented/duplicate/two-space nested/missing-section cases, exact one-character change. |
+| 5 Absent issue label / other labels preserved | PASS | Plain refusal, zero PATCH; exact outgoing remaining labels; existing DELETE success covered. |
+| 5 Full absent repository-label catalog | NOT RUN | Fake does not model full live label catalog; absent issue label covered. |
+| 6 A4 wording carry-over | PASS | Display-only wording present. |
+| 6 A4 set+strip exact body | FAIL | No-final-newline and whitespace-only originals still altered; existing trailing blank lines pass. |
+| 6 Note 500/upstream transport + Retry EN/FR | PASS | Four native draft-retention probes, Retry/Réessayer; socket destruction is not browser offline. |
+| 6 Note 409/explicit Refresh draft retention | PASS | LOCAL_DRAFT survives initial refusal and Refresh. |
+| 6 Note Retry safe remote reconciliation | FAIL | Refresh then Retry silently replaces REMOTE_NOTE. |
+| 6 Timed background poll / 409 in both languages / full reload draft persistence | NOT RUN | Explicit Refresh only; no claim of durable draft persistence. |
+| 7 Test inventory/count/reversion assessment | PASS | independent/test-accounting.md lists each added/changed test, observed red/green and source-only sensitivities. Full mutation testing NOT RUN. |
+| 7 .skip/.todo | PASS | Zero matches in test/ and web/tests/; final TAP zero skipped/todo. |
+| 8 All 24 A5 screenshots inspected | PASS | Original 24 and six independent images read; five regenerated Operations images re-read; 30-path manifest. |
+| 8 Incorrect metric screenshots regenerated | PASS | 09/10/11/12/24 after fix, actual saved theme preference + reload. Client 20 recaptured unchanged, remains visual FAIL. |
+| 8 French strings / narrow visual acceptance | FAIL | English status/error/loading strings; 360 disclaimer word-split. Static crops cannot certify below-fold table/scroll. |
+| 8 French section width/theme DOM matrix | PASS | Decisions/Blocked/Operations/Archive, 360/768/1280 × light/dark, 24 combinations, no document horizontal overflow. |
+| 8 Complete bilingual screenshot cross-product | NOT RUN | Original EN subset plus two French desktop shots; latest full DOM matrix runs without screenshots. |
+| 8 Long titles | PASS | Native section fixtures wrap without document overflow; drawer/Canvas narrow matrix NOT RUN. |
+| 8 Empty views | NOT RUN | Not independently exercised in final native browser audit. |
+| 8 Each data-section 401/500 | FAIL | Operations/Archive show English errors; Decisions/Blocked reuse snapshot, no new fetch/failure indication. Not direct browser HTTP-401 handling proof. |
+| 8 Each section browser offline | NOT RUN | Network.emulateNetworkConditions timed out; unsupported method omitted. Canvas/List/drawer/Client failure cross-product also NOT RUN. |
+| 8 Console/CSP in completed flow | PASS | exceptions:[], consoleErrors:[], CSP:[] in final browser.json. Not all possible paths. |
+| 8 Lexicon/emoji/double-plus | FAIL | Existing test names/regex and earlier proof contain forbidden terms; no emoji. Literal ++ matches increment operators, not duplicate-plus buttons; source button inspection found none. |
+| 8 Screenshot automation fidelity | PASS | Native CDP, actual assets, fake GitHub only data boundary; no style/script tags, CSS overrides or fake DOM injected. Inputs/preferences/clicks via Runtime.evaluate. Earlier unrecaptured direct theme-attribute claims remain historical. |
+| 8 Exhaustive browser credential disclosure scan | NOT RUN | Synthetic-only boundary; no real credentials read, no exhaustive DOM/storage audit claimed. |
+| 9 Final suites / honest proof | PASS | Raw final summaries below and committed raw logs; explicit omissions retained. |
+| Live GitHub writes / release / production switch | NOT RUN | Forbidden by brief. |
+
+### Tests and evidence
+
+Count: **538 + 2 A4 carry-over + 9 A5 = 549; +8 independent API/parser +2 presentation = 559.** Legacy npm suite stays 618 because it runs test/*.test.js only. No removed tests or skipped/todo tests. Prior changed Arrange-undo fixture gained final CRLF, hiding original edge case; no test weakening by this audit. Notes Retry source-regex test cannot prove conflict behavior. All 23 added/changed names, helper changes and reversion sensitivities: [independent/test-accounting.md](independent/test-accounting.md). Only Operations red/green actually observed; full mutation testing NOT RUN.
+
+Final commands run after product/test changes and concurrency correction. Browser/API exploratory scripts exit 0 after recording explicit product FAIL observations; their exit is not a verdict. Native response event array duplicates some events; use fake patchCalls, not Network.responseReceived array length, for write counts.
+
+`timeout 900 npm test` — verbatim final summary:
+```text
+1..618
+# tests 618
+# suites 0
+# pass 618
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 15643.452914
+
+exit 0
+```
+
+`timeout 900 node --test --test-timeout=30000 web/tests/*.test.mjs` — verbatim final summary:
+```text
+1..559
+# tests 559
+# suites 0
+# pass 559
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 30160.404665
+
+exit 0
+```
+
+`timeout 600 npm run typecheck` — verbatim output:
+```text
+
+> openchamber-github-task-board@1.2.1 typecheck
+> tsc --noEmit
+
+
+exit 0
+```
+
+`git show --stat 47bda6d` — raw output:
+```text
+commit 47bda6ddfa235a290177051b498fb450f35e7eff
+Author: Workflows Accelerator Agent <agent@workflows.ac>
+Date:   Fri Nov 6 01:46:52 2026 +0000
+
+    audit: count operations by explicit workflow status and prove write refusals
+
+ web/server/app.ts           |   2 +-
+ web/tests/a5-audit.test.mjs | 133 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 134 insertions(+), 1 deletion(-)
+```
+
+Raw evidence under [independent/raw/](independent/raw/): full final npm/web/typecheck logs, final native browser and data logs, red/green targeted Operations logs, two-test presentation log, selected screenshot-generation logs, clearly marked overlap-era logs. `independent/browser.json` and `independent/data.json` hold machine-readable observations. [independent/screenshots.md](independent/screenshots.md) lists every screenshot path/dimensions/SHA-256. Six independent images predate fix; `presentation-operations.png` is explicitly stale metric evidence. Post-fix original 09/10/11/12/24 supersede it for metrics. Original screenshots 08/12 crop lower content; 20 shows split disclaimer; 23 shows questions during active presentation; 24 English statuses. Retained historical originals are not a complete new EN/FR/theme/width certification.
+
+DIDN'T WORK: planned-count test `0 !== 1`; initial data probe wrong scoped route/request fields (`TypeError: Cannot read properties of undefined (reading 'map')`); offline CDP method timeout; intermittent screenshot/Runtime.evaluate timeouts; reload matrix wait after Canvas; untrusted overlapping question success expected 200 got 400.
+FINALLY WORKED: explicit-status fix and unchanged regression; `/api/combined/operations` plus fake path/query; offline marked NOT RUN; completed native DOM/action matrix with AUDIT_NO_SHOTS=1 and selected authentic captures; List before reload; final fresh tests/browser replace compromised observations, original overlapping source remains unrecoverable. Detailed limitations in independent/audit-findings.md. Broad product repairs left to follow-up, not hidden by a green suite.
+

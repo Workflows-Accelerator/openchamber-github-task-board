@@ -254,3 +254,16 @@ Auditor reproduced everything below against the fake GitHub (`web/tests/fake-git
 - 409/500 on a note save: the draft stays visible but is not stored anywhere, and the editor closes. A board refresh replaces it with the GitHub text. There is no retry button.
 - Proof line 52 still says "interactive display checkboxes". The markup is `disabled` (display only), so the wording is wrong, not the code.
 - Live GitHub writes: NOT VERIFIED.
+
+---
+
+## Final independent carry-over verdict — 2026-11-06 (A5 audit)
+
+**A4 final: FAIL / NEEDS-FIXES.** Earlier provisional acceptance is not promoted by green suites. Manager disclosed overlapping audit sessions; overlap-era observations are not final evidence. Current code/tests were read and rerun after correction. Complete provenance, matrix and raw logs live alongside A5 at `../A5/independent/`; A5 proof contains the final mandatory test summaries.
+
+- Wording carry-over `1ed4355`: PASS for display-only checkboxes.
+- Marker carry-over `6ce0195`: **FAIL** at `web/server/board.ts:230–249,372–378`. Fresh `timeout 120 node scripts/audit-a5-data.mjs` records original `"Plain"` restoring as `"Plain\n"` and whitespace-only `" \n\n"` restoring empty. Existing LF/CRLF trailing blank lines pass. Existing exact-equality Arrange-undo test also changed original fixture to end CRLF, so it missed the original no-final-newline case. No arbitrary-body whitespace repair attempted here.
+- Note carry-over `6c1a3a0`: draft retention / Retry improved. Native browser keeps exact draft and Retry/Réessayer after upstream 500 and socket destruction in EN/FR; 409 and explicit Refresh retain LOCAL_DRAFT. **Conflict recovery FAIL**: `web/public/app.js:2706` reads top-level fingerprint while 409 returns `payload.issue.fingerprint`; immediate Retry still 409/zero PATCH, then Refresh + Retry at `app.js:3123–3145` silently replaces REMOTE_NOTE with LOCAL_DRAFT (one PATCH). No reconciliation/overwrite confirmation. Server precondition refusal itself remains safe.
+- NOT RUN: full browser-offline section matrix (CDP method timed out), timed background poll after failure, 409 in both languages, full-page-reload draft persistence, combined note/drag/resize/Arrange failure stress, touch/200% re-audit, live GitHub writes. Upstream socket failure is not browser offline. Earlier A4 layout/parser evidence was not exhaustively re-certified.
+- Fresh final commands: `timeout 900 npm test` 618/618, fail 0, skipped 0, exit 0; `timeout 900 node --test --test-timeout=30000 web/tests/*.test.mjs` 559/559, fail 0, skipped 0, exit 0; `timeout 600 npm run typecheck` exit 0. Raw `../A5/independent/raw/{npm-test,web-test,typecheck}.log`; browser/data final observations and logs in same evidence directory.
+- No A4 production fix in this audit. Only contained A5 Operations status grouping fixed in `47bda6ddfa235a290177051b498fb450f35e7eff`. Larger marker/conflict repairs remain explicit follow-up blockers.

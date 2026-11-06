@@ -452,6 +452,7 @@ async function run() {
   try {
     for (let i = 0; i < scenarios.length; i++) {
       const sc = scenarios[i];
+      if (process.env.A5_SCREENSHOT_NAMES && !process.env.A5_SCREENSHOT_NAMES.split(',').includes(sc.name)) continue;
       const outPath = path.join(SCREENSHOTS_DIR, sc.name);
       console.log(`[${i + 1}/${scenarios.length}] Capturing ${sc.name}...`);
 
@@ -463,11 +464,10 @@ async function run() {
         [touchParam]: sc.w <= 768,
       });
 
-      // Set theme
-      await evaluate(`(() => {
-        document.documentElement.setAttribute("data-theme", "${sc.theme}");
-        localStorage.setItem("theme", "${sc.theme}");
-      })()`);
+      // Use the application's saved theme preference, never injected styles.
+      await evaluate(`localStorage.setItem("tb_theme_mode", "${sc.theme}")`);
+      await send('Page.reload');
+      await waitFor('document.querySelectorAll(".task-row").length > 0', 'board after theme reload');
 
       // Set language
       if (sc.lang === 'fr') {
@@ -515,7 +515,7 @@ async function run() {
       const stat = fs.statSync(outPath);
       console.log(`  Saved ${sc.name} (${stat.size} bytes)`);
     }
-    console.log('All 24 verification screenshots captured successfully!');
+    console.log('Selected verification screenshots captured successfully!');
   } finally {
     try {
       await cdp.send('Target.closeTarget', { targetId: created.targetId });

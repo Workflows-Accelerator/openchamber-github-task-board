@@ -1,0 +1,85 @@
+Scope: complete changed text files since 341ff45, including current audit artifacts. Raw logs intentionally excluded by extension.
+
+SCAN forbidden automation term
+.agents/run/chamberos-board-v2/verifications/A5/proof.md:227: - Forbidden lexicon scan: 0 occurrences of prohibited terms or `n8n` in proof/code (PASS)
+web/tests/canvas.test.mjs:380: test('canvas client: zero occurrences of "n8n" or "mobile" in web/public source files', () => {
+web/tests/canvas.test.mjs:386: assert.doesNotMatch(content, /\bn8n\b/i, `Forbidden token "n8n" found in ${filename}`);
+matching lines: 3
+
+SCAN forbidden device term
+web/tests/canvas.test.mjs:380: test('canvas client: zero occurrences of "n8n" or "mobile" in web/public source files', () => {
+web/tests/canvas.test.mjs:387: assert.doesNotMatch(content, /\bmobile\b/i, `Forbidden token "mobile" found in ${filename}`);
+matching lines: 2
+
+SCAN literal double plus
+.agents/run/chamberos-board-v2/verifications/A5/proof.md:307: | 8 Lexicon/emoji/double-plus | FAIL | Existing test names/regex and earlier proof contain forbidden terms; no emoji. Literal ++ matches increment operators, not duplicate-plus buttons; source button inspection found none. |
+.agents/run/chamberos-board-v2/verifications/A5/proof.md:368: web/tests/a5-audit.test.mjs | 133 ++++++++++++++++++++++++++++++++++++++++++++
+scripts/generate-a5-screenshots.mjs:51: const id = this.nextId++;
+scripts/generate-a5-screenshots.mjs:453: for (let i = 0; i < scenarios.length; i++) {
+web/public/app.js:68: if (!state.pending || sameRepository(state.pending, issue)) state.writeGeneration++;
+web/public/app.js:77: state.boardGeneration++;
+web/public/app.js:285: return question.completed ? question.answerIndex === null : question.answerIndex === answerIndex++;
+web/public/app.js:478: state.readGeneration++;
+web/public/app.js:479: state.boardGeneration++;
+web/public/app.js:551: state.readGeneration++;
+web/public/app.js:1000: for (var i = 0; i < 5; i++) {
+web/public/app.js:1141: id: 'offline-' + Date.now() + '-' + (++offlineSeq) + '-' + Math.random().toString(36).slice(2, 8),
+web/public/app.js:1196: for (var i = 0; i < drafts.length; i++) {
+web/public/app.js:1233: syncedCount++;
+web/public/app.js:1282: for (var i = 0; i < lines.length; i++) {
+web/public/app.js:1357: for (var i = 0; i < lines.length; i++) {
+web/public/app.js:1442: var generation = ++state.readGeneration;
+web/public/app.js:1488: var generation = ++state.readGeneration;
+web/public/app.js:1578: for (var i = 0; i < labels.length; i++) {
+web/public/app.js:1881: for (var k = 0; k < to; k++) {
+web/public/app.js:1891: for (var m = to + 1; m < desired.length; m++) {
+web/public/app.js:2062: for (var i = 0; i < lines.length; i++) {
+web/public/app.js:2693: for (var i = 0; i < state.board.issues.length; i++) {
+web/public/app.js:3521: for (var i = 0; i < issuesToArrange.length; i++) {
+web/public/app.js:3531: savedCount++;
+web/public/app.js:3535: failedCount++;
+web/public/app.js:3579: for (var i = 0; i < allIssues.length; i++) {
+web/public/app.js:3642: for (var k = 0; k < cardList.length; k++) {
+web/public/app.js:3764: for (var i = 0; i < points.length; i++) {
+web/public/app.js:4837: state.readGeneration++;
+web/public/app.js:4840: var generation = ++state.boardGeneration;
+web/public/app.js:4843: state.boardLoads++;
+web/public/app.js:5440: var generation = ++state.readGeneration;
+web/public/app.js:5475: else { rememberDraft(); state.readGeneration++; state.pending = null; state.detail = null; showBoard(); }
+web/public/app.js:5493: var generation = ++state.readGeneration;
+web/public/app.js:5555: var generation = ++state.readGeneration;
+web/public/app.js:5602: var generation = ++state.readGeneration;
+web/public/app.js:5663: if (!q.completed) decisionsCount++;
+web/public/app.js:5670: blockedCount++;
+web/public/app.js:5785: if (!q.completed) totalQuestions++;
+web/server/app.ts:1191: const repository = discovery.repositories[cursor++];
+web/server/app.ts:1204: loaded++;
+web/server/app.ts:1218: loaded++;
+web/server/app.ts:1232: loaded++;
+web/server/app.ts:1243: loaded++;
+web/server/app.ts:1371: openCount++;
+web/server/app.ts:1373: closedCount++;
+web/server/app.ts:1391: needsHumanCount++;
+web/server/app.ts:1402: blockedCount++;
+web/server/app.ts:1409: closed7DaysCount++;
+web/server/board.ts:148: for (let i = 0; i < lines.length; i++) {
+web/server/board.ts:156: for (let i = 0; i < lines.length; i++) {
+web/server/board.ts:168: for (let i = 0; i < lines.length; i++) {
+web/server/board.ts:179: for (let i = 0; i < lines.length; i++) {
+web/server/board.ts:234: for (let i = 0; i < lines.length; i++) {
+web/server/board.ts:245: for (let i = 0; i < lines.length; i++) {
+web/server/board.ts:352: for (let i = 0; i < lines.length; i++) {
+web/server/board.ts:362: for (let i = 0; i < lines.length; i++) {
+web/tests/a5-audit.test.mjs:73: for (let index = 0; index < tasks.length; index++) {
+web/tests/a5-sections.test.mjs:47: for (let i = 0; i < SAMPLE_BODY.length; i++) {
+web/tests/canvas.test.mjs:513: patchCalls++;
+.agents/run/chamberos-board-v2/verifications/A5/independent/audit-findings.md:69: | 8k Prohibited terms/emoji/button double-plus | FAIL | Full changed-file scan finds forbidden terms in existing test descriptions/regex and original A5 proof; no emoji matches. Literal ++ are increment operators, not UI duplication. No plus-icon-plus-text duplicate found by source inspection. |
+scripts/audit-a5.mjs:27: const id = ++this.next;
+matching lines: 63
+
+SCAN emoji
+matching lines: 0
+
+SCAN .skip/.todo in test/ and web/tests/
+matching lines: 0
+exit 0

@@ -1,0 +1,90 @@
+TAP version 13
+# {"route":"/api/issues/1/questions/0/answer","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/questions/0/answer","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/questions/0/answer","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 answer: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 1 - audit A5 answer: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 466.699212
+  type: 'test'
+  ...
+# {"route":"/api/issues/1/human-tasks/0/toggle","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/human-tasks/0/toggle","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/human-tasks/0/toggle","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 human task: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 2 - audit A5 human task: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 296.0965
+  type: 'test'
+  ...
+# {"route":"/api/issues/2/reopen","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/2/reopen","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/2/reopen","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 reopen: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 3 - audit A5 reopen: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 257.065752
+  type: 'test'
+  ...
+# {"route":"/api/issues/1/labels/remove","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/labels/remove","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/labels/remove","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 remove label POST: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 4 - audit A5 remove label POST: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 245.130549
+  type: 'test'
+  ...
+# {"route":"/api/issues/1/labels/backburner","method":"DELETE","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/labels/backburner","method":"DELETE","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/labels/backburner","method":"DELETE","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 remove label DELETE: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 5 - audit A5 remove label DELETE: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 254.048133
+  type: 'test'
+  ...
+# Subtest: audit A5 human task: BOM, LF, CRLF, fences, indented code, duplicate text and two-space nested list preserve exact bytes
+ok 6 - audit A5 human task: BOM, LF, CRLF, fences, indented code, duplicate text and two-space nested list preserve exact bytes
+  ---
+  duration_ms: 2.661947
+  type: 'test'
+  ...
+# Subtest: audit A5 operations: old closure edited today excluded; unlabelled/planned/review issues counted once; repository-qualified identity
+not ok 7 - audit A5 operations: old closure edited today excluded; unlabelled/planned/review issues counted once; repository-qualified identity
+  ---
+  duration_ms: 205.768251
+  type: 'test'
+  location: '/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2/web/tests/a5-audit.test.mjs:83:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2/web/tests/a5-audit.test.mjs:104:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: audit A5 label removal preserves unrelated labels and refuses absent assignment with zero PATCH
+ok 8 - audit A5 label removal preserves unrelated labels and refuses absent assignment with zero PATCH
+  ---
+  duration_ms: 275.01733
+  type: 'test'
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 7
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2393.054879

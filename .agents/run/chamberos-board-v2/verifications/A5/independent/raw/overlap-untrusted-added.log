@@ -1,0 +1,122 @@
+TAP version 13
+# TRACE question answer missing: HTTP 400, PATCH delta 0
+# TRACE question answer stale: HTTP 409, PATCH delta 0
+# TRACE question answer invalid: HTTP 400, PATCH delta 0
+# TRACE question answer malformed JSON: HTTP 400, PATCH delta 0
+# Subtest: independent A5: question answer refuses missing/stale/invalid fingerprints and malformed JSON with zero PATCH
+not ok 1 - independent A5: question answer refuses missing/stale/invalid fingerprints and malformed JSON with zero PATCH
+  ---
+  duration_ms: 466.117287
+  type: 'test'
+  location: '/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2/web/tests/a5-audit.test.mjs:17:3'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    400 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 400
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2/web/tests/a5-audit.test.mjs:58:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# TRACE human task toggle missing: HTTP 400, PATCH delta 0
+# TRACE human task toggle stale: HTTP 409, PATCH delta 0
+# TRACE human task toggle invalid: HTTP 400, PATCH delta 0
+# TRACE human task toggle malformed JSON: HTTP 400, PATCH delta 0
+# TRACE human task toggle completed="true": HTTP 400, PATCH delta 0
+# TRACE human task toggle completed=1: HTTP 400, PATCH delta 0
+# TRACE human task toggle completed=null: HTTP 400, PATCH delta 0
+# TRACE human task toggle completed=[]: HTTP 400, PATCH delta 0
+# TRACE human task toggle completed={}: HTTP 400, PATCH delta 0
+# TRACE human task toggle valid: HTTP 200, PATCH total 1
+# Subtest: independent A5: human task toggle refuses missing/stale/invalid fingerprints and malformed JSON with zero PATCH
+ok 2 - independent A5: human task toggle refuses missing/stale/invalid fingerprints and malformed JSON with zero PATCH
+  ---
+  duration_ms: 364.935075
+  type: 'test'
+  ...
+# TRACE reopen missing: HTTP 400, PATCH delta 0
+# TRACE reopen stale: HTTP 409, PATCH delta 0
+# TRACE reopen invalid: HTTP 400, PATCH delta 0
+# TRACE reopen malformed JSON: HTTP 400, PATCH delta 0
+# TRACE reopen valid: HTTP 200, PATCH total 1
+# Subtest: independent A5: reopen refuses missing/stale/invalid fingerprints and malformed JSON with zero PATCH
+ok 3 - independent A5: reopen refuses missing/stale/invalid fingerprints and malformed JSON with zero PATCH
+  ---
+  duration_ms: 280.865874
+  type: 'test'
+  ...
+# TRACE label remove POST missing: HTTP 400, PATCH delta 0
+# TRACE label remove POST stale: HTTP 409, PATCH delta 0
+# TRACE label remove POST invalid: HTTP 400, PATCH delta 0
+# TRACE label remove POST malformed JSON: HTTP 400, PATCH delta 0
+# TRACE label remove POST valid: HTTP 200, PATCH total 1
+# Subtest: independent A5: label remove POST refuses missing/stale/invalid fingerprints and malformed JSON with zero PATCH
+ok 4 - independent A5: label remove POST refuses missing/stale/invalid fingerprints and malformed JSON with zero PATCH
+  ---
+  duration_ms: 255.287546
+  type: 'test'
+  ...
+# TRACE label remove DELETE missing: HTTP 400, PATCH delta 0
+# TRACE label remove DELETE stale: HTTP 409, PATCH delta 0
+# TRACE label remove DELETE invalid: HTTP 400, PATCH delta 0
+# TRACE label remove DELETE malformed JSON: HTTP 400, PATCH delta 0
+# TRACE label remove DELETE valid: HTTP 200, PATCH total 1
+# Subtest: independent A5: label remove DELETE refuses missing/stale/invalid fingerprints and malformed JSON with zero PATCH
+ok 5 - independent A5: label remove DELETE refuses missing/stale/invalid fingerprints and malformed JSON with zero PATCH
+  ---
+  duration_ms: 274.123991
+  type: 'test'
+  ...
+# Subtest: independent A5: Human Tasks BOM/LF/CRLF/fences/indent/duplicate text/nested list change one character only
+ok 6 - independent A5: Human Tasks BOM/LF/CRLF/fences/indent/duplicate text/nested list change one character only
+  ---
+  duration_ms: 7.185881
+  type: 'test'
+  ...
+# TRACE reordered task: HTTP 409, PATCH delta 0
+# Subtest: independent A5: reordered human tasks reject stale index without PATCH
+ok 7 - independent A5: reordered human tasks reject stale index without PATCH
+  ---
+  duration_ms: 310.317185
+  type: 'test'
+  ...
+# Subtest: independent A5: operations uses closure date, counts unlabelled issues once, keeps repository-qualified identities
+not ok 8 - independent A5: operations uses closure date, counts unlabelled issues once, keeps repository-qualified identities
+  ---
+  duration_ms: 252.515793
+  type: 'test'
+  location: '/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2/web/tests/a5-audit.test.mjs:119:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    0 !== 1
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 1
+  actual: 0
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2/web/tests/a5-audit.test.mjs:143:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 6
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2589.22107

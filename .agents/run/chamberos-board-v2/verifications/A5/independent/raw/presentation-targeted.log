@@ -1,0 +1,23 @@
+TAP version 13
+# Subtest: audit A5 presentation en: saved toggle restores global body mode and filters draft rows without altering board data
+ok 1 - audit A5 presentation en: saved toggle restores global body mode and filters draft rows without altering board data
+  ---
+  duration_ms: 21.706628
+  type: 'test'
+  ...
+# Subtest: audit A5 presentation fr: saved toggle restores global body mode and filters draft rows without altering board data
+ok 2 - audit A5 presentation fr: saved toggle restores global body mode and filters draft rows without altering board data
+  ---
+  duration_ms: 10.973967
+  type: 'test'
+  ...
+1..2
+# tests 2
+# suites 0
+# pass 2
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 179.769727
+exit 0

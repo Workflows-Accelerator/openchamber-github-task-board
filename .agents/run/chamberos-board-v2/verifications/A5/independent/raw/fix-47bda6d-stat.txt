@@ -1,0 +1,9 @@
+commit 47bda6ddfa235a290177051b498fb450f35e7eff
+Author: Workflows Accelerator Agent <agent@workflows.ac>
+Date:   Fri Nov 6 01:46:52 2026 +0000
+
+    audit: count operations by explicit workflow status and prove write refusals
+
+ web/server/app.ts           |   2 +-
+ web/tests/a5-audit.test.mjs | 133 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 134 insertions(+), 1 deletion(-)

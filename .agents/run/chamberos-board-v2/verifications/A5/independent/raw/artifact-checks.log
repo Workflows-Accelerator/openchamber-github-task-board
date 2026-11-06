@@ -1,0 +1,9 @@
+node --check scripts/audit-a5.mjs: exit 0
+node --check scripts/audit-a5-data.mjs: exit 0
+node --check scripts/generate-a5-screenshots.mjs: exit 0
+node --check web/tests/a5-presentation-audit.test.mjs: exit 0
+git diff --check: exit 0
+30 manifest screenshot paths exist: 30
+Product diff since 6e189c3: exactly explicit-status preference, 1 deletion/1 insertion.
+No tracked panel/service changes or untracked panel/service/.env files.
+Proof cross-check: 24 layout observations; completed browser diagnostics empty; actual PATCH counts, reproduced remote overwrite and final TAP totals match text.
