@@ -219,3 +219,28 @@ test('closing fence must contain only marker characters and whitespace (R4)', ()
   const updated = replaceSectionText(body, 'overview', 'NEW');
   assert.equal(updated, '## Overview\nNEW\n\n## Human Tasks\n- [ ] keep\n');
 });
+
+test('YAML front matter is excluded from overview section and preserved on edit', () => {
+  const body = [
+    '---',
+    'agent: test-agent',
+    'model: test-model',
+    '---',
+    '',
+    '## Overview',
+    'Real public overview.',
+    '',
+    '## Human Tasks',
+    '- [ ] task 1',
+  ].join('\n');
+
+  const sections = findSections(body);
+  assert.equal(sections[0].id, 'overview');
+  assert.equal(sections[0].title, 'Overview');
+  assert.equal(sections[0].text, 'Real public overview.');
+
+  const replaced = replaceSectionText(body, 'overview', 'Updated overview text.');
+  assert.ok(replaced.startsWith('---\nagent: test-agent\nmodel: test-model\n---\n'));
+  assert.ok(replaced.includes('## Overview\nUpdated overview text.\n'));
+  assert.ok(replaced.includes('## Human Tasks\n- [ ] task 1'));
+});

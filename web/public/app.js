@@ -2099,7 +2099,9 @@
 
   function cleanPreviewText(raw) {
     if (!raw || typeof raw !== 'string') return '';
-    var cleaned = raw.replace(/<!--[\s\S]*?-->/g, '');
+    var cleaned = raw
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/^---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)\r?\n?/, '');
     var lines = cleaned.split(/\r?\n/);
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i].trim();
@@ -2746,14 +2748,8 @@
       setNotice('');
       return response;
     } catch (err) {
-      if (err && err.payload && typeof err.payload.fingerprint === 'string') {
-        currentIssue.fingerprint = err.payload.fingerprint;
-        issue.fingerprint = err.payload.fingerprint;
-      }
-      if (options.isCardMove) {
-        currentIssue.canvas = prevCanvas;
-        issue.canvas = prevCanvas;
-      }
+      currentIssue.canvas = prevCanvas;
+      issue.canvas = prevCanvas;
       var cardEl = options.cardEl;
       var oldPos = options.oldPos;
       if (cardEl && oldPos) {
@@ -5520,6 +5516,37 @@
     $('save-status').textContent = '';
     restoreDraft();
 
+    if (state.clientPresentationMode) {
+      if (save) save.hidden = true;
+      var editWarn = $('edit-warning');
+      if (editWarn) editWarn.hidden = true;
+      var drawerAddNote = $('drawer-add-note-btn');
+      if (drawerAddNote) drawerAddNote.hidden = true;
+      var qList = $('question-list');
+      if (qList && qList.parentElement) qList.parentElement.hidden = true;
+      var hList = $('human-list');
+      if (hList && hList.parentElement) hList.parentElement.hidden = true;
+      var sSelect = $('status-select');
+      var statusPanel = (sSelect && typeof sSelect.closest === 'function')
+        ? sSelect.closest('.panel')
+        : (sSelect && sSelect.parentElement && sSelect.parentElement.parentElement ? sSelect.parentElement.parentElement : null);
+      if (statusPanel) statusPanel.hidden = true;
+      if (textarea) textarea.readOnly = true;
+    } else {
+      var editWarn = $('edit-warning');
+      if (editWarn) editWarn.hidden = false;
+      var qList = $('question-list');
+      if (qList && qList.parentElement) qList.parentElement.hidden = false;
+      var hList = $('human-list');
+      if (hList && hList.parentElement) hList.parentElement.hidden = false;
+      var sSelect = $('status-select');
+      var statusPanel = (sSelect && typeof sSelect.closest === 'function')
+        ? sSelect.closest('.panel')
+        : (sSelect && sSelect.parentElement && sSelect.parentElement.parentElement ? sSelect.parentElement.parentElement : null);
+      if (statusPanel) statusPanel.hidden = false;
+      if (textarea) textarea.readOnly = false;
+    }
+
     if (focusHeading) {
       window.setTimeout(function () {
         $('detail-title').focus();
@@ -5750,6 +5777,18 @@
      Step A5: Sidebar Views & Real Operations Overview
      ========================================================================== */
 
+  function isInternalItem(text) {
+    return /^(?:INTERNAL_|\[internal\]|\(internal\))/i.test((text || '').trim());
+  }
+
+  function isDraftIssue(issue) {
+    if (!issue) return false;
+    return issue.column === 'draft' ||
+      issue.statusLabel === 'status:draft' ||
+      issue.statusLabel === 'status:cancelled' ||
+      stageOf(issue) === 'draft';
+  }
+
   function isIssueDecision(issue) {
     if (!issue || issue.state === 'closed') return false;
     return Array.isArray(issue.openQuestions) && issue.openQuestions.some(function (q) { return !q.completed; });
@@ -5770,13 +5809,24 @@
 
     items.forEach(function (item) {
       if (item.state === 'closed') return;
+      if (state.clientPresentationMode && isDraftIssue(item)) return;
       if (Array.isArray(item.openQuestions)) {
         item.openQuestions.forEach(function (q) {
-          if (!q.completed) decisionsCount++;
+          if (!q.completed && (!state.clientPresentationMode || !isInternalItem(q.text))) decisionsCount++;
         });
       }
       if (isIssueBlocked(item)) {
-        blockedCount++;
+        if (state.clientPresentationMode) {
+          var hasHuman = Array.isArray(item.humanTasks) && item.humanTasks.some(function (t) {
+            return !t.completed && !isInternalItem(t.text);
+          });
+          var hasDeps = Array.isArray(item.blockedBy) && item.blockedBy.some(function (dep) {
+            return dep.state === 'open' || dep.state === undefined;
+          });
+          if (hasHuman || hasDeps) blockedCount++;
+        } else {
+          blockedCount++;
+        }
       }
     });
 
@@ -5877,7 +5927,17 @@
     if (loading) loading.hidden = true;
 
     var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
-    var decisionIssues = items.filter(isIssueDecision);
+    var decisionIssues = items.filter(function (it) {
+      if (!isIssueDecision(it)) return false;
+      if (state.clientPresentationMode) {
+        if (isDraftIssue(it)) return false;
+        var hasVisible = (it.openQuestions || []).some(function (q) {
+          return !q.completed && !isInternalItem(q.text);
+        });
+        if (!hasVisible) return false;
+      }
+      return true;
+    });
 
     decisionIssues.sort(function (a, b) {
       var timeA = a.updatedAt ? Date.parse(a.updatedAt) : 0;
@@ -5889,7 +5949,7 @@
     var totalQuestions = 0;
     decisionIssues.forEach(function (it) {
       it.openQuestions.forEach(function (q) {
-        if (!q.completed) totalQuestions++;
+        if (!q.completed && (!state.clientPresentationMode || !isInternalItem(q.text))) totalQuestions++;
       });
     });
 
@@ -5935,6 +5995,7 @@
       var qContainer = el('div', { class: 'decision-questions' });
       issue.openQuestions.forEach(function (q) {
         if (q.completed) return;
+        if (state.clientPresentationMode && isInternalItem(q.text)) return;
         var qItem = el('div', { class: 'decision-question-item' });
         var qText = el('div', { class: 'decision-question-text' }, q.text);
         qItem.appendChild(qText);
@@ -6026,77 +6087,84 @@
 
     // Human tasks section
     if (groupKind === 'human' && Array.isArray(issue.humanTasks) && issue.humanTasks.length > 0) {
-      var tasksContainer = el('div', { class: 'blocked-human-tasks' });
-      var taskHeading = el('div', { class: 'blocked-deps-label' }, dict.blocked_human_tasks_title || 'Human Tasks');
-      tasksContainer.appendChild(taskHeading);
+      var visibleTasks = issue.humanTasks.filter(function (t) {
+        if (state.clientPresentationMode && isInternalItem(t.text)) return false;
+        return true;
+      });
+      if (visibleTasks.length > 0) {
+        var tasksContainer = el('div', { class: 'blocked-human-tasks' });
+        var taskHeading = el('div', { class: 'blocked-deps-label' }, dict.blocked_human_tasks_title || 'Human Tasks');
+        tasksContainer.appendChild(taskHeading);
 
-      issue.humanTasks.forEach(function (t, idx) {
-        var row = el('label', { class: 'human-task-row' });
-        var checkbox = el('input', {
-          type: 'checkbox',
-          class: 'human-task-checkbox',
-        });
-        if (t.completed) checkbox.checked = true;
+        issue.humanTasks.forEach(function (t, idx) {
+          if (state.clientPresentationMode && isInternalItem(t.text)) return;
+          var row = el('label', { class: 'human-task-row' });
+          var checkbox = el('input', {
+            type: 'checkbox',
+            class: 'human-task-checkbox',
+          });
+          if (t.completed) checkbox.checked = true;
 
-        var labelSpan = el('span', { class: 'human-task-label' }, t.text);
-        row.appendChild(checkbox);
-        row.appendChild(labelSpan);
+          var labelSpan = el('span', { class: 'human-task-label' }, t.text);
+          row.appendChild(checkbox);
+          row.appendChild(labelSpan);
 
-        checkbox.addEventListener('change', function () {
-          var completed = checkbox.checked;
-          var key = identity(issue);
-          var previous = humanTaskQueues.get(key) || Promise.resolve();
+          checkbox.addEventListener('change', function () {
+            var completed = checkbox.checked;
+            var key = identity(issue);
+            var previous = humanTaskQueues.get(key) || Promise.resolve();
 
-          var cardCbs = card.querySelectorAll ? card.querySelectorAll('.human-task-checkbox') : [checkbox];
-          cardCbs.forEach(function (cb) { cb.disabled = true; });
+            var cardCbs = card.querySelectorAll ? card.querySelectorAll('.human-task-checkbox') : [checkbox];
+            cardCbs.forEach(function (cb) { cb.disabled = true; });
 
-          var next = previous.then(async function () {
-            try {
-              var currentIssue = issue;
-              if (state.board && Array.isArray(state.board.issues)) {
-                var found = state.board.issues.find(function (it) { return sameIdentity(it, issue); });
-                if (found) currentIssue = found;
-              }
-              var endpoint = issuePath(currentIssue) + '/human-tasks/' + idx + '/toggle';
-              var response = await api(endpoint, {
-                method: 'POST',
-                body: { completed: completed, fingerprint: currentIssue.fingerprint },
-              });
-              if (response && (response.issue || response.listItem)) {
-                var updatedItem = response.listItem || response.issue;
+            var next = previous.then(async function () {
+              try {
+                var currentIssue = issue;
                 if (state.board && Array.isArray(state.board.issues)) {
-                  var boardIdx = state.board.issues.findIndex(function (it) {
-                    return sameIdentity(it, issue);
-                  });
-                  if (boardIdx !== -1) {
-                    state.board.issues[boardIdx] = updatedItem;
-                  }
+                  var found = state.board.issues.find(function (it) { return sameIdentity(it, issue); });
+                  if (found) currentIssue = found;
                 }
-                issue.fingerprint = updatedItem.fingerprint;
-                issue.humanTasks = updatedItem.humanTasks;
-              } else {
-                await loadBoard();
+                var endpoint = issuePath(currentIssue) + '/human-tasks/' + idx + '/toggle';
+                var response = await api(endpoint, {
+                  method: 'POST',
+                  body: { completed: completed, fingerprint: currentIssue.fingerprint },
+                });
+                if (response && (response.issue || response.listItem)) {
+                  var updatedItem = response.listItem || response.issue;
+                  if (state.board && Array.isArray(state.board.issues)) {
+                    var boardIdx = state.board.issues.findIndex(function (it) {
+                      return sameIdentity(it, issue);
+                    });
+                    if (boardIdx !== -1) {
+                      state.board.issues[boardIdx] = updatedItem;
+                    }
+                  }
+                  issue.fingerprint = updatedItem.fingerprint;
+                  issue.humanTasks = updatedItem.humanTasks;
+                } else {
+                  await loadBoard();
+                }
+                updateSidebarBadges();
+                renderBlockedView();
+              } catch (err) {
+                checkbox.checked = !completed;
+                setNotice(err.message || 'Could not toggle human task', true);
+              } finally {
+                if (humanTaskQueues.get(key) === nextPromise) {
+                  humanTaskQueues.delete(key);
+                  cardCbs.forEach(function (cb) { cb.disabled = false; });
+                }
               }
-              updateSidebarBadges();
-              renderBlockedView();
-            } catch (err) {
-              checkbox.checked = !completed;
-              setNotice(err.message || 'Could not toggle human task', true);
-            } finally {
-              if (humanTaskQueues.get(key) === nextPromise) {
-                humanTaskQueues.delete(key);
-                cardCbs.forEach(function (cb) { cb.disabled = false; });
-              }
-            }
+            });
+
+            var nextPromise = next.catch(function () {});
+            humanTaskQueues.set(key, nextPromise);
           });
 
-          var nextPromise = next.catch(function () {});
-          humanTaskQueues.set(key, nextPromise);
+          tasksContainer.appendChild(row);
         });
-
-        tasksContainer.appendChild(row);
-      });
-      card.appendChild(tasksContainer);
+        card.appendChild(tasksContainer);
+      }
     }
 
     // Dependencies (blocked by) section
@@ -6135,7 +6203,20 @@
     if (loading) loading.hidden = true;
 
     var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
-    var blockedIssues = items.filter(isIssueBlocked);
+    var blockedIssues = items.filter(function (it) {
+      if (!isIssueBlocked(it)) return false;
+      if (state.clientPresentationMode) {
+        if (isDraftIssue(it)) return false;
+        var hasHuman = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) {
+          return !t.completed && !isInternalItem(t.text);
+        });
+        var hasDeps = Array.isArray(it.blockedBy) && it.blockedBy.some(function (dep) {
+          return dep.state === 'open' || dep.state === undefined;
+        });
+        return hasHuman || hasDeps;
+      }
+      return true;
+    });
 
     blockedIssues.sort(function (a, b) {
       var timeA = a.updatedAt ? Date.parse(a.updatedAt) : 0;
@@ -6162,11 +6243,19 @@
 
     blockedIssues.forEach(function (it) {
       var isNeedsHuman = it.statusLabel === 'status:needs-human';
-      var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) { return !t.completed; });
+      var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) {
+        return !t.completed && (!state.clientPresentationMode || !isInternalItem(t.text));
+      });
       var hasOpenBlockers = Array.isArray(it.blockedBy) && it.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
 
-      if (isNeedsHuman || hasUncheckedTasks) {
-        humanIssues.push(it);
+      if (state.clientPresentationMode) {
+        if (hasUncheckedTasks) {
+          humanIssues.push(it);
+        }
+      } else {
+        if (isNeedsHuman || hasUncheckedTasks) {
+          humanIssues.push(it);
+        }
       }
       if (hasOpenBlockers) {
         depIssues.push(it);
@@ -6541,13 +6630,14 @@
 
   function cleanOverviewPreview(issue) {
     if (issue.overview && typeof issue.overview === 'string' && issue.overview.trim()) {
-      var trimmed = issue.overview.trim();
-      return trimmed.slice(0, 160) + (trimmed.length > 160 ? '…' : '');
+      var trimmed = issue.overview.replace(/^---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)\r?\n?/, '').trim();
+      if (trimmed) return trimmed.slice(0, 160) + (trimmed.length > 160 ? '…' : '');
     }
     var raw = issue.description || issue.body || '';
     if (!raw) return '';
     var clean = raw
       .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/^---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)\r?\n?/, '')
       .replace(/```[\s\S]*?```/g, '')
       .replace(/^#{1,6}\s+.*$/gm, '')
       .replace(/[-*+]\s+\[[ xX]\]\s+.*$/gm, '')
@@ -6577,6 +6667,10 @@
       localStorage.setItem('chamberos_client_presentation_mode', state.clientPresentationMode ? '1' : '0');
     } catch (_) {}
     applyClientPresentationMode();
+    updateSidebarBadges();
+    if (state.detail && !$('detail-view').hidden) {
+      renderDetail(state.detail);
+    }
     if (state.activeSectionView === 'client') {
       renderClientView();
     } else if (state.activeSectionView === 'decisions') {

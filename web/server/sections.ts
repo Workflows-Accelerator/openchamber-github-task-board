@@ -85,9 +85,21 @@ export function findSections(body: string): Section[] {
   const sections: Section[] = [];
   const usedIds = new Set<string>();
 
+  let frontMatterEndLine = -1;
+  if (lines.length > 0 && lines[0].replace(/\r$/, '') === '---') {
+    for (let i = 1; i < lines.length; i++) {
+      const trimmed = lines[i].replace(/\r$/, '');
+      if (trimmed === '---' || trimmed === '...') {
+        frontMatterEndLine = i;
+        break;
+      }
+    }
+  }
+
+  const preambleStart = frontMatterEndLine !== -1 ? frontMatterEndLine + 1 : 0;
   const firstHeadingLine = headings.length > 0 ? headings[0].line : lines.length;
-  const preambleLines = lines.slice(0, firstHeadingLine);
-  const preambleText = trimRange(lines, 0, firstHeadingLine).join('\n');
+  const preambleLines = preambleStart < firstHeadingLine ? lines.slice(preambleStart, firstHeadingLine) : [];
+  const preambleText = preambleStart < firstHeadingLine ? trimRange(lines, preambleStart, firstHeadingLine).join('\n') : '';
   const hasPreamble = preambleText.trim() !== '';
 
   const isPreambleAmbiguous =
@@ -100,7 +112,7 @@ export function findSections(body: string): Section[] {
       title: '(overview)',
       level: 0,
       headingLine: -1,
-      startLine: 0,
+      startLine: preambleStart,
       endLine: firstHeadingLine,
       text: preambleText,
       editable: !isPreambleAmbiguous,
@@ -183,7 +195,7 @@ export function replaceSectionText(body: string, sectionId: string, text: unknow
     if (!section.editable) {
       throw new SectionError(`section ${sectionId} is not editable`);
     }
-    const from = section.headingLine === -1 ? 0 : section.headingLine + 1;
+    const from = section.headingLine === -1 ? section.startLine : section.headingLine + 1;
     return replaceRange(lines, from, section.endLine, textLines, eol).join('\n');
   }
 

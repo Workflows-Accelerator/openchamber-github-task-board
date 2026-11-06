@@ -3217,7 +3217,13 @@ input[type="text"].search-input:focus,
 /* Client presentation mode active state */
 body.client-presentation-active #canvas-notes,
 body.client-presentation-active .card-action-add-note,
-body.client-presentation-active #drawer-add-note-btn {
+body.client-presentation-active #drawer-add-note-btn,
+body.client-presentation-active #detail-view section[aria-labelledby="questions-title"],
+body.client-presentation-active #detail-view section[aria-labelledby="human-title"],
+body.client-presentation-active #detail-view section[aria-labelledby="status-title"],
+body.client-presentation-active #detail-view #edit-warning,
+body.client-presentation-active #detail-view #save-overview,
+body.client-presentation-active #detail-view #save-status {
   display: none !important;
 }
 
