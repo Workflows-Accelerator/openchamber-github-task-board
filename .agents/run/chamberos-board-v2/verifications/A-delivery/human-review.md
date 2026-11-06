@@ -5,7 +5,7 @@
 - **Preview URL:** `http://127.0.0.1:4041`
 - **Health Check:** `http://127.0.0.1:4041/health`
 - **Synthetic Preview Password:** `correct-horse-battery-staple` (test fixture password from `web/tests/helpers.mjs`, used only for this isolated synthetic preview)
-- **Data Source:** Isolated in-process synthetic GitHub server (`http://127.0.0.1:37243`) with zero live GitHub API calls and zero access to `/workspace/.openchamber-data/board/`.
+- **Data Source:** Isolated in-process synthetic GitHub server (`http://127.0.0.1:44149`) with zero live GitHub API calls and zero access to `/workspace/.openchamber-data/board/`.
 - **Network / Ingress Limit:** The preview server binds to `127.0.0.1:4041` inside the workspace container so it never touches the live production board on `127.0.0.1:8787` (`https://board.workflows.ac`). To view `http://127.0.0.1:4041` from an external workstation browser, forward port `4041` (for example `ssh -L 4041:127.0.0.1:4041 <host>`) or attach a temporary preview ingress route.
 
 ---

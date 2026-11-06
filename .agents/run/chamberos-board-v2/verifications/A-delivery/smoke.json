@@ -6,7 +6,7 @@
     "payload": {
       "status": "ok",
       "version": "1.2.1",
-      "uptime": 104
+      "uptime": 174
     }
   },
   {
@@ -20,7 +20,7 @@
     "verdict": "PASS",
     "cards": 8,
     "notes": 1,
-    "wires": 0,
+    "wires": 4,
     "screenshots": [
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
