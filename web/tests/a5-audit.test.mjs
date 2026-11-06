@@ -151,3 +151,22 @@ test('audit A5 archive pagination: non-finite limit and offset normalize to fini
     await fake.close();
   }
 });
+
+test('audit A5 combined operations: cached fetchedAt matches oldest cached repository timestamp', async () => {
+  let clock = Date.parse('2026-11-06T00:00:00Z');
+  const fake = await startFakeGitHub({ issues: [makeIssue({ number: 1 })] });
+  const board = await startBoard(fake, { now: () => clock, boardCacheTtlMs: 30000 });
+  try {
+    const session = new HttpSession(board.url);
+    await session.login();
+    const first = await session.request('/api/combined/operations');
+    assert.equal(first.status, 200);
+    clock += 1000;
+    const next = await session.request('/api/combined/operations');
+    assert.equal(next.status, 200);
+    assert.equal(next.json.fetchedAt, first.json.fetchedAt);
+  } finally {
+    await board.app.close();
+    await fake.close();
+  }
+});
