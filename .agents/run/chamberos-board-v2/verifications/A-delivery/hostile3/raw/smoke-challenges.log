@@ -1,0 +1,72 @@
+baseline 0 []
+console 1 [
+  {
+    name: 'browser diagnostics',
+    verdict: 'FAIL',
+    exceptions: [],
+    consoleErrors: [ 'H3_CONSOLE_ERROR' ],
+    cspViolations: []
+  }
+]
+exception 1 [
+  {
+    name: 'browser diagnostics',
+    verdict: 'FAIL',
+    exceptions: [ 'H3_UNCAUGHT_EXCEPTION', 'Uncaught' ],
+    consoleErrors: [],
+    cspViolations: []
+  }
+]
+overlap 1 [
+  {
+    name: 'Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)',
+    verdict: 'FAIL',
+    casesTested: 9,
+    artifact: '.agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json'
+  }
+]
+csp 1 [
+  {
+    name: 'browser diagnostics',
+    verdict: 'FAIL',
+    exceptions: [],
+    consoleErrors: [
+      "Executing inline script violates the following Content Security Policy directive 'script-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-VnE6vRorjnpEPQbPozSQErnm6XEVQ3Nbkie4xAUTzc4='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked."
+    ],
+    cspViolations: [
+      "Executing inline script violates the following Content Security Policy directive 'script-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-VnE6vRorjnpEPQbPozSQErnm6XEVQ3Nbkie4xAUTzc4='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked.",
+      'inline'
+    ]
+  }
+]
+offscreenX 1 [
+  {
+    name: 'Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)',
+    verdict: 'FAIL',
+    casesTested: 9,
+    artifact: '.agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json'
+  }
+]
+offscreenY 0 []
+missingWire 1 [
+  {
+    name: 'Canvas view with markdown note and dependency wires (light/dark)',
+    verdict: 'FAIL',
+    cards: 8,
+    notes: 1,
+    wires: 3,
+    screenshots: [
+      '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png',
+      '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png'
+    ]
+  }
+]
+beforeNavigation 1 [
+  {
+    name: 'browser diagnostics',
+    verdict: 'FAIL',
+    exceptions: [],
+    consoleErrors: [ 'H3_BEFORE_NAVIGATION' ],
+    cspViolations: []
+  }
+]

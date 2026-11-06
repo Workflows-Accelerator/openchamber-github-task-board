@@ -1,0 +1,98 @@
+[
+  {
+    "file": "01-list-1280-light-en.png",
+    "width": 1280,
+    "height": 900,
+    "bytes": 87693,
+    "sha256": "34fff70fe5b719ede177ae1f82ac8e53bda116ff47b47e56a4bbc2cbb564f7d3",
+    "proofContainsHash": true
+  },
+  {
+    "file": "02-canvas-notes-wires-1280-light-en.png",
+    "width": 1280,
+    "height": 900,
+    "bytes": 143448,
+    "sha256": "80c7290328ba73d6bfcf0a87967daeb4e87dbba3e25b1768ff171a32d7d4f48d",
+    "proofContainsHash": true
+  },
+  {
+    "file": "03-canvas-notes-wires-1280-dark-en.png",
+    "width": 1280,
+    "height": 900,
+    "bytes": 143966,
+    "sha256": "e80f5a3c2e1a718954c8f40cebc216d91f863f58573c691ffd8471fdb361cf59",
+    "proofContainsHash": true
+  },
+  {
+    "file": "04-decisions-1280-dark-en.png",
+    "width": 1280,
+    "height": 900,
+    "bytes": 40723,
+    "sha256": "91e66c386ff9c5470fb8e32069d2c681872ffc071c80a7f6dd2aeca7e80945a0",
+    "proofContainsHash": true
+  },
+  {
+    "file": "05-decisions-768-light-fr.png",
+    "width": 768,
+    "height": 900,
+    "bytes": 23106,
+    "sha256": "001a755a7f90e32ab38f7b97a569af57a30ac1dbda0cb30a1cbec28975a99245",
+    "proofContainsHash": true
+  },
+  {
+    "file": "06-blocked-1280-dark-en.png",
+    "width": 1280,
+    "height": 900,
+    "bytes": 77392,
+    "sha256": "3a87a210df8c139386eb3f139d6fba0fdd9bdd91d6201ffb811036722ee498e6",
+    "proofContainsHash": true
+  },
+  {
+    "file": "07-blocked-360-dark-en.png",
+    "width": 360,
+    "height": 800,
+    "bytes": 45667,
+    "sha256": "639cbd76912606d9d468bedcb809c2879f3ad926a7f1150315197b03a1bd4ea7",
+    "proofContainsHash": true
+  },
+  {
+    "file": "08-operations-1280-dark-en.png",
+    "width": 1280,
+    "height": 900,
+    "bytes": 49444,
+    "sha256": "0857d372ee24641a0873c6a641126e6395e385da62f4129c4c2ad5d3dd1a8e7d",
+    "proofContainsHash": true
+  },
+  {
+    "file": "09-operations-1280-light-fr.png",
+    "width": 1280,
+    "height": 900,
+    "bytes": 49631,
+    "sha256": "a4e7292e888df7d7479f6d7ce31163f63fa5ee00cdb1c5ada665e0d020d4f955",
+    "proofContainsHash": true
+  },
+  {
+    "file": "10-archive-1280-dark-en.png",
+    "width": 1280,
+    "height": 900,
+    "bytes": 37869,
+    "sha256": "4fdd73c03be5ec60ef90d812b934c43f481de29b113ad6af617d319bc17e8c70",
+    "proofContainsHash": true
+  },
+  {
+    "file": "11-client-1280-dark-en.png",
+    "width": 1280,
+    "height": 900,
+    "bytes": 86372,
+    "sha256": "93faab0e1c5de01dd6519fc57f2ffd88d8a28d4c9ebe6d1fed3e0e57167e0891",
+    "proofContainsHash": true
+  },
+  {
+    "file": "12-client-360-dark-en.png",
+    "width": 360,
+    "height": 800,
+    "bytes": 48233,
+    "sha256": "afbbe5d6cf53022598f6b388de4ede3fc58360e960c0e7f7890109b8d9f716f0",
+    "proofContainsHash": true
+  }
+]

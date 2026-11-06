@@ -1,0 +1,636 @@
+[
+  {
+    "mode": "empty",
+    "operations": {
+      "scope": "all",
+      "repository": null,
+      "openClosed": {
+        "open": 0,
+        "closed": 0,
+        "total": 0
+      },
+      "needsHuman": 0,
+      "blocked": 0,
+      "closed7Days": 0,
+      "oldestOpenInProgress": null,
+      "statusPerProject": {},
+      "fetchedAt": "2026-11-06T00:00:00.000Z",
+      "truncated": false,
+      "partial": false,
+      "failures": []
+    },
+    "archive": {
+      "scope": "all",
+      "repository": null,
+      "backburner": [],
+      "closed": [],
+      "totalBackburner": 0,
+      "totalClosed": 0,
+      "limit": 100,
+      "offset": 0,
+      "hasMore": false,
+      "fetchedAt": "2026-11-06T00:00:00.000Z",
+      "truncated": false,
+      "partial": false,
+      "failures": []
+    },
+    "statuses": [
+      200,
+      200,
+      200
+    ],
+    "ui": {}
+  },
+  {
+    "mode": "unavailable",
+    "operations": {
+      "scope": "all",
+      "repository": null,
+      "openClosed": {
+        "open": 0,
+        "closed": 0,
+        "total": 0
+      },
+      "needsHuman": 0,
+      "blocked": 0,
+      "closed7Days": 0,
+      "oldestOpenInProgress": null,
+      "statusPerProject": {
+        "owner/one": {
+          "draft": 0,
+          "backlog": 0,
+          "todo": 0,
+          "planned": 0,
+          "in-progress": 0,
+          "needs-human": 0,
+          "in-review": 0,
+          "done": 0
+        }
+      },
+      "fetchedAt": "2026-11-06T00:01:01.000Z",
+      "truncated": false,
+      "partial": true,
+      "failures": [
+        {
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "one",
+            "full": "owner/one",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": false,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "message": "Unavailable"
+        }
+      ]
+    },
+    "archive": {
+      "scope": "all",
+      "repository": null,
+      "backburner": [],
+      "closed": [],
+      "totalBackburner": 0,
+      "totalClosed": 0,
+      "limit": 100,
+      "offset": 0,
+      "hasMore": false,
+      "fetchedAt": "2026-11-06T00:01:01.000Z",
+      "truncated": false,
+      "partial": true,
+      "failures": [
+        {
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "one",
+            "full": "owner/one",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": false,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "message": "Unavailable"
+        }
+      ]
+    },
+    "statuses": [
+      200,
+      200,
+      200
+    ],
+    "ui": {
+      "operations": {
+        "loading": "Loading…",
+        "loadingHidden": true,
+        "bodyText": "Skip to content\nAtelier\nVIEWS\nCanvas\nList\nDecisions\nBlocked\nDiscussions\nOperations overview\nArchive\nClient view\nSYSTEM\nProject\nAll Projects\nAll Projects\n▾\nRefresh\nSettings\nFR\nSign out\nOperations overview\n\nReal system metrics and distribution across all connected projects.\n\n12:01:01 AM\nSome repositories failed to load or were unavailable: owner/one: Unavailable\nOPEN\n0\nCLOSED\n0\nNEEDS HUMAN\n0\nBLOCKED\n0\nCLOSED (LAST 7 DAYS)\n0\nOLDEST OPEN IN-PROGRESS\n—\nStatus breakdown per project\nPROJECT\tDRAFT\tBACKLOG\tTODO\tPLANNED\tIN PROGRESS\tNEEDS HUMAN\tIN REVIEW\tDONE\nowner/one\t0\t0\t0\t0\t0\t0\t0\t0\nSigned in."
+      },
+      "archive": {
+        "loading": "Loading…",
+        "loadingHidden": true,
+        "bodyText": "Skip to content\nAtelier\nVIEWS\nCanvas\nList\nDecisions\nBlocked\nDiscussions\nOperations overview\nArchive\nClient view\nSYSTEM\nProject\nAll Projects\nAll Projects\n▾\nRefresh\nSettings\nFR\nSign out\nArchive & Backburner\n\nBrowse backburner tasks and historical closed issues.\n\nBackburner\nArchived (closed)\nSome repositories failed to load or were unavailable: owner/one: Unavailable\nNo tasks on the backburner.\nSigned in."
+      }
+    }
+  },
+  {
+    "mode": "partial",
+    "operations": {
+      "scope": "all",
+      "repository": null,
+      "openClosed": {
+        "open": 1,
+        "closed": 1,
+        "total": 2
+      },
+      "needsHuman": 0,
+      "blocked": 0,
+      "closed7Days": 0,
+      "oldestOpenInProgress": {
+        "number": 1,
+        "title": "Synthetic issue 1",
+        "repository": "owner/good",
+        "createdAt": "2026-10-01T09:00:00Z",
+        "ageDays": 35
+      },
+      "statusPerProject": {
+        "owner/good": {
+          "draft": 0,
+          "backlog": 0,
+          "todo": 0,
+          "planned": 0,
+          "in-progress": 1,
+          "needs-human": 0,
+          "in-review": 0,
+          "done": 1
+        },
+        "owner/bad": {
+          "draft": 0,
+          "backlog": 0,
+          "todo": 0,
+          "planned": 0,
+          "in-progress": 0,
+          "needs-human": 0,
+          "in-review": 0,
+          "done": 0
+        }
+      },
+      "fetchedAt": "2026-11-06T00:00:00.000Z",
+      "truncated": false,
+      "partial": true,
+      "failures": [
+        {
+          "repository": {
+            "id": 2,
+            "owner": "owner",
+            "name": "bad",
+            "full": "owner/bad",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": true,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "message": "Unavailable or refresh failed"
+        }
+      ]
+    },
+    "archive": {
+      "scope": "all",
+      "repository": null,
+      "backburner": [
+        {
+          "id": 100001,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "",
+          "order": null,
+          "canvas": null,
+          "fingerprint": "df9cf774416706a35c3ae3df4d5ef148c2bdb25b6bcafdafeb89318908f776f6",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 1,
+          "key": "owner/good#1",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "good",
+            "full": "owner/good",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": true,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "title": "Synthetic issue 1",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/good/issues/1",
+          "labels": [
+            "status:in-progress",
+            "backburner"
+          ],
+          "statusLabel": "status:in-progress",
+          "phase": "execution",
+          "attention": "none",
+          "column": "in-progress",
+          "updatedAt": "2026-10-20T10:00:00Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [],
+          "overview": ""
+        }
+      ],
+      "closed": [
+        {
+          "id": 100011,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": "2026-10-20T10:00:00Z",
+          "description": "",
+          "order": null,
+          "canvas": null,
+          "fingerprint": "92071364a9a1ea9f12b1b2d358821420a1f6f6a1193b53eea2a7e659d5fc0ea8",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 11,
+          "key": "owner/good#11",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "good",
+            "full": "owner/good",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": true,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "title": "Synthetic issue 11",
+          "friendlyTitle": null,
+          "state": "closed",
+          "htmlUrl": "https://github.com/owner/good/issues/11",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-10-20T10:00:00Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [],
+          "overview": ""
+        }
+      ],
+      "totalBackburner": 1,
+      "totalClosed": 1,
+      "limit": 100,
+      "offset": 0,
+      "hasMore": false,
+      "fetchedAt": "2026-11-06T00:00:00.000Z",
+      "truncated": false,
+      "partial": true,
+      "failures": [
+        {
+          "repository": {
+            "id": 2,
+            "owner": "owner",
+            "name": "bad",
+            "full": "owner/bad",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": true,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "message": "Unavailable or refresh failed"
+        },
+        {
+          "repository": {
+            "id": 2,
+            "owner": "owner",
+            "name": "bad",
+            "full": "owner/bad",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": true,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "message": "GitHub could not be reached"
+        }
+      ]
+    },
+    "statuses": [
+      200,
+      200,
+      200
+    ],
+    "ui": {}
+  },
+  {
+    "mode": "total",
+    "operations": {
+      "error": "discovery_unavailable",
+      "message": "Repository discovery failed; no operation was dispatched"
+    },
+    "archive": {
+      "error": "discovery_unavailable",
+      "message": "Repository discovery failed; no operation was dispatched"
+    },
+    "statuses": [
+      502,
+      502,
+      200
+    ],
+    "ui": {
+      "operations": {
+        "loading": "Could not load operations data: Server error. Please try again later.",
+        "loadingHidden": false,
+        "bodyText": "Skip to content\nAtelier\nVIEWS\nCanvas\nList\nDecisions\nBlocked\nDiscussions\nOperations overview\nArchive\nClient view\nSYSTEM\nProject\nAll Projects\nAll Projects\n▾\nRefresh\nSettings\nFR\nSign out\nOperations overview\n\nReal system metrics and distribution across all connected projects.\n\nCould not load operations data: Server error. Please try again later.\nSigned in."
+      },
+      "archive": {
+        "loading": "Could not load archive: Server error. Please try again later.",
+        "loadingHidden": false,
+        "bodyText": "Skip to content\nAtelier\nVIEWS\nCanvas\nList\nDecisions\nBlocked\nDiscussions\nOperations overview\nArchive\nClient view\nSYSTEM\nProject\nAll Projects\nAll Projects\n▾\nRefresh\nSettings\nFR\nSign out\nArchive & Backburner\n\nBrowse backburner tasks and historical closed issues.\n\nBackburner\nArchived (closed)\nCould not load archive: Server error. Please try again later.\nSigned in."
+      }
+    }
+  },
+  {
+    "mode": "cached",
+    "operations": {
+      "scope": "all",
+      "repository": null,
+      "openClosed": {
+        "open": 1,
+        "closed": 1,
+        "total": 2
+      },
+      "needsHuman": 0,
+      "blocked": 0,
+      "closed7Days": 0,
+      "oldestOpenInProgress": {
+        "number": 1,
+        "title": "Synthetic issue 1",
+        "repository": "owner/one",
+        "createdAt": "2026-10-01T09:00:00Z",
+        "ageDays": 35
+      },
+      "statusPerProject": {
+        "owner/one": {
+          "draft": 0,
+          "backlog": 0,
+          "todo": 0,
+          "planned": 0,
+          "in-progress": 1,
+          "needs-human": 0,
+          "in-review": 0,
+          "done": 1
+        }
+      },
+      "fetchedAt": "2026-11-06T00:00:00.000Z",
+      "truncated": false,
+      "partial": true,
+      "failures": [
+        {
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "one",
+            "full": "owner/one",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": true,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "message": "Unavailable or refresh failed; showing cached tasks"
+        }
+      ]
+    },
+    "archive": {
+      "scope": "all",
+      "repository": null,
+      "backburner": [
+        {
+          "id": 100001,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "",
+          "order": null,
+          "canvas": null,
+          "fingerprint": "6cc911b5176cfd6a250a9c793bfd5bca5c6aa04068d7dfcf79f9019717e2315d",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 1,
+          "key": "owner/one#1",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "one",
+            "full": "owner/one",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": true,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "title": "Synthetic issue 1",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/one/issues/1",
+          "labels": [
+            "status:in-progress",
+            "backburner"
+          ],
+          "statusLabel": "status:in-progress",
+          "phase": "execution",
+          "attention": "none",
+          "column": "in-progress",
+          "updatedAt": "2026-10-20T10:00:00Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [],
+          "overview": ""
+        }
+      ],
+      "closed": [
+        {
+          "id": 100011,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": "2026-10-20T10:00:00Z",
+          "description": "",
+          "order": null,
+          "canvas": null,
+          "fingerprint": "a27afd33970a3983331a053fb9b20d69703083974990555e205aba2f2671f9c5",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 11,
+          "key": "owner/one#11",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "one",
+            "full": "owner/one",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": true,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "title": "Synthetic issue 11",
+          "friendlyTitle": null,
+          "state": "closed",
+          "htmlUrl": "https://github.com/owner/one/issues/11",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-10-20T10:00:00Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [],
+          "overview": ""
+        }
+      ],
+      "totalBackburner": 1,
+      "totalClosed": 1,
+      "limit": 100,
+      "offset": 0,
+      "hasMore": false,
+      "fetchedAt": "2026-11-06T00:00:00.000Z",
+      "truncated": false,
+      "partial": true,
+      "failures": [
+        {
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "one",
+            "full": "owner/one",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": true,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "message": "Unavailable or refresh failed; showing cached tasks"
+        },
+        {
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "one",
+            "full": "owner/one",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "available": true,
+            "lastSeenAt": "2026-11-06T00:00:00.000Z"
+          },
+          "message": "GitHub could not be reached"
+        }
+      ]
+    },
+    "statuses": [
+      200,
+      200,
+      200
+    ],
+    "ui": {}
+  }
+]

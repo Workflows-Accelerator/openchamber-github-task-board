@@ -1,0 +1,14 @@
+{"name":"combined operations cached fetch time","verdict":"PASS","first":"2026-11-06T00:00:00.000Z","next":"2026-11-06T00:00:00.000Z","issueListsBefore":1,"issueListsAfter":1}
+{"name":"combined operations failed-repo metadata","verdict":"PASS","status":200,"partial":true,"failures":["Unavailable or refresh failed; showing cached tasks"],"fetchedAt":"2026-11-06T00:00:00.000Z"}
+{"name":"closed history beyond all-issues page bound","verdict":"PASS","repositoryClosed":1,"totalClosed":1,"hasMore":false,"truncated":true,"partial":true,"olderClosed":0,"combinedClosed":1,"combinedTruncated":true,"issueListRequests":["/repos/owner/repo/issues?state=all&per_page=100&page=1","/repos/owner/repo/issues?per_page=100&page=2","/repos/owner/repo/issues?per_page=100&page=3","/repos/owner/repo/issues?per_page=100&page=4","/repos/owner/repo/issues?per_page=100&page=5","/repos/owner/repo/issues?per_page=100&page=6","/repos/owner/repo/issues?per_page=100&page=7","/repos/owner/repo/issues?per_page=100&page=8","/repos/owner/repo/issues?per_page=100&page=9","/repos/owner/repo/issues?per_page=100&page=10","/repos/owner/repo/issues?state=closed&per_page=100&page=1"]}
+{"name":"archive closure order and load-more within fetched history","verdict":"PASS","ids":[2,3,1]}
+{"name":"paging limit=NaN&offset=-4","verdict":"PASS","status":200,"limit":100,"offset":0,"closed":3}
+{"name":"paging limit=-1&offset=NaN","verdict":"PASS","status":200,"limit":100,"offset":0,"closed":3}
+{"name":"paging limit=999999999&offset=999999999","verdict":"PASS","status":200,"limit":200,"offset":999999999,"closed":0}
+{"name":"paging limit=Infinity&offset=Infinity","verdict":"PASS","status":200,"limit":100,"offset":0,"closed":3}
+{"name":"paging limit=1.7&offset=0.5","verdict":"PASS","status":200,"limit":1,"offset":0,"closed":1}
+{"name":"A4 marker set/strip byte identity","verdict":"PASS","original":"Plain","restored":"Plain"}
+{"name":"A4 marker set/strip byte identity","verdict":"PASS","original":"Plain\n","restored":"Plain\n"}
+{"name":"A4 marker set/strip byte identity","verdict":"PASS","original":"Plain\n\n","restored":"Plain\n\n"}
+{"name":"A4 marker set/strip byte identity","verdict":"PASS","original":"Plain\r\n\r\n","restored":"Plain\r\n\r\n"}
+{"name":"A4 marker set/strip byte identity","verdict":"PASS","original":" \n\n","restored":" \n\n"}

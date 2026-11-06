@@ -1,0 +1,973 @@
+{
+  "timestamp": "2026-11-06T20:25:04.729Z",
+  "previewUrl": "http://127.0.0.1:4041",
+  "wireCount": 4,
+  "cardCount": 8,
+  "noteCount": 1,
+  "canvasMeasurementsPass": true,
+  "measurements": [
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 933,
+          "right": 1266,
+          "width": 333,
+          "height": 34
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "width": 1050
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 940,
+            "right": 964,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 24,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "left": 966,
+            "right": 1014,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 48,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 1016,
+            "right": 1043,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 27,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "left": 1055,
+            "right": 1102,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 47,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "left": 1104,
+            "right": 1183,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 79,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(24, 22, 19, 0.14) 1.13px, rgba(0, 0, 0, 0) 1.13px)"
+      },
+      "buttonOverlaps": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 933,
+          "right": 1266,
+          "width": 333,
+          "height": 34
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "width": 1050
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 940,
+            "right": 964,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 24,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "left": 966,
+            "right": 1014,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 48,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 1016,
+            "right": 1043,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 27,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "left": 1055,
+            "right": 1102,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 47,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "left": 1104,
+            "right": 1183,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 79,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(244, 241, 234, 0.14) 1.13px, rgba(0, 0, 0, 0) 1.13px)"
+      },
+      "buttonOverlaps": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 839,
+          "right": 1266,
+          "width": 427,
+          "height": 34
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "width": 1050
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 846,
+            "right": 870,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 24,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "left": 872,
+            "right": 920,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 48,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 922,
+            "right": 949,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 27,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "left": 961,
+            "right": 1048,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 87,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "left": 1050,
+            "right": 1173,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 123,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1185,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(24, 22, 19, 0.14) 1.13px, rgba(0, 0, 0, 0) 1.13px)"
+      },
+      "buttonOverlaps": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 421,
+          "right": 754,
+          "width": 333,
+          "height": 34
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "width": 768
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 428,
+            "right": 452,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 24,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "left": 454,
+            "right": 502,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 48,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 504,
+            "right": 531,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 27,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "left": 543,
+            "right": 590,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 47,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "left": 592,
+            "right": 671,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 79,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 683,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(24, 22, 19, 0.14) 1.13px, rgba(0, 0, 0, 0) 1.13px)"
+      },
+      "buttonOverlaps": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 327,
+          "right": 754,
+          "width": 427,
+          "height": 34
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "width": 768
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 334,
+            "right": 358,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 24,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "left": 360,
+            "right": 408,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 48,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 410,
+            "right": 437,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 27,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "left": 449,
+            "right": 536,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 87,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "left": 538,
+            "right": 661,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 123,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 673,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(244, 241, 234, 0.14) 1.13px, rgba(0, 0, 0, 0) 1.13px)"
+      },
+      "buttonOverlaps": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 21,
+          "right": 346,
+          "width": 325,
+          "height": 66
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "width": 360
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 236,
+            "right": 260,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 24,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "left": 262,
+            "right": 310,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 48,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 312,
+            "right": 339,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 27,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "left": 135,
+            "right": 182,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 47,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "left": 184,
+            "right": 263,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 79,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(24, 22, 19, 0.14) 1.13px, rgba(0, 0, 0, 0) 1.13px)"
+      },
+      "buttonOverlaps": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 21,
+          "right": 346,
+          "width": 325,
+          "height": 66
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "width": 360
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 236,
+            "right": 260,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 24,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "left": 262,
+            "right": 310,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 48,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 312,
+            "right": 339,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 27,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "left": 135,
+            "right": 182,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 47,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "left": 184,
+            "right": 263,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 79,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(244, 241, 234, 0.14) 1.13px, rgba(0, 0, 0, 0) 1.13px)"
+      },
+      "buttonOverlaps": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 14,
+          "right": 346,
+          "width": 332,
+          "height": 66
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "width": 360
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 236,
+            "right": 260,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 24,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "left": 262,
+            "right": 310,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 48,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 312,
+            "right": 339,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 27,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "left": 41,
+            "right": 128,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 87,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "left": 130,
+            "right": 253,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 123,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(24, 22, 19, 0.14) 1.13px, rgba(0, 0, 0, 0) 1.13px)"
+      },
+      "buttonOverlaps": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 14,
+          "right": 346,
+          "width": 332,
+          "height": 66
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "width": 360
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 236,
+            "right": 260,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 24,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "left": 262,
+            "right": 310,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 48,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 312,
+            "right": 339,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 27,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "left": 41,
+            "right": 128,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 87,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "left": 130,
+            "right": 253,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 123,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(244, 241, 234, 0.14) 1.13px, rgba(0, 0, 0, 0) 1.13px)"
+      },
+      "buttonOverlaps": [],
+      "pass": true
+    }
+  ]
+}

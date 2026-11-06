@@ -1,0 +1,9 @@
+/workspace/releases/board/98261a8-20261103
+{"status":"ok","version":"1.2.1","uptime":11991}
+{"status":"ok","version":"1.2.1","uptime":686}
+    PID    PPID COMMAND
+ 486338       1 node /tmp/opencode/board-v2-staging/59e5d05-state/start-preview.mjs
+ 486368  486338 /usr/local/bin/node --import /tmp/opencode/board-v2-staging/59e5d05-state/preload.mjs web/dist/server.mjs
+/tmp/opencode/board-v2-staging/59e5d05-foundation
+182ea32e32e8c40c39db9778f1cc3a1ffeb6e24b047a82c6a98b4f96262d3412  /tmp/opencode/hostile3-server.mjs
+182ea32e32e8c40c39db9778f1cc3a1ffeb6e24b047a82c6a98b4f96262d3412  /tmp/opencode/board-v2-staging/59e5d05-foundation/web/dist/server.mjs
