@@ -37,7 +37,7 @@ Changes under review: `a578ffd..de3641a`; code commit `de726e4`. Evidence writte
 - `cspViolations` (line 104) is declared but never written to, so it is always `[]`.
 - Injection test: I added `console.error(...)` and an uncaught exception from an appended script to a disposable copy of the script. It **exited 0** with `browser diagnostics: PASS, exceptions [], consoleErrors []` (`raw/smoke-injection-consoleerr.log`, `raw/smoke-injection-probe.log`, `raw/smoke-injection-diagnostics.txt`).
 - The wire-count check does work: changing the expected count to 5 made the script **exit 1** with "Smoke check failed with 1 failing check(s): Canvas view…" (`raw/smoke-injection-wires.log`).
-- Five section checks still use the literal `verdict: 'PASS'` (lines 464, 472, 480, 488, 493). They have only the implicit `waitFor` throw as a guard. `proof.md:110` claims the static literals were replaced across all checks, which is inaccurate.
+- Five section checks still use the literal `verdict: 'PASS'` (lines 464, 472, 480, 488, 493). They have only the implicit `waitFor` throw as a guard. `proof.md:109` claims the static literals were replaced across all checks, which is inaccurate.
 - Fix: subscribe to `Runtime.consoleAPICalled` (type `error`) as `scripts/audit-a5.mjs:206` already does, and either populate or remove `cspViolations`.
 
 ### H2-5 (low, test gap): the empty-account precondition is untested
@@ -184,4 +184,4 @@ The counts match. The proof.md prose that does not match is at lines 76, 102 and
 
 1. `web/server/app.ts:1332` and `:1421`: use `discovery.repositories.some((r) => r.available)`. Add a test for "the only known repo has become unavailable → 200" and one for "empty account → 200".
 2. `scripts/generate-delivery-smoke.mjs:106-112`: capture `Runtime.consoleAPICalled` errors, and populate or remove `cspViolations`. Replace or justify the five literal `'PASS'` verdicts. Optionally add overlap and `elementFromPoint` checks to the HUD measurements.
-3. Recapture A-delivery canvas shots 02/03, and preferably all 12, with Playwright and chrome-headless-shell using `hostile2/scripts/chromium-env.sh`. Correct proof.md lines 76, 102 and 110.
+3. Recapture A-delivery canvas shots 02/03, and preferably all 12, with Playwright and chrome-headless-shell using `hostile2/scripts/chromium-env.sh`. Correct proof.md lines 76, 102 and 109.
