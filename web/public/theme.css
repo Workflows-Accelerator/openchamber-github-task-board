@@ -1625,6 +1625,8 @@ input[type="text"].search-input:focus,
   min-width: 24px;
   min-height: 24px;
   transition: background-color 0.12s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .canvas-control-btn:hover {

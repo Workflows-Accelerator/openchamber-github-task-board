@@ -483,6 +483,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             body: { error: error.code, message: error.message, ...error.extra },
             headers: error.headers,
           };
+        } else if (error instanceof DiscoveryUnavailableError) {
+          response = {
+            status: 502,
+            body: { error: 'discovery_unavailable', message: 'Repository discovery failed; no operation was dispatched' },
+          };
         } else {
           response = {
             status: 500,
@@ -1319,9 +1324,12 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         closedFailures.push({ repository, message: err?.message || 'Could not fetch closed issues' });
       }
     } else {
+      const discovery = await repositories.view();
+      if (discovery.discoveryFailed) {
+        throw new DiscoveryUnavailableError();
+      }
       board = (await combinedBoard()) as any;
       allIssues = board.issues || [];
-      const discovery = await repositories.view();
       for (const repo of discovery.repositories) {
         if (!repo.available) continue;
         try {
@@ -1402,9 +1410,12 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       allIssues = board.issues;
       repos = [{ full: repository.full, name: repository.name }];
     } else {
+      const discovery = await repositories.view();
+      if (discovery.discoveryFailed) {
+        throw new DiscoveryUnavailableError();
+      }
       board = (await combinedBoard()) as any;
       allIssues = board.issues || [];
-      const discovery = await repositories.view();
       repos = discovery.repositories.map((r) => ({ full: r.full, name: r.name }));
     }
 

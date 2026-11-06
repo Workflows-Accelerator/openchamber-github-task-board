@@ -125,6 +125,7 @@ const fake = await startFakeGitHub({
       id: 2,
       issues: [
         makeIssue({ number: 10, repo: 'owner/other-repo', title: 'Cross-repo upstream platform API', body: '## Overview\nUpstream API in second repository.', labels: ['status:in-progress', 'priority:high'] }),
+        makeIssue({ number: 11, repo: 'owner/other-repo', title: 'Consumer SDK migration guide', body: '## Overview\nBlocked by #10.', labels: ['status:todo'] }),
       ],
     },
     {
@@ -135,9 +136,11 @@ const fake = await startFakeGitHub({
   ],
 });
 
-// Add same-repo and cross-repo dependencies on owner/repo#5
+// Add same-repo and cross-repo dependencies
+fake.addDependency(2, 1, 'owner/repo', 'owner/repo');
 fake.addDependency(5, 1, 'owner/repo', 'owner/repo');
 fake.addDependency(5, 10, 'owner/repo', 'owner/other-repo');
+fake.addDependency(11, 10, 'owner/other-repo', 'owner/other-repo');
 
 // Return real-shaped GitHub REST blocked_by payload (repository_url + html_url without repository object) for #10
 fake.setDependencyHook(({ method, repo, number, dir }) => {
@@ -305,16 +308,33 @@ try {
   await pause(200);
   const stayedOnArchive = await evaluate(`window.__taskBoard.state.activeSectionView === 'archive' && !document.querySelector('#archive-view').hidden`);
   await click('#nav-list');
-  await wait('document.querySelectorAll(".task-row").length === 1', 'other-repo list count');
-  const otherRepoIssueKey = await evaluate(`document.querySelector('.task-row')?.getAttribute('data-issue-key')`);
-  record('per-project switching preserves section and filters issues (owner/other-repo)', stayedOnArchive && otherRepoIssueKey === 'owner/other-repo#10' ? 'PASS' : 'FAIL', {
+  await wait('document.querySelectorAll(".task-row").length === 2', 'other-repo list count');
+  const otherRepoIssueKeys = await evaluate(`Array.from(document.querySelectorAll('.task-row')).map(el => el.getAttribute('data-issue-key'))`);
+  record('per-project switching preserves section and filters issues (owner/other-repo)', stayedOnArchive && otherRepoIssueKeys.includes('owner/other-repo#10') && otherRepoIssueKeys.includes('owner/other-repo#11') ? 'PASS' : 'FAIL', {
     stayedOnArchive,
-    otherRepoIssueKey,
+    otherRepoIssueKeys,
   });
 
   // Switch back to all projects
   await selectRepoInUi('all');
   await wait('document.querySelectorAll(".task-row").length >= 5', 'all projects list count');
+
+  // Multi-repo All Projects Operations aggregation
+  await click('#nav-operations');
+  await wait('!document.querySelector("#operations-grid")?.hidden', 'operations grid loaded');
+  const opsData = await evaluate(`window.__taskBoard.state.operations`);
+  const opsHasAllProjects = Boolean(
+    opsData &&
+    opsData.statusPerProject &&
+    opsData.statusPerProject['owner/repo'] &&
+    opsData.statusPerProject['owner/other-repo'] &&
+    opsData.blocked === 4
+  );
+  record('multi-repo All Projects Operations aggregation', opsHasAllProjects ? 'PASS' : 'FAIL', {
+    blocked: opsData?.blocked,
+    statusPerProjectKeys: opsData?.statusPerProject ? Object.keys(opsData.statusPerProject) : [],
+    statusPerProject: opsData?.statusPerProject,
+  });
 
   // 2. Real-shaped cross-repo dependency links in Blocked view and issue drawer
   await click('#nav-blocked');

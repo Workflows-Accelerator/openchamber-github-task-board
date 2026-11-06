@@ -2265,7 +2265,7 @@
     var dotRadius = Math.max(0.75, Math.min(2.0, 0.85 + 0.4 * state.canvasScale));
     var alpha = Math.max(0.10, Math.min(0.18, 0.10 + 0.06 * state.canvasScale)).toFixed(4);
 
-    viewport.style.backgroundImage = 'radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), ' + alpha + ') ' + dotRadius.toFixed(2) + 'px, transparent ' + dotRadius.toFixed(2) + 'px)';
+    viewport.style.backgroundImage = 'radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), ' + alpha + ') 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), ' + alpha + ') ' + dotRadius.toFixed(2) + 'px, transparent ' + dotRadius.toFixed(2) + 'px)';
     viewport.style.backgroundSize = gridStep.toFixed(2) + 'px ' + gridStep.toFixed(2) + 'px';
     viewport.style.backgroundPosition = state.canvasPanX.toFixed(2) + 'px ' + state.canvasPanY.toFixed(2) + 'px';
 
@@ -6529,7 +6529,7 @@
         : null;
       var path = (state.selected !== 'all' && selected)
         ? '/api/repos/' + encodeURIComponent(selected.owner) + '/' + encodeURIComponent(selected.name) + '/operations'
-        : '/api/operations';
+        : '/api/combined/operations';
 
       var data = await api(path);
       state.operations = data;
@@ -6617,7 +6617,7 @@
         : null;
       var basePath = (state.selected !== 'all' && selected)
         ? '/api/repos/' + encodeURIComponent(selected.owner) + '/' + encodeURIComponent(selected.name) + '/archive'
-        : '/api/archive';
+        : '/api/combined/archive';
 
       var url = basePath + '?limit=' + state.archive.limit + '&offset=' + state.archive.offset;
       var data = await api(url);

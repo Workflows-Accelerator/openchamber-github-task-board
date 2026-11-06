@@ -360,3 +360,72 @@ test('GET /api/operations returns real counts, 8 standard status columns, and ac
     await f.close();
   }
 });
+
+test('multi-repo All Projects Operations aggregates multiple repositories and handles discovery failure', async () => {
+  const fake = await startFakeGitHub({
+    repositories: [
+      {
+        repo: 'owner/repo',
+        issues: [
+          makeIssue({ number: 1, repo: 'owner/repo', title: 'Task 1', body: '## Human Tasks\n- [ ] Task 1', labels: ['status:needs-human'] }),
+          makeIssue({ number: 2, repo: 'owner/repo', title: 'Task 2', labels: ['status:in-progress'] }),
+          makeIssue({ number: 3, repo: 'owner/repo', title: 'Task 3', labels: ['status:todo'] }),
+        ],
+      },
+      {
+        repo: 'owner/other-repo',
+        issues: [
+          makeIssue({ number: 10, repo: 'owner/other-repo', title: 'Task 10', labels: ['status:in-progress'] }),
+          makeIssue({ number: 11, repo: 'owner/other-repo', title: 'Task 11', labels: ['status:todo'] }),
+        ],
+      },
+    ],
+  });
+  fake.addDependency(2, 1, 'owner/repo', 'owner/repo');
+  fake.addDependency(3, 10, 'owner/repo', 'owner/other-repo');
+  fake.addDependency(11, 10, 'owner/other-repo', 'owner/other-repo');
+
+  const board = await startBoard(fake, { repositoryTtlMs: 0 });
+  try {
+    const session = new HttpSession(board.url);
+    await session.login();
+
+    const opsRes = await session.request('/api/combined/operations');
+    assert.equal(opsRes.status, 200);
+    const data = opsRes.json;
+
+    // Both repositories present in statusPerProject with all 8 standard status columns
+    assert.ok(data.statusPerProject['owner/repo']);
+    assert.ok(data.statusPerProject['owner/other-repo']);
+    const expectedCols = ['draft', 'backlog', 'todo', 'planned', 'in-progress', 'needs-human', 'in-review', 'done'];
+    for (const col of expectedCols) {
+      assert.equal(typeof data.statusPerProject['owner/repo'][col], 'number');
+      assert.equal(typeof data.statusPerProject['owner/other-repo'][col], 'number');
+    }
+    assert.equal(data.statusPerProject['owner/repo']['needs-human'], 1);
+    assert.equal(data.statusPerProject['owner/repo']['in-progress'], 1);
+    assert.equal(data.statusPerProject['owner/repo']['todo'], 1);
+    assert.equal(data.statusPerProject['owner/other-repo']['in-progress'], 1);
+    assert.equal(data.statusPerProject['owner/other-repo']['todo'], 1);
+
+    // Blocked count:
+    // owner/repo#1 (needs-human) -> blocked
+    // owner/repo#2 (blocked by #1) -> blocked
+    // owner/repo#3 (blocked by other-repo#10) -> blocked
+    // owner/other-repo#11 (blocked by other-repo#10) -> blocked
+    assert.equal(data.blocked, 4);
+
+    // Upstream discovery failure maps to HTTP 502 discovery_unavailable on operations and archive
+    fake.setInjectedResponse(500, { message: 'Upstream discovery failure' });
+    const failOps = await session.request('/api/combined/operations');
+    assert.equal(failOps.status, 502);
+    assert.equal(failOps.json.error, 'discovery_unavailable');
+
+    const failArchive = await session.request('/api/combined/archive');
+    assert.equal(failArchive.status, 502);
+    assert.equal(failArchive.json.error, 'discovery_unavailable');
+  } finally {
+    await board.app.close();
+    await fake.close();
+  }
+});
