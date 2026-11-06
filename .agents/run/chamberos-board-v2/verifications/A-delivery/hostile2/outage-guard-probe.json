@@ -1,0 +1,151 @@
+[
+  {
+    "name": "A empty account (0 discovered repos)",
+    "expected": "200 legitimate empty",
+    "operations": {
+      "status": 200,
+      "partial": false,
+      "failures": []
+    },
+    "archive": {
+      "status": 200,
+      "partial": false
+    },
+    "combinedBoard": 200
+  },
+  {
+    "name": "B only repo removed from token (known, available:false)",
+    "expected": "legitimately empty; 502 would be a false positive",
+    "operations": {
+      "status": 502,
+      "error": "discovery_unavailable",
+      "message": "Repository discovery failed; no operation was dispatched"
+    },
+    "archive": {
+      "status": 502,
+      "error": "discovery_unavailable"
+    },
+    "primeStatus": 200,
+    "combinedBoardStatus": 200,
+    "combinedBoardFailures": [
+      "Unavailable"
+    ]
+  },
+  {
+    "name": "C only repo has issues disabled",
+    "expected": "200 empty",
+    "operations": {
+      "status": 200,
+      "partial": false,
+      "failures": []
+    },
+    "archive": {
+      "status": 200,
+      "partial": false
+    }
+  },
+  {
+    "name": "D only repo archived",
+    "expected": "200",
+    "operations": {
+      "status": 200,
+      "partial": false,
+      "failures": []
+    },
+    "archive": {
+      "status": 200,
+      "partial": false
+    }
+  },
+  {
+    "name": "E page-bound truncation (perPage=1, 12 issues)",
+    "expected": "200 partial/truncated",
+    "operations": {
+      "status": 200,
+      "partial": false,
+      "failures": []
+    },
+    "archive": {
+      "status": 200,
+      "partial": false
+    },
+    "truncated": false
+  },
+  {
+    "name": "F mixed good/unavailable/failing",
+    "expected": "200 partial",
+    "operations": {
+      "status": 200,
+      "partial": true,
+      "failures": [
+        "Unavailable",
+        "Unavailable or refresh failed; showing cached tasks"
+      ]
+    },
+    "archive": {
+      "status": 200,
+      "partial": true
+    }
+  },
+  {
+    "name": "G single-repo route, repo failing",
+    "expected": "unchanged pre-fix behaviour (error)",
+    "operations": {
+      "status": 502,
+      "error": "github_unavailable",
+      "message": "GitHub could not be reached"
+    },
+    "archive": {
+      "status": 502,
+      "error": "github_unavailable"
+    }
+  },
+  {
+    "name": "H all repos failing, no cache",
+    "expected": "502 + UI \"Could not load\"",
+    "operations": {
+      "status": 502,
+      "error": "discovery_unavailable",
+      "message": "Repository discovery failed; no operation was dispatched"
+    },
+    "archive": {
+      "status": 502,
+      "error": "discovery_unavailable"
+    },
+    "combinedBoardStatus": 200,
+    "combinedBoardPartial": true,
+    "combinedBoardIssues": 0,
+    "ui": {
+      "en": {
+        "operations": {
+          "loadingText": "Could not load operations data: Server error. Please try again later.",
+          "loadingHidden": false,
+          "operationsGridHidden": true,
+          "openCountText": "0"
+        },
+        "archive": {
+          "loadingText": "Could not load archive: Server error. Please try again later.",
+          "loadingHidden": false,
+          "operationsGridHidden": true,
+          "openCountText": "0"
+        },
+        "boardNotice": null
+      },
+      "fr": {
+        "operations": {
+          "loadingText": "Impossible de charger les données opérationnelles: Erreur serveur. Veuillez réessayer plus tard.",
+          "loadingHidden": false,
+          "operationsGridHidden": true,
+          "openCountText": "0"
+        },
+        "archive": {
+          "loadingText": "Impossible de charger les archives: Erreur serveur. Veuillez réessayer plus tard.",
+          "loadingHidden": false,
+          "operationsGridHidden": true,
+          "openCountText": "0"
+        },
+        "boardNotice": null
+      }
+    }
+  }
+]

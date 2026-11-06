@@ -1,0 +1,30 @@
+[
+ {
+  "theme": "light",
+  "scale": 0.72,
+  "gradient": "radial-gradient(rgba(24, 22, 19, 0.1432) 1.14px, transparent 1.14px)",
+  "backgroundSize": "17.28",
+  "screenshot": "obscura-standalone-light-072.png"
+ },
+ {
+  "theme": "light",
+  "scale": 1,
+  "gradient": "radial-gradient(rgba(24, 22, 19, 0.1600) 1.25px, transparent 1.25px)",
+  "backgroundSize": "24.00",
+  "screenshot": "obscura-standalone-light-100.png"
+ },
+ {
+  "theme": "dark",
+  "scale": 0.72,
+  "gradient": "radial-gradient(rgba(244, 241, 234, 0.1432) 1.14px, transparent 1.14px)",
+  "backgroundSize": "17.28",
+  "screenshot": "obscura-standalone-dark-072.png"
+ },
+ {
+  "theme": "dark",
+  "scale": 1,
+  "gradient": "radial-gradient(rgba(244, 241, 234, 0.1600) 1.25px, transparent 1.25px)",
+  "backgroundSize": "24.00",
+  "screenshot": "obscura-standalone-dark-100.png"
+ }
+]

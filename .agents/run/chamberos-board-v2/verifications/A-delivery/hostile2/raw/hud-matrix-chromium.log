@@ -1,0 +1,13 @@
+360 en light label="Fit all" hud=21..346x66 base=PASS undo=PASS undoHud=14..346x66
+360 en dark label="Fit all" hud=21..346x66 base=PASS undo=PASS undoHud=14..346x66
+360 fr light label="Ajuster tout" hud=14..346x66 base=PASS undo=PASS undoHud=14..346x94
+360 fr dark label="Ajuster tout" hud=14..346x66 base=PASS undo=PASS undoHud=14..346x94
+768 en light label="Fit all" hud=421..754x34 base=PASS undo=PASS undoHud=320..754x34
+768 en dark label="Fit all" hud=421..754x34 base=PASS undo=PASS undoHud=320..754x34
+768 fr light label="Ajuster tout" hud=327..754x34 base=PASS undo=PASS undoHud=177..754x34
+768 fr dark label="Ajuster tout" hud=327..754x34 base=PASS undo=PASS undoHud=177..754x34
+1280 en light label="Fit all" hud=933..1266x34 base=PASS undo=PASS undoHud=832..1266x34
+1280 en dark label="Fit all" hud=933..1266x34 base=PASS undo=PASS undoHud=832..1266x34
+1280 fr light label="Ajuster tout" hud=839..1266x34 base=PASS undo=PASS undoHud=689..1266x34
+1280 fr dark label="Ajuster tout" hud=839..1266x34 base=PASS undo=PASS undoHud=689..1266x34
+errors 0 []

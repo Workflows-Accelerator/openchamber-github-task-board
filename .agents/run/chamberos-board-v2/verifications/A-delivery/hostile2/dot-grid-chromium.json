@@ -1,0 +1,330 @@
+{
+  "browser": "156.0.8078.4",
+  "app": [
+    {
+      "theme": "light",
+      "scale": 0.25,
+      "readout": "25%",
+      "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1150) 0.95px, transparent 0.95px)",
+      "backgroundSize": "24px 24px",
+      "screenshot": "chromium-app-grid-light-025.png",
+      "emptyRegionStats": {
+        "min": 218,
+        "max": 244,
+        "backgroundLum": 244,
+        "maxDeviation": 26,
+        "nonBackgroundPixelPct": 0.72
+      }
+    },
+    {
+      "theme": "light",
+      "scale": 0.5,
+      "readout": "50%",
+      "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1300) 1.05px, transparent 1.05px)",
+      "backgroundSize": "24px 24px",
+      "screenshot": "chromium-app-grid-light-050.png",
+      "emptyRegionStats": {
+        "min": 214,
+        "max": 244,
+        "backgroundLum": 244,
+        "maxDeviation": 30,
+        "nonBackgroundPixelPct": 0.72
+      }
+    },
+    {
+      "theme": "light",
+      "scale": 0.72,
+      "readout": "72%",
+      "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1432) 1.14px, transparent 1.14px)",
+      "backgroundSize": "17.28px 17.28px",
+      "screenshot": "chromium-app-grid-light-072.png",
+      "emptyRegionStats": {
+        "min": 212,
+        "max": 244,
+        "backgroundLum": 244,
+        "maxDeviation": 32,
+        "nonBackgroundPixelPct": 2.36
+      }
+    },
+    {
+      "theme": "light",
+      "scale": 1,
+      "readout": "100%",
+      "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1600) 1.25px, transparent 1.25px)",
+      "backgroundSize": "24px 24px",
+      "screenshot": "chromium-app-grid-light-100.png",
+      "emptyRegionStats": {
+        "min": 208,
+        "max": 244,
+        "backgroundLum": 244,
+        "maxDeviation": 36,
+        "nonBackgroundPixelPct": 0.72
+      }
+    },
+    {
+      "theme": "light",
+      "scale": 2,
+      "readout": "200%",
+      "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1800) 1.65px, transparent 1.65px)",
+      "backgroundSize": "48px 48px",
+      "screenshot": "chromium-app-grid-light-200.png",
+      "emptyRegionStats": {
+        "min": 203,
+        "max": 244,
+        "backgroundLum": 244,
+        "maxDeviation": 41,
+        "nonBackgroundPixelPct": 0.52
+      }
+    },
+    {
+      "theme": "dark",
+      "scale": 0.25,
+      "readout": "25%",
+      "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1150) 0.95px, transparent 0.95px)",
+      "backgroundSize": "24px 24px",
+      "screenshot": "chromium-app-grid-dark-025.png",
+      "emptyRegionStats": {
+        "min": 20,
+        "max": 46,
+        "backgroundLum": 20,
+        "maxDeviation": 26,
+        "nonBackgroundPixelPct": 0.72
+      }
+    },
+    {
+      "theme": "dark",
+      "scale": 0.5,
+      "readout": "50%",
+      "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1300) 1.05px, transparent 1.05px)",
+      "backgroundSize": "24px 24px",
+      "screenshot": "chromium-app-grid-dark-050.png",
+      "emptyRegionStats": {
+        "min": 20,
+        "max": 49,
+        "backgroundLum": 20,
+        "maxDeviation": 29,
+        "nonBackgroundPixelPct": 0.72
+      }
+    },
+    {
+      "theme": "dark",
+      "scale": 0.72,
+      "readout": "72%",
+      "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1432) 1.14px, transparent 1.14px)",
+      "backgroundSize": "17.28px 17.28px",
+      "screenshot": "chromium-app-grid-dark-072.png",
+      "emptyRegionStats": {
+        "min": 20,
+        "max": 52,
+        "backgroundLum": 20,
+        "maxDeviation": 32,
+        "nonBackgroundPixelPct": 2.35
+      }
+    },
+    {
+      "theme": "dark",
+      "scale": 1,
+      "readout": "100%",
+      "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1600) 1.25px, transparent 1.25px)",
+      "backgroundSize": "24px 24px",
+      "screenshot": "chromium-app-grid-dark-100.png",
+      "emptyRegionStats": {
+        "min": 20,
+        "max": 56,
+        "backgroundLum": 20,
+        "maxDeviation": 36,
+        "nonBackgroundPixelPct": 0.72
+      }
+    },
+    {
+      "theme": "dark",
+      "scale": 2,
+      "readout": "200%",
+      "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1800) 1.65px, transparent 1.65px)",
+      "backgroundSize": "48px 48px",
+      "screenshot": "chromium-app-grid-dark-200.png",
+      "emptyRegionStats": {
+        "min": 20,
+        "max": 60,
+        "backgroundLum": 20,
+        "maxDeviation": 40,
+        "nonBackgroundPixelPct": 0.52
+      }
+    },
+    {
+      "theme": "light",
+      "fitAll": true,
+      "readout": "70%",
+      "screenshot": "chromium-canvas-fit-1280-light-en.png"
+    },
+    {
+      "theme": "dark",
+      "fitAll": true,
+      "readout": "70%",
+      "screenshot": "chromium-canvas-fit-1280-dark-en.png"
+    }
+  ],
+  "standalone": [
+    {
+      "theme": "light",
+      "scale": 0.25,
+      "gridStep": 24,
+      "dotRadius": 0.95,
+      "alpha": 0.115,
+      "gradient": "radial-gradient(rgba(24, 22, 19, 0.1150) 0.95px, transparent 0.95px)",
+      "screenshot": "chromium-standalone-light-025.png",
+      "stats": {
+        "min": 218,
+        "max": 244,
+        "backgroundLum": 244,
+        "maxDeviation": 26,
+        "nonBackgroundPixelPct": 0.75
+      }
+    },
+    {
+      "theme": "light",
+      "scale": 0.5,
+      "gridStep": 24,
+      "dotRadius": 1.05,
+      "alpha": 0.13,
+      "gradient": "radial-gradient(rgba(24, 22, 19, 0.1300) 1.05px, transparent 1.05px)",
+      "screenshot": "chromium-standalone-light-050.png",
+      "stats": {
+        "min": 214,
+        "max": 244,
+        "backgroundLum": 244,
+        "maxDeviation": 30,
+        "nonBackgroundPixelPct": 0.75
+      }
+    },
+    {
+      "theme": "light",
+      "scale": 0.72,
+      "gridStep": 17.28,
+      "dotRadius": 1.14,
+      "alpha": 0.1432,
+      "gradient": "radial-gradient(rgba(24, 22, 19, 0.1432) 1.14px, transparent 1.14px)",
+      "screenshot": "chromium-standalone-light-072.png",
+      "stats": {
+        "min": 212,
+        "max": 244,
+        "backgroundLum": 244,
+        "maxDeviation": 32,
+        "nonBackgroundPixelPct": 2.3
+      }
+    },
+    {
+      "theme": "light",
+      "scale": 1,
+      "gridStep": 24,
+      "dotRadius": 1.25,
+      "alpha": 0.16,
+      "gradient": "radial-gradient(rgba(24, 22, 19, 0.1600) 1.25px, transparent 1.25px)",
+      "screenshot": "chromium-standalone-light-100.png",
+      "stats": {
+        "min": 208,
+        "max": 244,
+        "backgroundLum": 244,
+        "maxDeviation": 36,
+        "nonBackgroundPixelPct": 0.75
+      }
+    },
+    {
+      "theme": "light",
+      "scale": 2,
+      "gridStep": 48,
+      "dotRadius": 1.65,
+      "alpha": 0.18,
+      "gradient": "radial-gradient(rgba(24, 22, 19, 0.1800) 1.65px, transparent 1.65px)",
+      "screenshot": "chromium-standalone-light-200.png",
+      "stats": {
+        "min": 203,
+        "max": 244,
+        "backgroundLum": 244,
+        "maxDeviation": 41,
+        "nonBackgroundPixelPct": 0.48
+      }
+    },
+    {
+      "theme": "dark",
+      "scale": 0.25,
+      "gridStep": 24,
+      "dotRadius": 0.95,
+      "alpha": 0.115,
+      "gradient": "radial-gradient(rgba(244, 241, 234, 0.1150) 0.95px, transparent 0.95px)",
+      "screenshot": "chromium-standalone-dark-025.png",
+      "stats": {
+        "min": 20,
+        "max": 46,
+        "backgroundLum": 20,
+        "maxDeviation": 26,
+        "nonBackgroundPixelPct": 0.75
+      }
+    },
+    {
+      "theme": "dark",
+      "scale": 0.5,
+      "gridStep": 24,
+      "dotRadius": 1.05,
+      "alpha": 0.13,
+      "gradient": "radial-gradient(rgba(244, 241, 234, 0.1300) 1.05px, transparent 1.05px)",
+      "screenshot": "chromium-standalone-dark-050.png",
+      "stats": {
+        "min": 20,
+        "max": 49,
+        "backgroundLum": 20,
+        "maxDeviation": 29,
+        "nonBackgroundPixelPct": 0.75
+      }
+    },
+    {
+      "theme": "dark",
+      "scale": 0.72,
+      "gridStep": 17.28,
+      "dotRadius": 1.14,
+      "alpha": 0.1432,
+      "gradient": "radial-gradient(rgba(244, 241, 234, 0.1432) 1.14px, transparent 1.14px)",
+      "screenshot": "chromium-standalone-dark-072.png",
+      "stats": {
+        "min": 20,
+        "max": 52,
+        "backgroundLum": 20,
+        "maxDeviation": 32,
+        "nonBackgroundPixelPct": 2.3
+      }
+    },
+    {
+      "theme": "dark",
+      "scale": 1,
+      "gridStep": 24,
+      "dotRadius": 1.25,
+      "alpha": 0.16,
+      "gradient": "radial-gradient(rgba(244, 241, 234, 0.1600) 1.25px, transparent 1.25px)",
+      "screenshot": "chromium-standalone-dark-100.png",
+      "stats": {
+        "min": 20,
+        "max": 56,
+        "backgroundLum": 20,
+        "maxDeviation": 36,
+        "nonBackgroundPixelPct": 0.75
+      }
+    },
+    {
+      "theme": "dark",
+      "scale": 2,
+      "gridStep": 48,
+      "dotRadius": 1.65,
+      "alpha": 0.18,
+      "gradient": "radial-gradient(rgba(244, 241, 234, 0.1800) 1.65px, transparent 1.65px)",
+      "screenshot": "chromium-standalone-dark-200.png",
+      "stats": {
+        "min": 20,
+        "max": 60,
+        "backgroundLum": 20,
+        "maxDeviation": 40,
+        "nonBackgroundPixelPct": 0.48
+      }
+    }
+  ],
+  "appErrors": []
+}

@@ -1,0 +1,32 @@
+{
+ "enabled": {
+  "Page.enable": "ok",
+  "Runtime.enable": "ok",
+  "Log.enable": "ok"
+ },
+ "eventsSeen": [
+  {
+   "method": "Runtime.consoleAPICalled",
+   "text": "{\"type\":\"error\",\"args\":[{\"type\":\"string\",\"value\":\"probe console.error\",\"description\":\"probe console.error\"}],\"executionContextId\":2,\"timestamp\":1793994630975.15"
+  },
+  {
+   "method": "Runtime.exceptionThrown",
+   "text": "{\"timestamp\":1793994630976.161,\"exceptionDetails\":{\"exceptionId\":1,\"text\":\"Uncaught\",\"lineNumber\":0,\"columnNumber\":6,\"scriptId\":\"\",\"url\":\"data:text/html;base64,"
+  },
+  {
+   "method": "Runtime.consoleAPICalled",
+   "text": "{\"type\":\"error\",\"args\":[{\"type\":\"string\",\"value\":\"Timer error:\",\"description\":\"Timer error:\"},{\"type\":\"object\",\"subtype\":\"error\",\"className\":\"Error\",\"descriptio"
+  },
+  {
+   "method": "Runtime.consoleAPICalled",
+   "text": "{\"type\":\"error\",\"args\":[{\"type\":\"string\",\"value\":\"probe evaluate console.error\",\"description\":\"probe evaluate console.error\"}],\"executionContextId\":2,\"timestamp"
+  },
+  {
+   "method": "Runtime.consoleAPICalled",
+   "text": "{\"type\":\"error\",\"args\":[{\"type\":\"string\",\"value\":\"Timer error:\",\"description\":\"Timer error:\"},{\"type\":\"object\",\"subtype\":\"error\",\"className\":\"Error\",\"descriptio"
+  }
+ ],
+ "exceptionThrownCount": 1,
+ "logEntryAddedCount": 0,
+ "consoleAPICalledCount": 4
+}

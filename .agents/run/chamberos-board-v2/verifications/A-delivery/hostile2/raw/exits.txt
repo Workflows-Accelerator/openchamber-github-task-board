@@ -1,0 +1,6 @@
+npm test exit 0
+web test exit 0
+typecheck exit 0
+audit-a5-data exit 0
+audit-a5 exit 0
+audit-a5-packaged exit 0

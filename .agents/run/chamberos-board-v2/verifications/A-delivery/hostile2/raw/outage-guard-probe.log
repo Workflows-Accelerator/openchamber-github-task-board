@@ -1,0 +1,40 @@
+A empty account (0 discovered repos): ops=200 archive=200 expected=200 legitimate empty
+B only repo removed from token (known, available:false): ops=502 discovery_unavailable archive=502 expected=legitimately empty; 502 would be a false positive
+C only repo has issues disabled: ops=200 archive=200 expected=200 empty
+D only repo archived: ops=200 archive=200 expected=200
+E page-bound truncation (perPage=1, 12 issues): ops=200 archive=200 expected=200 partial/truncated
+F mixed good/unavailable/failing: ops=200 archive=200 expected=200 partial
+G single-repo route, repo failing: ops=502 github_unavailable archive=502 expected=unchanged pre-fix behaviour (error)
+H all repos failing, no cache: ops=502 discovery_unavailable archive=502 expected=502 + UI "Could not load"
+{
+ "en": {
+  "operations": {
+   "loadingText": "Could not load operations data: Server error. Please try again later.",
+   "loadingHidden": false,
+   "operationsGridHidden": true,
+   "openCountText": "0"
+  },
+  "archive": {
+   "loadingText": "Could not load archive: Server error. Please try again later.",
+   "loadingHidden": false,
+   "operationsGridHidden": true,
+   "openCountText": "0"
+  },
+  "boardNotice": null
+ },
+ "fr": {
+  "operations": {
+   "loadingText": "Impossible de charger les données opérationnelles: Erreur serveur. Veuillez réessayer plus tard.",
+   "loadingHidden": false,
+   "operationsGridHidden": true,
+   "openCountText": "0"
+  },
+  "archive": {
+   "loadingText": "Impossible de charger les archives: Erreur serveur. Veuillez réessayer plus tard.",
+   "loadingHidden": false,
+   "operationsGridHidden": true,
+   "openCountText": "0"
+  },
+  "boardNotice": null
+ }
+}

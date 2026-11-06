@@ -1,0 +1,3222 @@
+{
+  "browser": "chrome-headless-shell 156.0.8078.4",
+  "errors": [],
+  "results": [
+    {
+      "w": 360,
+      "lang": "en",
+      "theme": "light",
+      "fitAllLabel": "Fit all",
+      "base": {
+        "W": 360,
+        "hud": {
+          "left": 21,
+          "right": 346,
+          "top": 198.5,
+          "bottom": 264.5,
+          "width": 325,
+          "height": 66
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 236,
+              "right": 260,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "20%",
+            "rect": {
+              "left": 262,
+              "right": 310,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 312,
+              "right": 339,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 135,
+              "right": 182,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 184,
+              "right": 263,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 275,
+              "right": 339,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 360,
+        "hud": {
+          "left": 14,
+          "right": 346,
+          "top": 198.5,
+          "bottom": 264.5,
+          "width": 332,
+          "height": 66
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 236,
+              "right": 260,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "20%",
+            "rect": {
+              "left": 262,
+              "right": 310,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 312,
+              "right": 339,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 34,
+              "right": 81,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 83,
+              "right": 162,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 174,
+              "right": 238,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "rect": {
+              "left": 240,
+              "right": 339,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-360-en-light.png"
+    },
+    {
+      "w": 360,
+      "lang": "en",
+      "theme": "dark",
+      "fitAllLabel": "Fit all",
+      "base": {
+        "W": 360,
+        "hud": {
+          "left": 21,
+          "right": 346,
+          "top": 198.5,
+          "bottom": 264.5,
+          "width": 325,
+          "height": 66
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 236,
+              "right": 260,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "20%",
+            "rect": {
+              "left": 262,
+              "right": 310,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 312,
+              "right": 339,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 135,
+              "right": 182,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 184,
+              "right": 263,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 275,
+              "right": 339,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 360,
+        "hud": {
+          "left": 14,
+          "right": 346,
+          "top": 198.5,
+          "bottom": 264.5,
+          "width": 332,
+          "height": 66
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 236,
+              "right": 260,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "20%",
+            "rect": {
+              "left": 262,
+              "right": 310,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 312,
+              "right": 339,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 34,
+              "right": 81,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 83,
+              "right": 162,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 174,
+              "right": 238,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "rect": {
+              "left": 240,
+              "right": 339,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-360-en-dark.png"
+    },
+    {
+      "w": 360,
+      "lang": "fr",
+      "theme": "light",
+      "fitAllLabel": "Ajuster tout",
+      "base": {
+        "W": 360,
+        "hud": {
+          "left": 14,
+          "right": 346,
+          "top": 198.5,
+          "bottom": 264.5,
+          "width": 332,
+          "height": 66
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 236,
+              "right": 260,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "20%",
+            "rect": {
+              "left": 262,
+              "right": 310,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 312,
+              "right": 339,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 41,
+              "right": 128,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 130,
+              "right": 253,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 265,
+              "right": 339,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 360,
+        "hud": {
+          "left": 14,
+          "right": 346,
+          "top": 198.5,
+          "bottom": 292.5,
+          "width": 332,
+          "height": 94
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 236,
+              "right": 260,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "20%",
+            "rect": {
+              "left": 262,
+              "right": 310,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 312,
+              "right": 339,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 41,
+              "right": 128,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 130,
+              "right": 253,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 265,
+              "right": 339,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "rect": {
+              "left": 191,
+              "right": 339,
+              "top": 263.5,
+              "bottom": 287.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-360-fr-light.png"
+    },
+    {
+      "w": 360,
+      "lang": "fr",
+      "theme": "dark",
+      "fitAllLabel": "Ajuster tout",
+      "base": {
+        "W": 360,
+        "hud": {
+          "left": 14,
+          "right": 346,
+          "top": 198.5,
+          "bottom": 264.5,
+          "width": 332,
+          "height": 66
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 236,
+              "right": 260,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "20%",
+            "rect": {
+              "left": 262,
+              "right": 310,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 312,
+              "right": 339,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 41,
+              "right": 128,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 130,
+              "right": 253,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 265,
+              "right": 339,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 360,
+        "hud": {
+          "left": 14,
+          "right": 346,
+          "top": 198.5,
+          "bottom": 292.5,
+          "width": 332,
+          "height": 94
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 236,
+              "right": 260,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "20%",
+            "rect": {
+              "left": 262,
+              "right": 310,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 312,
+              "right": 339,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 41,
+              "right": 128,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 130,
+              "right": 253,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 265,
+              "right": 339,
+              "top": 235.5,
+              "bottom": 259.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "rect": {
+              "left": 191,
+              "right": 339,
+              "top": 263.5,
+              "bottom": 287.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-360-fr-dark.png"
+    },
+    {
+      "w": 768,
+      "lang": "en",
+      "theme": "light",
+      "fitAllLabel": "Fit all",
+      "base": {
+        "W": 768,
+        "hud": {
+          "left": 421,
+          "right": 754,
+          "top": 198.5,
+          "bottom": 232.5,
+          "width": 333,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 428,
+              "right": 452,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "48%",
+            "rect": {
+              "left": 454,
+              "right": 502,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 504,
+              "right": 531,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 543,
+              "right": 590,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 592,
+              "right": 671,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 683,
+              "right": 747,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 768,
+        "hud": {
+          "left": 320,
+          "right": 754,
+          "top": 198.5,
+          "bottom": 232.5,
+          "width": 434,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 327,
+              "right": 351,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "48%",
+            "rect": {
+              "left": 353,
+              "right": 401,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 403,
+              "right": 430,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 442,
+              "right": 489,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 491,
+              "right": 570,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 582,
+              "right": 646,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "rect": {
+              "left": 648,
+              "right": 747,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-768-en-light.png"
+    },
+    {
+      "w": 768,
+      "lang": "en",
+      "theme": "dark",
+      "fitAllLabel": "Fit all",
+      "base": {
+        "W": 768,
+        "hud": {
+          "left": 421,
+          "right": 754,
+          "top": 198.5,
+          "bottom": 232.5,
+          "width": 333,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 428,
+              "right": 452,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "48%",
+            "rect": {
+              "left": 454,
+              "right": 502,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 504,
+              "right": 531,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 543,
+              "right": 590,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 592,
+              "right": 671,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 683,
+              "right": 747,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 768,
+        "hud": {
+          "left": 320,
+          "right": 754,
+          "top": 198.5,
+          "bottom": 232.5,
+          "width": 434,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 327,
+              "right": 351,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "48%",
+            "rect": {
+              "left": 353,
+              "right": 401,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 403,
+              "right": 430,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 442,
+              "right": 489,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 491,
+              "right": 570,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 582,
+              "right": 646,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "rect": {
+              "left": 648,
+              "right": 747,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-768-en-dark.png"
+    },
+    {
+      "w": 768,
+      "lang": "fr",
+      "theme": "light",
+      "fitAllLabel": "Ajuster tout",
+      "base": {
+        "W": 768,
+        "hud": {
+          "left": 327,
+          "right": 754,
+          "top": 198.5,
+          "bottom": 232.5,
+          "width": 427,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 334,
+              "right": 358,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "48%",
+            "rect": {
+              "left": 360,
+              "right": 408,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 410,
+              "right": 437,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 449,
+              "right": 536,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 538,
+              "right": 661,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 673,
+              "right": 747,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 768,
+        "hud": {
+          "left": 177,
+          "right": 754,
+          "top": 198.5,
+          "bottom": 232.5,
+          "width": 577,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 184,
+              "right": 208,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "48%",
+            "rect": {
+              "left": 210,
+              "right": 258,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 260,
+              "right": 287,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 299,
+              "right": 386,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 388,
+              "right": 511,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 523,
+              "right": 597,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "rect": {
+              "left": 599,
+              "right": 747,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-768-fr-light.png"
+    },
+    {
+      "w": 768,
+      "lang": "fr",
+      "theme": "dark",
+      "fitAllLabel": "Ajuster tout",
+      "base": {
+        "W": 768,
+        "hud": {
+          "left": 327,
+          "right": 754,
+          "top": 198.5,
+          "bottom": 232.5,
+          "width": 427,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 334,
+              "right": 358,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "48%",
+            "rect": {
+              "left": 360,
+              "right": 408,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 410,
+              "right": 437,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 449,
+              "right": 536,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 538,
+              "right": 661,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 673,
+              "right": 747,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 768,
+        "hud": {
+          "left": 177,
+          "right": 754,
+          "top": 198.5,
+          "bottom": 232.5,
+          "width": 577,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": true,
+            "left": 12,
+            "right": 36,
+            "top": 11.5,
+            "bottom": 35.5
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": -39,
+            "right": -15,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 184,
+              "right": 208,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "48%",
+            "rect": {
+              "left": 210,
+              "right": 258,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 260,
+              "right": 287,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 299,
+              "right": 386,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 388,
+              "right": 511,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 523,
+              "right": 597,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "rect": {
+              "left": 599,
+              "right": 747,
+              "top": 203.5,
+              "bottom": 227.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-768-fr-dark.png"
+    },
+    {
+      "w": 1280,
+      "lang": "en",
+      "theme": "light",
+      "fitAllLabel": "Fit all",
+      "base": {
+        "W": 1280,
+        "hud": {
+          "left": 933,
+          "right": 1266,
+          "top": 88.5,
+          "bottom": 122.5,
+          "width": 333,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": false,
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": 191,
+            "right": 215,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 940,
+              "right": 964,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "rect": {
+              "left": 966,
+              "right": 1014,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 1016,
+              "right": 1043,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 1055,
+              "right": 1102,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 1104,
+              "right": 1183,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 1195,
+              "right": 1259,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 1280,
+        "hud": {
+          "left": 832,
+          "right": 1266,
+          "top": 88.5,
+          "bottom": 122.5,
+          "width": 434,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": false,
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": 191,
+            "right": 215,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 839,
+              "right": 863,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "rect": {
+              "left": 865,
+              "right": 913,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 915,
+              "right": 942,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 954,
+              "right": 1001,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 1003,
+              "right": 1082,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 1094,
+              "right": 1158,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "rect": {
+              "left": 1160,
+              "right": 1259,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-1280-en-light.png"
+    },
+    {
+      "w": 1280,
+      "lang": "en",
+      "theme": "dark",
+      "fitAllLabel": "Fit all",
+      "base": {
+        "W": 1280,
+        "hud": {
+          "left": 933,
+          "right": 1266,
+          "top": 88.5,
+          "bottom": 122.5,
+          "width": 333,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": false,
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": 191,
+            "right": 215,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 940,
+              "right": 964,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "rect": {
+              "left": 966,
+              "right": 1014,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 1016,
+              "right": 1043,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 1055,
+              "right": 1102,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 1104,
+              "right": 1183,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 1195,
+              "right": 1259,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 1280,
+        "hud": {
+          "left": 832,
+          "right": 1266,
+          "top": 88.5,
+          "bottom": 122.5,
+          "width": 434,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": false,
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": 191,
+            "right": 215,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 839,
+              "right": 863,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "rect": {
+              "left": 865,
+              "right": 913,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 915,
+              "right": 942,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "rect": {
+              "left": 954,
+              "right": 1001,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "rect": {
+              "left": 1003,
+              "right": 1082,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "rect": {
+              "left": 1094,
+              "right": 1158,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "rect": {
+              "left": 1160,
+              "right": 1259,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-1280-en-dark.png"
+    },
+    {
+      "w": 1280,
+      "lang": "fr",
+      "theme": "light",
+      "fitAllLabel": "Ajuster tout",
+      "base": {
+        "W": 1280,
+        "hud": {
+          "left": 839,
+          "right": 1266,
+          "top": 88.5,
+          "bottom": 122.5,
+          "width": 427,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": false,
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": 191,
+            "right": 215,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 846,
+              "right": 870,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "rect": {
+              "left": 872,
+              "right": 920,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 922,
+              "right": 949,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 961,
+              "right": 1048,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 1050,
+              "right": 1173,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 1185,
+              "right": 1259,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 1280,
+        "hud": {
+          "left": 689,
+          "right": 1266,
+          "top": 88.5,
+          "bottom": 122.5,
+          "width": 577,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": false,
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": 191,
+            "right": 215,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 696,
+              "right": 720,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "rect": {
+              "left": 722,
+              "right": 770,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 772,
+              "right": 799,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 811,
+              "right": 898,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 900,
+              "right": 1023,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 1035,
+              "right": 1109,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "rect": {
+              "left": 1111,
+              "right": 1259,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-1280-fr-light.png"
+    },
+    {
+      "w": 1280,
+      "lang": "fr",
+      "theme": "dark",
+      "fitAllLabel": "Ajuster tout",
+      "base": {
+        "W": 1280,
+        "hud": {
+          "left": 839,
+          "right": 1266,
+          "top": 88.5,
+          "bottom": 122.5,
+          "width": 427,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": false,
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": 191,
+            "right": 215,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 846,
+              "right": 870,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "rect": {
+              "left": 872,
+              "right": 920,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 922,
+              "right": 949,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 961,
+              "right": 1048,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 1050,
+              "right": 1173,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 1185,
+              "right": 1259,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "basePass": true,
+      "withUndo": {
+        "W": 1280,
+        "hud": {
+          "left": 689,
+          "right": 1266,
+          "top": 88.5,
+          "bottom": 122.5,
+          "width": 577,
+          "height": 34
+        },
+        "toggles": [
+          {
+            "id": "sidebar-toggle-btn-compact",
+            "visible": false,
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0
+          },
+          {
+            "id": "sidebar-toggle-btn",
+            "visible": true,
+            "left": 191,
+            "right": 215,
+            "top": 14,
+            "bottom": 38
+          }
+        ],
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "rect": {
+              "left": 696,
+              "right": 720,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "70%",
+            "rect": {
+              "left": 722,
+              "right": 770,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "rect": {
+              "left": 772,
+              "right": 799,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "rect": {
+              "left": 811,
+              "right": 898,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "rect": {
+              "left": 900,
+              "right": 1023,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "rect": {
+              "left": 1035,
+              "right": 1109,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "rect": {
+              "left": 1111,
+              "right": 1259,
+              "top": 93.5,
+              "bottom": 117.5
+            },
+            "insideViewport": true,
+            "clickable": true,
+            "textLines": 1,
+            "overlapsToggle": [],
+            "scrollOverflow": false
+          }
+        ],
+        "docOverflow": false
+      },
+      "withUndoPass": true,
+      "screenshot": "chromium-hud-1280-fr-dark.png"
+    }
+  ]
+}
