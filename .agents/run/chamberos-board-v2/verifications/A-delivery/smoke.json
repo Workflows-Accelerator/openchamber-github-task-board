@@ -6,7 +6,7 @@
     "payload": {
       "status": "ok",
       "version": "1.2.1",
-      "uptime": 174
+      "uptime": 11
     }
   },
   {
@@ -25,6 +25,12 @@
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
     ]
+  },
+  {
+    "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+    "verdict": "PASS",
+    "casesTested": 9,
+    "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
   },
   {
     "name": "Decisions section (EN/FR, 1280/768)",

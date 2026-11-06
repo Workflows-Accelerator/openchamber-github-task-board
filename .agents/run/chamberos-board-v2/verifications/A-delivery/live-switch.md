@@ -8,7 +8,7 @@
 - **Supervisor Script:** `/workspace/config/opencode/tools/board/supervisor.sh`
 - **Start / Restart Helper:** `/workspace/config/opencode/tools/board/start.sh`
 - **Runtime Data & PIDs:** `/workspace/.openchamber-data/board/` (`supervisor.pid`, `child.pid`, `board.log`, `sessions.json`)
-- **Verified Staged Foundation Artifact:** `/tmp/opencode/board-v2-staging/c1f1807-foundation/` (commit `c1f1807` / `c1f1807312c2c90225874f5fac9a6b0dff401ff8`)
+- **Verified Staged Foundation Artifact:** `/tmp/opencode/board-v2-staging/de726e4-foundation/` (commit `de726e4` / `de726e4ad3ffb168f645f573fa5a80a4dd05dc10`)
 
 No live files under `/workspace/releases/board/` or `/workspace/.openchamber-data/board/` were modified during this audit and preview preparation.
 
@@ -27,12 +27,12 @@ Because `supervisor.sh` runs `cd "$RELEASE_DIR"` once when the supervisor proces
 
 ## 3. Cutover Procedure (When Approved by Human Reviewer)
 
-Run the following commands only after human sign-off on the `c1f1807` preview:
+Run the following commands only after human sign-off on the `de726e4` preview:
 
 ```bash
 # 1. Copy the verified staged release into /workspace/releases/board/
-TARGET_RELEASE="/workspace/releases/board/c1f1807-20261106"
-cp -a /tmp/opencode/board-v2-staging/c1f1807-foundation "$TARGET_RELEASE"
+TARGET_RELEASE="/workspace/releases/board/de726e4-20261106"
+cp -a /tmp/opencode/board-v2-staging/de726e4-foundation "$TARGET_RELEASE"
 
 # 2. Verify strict SHA-256 manifest and zero unlisted files in the destination directory
 (cd "$TARGET_RELEASE" && sha256sum -c --strict checksums.sha256)
@@ -57,8 +57,8 @@ curl -fsS https://board.workflows.ac/health
 Once live cutover is verified, stop the isolated preview server on port `4041`:
 
 ```bash
-if [ -f /tmp/opencode/board-v2-staging/c1f1807-state/preview.pid ]; then
-  kill -TERM "$(cat /tmp/opencode/board-v2-staging/c1f1807-state/preview.pid)" 2>/dev/null || true
+if [ -f /tmp/opencode/board-v2-staging/de726e4-state/preview.pid ]; then
+  kill -TERM "$(cat /tmp/opencode/board-v2-staging/de726e4-state/preview.pid)" 2>/dev/null || true
 fi
 ```
 
