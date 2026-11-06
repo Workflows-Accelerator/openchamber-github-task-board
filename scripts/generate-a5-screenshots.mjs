@@ -465,9 +465,14 @@ async function run() {
       });
 
       // Use the application's saved theme preference, never injected styles.
-      await evaluate(`localStorage.setItem("tb_theme_mode", "${sc.theme}")`);
-      await send('Page.reload');
-      await waitFor('document.querySelectorAll(".task-row").length > 0', 'board after theme reload');
+      await evaluate(`(() => {
+        if (window.__taskBoard && window.__taskBoard.setThemeMode) {
+          window.__taskBoard.setThemeMode("${sc.theme}");
+        } else {
+          localStorage.setItem("tb_theme_mode", "${sc.theme}");
+          document.documentElement.setAttribute("data-theme", "${sc.theme}");
+        }
+      })()`);
 
       // Set language
       if (sc.lang === 'fr') {

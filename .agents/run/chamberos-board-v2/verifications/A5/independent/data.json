@@ -1,9 +1,9 @@
 [
   {
     "name": "combined operations cached fetch time",
-    "verdict": "FAIL",
+    "verdict": "PASS",
     "first": "2026-11-06T00:00:00.000Z",
-    "next": "2026-11-06T00:00:01.000Z",
+    "next": "2026-11-06T00:00:00.000Z",
     "issueListsBefore": 1,
     "issueListsAfter": 1
   },
@@ -15,18 +15,18 @@
     "failures": [
       "Unavailable or refresh failed; showing cached tasks"
     ],
-    "fetchedAt": "2026-11-06T00:01:01.000Z"
+    "fetchedAt": "2026-11-06T00:00:00.000Z"
   },
   {
     "name": "closed history beyond all-issues page bound",
-    "verdict": "FAIL",
-    "repositoryClosed": 0,
-    "totalClosed": 0,
+    "verdict": "PASS",
+    "repositoryClosed": 1,
+    "totalClosed": 1,
     "hasMore": false,
     "truncated": true,
     "partial": true,
     "olderClosed": 0,
-    "combinedClosed": 0,
+    "combinedClosed": 1,
     "combinedTruncated": true,
     "issueListRequests": [
       "/repos/owner/repo/issues?state=all&per_page=100&page=1",
@@ -38,7 +38,8 @@
       "/repos/owner/repo/issues?per_page=100&page=7",
       "/repos/owner/repo/issues?per_page=100&page=8",
       "/repos/owner/repo/issues?per_page=100&page=9",
-      "/repos/owner/repo/issues?per_page=100&page=10"
+      "/repos/owner/repo/issues?per_page=100&page=10",
+      "/repos/owner/repo/issues?state=closed&per_page=100&page=1"
     ]
   },
   {
@@ -76,11 +77,11 @@
   },
   {
     "name": "paging limit=Infinity&offset=Infinity",
-    "verdict": "FAIL",
+    "verdict": "PASS",
     "status": 200,
-    "limit": 200,
-    "offset": null,
-    "closed": 0
+    "limit": 100,
+    "offset": 0,
+    "closed": 3
   },
   {
     "name": "paging limit=1.7&offset=0.5",
@@ -92,9 +93,9 @@
   },
   {
     "name": "A4 marker set/strip byte identity",
-    "verdict": "FAIL",
+    "verdict": "PASS",
     "original": "Plain",
-    "restored": "Plain\n"
+    "restored": "Plain"
   },
   {
     "name": "A4 marker set/strip byte identity",
@@ -116,8 +117,8 @@
   },
   {
     "name": "A4 marker set/strip byte identity",
-    "verdict": "FAIL",
+    "verdict": "PASS",
     "original": " \n\n",
-    "restored": ""
+    "restored": " \n\n"
   }
 ]

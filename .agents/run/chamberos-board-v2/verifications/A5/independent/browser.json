@@ -1,8 +1,8 @@
 [
   {
     "name": "initial decisions",
-    "text": "Repo\n#1\nA long issue title for responsive verification for responsive verification for responsive verification for responsive verification for responsive verification\nneeds human\n16d ago\nINTERNAL_QUESTION choose a date\nAnswer\nINTERNAL_QUESTION choose a place\nAnswer\nRepo\n#2\nClosed historical task with unresolved work\ndone\n16d ago\nCLOSED_QUESTION\nAnswer\nRepo\n#3\nQuestion only task\ntodo\n16d ago\nQuestion only\nAnswer",
-    "badge": "4"
+    "text": "Repo\n#1\nA long issue title for responsive verification for responsive verification for responsive verification for responsive verification for responsive verification\nneeds human\n17d ago\nINTERNAL_QUESTION choose a date\nAnswer\nINTERNAL_QUESTION choose a place\nAnswer\nRepo\n#3\nQuestion only task\ntodo\n17d ago\nQuestion only\nAnswer",
+    "badge": "3"
   },
   {
     "name": "double Answer",
@@ -12,14 +12,14 @@
   },
   {
     "name": "initial blocked",
-    "text": "Waiting on Human Action\n3\nRepo\n#1\nA long issue title for responsive verification for responsive verification for responsive verification for responsive verification for responsive verification\nneeds human\njust now\nHuman Tasks\nINTERNAL_TASK approve release\nINTERNAL_TASK confirm records\nRepo\n#2\nClosed historical task with unresolved work\ndone\n16d ago\nHuman Tasks\nCLOSED_TASK\nRepo\n#3\nQuestion only task\ntodo\n16d ago\nBlocked by Dependencies\n1\nRepo\n#5\nNative blocked task\ntodo\n16d ago\nBlocked by\n#1 A long issue title for responsive verification for responsive verification for responsive verification for responsive verification for responsive verification",
-    "sidebar": "3",
-    "heading": "4"
+    "text": "Waiting on Human Action\n1\nRepo\n#1\nA long issue title for responsive verification for responsive verification for responsive verification for responsive verification for responsive verification\nneeds human\njust now\nHuman Tasks\nINTERNAL_TASK approve release\nINTERNAL_TASK confirm records\nBlocked by Dependencies\n1\nRepo\n#5\nNative blocked task\ntodo\n17d ago\nBlocked by\n#1 A long issue title for responsive verification for responsive verification for responsive verification for responsive verification for responsive verification",
+    "sidebar": "2",
+    "heading": "2"
   },
   {
     "name": "two quick task toggles",
     "PATCH": 1,
-    "notice": "This task changed on GitHub after you opened it; nothing was written",
+    "notice": "Question answered.",
     "humanBody": "\n- [x] INTERNAL_TASK approve release\n- [ ] INTERNAL_TASK confirm records\n\n"
   },
   {
@@ -29,11 +29,7 @@
   },
   {
     "name": "presentation client",
-    "leaked": [
-      "INTERNAL_AGENT",
-      "INTERNAL_MODEL",
-      "INTERNAL_WORKTREE"
-    ]
+    "leaked": []
   },
   {
     "name": "presentation canvas",
@@ -41,23 +37,15 @@
   },
   {
     "name": "presentation list",
-    "leaked": [
-      "INTERNAL_AGENT"
-    ]
+    "leaked": []
   },
   {
     "name": "presentation decisions",
-    "leaked": [
-      "INTERNAL_QUESTION",
-      "CLOSED_QUESTION"
-    ]
+    "leaked": []
   },
   {
     "name": "presentation blocked",
-    "leaked": [
-      "INTERNAL_TASK",
-      "CLOSED_TASK"
-    ]
+    "leaked": []
   },
   {
     "name": "presentation operations",
@@ -69,8 +57,8 @@
   },
   {
     "name": "presentation drawer",
-    "text": "Back to board\nA long issue title for responsive verification for responsive verification for responsive verification for responsive verification for responsive verification\nopen\nneeds human\nRepo\nphase: execution\nneeds review\n#1 on GitHub ↗\n\nUpdated on GitHub just now\n\nBest-effort editing: a simultaneous edit on GitHub or by an agent can still be overwritten.\n\nAcceptance criteria\n\nNo acceptance criteria.\n\nActionable subtasks\n\nNo actionable subtasks.\n\nOverview\nOverview text\n--- agent: INTERNAL_AGENT model: INTERNAL_MODEL worktree: INTERNAL_WORKTREE ---\nSave overview\nOpen questions\n✓Already answered(answered)\n✓INTERNAL_QUESTION choose a date— Answer: Friday(answered)\n\nINTERNAL_QUESTION choose a place\n\nAnswer: INTERNAL_QUESTION choose a place\nAnswer\nStatus\nStatus label\nApply status\nMark Done\nHuman tasks\nINTERNAL_TASK approve release\nINTERNAL_TASK confirm records\nDependencies\nBlocked by\n\nNot blocked by any tasks.\n\nAdd a blocker: search issues\nBlocking\n#5 Native blocked task\n×",
-    "overview": "---\nagent: INTERNAL_AGENT\nmodel: INTERNAL_MODEL\nworktree: INTERNAL_WORKTREE\n---"
+    "text": "Back to board\nA long issue title for responsive verification for responsive verification for responsive verification for responsive verification for responsive verification\nopen\nneeds human\nRepo\nphase: execution\nneeds review\n#1 on GitHub ↗\n\nUpdated on GitHub just now\n\nAcceptance criteria\n\nNo acceptance criteria.\n\nActionable subtasks\n\nNo actionable subtasks.\n\nOverview\nOverview text\nPublic **overview**.\nDependencies\nBlocked by\n\nNot blocked by any tasks.\n\nAdd a blocker: search issues\nBlocking\n#5 Native blocked task\n×",
+    "overview": "Public **overview**."
   },
   {
     "name": "presentation reload",
@@ -78,7 +66,7 @@
   },
   {
     "name": "presentation disclaimer FR",
-    "text": "Filtre de présentation uniquement ; pas une frontière de sécurité\n\nInactif (affichage de toutes les tâches)\n\nActiver le mode présentation",
+    "text": "Filtre de présentation uniquement ; pas une frontière de sécurité\n\nActif (masque les brouillons internes et notes brutes)\n\nDésactiver le mode présentation",
     "active": true,
     "persisted": "1"
   },
@@ -87,14 +75,14 @@
     "editor": "DRAFT_fr_500",
     "retry": "Réessayer",
     "PATCH": 1,
-    "notice": "Outcome unknown — check the issue on GitHub."
+    "notice": "Impossible d’enregistrer la note."
   },
   {
     "name": "note fr network",
     "editor": "DRAFT_fr_network",
     "retry": "Réessayer",
     "PATCH": 1,
-    "notice": "Outcome unknown — check the issue on GitHub."
+    "notice": "Impossible d’enregistrer la note."
   },
   {
     "name": "note en 500",
@@ -124,7 +112,7 @@
     "name": "layout operations-360-light-fr",
     "viewport": 360,
     "overflow": false,
-    "headings": "Projet\nDraft\nBacklog\nTodo\nPlanned\nIn Progress\nNeeds Human\nIn Review\nDone"
+    "headings": "Projet\nBrouillon\nBacklog\nÀ faire\nPlanifié\nEn cours\nAction humaine\nEn revue\nTerminé"
   },
   {
     "name": "layout archive-360-light-fr",
@@ -145,7 +133,7 @@
     "name": "layout operations-360-dark-fr",
     "viewport": 360,
     "overflow": false,
-    "headings": "Projet\nDraft\nBacklog\nTodo\nPlanned\nIn Progress\nNeeds Human\nIn Review\nDone"
+    "headings": "Projet\nBrouillon\nBacklog\nÀ faire\nPlanifié\nEn cours\nAction humaine\nEn revue\nTerminé"
   },
   {
     "name": "layout archive-360-dark-fr",
@@ -166,7 +154,7 @@
     "name": "layout operations-768-light-fr",
     "viewport": 768,
     "overflow": false,
-    "headings": "Projet\nDraft\nBacklog\nTodo\nPlanned\nIn Progress\nNeeds Human\nIn Review\nDone"
+    "headings": "Projet\nBrouillon\nBacklog\nÀ faire\nPlanifié\nEn cours\nAction humaine\nEn revue\nTerminé"
   },
   {
     "name": "layout archive-768-light-fr",
@@ -187,7 +175,7 @@
     "name": "layout operations-768-dark-fr",
     "viewport": 768,
     "overflow": false,
-    "headings": "Projet\nDraft\nBacklog\nTodo\nPlanned\nIn Progress\nNeeds Human\nIn Review\nDone"
+    "headings": "Projet\nBrouillon\nBacklog\nÀ faire\nPlanifié\nEn cours\nAction humaine\nEn revue\nTerminé"
   },
   {
     "name": "layout archive-768-dark-fr",
@@ -208,7 +196,7 @@
     "name": "layout operations-1280-light-fr",
     "viewport": 1280,
     "overflow": false,
-    "headings": "Projet\nDraft\nBacklog\nTodo\nPlanned\nIn Progress\nNeeds Human\nIn Review\nDone"
+    "headings": "Projet\nBrouillon\nBacklog\nÀ faire\nPlanifié\nEn cours\nAction humaine\nEn revue\nTerminé"
   },
   {
     "name": "layout archive-1280-light-fr",
@@ -229,7 +217,7 @@
     "name": "layout operations-1280-dark-fr",
     "viewport": 1280,
     "overflow": false,
-    "headings": "Projet\nDraft\nBacklog\nTodo\nPlanned\nIn Progress\nNeeds Human\nIn Review\nDone"
+    "headings": "Projet\nBrouillon\nBacklog\nÀ faire\nPlanifié\nEn cours\nAction humaine\nEn revue\nTerminé"
   },
   {
     "name": "layout archive-1280-dark-fr",
@@ -238,49 +226,49 @@
   },
   {
     "name": "failure 401 decisions",
-    "loading": "Loading…",
+    "loading": "Chargement…",
     "visible": false,
     "notice": ""
   },
   {
     "name": "failure 401 blocked",
-    "loading": "Loading…",
+    "loading": "Chargement…",
     "visible": false,
     "notice": ""
   },
   {
     "name": "failure 401 operations",
-    "loading": "Could not load operations data: GitHub rejected credentials or token expired",
+    "loading": "Impossible de charger les données opérationnelles: Erreur serveur. Veuillez réessayer plus tard.",
     "visible": true,
     "notice": ""
   },
   {
     "name": "failure 401 archive",
-    "loading": "Could not load archive: GitHub rejected credentials or token expired",
+    "loading": "Impossible de charger les archives: Erreur serveur. Veuillez réessayer plus tard.",
     "visible": true,
     "notice": ""
   },
   {
     "name": "failure 500 decisions",
-    "loading": "Loading…",
+    "loading": "Chargement…",
     "visible": false,
     "notice": ""
   },
   {
     "name": "failure 500 blocked",
-    "loading": "Loading…",
+    "loading": "Chargement…",
     "visible": false,
     "notice": ""
   },
   {
     "name": "failure 500 operations",
-    "loading": "Could not load operations data: GitHub could not be reached",
+    "loading": "Impossible de charger les données opérationnelles: Erreur serveur. Veuillez réessayer plus tard.",
     "visible": true,
     "notice": ""
   },
   {
     "name": "failure 500 archive",
-    "loading": "Could not load archive: GitHub could not be reached",
+    "loading": "Impossible de charger les archives: Erreur serveur. Veuillez réessayer plus tard.",
     "visible": true,
     "notice": ""
   },
@@ -299,7 +287,7 @@
     "PATCH": 0,
     "editor": "LOCAL_DRAFT",
     "remoteRetained": true,
-    "notice": "This task changed on GitHub after you opened it; nothing was written."
+    "notice": "Impossible d’enregistrer la note."
   },
   {
     "name": "note refresh retains draft",
@@ -368,14 +356,6 @@
         "status": 200
       },
       {
-        "path": "/api/repos/owner/repo/issues/1/human-tasks/1/toggle",
-        "status": 409
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/human-tasks/1/toggle",
-        "status": 409
-      },
-      {
         "path": "/api/operations",
         "status": 200
       },
@@ -408,102 +388,6 @@
         "status": 200
       },
       {
-        "path": "/api/session",
-        "status": 200
-      },
-      {
-        "path": "/api/repos",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
-        "status": 200
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/canvas",
-        "status": 502
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/canvas",
-        "status": 502
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/canvas",
-        "status": 502
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/canvas",
-        "status": 502
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/canvas",
-        "status": 502
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/canvas",
-        "status": 502
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/canvas",
-        "status": 502
-      },
-      {
-        "path": "/api/repos/owner/repo/issues/1/canvas",
-        "status": 502
-      },
-      {
-        "path": "/api/session",
-        "status": 200
-      },
-      {
-        "path": "/api/session",
-        "status": 200
-      },
-      {
-        "path": "/api/repos",
-        "status": 200
-      },
-      {
-        "path": "/api/repos",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
-        "status": 200
-      },
-      {
-        "path": "/api/combined/board",
-        "status": 200
-      },
-      {
-        "path": "/api/operations",
-        "status": 200
-      },
-      {
-        "path": "/api/operations",
-        "status": 200
-      },
-      {
-        "path": "/api/archive",
-        "status": 200
-      },
-      {
-        "path": "/api/archive",
-        "status": 200
-      },
-      {
-        "path": "/api/session",
-        "status": 200
-      },
-      {
-        "path": "/api/repos",
-        "status": 200
-      },
-      {
         "path": "/api/combined/board",
         "status": 200
       },
@@ -520,27 +404,39 @@
         "status": 200
       },
       {
-        "path": "/api/operations",
-        "status": 200
+        "path": "/api/repos/owner/repo/issues/1/canvas",
+        "status": 502
       },
       {
-        "path": "/api/operations",
-        "status": 200
+        "path": "/api/repos/owner/repo/issues/1/canvas",
+        "status": 502
       },
       {
-        "path": "/api/archive",
-        "status": 200
+        "path": "/api/repos/owner/repo/issues/1/canvas",
+        "status": 502
       },
       {
-        "path": "/api/archive",
-        "status": 200
+        "path": "/api/repos/owner/repo/issues/1/canvas",
+        "status": 502
+      },
+      {
+        "path": "/api/repos/owner/repo/issues/1/canvas",
+        "status": 502
+      },
+      {
+        "path": "/api/repos/owner/repo/issues/1/canvas",
+        "status": 502
+      },
+      {
+        "path": "/api/repos/owner/repo/issues/1/canvas",
+        "status": 502
+      },
+      {
+        "path": "/api/repos/owner/repo/issues/1/canvas",
+        "status": 502
       },
       {
         "path": "/api/session",
-        "status": 200
-      },
-      {
-        "path": "/api/repos",
         "status": 200
       },
       {
@@ -553,6 +449,10 @@
       },
       {
         "path": "/api/combined/board",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
         "status": 200
       },
       {
@@ -624,6 +524,10 @@
         "status": 200
       },
       {
+        "path": "/api/combined/board",
+        "status": 200
+      },
+      {
         "path": "/api/session",
         "status": 200
       },
@@ -640,7 +544,83 @@
         "status": 200
       },
       {
+        "path": "/api/operations",
+        "status": 200
+      },
+      {
+        "path": "/api/archive",
+        "status": 200
+      },
+      {
+        "path": "/api/archive",
+        "status": 200
+      },
+      {
+        "path": "/api/session",
+        "status": 200
+      },
+      {
+        "path": "/api/session",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
+        "status": 200
+      },
+      {
         "path": "/api/combined/board",
+        "status": 200
+      },
+      {
+        "path": "/api/combined/board",
+        "status": 200
+      },
+      {
+        "path": "/api/operations",
+        "status": 200
+      },
+      {
+        "path": "/api/operations",
+        "status": 200
+      },
+      {
+        "path": "/api/archive",
+        "status": 200
+      },
+      {
+        "path": "/api/archive",
+        "status": 200
+      },
+      {
+        "path": "/api/session",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
+        "status": 200
+      },
+      {
+        "path": "/api/combined/board",
+        "status": 200
+      },
+      {
+        "path": "/api/session",
+        "status": 200
+      },
+      {
+        "path": "/api/repos",
+        "status": 200
+      },
+      {
+        "path": "/api/combined/board",
+        "status": 200
+      },
+      {
+        "path": "/api/operations",
         "status": 200
       },
       {
