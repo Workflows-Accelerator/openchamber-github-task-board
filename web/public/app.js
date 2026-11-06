@@ -704,6 +704,9 @@
       note_empty: '(Empty note - double-click to edit)',
       note_limit_exceeded: 'Note exceeds 4,000 character limit.',
       note_body_limit_exceeded: 'Issue body limit reached (65,536 characters). Cannot save note.',
+      note_conflict_prompt: 'Note was modified remotely.',
+      note_conflict_overwrite: 'Overwrite',
+      note_conflict_use_remote: 'Use remote',
       err_cycle_refused: 'Cannot add dependency: this would create a circular dependency.',
       err_duplicate_dependency: 'That dependency link already exists.',
       err_self_link: 'An issue cannot be blocked by itself.',
@@ -860,6 +863,9 @@
       note_empty: '(Note vide - double-cliquer pour modifier)',
       note_limit_exceeded: 'La note dépasse la limite de 4 000 caractères.',
       note_body_limit_exceeded: 'Limite du corps de tâche atteinte (65 536 caractères).',
+      note_conflict_prompt: 'La note a été modifiée à distance.',
+      note_conflict_overwrite: 'Écraser',
+      note_conflict_use_remote: 'Utiliser la version distante',
       err_cycle_refused: 'Impossible d’ajouter la dépendance : cela créerait une dépendance circulaire.',
       err_duplicate_dependency: 'Ce lien de dépendance existe déjà.',
       err_self_link: 'Une tâche ne peut pas être bloquée par elle-même.',
@@ -3099,12 +3105,14 @@
       });
       var cancelNoteBtn = el('button', { type: 'button', class: 'button small', text: dict.note_cancel || 'Cancel' });
 
+      var conflictNoticeEl = el('div', { class: 'canvas-note-conflict-banner', hidden: true });
+
       var footer = el('div', { class: 'canvas-note-edit-footer' }, [
         counter,
         el('div', { class: 'canvas-note-editor-actions' }, [saveNoteBtn, cancelNoteBtn]),
       ]);
 
-      var editor = el('div', { class: 'canvas-note-editor' }, [textarea, footer]);
+      var editor = el('div', { class: 'canvas-note-editor' }, [textarea, conflictNoticeEl, footer]);
       noteEl.appendChild(editor);
 
       textarea.focus();
@@ -3129,7 +3137,7 @@
 
       textarea.addEventListener('input', updateCounter);
 
-      async function doSave() {
+      async function doSave(forceOverwrite) {
         if (isFinishing) return;
         var val = textarea.value;
         if (val.length > 4000) {
@@ -3141,8 +3149,13 @@
         var prevText = note.text;
         note.text = val;
         try {
+          if (issue.canvas && Array.isArray(issue.canvas.notes)) {
+            var n = issue.canvas.notes.find(function (x) { return x.id === note.id; });
+            if (n) n.text = val;
+          }
           await saveIssueCanvas(issue, { notes: issue.canvas.notes });
           activeNoteDrafts.delete(draftKey);
+          conflictNoticeEl.hidden = true;
           exitEdit();
           renderBodyHtml();
         } catch (err) {
@@ -3152,6 +3165,52 @@
           saveNoteBtn.textContent = dict.note_retry || 'Retry';
           saveNoteBtn.classList.add('is-retry');
           isFinishing = false;
+
+          var remoteIssue = (err && err.payload && err.payload.issue) || (err && err.payload && err.payload.listItem);
+          var remoteNotes = remoteIssue && remoteIssue.canvas && Array.isArray(remoteIssue.canvas.notes) ? remoteIssue.canvas.notes : null;
+          var remoteNote = remoteNotes ? remoteNotes.find(function (x) { return x.id === note.id; }) : null;
+          var remoteTextChanged = remoteNote && remoteNote.text !== prevText;
+
+          if (remoteTextChanged && !forceOverwrite) {
+            conflictNoticeEl.hidden = false;
+            conflictNoticeEl.textContent = '';
+            var conflictMsg = el('span', { class: 'conflict-text', text: dict.note_conflict_prompt || 'Note was modified remotely.' });
+            var overwriteBtn = el('button', {
+              type: 'button',
+              class: 'button small conflict-overwrite',
+              text: dict.note_conflict_overwrite || 'Overwrite',
+            });
+            var useRemoteBtn = el('button', {
+              type: 'button',
+              class: 'button small conflict-use-remote',
+              text: dict.note_conflict_use_remote || 'Use remote',
+            });
+
+            overwriteBtn.addEventListener('click', function (e) {
+              e.stopPropagation();
+              conflictNoticeEl.hidden = true;
+              var remoteFp = remoteIssue && remoteIssue.fingerprint;
+              if (remoteFp) {
+                issue.fingerprint = remoteFp;
+              }
+              doSave(true);
+            });
+
+            useRemoteBtn.addEventListener('click', function (e) {
+              e.stopPropagation();
+              conflictNoticeEl.hidden = true;
+              textarea.value = remoteNote.text;
+              note.text = remoteNote.text;
+              activeNoteDrafts.delete(draftKey);
+              updateCounter();
+              exitEdit();
+              renderBodyHtml();
+            });
+
+            conflictNoticeEl.appendChild(conflictMsg);
+            conflictNoticeEl.appendChild(overwriteBtn);
+            conflictNoticeEl.appendChild(useRemoteBtn);
+          }
         }
       }
 
@@ -7065,6 +7124,9 @@
       updateSidebarBadges: updateSidebarBadges,
       renderBlockedView: renderBlockedView,
       renderBlockedCard: renderBlockedCard,
+      createStickyNoteElement: createStickyNoteElement,
+      saveIssueCanvas: saveIssueCanvas,
+      activeNoteDrafts: activeNoteDrafts,
     };
   }
 

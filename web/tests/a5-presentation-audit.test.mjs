@@ -30,11 +30,29 @@ function browser(storage = {}) {
       setAttribute(name, value) { this[name] = String(value); }, removeAttribute(name) { delete this[name]; },
       appendChild(child) { this.children.push(child); return child; },
       addEventListener(name, callback) { this.listeners[name] = callback; }, focus() {},
-      querySelector() { return node(); },
+      setSelectionRange() {},
+      querySelector(selector) {
+        return this.querySelectorAll(selector)[0] || null;
+      },
       querySelectorAll(selector) {
         const matches = [];
+        const parts = selector.trim().split(/\s+/);
+        const targetPart = parts[parts.length - 1];
+        const matchSingle = (n, sel) => {
+          if (!sel) return false;
+          if (sel.startsWith('.')) {
+            const classes = sel.slice(1).split('.');
+            return classes.every(c => n.classList && n.classList.contains(c));
+          }
+          if (sel.includes('.')) {
+            const [tag, ...classes] = sel.split('.');
+            if (tag && n.tagName !== tag.toUpperCase()) return false;
+            return classes.every(c => n.classList && n.classList.contains(c));
+          }
+          return n.tagName === sel.toUpperCase();
+        };
         const walk = n => {
-          if (selector.startsWith('.') && n.classList && n.classList.contains(selector.slice(1))) matches.push(n);
+          if (matchSingle(n, targetPart)) matches.push(n);
           if (n.children) n.children.forEach(walk);
         };
         if (this.children) this.children.forEach(walk);
@@ -183,4 +201,101 @@ test('audit A5 human task rapid toggle: queues toggles and adopts updated finger
   assert.equal(requests.length, 2);
   assert.equal(requests[0].body.fingerprint, 'fp-1');
   assert.equal(requests[1].body.fingerprint, 'fp-2', 'Second rapid toggle must send the updated fingerprint from first toggle');
+});
+
+test('audit A5 note 409 conflict recovery: extracts fingerprint from error payload and prompts on remote change', async () => {
+  const { app, context } = browser();
+  const repository = { full: 'owner/repo', owner: 'owner', name: 'repo' };
+  const note = { id: 'note-1', text: 'Initial text', x: 10, y: 20 };
+  const issue = {
+    number: 1, repository, fingerprint: 'fp-initial', state: 'open',
+    title: 'Issue 1', statusLabel: 'status:todo',
+    canvas: { notes: [note] },
+  };
+  app.state.board = { repo: 'owner/repo', issues: [issue] };
+
+  let callCount = 0;
+  context.fetch = async (url, opts) => {
+    callCount++;
+    const body = JSON.parse(opts.body);
+    if (callCount === 1) {
+      assert.equal(body.fingerprint, 'fp-initial');
+      // Return 409 with updated fingerprint in issue.fingerprint and changed remote note text
+      return {
+        ok: false,
+        status: 409,
+        text: async () => JSON.stringify({
+          error: 'stale_fingerprint',
+          message: 'Conflict',
+          issue: {
+            ...issue,
+            fingerprint: 'fp-remote-updated',
+            canvas: { notes: [{ id: 'note-1', text: 'Remote edited text', x: 10, y: 20 }] },
+          },
+        }),
+      };
+    }
+    // Second call: user clicked overwrite with the new fingerprint
+    assert.equal(body.fingerprint, 'fp-remote-updated');
+    const finalItem = {
+      ...issue,
+      fingerprint: 'fp-final',
+      title: 'Issue 1',
+      state: 'open',
+      statusLabel: 'status:todo',
+      updatedAt: '2026-11-06T00:00:00Z',
+      phase: 'build',
+      attention: 'human',
+      canvas: { notes: body.notes },
+      editableSections: [],
+      openQuestions: [],
+      humanTasks: [],
+      acceptanceCriteria: [],
+      subtasks: [],
+    };
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        ok: true,
+        issue: finalItem,
+        listItem: finalItem,
+        statusOptions: [{ value: 'status:todo', label: 'Todo' }],
+      }),
+    };
+  };
+
+  const noteEl = app.createStickyNoteElement(note, issue);
+  // Enter edit mode
+  const ev = { stopPropagation() {}, preventDefault() {} };
+  noteEl.querySelector('.btn-edit').listeners.click(ev);
+  const textarea = noteEl.querySelector('.canvas-note-textarea');
+  textarea.value = 'My local draft text';
+  textarea.listeners.input();
+
+  // Draft must be preserved
+  const draftKey = 'owner/repo#1:note-1';
+  assert.equal(app.activeNoteDrafts.get(draftKey).draftText, 'My local draft text');
+
+  // Trigger save
+  const saveBtn = noteEl.querySelector('.canvas-note-editor-actions button.button.primary');
+  saveBtn.listeners.click(ev);
+  await new Promise(r => setTimeout(r, 60));
+
+  // 409 happened: local draft must be retained on conflict
+  assert.equal(app.activeNoteDrafts.get(draftKey).draftText, 'My local draft text', 'Local draft must be retained on conflict');
+
+  // Conflict banner should appear with overwrite option
+  const conflictBanner = noteEl.querySelector('.canvas-note-conflict-banner');
+  assert.equal(conflictBanner.hidden, false);
+  const overwriteBtn = conflictBanner.querySelector('.conflict-overwrite');
+  assert.ok(overwriteBtn);
+
+  // Click overwrite
+  overwriteBtn.listeners.click(ev);
+  await new Promise(r => setTimeout(r, 60));
+
+  assert.equal(callCount, 2);
+  assert.equal(issue.fingerprint, 'fp-final');
+  assert.equal(app.activeNoteDrafts.has(draftKey), false, 'Draft cleared after successful overwrite');
 });
