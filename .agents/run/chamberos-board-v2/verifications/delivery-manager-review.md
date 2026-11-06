@@ -1,0 +1,10 @@
+# Manager review — delivery polish c1f1807 / evidence 9e244aa
+
+- Commit identities verified with git log; worktree clean before hostile reviewer dispatch.
+- Inspected git diff 4a122bd..c1f1807 for app.js, theme.css, app.ts and a5-sections.test.mjs: combined routes, discovery guard, error mapping, nowrap, 0px stop, one regression test.
+- Inspected refreshed 08-operations-1280-dark-en.png: both owner/repo and owner/other-repo rows visible, BLOCKED=4 matches sidebar=4. This specific visual routing issue appears resolved; not a substitute for reviewer behavioral proof.
+- Inspected refreshed 02-canvas-notes-wires-1280-light-en.png: controls no longer wrap. BUT grid renders as huge near-black circles covering canvas background; text also rasterized poorly. The explicit 0px gradient stop has NOT yielded a correct Obscura screenshot. This is not acceptable visual evidence for human validation. Compare real Chromium before calling it an app bug or making more source changes for a rasterizer quirk. Reviewer brief already requires Chromium if available and honest limitation disclosure; do not spawn a duplicate or interrupt it for this known check.
+- Builder return NOT VERIFIED: nothing relevant is rejected. Live writes, external preview access, actual human browser smoothness, cutover/rollback execution remain NOT RUN. A healthy production /health does not prove untouched release/state.
+- Root state committed at 1cab266. Untracked .agents/idle-nontext-state.json belongs to another writer and is not in this task.
+- Latest proof read: A-delivery/proof.md lines 1-89 and human-review.md lines 1-62. No reread needed unless modified by reviewer.
+- Next upon reviewer wake: read feature A-delivery/hostile/report.md, reconcile visible grid defect and full-failure cases, accept only independent PASS/APPROVED with disclosed blind spots. If ready ask once for A1-A5 human validation plus release authorisation; access through container loopback still needs forwarding or approved ingress. Do not claim shipped.
