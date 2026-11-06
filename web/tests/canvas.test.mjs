@@ -92,6 +92,12 @@ test('canvas marker set+strip: preserves original body byte-for-byte', () => {
     'Line 1\n\n<!-- board-order: 1000 -->\n',
     '# Heading\r\n\r\nParagraph\r\n```ts\n<!-- board-canvas: stay -->\n```\r\n',
     'Simple single line\n',
+    'Plain',
+    'Plain\n',
+    'Plain\n\n',
+    'Plain\r\n\r\n',
+    ' \n\n',
+    '',
   ];
   for (const body of bodies) {
     const withMarker = setCanvasMarker(body, { x: 120, y: 340, notes: [{ id: 'n1', text: 'temp' }] });
@@ -488,14 +494,14 @@ test('canvas persistence: fake GitHub body contains exactly ONE marker after two
 
   // Successive drops are 100% byte-identical except for the marker payload
   const revertedBody = finalBody.replace(
-    '<!-- board-canvas: {"x":360,"y":480} -->',
-    '<!-- board-canvas: {"x":120,"y":240} -->',
+    '<!-- board-canvas: {"x":360,"y":480} ;sep=4 -->',
+    '<!-- board-canvas: {"x":120,"y":240} ;sep=4 -->',
   );
   assert.equal(revertedBody, bodyAfterDrop1, 'Successive drops update only the marker and leave every other byte identical');
 
   // Stripping the unfenced marker recovers the initial content byte-for-byte
-  const stripped = stripCanvasMarker(finalBody).trimEnd();
-  assert.equal(stripped, initialBody.trimEnd(), 'Initial body prose, code fences, and order marker recovered byte-exact');
+  const stripped = stripCanvasMarker(finalBody);
+  assert.equal(stripped, initialBody, 'Initial body prose, code fences, and order marker recovered byte-exact');
 });
 
 test('canvas client: unpositioned cards are never written without a drop (zero PUT requests on load, fit all, reset, and zoom)', async (t) => {

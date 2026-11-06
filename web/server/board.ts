@@ -216,7 +216,12 @@ export function parseCanvasMarker(body: string = ''): Record<string, any> | null
     const match = canvasMarkerCommentPattern.exec(line.text);
     if (!match) continue;
     try {
-      const parsed = JSON.parse(match[1]);
+      let rawJson = match[1].trim();
+      const sepMatch = /;sep=\d+$/.exec(rawJson);
+      if (sepMatch) {
+        rawJson = rawJson.slice(0, sepMatch.index).trim();
+      }
+      const parsed = JSON.parse(rawJson);
       if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
         return parsed;
       }
@@ -230,22 +235,43 @@ export function parseCanvasMarker(body: string = ''): Record<string, any> | null
 export function stripCanvasMarker(body: string = ''): string {
   if (!body) return '';
   const lines = scanBodyLines(body);
-  const canvasIndices = new Set<number>();
+  const removalRanges: Array<{ from: number; to: number }> = [];
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     if (!line.fenced && !line.indentedCode && canvasMarkerLinePattern.test(line.text)) {
-      canvasIndices.add(i);
-      if (i > 0 && lines[i - 1].text === '' && !lines[i - 1].fenced) {
-        canvasIndices.add(i - 1);
+      const sepMatch = /;sep=(\d+)\s*-->/.exec(line.text);
+      if (sepMatch) {
+        const sepLen = Number(sepMatch[1]);
+        removalRanges.push({
+          from: Math.max(0, line.start - sepLen),
+          to: line.fullEnd,
+        });
+      } else {
+        const from = (i > 0 && lines[i - 1].text === '' && !lines[i - 1].fenced)
+          ? lines[i - 1].start
+          : line.start;
+        removalRanges.push({
+          from,
+          to: line.fullEnd,
+        });
       }
     }
   }
-  if (canvasIndices.size === 0) return body;
+
+  if (removalRanges.length === 0) return body;
+
+  // Merge overlapping or adjacent removal ranges
+  removalRanges.sort((a, b) => a.from - b.from);
   let result = '';
-  for (let i = 0; i < lines.length; i++) {
-    if (canvasIndices.has(i)) continue;
-    result += body.slice(lines[i].start, lines[i].fullEnd);
+  let lastPos = 0;
+  for (const range of removalRanges) {
+    if (range.from > lastPos) {
+      result += body.slice(lastPos, range.from);
+    }
+    lastPos = Math.max(lastPos, range.to);
   }
+  result += body.slice(lastPos);
   return result;
 }
 
@@ -359,24 +385,31 @@ export function setCanvasMarker(body: string = '', data: Record<string, any>): s
   if (canvasIndices.length > 0) {
     const lastIdx = canvasIndices[canvasIndices.length - 1];
     const earlierSet = new Set(canvasIndices.slice(0, -1));
+    const lastLineText = lines[lastIdx].text;
+    const existingSepMatch = /;sep=(\d+)/.exec(lastLineText);
+    const sepSuffix = existingSepMatch ? ` ;sep=${existingSepMatch[1]}` : '';
+    const updatedMarkerText = `<!-- board-canvas: ${jsonStr}${sepSuffix} -->`;
     for (let i = 0; i < lines.length; i++) {
       if (earlierSet.has(i)) continue;
       if (i === lastIdx) {
         const lineEnding = body.slice(lines[i].contentEnd, lines[i].fullEnd);
-        finalBody += markerText + lineEnding;
+        finalBody += updatedMarkerText + lineEnding;
       } else {
         finalBody += body.slice(lines[i].start, lines[i].fullEnd);
       }
     }
   } else {
     const eol = body.includes('\r\n') ? '\r\n' : '\n';
-    if (!body.trim()) {
-      finalBody = markerText;
+    let separator = '';
+    if (body.length === 0) {
+      separator = '';
     } else if (body.endsWith('\r\n') || body.endsWith('\n')) {
-      finalBody = body + eol + markerText;
+      separator = eol;
     } else {
-      finalBody = body + eol + eol + markerText;
+      separator = eol + eol;
     }
+    const markerWithSep = `<!-- board-canvas: ${jsonStr} ;sep=${separator.length} -->`;
+    finalBody = body + separator + markerWithSep;
   }
 
   if (finalBody.length > 65536) {
