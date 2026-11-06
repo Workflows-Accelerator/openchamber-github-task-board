@@ -2584,6 +2584,7 @@
   }
 
   var cardSaveQueues = new Map();
+  var humanTaskQueues = new Map();
   var activeNoteDrafts = new Map();
 
   function escapeHtml(str) {
@@ -5952,31 +5953,56 @@
         row.appendChild(checkbox);
         row.appendChild(labelSpan);
 
-        checkbox.addEventListener('change', async function () {
-          checkbox.disabled = true;
-          try {
-            var endpoint = issuePath(issue) + '/human-tasks/' + idx + '/toggle';
-            var response = await api(endpoint, {
-              method: 'POST',
-              body: { completed: checkbox.checked, fingerprint: issue.fingerprint },
-            });
-            if (response && response.listItem) {
-              var boardIdx = state.board.issues.findIndex(function (it) {
-                return sameIdentity(it, issue);
-              });
-              if (boardIdx !== -1) {
-                state.board.issues[boardIdx] = response.listItem;
+        checkbox.addEventListener('change', function () {
+          var completed = checkbox.checked;
+          var key = identity(issue);
+          var previous = humanTaskQueues.get(key) || Promise.resolve();
+
+          var cardCbs = card.querySelectorAll ? card.querySelectorAll('.human-task-checkbox') : [checkbox];
+          cardCbs.forEach(function (cb) { cb.disabled = true; });
+
+          var next = previous.then(async function () {
+            try {
+              var currentIssue = issue;
+              if (state.board && Array.isArray(state.board.issues)) {
+                var found = state.board.issues.find(function (it) { return sameIdentity(it, issue); });
+                if (found) currentIssue = found;
               }
-            } else {
-              await loadBoard();
+              var endpoint = issuePath(currentIssue) + '/human-tasks/' + idx + '/toggle';
+              var response = await api(endpoint, {
+                method: 'POST',
+                body: { completed: completed, fingerprint: currentIssue.fingerprint },
+              });
+              if (response && (response.issue || response.listItem)) {
+                var updatedItem = response.listItem || response.issue;
+                if (state.board && Array.isArray(state.board.issues)) {
+                  var boardIdx = state.board.issues.findIndex(function (it) {
+                    return sameIdentity(it, issue);
+                  });
+                  if (boardIdx !== -1) {
+                    state.board.issues[boardIdx] = updatedItem;
+                  }
+                }
+                issue.fingerprint = updatedItem.fingerprint;
+                issue.humanTasks = updatedItem.humanTasks;
+              } else {
+                await loadBoard();
+              }
+              updateSidebarBadges();
+              renderBlockedView();
+            } catch (err) {
+              checkbox.checked = !completed;
+              setNotice(err.message || 'Could not toggle human task', true);
+            } finally {
+              if (humanTaskQueues.get(key) === nextPromise) {
+                humanTaskQueues.delete(key);
+                cardCbs.forEach(function (cb) { cb.disabled = false; });
+              }
             }
-            updateSidebarBadges();
-            renderBlockedView();
-          } catch (err) {
-            checkbox.checked = !checkbox.checked;
-            checkbox.disabled = false;
-            setNotice(err.message || 'Could not toggle human task', true);
-          }
+          });
+
+          var nextPromise = next.catch(function () {});
+          humanTaskQueues.set(key, nextPromise);
         });
 
         tasksContainer.appendChild(row);
@@ -7037,6 +7063,8 @@
       isIssueBlocked: isIssueBlocked,
       isIssueDecision: isIssueDecision,
       updateSidebarBadges: updateSidebarBadges,
+      renderBlockedView: renderBlockedView,
+      renderBlockedCard: renderBlockedCard,
     };
   }
 
