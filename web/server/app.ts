@@ -841,6 +841,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       }
       const index = Number(humanTaskToggleMatch[2]);
       const body = await readJsonBody(req);
+      if (body && body.completed !== undefined && typeof body.completed !== 'boolean') {
+        throw new HttpError(400, 'invalid_edit', 'Completed must be a boolean');
+      }
       return writeIssue(repository!, number, body, {
         kind: 'human-task',
         index,
@@ -889,7 +892,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       if (!label) {
         throw new HttpError(400, 'invalid_edit', 'A label name is required');
       }
-      const body = (await readJsonBody(req).catch(() => null)) || {};
+      const body = (await readJsonBody(req)) || {};
+      if (typeof body !== 'object' || Array.isArray(body)) {
+        throw new HttpError(400, 'invalid_json', 'The request body must be JSON');
+      }
+      if (!body.fingerprint && url.searchParams.get('fingerprint')) {
+        body.fingerprint = url.searchParams.get('fingerprint');
+      }
       return writeIssue(repository!, number, body, {
         kind: 'remove-label',
         label,
@@ -1253,21 +1262,34 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
   async function archiveData(repository: RepositoryEntry | null, requestUrl: URL) {
     let allIssues: ReturnType<typeof buildBoardList>['issues'] = [];
+    let board: any = null;
     if (repository) {
-      const board = await repositoryBoard(repository);
+      board = await repositoryBoard(repository);
       allIssues = board.issues;
     } else {
-      const board = (await combinedBoard()) as any;
+      board = (await combinedBoard()) as any;
       allIssues = board.issues || [];
     }
 
-    const limit = Math.max(1, Math.min(200, Number(requestUrl.searchParams.get('limit') ?? 100)));
-    const offset = Math.max(0, Number(requestUrl.searchParams.get('offset') ?? 0));
+    let limit = Number(requestUrl.searchParams.get('limit') ?? 100);
+    if (Number.isNaN(limit) || limit < 1) limit = 100;
+    limit = Math.min(200, Math.floor(limit));
+
+    let offset = Number(requestUrl.searchParams.get('offset') ?? 0);
+    if (Number.isNaN(offset) || offset < 0) offset = 0;
+    offset = Math.floor(offset);
 
     const backburner = allIssues.filter(
       (issue) => issue.state === 'open' && (issue.labels || []).some((l) => l.toLowerCase() === 'backburner')
     );
     const closed = allIssues.filter((issue) => issue.state === 'closed');
+    // Stable newest-closed sorting: closedAt desc, then updatedAt desc, then number desc
+    closed.sort((a, b) => {
+      const timeA = a.closedAt ? Date.parse(a.closedAt) : (a.updatedAt ? Date.parse(a.updatedAt) : 0);
+      const timeB = b.closedAt ? Date.parse(b.closedAt) : (b.updatedAt ? Date.parse(b.updatedAt) : 0);
+      if (timeB !== timeA) return timeB - timeA;
+      return b.number - a.number;
+    });
 
     const pagedClosed = closed.slice(offset, offset + limit);
 
@@ -1281,20 +1303,24 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       limit,
       offset,
       hasMore: offset + limit < closed.length,
-      fetchedAt: new Date(now()).toISOString(),
+      fetchedAt: board?.fetchedAt || new Date(now()).toISOString(),
+      truncated: Boolean(board?.truncated || board?.truncatedByIssueCap),
+      partial: Boolean(board?.partial),
+      failures: board?.failures || [],
     };
   }
 
   async function operationsData(repository: RepositoryEntry | null) {
     let allIssues: ReturnType<typeof buildBoardList>['issues'] = [];
     let repos: Array<{ full: string; name: string }> = [];
+    let board: any = null;
 
     if (repository) {
-      const board = await repositoryBoard(repository);
+      board = await repositoryBoard(repository);
       allIssues = board.issues;
       repos = [{ full: repository.full, name: repository.name }];
     } else {
-      const board = (await combinedBoard()) as any;
+      board = (await combinedBoard()) as any;
       allIssues = board.issues || [];
       const discovery = await repositories.view();
       repos = discovery.repositories.map((r) => ({ full: r.full, name: r.name }));
@@ -1320,34 +1346,24 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     let oldestInProgress: OldestInProgress = null;
     let oldestInProgressTimestamp = Infinity;
 
+    // All 8 standard status columns
+    const standardColumns = ['draft', 'backlog', 'todo', 'planned', 'in-progress', 'needs-human', 'in-review', 'done'];
     const statusPerProject: Record<string, Record<string, number>> = {};
 
     for (const repo of repos) {
-      statusPerProject[repo.full] = {
-        draft: 0,
-        backlog: 0,
-        todo: 0,
-        'in-progress': 0,
-        review: 0,
-        done: 0,
-        cancelled: 0,
-        'needs-human': 0,
-      };
+      statusPerProject[repo.full] = {};
+      for (const col of standardColumns) {
+        statusPerProject[repo.full][col] = 0;
+      }
     }
 
     for (const issue of allIssues) {
       const repoFull = issue.repository?.full || (repository ? repository.full : 'unknown');
       if (!statusPerProject[repoFull]) {
-        statusPerProject[repoFull] = {
-          draft: 0,
-          backlog: 0,
-          todo: 0,
-          'in-progress': 0,
-          review: 0,
-          done: 0,
-          cancelled: 0,
-          'needs-human': 0,
-        };
+        statusPerProject[repoFull] = {};
+        for (const col of standardColumns) {
+          statusPerProject[repoFull][col] = 0;
+        }
       }
 
       const isOpen = issue.state === 'open';
@@ -1357,42 +1373,45 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         closedCount++;
       }
 
-      const stage = (issue.column || 'draft').toLowerCase();
-      if (statusPerProject[repoFull][stage] !== undefined) {
-        statusPerProject[repoFull][stage]++;
-      } else {
-        statusPerProject[repoFull][stage] = 1;
+      let stage = (issue.column || 'draft').toLowerCase();
+      if (stage === 'review') stage = 'in-review';
+      if (!standardColumns.includes(stage)) {
+        stage = isOpen ? 'draft' : 'done';
       }
+      statusPerProject[repoFull][stage] = (statusPerProject[repoFull][stage] || 0) + 1;
 
       const labels = (issue.labels || []).map((l) => l.toLowerCase());
       const isNeedsHuman =
-        labels.includes('status:needs-human') ||
-        labels.includes('needs-human') ||
-        (issue.counts?.humanTasks?.open ?? 0) > 0;
+        isOpen &&
+        (labels.includes('status:needs-human') ||
+          labels.includes('needs-human') ||
+          (issue.counts?.humanTasks?.open ?? 0) > 0);
 
-      if (isOpen && isNeedsHuman) {
+      if (isNeedsHuman) {
         needsHumanCount++;
       }
 
-      const isBlocked =
+      const hasOpenBlockers =
         isOpen &&
-        ((issue.blockedBy && issue.blockedBy.length > 0) ||
-          isNeedsHuman ||
-          issue.attention === 'blocked');
+        Array.isArray(issue.blockedBy) &&
+        issue.blockedBy.some((dep: any) => dep.state === 'open' || dep.state === undefined);
+
+      const isBlocked = isOpen && (hasOpenBlockers || isNeedsHuman || issue.attention === 'blocked');
 
       if (isBlocked) {
         blockedCount++;
       }
 
-      if (!isOpen && issue.updatedAt) {
-        const updatedTime = Date.parse(issue.updatedAt);
-        if (!Number.isNaN(updatedTime) && updatedTime >= sevenDaysAgo) {
+      // closed7Days: based STRICTLY on closedAt, never updatedAt!
+      if (!isOpen && issue.closedAt) {
+        const closedTime = Date.parse(issue.closedAt);
+        if (!Number.isNaN(closedTime) && closedTime >= sevenDaysAgo) {
           closed7DaysCount++;
         }
       }
 
       if (isOpen && (stage === 'in-progress' || labels.includes('status:in-progress'))) {
-        const createdStr = issue.createdAt || issue.updatedAt;
+        const createdStr = issue.createdAt;
         if (createdStr) {
           const createdTime = Date.parse(createdStr);
           if (!Number.isNaN(createdTime) && createdTime < oldestInProgressTimestamp) {
@@ -1423,7 +1442,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       closed7Days: closed7DaysCount,
       oldestOpenInProgress: oldestInProgress,
       statusPerProject,
-      fetchedAt: new Date(currentTime).toISOString(),
+      fetchedAt: board?.fetchedAt || new Date(currentTime).toISOString(),
+      truncated: Boolean(board?.truncated || board?.truncatedByIssueCap),
+      partial: Boolean(board?.partial),
+      failures: board?.failures || [],
     };
   }
 
@@ -1562,7 +1584,6 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     op: WriteOp,
   ): Promise<HandlerResponse> {
     const supplied = body && typeof body.fingerprint === 'string' ? body.fingerprint : '';
-    const fingerprintRequired = op.kind !== 'reopen' && op.kind !== 'remove-label' && op.kind !== 'human-task';
     if (supplied) {
       if (!/^[a-f0-9]{64}$/.test(supplied)) {
         throw new HttpError(
@@ -1571,7 +1592,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           'The provided fingerprint is not valid',
         );
       }
-    } else if (fingerprintRequired) {
+    } else {
       throw new HttpError(
         400,
         'fingerprint_required',
@@ -2167,7 +2188,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           const toggled = toggleHumanTaskInMarkdown(fresh.item.body ?? '', baseHumanTaskIndex, targetHumanTaskCompleted);
           patch = { body: toggled.newBody };
         } else if (op.kind === 'reopen') {
-          patch = { state: 'open' };
+          patch = { state: 'open', labels: applyStatusChange(fresh.item, 'status:backlog') };
         } else if (op.kind === 'remove-label') {
           patch = { labels: labelNames(fresh.item).filter((l) => l.trim().toLowerCase() !== baseRemoveLabel) };
         } else if (op.kind === 'patch') {
@@ -2268,7 +2289,8 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
           verified = true;
         }
       } else if (op.kind === 'reopen') {
-        if (currentItem.state === 'open') {
+        const curStatus = statusLabelOf(labelNames(currentItem));
+        if (currentItem.state === 'open' && curStatus === 'status:backlog') {
           verified = true;
         }
       } else if (op.kind === 'remove-label') {

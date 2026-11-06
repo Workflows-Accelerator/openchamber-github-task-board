@@ -372,8 +372,6 @@ export function setCanvasMarker(body: string = '', data: Record<string, any>): s
     const eol = body.includes('\r\n') ? '\r\n' : '\n';
     if (!body.trim()) {
       finalBody = markerText;
-    } else if (body.endsWith('\r\n\r\n') || body.endsWith('\n\n')) {
-      finalBody = body + markerText;
     } else if (body.endsWith('\r\n') || body.endsWith('\n')) {
       finalBody = body + eol + markerText;
     } else {
@@ -434,6 +432,7 @@ function listFields(raw: any, repository: BoardRepository | null) {
   return {
     id: typeof raw.id === 'number' ? raw.id : null,
     createdAt: raw.created_at ?? null,
+    closedAt: raw.closed_at ?? (normalizedOf(raw) as any)?.closed_at ?? null,
     description,
     order: parseOrderMarker(body),
     canvas: parseCanvasMarker(body),
@@ -699,6 +698,7 @@ export interface BoardListItem {
   column: string | null;
   updatedAt: string | null;
   createdAt: string | null;
+  closedAt: string | null;
   description: string;
   order: number | null;
   canvas: CanvasMarkerData | null;
@@ -728,6 +728,7 @@ export interface BoardListItem {
   };
   openQuestions?: OpenQuestionView[];
   humanTasks?: Array<{ index: number; text: string; completed: boolean; lineIndex?: number }>;
+  overview?: string;
 }
 
 export interface OpenQuestionView {
@@ -756,6 +757,7 @@ export interface IssueDetail {
   column: string | null;
   updatedAt: string | null;
   createdAt: string | null;
+  closedAt: string | null;
   dependencies: number[];
   textDependencies?: number[];
   blockedBy?: Array<{
@@ -852,6 +854,8 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
   }));
   const friendly = parseFriendlyTitle(stripHiddenMarkers(issue.body), issue.title);
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
+  const sections = editableSections(stripHiddenMarkers(rawBody));
+  const overview = sections.length > 0 ? sections[0].text : '';
   return {
     ...listFields(rawItem, repository),
     number: issue.number,
@@ -874,6 +878,7 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
     },
     openQuestions,
     humanTasks,
+    overview,
   };
 }
 
@@ -928,6 +933,7 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     column: resolveIssueColumn(issue),
     updatedAt: issue.updated_at ?? null,
     createdAt: issue.created_at ?? null,
+    closedAt: raw.closed_at ?? (issue as any).closed_at ?? null,
     editableSections: editableSections(stripHiddenMarkers(issue.body)),
     openQuestions,
     humanTasks: (parseWebHumanTasks(issue.body ?? '').length > 0 ? parseWebHumanTasks(issue.body ?? '') : (issue.humanTasks ?? [])).map((task, idx) => ({

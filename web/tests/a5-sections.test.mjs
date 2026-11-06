@@ -133,16 +133,35 @@ async function fixture(options = {}) {
   return { fake, board, close: async () => { await board.app.close(); await fake.close(); } };
 }
 
-test('POST /api/issues/:n/human-tasks/:index/toggle toggles checkbox and preserves body byte-for-byte', async () => {
+test('POST /api/issues/:n/human-tasks/:index/toggle toggles checkbox, enforces fingerprints, and validates boolean completed', async () => {
   const f = await fixture();
   try {
     const session = new HttpSession(f.board.url);
     await session.login();
     const read = await session.request('/api/issues/1');
     assert.equal(read.status, 200);
-    const fp = read.json.fingerprint;
+    const fp = read.json.issue.fingerprint;
 
-    // Toggle task 0: from [ ] to [x]
+    // Missing fingerprint -> 400 fingerprint_required
+    const noFpRes = await session.request('/api/issues/1/human-tasks/0/toggle', { method: 'POST', body: {} });
+    assert.equal(noFpRes.status, 400);
+    assert.equal(noFpRes.json.error, 'fingerprint_required');
+
+    // Stale fingerprint -> 409 conflict
+    const staleFp = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const staleRes = await session.request('/api/issues/1/human-tasks/0/toggle', { method: 'POST', body: { fingerprint: staleFp } });
+    assert.equal(staleRes.status, 409);
+    assert.equal(staleRes.json.error, 'conflict');
+
+    // Non-boolean completed -> 400 invalid_edit
+    const nonBoolRes = await session.request('/api/issues/1/human-tasks/0/toggle', {
+      method: 'POST',
+      body: { completed: 'not-a-bool', fingerprint: fp },
+    });
+    assert.equal(nonBoolRes.status, 400);
+    assert.equal(nonBoolRes.json.error, 'invalid_edit');
+
+    // Toggle task 0: from [ ] to [x] with valid fingerprint
     const res = await session.request('/api/issues/1/human-tasks/0/toggle', { method: 'POST', body: { fingerprint: fp } });
     assert.equal(res.status, 200);
     assert.equal(res.json.issue.humanTasks[0].completed, true);
@@ -154,7 +173,9 @@ test('POST /api/issues/:n/human-tasks/:index/toggle toggles checkbox and preserv
     assert.equal(patchCalls[0].payload.body, SAMPLE_BODY.replace('- [ ] Confirm DNS records', '- [x] Confirm DNS records'));
 
     // Toggle same completed state again fails with 400 invalid_edit
-    const sameRes = await session.request('/api/issues/1/human-tasks/0/toggle', { method: 'POST', body: { completed: true } });
+    const readAgain = await session.request('/api/issues/1');
+    const newFp = readAgain.json.issue.fingerprint;
+    const sameRes = await session.request('/api/issues/1/human-tasks/0/toggle', { method: 'POST', body: { completed: true, fingerprint: newFp } });
     assert.equal(sameRes.status, 400);
     assert.equal(sameRes.json.error, 'invalid_edit');
   } finally {
@@ -162,19 +183,39 @@ test('POST /api/issues/:n/human-tasks/:index/toggle toggles checkbox and preserv
   }
 });
 
-test('POST /api/issues/:n/reopen reopens a closed issue and refuses already open issues', async () => {
+test('POST /api/issues/:n/reopen enforces fingerprints, sets state:open, assigns status:backlog, and refuses open issues', async () => {
   const f = await fixture();
   try {
     const session = new HttpSession(f.board.url);
     await session.login();
 
-    // Reopen closed issue 3
-    const reopenRes = await session.request('/api/issues/3/reopen', { method: 'POST' });
+    // Read issue 3 to get fingerprint
+    const read3 = await session.request('/api/issues/3');
+    assert.equal(read3.status, 200);
+    const fp3 = read3.json.issue.fingerprint;
+
+    // Missing fingerprint -> 400 fingerprint_required
+    const noFpRes = await session.request('/api/issues/3/reopen', { method: 'POST' });
+    assert.equal(noFpRes.status, 400);
+    assert.equal(noFpRes.json.error, 'fingerprint_required');
+
+    // Stale fingerprint -> 409 conflict
+    const staleFp = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const staleRes = await session.request('/api/issues/3/reopen', { method: 'POST', body: { fingerprint: staleFp } });
+    assert.equal(staleRes.status, 409);
+    assert.equal(staleRes.json.error, 'conflict');
+
+    // Reopen closed issue 3 with valid fingerprint
+    const reopenRes = await session.request('/api/issues/3/reopen', { method: 'POST', body: { fingerprint: fp3 } });
     assert.equal(reopenRes.status, 200);
     assert.equal(reopenRes.json.issue.state, 'open');
+    assert.equal(reopenRes.json.issue.statusLabel, 'status:backlog', 'Reopen must reconcile status to status:backlog');
+    assert.equal(reopenRes.json.issue.labels.includes('status:done'), false, 'Reopen must remove status:done');
 
     // Attempting to reopen already open issue 1 fails 400 invalid_edit
-    const invalidReopen = await session.request('/api/issues/1/reopen', { method: 'POST' });
+    const read1 = await session.request('/api/issues/1');
+    const fp1 = read1.json.issue.fingerprint;
+    const invalidReopen = await session.request('/api/issues/1/reopen', { method: 'POST', body: { fingerprint: fp1 } });
     assert.equal(invalidReopen.status, 400);
     assert.equal(invalidReopen.json.error, 'invalid_edit');
   } finally {
@@ -182,35 +223,65 @@ test('POST /api/issues/:n/reopen reopens a closed issue and refuses already open
   }
 });
 
-test('POST /api/issues/:n/labels/remove and DELETE /api/issues/:n/labels/:label enforce precondition check failing 400 with ZERO GitHub PATCH if label absent', async () => {
+test('POST /api/issues/:n/labels/remove and DELETE /api/issues/:n/labels/:label enforce mandatory fingerprints, reject malformed JSON, and require label presence', async () => {
   const f = await fixture();
   try {
     const session = new HttpSession(f.board.url);
     await session.login();
 
-    // Precondition failure test: removing non-existent label 'security'
+    const read = await session.request('/api/issues/1');
+    assert.equal(read.status, 200);
+    const fp = read.json.issue.fingerprint;
+
+    // Missing fingerprint on POST -> 400 fingerprint_required
+    const noFpRes = await session.request('/api/issues/1/labels/remove', { method: 'POST', body: { label: 'bug' } });
+    assert.equal(noFpRes.status, 400);
+    assert.equal(noFpRes.json.error, 'fingerprint_required');
+
+    // Missing fingerprint on DELETE -> 400 fingerprint_required
+    const noFpDelete = await session.request('/api/issues/1/labels/bug', { method: 'DELETE' });
+    assert.equal(noFpDelete.status, 400);
+    assert.equal(noFpDelete.json.error, 'fingerprint_required');
+
+    // Stale fingerprint on POST -> 409 conflict with ZERO github patch
     const initialPatchCount = f.fake.patchCalls.length;
-    const failRes = await session.request('/api/issues/1/labels/remove', { method: 'POST', body: { label: 'security' } });
+    const staleFp = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const staleRes = await session.request('/api/issues/1/labels/remove', {
+      method: 'POST',
+      body: { label: 'bug', fingerprint: staleFp },
+    });
+    assert.equal(staleRes.status, 409);
+    assert.equal(f.fake.patchCalls.length, initialPatchCount);
+
+    // Precondition failure test: removing non-existent label 'security'
+    const failRes = await session.request('/api/issues/1/labels/remove', {
+      method: 'POST',
+      body: { label: 'security', fingerprint: fp },
+    });
     assert.equal(failRes.status, 400);
     assert.equal(failRes.json.error, 'invalid_edit');
     assert.match(failRes.json.message, /not present/);
 
-    // Precondition failure on DELETE as well
-    const failDelete = await session.request('/api/issues/1/labels/security', { method: 'DELETE' });
+    // Precondition failure on DELETE with non-existent label
+    const failDelete = await session.request(`/api/issues/1/labels/security?fingerprint=${fp}`, { method: 'DELETE' });
     assert.equal(failDelete.status, 400);
     assert.equal(failDelete.json.error, 'invalid_edit');
 
-    // Zero PATCH calls were made to GitHub!
-    const postFailPatchCount = f.fake.patchCalls.length;
-    assert.equal(postFailPatchCount, initialPatchCount, 'ZERO GitHub PATCH made when label absent');
+    // Zero PATCH calls were made to GitHub for failures!
+    assert.equal(f.fake.patchCalls.length, initialPatchCount, 'ZERO GitHub PATCH made when label absent');
 
     // Success removal via POST
-    const removeRes = await session.request('/api/issues/1/labels/remove', { method: 'POST', body: { label: 'bug' } });
+    const removeRes = await session.request('/api/issues/1/labels/remove', {
+      method: 'POST',
+      body: { label: 'bug', fingerprint: fp },
+    });
     assert.equal(removeRes.status, 200);
     assert.equal(removeRes.json.issue.labels.includes('bug'), false);
 
-    // Success removal via DELETE
-    const deleteRes = await session.request('/api/issues/1/labels/backburner', { method: 'DELETE' });
+    // Success removal via DELETE using updated fingerprint
+    const readAfterBug = await session.request('/api/issues/1');
+    const fpAfterBug = readAfterBug.json.issue.fingerprint;
+    const deleteRes = await session.request(`/api/issues/1/labels/backburner?fingerprint=${fpAfterBug}`, { method: 'DELETE' });
     assert.equal(deleteRes.status, 200);
     assert.equal(deleteRes.json.issue.labels.includes('backburner'), false);
   } finally {
@@ -218,7 +289,7 @@ test('POST /api/issues/:n/labels/remove and DELETE /api/issues/:n/labels/:label 
   }
 });
 
-test('GET /api/archive returns backburner and closed issues with bounded pagination', async () => {
+test('GET /api/archive returns backburner and closed issues with bounded pagination, stable sort, and preserved metadata', async () => {
   const f = await fixture();
   try {
     const session = new HttpSession(f.board.url);
@@ -230,17 +301,25 @@ test('GET /api/archive returns backburner and closed issues with bounded paginat
     assert.equal(res.json.closed.length, 1);
     assert.equal(res.json.totalClosed, 2);
     assert.equal(res.json.hasMore, true);
+    assert.ok(res.json.fetchedAt);
+    assert.equal(res.json.partial, false);
+    assert.equal(res.json.truncated, false);
+    assert.deepEqual(res.json.failures, []);
+
+    // Stable sort: issue 3 (closed 2 days ago) must come before issue 4 (closed months ago)
+    assert.equal(res.json.closed[0].number, 3);
 
     const nextRes = await session.request('/api/archive?limit=1&offset=1');
     assert.equal(nextRes.status, 200);
     assert.equal(nextRes.json.closed.length, 1);
+    assert.equal(nextRes.json.closed[0].number, 4);
     assert.equal(nextRes.json.hasMore, false);
   } finally {
     await f.close();
   }
 });
 
-test('GET /api/operations returns real counts with zero invented metrics', async () => {
+test('GET /api/operations returns real counts, 8 standard status columns, and accurate closed7Days using closedAt', async () => {
   const f = await fixture();
   try {
     const session = new HttpSession(f.board.url);
@@ -263,10 +342,20 @@ test('GET /api/operations returns real counts with zero invented metrics', async
     assert.ok(data.oldestOpenInProgress);
     assert.equal(data.oldestOpenInProgress.number, 1);
 
-    // statusPerProject
+    // statusPerProject must contain all 8 standard status columns
     assert.ok(data.statusPerProject['owner/repo']);
+    const expectedCols = ['draft', 'backlog', 'todo', 'planned', 'in-progress', 'needs-human', 'in-review', 'done'];
+    for (const col of expectedCols) {
+      assert.equal(typeof data.statusPerProject['owner/repo'][col], 'number', `Column ${col} missing from statusPerProject`);
+    }
     assert.equal(data.statusPerProject['owner/repo']['in-progress'], 1);
     assert.equal(data.statusPerProject['owner/repo']['needs-human'], 1);
+
+    // Real board metadata preserved
+    assert.ok(data.fetchedAt);
+    assert.equal(data.partial, false);
+    assert.equal(data.truncated, false);
+    assert.deepEqual(data.failures, []);
   } finally {
     await f.close();
   }

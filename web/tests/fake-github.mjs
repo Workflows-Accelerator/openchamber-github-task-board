@@ -15,6 +15,7 @@ export function makeIssue({
   user = 'board-owner',
   created_at = '2026-10-01T09:00:00Z',
   updated_at = '2026-10-20T10:00:00Z',
+  closed_at,
   pull_request = false,
   repo = 'owner/repo',
   node_id,
@@ -34,6 +35,7 @@ export function makeIssue({
     comments: 0,
     created_at,
     updated_at,
+    closed_at: closed_at !== undefined ? closed_at : (state === 'closed' ? updated_at : null),
     html_url: `https://github.com/${repo}/issues/${number}`,
   };
   if (pull_request) issue.pull_request = { url: `https://api.github.com/repos/${repo}/pulls/${number}` };
@@ -484,7 +486,14 @@ export async function startFakeGitHub(options = {}) {
             if (payload && Array.isArray(payload.labels)) {
               issue.labels = payload.labels.map((name) => ({ name, color: 'ededed' }));
             }
-            if (payload && typeof payload.state === 'string') issue.state = payload.state;
+            if (payload && typeof payload.state === 'string') {
+              issue.state = payload.state;
+              if (issue.state === 'closed') {
+                issue.closed_at = new Date().toISOString();
+              } else if (issue.state === 'open') {
+                issue.closed_at = null;
+              }
+            }
           }
           issue.updated_at = new Date().toISOString();
           return send(200, issue, { etag: etagFor(issue) });
