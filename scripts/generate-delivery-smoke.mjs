@@ -256,6 +256,110 @@ async function run() {
   await sleep(150);
   await captureShot('03-canvas-notes-wires-1280-dark-en.png');
 
+  // Measure Canvas controls across viewports and languages (Criterion 3: 360/768/1280, EN/FR, light/dark)
+  console.log('Measuring Canvas controls containment across matrix...');
+  const canvasMatrix = [
+    { width: 1280, height: 900, theme: 'light', lang: 'en' },
+    { width: 1280, height: 900, theme: 'dark', lang: 'en' },
+    { width: 1280, height: 900, theme: 'light', lang: 'fr' },
+    { width: 768, height: 900, theme: 'light', lang: 'en' },
+    { width: 768, height: 900, theme: 'dark', lang: 'fr' },
+    { width: 360, height: 800, theme: 'light', lang: 'en' },
+    { width: 360, height: 800, theme: 'dark', lang: 'en' },
+    { width: 360, height: 800, theme: 'light', lang: 'fr' },
+    { width: 360, height: 800, theme: 'dark', lang: 'fr' },
+  ];
+
+  const canvasMeasurements = [];
+  let canvasMeasurementsPass = true;
+
+  for (const mCase of canvasMatrix) {
+    await setViewport(mCase.width, mCase.height);
+    await setTheme(mCase.theme);
+    await setLang(mCase.lang);
+    await sleep(200);
+
+    const metrics = await evaluate(`(() => {
+      const hud = document.querySelector('#canvas-controls');
+      const viewport = document.querySelector('#canvas-viewport');
+      const hudRect = hud.getBoundingClientRect();
+      const vpRect = viewport.getBoundingClientRect();
+
+      const buttons = Array.from(hud.querySelectorAll('.canvas-control-btn')).map(b => {
+        const r = b.getBoundingClientRect();
+        const s = window.getComputedStyle(b);
+        return {
+          id: b.id,
+          text: b.textContent.trim(),
+          left: Math.round(r.left * 10) / 10,
+          right: Math.round(r.right * 10) / 10,
+          top: Math.round(r.top * 10) / 10,
+          bottom: Math.round(r.bottom * 10) / 10,
+          width: Math.round(r.width * 10) / 10,
+          height: Math.round(r.height * 10) / 10,
+          whiteSpace: s.whiteSpace,
+          flexShrink: s.flexShrink,
+          multilineWrap: r.height > 32,
+        };
+      });
+
+      const overflowsViewportRight = hudRect.right > vpRect.right + 0.5;
+      const overflowsViewportLeft = hudRect.left < vpRect.left - 0.5;
+      const documentOverflow = document.documentElement.scrollWidth > window.innerWidth;
+      const bg = window.getComputedStyle(viewport).backgroundImage;
+
+      return {
+        hudRect: {
+          left: Math.round(hudRect.left),
+          right: Math.round(hudRect.right),
+          width: Math.round(hudRect.width),
+          height: Math.round(hudRect.height),
+        },
+        vpRect: {
+          left: Math.round(vpRect.left),
+          right: Math.round(vpRect.right),
+          width: Math.round(vpRect.width),
+        },
+        overflowsViewportRight,
+        overflowsViewportLeft,
+        documentOverflow,
+        buttons,
+        backgroundImage: bg,
+      };
+    })()`);
+
+    const hasButtonOverflow = metrics.buttons.some(b => b.width > 0 && (b.left < 0 || b.right > mCase.width));
+    const casePass = !metrics.overflowsViewportLeft && !metrics.overflowsViewportRight && !hasButtonOverflow;
+    if (!casePass) {
+      canvasMeasurementsPass = false;
+      console.warn(`Canvas control containment violation at ${mCase.width}x${mCase.height} ${mCase.lang}:`, metrics);
+    }
+
+    canvasMeasurements.push({
+      testCase: mCase,
+      hudMetrics: metrics,
+      pass: casePass,
+    });
+  }
+
+  // Restore baseline desktop EN
+  await setViewport(1280, 900);
+  await setTheme('dark');
+  await setLang('en');
+  await sleep(150);
+
+  const measurementsArtifactPath = path.join(DELIVERY_DIR, 'canvas-measurements.json');
+  fs.writeFileSync(measurementsArtifactPath, JSON.stringify({
+    timestamp: new Date().toISOString(),
+    previewUrl: PREVIEW_URL,
+    wireCount,
+    cardCount,
+    noteCount,
+    canvasMeasurementsPass,
+    measurements: canvasMeasurements,
+  }, null, 2) + '\n');
+  console.log(`Saved canvas measurements to ${measurementsArtifactPath}`);
+
   // 4. Decisions section (EN/FR, 1280/768)
   console.log('4. Capturing 04-decisions-1280-dark-en.png...');
   await switchView('decisions');
@@ -328,19 +432,19 @@ async function run() {
   const smokeData = [
     {
       name: 'health',
-      verdict: 'PASS',
-      status: 200,
+      verdict: (healthRes.status === 200 && healthPayload?.status === 'ok') ? 'PASS' : 'FAIL',
+      status: healthRes.status,
       payload: healthPayload,
     },
     {
       name: 'sign-in & List view (1280 light EN)',
-      verdict: 'PASS',
+      verdict: rowCount >= 8 ? 'PASS' : 'FAIL',
       rows: rowCount,
       screenshot: '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png',
     },
     {
       name: 'Canvas view with markdown note and dependency wires (light/dark)',
-      verdict: 'PASS',
+      verdict: (wireCount === 4 && cardCount >= 8 && noteCount >= 1) ? 'PASS' : 'FAIL',
       cards: cardCount,
       notes: noteCount,
       wires: wireCount,
@@ -348,6 +452,12 @@ async function run() {
         '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png',
         '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png',
       ],
+    },
+    {
+      name: 'Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)',
+      verdict: canvasMeasurementsPass ? 'PASS' : 'FAIL',
+      casesTested: canvasMeasurements.length,
+      artifact: '.agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json',
     },
     {
       name: 'Decisions section (EN/FR, 1280/768)',
@@ -388,7 +498,7 @@ async function run() {
     },
     {
       name: 'browser diagnostics',
-      verdict: 'PASS',
+      verdict: (exceptions.length === 0 && consoleErrors.length === 0 && cspViolations.length === 0) ? 'PASS' : 'FAIL',
       exceptions,
       consoleErrors,
       cspViolations,
@@ -398,6 +508,11 @@ async function run() {
   const smokePath = path.join(DELIVERY_DIR, 'smoke.json');
   fs.writeFileSync(smokePath, JSON.stringify(smokeData, null, 2) + '\n');
   console.log(`Saved ${smokePath}`);
+
+  const failures = smokeData.filter((entry) => entry.verdict !== 'PASS');
+  if (failures.length > 0) {
+    throw new Error(`Smoke check failed with ${failures.length} failing check(s): ${failures.map((f) => f.name).join(', ')}`);
+  }
 }
 
 await run();

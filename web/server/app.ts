@@ -1329,6 +1329,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         throw new DiscoveryUnavailableError();
       }
       board = (await combinedBoard()) as any;
+      if (discovery.repositories.length > 0 && (board.repositoriesLoaded ?? 0) === 0) {
+        throw new DiscoveryUnavailableError();
+      }
       allIssues = board.issues || [];
       for (const repo of discovery.repositories) {
         if (!repo.available) continue;
@@ -1415,6 +1418,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         throw new DiscoveryUnavailableError();
       }
       board = (await combinedBoard()) as any;
+      if (discovery.repositories.length > 0 && (board.repositoriesLoaded ?? 0) === 0) {
+        throw new DiscoveryUnavailableError();
+      }
       allIssues = board.issues || [];
       repos = discovery.repositories.map((r) => ({ full: r.full, name: r.name }));
     }

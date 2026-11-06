@@ -429,3 +429,137 @@ test('multi-repo All Projects Operations aggregates multiple repositories and ha
     await fake.close();
   }
 });
+
+test('multi-repo Operations and Archive failure modes: total outage, partial per-repo failure, and cached fallback', async () => {
+  // 1. Partial per-repo failure (1 repo fails, 1 repo succeeds)
+  {
+    const fake = await startFakeGitHub({
+      repositories: [
+        {
+          repo: 'owner/repo-good',
+          id: 1,
+          issues: [
+            makeIssue({ number: 1, repo: 'owner/repo-good', title: 'Good Task', labels: ['status:in-progress'] }),
+          ],
+        },
+        {
+          repo: 'owner/repo-fail',
+          id: 2,
+          issues: [
+            makeIssue({ number: 10, repo: 'owner/repo-fail', title: 'Fail Task', labels: ['status:todo'] }),
+          ],
+        },
+      ],
+    });
+
+    const board = await startBoard(fake, { repositoryTtlMs: 60_000 });
+    try {
+      const session = new HttpSession(board.url);
+      await session.login();
+
+      fake.setRepoFailing('owner/repo-fail', true);
+
+      const opsRes = await session.request('/api/combined/operations');
+      assert.equal(opsRes.status, 200);
+      assert.equal(opsRes.json.partial, true);
+      assert.equal(Array.isArray(opsRes.json.failures), true);
+      assert.equal(opsRes.json.failures.length, 1);
+      assert.equal(opsRes.json.statusPerProject['owner/repo-good']['in-progress'], 1);
+
+      const archiveRes = await session.request('/api/combined/archive');
+      assert.equal(archiveRes.status, 200);
+      assert.equal(archiveRes.json.partial, true);
+    } finally {
+      await board.app.close();
+      await fake.close();
+    }
+  }
+
+  // 2. All repos failing with cached fallback
+  {
+    const fake = await startFakeGitHub({
+      repositories: [
+        {
+          repo: 'owner/repo-cached',
+          id: 1,
+          issues: [
+            makeIssue({ number: 1, repo: 'owner/repo-cached', title: 'Cached Task', labels: ['status:in-progress'] }),
+          ],
+        },
+      ],
+    });
+
+    let clock = Date.parse('2026-11-06T00:00:00Z');
+    const board = await startBoard(fake, {
+      now: () => clock,
+      repositoryTtlMs: 60_000,
+      boardCacheTtlMs: 30_000,
+      aggregateTimeoutMs: 12_000,
+    });
+    try {
+      const session = new HttpSession(board.url);
+      await session.login();
+
+      // Prime cache
+      const primeRes = await session.request('/api/combined/operations');
+      assert.equal(primeRes.status, 200);
+      assert.equal(primeRes.json.statusPerProject['owner/repo-cached']['in-progress'], 1);
+
+      // Advance past cache TTL and fail repo
+      clock += 35_000;
+      fake.setRepoFailing('owner/repo-cached', true);
+
+      const cachedOps = await session.request('/api/combined/operations');
+      assert.equal(cachedOps.status, 200);
+      assert.equal(cachedOps.json.partial, true);
+      assert.equal(cachedOps.json.statusPerProject['owner/repo-cached']['in-progress'], 1);
+      assert.ok(cachedOps.json.failures.some((f) => f.message.includes('showing cached tasks')));
+
+      const cachedArchive = await session.request('/api/combined/archive');
+      assert.equal(cachedArchive.status, 200);
+      assert.equal(cachedArchive.json.partial, true);
+    } finally {
+      await board.app.close();
+      await fake.close();
+    }
+  }
+
+  // 3. All repos failing with no cache -> 502 discovery_unavailable error
+  {
+    const fake = await startFakeGitHub({
+      repositories: [
+        {
+          repo: 'owner/repo-a',
+          id: 1,
+          issues: [makeIssue({ number: 1, repo: 'owner/repo-a', labels: ['status:todo'] })],
+        },
+        {
+          repo: 'owner/repo-b',
+          id: 2,
+          issues: [makeIssue({ number: 2, repo: 'owner/repo-b', labels: ['status:todo'] })],
+        },
+      ],
+    });
+
+    const board = await startBoard(fake, { repositoryTtlMs: 60_000 });
+    try {
+      const session = new HttpSession(board.url);
+      await session.login();
+
+      // Discovery succeeded, now fail all repos with no cache
+      fake.setRepoFailing('owner/repo-a', true);
+      fake.setRepoFailing('owner/repo-b', true);
+
+      const failOps = await session.request('/api/combined/operations');
+      assert.equal(failOps.status, 502);
+      assert.equal(failOps.json.error, 'discovery_unavailable');
+
+      const failArchive = await session.request('/api/combined/archive');
+      assert.equal(failArchive.status, 502);
+      assert.equal(failArchive.json.error, 'discovery_unavailable');
+    } finally {
+      await board.app.close();
+      await fake.close();
+    }
+  }
+});
