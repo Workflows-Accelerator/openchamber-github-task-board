@@ -149,6 +149,11 @@
     <main id="main" tabindex="-1">
       <p id="notice" class="notice" role="status" aria-live="polite" hidden></p>
 
+      <div id="client-presentation-banner" class="banner info client-presentation-banner" role="status" hidden>
+        <span data-i18n="client_presentation_banner_text">Client presentation mode active — hiding internal drafts and notes</span>
+        <button id="client-banner-exit-btn" class="button small secondary" type="button" data-i18n="client_banner_exit_btn">Exit presentation mode</button>
+      </div>
+
       <section id="login-view" class="view" aria-labelledby="login-title" hidden>
         <h1 id="login-title">Sign in</h1>
         <p class="muted">This board is private. Enter the board password to continue.</p>
@@ -265,11 +270,11 @@
                       <th>Draft</th>
                       <th>Backlog</th>
                       <th>Todo</th>
+                      <th>Planned</th>
                       <th>In Progress</th>
                       <th>Needs Human</th>
-                      <th>Review</th>
+                      <th>In Review</th>
                       <th>Done</th>
-                      <th>Cancelled</th>
                     </tr>
                   </thead>
                   <tbody id="operations-project-rows"></tbody>

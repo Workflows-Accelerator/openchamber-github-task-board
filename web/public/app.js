@@ -722,6 +722,8 @@
       blocked_needs_human_label: 'Status: Needs Human',
       blocked_by_dependencies: 'Blocked by',
       blocked_human_tasks_title: 'Human Tasks',
+      blocked_group_human: 'Waiting on Human Action',
+      blocked_group_dependencies: 'Blocked by Dependencies',
       operations_title: 'Operations overview',
       operations_desc: 'Real system metrics and distribution across all connected projects.',
       operations_open: 'Open',
@@ -748,6 +750,8 @@
       client_filter_inactive: 'Inactive (showing full task list)',
       client_switch_btn_enable: 'Enable presentation mode',
       client_switch_btn_disable: 'Disable presentation mode',
+      client_presentation_banner_text: 'Client presentation mode active — hiding internal drafts and notes',
+      client_banner_exit_btn: 'Exit presentation mode',
       discussions_placeholder_title: 'Discussions',
       discussions_placeholder_desc: 'GitHub Discussions are not enabled for this repository. Open questions and decision workflows are managed through task issues.',
     },
@@ -872,6 +876,8 @@
       blocked_needs_human_label: 'Statut : Action humaine requise',
       blocked_by_dependencies: 'Bloqué par',
       blocked_human_tasks_title: 'Tâches humaines',
+      blocked_group_human: 'En attente d’action humaine',
+      blocked_group_dependencies: 'Bloqué par des dépendances',
       operations_title: 'Vue opérationnelle',
       operations_desc: 'Métriques réelles du système et répartition sur tous les projets connectés.',
       operations_open: 'Ouvertes',
@@ -898,6 +904,8 @@
       client_filter_inactive: 'Inactif (affichage de toutes les tâches)',
       client_switch_btn_enable: 'Activer le mode présentation',
       client_switch_btn_disable: 'Désactiver le mode présentation',
+      client_presentation_banner_text: 'Mode présentation client actif — brouillons internes et notes masqués',
+      client_banner_exit_btn: 'Quitter le mode présentation',
       discussions_placeholder_title: 'Discussions',
       discussions_placeholder_desc: 'Les discussions GitHub ne sont pas configurées pour ce dépôt. Les questions ouvertes et les arbitrages sont gérés dans les tâches.',
     },
@@ -3226,6 +3234,12 @@
     if (!notesLayer) return;
     notesLayer.textContent = '';
 
+    if (state.clientPresentationMode) {
+      notesLayer.hidden = true;
+      return;
+    }
+    notesLayer.hidden = false;
+
     if (Array.isArray(state.canvasProjectBands) && state.canvasProjectBands.length > 0) {
       state.canvasProjectBands.forEach(function (band) {
         var bandLabel = el('div', {
@@ -4587,6 +4601,11 @@
     else if (state.activeSectionView === 'blocked') renderBlockedView();
     else if (state.activeSectionView === 'client') renderClientView();
     var allRows = (board.issues || []).concat(offlineRows());
+    if (state.clientPresentationMode) {
+      allRows = allRows.filter(function (issue) {
+        return issue.column !== 'draft' && issue.statusLabel !== 'status:draft' && issue.statusLabel !== 'status:cancelled';
+      });
+    }
     if (state.searchQuery) {
       allRows = allRows.filter(function (issue) {
         return matchesSearch(issue, state.searchQuery);
@@ -5871,6 +5890,110 @@
     });
   }
 
+  function renderBlockedCard(issue, groupKind, dict) {
+    var card = el('div', { class: 'section-card card-surface' });
+    var header = el('div', { class: 'section-card-header' });
+    var titleRow = el('div', { class: 'section-card-title-row' });
+
+    if (issue.repository) {
+      titleRow.appendChild(projectBadge(issue.repository));
+    }
+    var num = el('span', { class: 'section-card-num' }, '#' + issue.number);
+    titleRow.appendChild(num);
+
+    var titleLink = el('a', { class: 'section-card-title', href: '#/issue/' + issue.number }, issue.friendlyTitle || issue.title);
+    titleLink.addEventListener('click', function (e) {
+      e.preventDefault();
+      openIssue(issue.number, issue.repository);
+    });
+    titleRow.appendChild(titleLink);
+    header.appendChild(titleRow);
+
+    var meta = el('div', { class: 'section-card-meta' });
+    meta.appendChild(badge(statusText(issue.statusLabel), 'status'));
+    if (issue.updatedAt) {
+      meta.appendChild(el('span', { class: 'muted' }, relative(issue.updatedAt)));
+    }
+    header.appendChild(meta);
+    card.appendChild(header);
+
+    // Human tasks section
+    if (groupKind === 'human' && Array.isArray(issue.humanTasks) && issue.humanTasks.length > 0) {
+      var tasksContainer = el('div', { class: 'blocked-human-tasks' });
+      var taskHeading = el('div', { class: 'blocked-deps-label' }, dict.blocked_human_tasks_title || 'Human Tasks');
+      tasksContainer.appendChild(taskHeading);
+
+      issue.humanTasks.forEach(function (t, idx) {
+        var row = el('label', { class: 'human-task-row' });
+        var checkbox = el('input', {
+          type: 'checkbox',
+          class: 'human-task-checkbox',
+        });
+        if (t.completed) checkbox.checked = true;
+
+        var labelSpan = el('span', { class: 'human-task-label' }, t.text);
+        row.appendChild(checkbox);
+        row.appendChild(labelSpan);
+
+        checkbox.addEventListener('change', async function () {
+          checkbox.disabled = true;
+          try {
+            var endpoint = issuePath(issue) + '/human-tasks/' + idx + '/toggle';
+            var response = await api(endpoint, {
+              method: 'POST',
+              body: { completed: checkbox.checked, fingerprint: issue.fingerprint },
+            });
+            if (response && response.listItem) {
+              var boardIdx = state.board.issues.findIndex(function (it) {
+                return sameIdentity(it, issue);
+              });
+              if (boardIdx !== -1) {
+                state.board.issues[boardIdx] = response.listItem;
+              }
+            } else {
+              await loadBoard();
+            }
+            updateSidebarBadges();
+            renderBlockedView();
+          } catch (err) {
+            checkbox.checked = !checkbox.checked;
+            checkbox.disabled = false;
+            setNotice(err.message || 'Could not toggle human task', true);
+          }
+        });
+
+        tasksContainer.appendChild(row);
+      });
+      card.appendChild(tasksContainer);
+    }
+
+    // Dependencies (blocked by) section
+    var openBlockers = Array.isArray(issue.blockedBy) ? issue.blockedBy.filter(function (dep) {
+      return dep.state === 'open' || dep.state === undefined;
+    }) : [];
+    if (groupKind === 'dep' && openBlockers.length > 0) {
+      var depsContainer = el('div', { class: 'blocked-dependencies' });
+      var depsLabel = el('div', { class: 'blocked-deps-label' }, dict.blocked_by_dependencies || 'Blocked by');
+      depsContainer.appendChild(depsLabel);
+
+      openBlockers.forEach(function (dep) {
+        var depRow = el('div', { class: 'dependency-chip' });
+        var statusDot = el('span', { class: 'dependency-chip-status status-planned' });
+        var link = el('a', { class: 'dependency-chip-link' }, '#' + dep.number + (dep.title ? ' ' + dep.title : ''));
+        link.addEventListener('click', function (e) {
+          e.preventDefault();
+          openIssue(dep.number);
+        });
+        depRow.appendChild(statusDot);
+        depRow.appendChild(link);
+        depsContainer.appendChild(depRow);
+      });
+      card.appendChild(depsContainer);
+    }
+
+    return card;
+  }
+
   function renderBlockedView() {
     var list = $('blocked-list');
     var loading = $('blocked-loading');
@@ -5883,8 +6006,10 @@
     var blockedIssues = items.filter(function (it) {
       var isNeedsHuman = it.statusLabel === 'status:needs-human';
       var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) { return !t.completed; });
+      var hasOpenQuestions = (it.counts && it.counts.openQuestions && it.counts.openQuestions.open > 0) ||
+                             (Array.isArray(it.openQuestions) && it.openQuestions.some(function (q) { return !q.completed; }));
       var hasOpenBlockers = Array.isArray(it.blockedBy) && it.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
-      return isNeedsHuman || hasUncheckedTasks || hasOpenBlockers;
+      return isNeedsHuman || hasUncheckedTasks || hasOpenQuestions || hasOpenBlockers;
     });
 
     blockedIssues.sort(function (a, b) {
@@ -5907,109 +6032,49 @@
 
     var dict = I18N[getLanguage()] || I18N.en;
 
-    blockedIssues.forEach(function (issue) {
-      var card = el('div', { class: 'section-card card-surface' });
-      var header = el('div', { class: 'section-card-header' });
-      var titleRow = el('div', { class: 'section-card-title-row' });
+    var humanIssues = [];
+    var depIssues = [];
 
-      if (issue.repository) {
-        titleRow.appendChild(projectBadge(issue.repository));
+    blockedIssues.forEach(function (it) {
+      var isNeedsHuman = it.statusLabel === 'status:needs-human';
+      var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) { return !t.completed; });
+      var hasOpenQuestions = (it.counts && it.counts.openQuestions && it.counts.openQuestions.open > 0) ||
+                             (Array.isArray(it.openQuestions) && it.openQuestions.some(function (q) { return !q.completed; }));
+      var hasOpenBlockers = Array.isArray(it.blockedBy) && it.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
+
+      if (isNeedsHuman || hasUncheckedTasks || hasOpenQuestions) {
+        humanIssues.push(it);
       }
-      var num = el('span', { class: 'section-card-num' }, '#' + issue.number);
-      titleRow.appendChild(num);
-
-      var titleLink = el('a', { class: 'section-card-title', href: '#/issue/' + issue.number }, issue.friendlyTitle || issue.title);
-      titleLink.addEventListener('click', function (e) {
-        e.preventDefault();
-        openIssue(issue.number, issue.repository);
-      });
-      titleRow.appendChild(titleLink);
-      header.appendChild(titleRow);
-
-      var meta = el('div', { class: 'section-card-meta' });
-      meta.appendChild(badge(statusText(issue.statusLabel), 'status'));
-      if (issue.updatedAt) {
-        meta.appendChild(el('span', { class: 'muted' }, relative(issue.updatedAt)));
+      if (hasOpenBlockers) {
+        depIssues.push(it);
       }
-      header.appendChild(meta);
-      card.appendChild(header);
-
-      // Human tasks section
-      if (Array.isArray(issue.humanTasks) && issue.humanTasks.length > 0) {
-        var tasksContainer = el('div', { class: 'blocked-human-tasks' });
-        var taskHeading = el('div', { class: 'blocked-deps-label' }, dict.blocked_human_tasks_title || 'Human Tasks');
-        tasksContainer.appendChild(taskHeading);
-
-        issue.humanTasks.forEach(function (t, idx) {
-          var row = el('label', { class: 'human-task-row' });
-          var checkbox = el('input', {
-            type: 'checkbox',
-            class: 'human-task-checkbox',
-          });
-          if (t.completed) checkbox.checked = true;
-
-          var labelSpan = el('span', { class: 'human-task-label' }, t.text);
-          row.appendChild(checkbox);
-          row.appendChild(labelSpan);
-
-          checkbox.addEventListener('change', async function () {
-            checkbox.disabled = true;
-            try {
-              var endpoint = issuePath(issue) + '/human-tasks/' + idx + '/toggle';
-              var response = await api(endpoint, {
-                method: 'POST',
-                body: { completed: checkbox.checked, fingerprint: issue.fingerprint },
-              });
-              if (response && response.listItem) {
-                var boardIdx = state.board.issues.findIndex(function (it) {
-                  return sameIdentity(it, issue);
-                });
-                if (boardIdx !== -1) {
-                  state.board.issues[boardIdx] = response.listItem;
-                }
-              } else {
-                await loadBoard();
-              }
-              updateSidebarBadges();
-              renderBlockedView();
-            } catch (err) {
-              checkbox.checked = !checkbox.checked;
-              checkbox.disabled = false;
-              setNotice(err.message || 'Could not toggle human task', true);
-            }
-          });
-
-          tasksContainer.appendChild(row);
-        });
-        card.appendChild(tasksContainer);
-      }
-
-      // Dependencies (blocked by) section
-      var openBlockers = Array.isArray(issue.blockedBy) ? issue.blockedBy.filter(function (dep) {
-        return dep.state === 'open' || dep.state === undefined;
-      }) : [];
-      if (openBlockers.length > 0) {
-        var depsContainer = el('div', { class: 'blocked-dependencies' });
-        var depsLabel = el('div', { class: 'blocked-deps-label' }, dict.blocked_by_dependencies || 'Blocked by');
-        depsContainer.appendChild(depsLabel);
-
-        openBlockers.forEach(function (dep) {
-          var depRow = el('div', { class: 'dependency-chip' });
-          var statusDot = el('span', { class: 'dependency-chip-status status-planned' });
-          var link = el('a', { class: 'dependency-chip-link' }, '#' + dep.number + (dep.title ? ' ' + dep.title : ''));
-          link.addEventListener('click', function (e) {
-            e.preventDefault();
-            openIssue(dep.number);
-          });
-          depRow.appendChild(statusDot);
-          depRow.appendChild(link);
-          depsContainer.appendChild(depRow);
-        });
-        card.appendChild(depsContainer);
-      }
-
-      list.appendChild(card);
     });
+
+    if (humanIssues.length > 0) {
+      var group1 = el('div', { class: 'blocked-group' });
+      var title1 = el('h2', { class: 'blocked-group-title' }, [
+        el('span', {}, dict.blocked_group_human || 'Waiting on Human Action'),
+        el('span', { class: 'badge' }, String(humanIssues.length)),
+      ]);
+      group1.appendChild(title1);
+      humanIssues.forEach(function (issue) {
+        group1.appendChild(renderBlockedCard(issue, 'human', dict));
+      });
+      list.appendChild(group1);
+    }
+
+    if (depIssues.length > 0) {
+      var group2 = el('div', { class: 'blocked-group' });
+      var title2 = el('h2', { class: 'blocked-group-title' }, [
+        el('span', {}, dict.blocked_group_dependencies || 'Blocked by Dependencies'),
+        el('span', { class: 'badge' }, String(depIssues.length)),
+      ]);
+      group2.appendChild(title2);
+      depIssues.forEach(function (issue) {
+        group2.appendChild(renderBlockedCard(issue, 'dep', dict));
+      });
+      list.appendChild(group2);
+    }
   }
 
   async function loadAndRenderOperationsView() {
@@ -6076,7 +6141,7 @@
           var tr = el('tr');
           var tdRepo = el('td', { class: 'repo-name' }, repo);
           tr.appendChild(tdRepo);
-          ['draft', 'backlog', 'todo', 'in-progress', 'needs-human', 'in-review', 'done', 'cancelled'].forEach(function (st) {
+          ['draft', 'backlog', 'todo', 'planned', 'in-progress', 'needs-human', 'in-review', 'done'].forEach(function (st) {
             var val = counts[st] || 0;
             var td = el('td', { class: 'num' }, String(val));
             tr.appendChild(td);
@@ -6306,20 +6371,72 @@
     }
   }
 
+  function cleanOverviewPreview(issue) {
+    if (issue.overview && typeof issue.overview === 'string' && issue.overview.trim()) {
+      var trimmed = issue.overview.trim();
+      return trimmed.slice(0, 160) + (trimmed.length > 160 ? '…' : '');
+    }
+    var raw = issue.description || issue.body || '';
+    if (!raw) return '';
+    var clean = raw
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/^#{1,6}\s+.*$/gm, '')
+      .replace(/[-*+]\s+\[[ xX]\]\s+.*$/gm, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!clean) return '';
+    return clean.slice(0, 160) + (clean.length > 160 ? '…' : '');
+  }
+
+  function applyClientPresentationMode() {
+    var banner = $('client-presentation-banner');
+    if (banner) {
+      banner.hidden = !state.clientPresentationMode;
+    }
+    if (typeof document !== 'undefined' && document.body) {
+      if (state.clientPresentationMode) {
+        document.body.classList.add('client-presentation-active');
+      } else {
+        document.body.classList.remove('client-presentation-active');
+      }
+    }
+  }
+
+  function setClientPresentationMode(active) {
+    state.clientPresentationMode = Boolean(active);
+    try {
+      localStorage.setItem('chamberos_client_presentation_mode', state.clientPresentationMode ? '1' : '0');
+    } catch (_) {}
+    applyClientPresentationMode();
+    if (state.activeSectionView === 'client') {
+      renderClientView();
+    } else if (state.activeSectionView === 'decisions') {
+      renderDecisionsView();
+    } else if (state.activeSectionView === 'blocked') {
+      renderBlockedView();
+    } else {
+      renderBoard();
+    }
+  }
+
   function initClientView() {
     try {
       state.clientPresentationMode = localStorage.getItem('chamberos_client_presentation_mode') === '1';
     } catch (_) {
       state.clientPresentationMode = false;
     }
+    applyClientPresentationMode();
     var toggleBtn = $('client-toggle-btn');
     if (toggleBtn) {
       toggleBtn.addEventListener('click', function () {
-        state.clientPresentationMode = !state.clientPresentationMode;
-        try {
-          localStorage.setItem('chamberos_client_presentation_mode', state.clientPresentationMode ? '1' : '0');
-        } catch (_) {}
-        renderClientView();
+        setClientPresentationMode(!state.clientPresentationMode);
+      });
+    }
+    var bannerExitBtn = $('client-banner-exit-btn');
+    if (bannerExitBtn) {
+      bannerExitBtn.addEventListener('click', function () {
+        setClientPresentationMode(false);
       });
     }
   }
@@ -6374,8 +6491,9 @@
       header.appendChild(meta);
       card.appendChild(header);
 
-      if (issue.description) {
-        var descP = el('p', { class: 'small muted', style: 'margin: 0; line-height: 1.4;' }, issue.description.slice(0, 160) + (issue.description.length > 160 ? '…' : ''));
+      var previewText = cleanOverviewPreview(issue);
+      if (previewText) {
+        var descP = el('p', { class: 'small muted', style: 'margin: 0; line-height: 1.4;' }, previewText);
         card.appendChild(descP);
       }
 

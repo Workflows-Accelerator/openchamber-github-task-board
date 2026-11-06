@@ -159,7 +159,7 @@ accept on `https` origins (and on `http://localhost` for local testing).
   identities that the token can no longer see; this is accepted and not a durable inventory.
 - Proof for this slice is synthetic only: local fake-GitHub fixtures and localhost. No real
   multi-repository token, live GitHub permission change, hidden-private-repository enumeration,
-  production deployment, installed extension or physical mobile device was exercised.
+  production deployment, installed extension or physical compact device was exercised.
 - Residual defect remediations (F1–F5) and protocol corrections are documented in `.agents/run/task-centred-architecture/outputs/issue-33-last-correction.md`, which supersedes previous closure claims. Prior reports are immutable.
 - There is no notification/question loop and no agent integration. Those are
   separate, parked workstreams.

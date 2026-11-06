@@ -3167,5 +3167,33 @@ input[type="text"].search-input:focus,
   flex-shrink: 0;
 }
 
+/* Client presentation mode active state */
+body.client-presentation-active #canvas-notes,
+body.client-presentation-active .card-action-add-note,
+body.client-presentation-active #drawer-add-note-btn {
+  display: none !important;
+}
+
+.client-presentation-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+
+.blocked-group {
+  margin-bottom: 2rem;
+}
+
+.blocked-group-title {
+  font-size: 1.1rem;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+
 
 
