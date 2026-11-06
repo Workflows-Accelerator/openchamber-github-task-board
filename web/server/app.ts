@@ -1272,11 +1272,11 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
 
     let limit = Number(requestUrl.searchParams.get('limit') ?? 100);
-    if (Number.isNaN(limit) || limit < 1) limit = 100;
+    if (!Number.isFinite(limit) || limit < 1) limit = 100;
     limit = Math.min(200, Math.floor(limit));
 
     let offset = Number(requestUrl.searchParams.get('offset') ?? 0);
-    if (Number.isNaN(offset) || offset < 0) offset = 0;
+    if (!Number.isFinite(offset) || offset < 0) offset = 0;
     offset = Math.floor(offset);
 
     const backburner = allIssues.filter(

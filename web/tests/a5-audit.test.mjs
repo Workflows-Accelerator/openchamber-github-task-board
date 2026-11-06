@@ -131,3 +131,23 @@ test('audit A5 label removal preserves unrelated labels and refuses absent assig
     await fake.close();
   }
 });
+
+test('audit A5 archive pagination: non-finite limit and offset normalize to finite numbers', async () => {
+  const fake = await startFakeGitHub({ issues: [
+    makeIssue({ number: 1, state: 'closed', closed_at: '2026-11-01T00:00:00Z' }),
+  ] });
+  const board = await startBoard(fake);
+  try {
+    const session = new HttpSession(board.url);
+    await session.login();
+    for (const query of ['limit=Infinity&offset=Infinity', 'limit=-Infinity&offset=-Infinity', 'limit=NaN&offset=-5']) {
+      const res = await session.request('/api/archive?' + query);
+      assert.equal(res.status, 200);
+      assert.ok(Number.isFinite(res.json.limit), `${query}: limit must be finite`);
+      assert.ok(Number.isFinite(res.json.offset), `${query}: offset must be finite`);
+    }
+  } finally {
+    await board.app.close();
+    await fake.close();
+  }
+});
