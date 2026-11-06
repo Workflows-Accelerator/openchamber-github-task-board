@@ -342,17 +342,19 @@ export class GitHubClient {
     return { repositories, pages, truncated: false };
   }
 
-  async listIssues(): Promise<IssueList> {
+  async listIssues(options: { state?: 'all' | 'open' | 'closed'; maxPages?: number } = {}): Promise<IssueList> {
     const items: any[] = [];
     const seenNumbers = new Set<number>();
     let pages = 0;
     let truncated = false;
+    const stateFilter = options.state ?? 'all';
+    const effectiveMaxPages = options.maxPages ?? this.maxPages;
     let nextUrl: string | null =
-      `${this.issuesBase()}/issues?state=all&per_page=${this.perPage}&page=1`;
+      `${this.issuesBase()}/issues?state=${encodeURIComponent(stateFilter)}&per_page=${this.perPage}&page=1`;
     const apiOrigin = new URL(this.apiBase).origin;
 
     while (nextUrl) {
-      if (pages >= this.maxPages) {
+      if (pages >= effectiveMaxPages) {
         truncated = true;
         break;
       }

@@ -708,7 +708,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         body: issueBody,
         labels,
       }).catch(mapGitHubError);
-      if (repository) repoBoardCache.delete(repository.full);
+      if (repository) {
+        repoBoardCache.delete(repository.full);
+        repoClosedCache.delete(repository.full);
+      }
 
       return {
         status: 201,
@@ -984,8 +987,10 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       });
 
       repoBoardCache.delete(repository!.full);
+      repoClosedCache.delete(repository!.full);
       if (sourceRepo.full !== repository!.full) {
         repoBoardCache.delete(sourceRepo.full);
+        repoClosedCache.delete(sourceRepo.full);
       }
 
       const [freshTarget, updatedDeps] = await Promise.all([
@@ -1039,6 +1044,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       });
 
       repoBoardCache.delete(repository!.full);
+      repoClosedCache.delete(repository!.full);
 
       const [freshTarget, updatedDeps] = await Promise.all([
         scopedGithub!.getIssue(targetNumber).catch(mapGitHubError),
@@ -1082,6 +1088,12 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     cachedAt: number;
   }
   const repoBoardCache = new Map<string, CachedRepoBoard>();
+  interface CachedRepoClosed {
+    issues: ReturnType<typeof buildBoardList>['issues'];
+    truncated: boolean;
+    cachedAt: number;
+  }
+  const repoClosedCache = new Map<string, CachedRepoClosed>();
   const defaultBoardCacheTtlMs = options.boardCacheTtlMs ?? (options.repositoryTtlMs === 0 ? 0 : 30_000);
 
   async function checkDependencyCycle(
@@ -1164,6 +1176,23 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     return { scope: 'repo', repository, repo: repository.full, login: config.githubLogin,
       fetchedAt: new Date(now()).toISOString(), truncated: listed.truncated,
       complete: !listed.truncated, partial: listed.truncated, excludedPullRequests: excluded, issues, dependenciesDegraded };
+  }
+
+  async function repositoryClosedIssues(repository: RepositoryEntry, timeoutMs?: number): Promise<CachedRepoClosed> {
+    const cached = repoClosedCache.get(repository.full);
+    if (cached && defaultBoardCacheTtlMs > 0 && now() - cached.cachedAt < defaultBoardCacheTtlMs) {
+      return cached;
+    }
+    const client = clientFor(repository, timeoutMs);
+    const listed = await client.listIssues({ state: 'closed' }).catch(mapGitHubError);
+    const { issues } = buildBoardList(listed.items, repository);
+    const result: CachedRepoClosed = {
+      issues,
+      truncated: listed.truncated,
+      cachedAt: now(),
+    };
+    repoClosedCache.set(repository.full, result);
+    return result;
   }
 
   let aggregateInFlight: Promise<unknown> | null = null;
@@ -1273,12 +1302,37 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   async function archiveData(repository: RepositoryEntry | null, requestUrl: URL) {
     let allIssues: ReturnType<typeof buildBoardList>['issues'] = [];
     let board: any = null;
+    let closedIssues: ReturnType<typeof buildBoardList>['issues'] = [];
+    let closedTruncated = false;
+    let closedPartial = false;
+    const closedFailures: Array<{ repository: RepositoryEntry; message: string }> = [];
+
     if (repository) {
       board = await repositoryBoard(repository);
       allIssues = board.issues;
+      try {
+        const closedRes = await repositoryClosedIssues(repository);
+        closedIssues = closedRes.issues;
+        closedTruncated = closedRes.truncated;
+      } catch (err: any) {
+        closedPartial = true;
+        closedFailures.push({ repository, message: err?.message || 'Could not fetch closed issues' });
+      }
     } else {
       board = (await combinedBoard()) as any;
       allIssues = board.issues || [];
+      const discovery = await repositories.view();
+      for (const repo of discovery.repositories) {
+        if (!repo.available) continue;
+        try {
+          const closedRes = await repositoryClosedIssues(repo);
+          closedIssues.push(...closedRes.issues);
+          closedTruncated ||= closedRes.truncated;
+        } catch (err: any) {
+          closedPartial = true;
+          closedFailures.push({ repository: repo, message: err?.message || 'Could not fetch closed issues' });
+        }
+      }
     }
 
     let limit = Number(requestUrl.searchParams.get('limit') ?? 100);
@@ -1292,7 +1346,22 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     const backburner = allIssues.filter(
       (issue) => issue.state === 'open' && (issue.labels || []).some((l) => l.toLowerCase() === 'backburner')
     );
-    const closed = allIssues.filter((issue) => issue.state === 'closed');
+
+    const closedMap = new Map<string, (typeof allIssues)[0]>();
+    for (const issue of closedIssues) {
+      const key = issue.key || `${issue.repository?.full || ''}#${issue.number}`;
+      closedMap.set(key, issue);
+    }
+    for (const issue of allIssues) {
+      if (issue.state === 'closed') {
+        const key = issue.key || `${issue.repository?.full || ''}#${issue.number}`;
+        if (!closedMap.has(key)) {
+          closedMap.set(key, issue);
+        }
+      }
+    }
+    const closed = Array.from(closedMap.values());
+
     // Stable newest-closed sorting: closedAt desc, then updatedAt desc, then number desc
     closed.sort((a, b) => {
       const timeA = a.closedAt ? Date.parse(a.closedAt) : (a.updatedAt ? Date.parse(a.updatedAt) : 0);
@@ -1302,6 +1371,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     });
 
     const pagedClosed = closed.slice(offset, offset + limit);
+    const failures = [...(board?.failures || []), ...closedFailures];
+    const isTruncated = Boolean(board?.truncated || board?.truncatedByIssueCap || closedTruncated);
+    const isPartial = Boolean(board?.partial || closedPartial || failures.length > 0);
 
     return {
       scope: repository ? 'repo' : 'all',
@@ -1314,9 +1386,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       offset,
       hasMore: offset + limit < closed.length,
       fetchedAt: board?.fetchedAt || new Date(now()).toISOString(),
-      truncated: Boolean(board?.truncated || board?.truncatedByIssueCap),
-      partial: Boolean(board?.partial),
-      failures: board?.failures || [],
+      truncated: isTruncated,
+      partial: isPartial,
+      failures,
     };
   }
 
@@ -2328,6 +2400,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
       if (verified) {
         repoBoardCache.delete(repository.full);
+        repoClosedCache.delete(repository.full);
         log(`write issue=${number} fields=${Object.keys(patch).join(',')}`);
         return {
           status: 200,

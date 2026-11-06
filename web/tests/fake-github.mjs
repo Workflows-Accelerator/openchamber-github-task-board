@@ -275,6 +275,7 @@ export async function startFakeGitHub(options = {}) {
         const headers = {};
         if (start + size < all.length) {
           const next = new URL(`http://${req.headers.host}${url.pathname}`);
+          if (stateFilter) next.searchParams.set('state', stateFilter);
           next.searchParams.set('per_page', String(size));
           next.searchParams.set('page', String(page + 1));
           headers.link = `<${next.toString()}>; rel="next"`;

@@ -754,6 +754,8 @@
       client_banner_exit_btn: 'Exit presentation mode',
       discussions_placeholder_title: 'Discussions',
       discussions_placeholder_desc: 'GitHub Discussions are not enabled for this repository. Open questions and decision workflows are managed through task issues.',
+      warning_partial_or_truncated: 'Showing partial or truncated results; some data could not be fully loaded.',
+      warning_repository_failures: 'Some repositories failed to load or were unavailable',
     },
     fr: {
       section_views: 'Vues',
@@ -908,6 +910,8 @@
       client_banner_exit_btn: 'Quitter le mode présentation',
       discussions_placeholder_title: 'Discussions',
       discussions_placeholder_desc: 'Les discussions GitHub ne sont pas configurées pour ce dépôt. Les questions ouvertes et les arbitrages sont gérés dans les tâches.',
+      warning_partial_or_truncated: 'Affichage de résultats partiels ou tronqués ; certaines données n’ont pu être chargées complètement.',
+      warning_repository_failures: 'Certains dépôts n’ont pas pu être chargés ou étaient indisponibles',
     },
   };
 
@@ -971,7 +975,11 @@
       if (state.activeSectionView === 'decisions') renderDecisionsView();
       else if (state.activeSectionView === 'blocked') renderBlockedView();
       else if (state.activeSectionView === 'operations') loadAndRenderOperationsView();
-      else if (state.activeSectionView === 'archive') renderArchiveTabs();
+      else if (state.activeSectionView === 'archive') {
+        renderArchiveTabs();
+        var warningEl = $('archive-warning');
+        if (warningEl && state.archive && state.archive.data) renderWarningBanner(warningEl, state.archive.data, dict);
+      }
       else if (state.activeSectionView === 'client') renderClientView();
     }
   }
@@ -6077,6 +6085,30 @@
     }
   }
 
+  function renderWarningBanner(bannerEl, data, dict) {
+    if (!bannerEl) return;
+    if (!data || (!data.partial && !data.truncated && (!data.failures || data.failures.length === 0))) {
+      bannerEl.hidden = true;
+      bannerEl.textContent = '';
+      return;
+    }
+    bannerEl.hidden = false;
+    var messages = [];
+    if (data.failures && data.failures.length > 0) {
+      var failMsgs = data.failures.map(function (f) {
+        var repoName = (f.repository && (f.repository.full || f.repository.name)) || '';
+        return (repoName ? repoName + ': ' : '') + f.message;
+      }).join('; ');
+      messages.push((dict.warning_repository_failures || 'Some repositories failed to load') + (failMsgs ? ': ' + failMsgs : ''));
+    }
+    if (data.truncated || data.partial) {
+      if (!messages.length) {
+        messages.push(dict.warning_partial_or_truncated || 'Showing partial or truncated results; some data could not be fully loaded.');
+      }
+    }
+    bannerEl.textContent = messages.join('. ');
+  }
+
   async function loadAndRenderOperationsView() {
     var loading = $('operations-loading');
     var grid = $('operations-grid');
@@ -6093,6 +6125,10 @@
 
       var data = await api(path);
       state.operations = data;
+
+      var dict = I18N[getLanguage()] || I18N.en;
+      var warningEl = $('operations-warning');
+      renderWarningBanner(warningEl, data, dict);
 
       if (loading) loading.hidden = true;
       if (grid) grid.hidden = false;
@@ -6171,6 +6207,11 @@
 
       var url = basePath + '?limit=' + state.archive.limit + '&offset=' + state.archive.offset;
       var data = await api(url);
+      state.archive.data = data;
+
+      var dict = I18N[getLanguage()] || I18N.en;
+      var warningEl = $('archive-warning');
+      renderWarningBanner(warningEl, data, dict);
 
       if (!isLoadMore) {
         state.archive.backburner = data.backburner || [];

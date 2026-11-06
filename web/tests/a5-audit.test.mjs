@@ -170,3 +170,27 @@ test('audit A5 combined operations: cached fetchedAt matches oldest cached repos
     await fake.close();
   }
 });
+
+test('audit A5 archive: dedicated bounded closed fetch reaches closed issues beyond all-issues page cap', async () => {
+  const issues = Array.from({ length: 1001 }, (_, i) => makeIssue({
+    number: i + 1,
+    state: i === 1000 ? 'closed' : 'open',
+    updated_at: '2026-10-01T00:00:00Z',
+    closed_at: i === 1000 ? '2026-11-05T00:00:00Z' : null,
+  }));
+  const fake = await startFakeGitHub({ issues });
+  const board = await startBoard(fake);
+  try {
+    const session = new HttpSession(board.url);
+    await session.login();
+    const res = await session.request('/api/repos/owner/repo/archive?limit=200');
+    assert.equal(res.status, 200);
+    assert.equal(res.json.closed.length, 1);
+    assert.equal(res.json.closed[0].number, 1001);
+    const closedRequests = fake.requests.filter((r) => r.path.endsWith('/issues') && r.query && r.query.includes('state=closed'));
+    assert.ok(closedRequests.length > 0, 'Expected dedicated state=closed request to GitHub');
+  } finally {
+    await board.app.close();
+    await fake.close();
+  }
+});
