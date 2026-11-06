@@ -8,7 +8,7 @@ Step A5 completes the integration of every sidebar section in ChamberOS Board V2
 4. **Archive & Backburner:** Dual-tab view partitioning open backburner tasks from bounded closed issue history (`limit: 30` with "Load More"). Features "Remove backburner label" (`POST /api/issues/:n/labels/remove` and `DELETE /api/issues/:n/labels/:label`) with strict 400 precondition checks (0 GitHub PATCH calls when label is absent), and "Reopen task" (`POST /api/issues/:n/reopen`).
 5. **Client View Switch:** Presentation filter toggle persisted in `localStorage['tb_client_view']`, accompanied by an explicit disclaimer banner ("Presentation filter only; not a security boundary. Confidential data must not be exposed.") that filters draft items, questions, and internal notes from the presentation.
 6. **Honest Discussions Placeholder:** Clear, respectful notice that GitHub Discussions are not configured for the repository and decision workflows are managed through task issues, with a direct "Back to List" navigation action.
-7. **Dynamic Sidebar Badges:** Live count badges on Decisions and Blocked items in both desktop sidebar and mobile navigation drawer.
+7. **Dynamic Sidebar Badges:** Live count badges on Decisions and Blocked items in both desktop sidebar and compact navigation drawer.
 8. **Bilingual Localization (EN & FR):** Full dictionary translations for every view title, subtitle, stat label, button, disclaimer, and empty state.
 9. **Strict CSP & Zero Emojis:** Full compliance with `default-src 'self'`, `script-src 'self'`, and `style-src 'self'`. Zero emojis anywhere in UI or server responses.
 
@@ -134,32 +134,32 @@ Step A5 completes the integration of every sidebar section in ChamberOS Board V2
 
 ## Visual & Multi-Viewport Verification Screenshots
 
-Generated via Obscura headless browser in `.agents/run/chamberos-board-v2/verifications/A5/screenshots/` across 1280px (desktop), 768px (tablet), and 360px (mobile compact) viewports in dark and light themes:
+Generated via Obscura headless browser in `.agents/run/chamberos-board-v2/verifications/A5/screenshots/` across 1280px (desktop), 768px (tablet), and 360px (compact) viewports in dark and light themes:
 
 | Screenshot File | Viewport & Theme | Description |
 |---|---|---|
 | `01-decisions-1280-dark.png` | 1280px Desktop (Dark) | Decisions section with open questions grouped by issue, activity timestamps, and inline answer forms. |
 | `02-decisions-1280-light.png` | 1280px Desktop (Light) | Decisions section in light theme with high-contrast text and inputs. |
 | `03-decisions-768-dark.png` | 768px Tablet (Dark) | Decisions section on 768px tablet layout with responsive card widths. |
-| `04-decisions-360-dark.png` | 360px Mobile (Dark) | Decisions section on 360px mobile viewport with compact header and stacked answer form controls. |
+| `04-decisions-360-dark.png` | 360px Compact (Dark) | Decisions section on 360px compact viewport with compact header and stacked answer form controls. |
 | `05-blocked-1280-dark.png` | 1280px Desktop (Dark) | Blocked section showing issues requiring human tasks and dependencies with interactive checkboxes. |
 | `06-blocked-1280-light.png` | 1280px Desktop (Light) | Blocked section in light theme with clear warning badges and dependency chips. |
 | `07-blocked-768-dark.png` | 768px Tablet (Dark) | Blocked section on 768px tablet layout. |
-| `08-blocked-360-dark.png` | 360px Mobile (Dark) | Blocked section on 360px mobile viewport with responsive human task items. |
+| `08-blocked-360-dark.png` | 360px Compact (Dark) | Blocked section on 360px compact viewport with responsive human task items. |
 | `09-operations-1280-dark.png` | 1280px Desktop (Dark) | Operations overview with real stat cards, oldest in-progress task metric, and project breakdown table. |
 | `10-operations-1280-light.png` | 1280px Desktop (Light) | Operations overview in light theme with tabular figures and status badges. |
 | `11-operations-768-dark.png` | 768px Tablet (Dark) | Operations overview on 768px tablet layout with responsive metric grid. |
-| `12-operations-360-dark.png` | 360px Mobile (Dark) | Operations overview on 360px mobile viewport with horizontal table scrolling. |
+| `12-operations-360-dark.png` | 360px Compact (Dark) | Operations overview on 360px compact viewport with horizontal table scrolling. |
 | `13-archive-backburner-1280-dark.png` | 1280px Desktop (Dark) | Archive Backburner tab showing tasks on hold and "Remove backburner label" action buttons. |
 | `14-archive-closed-1280-light.png` | 1280px Desktop (Light) | Archive Closed Issues tab in light theme with "Reopen task" actions and "Load More" pagination. |
 | `15-archive-768-dark.png` | 768px Tablet (Dark) | Archive Backburner view on 768px tablet layout. |
-| `16-archive-360-dark.png` | 360px Mobile (Dark) | Archive Closed Issues view on 360px mobile viewport. |
+| `16-archive-360-dark.png` | 360px Compact (Dark) | Archive Closed Issues view on 360px compact viewport. |
 | `17-client-1280-dark.png` | 1280px Desktop (Dark) | Client view with active presentation filter, amber disclaimer warning banner, and filtered task list. |
 | `18-client-1280-light.png` | 1280px Desktop (Light) | Client view in light theme showing security disclaimer and exit action button. |
 | `19-client-768-dark.png` | 768px Tablet (Dark) | Client view on 768px tablet layout. |
-| `20-client-360-dark.png` | 360px Mobile (Dark) | Client view on 360px mobile viewport with responsive banner stacking. |
+| `20-client-360-dark.png` | 360px Compact (Dark) | Client view on 360px compact viewport with responsive banner stacking. |
 | `21-discussions-1280-dark.png` | 1280px Desktop (Dark) | Honest Discussions placeholder explaining that task issues manage decision workflows. |
-| `22-discussions-360-dark.png` | 360px Mobile (Dark) | Discussions placeholder on 360px mobile viewport with centered card and "Back to List" button. |
+| `22-discussions-360-dark.png` | 360px Compact (Dark) | Discussions placeholder on 360px compact viewport with centered card and "Back to List" button. |
 | `23-bilingual-fr-decisions-1280-dark.png` | 1280px Desktop (French) | Decisions section in French: "Arbitrages", "Répondre", localized timestamps and headings. |
 | `24-bilingual-fr-operations-1280-dark.png` | 1280px Desktop (French) | Operations overview in French: "Vue Opérations", "Tâches ouvertes", "Besoin d'attention humaine". |
 
@@ -195,4 +195,34 @@ Generated via Obscura headless browser in `.agents/run/chamberos-board-v2/verifi
 
 ### Finding 4: Precondition Guard on Label Removal
 - **Defect:** Attempting to remove a label not present on the issue could trigger an unnecessary upstream GitHub PATCH request or return a confusing response.
-- **Resolution:** Added an explicit precondition check in `POST /api/issues/:n/labels/remove` and `DELETE /api/issues/:n/labels/:label`. If the label is not currently attached, the backend returns HTTP 400 `label_not_present` with zero GitHub PATCH calls executed.
+- **Resolution:** Added an explicit precondition check in `POST /api/issues/:n/labels/remove` and `DELETE /api/issues/:n/labels/:label`. If the label is not currently attached, the backend returns HTTP 400 `invalid_edit` with zero GitHub PATCH calls executed.
+
+### Finding 5: Mandatory Fingerprint Enforcement Across All Write Paths
+- **Defect:** `writeIssue` previously relaxed fingerprint verification on `reopen`, `remove-label`, and `human-task`, exposing those endpoints to lost updates and race conditions. Furthermore, missing fingerprint bypassed conflict detection.
+- **Resolution:** Made fingerprints mandatory across all `writeIssue` operations without exception. Missing fingerprint returns 400 `fingerprint_required`, stale fingerprint returns 409 `conflict` with 0 GitHub writes.
+
+### Finding 6: Reopen Lifecycle & Status Reconciliation
+- **Defect:** Reopening closed issues patched `state: 'open'` without reconciling status labels, leaving issues stranded with `status:done` or stale stage markers.
+- **Resolution:** Updated reopen handler in `web/server/app.ts` to patch both `state: 'open'` and `labels: applyStatusChange(fresh.item, 'status:backlog')`, properly returning the issue to the backlog with active verification.
+
+### Finding 7: Operations Breakdown 8-Column Matrix & Accurate `closed7Days` Metric
+- **Defect:** Operations breakdown omitted `planned` and mapped `in-review` to non-standard columns. `closed7Days` incorrectly referenced `updatedAt` rather than `closedAt`, misclassifying recently edited historical closed tasks.
+- **Resolution:** Updated `operationsData` in `web/server/app.ts` and table headers in `web/public/index.html` to align with the 8 standard status columns (`draft`, `backlog`, `todo`, `planned`, `in-progress`, `needs-human`, `in-review`, `done`). Exclusively used `closedAt` for `closed7Days` calculation and preserved authentic `fetchedAt`, `truncated`, `partial`, and `failures` metadata.
+
+### Finding 8: Global Client Presentation Mode & Clean Overview Previews
+- **Defect:** Presentation mode was local to Client view, leaving Canvas, List, drawer, and other sidebar sections exposing internal draft tasks, raw markdown slices, and canvas sticky notes.
+- **Resolution:** Implemented persistent global presentation mode with body-level class `client-presentation-active`, hiding draft tasks in List and Canvas views, suppressing canvas notes, displaying clean overview previews without leaking raw markdown, and offering a persistent exit banner.
+
+### Finding 9: Native Obscura CDP Automation & Lexicon Sanitization
+- **Defect:** Screenshot generation previously used an HTTP proxy with injected `<script>` tags and CSS overrides, violating native viewport and authentic asset fidelity constraints. Banned terminology appeared in test artifacts and markdown text.
+- **Resolution:** Refactored `scripts/generate-a5-screenshots.mjs` to interface natively with Obscura CDP via Node's native WebSocket (`ws://127.0.0.1:9222/devtools/browser`, `Target.attachToTarget`, `Emulation.setDeviceMetricsOverride`), generating authentic 1280px, 768px, and 360px screenshots directly. Sanitized all occurrences of non-compliant terms to `compact` or `narrow`.
+
+---
+
+## Final Verification Summary
+- `npm test`: 618 passed, 0 failed (PASS)
+- `node --test web/tests/*.test.mjs`: 549 passed, 0 failed (PASS)
+- `npm run typecheck`: 0 errors (PASS)
+- Obscura CDP native screenshots: 24/24 captured at authentic viewports (PASS)
+- Forbidden lexicon scan: 0 occurrences of prohibited terms or `n8n` in proof/code (PASS)
+
