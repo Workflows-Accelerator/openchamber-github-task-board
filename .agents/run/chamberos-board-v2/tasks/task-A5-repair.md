@@ -18,7 +18,7 @@ Worktree audit report: .agents/run/chamberos-board-v2/verifications/A5/independe
 Worktree proofs: .agents/run/chamberos-board-v2/verifications/A5/proof.md and .agents/run/chamberos-board-v2/verifications/A4/proof.md
 </context_files>
 <skills>
-[@/workspace/code/openchamber-config/.agents/skills/build/implementation/surgical-patch/SKILL.md]
+[@/workspace/code/openchamber-config/.agents/skills/build/refactoring/surgical-patch/SKILL.md]
 [@/workspace/code/openchamber-config/.agents/skills/verify/browser/browser-testing-with-devtools/SKILL.md]
 [@/workspace/code/openchamber-config/.agents/skills/communication/terse/caveman-lite/SKILL.md]
 </skills>

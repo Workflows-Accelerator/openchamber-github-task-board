@@ -1,7 +1,7 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `proving` (A4/A5 failed independent audit at 81ed5b6; repair brief ready at tasks/task-A5-repair.md, BLOCKED on OpenChamber 401; A1-A3 awaiting combined human review; B1 parked)
+- **State:** `building` (A4/A5 repair RUNNING in sole worker ses_69c945ceb4e109beb4433b5e; A1-A3 awaiting combined human review; B1 parked until repair + hostile + independent re-audit pass)
 - **Alignment:** `CONFIRMED` (rounds 1-3, see decisions.md)
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2`
 - **Branch:** `feat/chamberos-board-v2`
@@ -52,4 +52,5 @@
   - `ses_dc3caccfc68591839a260337` P1 read-only preflight (engineer) — COMPLETED -> explore/preflight.md
 - **Preflight findings (2026-11-04):** native dependency API works, token is a classic PAT with repo scope (board uses GITHUB_TOKEN fallback); write on all 26 repos; Discussions DISABLED on all 26 repos (enabling = repo setting -> user task, B3 built on fake only); OpenChamber on 127.0.0.1:3000 same container, `POST /api/openchamber/control` session.create or `openchamber session create` CLI; live `current` reported -> 8b7e059-20261102 (summary said 98261a8 — C4 must re-check).
 - **Human tasks for morning:** enable GitHub Discussions on the repos you want (at least this one) so B3 can be checked live.
-- **Next:** when OpenChamber auth recovers and user says continue, check `session.list` on the worktree to confirm no stray repair session exists, then dispatch `[@/workspace/code/openchamber-github-task-board/.agents/run/chamberos-board-v2/tasks/task-A5-repair.md]` (engineer, location = worktree, auto_accept, dynamic-agent). On wake: verify SHAs/diffs/screenshots, then run one verification audit to confirm A4 and A5 both reach PASS/APPROVED before dispatching B1 #61. D29 authorises sequential B1-D3 without per-step human waits; live switch/master push/merge/deletion/closure still require the user. A1-A3 parked awaiting combined review, not Done.
+- **2026-11-06 continuation:** User confirmed 401 fixed and asked to continue. One worktree session check found no stray repair session; git verified clean HEAD `81ed5b6`. Corrected surgical-patch skill path in brief (build/refactoring, not build/implementation). Dispatched sole repair worker `ses_69c945ceb4e109beb4433b5e` with tasks/task-A5-repair.md, auto_accept true. One-time model verification via session.list confirmed `9router/engineer`, status busy; no further progress polling.
+- **Next:** await repair completion wake; verify SHAs/diffs/screenshots, then dispatch a fresh hostile review of the repair and a final independent audit to confirm A4 and A5 both reach PASS/APPROVED before dispatching B1 #61. D29 authorises sequential B1-D3 without per-step human waits; live switch/master push/merge/deletion/closure still require the user. A1-A3 parked awaiting combined review, not Done. GitHub audit-failure receipt was denied earlier; not reposted through another channel.

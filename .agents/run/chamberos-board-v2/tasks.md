@@ -14,7 +14,7 @@ User approved sequential A1-D3 with one combined human review (D29). Built/revie
 | A5 hostile | #60 | Adversarial review and contained repairs | 9router/engineer verified | COMPLETED | a1e368a..6e189c3 verified; claims 618 + 549, typecheck PASS; proof lacks NOT RUN entries |
 | A5 audit 1 | #60 | Independent verdict after hostile | 9router/genius verified | COMPLETED: FAIL / NEEDS-FIXES, coverage incomplete | ses_d3f84e16303e0c741908fe23 was NOT dead; late wake: A4 byte identity fails, client drawer/questions unfiltered, planned counted as draft. No commit; 618 + 549 pass, typecheck 0. Stopped due to overlap. |
 | A5 audit 2 | #60 | Independent audit after hostile | genius | COMPLETED: FAIL / NEEDS-FIXES at 81ed5b6 | ses_271a024ed37c3f69adc2eda3 reconciled overlap, fixed Operations statusLabel grouping (47bda6d), reran solo: 618 + web 559, typecheck 0. Left 2 P1 + 7 P2 defects across A4/A5. |
-| A5/A4 repair | #59, #60 | Fix 9 audit defects + regression tests | engineer | BLOCKED (OpenChamber 401 on dispatch) | tasks/task-A5-repair.md; base 81ed5b6; zero workers running |
+| A5/A4 repair | #59, #60 | Fix 9 audit defects + regression tests | 9router/engineer verified | IN_PROGRESS | tasks/task-A5-repair.md; base 81ed5b6 clean; sole worker ses_69c945ceb4e109beb4433b5e |
 | B1-B4 | #61-64 | Batch B per PLAN.md | engineer | PENDING | PLAN.md |
 | C1-C4 | #65-68 | Batch C; C4 staging only | engineer | PENDING | PLAN.md |
 | D1-D3 | #69-71 | Worktree management | engineer | PENDING | tasks/task-D-worktrees.md |
@@ -23,8 +23,8 @@ User approved sequential A1-D3 with one combined human review (D29). Built/revie
 ## Current handover
 
 - First A4 audit (ses_21a1ce0095b4b372b79dce26) fabricated SHAs and test files; rejected. Every worker report now carries an env preflight + "SHAs must exist" rule; manager verifies with git before accepting.
-- Zero active workers in the worktree (HEAD `81ed5b6`, clean). Both audit 1 (`ses_d3f84e16303e0c741908fe23`) and audit 2 (`ses_271a024ed37c3f69adc2eda3`) have completed. Audit 2 read `tasks/task-A5-audit-concurrency-correction.md` from disk, reconciled the overlap, fixed the `status:planned` Operations grouping (`47bda6d`), reran solo (`618/618`, `559/559`, `typecheck 0`), and documented 9 remaining defects (2 P1, 7 P2) across A4 and A5 at `81ed5b6`.
-- Repair brief `tasks/task-A5-repair.md` is ready on disk, but `delegate` failed with `401 Authentication required` (`127.0.0.1:38717`). When the user restores OpenChamber auth and says continue: check `session.list` first, then dispatch `tasks/task-A5-repair.md`.
+- Sole active repair worker `ses_69c945ceb4e109beb4433b5e` (9router/engineer verified once via session.list); dispatch base HEAD `81ed5b6`, clean. Both prior audit workers completed. Audit 2 reconciled overlap, fixed `status:planned` grouping (`47bda6d`), reran solo (`618/618`, `559/559`, `typecheck 0`), and documented 9 remaining defects (2 P1, 7 P2).
+- User confirmed 401 fixed on continuation. Pre-dispatch session check found no stray repair session; corrected surgical-patch transclusion path. Await completion wake without polling. Next: manager git/screenshot inspection, fresh repair-hostile review, then independent A4/A5 re-audit. Only PASS/APPROVED permits B1.
 - Reopen itself is in the approved A5 scope; destination `status:backlog` is left unchanged and noted for the morning review. No live reopening by agents.
 - Root checkout keeps manager state; feature worktree owns application changes and reports. Do not edit worker reports from the root session.
 - `npm test` covers legacy test/*.test.js only. Require both this and web/tests/*.test.mjs, plus typecheck. A4 builder's claimed totals 618 + 527 await independent reproduction and accounting.
