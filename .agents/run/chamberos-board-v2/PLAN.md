@@ -3,6 +3,9 @@
 Source of truth for decisions: [@decisions.md]. Technical ground: [@explore/discovery.md].
 Repo: Workflows-Accelerator/openchamber-github-task-board. Worktree: `.worktrees/team-dev-chamberos-board-v2`, branch `feat/chamberos-board-v2` (base `a8ccc7a`).
 
+## Urgent delivery override — D30/D31, 2026-11-06
+User selected the foundation-first version for today. Finish current A4/A5 repairs, hostile review and independent verification; then advance the minimum C4 preview/release preparation for A1-A5, request one human foundation review and release only after explicit approval. Do not wait for B1-B4, C1-C3 or D1-D3. Those features remain approved but deferred; never claim them in this delivery. All merge/master push/live switch/deletion/closure gates remain intact. This override takes precedence over the original ordering below.
+
 ## Ordering rule
 Every step edits the same front end (`web/public/**`) and most edit `web/server/**`.
 So steps run strictly ONE AT A TIME in the single worktree, in the order below.

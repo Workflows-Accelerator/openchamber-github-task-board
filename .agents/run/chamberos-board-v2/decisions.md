@@ -59,3 +59,8 @@ alignment: CONFIRMED (2026-11-03, rounds 1-3)
   Still gated on the user's click (D27 + manager rules): merge to master, push master, switching the live board (C4 live switch), any deletion, closing issues. Those steps are built and staged, then parked as needs-human.
   Unanswered: closing #53/#54 as superseded — left open.
   Speed: read-only preflight checks (token permissions, OpenChamber API reachability, deploy path) run in parallel with builds because they edit no product files.
+
+## Delivery priority — 2026-11-06 (answered on page)
+- D30 User needs a usable version today quickly and selected "Livrer le socle aujourd’hui — recommandé". Deliver the A1-A5 foundation first: Canvas/List, native dependency links, notes, Arrange and sidebar sections, after the current nine-defect repair and verification. Do NOT wait for B1-B4, C1-C3 or D1-D3 before presenting this foundation for human validation/publication.
+- D30 supersedes D29's uninterrupted A-to-D sequence for this delivery. Advanced label/front-matter editor, rich drawer additions, Discussions/template, D1 capture/screenshots, real Run and worktree management remain approved backlog, not cancelled and not claimed delivered.
+- D31 Advance only the minimum preview/release preparation needed for the A foundation (subset of C4). Preview is for validation, not permission to switch live. Clearly disclose unbuilt features and test-data boundaries; no fake production behavior. No publication before repair + L4 + independent verification + explicit human sign-off. Merge/master push/live switch/deletions/closures remain separately gated. No delivery-time guarantee was made.

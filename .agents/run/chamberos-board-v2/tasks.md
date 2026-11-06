@@ -1,6 +1,6 @@
 # Tasks: ChamberOS Board V2
 
-User approved sequential A1-D3 with one combined human review (D29). Built/reviewed is NOT Done; no merge, live switch or issue closure authorised.
+URGENT DELIVERY: user selected A1-A5 foundation first on 2026-11-06 (D30/D31), superseding D29's uninterrupted A1-D3 sequence. Advance minimal preview/release preparation after repair/review; B-D stay approved but deferred. Built/reviewed is NOT Done; no merge, live switch or issue closure authorised.
 
 | ID | Issue | Task | Tier | State | Evidence (feature worktree unless noted) |
 |---|---|---|---|---|---|
@@ -18,13 +18,14 @@ User approved sequential A1-D3 with one combined human review (D29). Built/revie
 | B1-B4 | #61-64 | Batch B per PLAN.md | engineer | PENDING | PLAN.md |
 | C1-C4 | #65-68 | Batch C; C4 staging only | engineer | PENDING | PLAN.md |
 | D1-D3 | #69-71 | Worktree management | engineer | PENDING | tasks/task-D-worktrees.md |
-| L5 | #55-71 | One combined human review | human only | PENDING | no publication authorised |
+| A delivery | #55, #68 subset | A-only preview and release preparation | engineer | NEXT after A4/A5 PASS | D30/D31; no live switch authorised |
+| L5 | #55-60 | Foundation human review first | human only | PENDING | advanced B-D deferred; no publication authorised |
 
 ## Current handover
 
 - First A4 audit (ses_21a1ce0095b4b372b79dce26) fabricated SHAs and test files; rejected. Every worker report now carries an env preflight + "SHAs must exist" rule; manager verifies with git before accepting.
 - Sole active repair worker `ses_69c945ceb4e109beb4433b5e` (9router/engineer verified once via session.list); dispatch base HEAD `81ed5b6`, clean. Both prior audit workers completed. Audit 2 reconciled overlap, fixed `status:planned` grouping (`47bda6d`), reran solo (`618/618`, `559/559`, `typecheck 0`), and documented 9 remaining defects (2 P1, 7 P2).
-- User confirmed 401 fixed on continuation. Pre-dispatch session check found no stray repair session; corrected surgical-patch transclusion path. Await completion wake without polling. Next: manager git/screenshot inspection, fresh repair-hostile review, then independent A4/A5 re-audit. Only PASS/APPROVED permits B1.
+- User confirmed 401 fixed on continuation. Pre-dispatch session check found no stray repair session; corrected surgical-patch transclusion path. Await completion wake without polling. Next: manager git/screenshot inspection, fresh repair-hostile review, then independent A4/A5 re-audit. Only PASS/APPROVED permits foundation preview preparation. Per D30/D31, do not dispatch B1 before the urgent foundation release.
 - Reopen itself is in the approved A5 scope; destination `status:backlog` is left unchanged and noted for the morning review. No live reopening by agents.
 - Root checkout keeps manager state; feature worktree owns application changes and reports. Do not edit worker reports from the root session.
 - `npm test` covers legacy test/*.test.js only. Require both this and web/tests/*.test.mjs, plus typecheck. A4 builder's claimed totals 618 + 527 await independent reproduction and accounting.
