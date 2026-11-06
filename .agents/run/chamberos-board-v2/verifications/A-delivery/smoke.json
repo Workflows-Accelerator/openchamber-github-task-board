@@ -6,7 +6,7 @@
     "payload": {
       "status": "ok",
       "version": "1.2.1",
-      "uptime": 11
+      "uptime": 17
     }
   },
   {
@@ -35,6 +35,7 @@
   {
     "name": "Decisions section (EN/FR, 1280/768)",
     "verdict": "PASS",
+    "cards": 1,
     "screenshots": [
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
@@ -43,6 +44,7 @@
   {
     "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
     "verdict": "PASS",
+    "cards": 4,
     "screenshots": [
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
@@ -51,6 +53,7 @@
   {
     "name": "Operations overview real metrics (EN/FR)",
     "verdict": "PASS",
+    "statCards": 6,
     "screenshots": [
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
@@ -59,11 +62,14 @@
   {
     "name": "Archive & Backburner section",
     "verdict": "PASS",
+    "cards": 1,
     "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
   },
   {
     "name": "Client Presentation Mode (1280/360)",
     "verdict": "PASS",
+    "rows": 7,
+    "active": true,
     "screenshots": [
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
       ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
