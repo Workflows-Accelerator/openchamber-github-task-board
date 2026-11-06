@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process';
 import { startFakeGitHub, makeIssue } from '../web/tests/fake-github.mjs';
 import { startBoard, BOARD_PASSWORD } from '../web/tests/helpers.mjs';
 
-const root = path.resolve('.agents/run/chamberos-board-v2/verifications/A5/independent');
+const root = process.env.AUDIT_A5_OUTPUT_DIR || '/tmp/opencode/audit-a5';
 fs.mkdirSync(path.join(root, 'screenshots'), { recursive: true });
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function ensureObscura() {
@@ -209,7 +209,9 @@ try {
     PATCH: fake.patchCalls.map(p => ({ number: p.number, keys: Object.keys(p.payload) })),
   });
 } finally {
-  fs.writeFileSync(path.join(root, 'browser.json'), JSON.stringify(report, null, 2) + '\n');
+  const outPath = process.env.AUDIT_A5_OUTPUT || path.join(root, 'browser.json');
+  fs.mkdirSync(path.dirname(outPath), { recursive: true });
+  fs.writeFileSync(outPath, JSON.stringify(report, null, 2) + '\n');
   if (target) await cdp.send('Target.closeTarget', { targetId: target.targetId }).catch(() => {});
   cdp.ws?.close();
   await board.app.close(); await fake.close();

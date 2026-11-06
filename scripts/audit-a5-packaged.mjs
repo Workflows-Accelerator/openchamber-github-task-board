@@ -512,7 +512,7 @@ try {
     cspViolations,
   });
 } finally {
-  const outA5 = path.resolve('.agents/run/chamberos-board-v2/verifications/A5/independent/packaged-browser.json');
+  const outA5 = process.env.PACKAGED_AUDIT_OUTPUT || '/tmp/opencode/packaged-browser.json';
   fs.mkdirSync(path.dirname(outA5), { recursive: true });
   fs.writeFileSync(outA5, JSON.stringify(report, null, 2) + '\n');
   if (target) await cdp.send('Target.closeTarget', { targetId: target.targetId }).catch(() => {});

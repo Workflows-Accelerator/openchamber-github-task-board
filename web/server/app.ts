@@ -1329,7 +1329,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         throw new DiscoveryUnavailableError();
       }
       board = (await combinedBoard()) as any;
-      if (discovery.repositories.length > 0 && (board.repositoriesLoaded ?? 0) === 0) {
+      if (discovery.repositories.some((r) => r.available) && (board.repositoriesLoaded ?? 0) === 0) {
         throw new DiscoveryUnavailableError();
       }
       allIssues = board.issues || [];
@@ -1418,7 +1418,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         throw new DiscoveryUnavailableError();
       }
       board = (await combinedBoard()) as any;
-      if (discovery.repositories.length > 0 && (board.repositoriesLoaded ?? 0) === 0) {
+      if (discovery.repositories.some((r) => r.available) && (board.repositoriesLoaded ?? 0) === 0) {
         throw new DiscoveryUnavailableError();
       }
       allIssues = board.issues || [];

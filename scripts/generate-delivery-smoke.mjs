@@ -1,87 +1,29 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import crypto from 'node:crypto';
 import { BOARD_PASSWORD } from '../web/tests/helpers.mjs';
+
+let pkg;
+try {
+  pkg = await import('/workspace/personal/lucas/charme-social/node_modules/playwright/index.js');
+} catch {
+  pkg = await import('playwright');
+}
+const { chromium } = pkg.default || pkg;
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
-const DELIVERY_DIR = path.resolve(ROOT_DIR, '.agents/run/chamberos-board-v2/verifications/A-delivery');
+const DELIVERY_DIR = process.env.DELIVERY_DIR || path.resolve(ROOT_DIR, '.agents/run/chamberos-board-v2/verifications/A-delivery');
 const SCREENSHOTS_DIR = path.resolve(DELIVERY_DIR, 'screenshots');
-const CDP_PORT = 9222;
 const PREVIEW_PORT = 4041;
-const PREVIEW_URL = `http://127.0.0.1:${PREVIEW_PORT}`;
+const PREVIEW_URL = process.env.PREVIEW_URL || `http://127.0.0.1:${PREVIEW_PORT}`;
+const CHROME_PATH = process.env.H2_CHROME || '/workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell';
 
 fs.mkdirSync(SCREENSHOTS_DIR, { recursive: true });
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-class CDP {
-  constructor(url) {
-    this.url = url;
-    this.nextId = 1;
-    this.pending = new Map();
-    this.handlers = new Map();
-  }
-
-  async open() {
-    this.ws = new WebSocket(this.url);
-    await new Promise((resolve, reject) => {
-      this.ws.addEventListener('open', resolve, { once: true });
-      this.ws.addEventListener('error', reject, { once: true });
-    });
-    this.ws.addEventListener('message', (event) => {
-      let message;
-      try {
-        message = JSON.parse(event.data);
-      } catch {
-        return;
-      }
-      if (message.method && this.handlers.has(message.method)) {
-        for (const fn of this.handlers.get(message.method)) {
-          try { fn(message.params); } catch (_) {}
-        }
-      }
-      if (message.id && this.pending.has(message.id)) {
-        const { resolve, reject } = this.pending.get(message.id);
-        this.pending.delete(message.id);
-        if (message.error) reject(new Error(message.error.message || 'CDP error'));
-        else resolve(message.result);
-      }
-    });
-  }
-
-  on(method, handler) {
-    if (!this.handlers.has(method)) this.handlers.set(method, new Set());
-    this.handlers.get(method).add(handler);
-  }
-
-  send(method, params = {}, sessionId) {
-    const id = this.nextId++;
-    return new Promise((resolve, reject) => {
-      this.pending.set(id, { resolve, reject });
-      const payload = { id, method, params };
-      if (sessionId) payload.sessionId = sessionId;
-      this.ws.send(JSON.stringify(payload));
-      setTimeout(() => {
-        if (this.pending.has(id)) {
-          this.pending.delete(id);
-          reject(new Error(`CDP timeout: ${method}`));
-        }
-      }, 30_000);
-    });
-  }
-
-  close() {
-    try {
-      this.ws.close();
-    } catch {
-      // ignore
-    }
-  }
 }
 
 async function run() {
@@ -91,48 +33,70 @@ async function run() {
   const healthPayload = await healthRes.json();
   console.log('Preview health:', healthPayload);
 
-  const cdp = new CDP(`ws://127.0.0.1:${CDP_PORT}/devtools/browser`);
-  await cdp.open();
+  console.log(`Launching real Chromium from ${CHROME_PATH}...`);
+  const browser = await chromium.launch({
+    executablePath: CHROME_PATH,
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
 
-  const created = await cdp.send('Target.createTarget', { url: 'about:blank' });
-  const attached = await cdp.send('Target.attachToTarget', { targetId: created.targetId, flatten: true });
-  const sessionId = attached.sessionId;
-  const send = (m, p) => cdp.send(m, p, sessionId);
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 900 },
+    serviceWorkers: 'block',
+  });
 
   const exceptions = [];
   const consoleErrors = [];
   const cspViolations = [];
 
-  cdp.on('Runtime.exceptionThrown', (params) => {
-    exceptions.push(params.exceptionDetails?.text || 'exception');
-  });
-  cdp.on('Log.entryAdded', (params) => {
-    if (params.entry?.level === 'error') {
-      consoleErrors.push(params.entry.text);
-    }
-  });
-
-  await send('Page.enable');
-  await send('Runtime.enable');
-  await send('Log.enable');
-
-  const evaluate = async (expression) => {
-    const res = await send('Runtime.evaluate', {
-      expression,
-      returnByValue: true,
-      awaitPromise: true,
+  await context.addInitScript(() => {
+    window.__cspViolations = [];
+    window.addEventListener('securitypolicyviolation', (e) => {
+      window.__cspViolations.push(e.blockedURI || e.violatedDirective || 'csp-violation');
     });
-    if (res.exceptionDetails) {
-      throw new Error(res.exceptionDetails.exception?.description || res.exceptionDetails.text || 'eval error');
+  });
+
+  const page = await context.newPage();
+
+  page.on('pageerror', (err) => {
+    exceptions.push(err.message || String(err));
+  });
+
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') {
+      consoleErrors.push(msg.text());
     }
-    return res.result.value;
-  };
+  });
+
+  const cdp = await context.newCDPSession(page);
+  await cdp.send('Runtime.enable');
+  await cdp.send('Log.enable');
+
+  cdp.on('Runtime.exceptionThrown', (params) => {
+    const text = params.exceptionDetails?.text || 'exception';
+    if (!exceptions.includes(text)) exceptions.push(text);
+  });
+
+  cdp.on('Runtime.consoleAPICalled', (params) => {
+    if (params.type === 'error') {
+      const msg = params.args?.map((a) => a.value || a.description).join(' ') || 'error';
+      if (!consoleErrors.includes(msg)) consoleErrors.push(msg);
+    }
+  });
+
+  cdp.on('Log.entryAdded', (params) => {
+    if (/content security|violat/i.test(params.entry?.text)) {
+      cspViolations.push(params.entry.text);
+    }
+  });
+
+  const evaluate = async (fn, arg) => page.evaluate(fn, arg);
 
   const waitFor = async (fnExpr, label, timeout = 10000) => {
     const start = Date.now();
     while (Date.now() - start < timeout) {
       try {
-        const val = await evaluate(`Boolean(${fnExpr})`);
+        const val = await page.evaluate(`Boolean(${fnExpr})`);
         if (val) return true;
       } catch (_) {}
       await sleep(100);
@@ -140,95 +104,85 @@ async function run() {
     throw new Error(`Timeout waiting for ${label}`);
   };
 
-  // Sign in
-  console.log('Navigating to preview...');
-  await send('Page.navigate', { url: PREVIEW_URL });
-  await waitFor('document.getElementById("login-form")', 'login form');
-  await evaluate(`(() => {
-    const pwd = document.getElementById("password");
-    pwd.value = ${JSON.stringify(BOARD_PASSWORD)};
-    pwd.dispatchEvent(new Event("input", { bubbles: true }));
-    document.getElementById("login-form").requestSubmit();
-  })()`);
-  await waitFor('!document.getElementById("board-view")?.hidden', 'board view');
-  await waitFor('Boolean(window.__taskBoard?.state?.board?.issues?.length >= 8)', 'board loaded');
-
-  // Verify all projects selected
-  await evaluate(`(() => {
-    if (window.__taskBoard && window.__taskBoard.state.selected !== 'all') {
-      window.__taskBoard.state.selected = 'all';
-      window.__taskBoard.reload();
-    }
-  })()`);
-  await sleep(400);
-
   const setViewport = async (w, h) => {
-    const touchParam = ['m', 'obile'].join('');
-    await send('Emulation.setDeviceMetricsOverride', {
-      width: w,
-      height: h,
-      deviceScaleFactor: 1,
-      [touchParam]: w <= 768,
-    });
+    await page.setViewportSize({ width: w, height: h });
+    await sleep(150);
   };
 
   const setTheme = async (theme) => {
-    await evaluate(`(() => {
+    await page.evaluate((t) => {
       if (window.__taskBoard && window.__taskBoard.setThemeMode) {
-        window.__taskBoard.setThemeMode("${theme}");
+        window.__taskBoard.setThemeMode(t);
       } else {
-        localStorage.setItem("tb_theme_mode", "${theme}");
-        document.documentElement.setAttribute("data-theme", "${theme}");
+        localStorage.setItem('tb_theme_mode', t);
+        document.documentElement.setAttribute('data-theme', t);
       }
-    })()`);
-    await sleep(100);
+    }, theme);
+    await sleep(150);
   };
 
   const setLang = async (lang) => {
-    if (lang === 'fr') {
-      await evaluate(`(() => {
-        const btn = document.getElementById("lang-switch-btn");
-        if (btn && (localStorage.getItem("tb_lang") !== "fr")) btn.click();
-      })()`);
-    } else {
-      await evaluate(`(() => {
-        const btn = document.getElementById("lang-switch-btn");
-        if (btn && (localStorage.getItem("tb_lang") === "fr")) btn.click();
-      })()`);
-    }
-    await sleep(100);
-  };
-
-  const setClientMode = async (enable) => {
-    await evaluate(`(() => {
-      const toggleBtn = document.getElementById("client-toggle-btn");
-      const desc = document.getElementById("client-filter-status-desc");
-      const isActive = desc && (desc.textContent.includes("Active") || desc.textContent.includes("Actif"));
-      if (${enable} && !isActive && toggleBtn) {
-        toggleBtn.click();
-      } else if (!${enable} && isActive && toggleBtn) {
-        toggleBtn.click();
+    await page.evaluate((targetLang) => {
+      const current = localStorage.getItem('tb_lang') || 'en';
+      if (current !== targetLang) {
+        const btn = document.getElementById('lang-switch-btn');
+        if (btn) btn.click();
       }
-    })()`);
+    }, lang);
     await sleep(200);
   };
 
+  const setClientMode = async (enable) => {
+    await page.evaluate((en) => {
+      const toggleBtn = document.getElementById('client-toggle-btn');
+      const desc = document.getElementById('client-filter-status-desc');
+      const isActive = desc && (desc.textContent.includes('Active') || desc.textContent.includes('Actif'));
+      if (en && !isActive && toggleBtn) {
+        toggleBtn.click();
+      } else if (!en && isActive && toggleBtn) {
+        toggleBtn.click();
+      }
+    }, enable);
+    await sleep(250);
+  };
+
   const switchView = async (view) => {
-    await evaluate(`(() => {
-      const btn = document.getElementById("nav-${view}");
+    await page.evaluate((targetView) => {
+      const btn = document.getElementById(`nav-${targetView}`);
       if (btn) btn.click();
-    })()`);
+    }, view);
     await sleep(350);
   };
 
   const captureShot = async (filename) => {
     const outPath = path.join(SCREENSHOTS_DIR, filename);
-    const shot = await send('Page.captureScreenshot', { format: 'png' });
-    fs.writeFileSync(outPath, Buffer.from(shot.data, 'base64'));
+    await page.screenshot({ path: outPath });
     const stat = fs.statSync(outPath);
     console.log(`Captured ${filename} (${stat.size} bytes)`);
     return outPath;
   };
+
+  // Sign in
+  console.log('Navigating to preview...');
+  await page.goto(PREVIEW_URL);
+  await waitFor('document.getElementById("login-form")', 'login form');
+  await page.evaluate((pwd) => {
+    const input = document.getElementById('password');
+    input.value = pwd;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    document.getElementById('login-form').requestSubmit();
+  }, BOARD_PASSWORD);
+  await waitFor('!document.getElementById("board-view")?.hidden', 'board view');
+  await waitFor('Boolean(window.__taskBoard?.state?.board?.issues?.length >= 8)', 'board loaded');
+
+  // Verify all projects selected
+  await page.evaluate(() => {
+    if (window.__taskBoard && window.__taskBoard.state.selected !== 'all') {
+      window.__taskBoard.state.selected = 'all';
+      window.__taskBoard.reload();
+    }
+  });
+  await sleep(400);
 
   // 1. Sign-in & List view (1280 light EN)
   console.log('1. Capturing 01-list-1280-light-en.png...');
@@ -238,7 +192,7 @@ async function run() {
   await setClientMode(false);
   await switchView('list');
   await waitFor('document.querySelectorAll(".task-row").length >= 8', 'list rows');
-  const rowCount = await evaluate('document.querySelectorAll(".task-row").length');
+  const rowCount = await page.evaluate(() => document.querySelectorAll('.task-row').length);
   await captureShot('01-list-1280-light-en.png');
 
   // 2. Canvas view with markdown note and dependency wires (light/dark)
@@ -246,9 +200,11 @@ async function run() {
   await switchView('canvas');
   await waitFor('document.querySelectorAll(".canvas-card").length >= 8', 'canvas cards');
   await waitFor('document.querySelectorAll(".canvas-wire-group").length === 4', 'canvas wire groups');
-  const cardCount = await evaluate('document.querySelectorAll(".canvas-card").length');
-  const noteCount = await evaluate('document.querySelectorAll(".canvas-sticky-note").length');
-  const wireCount = await evaluate('document.querySelectorAll(".canvas-wire-group").length');
+  await page.evaluate(() => window.__taskBoard.fitAllCanvasNodes());
+  await sleep(250);
+  const cardCount = await page.evaluate(() => document.querySelectorAll('.canvas-card').length);
+  const noteCount = await page.evaluate(() => document.querySelectorAll('.canvas-sticky-note').length);
+  const wireCount = await page.evaluate(() => document.querySelectorAll('.canvas-wire-group').length);
   await captureShot('02-canvas-notes-wires-1280-light-en.png');
 
   console.log('3. Capturing 03-canvas-notes-wires-1280-dark-en.png...');
@@ -256,8 +212,8 @@ async function run() {
   await sleep(150);
   await captureShot('03-canvas-notes-wires-1280-dark-en.png');
 
-  // Measure Canvas controls across viewports and languages (Criterion 3: 360/768/1280, EN/FR, light/dark)
-  console.log('Measuring Canvas controls containment across matrix...');
+  // Measure Canvas controls across viewports and languages
+  console.log('Measuring Canvas controls containment and non-overlap across matrix...');
   const canvasMatrix = [
     { width: 1280, height: 900, theme: 'light', lang: 'en' },
     { width: 1280, height: 900, theme: 'dark', lang: 'en' },
@@ -277,15 +233,21 @@ async function run() {
     await setViewport(mCase.width, mCase.height);
     await setTheme(mCase.theme);
     await setLang(mCase.lang);
+    if (mCase.width <= 768) {
+      await page.evaluate(() => {
+        const b = document.getElementById('sidebar-backdrop');
+        if (b && !b.hidden) b.click();
+      });
+    }
     await sleep(200);
 
-    const metrics = await evaluate(`(() => {
+    const metrics = await page.evaluate(() => {
       const hud = document.querySelector('#canvas-controls');
       const viewport = document.querySelector('#canvas-viewport');
       const hudRect = hud.getBoundingClientRect();
       const vpRect = viewport.getBoundingClientRect();
 
-      const buttons = Array.from(hud.querySelectorAll('.canvas-control-btn')).map(b => {
+      const buttons = Array.from(hud.querySelectorAll('.canvas-control-btn')).filter((b) => !b.hidden).map((b) => {
         const r = b.getBoundingClientRect();
         const s = window.getComputedStyle(b);
         return {
@@ -326,18 +288,40 @@ async function run() {
         buttons,
         backgroundImage: bg,
       };
-    })()`);
+    });
 
-    const hasButtonOverflow = metrics.buttons.some(b => b.width > 0 && (b.left < 0 || b.right > mCase.width));
-    const casePass = !metrics.overflowsViewportLeft && !metrics.overflowsViewportRight && !hasButtonOverflow;
+    const hasButtonOverflow = metrics.buttons.some((b) => b.width > 0 && (b.left < 0 || b.right > mCase.width));
+    const overlaps = [];
+    for (let i = 0; i < metrics.buttons.length; i++) {
+      for (let j = i + 1; j < metrics.buttons.length; j++) {
+        const b1 = metrics.buttons[i];
+        const b2 = metrics.buttons[j];
+        if (b1.width > 0 && b2.width > 0) {
+          const isOverlap = (b1.left < b2.right - 0.5) && (b1.right > b2.left + 0.5) &&
+                            (b1.top < b2.bottom - 0.5) && (b1.bottom > b2.top + 0.5);
+          if (isOverlap) {
+            overlaps.push(`${b1.id} & ${b2.id}`);
+          }
+        }
+      }
+    }
+    const hasButtonOverlap = overlaps.length > 0;
+    const casePass = !metrics.overflowsViewportLeft && !metrics.overflowsViewportRight && !hasButtonOverflow && !hasButtonOverlap && !metrics.documentOverflow;
     if (!casePass) {
       canvasMeasurementsPass = false;
-      console.warn(`Canvas control containment violation at ${mCase.width}x${mCase.height} ${mCase.lang}:`, metrics);
+      console.warn(`Canvas control containment violation at ${mCase.width}x${mCase.height} ${mCase.lang}:`, {
+        overflowsLeft: metrics.overflowsViewportLeft,
+        overflowsRight: metrics.overflowsViewportRight,
+        buttonOverflow: hasButtonOverflow,
+        buttonOverlap: overlaps,
+        documentOverflow: metrics.documentOverflow,
+      });
     }
 
     canvasMeasurements.push({
       testCase: mCase,
       hudMetrics: metrics,
+      buttonOverlaps: overlaps,
       pass: casePass,
     });
   }
@@ -364,12 +348,19 @@ async function run() {
   console.log('4. Capturing 04-decisions-1280-dark-en.png...');
   await switchView('decisions');
   await waitFor('!document.getElementById("decisions-view")?.hidden', 'decisions view');
+  await waitFor('document.querySelectorAll("#decisions-view .section-card").length >= 1', 'decisions cards');
+  const decisionsCards = await page.evaluate(() => document.querySelectorAll('#decisions-view .section-card').length);
+  const decisionsVisible = await page.evaluate(() => !document.getElementById('decisions-view')?.hidden);
   await captureShot('04-decisions-1280-dark-en.png');
 
   console.log('5. Capturing 05-decisions-768-light-fr.png...');
   await setViewport(768, 900);
   await setTheme('light');
   await setLang('fr');
+  await page.evaluate(() => {
+    const b = document.getElementById('sidebar-backdrop');
+    if (b && !b.hidden) b.click();
+  });
   await sleep(200);
   await captureShot('05-decisions-768-light-fr.png');
 
@@ -380,10 +371,17 @@ async function run() {
   await setLang('en');
   await switchView('blocked');
   await waitFor('!document.getElementById("blocked-view")?.hidden', 'blocked view');
+  await waitFor('document.querySelectorAll("#blocked-view .section-card").length >= 1', 'blocked cards');
+  const blockedCards = await page.evaluate(() => document.querySelectorAll('#blocked-view .section-card').length);
+  const blockedVisible = await page.evaluate(() => !document.getElementById('blocked-view')?.hidden);
   await captureShot('06-blocked-1280-dark-en.png');
 
   console.log('7. Capturing 07-blocked-360-dark-en.png...');
   await setViewport(360, 800);
+  await page.evaluate(() => {
+    const b = document.getElementById('sidebar-backdrop');
+    if (b && !b.hidden) b.click();
+  });
   await sleep(200);
   await captureShot('07-blocked-360-dark-en.png');
 
@@ -392,6 +390,9 @@ async function run() {
   await setViewport(1280, 900);
   await switchView('operations');
   await waitFor('!document.getElementById("operations-grid")?.hidden', 'operations view');
+  await waitFor('document.querySelectorAll("#operations-grid .stat-card").length >= 4', 'operations stat cards');
+  const operationsStatCards = await page.evaluate(() => document.querySelectorAll('#operations-grid .stat-card').length);
+  const operationsVisible = await page.evaluate(() => !document.getElementById('operations-grid')?.hidden);
   await captureShot('08-operations-1280-dark-en.png');
 
   console.log('9. Capturing 09-operations-1280-light-fr.png...');
@@ -402,10 +403,14 @@ async function run() {
 
   // 10. Archive & Backburner section
   console.log('10. Capturing 10-archive-1280-dark-en.png...');
+  await setViewport(1280, 900);
   await setTheme('dark');
   await setLang('en');
   await switchView('archive');
   await waitFor('!document.getElementById("archive-view")?.hidden', 'archive view');
+  await waitFor('document.querySelectorAll("#archive-view .section-card").length >= 1', 'archive cards');
+  const archiveCards = await page.evaluate(() => document.querySelectorAll('#archive-view .section-card').length);
+  const archiveVisible = await page.evaluate(() => !document.getElementById('archive-view')?.hidden);
   await captureShot('10-archive-1280-dark-en.png');
 
   // 11. Client Presentation Mode (1280/360)
@@ -413,21 +418,33 @@ async function run() {
   await switchView('list');
   await setClientMode(true);
   await waitFor('document.querySelectorAll(".task-row").length > 0', 'client mode list');
+  const clientRows = await page.evaluate(() => document.querySelectorAll('.task-row').length);
+  const clientActive = await page.evaluate(() => {
+    const desc = document.getElementById('client-filter-status-desc');
+    return Boolean(desc && (desc.textContent.includes('Active') || desc.textContent.includes('Actif')));
+  });
   await captureShot('11-client-1280-dark-en.png');
 
   console.log('12. Capturing 12-client-360-dark-en.png...');
   await setViewport(360, 800);
+  await page.evaluate(() => {
+    const b = document.getElementById('sidebar-backdrop');
+    if (b && !b.hidden) b.click();
+  });
   await sleep(200);
   await captureShot('12-client-360-dark-en.png');
 
   // Clean up client mode
   await setClientMode(false);
 
-  // Close CDP
-  try {
-    await cdp.send('Target.closeTarget', { targetId: created.targetId });
-  } catch (_) {}
-  cdp.close();
+  // Check page-side CSP listener
+  const pageCsp = await page.evaluate(() => window.__cspViolations || []).catch(() => []);
+  for (const c of pageCsp) {
+    if (!cspViolations.includes(c)) cspViolations.push(c);
+  }
+
+  // Close browser
+  await browser.close();
 
   const smokeData = [
     {
@@ -461,7 +478,8 @@ async function run() {
     },
     {
       name: 'Decisions section (EN/FR, 1280/768)',
-      verdict: 'PASS',
+      verdict: (decisionsVisible && decisionsCards >= 1) ? 'PASS' : 'FAIL',
+      cards: decisionsCards,
       screenshots: [
         '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png',
         '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png',
@@ -469,7 +487,8 @@ async function run() {
     },
     {
       name: 'Blocked section with human tasks and cross-repo dependencies (1280/360)',
-      verdict: 'PASS',
+      verdict: (blockedVisible && blockedCards >= 1) ? 'PASS' : 'FAIL',
+      cards: blockedCards,
       screenshots: [
         '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png',
         '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png',
@@ -477,7 +496,8 @@ async function run() {
     },
     {
       name: 'Operations overview real metrics (EN/FR)',
-      verdict: 'PASS',
+      verdict: (operationsVisible && operationsStatCards >= 4) ? 'PASS' : 'FAIL',
+      statCards: operationsStatCards,
       screenshots: [
         '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png',
         '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png',
@@ -485,12 +505,15 @@ async function run() {
     },
     {
       name: 'Archive & Backburner section',
-      verdict: 'PASS',
+      verdict: (archiveVisible && archiveCards >= 1) ? 'PASS' : 'FAIL',
+      cards: archiveCards,
       screenshot: '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png',
     },
     {
       name: 'Client Presentation Mode (1280/360)',
-      verdict: 'PASS',
+      verdict: (clientRows >= 1 && clientActive) ? 'PASS' : 'FAIL',
+      rows: clientRows,
+      active: clientActive,
       screenshots: [
         '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png',
         '.agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png',

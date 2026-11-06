@@ -562,4 +562,88 @@ test('multi-repo Operations and Archive failure modes: total outage, partial per
       await fake.close();
     }
   }
+
+  // 4. Sole repository becomes unavailable (known, available:false) -> 200 consistent with combined board
+  {
+    let clock = Date.parse('2026-11-06T00:00:00Z');
+    const fake = await startFakeGitHub({
+      repositories: [
+        {
+          repo: 'owner/repo-lone',
+          id: 1,
+          issues: [makeIssue({ number: 1, repo: 'owner/repo-lone', labels: ['status:todo'] })],
+        },
+      ],
+    });
+
+    const board = await startBoard(fake, {
+      now: () => clock,
+      repositoryTtlMs: 60_000,
+      boardCacheTtlMs: 0,
+    });
+    try {
+      const session = new HttpSession(board.url);
+      await session.login();
+
+      // Prime discovery
+      const primeOps = await session.request('/api/combined/operations');
+      assert.equal(primeOps.status, 200);
+
+      // Token loses access to repo and discovery TTL expires
+      fake.setRepoAccessible('owner/repo-lone', false);
+      clock += 61_000;
+
+      const opsRes = await session.request('/api/combined/operations');
+      assert.equal(opsRes.status, 200);
+      assert.equal(opsRes.json.partial, true);
+
+      const archiveRes = await session.request('/api/combined/archive');
+      assert.equal(archiveRes.status, 200);
+      assert.equal(archiveRes.json.partial, true);
+
+      const boardRes = await session.request('/api/combined/board');
+      assert.equal(boardRes.status, 200);
+    } finally {
+      await board.app.close();
+      await fake.close();
+    }
+  }
+
+  // 5. Empty account with zero discovered repos -> 200 empty, not 502
+  {
+    const fake = await startFakeGitHub({
+      repositories: [
+        {
+          repo: 'owner/inaccessible',
+          id: 1,
+          issues: [],
+          accessible: false,
+        },
+      ],
+    });
+
+    const board = await startBoard(fake, {
+      repositoryTtlMs: 60_000,
+      env: { BOARD_REPO: '' },
+    });
+    try {
+      const session = new HttpSession(board.url);
+      await session.login();
+
+      const opsRes = await session.request('/api/combined/operations');
+      assert.equal(opsRes.status, 200);
+      assert.equal(opsRes.json.openClosed.open, 0);
+
+      const archiveRes = await session.request('/api/combined/archive');
+      assert.equal(archiveRes.status, 200);
+      assert.equal(archiveRes.json.totalClosed, 0);
+      assert.equal(archiveRes.json.totalBackburner, 0);
+
+      const boardRes = await session.request('/api/combined/board');
+      assert.equal(boardRes.status, 200);
+    } finally {
+      await board.app.close();
+      await fake.close();
+    }
+  }
 });
