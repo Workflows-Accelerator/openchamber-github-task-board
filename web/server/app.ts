@@ -1373,7 +1373,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         closedCount++;
       }
 
-      let stage = (issue.column || 'draft').toLowerCase();
+      let stage = (issue.statusLabel?.replace(/^status:/i, '') || issue.column || 'draft').toLowerCase();
       if (stage === 'review') stage = 'in-review';
       if (!standardColumns.includes(stage)) {
         stage = isOpen ? 'draft' : 'done';
