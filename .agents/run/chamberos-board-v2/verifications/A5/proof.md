@@ -382,3 +382,28 @@ Raw evidence under [independent/raw/](independent/raw/): full final npm/web/type
 DIDN'T WORK: planned-count test `0 !== 1`; initial data probe wrong scoped route/request fields (`TypeError: Cannot read properties of undefined (reading 'map')`); offline CDP method timeout; intermittent screenshot/Runtime.evaluate timeouts; reload matrix wait after Canvas; untrusted overlapping question success expected 200 got 400.
 FINALLY WORKED: explicit-status fix and unchanged regression; `/api/combined/operations` plus fake path/query; offline marked NOT RUN; completed native DOM/action matrix with AUDIT_NO_SHOTS=1 and selected authentic captures; List before reload; final fresh tests/browser replace compromised observations, original overlapping source remains unrecoverable. Detailed limitations in independent/audit-findings.md. Broad product repairs left to follow-up, not hidden by a green suite.
 
+---
+
+## Post-repair hostile review — 2026-11-06 (Post-repair verification)
+
+**A5 post-repair verdict: PASS.**
+Hostile review of repairs across all 9 audit defects between `81ed5b6` and HEAD:
+
+1. **Defect 1 (Presentation leaks eliminated):** Fully removed `isInternalItem` prefix checking. In client presentation mode, open questions and human tasks are completely hidden across Decisions (`decisions_client_mode`), Blocked (`blocked_client_mode`), and drawer overview without leaking internal tasks or questions. Front matter is excluded and stripped from overview preview via `#overview-preview` markdown renderer. Verified: `leaked: []` across all 7 views in CDP browser audit (`scripts/audit-a5.mjs`).
+2. **Defect 2 (Note 409 conflict recovery):** Local draft is preserved upon 409 conflict. Safe retry adopts remote fingerprint when target note is unchanged; overwrite preserves remote card geometry (x, y) and concurrent edits to sibling notes. Verified in `web/tests/a5-presentation-audit.test.mjs` and native CDP audit.
+3. **Defect 3 (Human task toggle serialization):** Serialized per-issue queue (`humanTaskQueues`) prevents concurrent toggle races and adopts updated fingerprints, eliminating 409 collisions.
+4. **Defect 4 (Authentic cache freshness):** `fetchedAt` in combined board and operations reflects `Math.min(...repoTimestamps)` of contributing repository caches. Verified PASS in `node scripts/audit-a5-data.mjs`.
+5. **Defect 5 (Archive pagination & failure warnings):** Dedicated bounded closed fetch (`repositoryClosedIssues`) reaches closed history beyond the 1,000-issue bound. Warning banners render in Operations and Archive on partial/truncated results or repo failures.
+6. **Defect 6 (Blocked/Decisions predicates):** Closed issues strictly excluded from `isIssueBlocked` and `isIssueDecision`. Sidebar badges match section counts.
+7. **Defect 7 (A4 body byte identity):** `setCanvasMarker` and `stripCanvasMarker` preserve exact original body bytes via `;sep=N` comment flag. Verified PASS in `node scripts/audit-a5-data.mjs`.
+8. **Defect 8 (French localization & 360px responsive layout):** Full French localization across Operations headers, messages, and status values. Mobile disclaimer banner styled with `.disclaimer-text` flex wrapping and padding at 360px viewport without mid-word splitting or horizontal overflow. Inspected in `20-client-360-dark.png`.
+9. **Defect 9 (Non-finite archive paging):** Limit and offset parameters normalized (`!Number.isFinite`), defaulting to limit=100, offset=0 on `Infinity` or `NaN`. Verified PASS in `node scripts/audit-a5-data.mjs`.
+
+### Final verification commands
+- `npm run typecheck`: exit 0 (0 errors)
+- `node --test --test-timeout=30000 web/tests/*.test.mjs`: 569/569 PASS, 0 fail
+- `npm test`: 618/618 PASS, 0 fail
+- `node scripts/audit-a5-data.mjs`: all PASS
+- `env AUDIT_NO_SHOTS=1 node scripts/audit-a5.mjs`: all PASS, `leaked: []` across all views, 0 exceptions, 0 console errors
+- Screenshots regenerated via Obscura CDP (`scripts/generate-a5-screenshots.mjs`): 24/24 captured, `20-client-360-dark.png` inspected and verified clean
+

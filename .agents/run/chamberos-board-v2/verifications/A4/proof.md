@@ -265,3 +265,13 @@ Auditor reproduced everything below against the fake GitHub (`web/tests/fake-git
 - Marker carry-over (Defect 7): **PASS** in `b7f1517` (`fix(a4): exact byte identity in canvas marker set and strip`). `setCanvasMarker` in `web/server/board.ts` preserves exact body bytes by encoding the preceding separator count in a `;sep=N` comment flag, allowing `stripCanvasMarker` to restore the exact original bytes across all trailing whitespace combinations (`"Plain"`, `"Plain\n"`, `"Plain\n\n"`, `"Plain\r\n\r\n"`, `" \n\n"`). All five cases verified PASS in `node scripts/audit-a5-data.mjs`.
 - Note conflict recovery (Defect 2): **PASS** in `f2439fd` (`fix(a5): recover fingerprint and prompt on note 409 conflict`). 409 responses retain the local draft and display a conflict prompt with explicit "Overwrite" and "Use remote" actions (`web/public/app.js`). Immediate retry does not overwrite remote changes. Overwrite adopts the remote fingerprint from the error payload. Verified in `web/tests/a5-presentation-audit.test.mjs` and native CDP audit.
 - Final test suites: `npm test` 618/618 PASS; `node --test --test-timeout=30000 web/tests/*.test.mjs` 566/566 PASS; `npm run typecheck` exit 0; `node scripts/audit-a5-data.mjs` all PASS.
+
+---
+
+## Post-repair hostile review — 2026-11-06 (Post-repair verification)
+
+**A4 post-repair verdict: PASS.**
+Hostile review of canvas note conflict handling and body byte preservation:
+- **Canvas note 409 conflict handling and non-note remote modification:** Verified safe retry. When a 409 conflict is caused by non-note modifications (e.g. issue title/metadata changes), the client adopts the remote fingerprint without triggering a spurious conflict prompt. On explicit note overwrite, remote canvas card geometry (x, y) and concurrent modifications to other notes are merged and preserved. Verified in unit tests (`web/tests/a5-presentation-audit.test.mjs`) and CDP audit (`scripts/audit-a5.mjs`).
+- **Canvas marker set/strip exact byte identity:** Verified byte-for-byte fidelity across all 5 trailing whitespace and newline variations (`"Plain"`, `"Plain\n"`, `"Plain\n\n"`, `"Plain\r\n\r\n"`, `" \n\n"`). All five cases PASS in `node scripts/audit-a5-data.mjs`.
+- **Test suite results:** `node --test --test-timeout=30000 web/tests/*.test.mjs` (569/569 PASS), `npm test` (618/618 PASS), `npm run typecheck` (exit 0).

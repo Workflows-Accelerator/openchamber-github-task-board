@@ -299,3 +299,210 @@ test('audit A5 note 409 conflict recovery: extracts fingerprint from error paylo
   assert.equal(issue.fingerprint, 'fp-final');
   assert.equal(app.activeNoteDrafts.has(draftKey), false, 'Draft cleared after successful overwrite');
 });
+
+test('audit A5 presentation mode: hides all questions and human tasks in Decisions and Blocked without leaking text', () => {
+  const { app, get } = browser();
+  const repository = { full: 'owner/repo', owner: 'owner', name: 'repo' };
+  const issueWithQuestions = {
+    number: 1, state: 'open', repository,
+    title: 'Plan release', statusLabel: 'status:todo',
+    openQuestions: [{ text: 'Which cloud provider?', completed: false }],
+    humanTasks: [],
+  };
+  const issueWithHumanTasks = {
+    number: 2, state: 'open', repository,
+    title: 'Deploy release', statusLabel: 'status:needs-human',
+    openQuestions: [],
+    humanTasks: [{ text: 'Sign off production deploy', completed: false }],
+  };
+  app.state.board = { repo: 'owner/repo', issues: [issueWithQuestions, issueWithHumanTasks] };
+
+  app.setClientPresentationMode(true);
+  app.updateSidebarBadges();
+
+  assert.equal(get('decisions-nav-badge').textContent, '0', 'Decisions count must be 0 in presentation mode');
+  assert.equal(get('blocked-nav-badge').textContent, '1', 'Blocked count must still reflect blocked issue');
+
+  app.renderDecisionsView();
+  assert.equal(get('decisions-list').children.length, 0, 'No questions rendered in decisions in presentation mode');
+  assert.equal(get('decisions-empty').hidden, false);
+  assert.match(get('decisions-empty').textContent, /presentation mode/i);
+
+  app.renderBlockedView();
+  const blockedList = get('blocked-list');
+  const allText = JSON.stringify(blockedList);
+  assert.equal(allText.includes('Sign off production deploy'), false, 'Raw human task text must NOT leak into blocked view');
+  assert.match(allText, /presentation mode/i, 'Blocked view must show presentation notice');
+});
+
+test('audit A5 note overwrite preserves remote card geometry and concurrent changes to other notes', async () => {
+  const { app, context } = browser();
+  const repository = { full: 'owner/repo', owner: 'owner', name: 'repo' };
+  const noteA = { id: 'note-a', text: 'Base text A', x: 10, y: 10 };
+  const noteB = { id: 'note-b', text: 'Base text B', x: 20, y: 20 };
+  const issue = {
+    number: 1, repository, fingerprint: 'fp-base', state: 'open',
+    title: 'Issue 1', statusLabel: 'status:todo',
+    canvas: { x: 100, y: 200, notes: [noteA, noteB] },
+  };
+  app.state.board = { repo: 'owner/repo', issues: [issue] };
+
+  let callCount = 0;
+  context.fetch = async (url, opts) => {
+    callCount++;
+    const body = JSON.parse(opts.body);
+    if (callCount === 1) {
+      assert.equal(body.fingerprint, 'fp-base');
+      return {
+        ok: false,
+        status: 409,
+        text: async () => JSON.stringify({
+          error: 'stale_fingerprint',
+          message: 'Conflict',
+          issue: {
+            ...issue,
+            fingerprint: 'fp-remote',
+            canvas: {
+              x: 300, y: 400,
+              notes: [
+                { id: 'note-a', text: 'Remote updated A', x: 10, y: 10 },
+                { id: 'note-b', text: 'Remote updated B', x: 20, y: 20 },
+              ],
+            },
+          },
+        }),
+      };
+    }
+    assert.equal(body.fingerprint, 'fp-remote');
+    assert.equal(body.x, 300, 'Must preserve remote card position x');
+    assert.equal(body.y, 400, 'Must preserve remote card position y');
+    const savedNoteB = body.notes.find(n => n.id === 'note-b');
+    assert.equal(savedNoteB.text, 'Remote updated B', 'Must preserve remote concurrent edit to note B');
+    const savedNoteA = body.notes.find(n => n.id === 'note-a');
+    assert.equal(savedNoteA.text, 'My new local draft A', 'Must overwrite note A with user draft');
+
+    const finalItem = {
+      ...issue,
+      fingerprint: 'fp-final',
+      title: 'Issue 1',
+      state: 'open',
+      statusLabel: 'status:todo',
+      updatedAt: '2026-11-06T00:00:00Z',
+      phase: 'build',
+      attention: 'none',
+      canvas: { x: body.x, y: body.y, notes: body.notes },
+      editableSections: [],
+      openQuestions: [],
+      humanTasks: [],
+      acceptanceCriteria: [],
+      subtasks: [],
+    };
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({ ok: true, issue: finalItem, listItem: finalItem }),
+    };
+  };
+
+  const noteEl = app.createStickyNoteElement(noteA, issue);
+  const ev = { stopPropagation() {}, preventDefault() {} };
+  noteEl.querySelector('.btn-edit').listeners.click(ev);
+  const textarea = noteEl.querySelector('.canvas-note-textarea');
+  textarea.value = 'My new local draft A';
+  textarea.listeners.input();
+
+  const saveBtn = noteEl.querySelector('.canvas-note-editor-actions button.button.primary');
+  saveBtn.listeners.click(ev);
+  await new Promise(r => setTimeout(r, 60));
+
+  const conflictBanner = noteEl.querySelector('.canvas-note-conflict-banner');
+  assert.equal(conflictBanner.hidden, false);
+  const overwriteBtn = conflictBanner.querySelector('.conflict-overwrite');
+  overwriteBtn.listeners.click(ev);
+  await new Promise(r => setTimeout(r, 60));
+
+  assert.equal(callCount, 2);
+});
+
+test('audit A5 note 409 safe retry: adopts remote fingerprint without conflict prompt when target note was not modified remotely', async () => {
+  const { app, context } = browser();
+  const repository = { full: 'owner/repo', owner: 'owner', name: 'repo' };
+  const note = { id: 'note-1', text: 'Unchanged note text', x: 10, y: 10 };
+  const issue = {
+    number: 1, repository, fingerprint: 'fp-1', state: 'open',
+    title: 'Issue 1', statusLabel: 'status:todo',
+    canvas: { notes: [note] },
+  };
+  app.state.board = { repo: 'owner/repo', issues: [issue] };
+
+  let callCount = 0;
+  context.fetch = async (url, opts) => {
+    callCount++;
+    const body = JSON.parse(opts.body);
+    if (callCount === 1) {
+      assert.equal(body.fingerprint, 'fp-1');
+      return {
+        ok: false,
+        status: 409,
+        text: async () => JSON.stringify({
+          error: 'stale_fingerprint',
+          message: 'Conflict',
+          issue: {
+            ...issue,
+            fingerprint: 'fp-2-non-note',
+            title: 'Issue 1 renamed',
+            canvas: { notes: [{ id: 'note-1', text: 'Unchanged note text', x: 10, y: 10 }] },
+          },
+        }),
+      };
+    }
+    assert.equal(body.fingerprint, 'fp-2-non-note');
+    const finalItem = {
+      ...issue,
+      fingerprint: 'fp-3',
+      title: 'Issue 1 renamed',
+      state: 'open',
+      statusLabel: 'status:todo',
+      updatedAt: '2026-11-06T00:00:00Z',
+      phase: 'build',
+      attention: 'none',
+      canvas: { notes: body.notes },
+      editableSections: [],
+      openQuestions: [],
+      humanTasks: [],
+      acceptanceCriteria: [],
+      subtasks: [],
+    };
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        ok: true,
+        issue: finalItem,
+        listItem: finalItem,
+        statusOptions: [{ value: 'status:todo', label: 'Todo' }],
+      }),
+    };
+  };
+
+  const noteEl = app.createStickyNoteElement(note, issue);
+  const ev = { stopPropagation() {}, preventDefault() {} };
+  noteEl.querySelector('.btn-edit').listeners.click(ev);
+  const textarea = noteEl.querySelector('.canvas-note-textarea');
+  textarea.value = 'User edit to note';
+  textarea.listeners.input();
+
+  const saveBtn = noteEl.querySelector('.canvas-note-editor-actions button.button.primary');
+  saveBtn.listeners.click(ev);
+  await new Promise(r => setTimeout(r, 60));
+
+  const conflictBanner = noteEl.querySelector('.canvas-note-conflict-banner');
+  assert.equal(conflictBanner.hidden, true);
+  assert.ok(saveBtn.classList.contains('is-retry'));
+
+  saveBtn.listeners.click(ev);
+  await new Promise(r => setTimeout(r, 60));
+
+  assert.equal(callCount, 2);
+  assert.equal(issue.fingerprint, 'fp-3');
+});

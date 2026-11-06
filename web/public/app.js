@@ -715,6 +715,7 @@
       decisions_title: 'Decisions',
       decisions_desc: 'Every unanswered open question across repositories, grouped by issue, newest activity first.',
       decisions_no_items: 'No open questions requiring decisions.',
+      decisions_client_mode: 'Open questions are hidden in client presentation mode.',
       decisions_answer_placeholder: 'Type answer…',
       decisions_btn_answer: 'Answer',
       decisions_answering: 'Saving…',
@@ -722,6 +723,7 @@
       blocked_title: 'Blocked',
       blocked_desc: 'Issues requiring human action or blocked by open dependencies.',
       blocked_no_items: 'No blocked tasks.',
+      blocked_client_mode: 'Human action required (details hidden in presentation mode).',
       blocked_needs_human_label: 'Status: Needs Human',
       blocked_by_dependencies: 'Blocked by',
       blocked_human_tasks_title: 'Human Tasks',
@@ -888,6 +890,7 @@
       decisions_title: 'Décisions',
       decisions_desc: 'Toutes les questions ouvertes sans réponse entre les dépôts, groupées par tâche, activité récente en premier.',
       decisions_no_items: 'Aucune question ouverte nécessitant une décision.',
+      decisions_client_mode: 'Les questions ouvertes sont masquées en mode présentation client.',
       decisions_answer_placeholder: 'Saisir une réponse…',
       decisions_btn_answer: 'Répondre',
       decisions_answering: 'Enregistrement…',
@@ -895,6 +898,7 @@
       blocked_title: 'Tâches bloquées',
       blocked_desc: 'Tâches nécessitant une action humaine ou bloquées par des dépendances ouvertes.',
       blocked_no_items: 'Aucune tâche bloquée.',
+      blocked_client_mode: 'Action humaine requise (détails masqués en mode présentation client).',
       blocked_needs_human_label: 'Statut : Action humaine requise',
       blocked_by_dependencies: 'Bloqué par',
       blocked_human_tasks_title: 'Tâches humaines',
@@ -2700,6 +2704,10 @@
       ? state.board.issues.find(function (i) { return sameIdentity(i, issue); }) || issue
       : issue;
 
+    if (issue.fingerprint && currentIssue.fingerprint !== issue.fingerprint) {
+      currentIssue.fingerprint = issue.fingerprint;
+    }
+
     var prevCanvas = currentIssue.canvas ? JSON.parse(JSON.stringify(currentIssue.canvas)) : null;
     currentIssue.canvas = Object.assign({}, currentIssue.canvas || {}, canvasUpdates);
     issue.canvas = currentIssue.canvas;
@@ -3192,12 +3200,30 @@
           saveNoteBtn.classList.add('is-retry');
           isFinishing = false;
 
-          var remoteIssue = (err && err.payload && err.payload.issue) || (err && err.payload && err.payload.listItem);
-          var remoteNotes = remoteIssue && remoteIssue.canvas && Array.isArray(remoteIssue.canvas.notes) ? remoteIssue.canvas.notes : null;
+          var remoteIssue = (err && err.payload && (err.payload.issue || err.payload.listItem)) || null;
+          var remoteFp = (remoteIssue && remoteIssue.fingerprint) || (err && err.payload && typeof err.payload.fingerprint === 'string' ? err.payload.fingerprint : '') || '';
+          var remoteCanvas = remoteIssue && remoteIssue.canvas ? remoteIssue.canvas : null;
+          var remoteNotes = remoteCanvas && Array.isArray(remoteCanvas.notes) ? remoteCanvas.notes : null;
           var remoteNote = remoteNotes ? remoteNotes.find(function (x) { return x.id === note.id; }) : null;
-          var remoteTextChanged = remoteNote && remoteNote.text !== prevText;
+          var remoteTextChanged = remoteNote ? (remoteNote.text !== prevText) : (remoteNotes ? true : false);
 
-          if (remoteTextChanged && !forceOverwrite) {
+          if (!remoteTextChanged) {
+            if (remoteFp) {
+              issue.fingerprint = remoteFp;
+            }
+            if (remoteCanvas) {
+              if (remoteCanvas.x !== undefined) issue.canvas.x = remoteCanvas.x;
+              if (remoteCanvas.y !== undefined) issue.canvas.y = remoteCanvas.y;
+              if (Array.isArray(remoteCanvas.notes)) {
+                issue.canvas.notes = remoteCanvas.notes.map(function (rn) {
+                  if (rn.id === note.id) {
+                    return Object.assign({}, rn, { text: val });
+                  }
+                  return rn;
+                });
+              }
+            }
+          } else if (!forceOverwrite) {
             conflictNoticeEl.hidden = false;
             conflictNoticeEl.textContent = '';
             var conflictMsg = el('span', { class: 'conflict-text', text: dict.note_conflict_prompt || 'Note was modified remotely.' });
@@ -3215,9 +3241,24 @@
             overwriteBtn.addEventListener('click', function (e) {
               e.stopPropagation();
               conflictNoticeEl.hidden = true;
-              var remoteFp = remoteIssue && remoteIssue.fingerprint;
               if (remoteFp) {
                 issue.fingerprint = remoteFp;
+              }
+              if (remoteCanvas) {
+                if (remoteCanvas.x !== undefined) issue.canvas.x = remoteCanvas.x;
+                if (remoteCanvas.y !== undefined) issue.canvas.y = remoteCanvas.y;
+                if (Array.isArray(remoteCanvas.notes)) {
+                  var merged = remoteCanvas.notes.map(function (rn) {
+                    if (rn.id === note.id) {
+                      return Object.assign({}, rn, { text: val });
+                    }
+                    return rn;
+                  });
+                  if (!merged.some(function (rn) { return rn.id === note.id; })) {
+                    merged.push(Object.assign({}, note, { text: val }));
+                  }
+                  issue.canvas.notes = merged;
+                }
               }
               doSave(true);
             });
@@ -3225,12 +3266,19 @@
             useRemoteBtn.addEventListener('click', function (e) {
               e.stopPropagation();
               conflictNoticeEl.hidden = true;
-              textarea.value = remoteNote.text;
-              note.text = remoteNote.text;
-              activeNoteDrafts.delete(draftKey);
-              updateCounter();
-              exitEdit();
-              renderBodyHtml();
+              if (remoteNote) {
+                textarea.value = remoteNote.text;
+                note.text = remoteNote.text;
+                activeNoteDrafts.delete(draftKey);
+                updateCounter();
+                exitEdit();
+                renderBodyHtml();
+              } else {
+                activeNoteDrafts.delete(draftKey);
+                exitEdit();
+                if (noteEl.parentNode) noteEl.parentNode.removeChild(noteEl);
+                renderCanvasWires();
+              }
             });
 
             conflictNoticeEl.appendChild(conflictMsg);
@@ -5019,9 +5067,11 @@
       container.appendChild(projectBadge(issue.repository));
       if (issue.repository.archived) container.appendChild(badge('archived'));
     }
-    if (issue.phase) container.appendChild(badge('phase: ' + String(issue.phase).replace(/_/g, ' '), 'phase'));
-    if (issue.attention && issue.attention !== 'none') {
-      container.appendChild(badge('needs ' + String(issue.attention).replace('needs-', ''), 'attention'));
+    if (!state.clientPresentationMode) {
+      if (issue.phase) container.appendChild(badge('phase: ' + String(issue.phase).replace(/_/g, ' '), 'phase'));
+      if (issue.attention && issue.attention !== 'none') {
+        container.appendChild(badge('needs ' + String(issue.attention).replace('needs-', ''), 'attention'));
+      }
     }
     if (issue.number !== undefined && issue.number !== null) {
       if (issue.htmlUrl) {
@@ -5492,20 +5542,49 @@
     var sections = Array.isArray(issue.editableSections) ? issue.editableSections : [];
     var overview = sections.length > 0 ? sections[0] : null;
     var textarea = $('overview-text');
+    var overviewPreview = $('overview-preview');
     var save = $('save-overview');
+    var rawOverview = overview ? (overview.text || '') : '';
+    var cleanOverview = rawOverview
+      .replace(/^---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)\r?\n?/, '')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .trim();
+
     if (overview) {
-      textarea.hidden = false;
-      textarea.value = overview.text || '';
+      textarea.value = rawOverview;
       textarea.disabled = false;
-      save.hidden = false;
-      save.disabled = false;
-      $('overview-empty').hidden = true;
+      $('overview-empty').hidden = false && !cleanOverview;
+      if (state.clientPresentationMode) {
+        textarea.hidden = true;
+        textarea.readOnly = true;
+        save.hidden = true;
+        save.disabled = true;
+        if (overviewPreview) {
+          overviewPreview.hidden = !cleanOverview;
+          overviewPreview.innerHTML = cleanOverview ? safeRenderMarkdown(cleanOverview) : '';
+        }
+        $('overview-empty').hidden = Boolean(cleanOverview);
+      } else {
+        textarea.hidden = false;
+        textarea.readOnly = false;
+        save.hidden = false;
+        save.disabled = false;
+        if (overviewPreview) {
+          overviewPreview.hidden = true;
+          overviewPreview.innerHTML = '';
+        }
+        $('overview-empty').hidden = true;
+      }
     } else {
       textarea.hidden = true;
       textarea.value = '';
       textarea.disabled = true;
       save.hidden = true;
       save.disabled = true;
+      if (overviewPreview) {
+        overviewPreview.hidden = true;
+        overviewPreview.innerHTML = '';
+      }
       $('overview-empty').hidden = false;
     }
 
@@ -5531,7 +5610,10 @@
         ? sSelect.closest('.panel')
         : (sSelect && sSelect.parentElement && sSelect.parentElement.parentElement ? sSelect.parentElement.parentElement : null);
       if (statusPanel) statusPanel.hidden = true;
-      if (textarea) textarea.readOnly = true;
+      if (textarea) {
+        textarea.hidden = true;
+        textarea.readOnly = true;
+      }
     } else {
       var editWarn = $('edit-warning');
       if (editWarn) editWarn.hidden = false;
@@ -5544,7 +5626,10 @@
         ? sSelect.closest('.panel')
         : (sSelect && sSelect.parentElement && sSelect.parentElement.parentElement ? sSelect.parentElement.parentElement : null);
       if (statusPanel) statusPanel.hidden = false;
-      if (textarea) textarea.readOnly = false;
+      if (textarea && overview) {
+        textarea.hidden = false;
+        textarea.readOnly = false;
+      }
     }
 
     if (focusHeading) {
@@ -5777,10 +5862,6 @@
      Step A5: Sidebar Views & Real Operations Overview
      ========================================================================== */
 
-  function isInternalItem(text) {
-    return /^(?:INTERNAL_|\[internal\]|\(internal\))/i.test((text || '').trim());
-  }
-
   function isDraftIssue(issue) {
     if (!issue) return false;
     return issue.column === 'draft' ||
@@ -5791,11 +5872,13 @@
 
   function isIssueDecision(issue) {
     if (!issue || issue.state === 'closed') return false;
+    if (state.clientPresentationMode && isDraftIssue(issue)) return false;
     return Array.isArray(issue.openQuestions) && issue.openQuestions.some(function (q) { return !q.completed; });
   }
 
   function isIssueBlocked(issue) {
     if (!issue || issue.state === 'closed') return false;
+    if (state.clientPresentationMode && isDraftIssue(issue)) return false;
     var isNeedsHuman = issue.statusLabel === 'status:needs-human';
     var hasUncheckedTasks = Array.isArray(issue.humanTasks) && issue.humanTasks.some(function (t) { return !t.completed; });
     var hasOpenBlockers = Array.isArray(issue.blockedBy) && issue.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
@@ -5810,23 +5893,13 @@
     items.forEach(function (item) {
       if (item.state === 'closed') return;
       if (state.clientPresentationMode && isDraftIssue(item)) return;
-      if (Array.isArray(item.openQuestions)) {
+      if (!state.clientPresentationMode && Array.isArray(item.openQuestions)) {
         item.openQuestions.forEach(function (q) {
-          if (!q.completed && (!state.clientPresentationMode || !isInternalItem(q.text))) decisionsCount++;
+          if (!q.completed) decisionsCount++;
         });
       }
       if (isIssueBlocked(item)) {
-        if (state.clientPresentationMode) {
-          var hasHuman = Array.isArray(item.humanTasks) && item.humanTasks.some(function (t) {
-            return !t.completed && !isInternalItem(t.text);
-          });
-          var hasDeps = Array.isArray(item.blockedBy) && item.blockedBy.some(function (dep) {
-            return dep.state === 'open' || dep.state === undefined;
-          });
-          if (hasHuman || hasDeps) blockedCount++;
-        } else {
-          blockedCount++;
-        }
+        blockedCount++;
       }
     });
 
@@ -5926,17 +5999,22 @@
 
     if (loading) loading.hidden = true;
 
+    var dict = I18N[getLanguage()] || I18N.en;
+
+    if (state.clientPresentationMode) {
+      list.textContent = '';
+      if (empty) {
+        empty.textContent = dict.decisions_client_mode || 'Open questions are hidden in client presentation mode.';
+        empty.hidden = false;
+      }
+      var countBadge = $('decisions-count-badge');
+      if (countBadge) countBadge.textContent = '0';
+      return;
+    }
+
     var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
     var decisionIssues = items.filter(function (it) {
-      if (!isIssueDecision(it)) return false;
-      if (state.clientPresentationMode) {
-        if (isDraftIssue(it)) return false;
-        var hasVisible = (it.openQuestions || []).some(function (q) {
-          return !q.completed && !isInternalItem(q.text);
-        });
-        if (!hasVisible) return false;
-      }
-      return true;
+      return isIssueDecision(it);
     });
 
     decisionIssues.sort(function (a, b) {
@@ -5945,11 +6023,10 @@
       return timeB - timeA;
     });
 
-    var dict = I18N[getLanguage()] || I18N.en;
     var totalQuestions = 0;
     decisionIssues.forEach(function (it) {
       it.openQuestions.forEach(function (q) {
-        if (!q.completed && (!state.clientPresentationMode || !isInternalItem(q.text))) totalQuestions++;
+        if (!q.completed) totalQuestions++;
       });
     });
 
@@ -5958,7 +6035,10 @@
 
     if (decisionIssues.length === 0) {
       list.textContent = '';
-      if (empty) empty.hidden = false;
+      if (empty) {
+        empty.textContent = dict.decisions_no_items || 'No open questions requiring decisions.';
+        empty.hidden = false;
+      }
       return;
     }
 
@@ -5995,7 +6075,6 @@
       var qContainer = el('div', { class: 'decision-questions' });
       issue.openQuestions.forEach(function (q) {
         if (q.completed) return;
-        if (state.clientPresentationMode && isInternalItem(q.text)) return;
         var qItem = el('div', { class: 'decision-question-item' });
         var qText = el('div', { class: 'decision-question-text' }, q.text);
         qItem.appendChild(qText);
@@ -6086,18 +6165,16 @@
     card.appendChild(header);
 
     // Human tasks section
-    if (groupKind === 'human' && Array.isArray(issue.humanTasks) && issue.humanTasks.length > 0) {
-      var visibleTasks = issue.humanTasks.filter(function (t) {
-        if (state.clientPresentationMode && isInternalItem(t.text)) return false;
-        return true;
-      });
-      if (visibleTasks.length > 0) {
+    if (groupKind === 'human') {
+      if (state.clientPresentationMode) {
+        var notice = el('div', { class: 'blocked-human-tasks muted small' }, dict.blocked_client_mode || 'Human action required (details hidden in presentation mode).');
+        card.appendChild(notice);
+      } else if (Array.isArray(issue.humanTasks) && issue.humanTasks.length > 0) {
         var tasksContainer = el('div', { class: 'blocked-human-tasks' });
         var taskHeading = el('div', { class: 'blocked-deps-label' }, dict.blocked_human_tasks_title || 'Human Tasks');
         tasksContainer.appendChild(taskHeading);
 
         issue.humanTasks.forEach(function (t, idx) {
-          if (state.clientPresentationMode && isInternalItem(t.text)) return;
           var row = el('label', { class: 'human-task-row' });
           var checkbox = el('input', {
             type: 'checkbox',
@@ -6204,18 +6281,7 @@
 
     var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
     var blockedIssues = items.filter(function (it) {
-      if (!isIssueBlocked(it)) return false;
-      if (state.clientPresentationMode) {
-        if (isDraftIssue(it)) return false;
-        var hasHuman = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) {
-          return !t.completed && !isInternalItem(t.text);
-        });
-        var hasDeps = Array.isArray(it.blockedBy) && it.blockedBy.some(function (dep) {
-          return dep.state === 'open' || dep.state === undefined;
-        });
-        return hasHuman || hasDeps;
-      }
-      return true;
+      return isIssueBlocked(it);
     });
 
     blockedIssues.sort(function (a, b) {
@@ -6243,19 +6309,11 @@
 
     blockedIssues.forEach(function (it) {
       var isNeedsHuman = it.statusLabel === 'status:needs-human';
-      var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) {
-        return !t.completed && (!state.clientPresentationMode || !isInternalItem(t.text));
-      });
+      var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) { return !t.completed; });
       var hasOpenBlockers = Array.isArray(it.blockedBy) && it.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
 
-      if (state.clientPresentationMode) {
-        if (hasUncheckedTasks) {
-          humanIssues.push(it);
-        }
-      } else {
-        if (isNeedsHuman || hasUncheckedTasks) {
-          humanIssues.push(it);
-        }
+      if (isNeedsHuman || hasUncheckedTasks) {
+        humanIssues.push(it);
       }
       if (hasOpenBlockers) {
         depIssues.push(it);
@@ -7260,6 +7318,8 @@
       updateSidebarBadges: updateSidebarBadges,
       renderBlockedView: renderBlockedView,
       renderBlockedCard: renderBlockedCard,
+      renderDecisionsView: renderDecisionsView,
+      setClientPresentationMode: setClientPresentationMode,
       createStickyNoteElement: createStickyNoteElement,
       saveIssueCanvas: saveIssueCanvas,
       activeNoteDrafts: activeNoteDrafts,

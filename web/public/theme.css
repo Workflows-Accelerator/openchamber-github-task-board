@@ -3203,6 +3203,12 @@ input[type="text"].search-input:focus,
   .client-disclaimer-banner {
     flex-direction: column;
     align-items: flex-start;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .client-disclaimer-banner .disclaimer-text {
+    flex: 0 0 auto;
+    width: 100%;
   }
   .client-disclaimer-banner .disclaimer-action {
     width: 100%;
@@ -3223,8 +3229,20 @@ body.client-presentation-active #detail-view section[aria-labelledby="human-titl
 body.client-presentation-active #detail-view section[aria-labelledby="status-title"],
 body.client-presentation-active #detail-view #edit-warning,
 body.client-presentation-active #detail-view #save-overview,
-body.client-presentation-active #detail-view #save-status {
+body.client-presentation-active #detail-view #save-status,
+body.client-presentation-active #detail-view textarea#overview-text,
+body.client-presentation-active #detail-view label[for="overview-text"] {
   display: none !important;
+}
+
+#detail-view .overview-preview {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--fg);
+  padding: 4px 0;
+  margin-bottom: 8px;
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 .client-presentation-banner {
