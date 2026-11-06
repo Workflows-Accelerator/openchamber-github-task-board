@@ -157,7 +157,7 @@ Reruns at de3641a. Exit codes are in `raw/exits.txt`:
 | `timeout 240 env AUDIT_NO_SHOTS=1 node scripts/audit-a5.mjs` | exit 0, `leaked: []`, exceptions/console `[]` | ALL PASS | yes |
 | `timeout 240 env PACKAGED_RELEASE_DIR=/tmp/opencode/board-v2-staging/de726e4-foundation node scripts/audit-a5-packaged.mjs` | 13 × PASS, exit 0 | 13/13 | yes |
 
-The counts match. The proof.md prose that does not match is at lines 76, 102 and 110 (H2-1, H2-4).
+The counts match. The proof.md prose that does not match is at lines 76, 102 and 109 (H2-1, H2-4).
 
 ## Criterion 5: staging and production isolation
 
