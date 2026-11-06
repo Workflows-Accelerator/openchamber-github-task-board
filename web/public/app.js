@@ -553,7 +553,12 @@
     state.pending = null;
     state.closingHash = window.location.hash !== '#/';
     setHash('#/');
-    showBoard();
+    if (state.activeSectionView) {
+      showView(state.activeSectionView);
+      setNotice('');
+    } else {
+      showBoard();
+    }
   }
 
   function openIssueView(issue, fromDraftBtn) {
@@ -1007,6 +1012,7 @@
       if (langLabel) {
         langLabel.textContent = l === 'en' ? 'FR' : 'EN';
       }
+      applyClientPresentationMode();
       if (state.board) {
         renderBoard();
       }
@@ -1570,9 +1576,10 @@
   function showView(name) {
     var allViews = ['login', 'board', 'detail', 'placeholder', 'decisions', 'blocked', 'operations', 'archive', 'client'];
     if (name === 'detail') {
+      var backgroundView = state.activeSectionView || 'board';
       allViews.forEach(function (v) {
         var sec = document.getElementById(v + '-view');
-        if (sec) sec.hidden = (v !== 'detail' && v !== 'board');
+        if (sec) sec.hidden = (v !== 'detail' && v !== backgroundView);
       });
       var backdrop = $('drawer-backdrop');
       if (backdrop) backdrop.hidden = false;
@@ -2130,7 +2137,10 @@
     });
     var titleEl = el('span', { class: 'simple-row-title task-title', text: friendly.title });
     var mainColChildren = [titleEl];
-    var descText = friendly.subtitle || cleanPreviewText(issue.description || issue.body || '');
+    var overviewSource = typeof issue.overview === 'string'
+      ? issue.overview
+      : (state.clientPresentationMode ? '' : (issue.description || issue.body || ''));
+    var descText = friendly.subtitle || cleanPreviewText(overviewSource);
     if (descText && descText !== friendly.title) {
       mainColChildren.push(el('span', { class: 'simple-row-desc task-subtitle muted small', text: descText }));
     }
@@ -3152,7 +3162,92 @@
       textarea.focus();
       textarea.setSelectionRange(textarea.value.length, textarea.value.length);
 
+      var currentDraftInfo = activeNoteDrafts.get(draftKey);
+      var baseText = (currentDraftInfo && typeof currentDraftInfo.baseText === 'string')
+        ? currentDraftInfo.baseText
+        : (note.text || '');
+
       var isFinishing = false;
+
+      function showConflictBanner(rFp, rCanvas, rNote) {
+        conflictNoticeEl.hidden = false;
+        conflictNoticeEl.textContent = '';
+        var conflictMsg = el('span', { class: 'conflict-text', text: dict.note_conflict_prompt || 'Note was modified remotely.' });
+        var overwriteBtn = el('button', {
+          type: 'button',
+          class: 'button small conflict-overwrite',
+          text: dict.note_conflict_overwrite || 'Overwrite',
+        });
+        var useRemoteBtn = el('button', {
+          type: 'button',
+          class: 'button small conflict-use-remote',
+          text: dict.note_conflict_use_remote || 'Use remote',
+        });
+
+        overwriteBtn.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+        overwriteBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          conflictNoticeEl.hidden = true;
+          var curVal = textarea.value;
+          if (rFp) {
+            issue.fingerprint = rFp;
+          }
+          if (rCanvas) {
+            if (rCanvas.x !== undefined) issue.canvas.x = rCanvas.x;
+            if (rCanvas.y !== undefined) issue.canvas.y = rCanvas.y;
+            if (Array.isArray(rCanvas.notes)) {
+              var merged = rCanvas.notes.map(function (rn) {
+                if (rn.id === note.id) {
+                  return Object.assign({}, rn, { text: curVal });
+                }
+                return rn;
+              });
+              if (!merged.some(function (rn) { return rn.id === note.id; })) {
+                merged.push(Object.assign({}, note, { text: curVal }));
+              }
+              issue.canvas.notes = merged;
+            }
+          }
+          doSave(true);
+        });
+
+        useRemoteBtn.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        });
+        useRemoteBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          conflictNoticeEl.hidden = true;
+          if (rNote) {
+            textarea.value = rNote.text;
+            note.text = rNote.text;
+            activeNoteDrafts.delete(draftKey);
+            updateCounter();
+            exitEdit();
+            renderBodyHtml();
+          } else {
+            activeNoteDrafts.delete(draftKey);
+            exitEdit();
+            if (noteEl.parentNode) noteEl.parentNode.removeChild(noteEl);
+            renderCanvasWires();
+          }
+        });
+
+        conflictNoticeEl.appendChild(conflictMsg);
+        conflictNoticeEl.appendChild(overwriteBtn);
+        conflictNoticeEl.appendChild(useRemoteBtn);
+      }
+
+      if ((currentDraftInfo && currentDraftInfo.conflict) || note.text !== baseText) {
+        var initRCanvas = (currentDraftInfo && currentDraftInfo.remoteCanvas) || issue.canvas || null;
+        var initRNotes = (initRCanvas && Array.isArray(initRCanvas.notes)) ? initRCanvas.notes : null;
+        var initRNote = initRNotes ? initRNotes.find(function (x) { return x.id === note.id; }) : { id: note.id, text: note.text };
+        var initRFp = (currentDraftInfo && currentDraftInfo.remoteFp) || issue.fingerprint || '';
+        showConflictBanner(initRFp, initRCanvas, initRNote);
+      }
 
       function updateCounter() {
         var len = textarea.value.length;
@@ -3162,7 +3257,13 @@
         } else {
           counter.classList.remove('is-limit');
         }
-        activeNoteDrafts.set(draftKey, { draftText: textarea.value, failed: false });
+        var existing = activeNoteDrafts.get(draftKey);
+        activeNoteDrafts.set(draftKey, Object.assign({}, existing || {}, {
+          draftText: textarea.value,
+          baseText: baseText,
+          failed: false,
+          noteSnapshot: Object.assign({}, note),
+        }));
         if (saveNoteBtn.textContent !== (dict.note_save || 'Save')) {
           saveNoteBtn.textContent = dict.note_save || 'Save';
           saveNoteBtn.classList.remove('is-retry');
@@ -3176,6 +3277,27 @@
         var val = textarea.value;
         if (val.length > 4000) {
           setNotice(dict.note_limit_exceeded || 'Note exceeds 4,000 character limit.', true);
+          return;
+        }
+        var draftState = activeNoteDrafts.get(draftKey);
+        if (!forceOverwrite && ((draftState && draftState.conflict) || note.text !== baseText)) {
+          var rCanvas = (draftState && draftState.remoteCanvas) || issue.canvas || null;
+          var rNotes = (rCanvas && Array.isArray(rCanvas.notes)) ? rCanvas.notes : null;
+          var rNote = rNotes ? rNotes.find(function (x) { return x.id === note.id; }) : { id: note.id, text: note.text };
+          var rFp = (draftState && draftState.remoteFp) || issue.fingerprint || '';
+          activeNoteDrafts.set(draftKey, {
+            draftText: val,
+            baseText: baseText,
+            failed: true,
+            conflict: true,
+            remoteFp: rFp,
+            remoteCanvas: rCanvas,
+            noteSnapshot: Object.assign({}, note),
+          });
+          saveNoteBtn.disabled = false;
+          saveNoteBtn.textContent = dict.note_retry || 'Retry';
+          saveNoteBtn.classList.add('is-retry');
+          showConflictBanner(rFp, rCanvas, rNote);
           return;
         }
         isFinishing = true;
@@ -3194,7 +3316,10 @@
           renderBodyHtml();
         } catch (err) {
           note.text = prevText;
-          activeNoteDrafts.set(draftKey, { draftText: val, failed: true });
+          if (issue.canvas && Array.isArray(issue.canvas.notes)) {
+            var restored = issue.canvas.notes.find(function (x) { return x.id === note.id; });
+            if (restored) restored.text = prevText;
+          }
           saveNoteBtn.disabled = false;
           saveNoteBtn.textContent = dict.note_retry || 'Retry';
           saveNoteBtn.classList.add('is-retry');
@@ -3205,7 +3330,15 @@
           var remoteCanvas = remoteIssue && remoteIssue.canvas ? remoteIssue.canvas : null;
           var remoteNotes = remoteCanvas && Array.isArray(remoteCanvas.notes) ? remoteCanvas.notes : null;
           var remoteNote = remoteNotes ? remoteNotes.find(function (x) { return x.id === note.id; }) : null;
-          var remoteTextChanged = remoteNote ? (remoteNote.text !== prevText) : (remoteNotes ? true : false);
+          var remoteTextChanged = remoteNote ? (remoteNote.text !== baseText) : (remoteNotes ? true : false);
+
+          activeNoteDrafts.set(draftKey, { draftText: val, failed: true });
+          var failedDraft = activeNoteDrafts.get(draftKey);
+          failedDraft.baseText = baseText;
+          failedDraft.conflict = Boolean(remoteTextChanged && !forceOverwrite);
+          failedDraft.remoteFp = remoteFp;
+          failedDraft.remoteCanvas = remoteCanvas;
+          failedDraft.noteSnapshot = Object.assign({}, note);
 
           if (!remoteTextChanged) {
             if (remoteFp) {
@@ -3217,73 +3350,14 @@
               if (Array.isArray(remoteCanvas.notes)) {
                 issue.canvas.notes = remoteCanvas.notes.map(function (rn) {
                   if (rn.id === note.id) {
-                    return Object.assign({}, rn, { text: val });
+                    return Object.assign({}, rn, { text: prevText });
                   }
                   return rn;
                 });
               }
             }
           } else if (!forceOverwrite) {
-            conflictNoticeEl.hidden = false;
-            conflictNoticeEl.textContent = '';
-            var conflictMsg = el('span', { class: 'conflict-text', text: dict.note_conflict_prompt || 'Note was modified remotely.' });
-            var overwriteBtn = el('button', {
-              type: 'button',
-              class: 'button small conflict-overwrite',
-              text: dict.note_conflict_overwrite || 'Overwrite',
-            });
-            var useRemoteBtn = el('button', {
-              type: 'button',
-              class: 'button small conflict-use-remote',
-              text: dict.note_conflict_use_remote || 'Use remote',
-            });
-
-            overwriteBtn.addEventListener('click', function (e) {
-              e.stopPropagation();
-              conflictNoticeEl.hidden = true;
-              if (remoteFp) {
-                issue.fingerprint = remoteFp;
-              }
-              if (remoteCanvas) {
-                if (remoteCanvas.x !== undefined) issue.canvas.x = remoteCanvas.x;
-                if (remoteCanvas.y !== undefined) issue.canvas.y = remoteCanvas.y;
-                if (Array.isArray(remoteCanvas.notes)) {
-                  var merged = remoteCanvas.notes.map(function (rn) {
-                    if (rn.id === note.id) {
-                      return Object.assign({}, rn, { text: val });
-                    }
-                    return rn;
-                  });
-                  if (!merged.some(function (rn) { return rn.id === note.id; })) {
-                    merged.push(Object.assign({}, note, { text: val }));
-                  }
-                  issue.canvas.notes = merged;
-                }
-              }
-              doSave(true);
-            });
-
-            useRemoteBtn.addEventListener('click', function (e) {
-              e.stopPropagation();
-              conflictNoticeEl.hidden = true;
-              if (remoteNote) {
-                textarea.value = remoteNote.text;
-                note.text = remoteNote.text;
-                activeNoteDrafts.delete(draftKey);
-                updateCounter();
-                exitEdit();
-                renderBodyHtml();
-              } else {
-                activeNoteDrafts.delete(draftKey);
-                exitEdit();
-                if (noteEl.parentNode) noteEl.parentNode.removeChild(noteEl);
-                renderCanvasWires();
-              }
-            });
-
-            conflictNoticeEl.appendChild(conflictMsg);
-            conflictNoticeEl.appendChild(overwriteBtn);
-            conflictNoticeEl.appendChild(useRemoteBtn);
+            showConflictBanner(remoteFp, remoteCanvas, remoteNote);
           }
         }
       }
@@ -3336,6 +3410,7 @@
 
       textarea.addEventListener('blur', function () {
         setTimeout(function () {
+          if (!noteEl.parentNode || (typeof noteEl.isConnected === 'boolean' && !noteEl.isConnected)) return;
           var draft = activeNoteDrafts.get(draftKey);
           if (!isFinishing && noteEl.classList.contains('is-editing') && (!draft || !draft.failed)) {
             doSave();
@@ -3412,7 +3487,17 @@
     notesLayer.appendChild(svg);
 
     issues.forEach(function (issue) {
-      if (!issue.canvas || !Array.isArray(issue.canvas.notes) || issue.canvas.notes.length === 0) return;
+      var rawNotes = (issue.canvas && Array.isArray(issue.canvas.notes)) ? issue.canvas.notes.slice() : [];
+      var issuePrefix = identity(issue) + ':';
+      activeNoteDrafts.forEach(function (draftVal, key) {
+        if (key.indexOf(issuePrefix) === 0 && draftVal && draftVal.noteSnapshot) {
+          var draftNoteId = key.slice(issuePrefix.length);
+          if (!rawNotes.some(function (n) { return n.id === draftNoteId; })) {
+            rawNotes.push(Object.assign({}, draftVal.noteSnapshot));
+          }
+        }
+      });
+      if (rawNotes.length === 0) return;
 
       var cardEl = cardsLayer ? cardsLayer.querySelector('[data-issue-key="' + identity(issue) + '"]') : null;
       var cardX = (issue.canvas && typeof issue.canvas.x === 'number') ? issue.canvas.x : (cardEl ? cardEl.offsetLeft : 100);
@@ -3420,7 +3505,7 @@
       var cardW = cardEl ? (cardEl.offsetWidth || 250) : 250;
       var cardH = cardEl ? (cardEl.offsetHeight || 130) : 130;
 
-      issue.canvas.notes.forEach(function (note, idx) {
+      rawNotes.forEach(function (note, idx) {
         if (typeof note.x !== 'number') note.x = cardX + 20 + (idx % 3) * 20;
         if (typeof note.y !== 'number') note.y = cardY + 160 + idx * 30;
         if (typeof note.w !== 'number') note.w = 220;
@@ -3987,10 +4072,12 @@
     if (cardElements.length === 0) return;
 
     var cardMap = new Map();
+    var cardByKey = new Map();
     var allPoints = [];
 
     cardElements.forEach(function (card) {
       var num = Number(card.getAttribute('data-issue-number'));
+      var key = card.getAttribute('data-issue-key');
       var pos = {
         element: card,
         x: card.offsetLeft,
@@ -3999,24 +4086,33 @@
         h: card.offsetHeight || 110,
       };
       cardMap.set(num, pos);
+      if (key) cardByKey.set(key, pos);
       allPoints.push({ x: pos.x, y: pos.y });
       allPoints.push({ x: pos.x + pos.w, y: pos.y + pos.h });
     });
 
-    var cardList = Array.from(cardMap.values());
+    var cardList = Array.from(cardByKey.size > 0 ? cardByKey.values() : cardMap.values());
     var issues = state.currentCanvasIssues || ((state.board && Array.isArray(state.board.issues)) ? state.board.issues : []);
     var dict = I18N[getLanguage()] || I18N.en;
 
     issues.forEach(function (targetIssue) {
-      var targetPos = cardMap.get(targetIssue.number);
+      var targetKey = identity(targetIssue);
+      var targetPos = cardByKey.get(targetKey) || cardMap.get(targetIssue.number);
       if (!targetPos) return;
 
+      var targetRepoFull = targetIssue.repository ? (targetIssue.repository.full || targetIssue.repository) : '';
       var nativeBlockers = Array.isArray(targetIssue.blockedBy) ? targetIssue.blockedBy : [];
       var nativeNums = new Set();
 
       nativeBlockers.forEach(function (blocker) {
-        nativeNums.add(blocker.number);
-        var blockerPos = cardMap.get(blocker.number);
+        var blockerRepoFull = blocker.repository
+          ? (blocker.repository.full || blocker.repository.full_name || blocker.repository.nameWithOwner || (typeof blocker.repository === 'string' ? blocker.repository : ''))
+          : targetRepoFull;
+        if (!blockerRepoFull || !targetRepoFull || blockerRepoFull.toLowerCase() === targetRepoFull.toLowerCase()) {
+          nativeNums.add(blocker.number);
+        }
+        var blockerKey = blockerRepoFull ? (blockerRepoFull + '#' + blocker.number) : '';
+        var blockerPos = (blockerKey && cardByKey.get(blockerKey)) || cardMap.get(blocker.number);
         if (!blockerPos) return;
 
         var curve = chooseWirePorts(blockerPos, targetPos, cardList);
@@ -4025,7 +4121,10 @@
         allPoints.push({ x: curve.cx2, y: curve.cy2 });
         allPoints.push({ x: curve.x2, y: curve.y2 });
 
-        var fullBlocker = issues.find(function (i) { return i.number === blocker.number; }) || blocker;
+        var fullBlocker = issues.find(function (i) {
+          var iRepo = i.repository ? (i.repository.full || i.repository) : '';
+          return i.number === blocker.number && (!blockerRepoFull || !iRepo || iRepo.toLowerCase() === blockerRepoFull.toLowerCase());
+        }) || blocker;
         var blockerStage = stageOf(fullBlocker);
         var isBlockerDone = fullBlocker.state === 'closed' || fullBlocker.state === 'done' || blockerStage === 'done';
         var wireClass = 'wire-open';
@@ -4106,7 +4205,8 @@
       var textDeps = Array.isArray(targetIssue.textDependencies) ? targetIssue.textDependencies : [];
       textDeps.forEach(function (depNum) {
         if (nativeNums.has(depNum)) return;
-        var blockerPos = cardMap.get(depNum);
+        var sameRepoKey = targetRepoFull ? (targetRepoFull + '#' + depNum) : '';
+        var blockerPos = (sameRepoKey && cardByKey.get(sameRepoKey)) || cardMap.get(depNum);
         if (!blockerPos) return;
 
         var curve = chooseWirePorts(blockerPos, targetPos, cardList);
@@ -4745,7 +4845,7 @@
     var allRows = (board.issues || []).concat(offlineRows());
     if (state.clientPresentationMode) {
       allRows = allRows.filter(function (issue) {
-        return issue.column !== 'draft' && issue.statusLabel !== 'status:draft' && issue.statusLabel !== 'status:cancelled';
+        return !isDraftIssue(issue);
       });
     }
     if (state.searchQuery) {
@@ -4951,8 +5051,10 @@
       var opaque = state.selected === 'all' ? 'all' : await choiceDigest(repository);
       window.localStorage.setItem('board-repository-choice', opaque);
     } catch (error) { /* Storage or digest unavailable: keep memory choice. */ }
-    setHash('#/');
+    if (!state.activeSectionView) setHash('#/');
     await loadBoard();
+    if (state.activeSectionView === 'operations') loadAndRenderOperationsView();
+    else if (state.activeSectionView === 'archive') loadAndRenderArchiveView();
   }
 
   async function rememberedChoice(view) {
@@ -5033,7 +5135,7 @@
       } else {
         setNotice('');
       }
-      showView('board');
+      showView(state.activeSectionView || 'board');
     } catch (error) {
       if (error.status === 401 || generation !== state.boardGeneration) return;
       if (state.board && previousScope === (state.selected === 'all' ? 'All repositories' : state.selected)) {
@@ -5346,6 +5448,36 @@
     suggestionsList.hidden = true;
   }
 
+  function resolveRepositoryObject(repoInput, fallbackRepo) {
+    if (!repoInput) return fallbackRepo || null;
+    if (typeof repoInput === 'object' && repoInput.owner && repoInput.name) {
+      return repoInput;
+    }
+    var full = typeof repoInput === 'string'
+      ? repoInput.trim()
+      : (repoInput.full || repoInput.full_name || repoInput.nameWithOwner || '');
+    if (!full && typeof repoInput.repository_url === 'string') {
+      var m = /\/repos\/([^/]+\/[^/]+)\/?$/.exec(repoInput.repository_url);
+      if (m) full = m[1];
+    }
+    if (!full && typeof repoInput.html_url === 'string') {
+      var hm = /github\.com\/([^/]+\/[^/]+)\/(?:issues|pull)\/\d+/.exec(repoInput.html_url);
+      if (hm) full = hm[1];
+    }
+    if (!full) return fallbackRepo || null;
+    if (state.repositories && Array.isArray(state.repositories.repositories)) {
+      var found = state.repositories.repositories.find(function (r) {
+        return r.full && r.full.toLowerCase() === full.toLowerCase();
+      });
+      if (found) return found;
+    }
+    var parts = full.split('/');
+    if (parts.length === 2 && parts[0] && parts[1]) {
+      return { owner: parts[0], name: parts[1], full: parts[0] + '/' + parts[1] };
+    }
+    return fallbackRepo || null;
+  }
+
   function renderDependencies(issue) {
     var dict = I18N[getLanguage()] || I18N.en;
 
@@ -5362,7 +5494,8 @@
       blockedByList.forEach(function (dep) {
         var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
         var friendly = resolveFriendlyTitle(dep);
-        var depRepoName = dep.repository ? (dep.repository.full || dep.repository.full_name || dep.repository.nameWithOwner || (typeof dep.repository === 'string' ? dep.repository : '')) : '';
+        var resolvedDepRepo = resolveRepositoryObject(dep.repository || dep, null);
+        var depRepoName = resolvedDepRepo ? resolvedDepRepo.full : '';
         var isCrossRepo = depRepoName && currentRepoName && depRepoName.toLowerCase() !== currentRepoName.toLowerCase();
         var chipText = '#' + dep.number + ' ' + (friendly.title || dep.title || '');
 
@@ -5374,10 +5507,7 @@
             text: chipText,
             onclick: function (e) {
               e.preventDefault();
-              var targetRepo = (dep.repository && state.repositories)
-                ? state.repositories.repositories.find(function (r) { return r.full === depRepoName; })
-                : issue.repository;
-              openIssue({ number: dep.number, repository: targetRepo || issue.repository });
+              openIssue({ number: dep.number, repository: resolvedDepRepo || issue.repository });
             }
           }),
         ];
@@ -5420,7 +5550,8 @@
       blockingList.forEach(function (dep) {
         var stage = (dep.state === 'closed' || dep.state === 'done') ? 'done' : stageOf(dep);
         var friendly = resolveFriendlyTitle(dep);
-        var depRepoName = dep.repository ? (dep.repository.full || dep.repository.full_name || dep.repository.nameWithOwner || (typeof dep.repository === 'string' ? dep.repository : '')) : '';
+        var resolvedDepRepo = resolveRepositoryObject(dep.repository || dep, null);
+        var depRepoName = resolvedDepRepo ? resolvedDepRepo.full : '';
         var isCrossRepo = depRepoName && currentRepoName && depRepoName.toLowerCase() !== currentRepoName.toLowerCase();
         var chipText = '#' + dep.number + ' ' + (friendly.title || dep.title || '');
 
@@ -5432,10 +5563,7 @@
             text: chipText,
             onclick: function (e) {
               e.preventDefault();
-              var targetRepo = (dep.repository && state.repositories)
-                ? state.repositories.repositories.find(function (r) { return r.full === depRepoName; })
-                : issue.repository;
-              openIssue({ number: dep.number, repository: targetRepo || issue.repository });
+              openIssue({ number: dep.number, repository: resolvedDepRepo || issue.repository });
             }
           }),
         ];
@@ -5640,11 +5768,29 @@
   }
 
   async function openIssue(target, options) {
-    options = options || {};
+    var repoArg = null;
+    if (options && (typeof options === 'string' || options.owner || options.full || options.full_name || options.nameWithOwner)) {
+      repoArg = resolveRepositoryObject(options, null);
+      options = {};
+    } else {
+      options = options || {};
+      if (options.repository) {
+        repoArg = resolveRepositoryObject(options.repository, null);
+      }
+    }
     if (typeof target === 'number') {
-      var repository = state.repositories && state.repositories.repositories.find(function (r) { return r.full === state.selected; });
+      var repository = repoArg || (state.repositories && state.repositories.repositories.find(function (r) { return r.full === state.selected; }));
+      if (!repository && state.board && Array.isArray(state.board.issues)) {
+        var matching = state.board.issues.filter(function (i) { return i.number === target && i.repository; });
+        if (matching.length === 1) repository = matching[0].repository;
+      }
       if (!repository) return;
       target = { number: target, repository: repository };
+    } else if (target && typeof target === 'object') {
+      var resolvedRepo = resolveRepositoryObject(target.repository || repoArg, null);
+      if (resolvedRepo) {
+        target = Object.assign({}, target, { repository: resolvedRepo });
+      }
     }
     rememberDraft();
     var generation = ++state.readGeneration;
@@ -5682,6 +5828,7 @@
       return;
     }
     if (match && state.selected !== 'all') openIssue(Number(match[1]));
+    else if (state.activeSectionView) { rememberDraft(); state.readGeneration++; state.pending = null; state.detail = null; showView(state.activeSectionView); }
     else { rememberDraft(); state.readGeneration++; state.pending = null; state.detail = null; showBoard(); }
   }
 
@@ -5864,10 +6011,10 @@
 
   function isDraftIssue(issue) {
     if (!issue) return false;
-    return issue.column === 'draft' ||
+    return stageOf(issue) === 'draft' ||
       issue.statusLabel === 'status:draft' ||
       issue.statusLabel === 'status:cancelled' ||
-      stageOf(issue) === 'draft';
+      Boolean(issue.offline);
   }
 
   function isIssueDecision(issue) {
@@ -6191,8 +6338,7 @@
             var key = identity(issue);
             var previous = humanTaskQueues.get(key) || Promise.resolve();
 
-            var cardCbs = card.querySelectorAll ? card.querySelectorAll('.human-task-checkbox') : [checkbox];
-            cardCbs.forEach(function (cb) { cb.disabled = true; });
+            checkbox.disabled = true;
 
             var next = previous.then(async function () {
               try {
@@ -6222,14 +6368,14 @@
                   await loadBoard();
                 }
                 updateSidebarBadges();
-                renderBlockedView();
               } catch (err) {
                 checkbox.checked = !completed;
                 setNotice(err.message || 'Could not toggle human task', true);
               } finally {
+                checkbox.disabled = false;
                 if (humanTaskQueues.get(key) === nextPromise) {
                   humanTaskQueues.delete(key);
-                  cardCbs.forEach(function (cb) { cb.disabled = false; });
+                  renderBlockedView();
                 }
               }
             });
@@ -6259,7 +6405,7 @@
         var link = el('a', { class: 'dependency-chip-link' }, '#' + dep.number + (dep.title ? ' ' + dep.title : ''));
         link.addEventListener('click', function (e) {
           e.preventDefault();
-          openIssue(dep.number);
+          openIssue(dep.number, dep.repository || dep || issue.repository);
         });
         depRow.appendChild(statusDot);
         depRow.appendChild(link);
@@ -6687,22 +6833,11 @@
   }
 
   function cleanOverviewPreview(issue) {
-    if (issue.overview && typeof issue.overview === 'string' && issue.overview.trim()) {
-      var trimmed = issue.overview.replace(/^---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)\r?\n?/, '').trim();
-      if (trimmed) return trimmed.slice(0, 160) + (trimmed.length > 160 ? '…' : '');
+    if (typeof issue.overview === 'string') {
+      return cleanPreviewText(issue.overview);
     }
-    var raw = issue.description || issue.body || '';
-    if (!raw) return '';
-    var clean = raw
-      .replace(/<!--[\s\S]*?-->/g, '')
-      .replace(/^---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)\r?\n?/, '')
-      .replace(/```[\s\S]*?```/g, '')
-      .replace(/^#{1,6}\s+.*$/gm, '')
-      .replace(/[-*+]\s+\[[ xX]\]\s+.*$/gm, '')
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (!clean) return '';
-    return clean.slice(0, 160) + (clean.length > 160 ? '…' : '');
+    if (state.clientPresentationMode) return '';
+    return cleanPreviewText(issue.description || issue.body || '');
   }
 
   function applyClientPresentationMode() {
@@ -6716,6 +6851,19 @@
       } else {
         document.body.classList.remove('client-presentation-active');
       }
+    }
+    var dict = I18N[getLanguage()] || I18N.en;
+    var statusDesc = $('client-filter-status-desc');
+    if (statusDesc) {
+      statusDesc.textContent = state.clientPresentationMode
+        ? (dict.client_filter_active || 'Active (hiding internal drafts and raw notes)')
+        : (dict.client_filter_inactive || 'Inactive (showing full task list)');
+    }
+    var toggleBtn = $('client-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.textContent = state.clientPresentationMode
+        ? (dict.client_switch_btn_disable || 'Disable presentation mode')
+        : (dict.client_switch_btn_enable || 'Enable presentation mode');
     }
   }
 
@@ -6784,9 +6932,7 @@
     var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
 
     var filtered = items.filter(function (it) {
-      if (state.clientPresentationMode) {
-        if (it.column === 'draft' || it.statusLabel === 'status:cancelled') return false;
-      }
+      if (state.clientPresentationMode && isDraftIssue(it)) return false;
       return true;
     });
 
@@ -6934,6 +7080,8 @@
         openIssue(state.detail);
       } else {
         loadBoard();
+        if (state.activeSectionView === 'operations') loadAndRenderOperationsView();
+        else if (state.activeSectionView === 'archive') loadAndRenderArchiveView();
       }
     });
 
@@ -7218,15 +7366,19 @@
       if (session && session.authenticated) {
         setAuthHint();
         state.csrf = session.csrfToken;
-        setBoardMode(state.activeViewMode || 'list');
-        showView('board');
+        if (!state.activeSectionView) {
+          setBoardMode(state.activeViewMode || 'list');
+          showView('board');
+        }
         if ($('board-toolbar')) $('board-toolbar').hidden = false;
         if ($('app-sidebar')) $('app-sidebar').hidden = false;
         if ($('compact-header')) $('compact-header').hidden = false;
         $('refresh-btn').hidden = false;
         $('signout-btn').hidden = false;
         await loadBoard();
-        route();
+        if (!state.activeSectionView) {
+          route();
+        }
         syncOfflineDrafts();
         return;
       }

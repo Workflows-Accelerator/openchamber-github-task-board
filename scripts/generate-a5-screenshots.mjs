@@ -487,6 +487,14 @@ async function run() {
         })()`);
       }
 
+      if (sc.view !== 'client') {
+        await evaluate(`(() => {
+          if (window.__taskBoard && window.__taskBoard.setClientPresentationMode && window.__taskBoard.state.clientPresentationMode) {
+            window.__taskBoard.setClientPresentationMode(false);
+          }
+        })()`);
+      }
+
       // Switch view
       await evaluate(`(() => {
         const btn = document.getElementById("nav-${sc.view}");

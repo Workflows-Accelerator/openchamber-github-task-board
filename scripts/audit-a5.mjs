@@ -1,17 +1,35 @@
 // Independent audit against unchanged application assets and synthetic GitHub only.
 import fs from 'node:fs';
 import path from 'node:path';
+import { spawn } from 'node:child_process';
 import { startFakeGitHub, makeIssue } from '../web/tests/fake-github.mjs';
 import { startBoard, BOARD_PASSWORD } from '../web/tests/helpers.mjs';
 
 const root = path.resolve('.agents/run/chamberos-board-v2/verifications/A5/independent');
 fs.mkdirSync(path.join(root, 'screenshots'), { recursive: true });
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+async function ensureObscura() {
+  try {
+    const res = await fetch('http://127.0.0.1:9222/json/version');
+    if (res.ok) return;
+  } catch {}
+  const child = spawn('obscura', ['serve', '--port', '9222', '--allow-private-network'], { stdio: 'ignore', detached: true });
+  child.unref();
+  for (let i = 0; i < 60; i++) {
+    await pause(250);
+    try {
+      const res = await fetch('http://127.0.0.1:9222/json/version');
+      if (res.ok) return;
+    } catch {}
+  }
+  throw new Error('Obscura did not start on 9222');
+}
 const report = [];
 const record = (name, data) => { report.push({ name, ...data }); console.log(JSON.stringify(report.at(-1))); };
 class CDP {
   pending = new Map(); next = 0; events = [];
   async open() {
+    await ensureObscura();
     this.ws = new WebSocket('ws://127.0.0.1:9222/devtools/browser');
     await new Promise((resolve, reject) => { this.ws.addEventListener('open', resolve); this.ws.addEventListener('error', reject); });
     this.ws.addEventListener('message', event => {
@@ -180,6 +198,8 @@ try {
   record('note refresh retains draft', { editor: await evaluate(`document.querySelector('.canvas-note-textarea')?.value`), retry: await text('.canvas-note-editor .button.primary') });
   await click('.canvas-note-editor .button.primary'); await pause(300);
   record('note Retry after refresh', { PATCH: fake.patchCalls.length - notesBefore, remoteRetained: fake.findIssue(1).body.includes('REMOTE_NOTE'), localSaved: fake.findIssue(1).body.includes('LOCAL_DRAFT'), notice: await text('#notice') });
+  await click('.conflict-overwrite'); await pause(300);
+  record('note explicit Overwrite', { PATCH: fake.patchCalls.length - notesBefore, localSaved: fake.findIssue(1).body.includes('LOCAL_DRAFT'), remoteReplaced: !fake.findIssue(1).body.includes('REMOTE_NOTE') });
   // Canvas screenshot omitted after renderer timeout; DOM/HTTP evidence retained.
   record('browser diagnostics', {
     exceptions: cdp.events.filter(e => e.method === 'Runtime.exceptionThrown').map(e => e.params.exceptionDetails.text),

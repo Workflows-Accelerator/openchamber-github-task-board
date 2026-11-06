@@ -68,6 +68,7 @@ function browser(storage = {}) {
     navigator: { onLine: true },
     localStorage: { getItem: key => store.get(key) || null, setItem: (key, value) => store.set(key, String(value)), removeItem: key => store.delete(key) },
     fetch: async () => ({ ok: true, status: 200, text: async () => JSON.stringify({ authenticated: false }) }),
+    setTimeout: (fn, ms) => setTimeout(fn, ms),
     console: console,
   };
   vm.runInNewContext(fs.readFileSync('web/public/app.js', 'utf8').replace('  boot();', ''), context);
@@ -505,4 +506,197 @@ test('audit A5 note 409 safe retry: adopts remote fingerprint without conflict p
 
   assert.equal(callCount, 2);
   assert.equal(issue.fingerprint, 'fp-3');
+});
+
+test('audit A5 presentation draft filtering: non-draft status issues without priority label stay visible when column is draft', () => {
+  const { app, get } = browser({ chamberos_client_presentation_mode: '1' });
+  app.setClientPresentationMode(true);
+  const repository = { full: 'owner/repo', owner: 'owner', name: 'repo' };
+  app.state.board = {
+    repo: 'owner/repo',
+    issues: [
+      { number: 1, repository, state: 'open', title: 'Secret draft', column: 'draft', statusLabel: 'status:draft', labels: ['status:draft'], counts: {} },
+      { number: 2, repository, state: 'open', title: 'Unprioritized todo task', friendlyTitle: 'Client friendly release title', column: 'draft', statusLabel: 'status:todo', labels: ['status:todo'], overview: 'Safe overview prose', counts: {} },
+      { number: 3, repository, state: 'open', title: 'Cancelled task', column: 'backlog', statusLabel: 'status:cancelled', labels: ['status:cancelled'], counts: {} },
+    ],
+  };
+  app.state.viewState = { view: 'simple', filters: [], sort: 'priority' };
+  app.renderBoard();
+  assert.equal(get('task-list').children.length, 1, 'Open todo issue without priority label must remain visible in presentation mode');
+});
+
+test('audit A5 note 409 conflict across refresh: ordinary Retry after board refresh does not overwrite remote note without explicit Overwrite', async () => {
+  const { app, context } = browser();
+  const repository = { full: 'owner/repo', owner: 'owner', name: 'repo' };
+  const note = { id: 'note-1', text: 'Initial canvas note', x: 10, y: 20 };
+  const issue = {
+    number: 1, repository, fingerprint: 'fp-initial', state: 'open',
+    title: 'Issue 1', statusLabel: 'status:todo',
+    canvas: { notes: [note] },
+  };
+  app.state.board = { repo: 'owner/repo', issues: [issue] };
+
+  let putCalls = 0;
+  context.fetch = async (url, opts) => {
+    putCalls++;
+    const body = JSON.parse(opts.body);
+    if (putCalls === 1) {
+      assert.equal(body.fingerprint, 'fp-initial');
+      return {
+        ok: false,
+        status: 409,
+        text: async () => JSON.stringify({
+          error: 'conflict',
+          message: 'Conflict',
+          issue: {
+            ...issue,
+            fingerprint: 'fp-remote-after-edit',
+            canvas: { notes: [{ id: 'note-1', text: 'REMOTE_NOTE', x: 10, y: 20 }] },
+          },
+        }),
+      };
+    }
+    const finalItem = {
+      ...issue,
+      fingerprint: 'fp-final',
+      title: 'Issue 1',
+      state: 'open',
+      statusLabel: 'status:todo',
+      updatedAt: '2026-11-06T00:00:00Z',
+      phase: 'build',
+      attention: 'none',
+      canvas: { notes: body.notes },
+      editableSections: [],
+      openQuestions: [],
+      humanTasks: [],
+      acceptanceCriteria: [],
+      subtasks: [],
+    };
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        ok: true,
+        issue: finalItem,
+        listItem: finalItem,
+        statusOptions: [{ value: 'status:todo', label: 'Todo' }],
+      }),
+    };
+  };
+
+  const ev = { stopPropagation() {}, preventDefault() {} };
+  const noteEl1 = app.createStickyNoteElement(note, issue);
+  noteEl1.querySelector('.btn-edit').listeners.click(ev);
+  const textarea1 = noteEl1.querySelector('.canvas-note-textarea');
+  textarea1.value = 'LOCAL_DRAFT';
+  textarea1.listeners.input();
+
+  const saveBtn1 = noteEl1.querySelector('.canvas-note-editor-actions button.button.primary');
+  saveBtn1.listeners.click(ev);
+  await new Promise(r => setTimeout(r, 60));
+  assert.equal(putCalls, 1);
+
+  // Simulate board refresh updating issue.fingerprint and note.text to REMOTE_NOTE
+  const refreshedNote = { id: 'note-1', text: 'REMOTE_NOTE', x: 10, y: 20 };
+  const refreshedIssue = {
+    ...issue,
+    fingerprint: 'fp-remote-after-edit',
+    canvas: { notes: [refreshedNote] },
+  };
+  app.state.board = { repo: 'owner/repo', issues: [refreshedIssue] };
+  const noteEl2 = app.createStickyNoteElement(refreshedNote, refreshedIssue);
+
+  const textarea2 = noteEl2.querySelector('.canvas-note-textarea');
+  assert.equal(textarea2.value, 'LOCAL_DRAFT', 'Local draft must survive refresh');
+  const retryBtn = noteEl2.querySelector('.canvas-note-editor-actions button.button.primary');
+  assert.ok(retryBtn.classList.contains('is-retry'), 'Retry button must remain visible after refresh');
+
+  // Clicking ordinary Retry must NOT send a PUT overwriting REMOTE_NOTE
+  retryBtn.listeners.click(ev);
+  await new Promise(r => setTimeout(r, 60));
+  assert.equal(putCalls, 1, 'Ordinary Retry after refresh must not overwrite remote note');
+
+  // Explicit Overwrite sends the PUT with the remote fingerprint
+  const conflictBanner = noteEl2.querySelector('.canvas-note-conflict-banner');
+  assert.equal(conflictBanner.hidden, false);
+  conflictBanner.querySelector('.conflict-overwrite').listeners.click(ev);
+  await new Promise(r => setTimeout(r, 60));
+  assert.equal(putCalls, 2, 'Explicit Overwrite must send the reconciled PUT');
+});
+
+test('audit A5 combined-mode openIssue: resolves repository argument for section cards and cross-repo dependencies', async () => {
+  const { app, context } = browser();
+  app.state.selected = 'all';
+  app.state.repositories = {
+    repositories: [
+      { owner: 'owner', name: 'repo-a', full: 'owner/repo-a' },
+      { owner: 'owner', name: 'repo-b', full: 'owner/repo-b' },
+    ],
+  };
+  const requestedUrls = [];
+  context.fetch = async (url) => {
+    requestedUrls.push(url);
+    return {
+      ok: true,
+      status: 200,
+      text: async () => JSON.stringify({
+        issue: {
+          number: 7,
+          repository: { owner: 'owner', name: 'repo-b', full: 'owner/repo-b' },
+          fingerprint: 'fp-7',
+          title: 'Cross-repo issue',
+          state: 'open',
+          statusLabel: 'status:todo',
+          updatedAt: '2026-11-06T00:00:00Z',
+          phase: 'build',
+          attention: 'none',
+          editableSections: [],
+          openQuestions: [],
+          humanTasks: [],
+          acceptanceCriteria: [],
+          subtasks: [],
+        },
+        statusOptions: [{ value: 'status:todo', label: 'Todo' }],
+      }),
+    };
+  };
+
+  await app.openIssue(7, 'owner/repo-b');
+  assert.equal(requestedUrls.length, 1);
+  assert.match(requestedUrls[0], /\/api\/repos\/owner\/repo-b\/issues\/7$/);
+});
+
+test('audit A4 note poll/refresh: blur on detached note element does not trigger premature save', async () => {
+  const { app, context } = browser();
+  const repository = { full: 'owner/repo', owner: 'owner', name: 'repo' };
+  const note = { id: 'note-poll', text: 'Original note', x: 10, y: 20 };
+  const issue = {
+    number: 1, repository, fingerprint: 'fp-1', state: 'open',
+    title: 'Issue 1', statusLabel: 'status:todo',
+    canvas: { notes: [note] },
+  };
+  app.state.board = { repo: 'owner/repo', issues: [issue] };
+
+  let putCalls = 0;
+  context.fetch = async () => {
+    putCalls++;
+    return { ok: true, status: 200, text: async () => JSON.stringify({ ok: true }) };
+  };
+
+  const ev = { stopPropagation() {}, preventDefault() {} };
+  const noteEl = app.createStickyNoteElement(note, issue);
+  // Attach then detach to simulate renderCanvasNotes() replacing notesLayer contents
+  const parent = { removeChild() {} };
+  noteEl.parentNode = parent;
+  noteEl.querySelector('.btn-edit').listeners.click(ev);
+  const textarea = noteEl.querySelector('.canvas-note-textarea');
+  textarea.value = 'In-progress draft during poll';
+  textarea.listeners.input();
+
+  // Detach before blur timeout fires
+  noteEl.parentNode = null;
+  if (textarea.listeners.blur) textarea.listeners.blur(ev);
+  await new Promise(r => setTimeout(r, 160));
+
+  assert.equal(putCalls, 0, 'Detached note element blur must not auto-save during refresh/poll');
 });

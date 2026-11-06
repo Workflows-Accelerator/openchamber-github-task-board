@@ -423,6 +423,22 @@ export function midpointOrder(previous: number | null, next: number | null): num
     next === null ? previous + 1000 : previous / 2 + next / 2;
 }
 
+function extractDependencyRepository(item: any, fallbackRepo: BoardRepository | null): string | undefined {
+  if (!item) return fallbackRepo?.full;
+  if (typeof item.repository === 'string' && item.repository.trim()) return item.repository.trim();
+  const repoObj = item.repository?.full ?? item.repository?.nameWithOwner ?? item.repository?.full_name;
+  if (typeof repoObj === 'string' && repoObj.trim()) return repoObj.trim();
+  if (typeof item.repository_url === 'string') {
+    const match = /\/repos\/([^/]+\/[^/]+)\/?$/.exec(item.repository_url);
+    if (match) return match[1];
+  }
+  if (typeof item.html_url === 'string') {
+    const match = /github\.com\/([^/]+\/[^/]+)\/(?:issues|pull)\/\d+/.exec(item.html_url);
+    if (match) return match[1];
+  }
+  return fallbackRepo?.full;
+}
+
 function listFields(raw: any, repository: BoardRepository | null) {
   const body = typeof raw.body === 'string' ? raw.body : '';
   const description = trimTrailingBlankLines(stripHiddenMarkers(body));
@@ -451,7 +467,7 @@ function listFields(raw: any, repository: BoardRepository | null) {
     number: item.number,
     title: item.title ?? '',
     state: (item.state ?? 'open').toLowerCase(),
-    repository: typeof item.repository === 'string' ? item.repository : (item.repository?.nameWithOwner ?? item.repository?.full_name ?? repository?.full),
+    repository: extractDependencyRepository(item, repository),
   }));
   const rawBlocking = Array.isArray(raw.blocking) ? raw.blocking : [];
   const blocking = rawBlocking.map((item: any) => ({
@@ -459,7 +475,7 @@ function listFields(raw: any, repository: BoardRepository | null) {
     number: item.number,
     title: item.title ?? '',
     state: (item.state ?? 'open').toLowerCase(),
-    repository: typeof item.repository === 'string' ? item.repository : (item.repository?.nameWithOwner ?? item.repository?.full_name ?? repository?.full),
+    repository: extractDependencyRepository(item, repository),
   }));
 
   return {
