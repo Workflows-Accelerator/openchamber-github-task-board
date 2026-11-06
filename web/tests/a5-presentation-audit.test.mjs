@@ -58,3 +58,44 @@ for (const language of ['en', 'fr']) {
     assert.equal(get('task-list').children.length, 2);
   });
 }
+
+test('audit A5 blocked/decisions predicate: excludes closed issues and separates question-only items', () => {
+  const { app, get } = browser();
+  const repository = { full: 'owner/repo', owner: 'owner', name: 'repo' };
+  const closedWithQuestionsAndTasks = {
+    number: 1, state: 'closed', repository,
+    openQuestions: [{ text: 'Which date?', completed: false }],
+    humanTasks: [{ text: 'Review contract', completed: false }],
+    statusLabel: 'status:needs-human',
+  };
+  const openQuestionOnly = {
+    number: 2, state: 'open', repository,
+    openQuestions: [{ text: 'Which date?', completed: false }],
+    humanTasks: [],
+    statusLabel: 'status:todo',
+  };
+  const openBlockedByHuman = {
+    number: 3, state: 'open', repository,
+    humanTasks: [{ text: 'Sign agreement', completed: false }],
+    statusLabel: 'status:needs-human',
+  };
+  const openBlockedByDep = {
+    number: 4, state: 'open', repository,
+    blockedBy: [{ number: 99, state: 'open' }],
+    statusLabel: 'status:todo',
+  };
+
+  assert.equal(app.isIssueDecision(closedWithQuestionsAndTasks), false, 'Closed issue must not be in decisions');
+  assert.equal(app.isIssueBlocked(closedWithQuestionsAndTasks), false, 'Closed issue must not be in blocked');
+
+  assert.equal(app.isIssueDecision(openQuestionOnly), true, 'Open question-only must be in decisions');
+  assert.equal(app.isIssueBlocked(openQuestionOnly), false, 'Open question-only must NOT be in blocked');
+
+  assert.equal(app.isIssueBlocked(openBlockedByHuman), true, 'Open needs-human must be blocked');
+  assert.equal(app.isIssueBlocked(openBlockedByDep), true, 'Open with blocker must be blocked');
+
+  app.state.board = { repo: 'owner/repo', issues: [closedWithQuestionsAndTasks, openQuestionOnly, openBlockedByHuman, openBlockedByDep] };
+  app.updateSidebarBadges();
+  assert.equal(get('decisions-nav-badge').textContent, '1');
+  assert.equal(get('blocked-nav-badge').textContent, '2');
+});

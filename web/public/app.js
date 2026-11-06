@@ -5660,21 +5660,32 @@
      Step A5: Sidebar Views & Real Operations Overview
      ========================================================================== */
 
+  function isIssueDecision(issue) {
+    if (!issue || issue.state === 'closed') return false;
+    return Array.isArray(issue.openQuestions) && issue.openQuestions.some(function (q) { return !q.completed; });
+  }
+
+  function isIssueBlocked(issue) {
+    if (!issue || issue.state === 'closed') return false;
+    var isNeedsHuman = issue.statusLabel === 'status:needs-human';
+    var hasUncheckedTasks = Array.isArray(issue.humanTasks) && issue.humanTasks.some(function (t) { return !t.completed; });
+    var hasOpenBlockers = Array.isArray(issue.blockedBy) && issue.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
+    return isNeedsHuman || hasUncheckedTasks || hasOpenBlockers;
+  }
+
   function updateSidebarBadges() {
     var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
     var decisionsCount = 0;
     var blockedCount = 0;
 
     items.forEach(function (item) {
+      if (item.state === 'closed') return;
       if (Array.isArray(item.openQuestions)) {
         item.openQuestions.forEach(function (q) {
           if (!q.completed) decisionsCount++;
         });
       }
-      var isNeedsHuman = item.statusLabel === 'status:needs-human';
-      var hasUncheckedTasks = Array.isArray(item.humanTasks) && item.humanTasks.some(function (t) { return !t.completed; });
-      var hasOpenBlockers = Array.isArray(item.blockedBy) && item.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
-      if (isNeedsHuman || hasUncheckedTasks || hasOpenBlockers) {
+      if (isIssueBlocked(item)) {
         blockedCount++;
       }
     });
@@ -5776,9 +5787,7 @@
     if (loading) loading.hidden = true;
 
     var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
-    var decisionIssues = items.filter(function (it) {
-      return Array.isArray(it.openQuestions) && it.openQuestions.some(function (q) { return !q.completed; });
-    });
+    var decisionIssues = items.filter(isIssueDecision);
 
     decisionIssues.sort(function (a, b) {
       var timeA = a.updatedAt ? Date.parse(a.updatedAt) : 0;
@@ -6011,14 +6020,7 @@
     if (loading) loading.hidden = true;
 
     var items = (state.board && Array.isArray(state.board.issues)) ? state.board.issues : [];
-    var blockedIssues = items.filter(function (it) {
-      var isNeedsHuman = it.statusLabel === 'status:needs-human';
-      var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) { return !t.completed; });
-      var hasOpenQuestions = (it.counts && it.counts.openQuestions && it.counts.openQuestions.open > 0) ||
-                             (Array.isArray(it.openQuestions) && it.openQuestions.some(function (q) { return !q.completed; }));
-      var hasOpenBlockers = Array.isArray(it.blockedBy) && it.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
-      return isNeedsHuman || hasUncheckedTasks || hasOpenQuestions || hasOpenBlockers;
-    });
+    var blockedIssues = items.filter(isIssueBlocked);
 
     blockedIssues.sort(function (a, b) {
       var timeA = a.updatedAt ? Date.parse(a.updatedAt) : 0;
@@ -6046,11 +6048,9 @@
     blockedIssues.forEach(function (it) {
       var isNeedsHuman = it.statusLabel === 'status:needs-human';
       var hasUncheckedTasks = Array.isArray(it.humanTasks) && it.humanTasks.some(function (t) { return !t.completed; });
-      var hasOpenQuestions = (it.counts && it.counts.openQuestions && it.counts.openQuestions.open > 0) ||
-                             (Array.isArray(it.openQuestions) && it.openQuestions.some(function (q) { return !q.completed; }));
       var hasOpenBlockers = Array.isArray(it.blockedBy) && it.blockedBy.some(function (dep) { return dep.state === 'open' || dep.state === undefined; });
 
-      if (isNeedsHuman || hasUncheckedTasks || hasOpenQuestions) {
+      if (isNeedsHuman || hasUncheckedTasks) {
         humanIssues.push(it);
       }
       if (hasOpenBlockers) {
@@ -7034,6 +7034,9 @@
       addIssueDependencyAction: addIssueDependencyAction,
       deleteIssueDependencyAction: deleteIssueDependencyAction,
       computeBezierPath: computeBezierPath,
+      isIssueBlocked: isIssueBlocked,
+      isIssueDecision: isIssueDecision,
+      updateSidebarBadges: updateSidebarBadges,
     };
   }
 
