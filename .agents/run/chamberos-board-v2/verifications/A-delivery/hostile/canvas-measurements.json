@@ -1,0 +1,923 @@
+{
+  "timestamp": "2026-11-06T19:08:40.586Z",
+  "previewUrl": "http://127.0.0.1:4041",
+  "wireDetails": {
+    "wiresLayerExists": true,
+    "layerRect": {
+      "x": 142.07000732421875,
+      "y": 196.614013671875,
+      "width": 898.8899536132812,
+      "height": 446.91796875
+    },
+    "layerViewBox": "-65 -13 1245 619",
+    "groupCount": 4,
+    "wires": [
+      {
+        "target": "2",
+        "blocker": "1",
+        "className": "canvas-wire-group",
+        "hasVisualPath": true,
+        "hasHitPath": true,
+        "hasDelBtn": true,
+        "d": "M 351 143 C 381 143, 360 144, 390 144",
+        "stroke": "",
+        "strokeWidth": "",
+        "display": "block",
+        "visibility": "visible",
+        "boundingRect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        }
+      },
+      {
+        "target": "5",
+        "blocker": "1",
+        "className": "canvas-wire-group",
+        "hasVisualPath": true,
+        "hasHitPath": true,
+        "hasDelBtn": true,
+        "d": "M 351 143 C 486 143, 486 140.5, 621 140.5",
+        "stroke": "",
+        "strokeWidth": "",
+        "display": "block",
+        "visibility": "visible",
+        "boundingRect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        }
+      },
+      {
+        "target": "5",
+        "blocker": "10",
+        "className": "canvas-wire-group",
+        "hasVisualPath": true,
+        "hasHitPath": true,
+        "hasDelBtn": true,
+        "d": "M 101 403 C 35.375 403, 35.375 140.5, 621 140.5",
+        "stroke": "",
+        "strokeWidth": "",
+        "display": "block",
+        "visibility": "visible",
+        "boundingRect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        }
+      },
+      {
+        "target": "11",
+        "blocker": "10",
+        "className": "canvas-wire-group",
+        "hasVisualPath": true,
+        "hasHitPath": true,
+        "hasDelBtn": true,
+        "d": "M 101 403 C 41 403, 41 255.5, 621 255.5",
+        "stroke": "",
+        "strokeWidth": "",
+        "display": "block",
+        "visibility": "visible",
+        "boundingRect": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        }
+      }
+    ],
+    "cardsCount": 8
+  },
+  "measurements": [
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en",
+        "shot": "hostile-canvas-1280-light-en.png"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 962,
+          "right": 1266,
+          "width": 304,
+          "height": 37
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "width": 1050
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "72%",
+            "width": 48,
+            "height": 25,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "width": 41,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "width": 69,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "width": 54,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)"
+      }
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en",
+        "shot": "hostile-canvas-1280-dark-en.png"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 962,
+          "right": 1266,
+          "width": 304,
+          "height": 37
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "width": 1050
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "72%",
+            "width": 48,
+            "height": 25,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "width": 41,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "width": 69,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "width": 54,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)"
+      }
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr",
+        "shot": "hostile-canvas-1280-light-fr.png"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 889,
+          "right": 1266,
+          "width": 377,
+          "height": 37
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "width": 1050
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "72%",
+            "width": 48,
+            "height": 25,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "width": 71,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "width": 103,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "width": 63,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)"
+      }
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en",
+        "shot": "hostile-canvas-768-light-en.png"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 450,
+          "right": 754,
+          "width": 304,
+          "height": 37
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "width": 768
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "72%",
+            "width": 48,
+            "height": 25,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "width": 41,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "width": 69,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "width": 54,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)"
+      }
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr",
+        "shot": "hostile-canvas-768-dark-fr.png"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 377,
+          "right": 754,
+          "width": 377,
+          "height": 37
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "width": 768
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "72%",
+            "width": 48,
+            "height": 25,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "width": 71,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "width": 103,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "width": 63,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)"
+      }
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en",
+        "shot": "hostile-canvas-360-light-en.png"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 42,
+          "right": 346,
+          "width": 304,
+          "height": 37
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "width": 360
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "72%",
+            "width": 48,
+            "height": 25,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "width": 41,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "width": 69,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "width": 54,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)"
+      }
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en",
+        "shot": "hostile-canvas-360-dark-en.png"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": 42,
+          "right": 346,
+          "width": 304,
+          "height": 37
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "width": 360
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": false,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "72%",
+            "width": 48,
+            "height": 25,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit all",
+            "width": 41,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset view",
+            "width": 69,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "width": 54,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo arrange",
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)"
+      }
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr",
+        "shot": "hostile-canvas-360-light-fr.png"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": -31,
+          "right": 346,
+          "width": 377,
+          "height": 37
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "width": 360
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": true,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "72%",
+            "width": 48,
+            "height": 25,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "width": 71,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "width": 103,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "width": 63,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)"
+      }
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr",
+        "shot": "hostile-canvas-360-dark-fr.png"
+      },
+      "hudMetrics": {
+        "hudRect": {
+          "left": -31,
+          "right": 346,
+          "width": 377,
+          "height": 37
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "width": 360
+        },
+        "overflowsViewportRight": false,
+        "overflowsViewportLeft": true,
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "72%",
+            "width": 48,
+            "height": 25,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "width": 24,
+            "height": 27,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "width": 71,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "width": 103,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "width": 63,
+            "height": 26,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "",
+            "multilineWrap": false
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)"
+      }
+    }
+  ],
+  "dotGridInfo": {
+    "inlineStyle": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)",
+    "computedStyle": "radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 0px, rgba(var(--canvas-dot-rgb, 24, 22, 19), 0.1433) 1.14px, transparent 1.14px)",
+    "backgroundSize": "17.33px 17.33px",
+    "backgroundPosition": "-41.00px 131.00px"
+  },
+  "exceptions": [],
+  "consoleErrors": []
+}
