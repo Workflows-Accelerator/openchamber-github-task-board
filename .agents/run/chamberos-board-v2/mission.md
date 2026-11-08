@@ -1,7 +1,7 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `awaiting_human` (execution direction, NOT L5 acceptance; hostile3 HALT at 0d66b56, verified clean; current application bundle 59e5d05; no workers running. Automatic repeat cycles stopped after repeated failed reviews. User must choose bounded tooling/docs correction or park. B-D deferred; human acceptance and release NOT authorised)
+- **State:** `building` (D32: user chose bounded verification-only fix after hostile3 HALT at 0d66b56; fix4 worker dispatched per tasks/A-delivery-fix4-brief.md; app source/bundle frozen 59e5d05. Next: targeted hostile4, then L5 request only on PASS. B-D deferred; human acceptance and release NOT authorised)
 - **Alignment:** `CONFIRMED` (rounds 1-3, see decisions.md)
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2`
 - **Branch:** `feat/chamberos-board-v2`
