@@ -1,0 +1,6 @@
+360 light fr: undoVisible=true outside=[] overlaps=[] gap=null pass=true
+360 dark fr: undoVisible=true outside=[] overlaps=[] gap=null pass=true
+1280 light fr: undoVisible=true outside=[] overlaps=[] gap=2 pass=true
+1280 dark fr: undoVisible=true outside=[] overlaps=[] gap=2 pass=true
+arrangeSummary="6 cards arranged." diagnosticsClean=true allPass=true
+exit=0

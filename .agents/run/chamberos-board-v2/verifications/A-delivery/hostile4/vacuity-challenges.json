@@ -1,0 +1,617 @@
+{
+  "temp": "/tmp/opencode/hostile4-smoke-cWpHiO",
+  "results": [
+    {
+      "name": "hudDisplayNone",
+      "injection": "await page.evaluate(() => { document.getElementById(\"canvas-controls\").style.display = \"none\"; });",
+      "exit": 1,
+      "signal": null,
+      "passCount": 9,
+      "total": 10,
+      "verdicts": [
+        {
+          "name": "health",
+          "verdict": "PASS"
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "FAIL"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "PASS"
+        }
+      ],
+      "cases": [
+        {
+          "testCase": "1280x900 light en",
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "1280x900 dark en",
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "1280x900 light fr",
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "768x900 light en",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "768x900 dark fr",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "360x800 light en",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "360x800 dark en",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "360x800 light fr",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "360x800 dark fr",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        }
+      ],
+      "source": "/tmp/opencode/hostile4-smoke-cWpHiO/hudDisplayNone.mjs",
+      "destination": "/tmp/opencode/hostile4-smoke-cWpHiO/hudDisplayNone"
+    },
+    {
+      "name": "canvasViewNotShown",
+      "injection": "await page.evaluate(() => document.getElementById(\"nav-list\").click()); await sleep(300);",
+      "exit": 0,
+      "signal": null,
+      "passCount": 10,
+      "total": 10,
+      "verdicts": [
+        {
+          "name": "health",
+          "verdict": "PASS"
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS"
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "PASS"
+        }
+      ],
+      "cases": [
+        {
+          "testCase": "1280x900 light en",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "1280x900 dark en",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "1280x900 light fr",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "768x900 light en",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "768x900 dark fr",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "360x800 light en",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "360x800 dark en",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "360x800 light fr",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": "360x800 dark fr",
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 0,
+            "right": 0,
+            "top": 0,
+            "bottom": 0,
+            "width": 0,
+            "height": 0,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "visibleIds": [],
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        }
+      ],
+      "source": "/tmp/opencode/hostile4-smoke-cWpHiO/canvasViewNotShown.mjs",
+      "destination": "/tmp/opencode/hostile4-smoke-cWpHiO/canvasViewNotShown"
+    }
+  ]
+}

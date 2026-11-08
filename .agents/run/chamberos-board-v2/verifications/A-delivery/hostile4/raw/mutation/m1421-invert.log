@@ -1,0 +1,110 @@
+TAP version 13
+# Subtest: parseWebHumanTasks extracts checkboxes under Human Tasks and computes accurate character offsets
+ok 1 - parseWebHumanTasks extracts checkboxes under Human Tasks and computes accurate character offsets
+  ---
+  duration_ms: 2.396652
+  type: 'test'
+  ...
+# Subtest: toggleHumanTaskInMarkdown preserves markdown byte-for-byte except for the single checkbox character
+ok 2 - toggleHumanTaskInMarkdown preserves markdown byte-for-byte except for the single checkbox character
+  ---
+  duration_ms: 0.743187
+  type: 'test'
+  ...
+# Subtest: toggleHumanTaskInMarkdown preserves CRLF line endings byte-for-byte
+ok 3 - toggleHumanTaskInMarkdown preserves CRLF line endings byte-for-byte
+  ---
+  duration_ms: 0.287919
+  type: 'test'
+  ...
+# Subtest: parseWebHumanTasks ignores code fences and indented code
+ok 4 - parseWebHumanTasks ignores code fences and indented code
+  ---
+  duration_ms: 0.424524
+  type: 'test'
+  ...
+# Subtest: POST /api/issues/:n/human-tasks/:index/toggle toggles checkbox, enforces fingerprints, and validates boolean completed
+ok 5 - POST /api/issues/:n/human-tasks/:index/toggle toggles checkbox, enforces fingerprints, and validates boolean completed
+  ---
+  duration_ms: 417.390893
+  type: 'test'
+  ...
+# Subtest: POST /api/issues/:n/reopen enforces fingerprints, sets state:open, assigns status:backlog, and refuses open issues
+ok 6 - POST /api/issues/:n/reopen enforces fingerprints, sets state:open, assigns status:backlog, and refuses open issues
+  ---
+  duration_ms: 287.880244
+  type: 'test'
+  ...
+# Subtest: POST /api/issues/:n/labels/remove and DELETE /api/issues/:n/labels/:label enforce mandatory fingerprints, reject malformed JSON, and require label presence
+ok 7 - POST /api/issues/:n/labels/remove and DELETE /api/issues/:n/labels/:label enforce mandatory fingerprints, reject malformed JSON, and require label presence
+  ---
+  duration_ms: 274.464323
+  type: 'test'
+  ...
+# Subtest: GET /api/archive returns backburner and closed issues with bounded pagination, stable sort, and preserved metadata
+ok 8 - GET /api/archive returns backburner and closed issues with bounded pagination, stable sort, and preserved metadata
+  ---
+  duration_ms: 239.131388
+  type: 'test'
+  ...
+# Subtest: GET /api/operations returns real counts, 8 standard status columns, and accurate closed7Days using closedAt
+ok 9 - GET /api/operations returns real counts, 8 standard status columns, and accurate closed7Days using closedAt
+  ---
+  duration_ms: 236.530398
+  type: 'test'
+  ...
+# Subtest: multi-repo All Projects Operations aggregates multiple repositories and handles discovery failure
+not ok 10 - multi-repo All Projects Operations aggregates multiple repositories and handles discovery failure
+  ---
+  duration_ms: 289.759202
+  type: 'test'
+  location: '/tmp/opencode/hostile4-mutation/m1421-invert/web/tests/a5-sections.test.mjs:364:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    502 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 502
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/hostile4-mutation/m1421-invert/web/tests/a5-sections.test.mjs:394:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: multi-repo Operations and Archive failure modes: total outage, partial per-repo failure, and cached fallback
+not ok 11 - multi-repo Operations and Archive failure modes: total outage, partial per-repo failure, and cached fallback
+  ---
+  duration_ms: 223.958786
+  type: 'test'
+  location: '/tmp/opencode/hostile4-mutation/m1421-invert/web/tests/a5-sections.test.mjs:433:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    Expected values to be strictly equal:
+    
+    502 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 502
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/hostile4-mutation/m1421-invert/web/tests/a5-sections.test.mjs:463:14)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..11
+# tests 11
+# suites 0
+# pass 9
+# fail 2
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2335.72841

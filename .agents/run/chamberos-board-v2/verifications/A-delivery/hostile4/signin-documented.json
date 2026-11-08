@@ -1,0 +1,11 @@
+{
+  "url": "http://127.0.0.1:4041",
+  "documentedLine": "- **Synthetic Preview Password:** `correct horse battery staple` (four words separated by single spaces, no hyphens; `BOARD_PASSWORD` in `web/tests/helpers.mjs:9`, used only for this isolated synthetic preview)",
+  "documented": "correct horse battery staple",
+  "documentedLength": 28,
+  "typedValue": "correct horse battery staple",
+  "boardVisible": true,
+  "issues": 8,
+  "consoleErrors": [],
+  "pass": true
+}

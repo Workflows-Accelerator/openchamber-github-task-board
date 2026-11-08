@@ -1,0 +1,2 @@
+hudDisplayNone exit=1 9/10 PASS ["Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)"]
+canvasViewNotShown exit=0 10/10 PASS []

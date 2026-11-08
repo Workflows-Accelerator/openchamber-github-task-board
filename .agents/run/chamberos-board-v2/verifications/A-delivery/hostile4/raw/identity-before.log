@@ -1,0 +1,38 @@
+## git diff 59e5d05 b88e198 -- web/ (bytes)
+0
+## git diff 59e5d05 -- web/ (working tree, bytes)
+0
+## git diff --stat 59e5d05 b88e198 -- web/ scripts/
+ scripts/generate-delivery-smoke.mjs | 27 +++++++++++++++++++++++----
+ 1 file changed, 23 insertions(+), 4 deletions(-)
+## HEAD
+b88e1987c9703f1d84f0f5078aff0f8f83abe3be
+## checksums
+package.json: OK
+web/dist/server.mjs: OK
+web/public/app.js: OK
+web/public/apple-touch-icon.png: OK
+web/public/arrange.js: OK
+web/public/icon-192.png: OK
+web/public/icon-512.png: OK
+web/public/icon.svg: OK
+web/public/index.html: OK
+web/public/manifest.json: OK
+web/public/markdown.js: OK
+web/public/sw.js: OK
+web/public/theme.css: OK
+exit=0
+listed=13
+files=13
+symlinks=0
+## PIDs
+ 486338 Fri Nov  6 20:17:08 2026  147279 node /tmp/opencode/board-v2-staging/59e5d05-state/start-preview.mjs
+/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2
+ 486368 Fri Nov  6 20:17:08 2026  147279 /usr/local/bin/node --import /tmp/opencode/board-v2-staging/59e5d05-state/preload.mjs web/dist/server.mjs
+/tmp/opencode/board-v2-staging/59e5d05-foundation
+## health 4041
+{"status":"ok","version":"1.2.1","uptime":147279} http=200
+## production symlink (read-only)
+/workspace/releases/board/98261a8-20261103
+## prod health
+http=200
