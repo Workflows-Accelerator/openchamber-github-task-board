@@ -1,7 +1,7 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `building` (D32: user chose bounded verification-only fix after hostile3 HALT at 0d66b56; fix4 worker dispatched per tasks/A-delivery-fix4-brief.md; app source/bundle frozen 59e5d05. Next: targeted hostile4, then L5 request only on PASS. B-D deferred; human acceptance and release NOT authorised)
+- **State:** `awaiting_human` L5 (fix4 b88e198 + hostile4 PASS/APPROVED/PROCEED at 5e1042d; app frozen 59e5d05; preview :4041 loopback-only. L5 form sent: per-issue verdicts #56-#60, access choice, Reopen policy, separate release approval. Non-blocking follow-ups: containment vacuity guard, audit-a5-data exit code, html lang stays en in FR, 48px viewport overhang at 768/360, no divider Arrange/Undo. B-D deferred; release NOT authorised until answered)
 - **Alignment:** `CONFIRMED` (rounds 1-3, see decisions.md)
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2`
 - **Branch:** `feat/chamberos-board-v2`
