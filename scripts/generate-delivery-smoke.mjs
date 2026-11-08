@@ -280,7 +280,10 @@ async function run() {
         vpRect: {
           left: Math.round(vpRect.left),
           right: Math.round(vpRect.right),
+          top: Math.round(vpRect.top * 10) / 10,
+          bottom: Math.round(vpRect.bottom * 10) / 10,
           width: Math.round(vpRect.width),
+          height: Math.round(vpRect.height),
         },
         overflowsViewportRight,
         overflowsViewportLeft,
@@ -290,7 +293,14 @@ async function run() {
       };
     });
 
-    const hasButtonOverflow = metrics.buttons.some((b) => b.width > 0 && (b.left < 0 || b.right > mCase.width));
+    const hasButtonOverflow = metrics.buttons.some((b) => b.width > 0 && (b.left < 0 || b.right > mCase.width || b.top < 0 || b.bottom > mCase.height));
+    const vp = metrics.vpRect;
+    const outsideViewport = metrics.buttons
+      .filter((b) => b.width > 0 && b.height > 0 && (
+        b.left < vp.left - 0.5 || b.right > vp.right + 0.5 ||
+        b.top < vp.top - 0.5 || b.bottom > vp.bottom + 0.5))
+      .map((b) => ({ id: b.id, left: b.left, right: b.right, top: b.top, bottom: b.bottom }));
+    const hasButtonOutsideViewport = outsideViewport.length > 0;
     const overlaps = [];
     for (let i = 0; i < metrics.buttons.length; i++) {
       for (let j = i + 1; j < metrics.buttons.length; j++) {
@@ -306,22 +316,25 @@ async function run() {
       }
     }
     const hasButtonOverlap = overlaps.length > 0;
-    const casePass = !metrics.overflowsViewportLeft && !metrics.overflowsViewportRight && !hasButtonOverflow && !hasButtonOverlap && !metrics.documentOverflow;
+    const casePass = !metrics.overflowsViewportLeft && !metrics.overflowsViewportRight && !hasButtonOverflow && !hasButtonOutsideViewport && !hasButtonOverlap && !metrics.documentOverflow;
     if (!casePass) {
       canvasMeasurementsPass = false;
-      console.warn(`Canvas control containment violation at ${mCase.width}x${mCase.height} ${mCase.lang}:`, {
+      console.warn(`Canvas control containment violation at ${mCase.width}x${mCase.height} ${mCase.lang}:`, JSON.stringify({
         overflowsLeft: metrics.overflowsViewportLeft,
         overflowsRight: metrics.overflowsViewportRight,
         buttonOverflow: hasButtonOverflow,
+        buttonsOutsideViewport: outsideViewport,
+        viewport: vp,
         buttonOverlap: overlaps,
         documentOverflow: metrics.documentOverflow,
-      });
+      }));
     }
 
     canvasMeasurements.push({
       testCase: mCase,
       hudMetrics: metrics,
       buttonOverlaps: overlaps,
+      buttonsOutsideViewport: outsideViewport,
       pass: casePass,
     });
   }
@@ -474,6 +487,12 @@ async function run() {
       name: 'Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)',
       verdict: canvasMeasurementsPass ? 'PASS' : 'FAIL',
       casesTested: canvasMeasurements.length,
+      violations: canvasMeasurements.filter((m) => !m.pass).map((m) => ({
+        testCase: m.testCase,
+        buttonsOutsideViewport: m.buttonsOutsideViewport,
+        buttonOverlaps: m.buttonOverlaps,
+        viewport: m.hudMetrics.vpRect,
+      })),
       artifact: '.agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json',
     },
     {

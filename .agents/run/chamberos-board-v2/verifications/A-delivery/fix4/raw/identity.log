@@ -1,0 +1,7 @@
+git diff 59e5d05 -- web/ bytes: 0
+production current: /workspace/releases/board/98261a8-20261103
+:8787/health HTTP 200
+:4041/health {"status":"ok","version":"1.2.1","uptime":147155}
+    PID     ELAPSED CMD
+ 486338  1-16:52:35 node /tmp/opencode/board-v2-staging/59e5d05-state/start-preview.mjs
+ 486368  1-16:52:35 /usr/local/bin/node --import /tmp/opencode/board-v2-staging/59e5d05-state/preload.mjs web/dist/server.mjs

@@ -4,9 +4,12 @@
 
 - **Preview URL:** `http://127.0.0.1:4041`
 - **Health Check:** `http://127.0.0.1:4041/health`
-- **Synthetic Preview Password:** `correct-horse-battery-staple` (test fixture password from `web/tests/helpers.mjs`, used only for this isolated synthetic preview)
+- **Synthetic Preview Password:** `correct horse battery staple` (four words separated by single spaces, no hyphens; `BOARD_PASSWORD` in `web/tests/helpers.mjs:9`, used only for this isolated synthetic preview)
 - **Data Source:** Isolated in-process synthetic GitHub server (`http://127.0.0.1:44821`) with zero live GitHub API calls and zero access to `/workspace/.openchamber-data/board/`.
-- **Network / Ingress Limit:** The preview server binds to `127.0.0.1:4041` inside the workspace container so it never touches the live production board on `127.0.0.1:8787` (`https://board.workflows.ac`). To view `http://127.0.0.1:4041` from an external workstation browser, forward port `4041` (for example `ssh -L 4041:127.0.0.1:4041 <host>`) or attach a temporary preview ingress route.
+- **Network / Ingress Limit (not verified):** The preview server binds only to the workspace container's loopback interface, `127.0.0.1:4041`. It is not reachable from outside the container as deployed. External access requires one of the following, and **neither has been set up or verified**:
+  - SSH local port forwarding to a host that shares (or can reach) the container's network namespace, for example `ssh -N -L 4041:127.0.0.1:4041 <user>@<host-reaching-container-loopback>`, then opening `http://127.0.0.1:4041` on the workstation. Forwarding to a host with a different loopback namespace will not work.
+  - A temporary preview ingress route explicitly approved by the user.
+- **Not this preview:** `https://board.workflows.ac` is the live production board (`127.0.0.1:8787`), not this foundation preview. Do not use it for this review.
 
 ---
 

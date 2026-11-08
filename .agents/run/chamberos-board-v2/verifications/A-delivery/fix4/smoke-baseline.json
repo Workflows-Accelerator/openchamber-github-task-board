@@ -1,0 +1,86 @@
+[
+  {
+    "name": "health",
+    "verdict": "PASS",
+    "status": 200,
+    "payload": {
+      "status": "ok",
+      "version": "1.2.1",
+      "uptime": 147044
+    }
+  },
+  {
+    "name": "sign-in & List view (1280 light EN)",
+    "verdict": "PASS",
+    "rows": 8,
+    "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+  },
+  {
+    "name": "Canvas view with markdown note and dependency wires (light/dark)",
+    "verdict": "PASS",
+    "cards": 8,
+    "notes": 1,
+    "wires": 4,
+    "screenshots": [
+      ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+      ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+    ]
+  },
+  {
+    "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+    "verdict": "PASS",
+    "casesTested": 9,
+    "violations": [],
+    "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+  },
+  {
+    "name": "Decisions section (EN/FR, 1280/768)",
+    "verdict": "PASS",
+    "cards": 1,
+    "screenshots": [
+      ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+      ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+    ]
+  },
+  {
+    "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+    "verdict": "PASS",
+    "cards": 4,
+    "screenshots": [
+      ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+      ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+    ]
+  },
+  {
+    "name": "Operations overview real metrics (EN/FR)",
+    "verdict": "PASS",
+    "statCards": 6,
+    "screenshots": [
+      ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+      ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+    ]
+  },
+  {
+    "name": "Archive & Backburner section",
+    "verdict": "PASS",
+    "cards": 1,
+    "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+  },
+  {
+    "name": "Client Presentation Mode (1280/360)",
+    "verdict": "PASS",
+    "rows": 7,
+    "active": true,
+    "screenshots": [
+      ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+      ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+    ]
+  },
+  {
+    "name": "browser diagnostics",
+    "verdict": "PASS",
+    "exceptions": [],
+    "consoleErrors": [],
+    "cspViolations": []
+  }
+]

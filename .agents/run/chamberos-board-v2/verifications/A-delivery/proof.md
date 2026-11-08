@@ -55,8 +55,9 @@ UNLISTED_COUNT=0
 | Web integration & audit suite | `timeout 900 node --test --test-timeout=30000 web/tests/*.test.mjs` | **575 / 575 PASS** (0 fail, 0 skipped) | `.agents/run/chamberos-board-v2/verifications/A5/independent/raw/web-test-repair-final.log` |
 | TypeScript typecheck | `timeout 600 npm run typecheck` | **PASS** (exit 0, 0 errors) | `.agents/run/chamberos-board-v2/verifications/A5/independent/raw/typecheck-repair-final.log` |
 | Independent data probe | `timeout 120 node scripts/audit-a5-data.mjs` | **14 / 14 PASS** | `.agents/run/chamberos-board-v2/verifications/A5/independent/raw/data-repair-final.log` |
-| Independent browser probe | `timeout 240 env AUDIT_NO_SHOTS=1 node scripts/audit-a5.mjs` | **ALL PASS** (`leaked: []`, 0 exceptions, 0 console/CSP errors) | `.agents/run/chamberos-board-v2/verifications/A5/independent/raw/browser-repair-final.log` |
+| Observational browser trace probe (not an asserted suite) | `timeout 240 env AUDIT_NO_SHOTS=1 node scripts/audit-a5.mjs` | **Exit 0; 58 observational trace records, no assertions, no verdict fields.** Recorded observations: `leaked: []`, empty exceptions/console/CSP arrays (Obscura renderer). Wrong recorded values would not fail this command; only a thrown JavaScript error would. | `.agents/run/chamberos-board-v2/verifications/A5/independent/raw/browser-repair-final.log` |
 | Packaged release browser probe | `timeout 180 env PACKAGED_RELEASE_DIR=/tmp/opencode/board-v2-staging/59e5d05-foundation node scripts/audit-a5-packaged.mjs` | **13 / 13 PASS** (0 exceptions, 0 console/CSP errors) | `/tmp/opencode/packaged-browser.json` |
+| Asserted real-Chromium delivery smoke (fix4) | `source .../hostile2/scripts/chromium-env.sh; DELIVERY_DIR=/tmp/opencode/fix4-baseline-rLN3 timeout 200 node scripts/generate-delivery-smoke.mjs` | **Exit 0; 10 / 10 computed PASS verdicts**, including two-axis HUD containment against `#canvas-viewport` in all 9 matrix cases and browser diagnostics (0 exceptions, 0 console errors, 0 CSP violations). This, not the observational probe above, is the asserting browser evidence. | `.agents/run/chamberos-board-v2/verifications/A-delivery/fix4/raw/smoke-baseline-direct.log` |
 
 ---
 
@@ -69,7 +70,7 @@ UNLISTED_COUNT=0
   - Packaged `node web/dist/server.mjs` PID: `486368`
   - Synthetic GitHub API base: `http://127.0.0.1:44821` (bridged via `--import /tmp/opencode/board-v2-staging/59e5d05-state/preload.mjs` so the packaged bundle runs unmodified without live GitHub traffic or production credentials)
   - Session storage: `/tmp/opencode/board-v2-staging/59e5d05-state/sessions.json`
-- **Access Limit:** `http://127.0.0.1:4041` is bound to container loopback (`127.0.0.1`) so it does not conflict with the live production board on `127.0.0.1:8787` (`https://board.workflows.ac`). Remote browser access requires local port forwarding (`ssh -L 4041:127.0.0.1:4041 ...`) or an approved preview ingress route.
+- **Access Limit (not verified):** `http://127.0.0.1:4041` binds only to container loopback. External access needs SSH forwarding to a host sharing (or reaching) the container network namespace, or a user-approved preview ingress; neither has been set up or verified. `https://board.workflows.ac` is production (`127.0.0.1:8787`), not this preview.
 
 ### Preview Smoke Check Screenshots (`.agents/run/chamberos-board-v2/verifications/A-delivery/smoke.json`)
 
@@ -107,15 +108,21 @@ All 12 delivery screenshots were captured from `http://127.0.0.1:4041` in real C
    - Injected faults into console errors, uncaught exceptions, and button overlaps; confirmed non-zero exits on each failure type and documented results in `.agents/run/chamberos-board-v2/verifications/A-delivery/smoke-negative.md`.
 5. **Finding H2-5 — Unit Tests for Outage Guard Edge Cases (`web/tests/a5-sections.test.mjs`):**
    - Added unit test cases for "sole known repository becomes unavailable -> 200 partial" and "empty account with zero discovered repos -> 200 empty".
-   - Mutation-verified: removing either clause of the guard causes test suite failure.
+   - Mutation-verified independently in fix4 (`fix4/mutation.md`): dropping either clause or inverting `=== 0` at either guard (6 mutants) fails at least one named `a5-sections.test.mjs` test; unmutated `59e5d05` copy passes 11/11.
 6. **Finding H2-6 — Audit Scripts Non-Destructive Outputs (`scripts/audit-a5.mjs`, `scripts/audit-a5-packaged.mjs`):**
    - Redirected output paths in both audit scripts to env-configurable variables defaulting to `/tmp/opencode/`, ensuring test reruns do not rewrite tracked git evidence.
+
+7. **Hostile Review 3 (fix4, tooling/docs only; application `59e5d05` unchanged):**
+   - **H3-1:** `scripts/generate-delivery-smoke.mjs` now asserts both axes of every visible HUD control against `#canvas-viewport` and names offending controls with rects. Above (`translateY(-2000px)`) and below (`translateY(2000px)`) injections each exit 1 naming `canvas-arrange`; the seven earlier hostile3 injections still exit 1; baseline exits 0 with 10/10 computed PASS (`smoke-negative.md` fix4 section, `fix4/smoke-challenges.json`, `fix4/raw/`).
+   - **H3-2:** `human-review.md` password corrected to `correct horse battery staple` (spaces); access limit stated as unverified.
+   - **H3-3:** `scripts/audit-a5.mjs` relabelled above as an observational trace probe; the asserted Chromium smoke is cited as a separate row.
+   - **Unfinished hostile3 checks:** guard mutations (`fix4/mutation.md`) and Undo-arrange-visible HUD recheck at 360/1280 FR light/dark in real Chromium against the staged bundle: both axes contained, zero overlap (`fix4/undo-visible.md`, `fix4/undo-visible.json`, `fix4/screenshots/`).
 
 ---
 
 ## 6. Verification Blind Spots & Explicit NOT RUN Declarations
 
 1. **Live GitHub Mutations:** Zero live GitHub issues, comments, labels, or dependencies were mutated. All checks ran against synthetic test fixtures.
-2. **External Browser Preview Access:** The preview server is bound to container loopback (`127.0.0.1:4041`). Remote access requires SSH port forwarding (`ssh -L 4041:127.0.0.1:4041 ...`) or ingress configuration.
+2. **External Browser Preview Access:** NOT VERIFIED. The preview server is bound to container loopback (`127.0.0.1:4041`). Remote access requires SSH forwarding to a host sharing the container network namespace, or a user-approved ingress; no such endpoint has been supplied or tested.
 3. **Live Production Cutover:** Production symlink `/workspace/releases/board/current` remains pointing to `98261a8-20261103`, and production port `:8787` remains untouched.
 4. **Human Acceptance:** Human tactile verification of canvas panning feel, wire ergonomics, and overall aesthetic polish remains pending.

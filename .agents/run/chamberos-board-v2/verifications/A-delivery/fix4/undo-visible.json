@@ -1,0 +1,424 @@
+{
+  "timestamp": "2026-11-08T13:06:52.227Z",
+  "server": {
+    "url": "http://127.0.0.1:4051",
+    "releaseDir": "/tmp/opencode/board-v2-staging/59e5d05-foundation",
+    "health": {
+      "status": "ok",
+      "version": "1.2.1",
+      "uptime": 0
+    },
+    "stateDir": "/tmp/opencode/fix4-undo-CNomLg"
+  },
+  "arrangeSummary": "6 cards arranged.",
+  "exceptions": [],
+  "consoleErrors": [],
+  "diagnosticsClean": true,
+  "allPass": true,
+  "cases": [
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "undoVisible": true,
+      "undoText": "Annuler l’organisation",
+      "outsideViewport": [],
+      "overlaps": [],
+      "pass": true,
+      "screenshot": "fix4/screenshots/undo-visible-360-light-fr.png",
+      "metrics": {
+        "lang": "en",
+        "theme": "light",
+        "viewport": {
+          "left": 0,
+          "right": 360,
+          "top": 184.5,
+          "bottom": 848
+        },
+        "window": {
+          "width": 360,
+          "height": 800
+        },
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 236,
+            "right": 260,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 24,
+            "height": 24
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "90%",
+            "left": 262,
+            "right": 310,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 48,
+            "height": 24
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 312,
+            "right": 339,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 27,
+            "height": 24
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "left": 41,
+            "right": 128,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 87,
+            "height": 24
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "left": 130,
+            "right": 253,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 123,
+            "height": 24
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "left": 191,
+            "right": 339,
+            "top": 263.5,
+            "bottom": 287.5,
+            "width": 148,
+            "height": 24
+          }
+        ]
+      }
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "undoVisible": true,
+      "undoText": "Annuler l’organisation",
+      "outsideViewport": [],
+      "overlaps": [],
+      "pass": true,
+      "screenshot": "fix4/screenshots/undo-visible-360-dark-fr.png",
+      "metrics": {
+        "lang": "en",
+        "theme": "dark",
+        "viewport": {
+          "left": 0,
+          "right": 360,
+          "top": 184.5,
+          "bottom": 848
+        },
+        "window": {
+          "width": 360,
+          "height": 800
+        },
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 236,
+            "right": 260,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 24,
+            "height": 24
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "90%",
+            "left": 262,
+            "right": 310,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 48,
+            "height": 24
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 312,
+            "right": 339,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 27,
+            "height": 24
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "left": 41,
+            "right": 128,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 87,
+            "height": 24
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "left": 130,
+            "right": 253,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 123,
+            "height": 24
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "left": 191,
+            "right": 339,
+            "top": 263.5,
+            "bottom": 287.5,
+            "width": 148,
+            "height": 24
+          }
+        ]
+      }
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr"
+      },
+      "undoVisible": true,
+      "undoText": "Annuler l’organisation",
+      "outsideViewport": [],
+      "overlaps": [],
+      "pass": true,
+      "screenshot": "fix4/screenshots/undo-visible-1280-light-fr.png",
+      "metrics": {
+        "lang": "en",
+        "theme": "light",
+        "viewport": {
+          "left": 230,
+          "right": 1280,
+          "top": 74.5,
+          "bottom": 900
+        },
+        "window": {
+          "width": 1280,
+          "height": 900
+        },
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 696,
+            "right": 720,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 24,
+            "height": 24
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "90%",
+            "left": 722,
+            "right": 770,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 48,
+            "height": 24
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 772,
+            "right": 799,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 27,
+            "height": 24
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "left": 811,
+            "right": 898,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 87,
+            "height": 24
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "left": 900,
+            "right": 1023,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 123,
+            "height": 24
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1035,
+            "right": 1109,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 74,
+            "height": 24
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "left": 1111,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 148,
+            "height": 24
+          }
+        ]
+      }
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr"
+      },
+      "undoVisible": true,
+      "undoText": "Annuler l’organisation",
+      "outsideViewport": [],
+      "overlaps": [],
+      "pass": true,
+      "screenshot": "fix4/screenshots/undo-visible-1280-dark-fr.png",
+      "metrics": {
+        "lang": "en",
+        "theme": "dark",
+        "viewport": {
+          "left": 230,
+          "right": 1280,
+          "top": 74.5,
+          "bottom": 900
+        },
+        "window": {
+          "width": 1280,
+          "height": 900
+        },
+        "documentOverflow": false,
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 696,
+            "right": 720,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 24,
+            "height": 24
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "90%",
+            "left": 722,
+            "right": 770,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 48,
+            "height": 24
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 772,
+            "right": 799,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 27,
+            "height": 24
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Ajuster tout",
+            "left": 811,
+            "right": 898,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 87,
+            "height": 24
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinitialiser la vue",
+            "left": 900,
+            "right": 1023,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 123,
+            "height": 24
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1035,
+            "right": 1109,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 74,
+            "height": 24
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler l’organisation",
+            "left": 1111,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 148,
+            "height": 24
+          }
+        ]
+      }
+    }
+  ]
+}

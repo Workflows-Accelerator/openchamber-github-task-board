@@ -1,0 +1,14 @@
+package.json: OK
+web/dist/server.mjs: OK
+web/public/app.js: OK
+web/public/apple-touch-icon.png: OK
+web/public/arrange.js: OK
+web/public/icon-192.png: OK
+web/public/icon-512.png: OK
+web/public/icon.svg: OK
+web/public/index.html: OK
+web/public/manifest.json: OK
+web/public/markdown.js: OK
+web/public/sw.js: OK
+web/public/theme.css: OK
+checksum_exit=0

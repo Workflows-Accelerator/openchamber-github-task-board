@@ -1,0 +1,4 @@
+1332c1332
+<       if (discovery.repositories.some((r) => r.available) && (board.repositoriesLoaded ?? 0) === 0) {
+---
+>       if (discovery.repositories.some((r) => r.available) && (board.repositoriesLoaded ?? 0) !== 0) {

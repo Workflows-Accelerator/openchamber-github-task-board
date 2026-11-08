@@ -1,0 +1,5041 @@
+{
+  "temp": "/tmp/opencode/fix4-smoke-EKeKmZ",
+  "results": [
+    {
+      "name": "baseline",
+      "status": 0,
+      "source": "/tmp/opencode/fix4-smoke-EKeKmZ/baseline.mjs",
+      "destination": "/tmp/opencode/fix4-smoke-EKeKmZ/baseline",
+      "checks": [
+        {
+          "name": "health",
+          "verdict": "PASS",
+          "status": 200,
+          "payload": {
+            "status": "ok",
+            "version": "1.2.1",
+            "uptime": 146649
+          }
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS",
+          "rows": 8,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS",
+          "cards": 8,
+          "notes": 1,
+          "wires": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+          ]
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "PASS",
+          "casesTested": 9,
+          "violations": [],
+          "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+          ]
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS",
+          "cards": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS",
+          "statCards": 6,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+          ]
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS",
+          "rows": 7,
+          "active": true,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "PASS",
+          "exceptions": [],
+          "consoleErrors": [],
+          "cspViolations": []
+        }
+      ],
+      "arrangeRects": [
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1185,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 683,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 673,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        }
+      ]
+    },
+    {
+      "name": "console",
+      "status": 1,
+      "source": "/tmp/opencode/fix4-smoke-EKeKmZ/console.mjs",
+      "destination": "/tmp/opencode/fix4-smoke-EKeKmZ/console",
+      "checks": [
+        {
+          "name": "health",
+          "verdict": "PASS",
+          "status": 200,
+          "payload": {
+            "status": "ok",
+            "version": "1.2.1",
+            "uptime": 146667
+          }
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS",
+          "rows": 8,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS",
+          "cards": 8,
+          "notes": 1,
+          "wires": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+          ]
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "PASS",
+          "casesTested": 9,
+          "violations": [],
+          "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+          ]
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS",
+          "cards": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS",
+          "statCards": 6,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+          ]
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS",
+          "rows": 7,
+          "active": true,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "FAIL",
+          "exceptions": [],
+          "consoleErrors": [
+            "H3_CONSOLE_ERROR"
+          ],
+          "cspViolations": []
+        }
+      ],
+      "arrangeRects": [
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1185,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 683,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 673,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        }
+      ]
+    },
+    {
+      "name": "exception",
+      "status": 1,
+      "source": "/tmp/opencode/fix4-smoke-EKeKmZ/exception.mjs",
+      "destination": "/tmp/opencode/fix4-smoke-EKeKmZ/exception",
+      "checks": [
+        {
+          "name": "health",
+          "verdict": "PASS",
+          "status": 200,
+          "payload": {
+            "status": "ok",
+            "version": "1.2.1",
+            "uptime": 146685
+          }
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS",
+          "rows": 8,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS",
+          "cards": 8,
+          "notes": 1,
+          "wires": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+          ]
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "PASS",
+          "casesTested": 9,
+          "violations": [],
+          "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+          ]
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS",
+          "cards": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS",
+          "statCards": 6,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+          ]
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS",
+          "rows": 7,
+          "active": true,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "FAIL",
+          "exceptions": [
+            "H3_UNCAUGHT_EXCEPTION",
+            "Uncaught"
+          ],
+          "consoleErrors": [],
+          "cspViolations": []
+        }
+      ],
+      "arrangeRects": [
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1185,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 683,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 673,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        }
+      ]
+    },
+    {
+      "name": "overlap",
+      "status": 1,
+      "source": "/tmp/opencode/fix4-smoke-EKeKmZ/overlap.mjs",
+      "destination": "/tmp/opencode/fix4-smoke-EKeKmZ/overlap",
+      "checks": [
+        {
+          "name": "health",
+          "verdict": "PASS",
+          "status": 200,
+          "payload": {
+            "status": "ok",
+            "version": "1.2.1",
+            "uptime": 146703
+          }
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS",
+          "rows": 8,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS",
+          "cards": 8,
+          "notes": 1,
+          "wires": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+          ]
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "FAIL",
+          "casesTested": 9,
+          "violations": [
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-reset-view",
+                  "left": 1204,
+                  "right": 1283,
+                  "top": 119.5,
+                  "bottom": 143.5
+                }
+              ],
+              "buttonOverlaps": [
+                "canvas-reset-view & canvas-arrange"
+              ],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "dark",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-reset-view",
+                  "left": 1204,
+                  "right": 1283,
+                  "top": 119.5,
+                  "bottom": 143.5
+                }
+              ],
+              "buttonOverlaps": [
+                "canvas-reset-view & canvas-arrange"
+              ],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "light",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [],
+              "buttonOverlaps": [
+                "canvas-reset-view & canvas-arrange"
+              ],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 768,
+                "height": 900,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-reset-view",
+                  "left": 692,
+                  "right": 771,
+                  "top": 229.5,
+                  "bottom": 253.5
+                }
+              ],
+              "buttonOverlaps": [
+                "canvas-reset-view & canvas-arrange"
+              ],
+              "viewport": {
+                "left": 0,
+                "right": 768,
+                "top": 184.5,
+                "bottom": 948,
+                "width": 768,
+                "height": 764
+              }
+            },
+            {
+              "testCase": {
+                "width": 768,
+                "height": 900,
+                "theme": "dark",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [],
+              "buttonOverlaps": [
+                "canvas-reset-view & canvas-arrange"
+              ],
+              "viewport": {
+                "left": 0,
+                "right": 768,
+                "top": 184.5,
+                "bottom": 948,
+                "width": 768,
+                "height": 764
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-reset-view",
+                  "left": 284,
+                  "right": 363,
+                  "top": 235.5,
+                  "bottom": 259.5
+                }
+              ],
+              "buttonOverlaps": [
+                "canvas-fit-all & canvas-arrange",
+                "canvas-reset-view & canvas-arrange"
+              ],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "dark",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-reset-view",
+                  "left": 284,
+                  "right": 363,
+                  "top": 235.5,
+                  "bottom": 259.5
+                }
+              ],
+              "buttonOverlaps": [
+                "canvas-fit-all & canvas-arrange",
+                "canvas-reset-view & canvas-arrange"
+              ],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "light",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [],
+              "buttonOverlaps": [
+                "canvas-reset-view & canvas-arrange"
+              ],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "dark",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [],
+              "buttonOverlaps": [
+                "canvas-reset-view & canvas-arrange"
+              ],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            }
+          ],
+          "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+          ]
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS",
+          "cards": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS",
+          "statCards": 6,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+          ]
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS",
+          "rows": 7,
+          "active": true,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "PASS",
+          "exceptions": [],
+          "consoleErrors": [],
+          "cspViolations": []
+        }
+      ],
+      "arrangeRects": [
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 119.5,
+            "bottom": 143.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-reset-view",
+              "left": 1204,
+              "right": 1283,
+              "top": 119.5,
+              "bottom": 143.5
+            }
+          ],
+          "buttonOverlaps": [
+            "canvas-reset-view & canvas-arrange"
+          ]
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 119.5,
+            "bottom": 143.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-reset-view",
+              "left": 1204,
+              "right": 1283,
+              "top": 119.5,
+              "bottom": 143.5
+            }
+          ],
+          "buttonOverlaps": [
+            "canvas-reset-view & canvas-arrange"
+          ]
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1185,
+            "right": 1259,
+            "top": 119.5,
+            "bottom": 143.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": [
+            "canvas-reset-view & canvas-arrange"
+          ]
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 683,
+            "right": 747,
+            "top": 229.5,
+            "bottom": 253.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-reset-view",
+              "left": 692,
+              "right": 771,
+              "top": 229.5,
+              "bottom": 253.5
+            }
+          ],
+          "buttonOverlaps": [
+            "canvas-reset-view & canvas-arrange"
+          ]
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 673,
+            "right": 747,
+            "top": 229.5,
+            "bottom": 253.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": [
+            "canvas-reset-view & canvas-arrange"
+          ]
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-reset-view",
+              "left": 284,
+              "right": 363,
+              "top": 235.5,
+              "bottom": 259.5
+            }
+          ],
+          "buttonOverlaps": [
+            "canvas-fit-all & canvas-arrange",
+            "canvas-reset-view & canvas-arrange"
+          ]
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-reset-view",
+              "left": 284,
+              "right": 363,
+              "top": 235.5,
+              "bottom": 259.5
+            }
+          ],
+          "buttonOverlaps": [
+            "canvas-fit-all & canvas-arrange",
+            "canvas-reset-view & canvas-arrange"
+          ]
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": [
+            "canvas-reset-view & canvas-arrange"
+          ]
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": [
+            "canvas-reset-view & canvas-arrange"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "csp",
+      "status": 1,
+      "source": "/tmp/opencode/fix4-smoke-EKeKmZ/csp.mjs",
+      "destination": "/tmp/opencode/fix4-smoke-EKeKmZ/csp",
+      "checks": [
+        {
+          "name": "health",
+          "verdict": "PASS",
+          "status": 200,
+          "payload": {
+            "status": "ok",
+            "version": "1.2.1",
+            "uptime": 146722
+          }
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS",
+          "rows": 8,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS",
+          "cards": 8,
+          "notes": 1,
+          "wires": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+          ]
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "PASS",
+          "casesTested": 9,
+          "violations": [],
+          "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+          ]
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS",
+          "cards": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS",
+          "statCards": 6,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+          ]
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS",
+          "rows": 7,
+          "active": true,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "FAIL",
+          "exceptions": [],
+          "consoleErrors": [
+            "Executing inline script violates the following Content Security Policy directive 'script-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-VnE6vRorjnpEPQbPozSQErnm6XEVQ3Nbkie4xAUTzc4='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked."
+          ],
+          "cspViolations": [
+            "Executing inline script violates the following Content Security Policy directive 'script-src 'self''. Either the 'unsafe-inline' keyword, a hash ('sha256-VnE6vRorjnpEPQbPozSQErnm6XEVQ3Nbkie4xAUTzc4='), or a nonce ('nonce-...') is required to enable inline execution. The action has been blocked.",
+            "inline"
+          ]
+        }
+      ],
+      "arrangeRects": [
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1185,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 683,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 673,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        }
+      ]
+    },
+    {
+      "name": "offscreenX",
+      "status": 1,
+      "source": "/tmp/opencode/fix4-smoke-EKeKmZ/offscreenX.mjs",
+      "destination": "/tmp/opencode/fix4-smoke-EKeKmZ/offscreenX",
+      "checks": [
+        {
+          "name": "health",
+          "verdict": "PASS",
+          "status": 200,
+          "payload": {
+            "status": "ok",
+            "version": "1.2.1",
+            "uptime": 146740
+          }
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS",
+          "rows": 8,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS",
+          "cards": 8,
+          "notes": 1,
+          "wires": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+          ]
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "FAIL",
+          "casesTested": 9,
+          "violations": [
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 3195,
+                  "right": 3259,
+                  "top": 93.5,
+                  "bottom": 117.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "dark",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 3195,
+                  "right": 3259,
+                  "top": 93.5,
+                  "bottom": 117.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "light",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 3185,
+                  "right": 3259,
+                  "top": 93.5,
+                  "bottom": 117.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 768,
+                "height": 900,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 2683,
+                  "right": 2747,
+                  "top": 203.5,
+                  "bottom": 227.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 768,
+                "top": 184.5,
+                "bottom": 948,
+                "width": 768,
+                "height": 764
+              }
+            },
+            {
+              "testCase": {
+                "width": 768,
+                "height": 900,
+                "theme": "dark",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 2673,
+                  "right": 2747,
+                  "top": 203.5,
+                  "bottom": 227.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 768,
+                "top": 184.5,
+                "bottom": 948,
+                "width": 768,
+                "height": 764
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 2275,
+                  "right": 2339,
+                  "top": 235.5,
+                  "bottom": 259.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "dark",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 2275,
+                  "right": 2339,
+                  "top": 235.5,
+                  "bottom": 259.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "light",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 2265,
+                  "right": 2339,
+                  "top": 235.5,
+                  "bottom": 259.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "dark",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 2265,
+                  "right": 2339,
+                  "top": 235.5,
+                  "bottom": 259.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            }
+          ],
+          "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+          ]
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS",
+          "cards": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS",
+          "statCards": 6,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+          ]
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS",
+          "rows": 7,
+          "active": true,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "PASS",
+          "exceptions": [],
+          "consoleErrors": [],
+          "cspViolations": []
+        }
+      ],
+      "arrangeRects": [
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 3195,
+            "right": 3259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 3195,
+              "right": 3259,
+              "top": 93.5,
+              "bottom": 117.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 3195,
+            "right": 3259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 3195,
+              "right": 3259,
+              "top": 93.5,
+              "bottom": 117.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 3185,
+            "right": 3259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 3185,
+              "right": 3259,
+              "top": 93.5,
+              "bottom": 117.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 2683,
+            "right": 2747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 2683,
+              "right": 2747,
+              "top": 203.5,
+              "bottom": 227.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 2673,
+            "right": 2747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 2673,
+              "right": 2747,
+              "top": 203.5,
+              "bottom": 227.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 2275,
+            "right": 2339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 2275,
+              "right": 2339,
+              "top": 235.5,
+              "bottom": 259.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 2275,
+            "right": 2339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 2275,
+              "right": 2339,
+              "top": 235.5,
+              "bottom": 259.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 2265,
+            "right": 2339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 2265,
+              "right": 2339,
+              "top": 235.5,
+              "bottom": 259.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 2265,
+            "right": 2339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 2265,
+              "right": 2339,
+              "top": 235.5,
+              "bottom": 259.5
+            }
+          ],
+          "buttonOverlaps": []
+        }
+      ]
+    },
+    {
+      "name": "offscreenY",
+      "status": 1,
+      "source": "/tmp/opencode/fix4-smoke-EKeKmZ/offscreenY.mjs",
+      "destination": "/tmp/opencode/fix4-smoke-EKeKmZ/offscreenY",
+      "checks": [
+        {
+          "name": "health",
+          "verdict": "PASS",
+          "status": 200,
+          "payload": {
+            "status": "ok",
+            "version": "1.2.1",
+            "uptime": 146758
+          }
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS",
+          "rows": 8,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS",
+          "cards": 8,
+          "notes": 1,
+          "wires": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+          ]
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "FAIL",
+          "casesTested": 9,
+          "violations": [
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 1195,
+                  "right": 1259,
+                  "top": -1906.5,
+                  "bottom": -1882.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "dark",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 1195,
+                  "right": 1259,
+                  "top": -1906.5,
+                  "bottom": -1882.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "light",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 1185,
+                  "right": 1259,
+                  "top": -1906.5,
+                  "bottom": -1882.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 768,
+                "height": 900,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 683,
+                  "right": 747,
+                  "top": -1796.5,
+                  "bottom": -1772.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 768,
+                "top": 184.5,
+                "bottom": 948,
+                "width": 768,
+                "height": 764
+              }
+            },
+            {
+              "testCase": {
+                "width": 768,
+                "height": 900,
+                "theme": "dark",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 673,
+                  "right": 747,
+                  "top": -1796.5,
+                  "bottom": -1772.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 768,
+                "top": 184.5,
+                "bottom": 948,
+                "width": 768,
+                "height": 764
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 275,
+                  "right": 339,
+                  "top": -1764.5,
+                  "bottom": -1740.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "dark",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 275,
+                  "right": 339,
+                  "top": -1764.5,
+                  "bottom": -1740.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "light",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 265,
+                  "right": 339,
+                  "top": -1764.5,
+                  "bottom": -1740.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "dark",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 265,
+                  "right": 339,
+                  "top": -1764.5,
+                  "bottom": -1740.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            }
+          ],
+          "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+          ]
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS",
+          "cards": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS",
+          "statCards": 6,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+          ]
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS",
+          "rows": 7,
+          "active": true,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "PASS",
+          "exceptions": [],
+          "consoleErrors": [],
+          "cspViolations": []
+        }
+      ],
+      "arrangeRects": [
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": -1906.5,
+            "bottom": -1882.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 1195,
+              "right": 1259,
+              "top": -1906.5,
+              "bottom": -1882.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": -1906.5,
+            "bottom": -1882.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 1195,
+              "right": 1259,
+              "top": -1906.5,
+              "bottom": -1882.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1185,
+            "right": 1259,
+            "top": -1906.5,
+            "bottom": -1882.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 1185,
+              "right": 1259,
+              "top": -1906.5,
+              "bottom": -1882.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 683,
+            "right": 747,
+            "top": -1796.5,
+            "bottom": -1772.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 683,
+              "right": 747,
+              "top": -1796.5,
+              "bottom": -1772.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 673,
+            "right": 747,
+            "top": -1796.5,
+            "bottom": -1772.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 673,
+              "right": 747,
+              "top": -1796.5,
+              "bottom": -1772.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": -1764.5,
+            "bottom": -1740.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 275,
+              "right": 339,
+              "top": -1764.5,
+              "bottom": -1740.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": -1764.5,
+            "bottom": -1740.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 275,
+              "right": 339,
+              "top": -1764.5,
+              "bottom": -1740.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": -1764.5,
+            "bottom": -1740.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 265,
+              "right": 339,
+              "top": -1764.5,
+              "bottom": -1740.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": -1764.5,
+            "bottom": -1740.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 265,
+              "right": 339,
+              "top": -1764.5,
+              "bottom": -1740.5
+            }
+          ],
+          "buttonOverlaps": []
+        }
+      ]
+    },
+    {
+      "name": "offscreenYBelow",
+      "status": 1,
+      "source": "/tmp/opencode/fix4-smoke-EKeKmZ/offscreenYBelow.mjs",
+      "destination": "/tmp/opencode/fix4-smoke-EKeKmZ/offscreenYBelow",
+      "checks": [
+        {
+          "name": "health",
+          "verdict": "PASS",
+          "status": 200,
+          "payload": {
+            "status": "ok",
+            "version": "1.2.1",
+            "uptime": 146776
+          }
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS",
+          "rows": 8,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS",
+          "cards": 8,
+          "notes": 1,
+          "wires": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+          ]
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "FAIL",
+          "casesTested": 9,
+          "violations": [
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 1195,
+                  "right": 1259,
+                  "top": 2093.5,
+                  "bottom": 2117.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "dark",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 1195,
+                  "right": 1259,
+                  "top": 2093.5,
+                  "bottom": 2117.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 1280,
+                "height": 900,
+                "theme": "light",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 1185,
+                  "right": 1259,
+                  "top": 2093.5,
+                  "bottom": 2117.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 230,
+                "right": 1280,
+                "top": 74.5,
+                "bottom": 900,
+                "width": 1050,
+                "height": 826
+              }
+            },
+            {
+              "testCase": {
+                "width": 768,
+                "height": 900,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 683,
+                  "right": 747,
+                  "top": 2203.5,
+                  "bottom": 2227.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 768,
+                "top": 184.5,
+                "bottom": 948,
+                "width": 768,
+                "height": 764
+              }
+            },
+            {
+              "testCase": {
+                "width": 768,
+                "height": 900,
+                "theme": "dark",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 673,
+                  "right": 747,
+                  "top": 2203.5,
+                  "bottom": 2227.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 768,
+                "top": 184.5,
+                "bottom": 948,
+                "width": 768,
+                "height": 764
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "light",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 275,
+                  "right": 339,
+                  "top": 2235.5,
+                  "bottom": 2259.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "dark",
+                "lang": "en"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 275,
+                  "right": 339,
+                  "top": 2235.5,
+                  "bottom": 2259.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "light",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 265,
+                  "right": 339,
+                  "top": 2235.5,
+                  "bottom": 2259.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            },
+            {
+              "testCase": {
+                "width": 360,
+                "height": 800,
+                "theme": "dark",
+                "lang": "fr"
+              },
+              "buttonsOutsideViewport": [
+                {
+                  "id": "canvas-arrange",
+                  "left": 265,
+                  "right": 339,
+                  "top": 2235.5,
+                  "bottom": 2259.5
+                }
+              ],
+              "buttonOverlaps": [],
+              "viewport": {
+                "left": 0,
+                "right": 360,
+                "top": 184.5,
+                "bottom": 848,
+                "width": 360,
+                "height": 664
+              }
+            }
+          ],
+          "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+          ]
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS",
+          "cards": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS",
+          "statCards": 6,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+          ]
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS",
+          "rows": 7,
+          "active": true,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "PASS",
+          "exceptions": [],
+          "consoleErrors": [],
+          "cspViolations": []
+        }
+      ],
+      "arrangeRects": [
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 2093.5,
+            "bottom": 2117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 1195,
+              "right": 1259,
+              "top": 2093.5,
+              "bottom": 2117.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 2093.5,
+            "bottom": 2117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 1195,
+              "right": 1259,
+              "top": 2093.5,
+              "bottom": 2117.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1185,
+            "right": 1259,
+            "top": 2093.5,
+            "bottom": 2117.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 1185,
+              "right": 1259,
+              "top": 2093.5,
+              "bottom": 2117.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 683,
+            "right": 747,
+            "top": 2203.5,
+            "bottom": 2227.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 683,
+              "right": 747,
+              "top": 2203.5,
+              "bottom": 2227.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 673,
+            "right": 747,
+            "top": 2203.5,
+            "bottom": 2227.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 673,
+              "right": 747,
+              "top": 2203.5,
+              "bottom": 2227.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 2235.5,
+            "bottom": 2259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 275,
+              "right": 339,
+              "top": 2235.5,
+              "bottom": 2259.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 2235.5,
+            "bottom": 2259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 275,
+              "right": 339,
+              "top": 2235.5,
+              "bottom": 2259.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 2235.5,
+            "bottom": 2259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 265,
+              "right": 339,
+              "top": 2235.5,
+              "bottom": 2259.5
+            }
+          ],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": false,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 2235.5,
+            "bottom": 2259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [
+            {
+              "id": "canvas-arrange",
+              "left": 265,
+              "right": 339,
+              "top": 2235.5,
+              "bottom": 2259.5
+            }
+          ],
+          "buttonOverlaps": []
+        }
+      ]
+    },
+    {
+      "name": "missingWire",
+      "status": 1,
+      "source": "/tmp/opencode/fix4-smoke-EKeKmZ/missingWire.mjs",
+      "destination": "/tmp/opencode/fix4-smoke-EKeKmZ/missingWire",
+      "checks": [
+        {
+          "name": "health",
+          "verdict": "PASS",
+          "status": 200,
+          "payload": {
+            "status": "ok",
+            "version": "1.2.1",
+            "uptime": 146794
+          }
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS",
+          "rows": 8,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "FAIL",
+          "cards": 8,
+          "notes": 1,
+          "wires": 3,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+          ]
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "PASS",
+          "casesTested": 9,
+          "violations": [],
+          "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+          ]
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS",
+          "cards": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS",
+          "statCards": 6,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+          ]
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS",
+          "rows": 7,
+          "active": true,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "PASS",
+          "exceptions": [],
+          "consoleErrors": [],
+          "cspViolations": []
+        }
+      ],
+      "arrangeRects": [
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1185,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 683,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 673,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        }
+      ]
+    },
+    {
+      "name": "beforeNavigation",
+      "status": 1,
+      "source": "/tmp/opencode/fix4-smoke-EKeKmZ/beforeNavigation.mjs",
+      "destination": "/tmp/opencode/fix4-smoke-EKeKmZ/beforeNavigation",
+      "checks": [
+        {
+          "name": "health",
+          "verdict": "PASS",
+          "status": 200,
+          "payload": {
+            "status": "ok",
+            "version": "1.2.1",
+            "uptime": 146813
+          }
+        },
+        {
+          "name": "sign-in & List view (1280 light EN)",
+          "verdict": "PASS",
+          "rows": 8,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/01-list-1280-light-en.png"
+        },
+        {
+          "name": "Canvas view with markdown note and dependency wires (light/dark)",
+          "verdict": "PASS",
+          "cards": 8,
+          "notes": 1,
+          "wires": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/02-canvas-notes-wires-1280-light-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/03-canvas-notes-wires-1280-dark-en.png"
+          ]
+        },
+        {
+          "name": "Canvas controls mobile containment (360/768/1280, EN/FR, light/dark)",
+          "verdict": "PASS",
+          "casesTested": 9,
+          "violations": [],
+          "artifact": ".agents/run/chamberos-board-v2/verifications/A-delivery/canvas-measurements.json"
+        },
+        {
+          "name": "Decisions section (EN/FR, 1280/768)",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/04-decisions-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/05-decisions-768-light-fr.png"
+          ]
+        },
+        {
+          "name": "Blocked section with human tasks and cross-repo dependencies (1280/360)",
+          "verdict": "PASS",
+          "cards": 4,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/06-blocked-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/07-blocked-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "Operations overview real metrics (EN/FR)",
+          "verdict": "PASS",
+          "statCards": 6,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/08-operations-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/09-operations-1280-light-fr.png"
+          ]
+        },
+        {
+          "name": "Archive & Backburner section",
+          "verdict": "PASS",
+          "cards": 1,
+          "screenshot": ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/10-archive-1280-dark-en.png"
+        },
+        {
+          "name": "Client Presentation Mode (1280/360)",
+          "verdict": "PASS",
+          "rows": 7,
+          "active": true,
+          "screenshots": [
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/11-client-1280-dark-en.png",
+            ".agents/run/chamberos-board-v2/verifications/A-delivery/screenshots/12-client-360-dark-en.png"
+          ]
+        },
+        {
+          "name": "browser diagnostics",
+          "verdict": "FAIL",
+          "exceptions": [],
+          "consoleErrors": [
+            "H3_BEFORE_NAVIGATION"
+          ],
+          "cspViolations": []
+        }
+      ],
+      "arrangeRects": [
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 1195,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 1280,
+            "height": 900,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 230,
+            "right": 1280,
+            "top": 74.5,
+            "bottom": 900,
+            "width": 1050,
+            "height": 826
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 1185,
+            "right": 1259,
+            "top": 93.5,
+            "bottom": 117.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 683,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 768,
+            "height": 900,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 768,
+            "top": 184.5,
+            "bottom": 948,
+            "width": 768,
+            "height": 764
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 673,
+            "right": 747,
+            "top": 203.5,
+            "bottom": 227.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "en"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 275,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 64,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "light",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        },
+        {
+          "testCase": {
+            "width": 360,
+            "height": 800,
+            "theme": "dark",
+            "lang": "fr"
+          },
+          "pass": true,
+          "viewport": {
+            "left": 0,
+            "right": 360,
+            "top": 184.5,
+            "bottom": 848,
+            "width": 360,
+            "height": 664
+          },
+          "arrange": {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 265,
+            "right": 339,
+            "top": 235.5,
+            "bottom": 259.5,
+            "width": 74,
+            "height": 24,
+            "whiteSpace": "nowrap",
+            "flexShrink": "0",
+            "multilineWrap": false
+          },
+          "buttonsOutsideViewport": [],
+          "buttonOverlaps": []
+        }
+      ]
+    }
+  ]
+}
