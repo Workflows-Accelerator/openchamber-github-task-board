@@ -7,7 +7,7 @@ Paths below are relative to `.agents/run/chamberos-board-v2/verifications/A-deli
 ## Verdict
 
 - **Spec: PASS**
-- **Quality: APPROVED** (low-risk notes below, none blocking)
+- **Quality: APPROVED** for D32 scope, with one recorded follow-up. The containment verdict can pass with zero controls measured (see H3-1, vacuity gap). The delivered baseline is not vacuous: 6 or 7 controls are measured in every case. This is a regression-protection gap, not a delivery defect.
 - **PROCEED**: ready for human validation only. This is not permission to publish, cut over, push or merge.
 
 ## Per item
@@ -37,7 +37,18 @@ I wrote my own injections in `hostile4/scripts/containment-challenges.mjs`. Each
 
 **Can the visible filter be gamed?** No, not for offscreen controls. The filter is `!b.hidden` plus `width>0 && height>0`. Opacity 0, visibility hidden and tiny scale offscreen all still fail. Excluding `display:none`/`[hidden]` is correct: a control taken out of layout is absent, not overflowing. That covers the hidden Undo button before Arrange runs.
 
-**Low-risk gap:** the smoke never asserts that each expected control is present. If Arrange were removed (`display:none`), the smoke would still pass 10/10. This is outside H3-1, which is about containment.
+**Vacuity gap (low/moderate, not blocking):** the containment verdict has no presence or non-empty guard.
+
+Evidence: `hostile4/vacuity-challenges.json` and `raw/vacuity-harness.log`, with per-run logs `raw/smoke-{hudDisplayNone,canvasViewNotShown}.log`. These were produced by the prior hostile4 session. Its generator script was not saved, but each injection is recorded inline in the JSON, and I checked the results.
+- `canvasViewNotShown` (switch to the List view before the matrix): every control measures 0×0, and the smoke **exits 0 with 10/10 PASS**.
+- `hudDisplayNone`: exits 1, but only because the 3 cases at 1280 trip the left-edge check of the HUD rect. The 6 cases at 768 and 360 pass with zero controls measured.
+- `displayNoneReference` (Arrange removed): 10/10 PASS.
+
+So a regression that hides the HUD, or leaves the Canvas view, would not be caught.
+
+Why this does not block D32: H3-1 asks for two-axis containment of the visible controls, and that is met. The delivered baseline is not vacuous: `containment-challenges.json` measures 6 visible controls in all 9 cases, and the Undo recheck measures 7 in all 4 cases.
+
+Recommended follow-up, outside D32 scope: assert `visibleIds` covers the expected control set per case.
 
 ### H3-2 — password and access wording: RESOLVED
 
@@ -94,8 +105,9 @@ Checks run in this session (earlier capture in `hostile4/raw/identity-before.log
 
 - Catastrophic: none.
 - Moderate: none.
+- Low/moderate (test quality, non-blocking):
+  - (1) The containment verdict passes vacuously when no HUD controls render (`canvasViewNotShown` gives exit 0 and 10/10). There is no presence assertion for the expected controls.
 - Low:
-  - (1) The smoke has no presence assertion for expected HUD controls (displayNoneReference passes).
   - (2) `audit-a5-data.mjs` does not exit non-zero on FAIL.
   - (3) There is no divider between Arrange and Undo at 1280.
   - (4) At 768 and 360, `#canvas-viewport` extends 48px below the window (bottom 948/848 vs height 900/800). HUD controls are unaffected because they sit at the top. This is outside scope and noted for a later layout check.
