@@ -26,7 +26,7 @@ import {
   csrfMatches,
   parseCookieHeader,
 } from './auth.ts';
-import { GitHubClient, GitHubError, parseIssueNumber, type IssueRead } from './github.ts';
+import { GitHubClient, GitHubError, parseIssueNumber, type IssueRead, type RateLimitInfo } from './github.ts';
 import { RepositoryRegistry, RepositoryNotAllowedError, DiscoveryUnavailableError, type RepositoryEntry } from './repositories.ts';
 import { STATUS_METADATA } from '../../panel/labels.ts';
 import { findSections, replaceSectionText, SectionError } from './sections.ts';
@@ -157,6 +157,26 @@ export function getVersionStamp(
   } catch {
     return pkgVersion;
   }
+}
+
+function computeWeakEtag(payload: unknown): string {
+  let content = payload;
+  if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
+    const { rateLimit, fetchedAt, ...rest } = payload as Record<string, unknown>;
+    content = rest;
+  }
+  const hash = createHash('sha1').update(JSON.stringify(content)).digest('hex').slice(0, 16);
+  return `W/"${hash}"`;
+}
+
+function etagMatches(clientEtag: string | string[] | undefined, serverEtag: string): boolean {
+  const raw = Array.isArray(clientEtag) ? clientEtag[0] : clientEtag;
+  if (!raw) return false;
+  const normServer = serverEtag.trim().replace(/^W\//, '').replace(/^"|"$/g, '');
+  return raw.split(',').some((part) => {
+    const normClient = part.trim().replace(/^W\//, '').replace(/^"|"$/g, '');
+    return normClient === normServer || normClient === '*';
+  });
 }
 
 function redactLine(line: string, secrets: string[]): string {
@@ -366,11 +386,26 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     sink(safe);
   };
 
+  const sharedRateLimit: { current: RateLimitInfo } = {
+    current: {
+      limit: null,
+      remaining: null,
+      reset: null,
+      resource: null,
+      updatedAt: null,
+    },
+  };
+
+  function currentRateLimit(): RateLimitInfo {
+    return { ...sharedRateLimit.current };
+  }
+
   const github = new GitHubClient({
     apiBase: options.githubApiBase ?? config.githubApiBase,
     token: config.githubToken,
     repo: config.repo,
     fetchImpl: options.fetchImpl,
+    rateLimitRef: sharedRateLimit,
   });
 
   // --- startup identity enforcement -------------------------------------
@@ -392,9 +427,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
   const repositories = new RepositoryRegistry({ client: github, now, ttlMs: options.repositoryTtlMs });
   await repositories.view(); // Nonfatal: sign-in can disclose discovery failure distinctly.
   function clientFor(repository: RepositoryEntry, timeoutMs?: number): GitHubClient {
-    return new GitHubClient({ apiBase: options.githubApiBase ?? config.githubApiBase,
-      token: config.githubToken, repo: repository, fetchImpl: options.fetchImpl,
-      timeoutMs: timeoutMs ?? 15_000 });
+    return new GitHubClient({
+      apiBase: options.githubApiBase ?? config.githubApiBase,
+      token: config.githubToken,
+      repo: repository,
+      fetchImpl: options.fetchImpl,
+      timeoutMs: timeoutMs ?? 15_000,
+      rateLimitRef: sharedRateLimit,
+    });
   }
   async function resolveRepository(owner: string, name: string): Promise<RepositoryEntry> {
     try { return await repositories.resolve(owner, name); }
@@ -504,7 +544,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         res.setHeader(name, value);
       }
       res.statusCode = response.status;
-      if (response.buffer !== undefined) {
+      if (response.status === 304) {
+        res.end();
+      } else if (response.buffer !== undefined) {
         res.setHeader('content-type', response.type ?? 'application/octet-stream');
         res.end(response.buffer);
       } else if (response.text !== undefined) {
@@ -617,7 +659,27 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
 
     if (url.pathname === '/api/repos') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      return { status: 200, body: { ...await repositories.view(), projectNames: projectNames() } };
+      const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
+      const discovery = await repositories.view({ forceRefresh });
+      const payload = { ...discovery, projectNames: projectNames(), rateLimit: currentRateLimit() };
+      const etag = computeWeakEtag(payload);
+      if (!forceRefresh && etagMatches(req.headers['if-none-match'], etag)) {
+        return {
+          status: 304,
+          headers: {
+            etag,
+            'cache-control': 'no-cache',
+          },
+        };
+      }
+      return {
+        status: 200,
+        body: payload,
+        headers: {
+          etag,
+          'cache-control': 'no-cache',
+        },
+      };
     }
     if (url.pathname === '/api/project-names') {
       if (method === 'GET') return { status: 200, body: { projectNames: projectNames() } };
@@ -640,7 +702,27 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
     if (url.pathname === '/api/combined/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      return { status: 200, body: await combinedBoard() };
+      const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
+      const board = (await combinedBoard({ forceRefresh })) as Record<string, unknown>;
+      const payload = { ...board, rateLimit: currentRateLimit() };
+      const etag = computeWeakEtag(payload);
+      if (!forceRefresh && etagMatches(req.headers['if-none-match'], etag)) {
+        return {
+          status: 304,
+          headers: {
+            etag,
+            'cache-control': 'no-cache',
+          },
+        };
+      }
+      return {
+        status: 200,
+        body: payload,
+        headers: {
+          etag,
+          'cache-control': 'no-cache',
+        },
+      };
     }
     if (url.pathname === '/api/combined/archive' || (url.pathname === '/api/archive' && !config.repo)) {
       if (method !== 'GET') return methodNotAllowed('GET');
@@ -673,7 +755,27 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     const scopedGithub = repository ? clientFor(repository) : null;
     if (route === '/api/board') {
       if (method !== 'GET') return methodNotAllowed('GET');
-      return { status: 200, body: await repositoryBoard(repository!) };
+      const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
+      const board = (await repositoryBoard(repository!, undefined, { forceRefresh })) as Record<string, unknown>;
+      const payload = { ...board, rateLimit: currentRateLimit() };
+      const etag = computeWeakEtag(payload);
+      if (!forceRefresh && etagMatches(req.headers['if-none-match'], etag)) {
+        return {
+          status: 304,
+          headers: {
+            etag,
+            'cache-control': 'no-cache',
+          },
+        };
+      }
+      return {
+        status: 200,
+        body: payload,
+        headers: {
+          etag,
+          'cache-control': 'no-cache',
+        },
+      };
     }
     if (route === '/api/archive') {
       if (method !== 'GET') return methodNotAllowed('GET');
@@ -708,11 +810,31 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         }
         labels = body.labels;
       }
-      const created = await scopedGithub!.createIssue({
-        title,
-        body: issueBody,
-        labels,
-      }).catch(mapGitHubError);
+      let created: any;
+      let labelFallback = false;
+      try {
+        created = await scopedGithub!.createIssue({
+          title,
+          body: issueBody,
+          labels,
+        });
+      } catch (err: any) {
+        if (
+          err instanceof GitHubError &&
+          (err.status === 403 || err.status === 422) &&
+          labels &&
+          labels.length > 0
+        ) {
+          created = await scopedGithub!.createIssue({
+            title,
+            body: issueBody,
+            labels: [],
+          }).catch(mapGitHubError);
+          labelFallback = true;
+        } else {
+          mapGitHubError(err);
+        }
+      }
       if (repository) {
         repoBoardCache.delete(repository.full);
         repoClosedCache.delete(repository.full);
@@ -723,6 +845,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         body: {
           ok: true,
           issue: buildBoardListItem(created.item, repository),
+          ...(labelFallback ? { labelFallback: true } : {}),
         },
       };
     }
@@ -1091,15 +1214,21 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     excluded: number;
     truncated: boolean;
     cachedAt: number;
+    dependenciesDegraded?: boolean;
+    etag?: string | null;
   }
   const repoBoardCache = new Map<string, CachedRepoBoard>();
   interface CachedRepoClosed {
     issues: ReturnType<typeof buildBoardList>['issues'];
     truncated: boolean;
     cachedAt: number;
+    etag?: string | null;
   }
   const repoClosedCache = new Map<string, CachedRepoClosed>();
   const defaultBoardCacheTtlMs = options.boardCacheTtlMs ?? (options.repositoryTtlMs === 0 ? 0 : 30_000);
+
+  const inFlightBoards = new Map<string, Promise<any>>();
+  const inFlightClosed = new Map<string, Promise<CachedRepoClosed>>();
 
   async function checkDependencyCycle(
     startNumber: number,
@@ -1142,72 +1271,190 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     return false;
   }
 
-  async function repositoryBoard(repository: RepositoryEntry, timeoutMs?: number) {
+  async function repositoryBoard(
+    repository: RepositoryEntry,
+    timeoutMs?: number,
+    boardOpts: { forceRefresh?: boolean } = {},
+  ) {
     if (!repository.hasIssues) {
-      return { scope: 'repo', repository, repo: repository.full, login: config.githubLogin,
-        fetchedAt: new Date(now()).toISOString(), truncated: false,
-        complete: true, partial: false, excludedPullRequests: 0, issues: [] };
+      return {
+        scope: 'repo',
+        repository,
+        repo: repository.full,
+        login: config.githubLogin,
+        fetchedAt: new Date(now()).toISOString(),
+        truncated: false,
+        complete: true,
+        partial: false,
+        excludedPullRequests: 0,
+        issues: [],
+        dependenciesDegraded: false,
+      };
     }
-    const cached = repoBoardCache.get(repository.full);
-    if (cached && defaultBoardCacheTtlMs > 0 && now() - cached.cachedAt < defaultBoardCacheTtlMs) {
-      return { scope: 'repo', repository, repo: repository.full, login: config.githubLogin,
-        fetchedAt: new Date(cached.cachedAt).toISOString(), truncated: cached.truncated,
-        complete: !cached.truncated, partial: cached.truncated, excludedPullRequests: cached.excluded,
-        issues: cached.issues };
-    }
-    const client = clientFor(repository, timeoutMs);
-    let dependenciesDegraded = false;
-    const [listed, repoDeps] = await Promise.all([
-      client.listIssues().catch(mapGitHubError),
-      client.listRepositoryDependencies().catch(() => {
-        dependenciesDegraded = true;
-        return new Map<number, any[]>();
-      }),
-    ]);
-    if (repoDeps.size > 0) {
-      for (const item of listed.items) {
-        if (repoDeps.has(item.number)) {
-          item.blockedBy = repoDeps.get(item.number);
-        }
+
+    const key = repository.full;
+    if (!boardOpts.forceRefresh) {
+      const existingInFlight = inFlightBoards.get(key);
+      if (existingInFlight) {
+        return existingInFlight;
+      }
+      const cached = repoBoardCache.get(key);
+      if (cached && defaultBoardCacheTtlMs > 0 && now() - cached.cachedAt < defaultBoardCacheTtlMs) {
+        return {
+          scope: 'repo',
+          repository,
+          repo: repository.full,
+          login: config.githubLogin,
+          fetchedAt: new Date(cached.cachedAt).toISOString(),
+          truncated: cached.truncated,
+          complete: !cached.truncated,
+          partial: cached.truncated,
+          excludedPullRequests: cached.excluded,
+          issues: cached.issues,
+          dependenciesDegraded: Boolean(cached.dependenciesDegraded),
+        };
       }
     }
-    const { issues, excluded } = buildBoardList(listed.items, repository);
-    repoBoardCache.set(repository.full, {
-      issues,
-      excluded,
-      truncated: listed.truncated,
-      cachedAt: now(),
-    });
-    return { scope: 'repo', repository, repo: repository.full, login: config.githubLogin,
-      fetchedAt: new Date(now()).toISOString(), truncated: listed.truncated,
-      complete: !listed.truncated, partial: listed.truncated, excludedPullRequests: excluded, issues, dependenciesDegraded };
+
+    const run = async () => {
+      const cached = repoBoardCache.get(key);
+      const client = clientFor(repository, timeoutMs);
+      const ifNoneMatch = boardOpts.forceRefresh ? undefined : cached?.etag;
+
+      const listed = await client.listIssues({ ifNoneMatch }).catch(mapGitHubError);
+      if (listed.notModified && cached) {
+        cached.cachedAt = now();
+        return {
+          scope: 'repo',
+          repository,
+          repo: repository.full,
+          login: config.githubLogin,
+          fetchedAt: new Date(cached.cachedAt).toISOString(),
+          truncated: cached.truncated,
+          complete: !cached.truncated,
+          partial: cached.truncated,
+          excludedPullRequests: cached.excluded,
+          issues: cached.issues,
+          dependenciesDegraded: Boolean(cached.dependenciesDegraded),
+        };
+      }
+
+      let dependenciesDegraded = false;
+      let repoDeps = new Map<number, any[]>();
+      const hasOpenIssues = (repository.openIssuesCount !== 0) && listed.items.some((i: any) => i.state === 'open');
+      if (hasOpenIssues) {
+        try {
+          repoDeps = await client.listRepositoryDependencies();
+        } catch {
+          dependenciesDegraded = true;
+        }
+      }
+
+      if (repoDeps.size > 0) {
+        for (const item of listed.items) {
+          if (repoDeps.has(item.number)) {
+            item.blockedBy = repoDeps.get(item.number);
+          }
+        }
+      }
+
+      const { issues, excluded } = buildBoardList(listed.items, repository);
+      repoBoardCache.set(key, {
+        issues,
+        excluded,
+        truncated: listed.truncated,
+        cachedAt: now(),
+        dependenciesDegraded,
+        etag: listed.etag,
+      });
+
+      return {
+        scope: 'repo',
+        repository,
+        repo: repository.full,
+        login: config.githubLogin,
+        fetchedAt: new Date(now()).toISOString(),
+        truncated: listed.truncated,
+        complete: !listed.truncated,
+        partial: listed.truncated,
+        excludedPullRequests: excluded,
+        issues,
+        dependenciesDegraded,
+      };
+    };
+
+    const promise = run();
+    inFlightBoards.set(key, promise);
+    try {
+      return await promise;
+    } finally {
+      if (inFlightBoards.get(key) === promise) {
+        inFlightBoards.delete(key);
+      }
+    }
   }
 
-  async function repositoryClosedIssues(repository: RepositoryEntry, timeoutMs?: number): Promise<CachedRepoClosed> {
-    const cached = repoClosedCache.get(repository.full);
-    if (cached && defaultBoardCacheTtlMs > 0 && now() - cached.cachedAt < defaultBoardCacheTtlMs) {
-      return cached;
+  async function repositoryClosedIssues(
+    repository: RepositoryEntry,
+    timeoutMs?: number,
+    closedOpts: { forceRefresh?: boolean } = {},
+  ): Promise<CachedRepoClosed> {
+    const key = repository.full;
+    if (!closedOpts.forceRefresh) {
+      const existingInFlight = inFlightClosed.get(key);
+      if (existingInFlight) {
+        return existingInFlight;
+      }
+      const cached = repoClosedCache.get(key);
+      if (cached && defaultBoardCacheTtlMs > 0 && now() - cached.cachedAt < defaultBoardCacheTtlMs) {
+        return cached;
+      }
     }
-    const client = clientFor(repository, timeoutMs);
-    const listed = await client.listIssues({ state: 'closed' }).catch(mapGitHubError);
-    const { issues } = buildBoardList(listed.items, repository);
-    const result: CachedRepoClosed = {
-      issues,
-      truncated: listed.truncated,
-      cachedAt: now(),
+
+    const run = async (): Promise<CachedRepoClosed> => {
+      const cached = repoClosedCache.get(key);
+      const client = clientFor(repository, timeoutMs);
+      const ifNoneMatch = closedOpts.forceRefresh ? undefined : cached?.etag;
+
+      const listed = await client.listIssues({ state: 'closed', ifNoneMatch }).catch(mapGitHubError);
+      if (listed.notModified && cached) {
+        cached.cachedAt = now();
+        return cached;
+      }
+
+      const { issues } = buildBoardList(listed.items, repository);
+      const result: CachedRepoClosed = {
+        issues,
+        truncated: listed.truncated,
+        cachedAt: now(),
+        etag: listed.etag,
+      };
+      repoClosedCache.set(key, result);
+      return result;
     };
-    repoClosedCache.set(repository.full, result);
-    return result;
+
+    const promise = run();
+    inFlightClosed.set(key, promise);
+    try {
+      return await promise;
+    } finally {
+      if (inFlightClosed.get(key) === promise) {
+        inFlightClosed.delete(key);
+      }
+    }
   }
 
   let aggregateInFlight: Promise<unknown> | null = null;
-  function combinedBoard(): Promise<unknown> {
+  function combinedBoard(combinedOpts: { forceRefresh?: boolean } = {}): Promise<unknown> {
+    if (combinedOpts.forceRefresh) {
+      return aggregate({ forceRefresh: true });
+    }
     if (aggregateInFlight) return aggregateInFlight;
     aggregateInFlight = aggregate().finally(() => { aggregateInFlight = null; });
     return aggregateInFlight;
   }
-  async function aggregate() {
-    const discovery = await repositories.view();
+  async function aggregate(aggregateOpts: { forceRefresh?: boolean } = {}) {
+    const discovery = await repositories.view({ forceRefresh: aggregateOpts.forceRefresh });
     const issues: ReturnType<typeof buildBoardList>['issues'] = [];
     const failures: Array<{ repository: RepositoryEntry; message: string }> = [];
     const repoFetchedTimestamps: number[] = [];
@@ -1260,7 +1507,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         }
 
         try {
-          const board = await repositoryBoard(repository, perRepoTimeoutMs);
+          const board = await repositoryBoard(repository, perRepoTimeoutMs, { forceRefresh: aggregateOpts.forceRefresh });
           issues.push(...board.issues);
           excluded += board.excludedPullRequests;
           truncated ||= board.truncated;

@@ -33,6 +33,7 @@ export class RepositoryRegistry {
   private attemptedAt: number | null = null;
   private failed = false;
   private inFlight: Promise<RepositoryView> | null = null;
+  private cachedEtag: string | null = null;
 
   constructor(options: { client: GitHubClient; now?: () => number; ttlMs?: number }) {
     this.client = options.client;
@@ -40,12 +41,14 @@ export class RepositoryRegistry {
     this.ttlMs = Math.max(0, options.ttlMs ?? 60_000);
   }
 
-  async view(): Promise<RepositoryView> {
+  async view(options: { forceRefresh?: boolean } = {}): Promise<RepositoryView> {
     // A refresh marks attemptedAt before the list request completes. Await that
     // refresh first so authorisation can never use the pre-refresh allowlist.
     if (this.inFlight) return this.inFlight;
-    if (this.attemptedAt !== null && this.now() - this.attemptedAt < this.ttlMs) return this.snapshot();
-    this.inFlight = this.refresh().finally(() => { this.inFlight = null; });
+    if (!options.forceRefresh && this.attemptedAt !== null && this.now() - this.attemptedAt < this.ttlMs) {
+      return this.snapshot();
+    }
+    this.inFlight = this.refresh(options).finally(() => { this.inFlight = null; });
     return this.inFlight;
   }
 
@@ -60,11 +63,20 @@ export class RepositoryRegistry {
     return found;
   }
 
-  private async refresh(): Promise<RepositoryView> {
+  private async refresh(options: { forceRefresh?: boolean } = {}): Promise<RepositoryView> {
     this.attemptedAt = this.now();
     try {
-      const listed = await this.client.listRepositories();
+      const ifNoneMatch = options.forceRefresh ? undefined : this.cachedEtag;
+      const listed = await this.client.listRepositories({ ifNoneMatch });
       const at = this.now();
+      if (listed.notModified) {
+        this.fetchedAt = at;
+        this.failed = false;
+        return this.snapshot();
+      }
+      if (listed.etag) {
+        this.cachedEtag = listed.etag;
+      }
       const next = new Map<string, RepositoryEntry>();
       for (const repository of listed.repositories) {
         next.set(repository.full, { ...repository, available: !repository.disabled, lastSeenAt: new Date(at).toISOString() });

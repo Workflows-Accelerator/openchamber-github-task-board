@@ -732,6 +732,16 @@ export function issueKey(
   return repository && repository.full ? `${repository.full}#${number}` : `#${number}`;
 }
 
+export type EffectiveStage =
+  | 'draft'
+  | 'backlog'
+  | 'todo'
+  | 'planned'
+  | 'in-progress'
+  | 'needs-human'
+  | 'in-review'
+  | 'done';
+
 export interface BoardListItem {
   number: number;
   key: string;
@@ -742,6 +752,8 @@ export interface BoardListItem {
   htmlUrl: string;
   labels: string[];
   statusLabel: string | null;
+  effectiveStage: EffectiveStage;
+  isExplicitDraft: boolean;
   phase: string;
   attention: string;
   column: string | null;
@@ -780,6 +792,8 @@ export interface BoardListItem {
   overview?: string;
 }
 
+export type IssueSummary = BoardListItem;
+
 export interface OpenQuestionView {
   index: number;
   answerIndex: number | null;
@@ -797,10 +811,13 @@ export interface IssueDetail {
   state: 'open' | 'closed';
   htmlUrl: string;
   body: string;
+  bodyMarkdown: string;
   canvas: CanvasMarkerData | null;
   fingerprint: string;
   labels: string[];
   statusLabel: string | null;
+  effectiveStage: EffectiveStage;
+  isExplicitDraft: boolean;
   phase: string;
   attention: string;
   column: string | null;
@@ -847,6 +864,76 @@ export function statusLabelOf(labels: string[]): string | null {
     if (statusSet.has(normalized)) return normalized;
   }
   return null;
+}
+
+export function isExplicitDraft(
+  labelsOrIssue:
+    | Array<string | { name?: string }>
+    | { labels?: Array<string | { name?: string }> | null }
+    | null
+    | undefined,
+): boolean {
+  const labels = Array.isArray(labelsOrIssue)
+    ? labelsOrIssue
+    : (labelsOrIssue && Array.isArray(labelsOrIssue.labels) ? labelsOrIssue.labels : []);
+  return labels.some((label) => {
+    const norm = (typeof label === 'string' ? label : label?.name ?? '').trim().toLowerCase();
+    return norm === 'status:draft' || norm === 'draft';
+  });
+}
+
+const VALID_EFFECTIVE_STAGES = new Set<EffectiveStage>([
+  'draft',
+  'backlog',
+  'todo',
+  'planned',
+  'in-progress',
+  'needs-human',
+  'in-review',
+  'done',
+]);
+
+export function resolveEffectiveStage(issue: {
+  state?: string | null;
+  statusLabel?: string | null;
+  labels?: Array<string | { name?: string }> | null;
+}): EffectiveStage {
+  const rawLabels = Array.isArray(issue?.labels)
+    ? issue.labels.map((label) => (typeof label === 'string' ? label : label?.name ?? '')).filter(Boolean)
+    : [];
+  const computedStatusLabel = issue?.statusLabel !== undefined
+    ? issue.statusLabel
+    : statusLabelOf(rawLabels);
+
+  if (issue?.state === 'closed' || computedStatusLabel === 'status:done') {
+    return 'done';
+  }
+  if (computedStatusLabel && computedStatusLabel.startsWith('status:')) {
+    const rawStage = computedStatusLabel.slice('status:'.length).toLowerCase() as EffectiveStage;
+    if (VALID_EFFECTIVE_STAGES.has(rawStage)) {
+      return rawStage;
+    }
+  }
+  const normalizedLabels = rawLabels.map((label) => label.trim().toLowerCase());
+  if (normalizedLabels.some((l) => ['in progress', 'in-progress', 'wip', 'doing'].includes(l))) {
+    return 'in-progress';
+  }
+  if (normalizedLabels.some((l) => ['in review', 'in-review', 'review', 'needs-review'].includes(l))) {
+    return 'in-review';
+  }
+  if (normalizedLabels.some((l) => ['needs-human', 'needs human', 'blocked', 'waiting'].includes(l))) {
+    return 'needs-human';
+  }
+  if (normalizedLabels.some((l) => ['planned', 'ready'].includes(l))) {
+    return 'planned';
+  }
+  if (normalizedLabels.some((l) => ['backlog', 'icebox', 'later'].includes(l))) {
+    return 'backlog';
+  }
+  if (normalizedLabels.some((l) => l === 'draft')) {
+    return 'draft';
+  }
+  return 'todo';
 }
 
 function countsOf(items: Array<{ completed: boolean }> = []) {
@@ -905,6 +992,7 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
   const sections = editableSections(stripHiddenMarkers(rawBody));
   const overview = sections.length > 0 ? sections[0].text : '';
+  const statusLabel = statusLabelOf(labels);
   return {
     ...listFields(rawItem, repository),
     number: issue.number,
@@ -915,7 +1003,9 @@ export function buildBoardListItem(rawItem: any, repository: BoardRepository | n
     state: issue.state,
     htmlUrl: issue.html_url,
     labels,
-    statusLabel: statusLabelOf(labels),
+    statusLabel,
+    effectiveStage: resolveEffectiveStage({ state: issue.state, statusLabel, labels }),
+    isExplicitDraft: isExplicitDraft(labels),
     phase: metadata.phase,
     attention: metadata.attention,
     column: resolveIssueColumn(issue),
@@ -947,6 +1037,8 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
   }
   const metadata = resolveV2Metadata(issue);
   const labels = labelNames(raw);
+  const statusLabel = statusLabelOf(labels);
+  const cleanBody = stripHiddenMarkers(issue.body ?? '');
   const questions = parseWebOpenQuestions(issue.body ?? '');
   let answerIndex = 0;
   const openQuestions: OpenQuestionView[] = questions.map((question, index) => {
@@ -960,7 +1052,7 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     return view;
   });
   const testPlan = parseTestPlan(issue.body);
-  const friendly = parseFriendlyTitle(stripHiddenMarkers(issue.body), issue.title);
+  const friendly = parseFriendlyTitle(cleanBody, issue.title);
   const friendlyTitle = friendly.subtitle && friendly.title !== issue.title ? friendly.title : null;
 
   return {
@@ -972,18 +1064,21 @@ export function buildIssueDetail(raw: any, repository: BoardRepository | null = 
     friendlyTitle,
     state: issue.state,
     htmlUrl: issue.html_url,
-    body: stripHiddenMarkers(issue.body),
+    body: cleanBody,
+    bodyMarkdown: cleanBody,
     canvas: parseCanvasMarker(issue.body ?? ''),
     fingerprint: issueFingerprint(raw, repository),
     labels,
-    statusLabel: statusLabelOf(labels),
+    statusLabel,
+    effectiveStage: resolveEffectiveStage({ state: issue.state, statusLabel, labels }),
+    isExplicitDraft: isExplicitDraft(labels),
     phase: metadata.phase,
     attention: metadata.attention,
     column: resolveIssueColumn(issue),
     updatedAt: issue.updated_at ?? null,
     createdAt: issue.created_at ?? null,
     closedAt: raw.closed_at ?? (issue as any).closed_at ?? null,
-    editableSections: editableSections(stripHiddenMarkers(issue.body)),
+    editableSections: editableSections(cleanBody),
     openQuestions,
     humanTasks: (parseWebHumanTasks(issue.body ?? '').length > 0 ? parseWebHumanTasks(issue.body ?? '') : (issue.humanTasks ?? [])).map((task, idx) => ({
       index: typeof (task as any).index === 'number' ? (task as any).index : idx,

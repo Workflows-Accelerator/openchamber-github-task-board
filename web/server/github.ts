@@ -52,12 +52,24 @@ export interface GitHubRepositorySummary {
   hasIssues: boolean;
   disabled: boolean;
   private: boolean;
+  openIssuesCount?: number | null;
+  pushedAt?: string | null;
+}
+
+export interface RateLimitInfo {
+  limit: number | null;
+  remaining: number | null;
+  reset: number | null;
+  resource: string | null;
+  updatedAt: string | null;
 }
 
 export interface RepositoryList {
   repositories: GitHubRepositorySummary[];
   pages: number;
   truncated: boolean;
+  notModified?: boolean;
+  etag?: string | null;
 }
 
 export interface GitHubClientOptions {
@@ -68,6 +80,7 @@ export interface GitHubClientOptions {
   timeoutMs?: number;
   maxPages?: number;
   perPage?: number;
+  rateLimitRef?: { current: RateLimitInfo };
 }
 
 export interface IssueRead {
@@ -101,6 +114,9 @@ export interface IssueList {
   items: any[];
   pages: number;
   truncated: boolean;
+  notModified?: boolean;
+  etag?: string | null;
+  excludedPullRequests?: number;
 }
 
 const MAX_BODY_BYTES = 2 * 1024 * 1024;
@@ -157,6 +173,7 @@ export class GitHubClient {
   private readonly timeoutMs: number;
   private readonly maxPages: number;
   private readonly perPage: number;
+  private readonly rateLimitRef: { current: RateLimitInfo };
 
   constructor(options: GitHubClientOptions) {
     this.apiBase = options.apiBase.replace(/\/+$/, '');
@@ -166,6 +183,36 @@ export class GitHubClient {
     this.timeoutMs = options.timeoutMs ?? 15_000;
     this.maxPages = options.maxPages ?? 10;
     this.perPage = options.perPage ?? 100;
+    this.rateLimitRef = options.rateLimitRef ?? {
+      current: {
+        limit: null,
+        remaining: null,
+        reset: null,
+        resource: null,
+        updatedAt: null,
+      },
+    };
+  }
+
+  getRateLimitInfo(): RateLimitInfo {
+    return { ...this.rateLimitRef.current };
+  }
+
+  private recordRateLimitHeaders(headers?: Headers): void {
+    if (!headers) return;
+    const limit = headers.get('x-ratelimit-limit');
+    const remaining = headers.get('x-ratelimit-remaining');
+    const reset = headers.get('x-ratelimit-reset');
+    const resource = headers.get('x-ratelimit-resource');
+    if (limit !== null || remaining !== null || reset !== null || resource !== null) {
+      this.rateLimitRef.current = {
+        limit: limit !== null ? Number(limit) : this.rateLimitRef.current.limit,
+        remaining: remaining !== null ? Number(remaining) : this.rateLimitRef.current.remaining,
+        reset: reset !== null ? Number(reset) : this.rateLimitRef.current.reset,
+        resource: resource !== null ? resource : this.rateLimitRef.current.resource,
+        updatedAt: new Date().toISOString(),
+      };
+    }
   }
 
   get repository(): GitHubRepoRef | null {
@@ -186,7 +233,13 @@ export class GitHubClient {
 
   private async request(
     url: string,
-    options: { method?: string; body?: unknown; etag?: string | null; accept?: string } = {},
+    options: {
+      method?: string;
+      body?: unknown;
+      etag?: string | null;
+      ifNoneMatch?: string | null;
+      accept?: string;
+    } = {},
   ): Promise<{ status: number; headers: Headers; data: any }> {
     const headers: Record<string, string> = {
       authorization: `Bearer ${this.token}`,
@@ -199,6 +252,9 @@ export class GitHubClient {
     }
     if (options.etag) {
       headers['if-match'] = options.etag;
+    }
+    if (options.ifNoneMatch) {
+      headers['if-none-match'] = options.ifNoneMatch;
     }
 
     let response: Response;
@@ -215,6 +271,12 @@ export class GitHubClient {
     } catch (error) {
       if (error instanceof GitHubError) throw error;
       throw new GitHubError('network', 0, 'GitHub request failed before completion');
+    }
+
+    this.recordRateLimitHeaders(response.headers);
+
+    if (response.status === 304) {
+      return { status: 304, headers: response.headers, data: null };
     }
 
     if (response.status >= 300 && response.status < 400) {
@@ -289,19 +351,34 @@ export class GitHubClient {
     return `${this.apiBase}/user/repos?${query.toString()}`;
   }
 
-  async listRepositories(): Promise<RepositoryList> {
+  async listRepositories(options: { ifNoneMatch?: string | null } = {}): Promise<RepositoryList> {
     const repositories: GitHubRepositorySummary[] = [];
     const seen = new Map<string, number | null>();
     let pages = 0;
     let nextUrl: string | null = this.repositoriesUrl(1);
     const apiOrigin = new URL(this.apiBase).origin;
     const expectedPath = new URL(`${this.apiBase}/user/repos`).pathname;
+    let page1Etag: string | null = null;
 
     while (nextUrl) {
       if (pages >= this.maxPages) {
         throw new GitHubError('server', 200, 'GitHub repository discovery exceeded the page bound');
       }
-      const { data, headers } = await this.request(nextUrl);
+      const { data, headers, status } = await this.request(nextUrl, {
+        ifNoneMatch: pages === 0 ? options.ifNoneMatch : undefined,
+      });
+      if (pages === 0 && status === 304) {
+        return {
+          repositories: [],
+          pages: 0,
+          truncated: false,
+          notModified: true,
+          etag: headers.get('etag') || options.ifNoneMatch || null,
+        };
+      }
+      if (pages === 0) {
+        page1Etag = headers.get('etag') || null;
+      }
       if (!Array.isArray(data)) {
         throw new GitHubError('server', 200, 'GitHub repository list response was not a list');
       }
@@ -339,26 +416,53 @@ export class GitHubClient {
       }
     }
 
-    return { repositories, pages, truncated: false };
+    return { repositories, pages, truncated: false, notModified: false, etag: page1Etag };
   }
 
-  async listIssues(options: { state?: 'all' | 'open' | 'closed'; maxPages?: number } = {}): Promise<IssueList> {
+  async listIssues(
+    stateOrOptions?:
+      | 'all'
+      | 'open'
+      | 'closed'
+      | { state?: 'all' | 'open' | 'closed'; maxPages?: number; ifNoneMatch?: string | null },
+    options?: { maxPages?: number; ifNoneMatch?: string | null },
+  ): Promise<IssueList> {
+    const opts = typeof stateOrOptions === 'string'
+      ? { state: stateOrOptions, ...options }
+      : (stateOrOptions ?? {});
     const items: any[] = [];
     const seenNumbers = new Set<number>();
     let pages = 0;
     let truncated = false;
-    const stateFilter = options.state ?? 'all';
-    const effectiveMaxPages = options.maxPages ?? this.maxPages;
+    const stateFilter = opts.state ?? 'all';
+    const effectiveMaxPages = opts.maxPages ?? this.maxPages;
+    const ifNoneMatch = opts.ifNoneMatch;
     let nextUrl: string | null =
       `${this.issuesBase()}/issues?state=${encodeURIComponent(stateFilter)}&per_page=${this.perPage}&page=1`;
     const apiOrigin = new URL(this.apiBase).origin;
+    let page1Etag: string | null = null;
 
     while (nextUrl) {
       if (pages >= effectiveMaxPages) {
         truncated = true;
         break;
       }
-      const { data, headers } = await this.request(nextUrl);
+      const { data, headers, status } = await this.request(nextUrl, {
+        ifNoneMatch: pages === 0 ? ifNoneMatch : undefined,
+      });
+      if (pages === 0 && status === 304) {
+        return {
+          items: [],
+          pages: 0,
+          truncated: false,
+          notModified: true,
+          etag: headers.get('etag') || ifNoneMatch || null,
+          excludedPullRequests: 0,
+        };
+      }
+      if (pages === 0) {
+        page1Etag = headers.get('etag') || null;
+      }
       if (!Array.isArray(data)) {
         throw new GitHubError('server', 200, 'GitHub issues response was not a list');
       }
@@ -411,13 +515,13 @@ export class GitHubClient {
         }
         nextUrl = parsedNext.toString();
       } else if (data.length >= this.perPage) {
-        nextUrl = `${this.issuesBase()}/issues?state=all&per_page=${this.perPage}&page=${pages + 1}`;
+        nextUrl = `${this.issuesBase()}/issues?state=${encodeURIComponent(stateFilter)}&per_page=${this.perPage}&page=${pages + 1}`;
       } else {
         nextUrl = null;
       }
     }
 
-    return { items, pages, truncated };
+    return { items, pages, truncated, notModified: false, etag: page1Etag };
   }
 
   async getIssue(number: unknown): Promise<IssueRead> {
@@ -646,6 +750,10 @@ export function parseRepositorySummary(item: any): GitHubRepositorySummary {
     throw new GitHubError('server', 200, 'GitHub repository response was malformed');
   }
   const id = typeof item.id === 'number' && Number.isInteger(item.id) && item.id > 0 ? item.id : null;
+  const openIssuesCount = typeof item.open_issues_count === 'number' && Number.isFinite(item.open_issues_count)
+    ? item.open_issues_count
+    : (typeof item.open_issues === 'number' && Number.isFinite(item.open_issues) ? item.open_issues : null);
+  const pushedAt = typeof item.pushed_at === 'string' && item.pushed_at ? item.pushed_at : null;
   return {
     id,
     owner: parts[0],
@@ -655,6 +763,8 @@ export function parseRepositorySummary(item: any): GitHubRepositorySummary {
     hasIssues: item.has_issues !== false,
     disabled: item.disabled === true,
     private: item.private === true,
+    openIssuesCount,
+    pushedAt,
   };
 }
 

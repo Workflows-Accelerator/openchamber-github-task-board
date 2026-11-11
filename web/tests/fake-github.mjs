@@ -101,6 +101,8 @@ function repositorySpec(input, index) {
     issues: clonedIssues,
     maxIssueNumber: clonedIssues.reduce((max, i) => Math.max(max, i.number), 0),
     dependencies: input.dependencies ? structuredClone(input.dependencies) : [],
+    openIssuesCount: input.openIssuesCount,
+    pushedAt: input.pushedAt,
   };
 }
 
@@ -151,6 +153,9 @@ export async function startFakeGitHub(options = {}) {
     injectedResponse: null,
     discoveryResponse: null,
     honorIfMatch: options.honorIfMatch ?? false,
+    honorIfNoneMatch: options.honorIfNoneMatch ?? false,
+    failLabels: options.failLabels ?? false,
+    issueCreateHook: options.issueCreateHook ?? null,
     beforePatchHook: options.beforePatchHook ?? null,
     patchHook: options.patchHook ?? null,
     listDelayMs: options.listDelayMs ?? 0,
@@ -172,6 +177,9 @@ export async function startFakeGitHub(options = {}) {
 
   function summaryFor(spec) {
     const [owner, name] = spec.repo.split('/');
+    const openIssues = typeof spec.openIssuesCount === 'number'
+      ? spec.openIssuesCount
+      : spec.issues.filter((i) => i.state === 'open' && !i.pull_request).length;
     return {
       id: spec.id,
       node_id: spec.nodeId,
@@ -183,6 +191,9 @@ export async function startFakeGitHub(options = {}) {
       private: spec.private,
       has_issues: spec.hasIssues,
       permissions: { pull: true, push: true },
+      open_issues_count: openIssues,
+      open_issues: openIssues,
+      pushed_at: spec.pushedAt ?? '2026-10-20T10:00:00Z',
     };
   }
 
@@ -192,6 +203,15 @@ export async function startFakeGitHub(options = {}) {
     res.setHeader('content-type', 'application/json; charset=utf-8');
 
     const send = (status, payload, headers = {}) => {
+      const defaultHeaders = {
+        'x-ratelimit-limit': '5000',
+        'x-ratelimit-remaining': '4999',
+        'x-ratelimit-reset': String(Math.floor(Date.now() / 1000) + 3600),
+        'x-ratelimit-resource': 'core',
+      };
+      for (const [name, value] of Object.entries(defaultHeaders)) {
+        if (!res.hasHeader(name)) res.setHeader(name, value);
+      }
       for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
       res.statusCode = status;
       res.end(payload === undefined ? '' : JSON.stringify(payload));
@@ -222,12 +242,20 @@ export async function startFakeGitHub(options = {}) {
       const all = visible.map(summaryFor);
       const start = (page - 1) * size;
       const items = all.slice(start, start + size);
-      const headers = {};
+      const reposEtag = `"${createHash('sha1').update(JSON.stringify(items)).digest('hex')}"`;
+      const headers = { etag: reposEtag };
       if (start + size < all.length) {
         const next = new URL(`http://${req.headers.host}${url.pathname}`);
         next.searchParams.set('per_page', String(size));
         next.searchParams.set('page', String(page + 1));
         headers.link = `<${next.toString()}>; rel="next"`;
+      }
+      const ifNoneMatch = req.headers['if-none-match'];
+      if (state.honorIfNoneMatch && ifNoneMatch) {
+        const cleanMatch = ifNoneMatch.replace(/^W\//, '');
+        if (cleanMatch === reposEtag.replace(/^W\//, '')) {
+          return send(304, undefined, headers);
+        }
       }
       return send(200, items, headers);
     }
@@ -272,13 +300,21 @@ export async function startFakeGitHub(options = {}) {
         });
         const start = (page - 1) * size;
         const items = all.slice(start, start + size);
-        const headers = {};
+        const issuesEtag = `"${createHash('sha1').update(JSON.stringify(items)).digest('hex')}"`;
+        const headers = { etag: issuesEtag };
         if (start + size < all.length) {
           const next = new URL(`http://${req.headers.host}${url.pathname}`);
           if (stateFilter && stateFilter !== 'all') next.searchParams.set('state', stateFilter);
           next.searchParams.set('per_page', String(size));
           next.searchParams.set('page', String(page + 1));
           headers.link = `<${next.toString()}>; rel="next"`;
+        }
+        const ifNoneMatch = req.headers['if-none-match'];
+        if (state.honorIfNoneMatch && ifNoneMatch) {
+          const cleanMatch = ifNoneMatch.replace(/^W\//, '');
+          if (cleanMatch === issuesEtag.replace(/^W\//, '')) {
+            return send(304, undefined, headers);
+          }
         }
         return send(200, items, headers);
       }
@@ -289,6 +325,17 @@ export async function startFakeGitHub(options = {}) {
           payload = await readBody(req);
         } catch {
           return send(400, { message: 'Bad Request' });
+        }
+        if (state.issueCreateHook) {
+          const hookRes = await state.issueCreateHook(payload, spec, req);
+          if (hookRes) return send(hookRes.status, hookRes.payload ?? {}, hookRes.headers ?? {});
+        }
+        if (state.failLabels && Array.isArray(payload.labels) && payload.labels.length > 0) {
+          const status = typeof state.failLabels === 'number' ? state.failLabels : 403;
+          return send(status, {
+            message: 'Resource not accessible by integration',
+            documentation_url: 'https://docs.github.com/rest/issues/issues#create-an-issue',
+          });
         }
         const currentMax = spec.issues.reduce((max, i) => Math.max(max, i.number), spec.maxIssueNumber ?? 0);
         const nextNumber = currentMax + 1;
@@ -736,6 +783,21 @@ export async function startFakeGitHub(options = {}) {
     },
     setHonorIfMatch(value) {
       state.honorIfMatch = Boolean(value);
+    },
+    setHonorIfNoneMatch(value) {
+      state.honorIfNoneMatch = Boolean(value);
+    },
+    setFailLabels(value) {
+      state.failLabels = value;
+    },
+    setIssueCreateHook(fn) {
+      state.issueCreateHook = fn;
+    },
+    setListDelay(ms) {
+      state.listDelayMs = Number(ms) || 0;
+    },
+    get maxActiveIssueLists() {
+      return state.maxActiveIssueLists;
     },
     setBeforePatchHook(fn) {
       state.beforePatchHook = fn;
