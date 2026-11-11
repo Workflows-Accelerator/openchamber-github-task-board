@@ -159,13 +159,14 @@ export function getVersionStamp(
   }
 }
 
-function computeWeakEtag(payload: unknown): string {
+function computeWeakEtag(payload: unknown, sessionScope: string): string {
   let content = payload;
   if (payload && typeof payload === 'object' && !Array.isArray(payload)) {
     const { rateLimit, fetchedAt, ...rest } = payload as Record<string, unknown>;
     content = rest;
   }
-  const hash = createHash('sha1').update(JSON.stringify(content)).digest('hex').slice(0, 16);
+  // Bound to the session so a validator from one session never revalidates another's body.
+  const hash = createHash('sha1').update(sessionScope).update('\0').update(JSON.stringify(content)).digest('hex').slice(0, 16);
   return `W/"${hash}"`;
 }
 
@@ -662,13 +663,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
       const discovery = await repositories.view({ forceRefresh });
       const payload = { ...discovery, projectNames: projectNames(), rateLimit: currentRateLimit() };
-      const etag = computeWeakEtag(payload);
+      const etag = computeWeakEtag(payload, record.id);
       if (!forceRefresh && etagMatches(req.headers['if-none-match'], etag)) {
         return {
           status: 304,
           headers: {
             etag,
-            'cache-control': 'no-cache',
+            'cache-control': 'private, no-cache',
           },
         };
       }
@@ -677,7 +678,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         body: payload,
         headers: {
           etag,
-          'cache-control': 'no-cache',
+          'cache-control': 'private, no-cache',
         },
       };
     }
@@ -705,13 +706,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
       const board = (await combinedBoard({ forceRefresh })) as Record<string, unknown>;
       const payload = { ...board, rateLimit: currentRateLimit() };
-      const etag = computeWeakEtag(payload);
+      const etag = computeWeakEtag(payload, record.id);
       if (!forceRefresh && etagMatches(req.headers['if-none-match'], etag)) {
         return {
           status: 304,
           headers: {
             etag,
-            'cache-control': 'no-cache',
+            'cache-control': 'private, no-cache',
           },
         };
       }
@@ -720,7 +721,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         body: payload,
         headers: {
           etag,
-          'cache-control': 'no-cache',
+          'cache-control': 'private, no-cache',
         },
       };
     }
@@ -758,13 +759,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       const forceRefresh = url.searchParams.get('refresh') === '1' || url.searchParams.get('refresh') === 'true';
       const board = (await repositoryBoard(repository!, undefined, { forceRefresh })) as Record<string, unknown>;
       const payload = { ...board, rateLimit: currentRateLimit() };
-      const etag = computeWeakEtag(payload);
+      const etag = computeWeakEtag(payload, record.id);
       if (!forceRefresh && etagMatches(req.headers['if-none-match'], etag)) {
         return {
           status: 304,
           headers: {
             etag,
-            'cache-control': 'no-cache',
+            'cache-control': 'private, no-cache',
           },
         };
       }
@@ -773,7 +774,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         body: payload,
         headers: {
           etag,
-          'cache-control': 'no-cache',
+          'cache-control': 'private, no-cache',
         },
       };
     }
@@ -834,10 +835,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         } else {
           mapGitHubError(err);
         }
-      }
-      if (repository) {
-        repoBoardCache.delete(repository.full);
-        repoClosedCache.delete(repository.full);
+      } finally {
+        // A lost response can follow a completed create; reconcile on next read.
+        if (repository) invalidateRepositoryCaches([repository.full]);
       }
 
       return {
@@ -1106,19 +1106,16 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         throw new HttpError(400, 'cycle_refused', 'Cannot add dependency: this would create a circular dependency');
       }
 
-      await scopedGithub!.addIssueDependency(targetNumber, sourceIssue.id).catch((err) => {
-        if (err instanceof GitHubError && (err.status === 422 || err.status === 400)) {
-          const msg = typeof err.data?.message === 'string' ? err.data.message : 'Invalid dependency request';
-          throw new HttpError(422, 'invalid_dependency', msg);
-        }
-        mapGitHubError(err);
-      });
-
-      repoBoardCache.delete(repository!.full);
-      repoClosedCache.delete(repository!.full);
-      if (sourceRepo.full !== repository!.full) {
-        repoBoardCache.delete(sourceRepo.full);
-        repoClosedCache.delete(sourceRepo.full);
+      try {
+        await scopedGithub!.addIssueDependency(targetNumber, sourceIssue.id).catch((err) => {
+          if (err instanceof GitHubError && (err.status === 422 || err.status === 400)) {
+            const msg = typeof err.data?.message === 'string' ? err.data.message : 'Invalid dependency request';
+            throw new HttpError(422, 'invalid_dependency', msg);
+          }
+          mapGitHubError(err);
+        });
+      } finally {
+        invalidateRepositoryCaches([repository!.full, sourceRepo.full]);
       }
 
       const [freshTarget, updatedDeps] = await Promise.all([
@@ -1164,15 +1161,17 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       const matchDep = targetDeps.blockedBy.find((b: any) => b.id === rawTargetId || b.number === rawTargetId);
       const issueIdToDelete = matchDep?.id ?? rawTargetId;
 
-      await scopedGithub!.removeIssueDependency(targetNumber, issueIdToDelete).catch((err) => {
-        if (err instanceof GitHubError && err.status === 404) {
-          throw new HttpError(404, 'not_found', 'Dependency link not found');
-        }
-        mapGitHubError(err);
-      });
-
-      repoBoardCache.delete(repository!.full);
-      repoClosedCache.delete(repository!.full);
+      try {
+        await scopedGithub!.removeIssueDependency(targetNumber, issueIdToDelete).catch((err) => {
+          if (err instanceof GitHubError && err.status === 404) {
+            throw new HttpError(404, 'not_found', 'Dependency link not found');
+          }
+          mapGitHubError(err);
+        });
+      } finally {
+        // Success or unknown outcome: both sides of the link may have changed.
+        invalidateRepositoryCaches([repository!.full, matchDep?.repository?.nameWithOwner]);
+      }
 
       const [freshTarget, updatedDeps] = await Promise.all([
         scopedGithub!.getIssue(targetNumber).catch(mapGitHubError),
@@ -1225,6 +1224,17 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     etag?: string | null;
   }
   const repoClosedCache = new Map<string, CachedRepoClosed>();
+  const repositoryCacheVersions = new Map<string, number>();
+  function invalidateRepositoryCaches(fulls: Iterable<string | null | undefined>): void {
+    for (const full of fulls) {
+      if (!full) continue;
+      repoBoardCache.delete(full);
+      repoClosedCache.delete(full);
+      repositoryCacheVersions.set(full, (repositoryCacheVersions.get(full) || 0) + 1);
+      inFlightBoards.delete(full);
+      inFlightClosed.delete(full);
+    }
+  }
   const defaultBoardCacheTtlMs = options.boardCacheTtlMs ?? (options.repositoryTtlMs === 0 ? 0 : 30_000);
 
   const inFlightBoards = new Map<string, Promise<any>>();
@@ -1317,6 +1327,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
 
     const run = async () => {
+      const version = repositoryCacheVersions.get(key) || 0;
       const cached = repoBoardCache.get(key);
       const client = clientFor(repository, timeoutMs);
       const ifNoneMatch = boardOpts.forceRefresh ? undefined : cached?.etag;
@@ -1359,13 +1370,14 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       }
 
       const { issues, excluded } = buildBoardList(listed.items, repository);
-      repoBoardCache.set(key, {
+      if ((repositoryCacheVersions.get(key) || 0) === version) repoBoardCache.set(key, {
         issues,
         excluded,
         truncated: listed.truncated,
         cachedAt: now(),
         dependenciesDegraded,
-        etag: listed.etag,
+        // Page-1 ETag only proves page 1; degraded dependencies must be re-read.
+        etag: listed.pages === 1 && !listed.truncated && !dependenciesDegraded ? listed.etag : null,
       });
 
       return {
@@ -1399,6 +1411,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     timeoutMs?: number,
     closedOpts: { forceRefresh?: boolean } = {},
   ): Promise<CachedRepoClosed> {
+    if (!repository.hasIssues) {
+      return { issues: [], truncated: false, cachedAt: now(), etag: null };
+    }
     const key = repository.full;
     if (!closedOpts.forceRefresh) {
       const existingInFlight = inFlightClosed.get(key);
@@ -1412,6 +1427,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
     }
 
     const run = async (): Promise<CachedRepoClosed> => {
+      const version = repositoryCacheVersions.get(key) || 0;
       const cached = repoClosedCache.get(key);
       const client = clientFor(repository, timeoutMs);
       const ifNoneMatch = closedOpts.forceRefresh ? undefined : cached?.etag;
@@ -1427,9 +1443,9 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         issues,
         truncated: listed.truncated,
         cachedAt: now(),
-        etag: listed.etag,
+        etag: listed.pages === 1 && !listed.truncated ? listed.etag : null,
       };
-      repoClosedCache.set(key, result);
+      if ((repositoryCacheVersions.get(key) || 0) === version) repoClosedCache.set(key, result);
       return result;
     };
 
@@ -1719,7 +1735,13 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
         closedCount++;
       }
 
-      let stage = (issue.statusLabel?.replace(/^status:/i, '') || issue.column || 'draft').toLowerCase();
+      // Any-Repo: unlabeled open issues resolve to `todo`, never `draft`, matching the list grouping.
+      let stage = String(
+        (issue as { effectiveStage?: string }).effectiveStage ||
+          issue.statusLabel?.replace(/^status:/i, '') ||
+          issue.column ||
+          'draft',
+      ).toLowerCase();
       if (stage === 'review') stage = 'in-review';
       if (!standardColumns.includes(stage)) {
         stage = isOpen ? 'draft' : 'done';
@@ -2179,6 +2201,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
                 };
                 preparedMap.set(k, prepared);
                 updateSequence.push(prepared);
+                touchedRepositories.add(uRepo.full);
               }
 
               if (!includesPrimary) {
@@ -2424,6 +2447,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             if (target.full.toLowerCase() === repository.full.toLowerCase() || target.archived || !target.hasIssues) {
               throw new HttpError(400, 'invalid_target', 'Select a different writable project');
             }
+            touchedRepositories.add(target.full);
             const targetClient = clientFor(target);
             const targetRepoRaw = await targetClient.getRepository().catch(mapGitHubError);
             if (targetRepoRaw.archived || targetRepoRaw.has_issues === false || targetRepoRaw.disabled) {
@@ -2663,8 +2687,6 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       }
 
       if (verified) {
-        repoBoardCache.delete(repository.full);
-        repoClosedCache.delete(repository.full);
         log(`write issue=${number} fields=${Object.keys(patch).join(',')}`);
         return {
           status: 200,
@@ -2688,10 +2710,22 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       );
     };
 
+    // Every repository a write may have touched (source, transfer target, batch
+    // order items) is invalidated after the attempt, including failures whose
+    // outcome is unknown, so no stale 30s board cache survives a mutation.
+    const touchedRepositories = new Set<string>([repository.full]);
+    const runAndInvalidate = async (): Promise<HandlerResponse> => {
+      try {
+        return await runLocked();
+      } finally {
+        touchedRepositories.add(repository.full);
+        invalidateRepositoryCaches(touchedRepositories);
+      }
+    };
     if (op.kind === 'order') {
-      return withIssueLock('board:order', () => withIssueLock(issueKey(repository, number), runLocked));
+      return withIssueLock('board:order', () => withIssueLock(issueKey(repository, number), runAndInvalidate));
     }
-    return withIssueLock(issueKey(repository, number), runLocked);
+    return withIssueLock(issueKey(repository, number), runAndInvalidate);
   }
 
   return {

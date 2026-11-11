@@ -15,7 +15,7 @@ const { chromium } = pkg.default || pkg;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
-const DELIVERY_DIR = process.env.DELIVERY_DIR || path.resolve(ROOT_DIR, '.agents/run/chamberos-board-v2/verifications/V3-2');
+const DELIVERY_DIR = process.env.DELIVERY_DIR || path.resolve(ROOT_DIR, '.agents/run/chamberos-board-v2/verifications/V3-3');
 const SCREENSHOTS_DIR = path.resolve(DELIVERY_DIR, 'screenshots');
 const DEFAULT_PORT = 4041;
 const CHROME_PATH = process.env.H2_CHROME || '/workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell';
@@ -354,6 +354,21 @@ async function run() {
       return relPath(outPath);
     };
 
+    const inspectSurface = async () => page.evaluate(() => {
+      const visible = n => {
+        const r = n.getBoundingClientRect(), s = getComputedStyle(n);
+        return r.width > 0 && r.height > 0 && s.visibility !== 'hidden' && s.display !== 'none' && r.top >= 0 && r.bottom <= innerHeight && r.left >= 0 && r.right <= innerWidth;
+      };
+      const undersized = Array.from(document.querySelectorAll('button, input:not([type="hidden"]), select, textarea, a[href]')).filter(visible).filter(n => {
+        const r = n.getBoundingClientRect();
+        return innerWidth <= 768 && (r.width < 44 || r.height < 44);
+      }).map(n => ({ id: n.id, text: n.textContent.trim().slice(0, 60), width: n.getBoundingClientRect().width, height: n.getBoundingClientRect().height }));
+      const inlineStyles = Array.from(document.querySelectorAll('[style]')).filter(n => n.getAttribute('style')?.trim()).length;
+      // CSSOM assignments are CSP-compatible; HTML style attributes are prohibited in source.
+      const banned = /\b(?:mo(?:bile)|n(?:8n))\b/i.test(document.body.innerText);
+      return { pass: document.documentElement.scrollWidth <= innerWidth && document.documentElement.scrollHeight <= innerHeight && undersized.length === 0 && !banned, undersized, inlineStyles, banned, lang: document.documentElement.lang };
+    });
+
     // Sign in starting at 390x844 so initial Canvas load tests narrow smart-fit (>=0.55)
     console.log('Navigating to preview at 390x844...');
     await page.goto(previewUrl);
@@ -408,24 +423,9 @@ async function run() {
     const shot03 = await captureShot('03-canvas-notes-wires-1280-dark-en.png');
 
     // Measure Canvas controls containment, <html lang>, and 0px overhang (6 controls before Arrange + 7 controls with Undo visible)
-    const baseMatrix = [
-      { width: 1280, height: 900, theme: 'light', lang: 'en', expectUndo: false },
-      { width: 1280, height: 900, theme: 'dark', lang: 'en', expectUndo: false },
-      { width: 1280, height: 900, theme: 'light', lang: 'fr', expectUndo: false },
-      { width: 768, height: 900, theme: 'light', lang: 'en', expectUndo: false },
-      { width: 768, height: 900, theme: 'dark', lang: 'fr', expectUndo: false },
-      { width: 390, height: 844, theme: 'dark', lang: 'en', expectUndo: false },
-      { width: 390, height: 844, theme: 'light', lang: 'fr', expectUndo: false },
-      { width: 360, height: 800, theme: 'light', lang: 'en', expectUndo: false },
-      { width: 360, height: 800, theme: 'dark', lang: 'fr', expectUndo: false },
-    ];
-
-    const undoMatrix = [
-      { width: 360, height: 800, theme: 'light', lang: 'fr', expectUndo: true },
-      { width: 360, height: 800, theme: 'dark', lang: 'fr', expectUndo: true },
-      { width: 390, height: 844, theme: 'dark', lang: 'fr', expectUndo: true },
-      { width: 1280, height: 900, theme: 'light', lang: 'fr', expectUndo: true },
-    ];
+    const viewports = [{ width: 360, height: 800 }, { width: 390, height: 844 }, { width: 768, height: 900 }, { width: 1280, height: 900 }];
+    const baseMatrix = viewports.flatMap(size => ['light', 'dark'].flatMap(theme => ['en', 'fr'].map(lang => ({ ...size, theme, lang, expectUndo: false }))));
+    const undoMatrix = baseMatrix.map(item => ({ ...item, expectUndo: true }));
 
     const canvasMeasurements = [];
     let canvasMeasurementsPass = true;
@@ -463,6 +463,8 @@ async function run() {
         });
 
         return {
+          canvasViewNotShown: viewport.hidden || !viewport.getClientRects().length || getComputedStyle(viewport).display === 'none',
+          viewportScrollTop: viewport.scrollTop,
           htmlLang: document.documentElement.lang,
           windowWidth: window.innerWidth,
           windowHeight: window.innerHeight,
@@ -490,9 +492,12 @@ async function run() {
       });
 
       const vp = metrics.vpRect;
-      const nonVacuousButtons = mCase.expectUndo
+      const nonVacuousButtons = !metrics.canvasViewNotShown && vp.width > 0 && vp.height > 0 && (mCase.expectUndo
         ? metrics.buttons.length === 7 && metrics.buttons.some((b) => b.id === 'canvas-arrange-undo' && b.width > 0 && b.height > 0)
-        : metrics.buttons.length >= 6 && metrics.buttons.every((b) => b.width > 0 && b.height > 0);
+        : metrics.buttons.length >= 6 && metrics.buttons.every((b) => b.width > 0 && b.height > 0));
+      const bottomGap = vp.bottom - metrics.hudRect.bottom;
+      const hudBottomDocked = bottomGap >= 4 && bottomGap <= 36;
+      const touchTargetsPass = mCase.width > 768 || metrics.buttons.every(b => b.width >= 44 && b.height >= 44);
       const compactHudHeight = metrics.hudRect.height > 0 && metrics.hudRect.height < 56;
       const langMatches = metrics.htmlLang === mCase.lang;
       const zeroViewportBottomOverhang = vp.bottom <= metrics.windowHeight + 0.5;
@@ -520,6 +525,8 @@ async function run() {
 
       const casePass =
         nonVacuousButtons &&
+        hudBottomDocked &&
+        touchTargetsPass &&
         compactHudHeight &&
         langMatches &&
         zeroViewportBottomOverhang &&
@@ -532,6 +539,7 @@ async function run() {
         canvasMeasurementsPass = false;
         console.warn(`Containment/invariant violation at ${mCase.width}x${mCase.height} ${mCase.theme} ${mCase.lang} (undo=${mCase.expectUndo}):`, JSON.stringify({
           nonVacuousButtons,
+          bottomGap, hudBottomDocked, touchTargetsPass,
           buttonCount: metrics.buttons.length,
           compactHudHeight,
           hudHeight: metrics.hudRect.height,
@@ -553,6 +561,7 @@ async function run() {
         testCase: mCase,
         hudMetrics: metrics,
         nonVacuousButtons,
+        bottomGap, hudBottomDocked, touchTargetsPass,
         compactHudHeight,
         langMatches,
         zeroViewportBottomOverhang,
@@ -565,6 +574,7 @@ async function run() {
 
     for (const mCase of baseMatrix) {
       await measureCase(mCase);
+      await captureShot(`matrix-canvas-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
     }
 
     // Trigger Arrange so Undo button becomes visible (7 buttons total)
@@ -583,6 +593,7 @@ async function run() {
 
     for (const mCase of undoMatrix) {
       await measureCase(mCase);
+      await captureShot(`matrix-undo-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
       if (mCase.width === 360 && mCase.theme === 'light' && mCase.lang === 'fr') {
         await captureShot('05-canvas-undo-360-light-fr.png');
       }
@@ -731,6 +742,12 @@ async function run() {
     await waitFor('!document.getElementById("operations-grid")?.hidden', 'operations grid');
     const operationsStatCards = await page.evaluate(() => document.querySelectorAll('#operations-grid .stat-card').length);
     const operationsVisible = await page.evaluate(() => !document.getElementById('operations-grid')?.hidden);
+    const operationsStageParity = await page.evaluate(() => {
+      const rows = Array.from(document.querySelectorAll('#operations-project-rows tr')).map((r) => Array.from(r.querySelectorAll('td')).map((c) => c.textContent.trim()));
+      const byProject = Object.fromEntries(rows.map((cells) => [cells[0], cells.slice(1).map(Number)]));
+      return JSON.stringify(byProject['acme/vanilla-sdk']) === JSON.stringify([0, 0, 3, 0, 0, 0, 0, 0]) &&
+        JSON.stringify(byProject['chamberos/platform']) === JSON.stringify([1, 0, 2, 0, 1, 1, 1, 1]);
+    });
     const shot13 = await captureShot('13-operations-1280-light-fr.png');
 
     // Archive (1280x900 Dark EN)
@@ -753,6 +770,55 @@ async function run() {
     const shot14 = await captureShot('14-client-view-1280-dark-en.png');
     await setClientMode(false);
 
+    // Independent visual/DOM regression matrix: list, drawer, switcher and client.
+    const surfaceMeasurements = [];
+    for (const mCase of baseMatrix) {
+      await setClientMode(false);
+      await setViewport(mCase.width, mCase.height);
+      await setTheme(mCase.theme);
+      await setLang(mCase.lang);
+      await switchView('list');
+      await sleep(200);
+      const list = await page.evaluate(() => {
+        const r = document.querySelector('.simple-row');
+        if (!r) return { pass: false, reason: 'missing row' };
+        const title = r.querySelector('.simple-row-title').getBoundingClientRect();
+        const main = r.querySelector('.simple-row-main').getBoundingClientRect();
+        const meta = r.querySelector('.simple-row-meta').getBoundingClientRect();
+        const box = r.getBoundingClientRect();
+        return { pass: box.width > 0 && title.width > 0 && (window.innerWidth > 640 || (meta.top >= main.bottom - 1 && title.width >= box.width - 96)), titleWidth: title.width, rowWidth: box.width, metaTop: meta.top, mainBottom: main.bottom };
+      });
+      const listSurface = await inspectSurface();
+      await captureShot(`matrix-list-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
+      await page.evaluate(() => document.querySelector('.simple-row')?.click());
+      await waitFor('!document.getElementById("detail-view")?.hidden', 'matrix drawer');
+      await sleep(150);
+      const drawer = await page.evaluate(() => {
+        const h = document.getElementById('detail-title').getBoundingClientRect();
+        const head = document.querySelector('.detail-head').getBoundingClientRect();
+        return { pass: (window.innerWidth > 640 || h.width >= head.width - 1) && document.querySelectorAll('#detail-view a.github-link').length === 1 && !document.getElementById('detail-github'), titleWidth: h.width, headWidth: head.width };
+      });
+      const drawerSurface = await inspectSurface();
+      await captureShot(`matrix-drawer-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
+      await page.click('#back-btn');
+      await page.evaluate(() => document.getElementById('repo-select-btn').click());
+      await sleep(100);
+      const picker = await page.evaluate(() => {
+        const names = Array.from(document.querySelectorAll('.repo-option-name'));
+        return { pass: names.every(n => n.scrollWidth <= n.clientWidth + 1), options: names.length };
+      });
+      const pickerSurface = await inspectSurface();
+      await captureShot(`matrix-picker-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
+      await page.keyboard.press('Escape');
+      await switchView('client');
+      await setClientMode(true);
+      const client = await page.evaluate(() => ({ pass: getComputedStyle(document.getElementById('client-presentation-banner')).display === 'none' && getComputedStyle(document.querySelector('.client-disclaimer-banner')).display !== 'none' }));
+      await captureShot(`matrix-client-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
+      const common = await inspectSurface();
+      surfaceMeasurements.push({ testCase: mCase, list, drawer, picker, client, listSurface, drawerSurface, pickerSurface, common, pass: list.pass && drawer.pass && picker.pass && client.pass && listSurface.pass && drawerSurface.pass && pickerSurface.pass && common.pass && common.lang === mCase.lang });
+    }
+    fs.writeFileSync(path.join(DELIVERY_DIR, 'surface-measurements.json'), JSON.stringify(surfaceMeasurements, null, 2) + '\n');
+
     const pageCsp = await page.evaluate(() => window.__cspViolations || []).catch(() => []);
     for (const c of pageCsp) {
       if (!cspViolations.includes(c)) cspViolations.push(c);
@@ -762,6 +828,7 @@ async function run() {
     browser = null;
 
     const smokeData = [
+      { name: 'Hostile list/drawer/picker/client geometry and narrow touch targets, complete 16-case matrix', verdict: surfaceMeasurements.every(m => m.pass) ? 'PASS' : 'FAIL', cases: surfaceMeasurements.length, failures: surfaceMeasurements.filter(m => !m.pass) },
       {
         name: 'health',
         verdict: (healthRes.status === 200 && healthPayload?.status === 'ok') ? 'PASS' : 'FAIL',
@@ -817,7 +884,8 @@ async function run() {
       },
       {
         name: 'Operations, Archive, and Client Presentation Mode',
-        verdict: (operationsVisible && operationsStatCards >= 4 && archiveVisible && archiveCards >= 1 && clientCards >= 1 && clientIncludesVanilla) ? 'PASS' : 'FAIL',
+        verdict: (operationsVisible && operationsStatCards >= 4 && operationsStageParity && archiveVisible && archiveCards >= 1 && clientCards >= 1 && clientIncludesVanilla) ? 'PASS' : 'FAIL',
+        operationsStageParity,
         operationsStatCards,
         archiveCards,
         clientCards,

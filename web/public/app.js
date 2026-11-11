@@ -308,7 +308,7 @@
     var headers = {};
     if (options.body !== undefined) headers['content-type'] = 'application/json';
     if (cached && !/[?&]refresh=1/.test(path)) headers['If-None-Match'] = cached.etag;
-    var isMutation = method !== 'GET' && !path.startsWith('/api/session');
+    var isMutation = method !== 'GET' && !path.startsWith('/api/session'); if (isMutation) getResponses.clear();
     if (isMutation && !state.csrf && state.sessionPromise) {
       try {
         var sessionResult = await state.sessionPromise;
@@ -1031,7 +1031,7 @@
       if (langLabel) {
         langLabel.textContent = l === 'en' ? 'FR' : 'EN';
       }
-      applyClientPresentationMode(); if (state.detail && $('detail-view') && !$('detail-view').hidden) renderDetail(false);
+      localizeChrome(l); applyClientPresentationMode(); if (state.detail && $('detail-view') && !$('detail-view').hidden) renderDetail(false);
       if (state.board) {
         renderBoard();
       }
@@ -1251,7 +1251,7 @@
     $('signout-btn').hidden = true;
     renderBoard();
     showView('board');
-    setNotice('Offline mode \u2014 showing local drafts only. Reconnect and refresh to sign in and sync with GitHub.', true);
+    setNotice(getLanguage() === 'fr' ? 'Mode hors ligne \u2014 brouillons locaux uniquement. Reconnectez-vous et actualisez pour vous connecter et synchroniser avec GitHub.' : 'Offline mode \u2014 showing local drafts only. Reconnect and refresh to sign in and sync with GitHub.', true);
   }
 
   async function syncOfflineDrafts() {
@@ -1333,7 +1333,7 @@
         (hadUncertain ? ' Some drafts have an uncertain outcome; review before retrying.' : ''), hadUncertain);
       if (state.board) await loadBoard();
     } else if (hadUncertain) {
-      setNotice('Offline draft sync outcome unknown \u2014 refresh and check the board before retrying.', true);
+      setNotice(getLanguage() === 'fr' ? 'Résultat de synchronisation hors ligne inconnu \u2014 actualisez et vérifiez le tableau avant de réessayer.' : 'Offline draft sync outcome unknown \u2014 refresh and check the board before retrying.', true);
       if (state.board) renderBoard();
     }
   }
@@ -1574,7 +1574,7 @@
         });
       }
       if (!publishMutation(response, issue, generation, 'status')) return;
-      setNotice('Task ' + (isDone ? 'reopened' : 'marked done'), false);
+      setNotice(getLanguage() === 'fr' ? (isDone ? 'Tâche rouverte' : 'Tâche terminée') : 'Task ' + (isDone ? 'reopened' : 'marked done'), false);
     } catch (err) {
       invalidateDetailForWrite(issue);
       invalidateBoardForWrite(issue);
@@ -1583,7 +1583,7 @@
       if (err.status === 409) {
         handleConflict(err, issue, generation);
       }
-      setNotice(err.message || 'Failed to update task state', true);
+      setNotice(err.message || (getLanguage() === 'fr' ? 'Échec de mise à jour du statut' : 'Failed to update task state'), true);
     } finally {
       state.busy = false;
       if (btn) btn.disabled = false;
@@ -1735,13 +1735,13 @@
   }
   function quickCapture() { return state.viewState.view === 'simple' && state.viewState.filters.includes('stage:draft'); }
   function filterLabel(token) {
-    return KIND_LABELS[token] || (token.startsWith('stage:') ? statusText(token.slice(6)) : shortName(token.slice(8)));
+    return (KIND_LABELS[token] && localizedChoice('filter', token)) || (token.startsWith('stage:') ? statusText(token.slice(6)) : shortName(token.slice(8)));
   }
   function renderControls() {
     var l = getLanguage();
     var dict = I18N[l] || I18N.en;
     if ($('board-toolbar')) $('board-toolbar').hidden = false;
-    if ($('view-btn')) $('view-btn').textContent = 'View: ' + VIEW_LABELS[state.viewState.view];
+    if ($('view-btn')) $('view-btn').textContent = (l === 'fr' ? 'Vue : ' : 'View: ') + localizedChoice('view', state.viewState.view);
     if ($('filter-btn')) $('filter-btn').textContent = (dict.btn_filter || 'Filter') + (state.viewState.filters.length ? ' (' + state.viewState.filters.length + ')' : '');
     var sortLabel = (l === 'fr' ? dict['sort_' + state.viewState.sort] : null) || SORT_LABELS[state.viewState.sort];
     var sortSep = l === 'fr' ? ' : ' : ': ';
@@ -1750,11 +1750,11 @@
     chips.textContent = '';
     state.viewState.filters.forEach(function (token) {
       chips.appendChild(el('button', { type: 'button', class: 'filter-chip', text: filterLabel(token) + ' ×',
-        'aria-label': 'Remove filter ' + filterLabel(token), onclick: function () {
+        'aria-label': (getLanguage() === 'fr' ? 'Retirer le filtre ' : 'Remove filter ') + filterLabel(token), onclick: function () {
           state.viewState.filters = state.viewState.filters.filter(function (f) { return f !== token; }); rememberView();
         } }));
     });
-    if (state.viewState.filters.length) chips.appendChild(el('button', { type: 'button', class: 'button', text: 'Clear', onclick: function () {
+    if (state.viewState.filters.length) chips.appendChild(el('button', { type: 'button', class: 'button', text: getLanguage() === 'fr' ? 'Effacer' : 'Clear', onclick: function () {
       state.viewState.filters = []; rememberView();
     } }));
     $('capture-hint').hidden = !quickCapture();
@@ -1779,11 +1779,11 @@
     sheetOpener = opener;
     var dialog = $('board-sheet'), content = $('sheet-content');
     content.textContent = '';
-    $('sheet-title').textContent = kind === 'settings' ? 'Project names' : kind === 'filter' ? 'Filter tasks' : kind === 'sort' ? 'Sort tasks' : 'Choose view';
+    $('sheet-title').textContent = getLanguage() === 'fr' ? (kind === 'settings' ? 'Paramètres' : kind === 'filter' ? 'Filtrer les tâches' : kind === 'sort' ? 'Trier les tâches' : 'Choisir une vue') : (kind === 'settings' ? 'Settings' : kind === 'filter' ? 'Filter tasks' : kind === 'sort' ? 'Sort tasks' : 'Choose view');
     if (kind === 'view' || kind === 'sort') {
       var labels = kind === 'view' ? VIEW_LABELS : SORT_LABELS;
       Object.keys(labels).forEach(function (key) {
-        content.appendChild(el('button', { type: 'button', class: 'sheet-option', text: labels[key], 'aria-label': labels[key],
+        content.appendChild(el('button', { type: 'button', class: 'sheet-option', text: localizedChoice(kind, key), 'aria-label': localizedChoice(kind, key),
           'aria-pressed': String(state.viewState[kind] === key), onclick: function () {
             state.viewState[kind] = key; rememberView(); closeSheet();
           } }));
@@ -1791,7 +1791,7 @@
     } else if (kind === 'filter') {
       var options = Object.keys(KIND_LABELS).concat(STAGES.map(function (stage) { return 'stage:' + stage; }))
         .concat((state.repositories ? state.repositories.repositories : []).map(function (r) { return 'project:' + r.full; }));
-      ['Attention', 'Stage', 'Project'].forEach(function (title, group) {
+      (getLanguage() === 'fr' ? ['Attention', 'Statut', 'Projet'] : ['Attention', 'Stage', 'Project']).forEach(function (title, group) {
         content.appendChild(el('h3', { text: title }));
         options.filter(function (token) { return group === 0 ? Boolean(KIND_LABELS[token]) : token.startsWith(group === 1 ? 'stage:' : 'project:'); }).forEach(function (token) {
           var button = el('button', { type: 'button', class: 'sheet-option', text: filterLabel(token), 'aria-label': filterLabel(token),
@@ -1803,21 +1803,21 @@
           content.appendChild(button);
         });
       });
-      content.appendChild(el('p', { class: 'muted small', text: 'Any selected option within a group; all selected groups must match.' }));
+      content.appendChild(el('p', { class: 'muted small', text: getLanguage() === 'fr' ? 'Une option par groupe suffit ; tous les groupes sélectionnés doivent correspondre.' : 'Any selected option within a group; all selected groups must match.' }));
     } else {
-      content.appendChild(el('h3', { text: 'Theme' }));
+      content.appendChild(el('h3', { text: getLanguage() === 'fr' ? 'Thème' : 'Theme' }));
       var currentTheme = getThemeMode();
       var themeModes = [
-        { id: 'auto', label: 'Auto (device theme)' },
-        { id: 'dark', label: 'Dark' },
-        { id: 'light', label: 'Light' }
+        { id: 'auto', label: getLanguage() === 'fr' ? 'Auto (thème de l’appareil)' : 'Auto (device theme)' },
+        { id: 'dark', label: getLanguage() === 'fr' ? 'Sombre' : 'Dark' },
+        { id: 'light', label: getLanguage() === 'fr' ? 'Clair' : 'Light' }
       ];
       themeModes.forEach(function (tm) {
         content.appendChild(el('button', {
           type: 'button',
           class: 'sheet-option theme-option',
           text: tm.label,
-          'aria-label': 'Theme: ' + tm.label,
+          'aria-label': (getLanguage() === 'fr' ? 'Thème : ' : 'Theme: ') + tm.label,
           'aria-pressed': String(currentTheme === tm.id),
           onclick: function () {
             setThemeMode(tm.id);
@@ -1825,19 +1825,19 @@
           }
         }));
       });
-      content.appendChild(el('h3', { text: 'Project names' }));
-      content.appendChild(el('p', { class: 'muted', text: 'Names are shared across devices. Empty resets the automatic short name.' }));
+      content.appendChild(el('h3', { text: getLanguage() === 'fr' ? 'Noms des projets' : 'Project names' }));
+      content.appendChild(el('p', { class: 'muted', text: getLanguage() === 'fr' ? 'Les noms sont partagés entre appareils. Un champ vide rétablit le nom automatique.' : 'Names are shared across devices. Empty resets the automatic short name.' }));
       (state.repositories ? state.repositories.repositories : []).forEach(function (repo) {
-        var input = el('input', { type: 'text', maxlength: '60', 'aria-label': 'Project name for ' + repo.full });
+        var input = el('input', { type: 'text', maxlength: '60', 'aria-label': (getLanguage() === 'fr' ? 'Nom du projet ' : 'Project name for ') + repo.full });
         input.value = state.projectNames[repo.full.toLowerCase()] || '';
         var message = el('p', { class: 'muted small', role: 'status' });
         var form = el('form', { class: 'rename-project' }, [el('label', { text: repo.full }, [input]),
-          el('button', { type: 'submit', class: 'button', text: 'Save name' }), message]);
+          el('button', { type: 'submit', class: 'button', text: getLanguage() === 'fr' ? 'Enregistrer le nom' : 'Save name' }), message]);
         form.addEventListener('submit', async function (event) {
           event.preventDefault();
           try {
             var response = await api('/api/project-names', { method: 'PUT', body: { repository: repo.full, name: input.value } });
-            state.projectNames = response.projectNames; renderPicker(); renderBoard(); message.textContent = 'Saved.';
+            state.projectNames = response.projectNames; renderPicker(); renderBoard(); message.textContent = getLanguage() === 'fr' ? 'Enregistré.' : 'Saved.';
           } catch (error) { message.textContent = error.message; }
         });
         content.appendChild(form);
@@ -1884,9 +1884,9 @@
     });
   }
   async function draftMutation(issue, action, data) {
-    if (state.draftBusy) { setNotice('A draft is saving. Wait before making another change.', true); return false; }
-    if (state.uncertain.has(identity(issue))) { setNotice('Previous outcome needs review. Refresh and inspect GitHub before retrying.', true); return false; }
-    if (typeof navigator !== 'undefined' && !navigator.onLine) { setNotice('Existing GitHub drafts cannot be changed offline. Local drafts can still be edited and reordered.', true); return false; }
+    if (state.draftBusy) { setNotice(getLanguage() === 'fr' ? 'Un brouillon est en cours d’enregistrement. Patientez avant de modifier.' : 'A draft is saving. Wait before making another change.', true); return false; }
+    if (state.uncertain.has(identity(issue))) { setNotice(getLanguage() === 'fr' ? 'Le résultat précédent doit être vérifié. Actualisez et inspectez GitHub avant de réessayer.' : 'Previous outcome needs review. Refresh and inspect GitHub before retrying.', true); return false; }
+    if (typeof navigator !== 'undefined' && !navigator.onLine) { setNotice(getLanguage() === 'fr' ? 'Les brouillons GitHub existants ne peuvent pas être modifiés hors ligne. Les brouillons locaux restent modifiables.' : 'Existing GitHub drafts cannot be changed offline. Local drafts can still be edited and reordered.', true); return false; }
     state.draftBusy = true;
     invalidateBoardForWrite(issue);
     var preFingerprints = new Map();
@@ -1921,7 +1921,7 @@
       }
       replaceBoardRow(issue, response);
       if (response.targetUrl && state.csrf) await loadBoard(); else renderBoard();
-      if (response.targetUrl) setNotice('Transferred to ' + response.targetUrl + '.');
+      if (response.targetUrl) setNotice((getLanguage() === 'fr' ? 'Transféré vers ' : 'Transferred to ') + response.targetUrl + '.');
       return true;
     } catch (error) {
       invalidateBoardForWrite(issue);
@@ -2012,14 +2012,14 @@
     }
   }
   function draftRow(issue, ordered, index) {
-    var title = el('input', { type: 'text', class: 'draft-title', maxlength: '256', 'aria-label': 'Title: ' + issue.title });
+    var title = el('input', { type: 'text', class: 'draft-title', maxlength: '256', 'aria-label': (getLanguage() === 'fr' ? 'Titre : ' : 'Title: ') + issue.title });
     var editKey = issue.offline ? issue.id : identity(issue);
     var buffered = state.draftEdits.get(editKey);
     title.value = buffered ? buffered.title : issue.title;
-    var description = el('textarea', { class: 'draft-description', rows: '1', 'aria-label': 'Description: ' + issue.title, placeholder: 'Add inspiration or a description…' });
+    var description = el('textarea', { class: 'draft-description', rows: '1', 'aria-label': 'Description: ' + issue.title, placeholder: getLanguage() === 'fr' ? 'Ajouter une inspiration ou une description…' : 'Add inspiration or a description…' });
     description.value = buffered ? buffered.description : issue.description || '';
     autoSizeTextarea(description);
-    var save = el('button', { type: 'submit', class: 'button draft-save', text: 'Save', hidden: true });
+    var save = el('button', { type: 'submit', class: 'button draft-save', text: getLanguage() === 'fr' ? 'Enregistrer' : 'Save', hidden: true });
     var form = el('form', { class: 'draft-fields' }, [title, description, save]);
     if (buffered) save.hidden = false;
     [title, description].forEach(function (input) { input.addEventListener('input', function () {
@@ -2040,23 +2040,23 @@
       }
     });
     var handle = el('button', { type: 'button', class: 'button drag-handle', text: '⠿',
-      'aria-label': 'Drag to reorder ' + issue.title, title: 'Drag to reorder; or use Move up / Move down' });
+      'aria-label': (getLanguage() === 'fr' ? 'Glisser pour réordonner ' : 'Drag to reorder ') + issue.title, title: getLanguage() === 'fr' ? 'Glisser pour réordonner ; ou utiliser Monter / Descendre' : 'Drag to reorder; or use Move up / Move down' });
     var row = el('li', { class: 'draft-row' + (issue.offline ? ' draft-row-offline' : ''), 'data-draft-key': issue.offline ? issue.id : issue.key }, [handle, form]);
     var meta = el('div', { class: 'draft-meta' }, [
       issue.offline ? badge(issue.uncertain ? '(offline — outcome unknown)' : '(offline)', 'badge-offline') : null,
     ]);
     if (issue.offline && issue.uncertain) {
-      meta.appendChild(el('button', { type: 'button', class: 'button', text: 'Retry sync', onclick: function () {
+      meta.appendChild(el('button', { type: 'button', class: 'button', text: getLanguage() === 'fr' ? 'Réessayer la synchronisation' : 'Retry sync', onclick: function () {
         saveOfflineDrafts(getOfflineDrafts().map(function (d) { return d.id === issue.id ? Object.assign({}, d, { state: 'queued', uncertain: false }) : d; }));
         syncOfflineDrafts();
       } }));
-      meta.appendChild(el('button', { type: 'button', class: 'button', text: 'Dismiss', onclick: function () {
+      meta.appendChild(el('button', { type: 'button', class: 'button', text: getLanguage() === 'fr' ? 'Ignorer' : 'Dismiss', onclick: function () {
         saveOfflineDrafts(getOfflineDrafts().filter(function (d) { return d.id !== issue.id; }));
         renderBoard();
       } }));
     }
     if (state.selected === 'all') {
-      var project = el('select', { class: 'draft-project', title: issue.repository.full, 'aria-label': 'Project for ' + issue.title });
+      var project = el('select', { class: 'draft-project', title: issue.repository.full, 'aria-label': (getLanguage() === 'fr' ? 'Projet de ' : 'Project for ') + issue.title });
       var projects = availableProjects();
       if (!projects.some(function (r) { return r.full === issue.repository.full; })) projects = [{ full: issue.repository.full }].concat(projects);
       projects.forEach(function (repo) { project.appendChild(el('option', { value: repo.full, text: shortName(repo.full), title: repo.full })); });
@@ -2069,11 +2069,11 @@
       });
       meta.appendChild(project);
     } else if (issue.repository) meta.appendChild(projectBadge(issue.repository));
-    if (!issue.offline) meta.appendChild(el('button', { type: 'button', class: 'button draft-open-btn', 'data-issue-key': identity(issue), text: '#' + issue.number, 'aria-label': 'Open task ' + issue.number, onclick: function () { openIssueView(issue, true); } }));
+    if (!issue.offline) meta.appendChild(el('button', { type: 'button', class: 'button draft-open-btn', 'data-issue-key': identity(issue), text: '#' + issue.number, 'aria-label': (getLanguage() === 'fr' ? 'Ouvrir la tâche ' : 'Open task ') + issue.number, onclick: function () { openIssueView(issue, true); } }));
     var controls = el('div', { class: 'draft-moves' });
     [-1, 1].forEach(function (direction) {
       var button = el('button', { type: 'button', class: 'button', text: direction < 0 ? '↑' : '↓',
-        'aria-label': (direction < 0 ? 'Move up: ' : 'Move down: ') + issue.title, onclick: function () { reorderDraft(issue, index, index + direction, ordered); } });
+        'aria-label': (getLanguage() === 'fr' ? (direction < 0 ? 'Monter : ' : 'Descendre : ') : (direction < 0 ? 'Move up: ' : 'Move down: ')) + issue.title, onclick: function () { reorderDraft(issue, index, index + direction, ordered); } });
       button.disabled = state.viewState.sort !== 'manual' || (direction < 0 ? index === 0 : index === ordered.length - 1);
       controls.appendChild(button);
     });
@@ -2180,7 +2180,7 @@
       'data-issue-key': identity(issue),
       'aria-label': friendly.title + ', ' + statusText('status:' + stage) + ', #' + (issue.offline ? 'offline' : issue.number),
       onclick: function () {
-        if (issue.offline) { setNotice('Saved offline. Use Simple list + Draft filter to edit.'); return; }
+        if (issue.offline) { setNotice(getLanguage() === 'fr' ? 'Enregistré hors ligne. Utilisez Liste simple + filtre Brouillon pour modifier.' : 'Saved offline. Use Simple list + Draft filter to edit.'); return; }
         openIssueView(issue, false);
       }
     }, [dot, content, meta]);
@@ -2203,9 +2203,9 @@
       blockedBadge,
       countOf(issue, 'openQuestions') ? badge(countOf(issue, 'openQuestions') + ' questions', 'attention') : null,
       countOf(issue, 'humanTasks') ? badge(countOf(issue, 'humanTasks') + ' human tasks', 'attention') : null]));
-    children.push(el('p', { class: 'muted small', text: 'Updated ' + relative(issue.updatedAt) }));
+    children.push(el('p', { class: 'muted small', text: (getLanguage() === 'fr' ? 'Mis à jour ' : 'Updated ') + relative(issue.updatedAt) }));
     return el('button', { type: 'button', class: 'task-row', 'data-issue-key': identity(issue), onclick: function () {
-      if (issue.offline) { setNotice('Saved offline. Use Simple list + Draft filter to edit.'); return; } openIssueView(issue, false);
+      if (issue.offline) { setNotice(getLanguage() === 'fr' ? 'Enregistré hors ligne. Utilisez Liste simple + filtre Brouillon pour modifier.' : 'Saved offline. Use Simple list + Draft filter to edit.'); return; } openIssueView(issue, false);
     } }, children);
   }
   /* ==========================================================================
@@ -2652,7 +2652,7 @@
         return;
       }
       if (issue.offline) {
-        setNotice('Saved offline. Use Simple list + Draft filter to edit.');
+        setNotice(getLanguage() === 'fr' ? 'Enregistré hors ligne. Utilisez Liste simple + filtre Brouillon pour modifier.' : 'Saved offline. Use Simple list + Draft filter to edit.');
         return;
       }
       openIssueView(issue, false);
@@ -2663,7 +2663,7 @@
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (issue.offline) {
-          setNotice('Saved offline. Use Simple list + Draft filter to edit.');
+          setNotice(getLanguage() === 'fr' ? 'Enregistré hors ligne. Utilisez Liste simple + filtre Brouillon pour modifier.' : 'Saved offline. Use Simple list + Draft filter to edit.');
           return;
         }
         openIssueView(issue, false);
@@ -3060,7 +3060,7 @@
       'data-note-id': note.id,
       'data-issue-key': identity(issue),
       role: 'region',
-      'aria-label': 'Note on #' + issue.number,
+      'aria-label': (getLanguage() === 'fr' ? 'Note de la tâche #' : 'Note on #') + issue.number,
     });
     noteEl.style.left = (note.x || 0) + 'px';
     noteEl.style.top = (note.y || 0) + 'px';
@@ -3076,7 +3076,7 @@
         type: 'button',
         class: 'canvas-note-swatch swatch-' + c,
         title: c,
-        'aria-label': c + ' note color',
+        'aria-label': getLanguage() === 'fr' ? 'Couleur de note : ' + ({ yellow: 'jaune', blue: 'bleu', green: 'vert', pink: 'rose', slate: 'ardoise' }[c] || c) : c + ' note color',
       });
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
@@ -3175,7 +3175,7 @@
       var textarea = el('textarea', {
         class: 'canvas-note-textarea',
         maxlength: '4000',
-        placeholder: 'Note in Markdown…',
+        placeholder: getLanguage() === 'fr' ? 'Note en Markdown…' : 'Note in Markdown…',
       });
       textarea.value = currentDraft;
 
@@ -3653,7 +3653,7 @@
       var summaryEl = $('arrange-summary');
       if (summaryEl) {
         summaryEl.hidden = false;
-        summaryEl.textContent = 'All cards already placed. Choose "All cards" to re-arrange.';
+        summaryEl.textContent = getLanguage() === 'fr' ? 'Toutes les cartes sont positionnées. Choisissez « Toutes les cartes » pour réorganiser.' : 'All cards already placed. Choose "All cards" to re-arrange.';
       }
       return;
     }
@@ -3785,7 +3785,7 @@
 
     for (var i = 0; i < issuesToArrange.length; i++) {
       var cur = issuesToArrange[i];
-      if (progressText) progressText.textContent = 'Saving ' + (i + 1) + ' of ' + total + '...';
+      if (progressText) progressText.textContent = (getLanguage() === 'fr' ? 'Enregistrement ' : 'Saving ') + (i + 1) + ' / ' + total + '…';
       if (progressBar) progressBar.style.width = Math.round(((i + 1) / total) * 100) + '%';
       try {
         await saveIssueCanvas(cur, {
@@ -3824,9 +3824,9 @@
     if (arrangeSummaryEl) {
       arrangeSummaryEl.hidden = false;
       if (failedCount === 0) {
-        arrangeSummaryEl.textContent = savedCount + ' cards arranged.';
+        arrangeSummaryEl.textContent = savedCount + (getLanguage() === 'fr' ? ' cartes organisées.' : ' cards arranged.');
       } else {
-        arrangeSummaryEl.textContent = savedCount + ' cards arranged, ' + failedCount + ' failed.';
+        arrangeSummaryEl.textContent = savedCount + (getLanguage() === 'fr' ? ' cartes organisées, ' : ' cards arranged, ') + failedCount + (getLanguage() === 'fr' ? ' échecs.' : ' failed.');
       }
     }
 
@@ -4930,17 +4930,17 @@
     var empty = $('empty-state'); empty.hidden = issues.length !== 0;
     if ($('empty-create')) $('empty-create').disabled = !availableProjects().length;
     var emptyText = empty.querySelector && empty.querySelector('p');
-    if (emptyText) emptyText.textContent = board.partial ? 'No tasks loaded. Refresh incomplete, not an empty project.' : pending ? 'Nothing is waiting on you.' :
+    if (emptyText) emptyText.textContent = board.partial ? (l === 'fr' ? 'Aucune tâche chargée. Actualisation incomplète, projet non vide.' : 'No tasks loaded. Refresh incomplete, not an empty project.') : pending ? (l === 'fr' ? 'Rien n’attend votre action.' : 'Nothing is waiting on you.') :
       state.viewState.filters.length ? (l === 'fr' ? 'Aucune tâche ne correspond aux filtres.' : 'No tasks match these filters.') : (l === 'fr' ? 'Aucune tâche dans ' : 'No tasks yet in ') + name + '.';
-    var hint = $('view-hint'); hint.textContent = state.viewState.view === 'graph' ? 'Dependency list-tree — “Depends on”, “Blocked by” and “Requires” issue links. Cycles and missing issues stay visible.' :
-      quickCapture() && state.viewState.sort !== 'manual' ? 'Choose Sort: Manual order to rearrange drafts.' : '';
+    var hint = $('view-hint'); hint.textContent = state.viewState.view === 'graph' ? (l === 'fr' ? 'Arbre de dépendances — liens « Dépend de », « Bloqué par » et « Requiert ». Les cycles et tickets manquants restent visibles.' : 'Dependency list-tree — “Depends on”, “Blocked by” and “Requires” issue links. Cycles and missing issues stay visible.') :
+      quickCapture() && state.viewState.sort !== 'manual' ? (l === 'fr' ? 'Choisissez Trier : Ordre manuel pour réorganiser les brouillons.' : 'Choose Sort: Manual order to rearrange drafts.') : '';
     if (state.viewState.view === 'kanban') {
       STAGES.forEach(function (stage) {
         var group = issues.filter(function (issue) { return stageOf(issue) === stage; });
         var column = el('ul', { class: 'kanban-tasks', 'aria-label': statusText(stage) });
         group.forEach(function (issue) { column.appendChild(el('li', {}, [taskCard(issue, false)])); });
         list.appendChild(el('li', { class: 'kanban-column' }, [el('h2', { text: statusText(stage) + ' — ' + group.length }), column,
-          !group.length ? el('p', { class: 'muted small', text: 'No tasks' }) : null]));
+          !group.length ? el('p', { class: 'muted small', text: getLanguage() === 'fr' ? 'Aucune tâche' : 'No tasks' }) : null]));
       });
     } else if (state.viewState.view === 'graph') {
       var seen = new Set();
@@ -4949,7 +4949,7 @@
         seen.add(key); var nextPath = new Set(path); nextPath.add(key);
         var item = el('li', { class: 'graph-item' }, [taskCard(issue, true)]);
         var references = (issue.dependencies || []).map(function (number) { return '#' + number; });
-        if (references.length) item.appendChild(el('p', { class: 'muted small', text: 'Depends on ' + references.join(', ') }));
+        if (references.length) item.appendChild(el('p', { class: 'muted small', text: (getLanguage() === 'fr' ? 'Dépend de ' : 'Depends on ') + references.join(', ') }));
         list.appendChild(item);
         if (depth > 12) return;
         var children = issues.filter(function (candidate) { return candidate.repository && issue.repository && candidate.repository.full === issue.repository.full && (candidate.dependencies || []).includes(issue.number); });
@@ -4997,7 +4997,7 @@
     var select = $('repo-select');
     if (select) {
       select.textContent = '';
-      select.appendChild(el('option', { value: 'all', text: 'All Projects' }));
+      select.appendChild(el('option', { value: 'all', text: getLanguage() === 'fr' ? 'Tous les projets' : 'All Projects' }));
       view.repositories.forEach(function (repository) {
         select.appendChild(el('option', { value: repository.full, title: repository.full, text: shortName(repository.full) +
           (repository.archived ? ' — archived' : '') + (!repository.available ? ' — unavailable' : '') +
@@ -5029,8 +5029,8 @@
 
     $('repository-picker').hidden = false;
     $('discovery-status').textContent = view.discoveryFailed
-      ? 'Discovery failed — last known picker retained; refresh later. Repository operations are paused.'
-      : (!view.visibleCount ? 'No repositories visible to this token.' : 'Only repositories visible to the bot token are listed.');
+      ? (getLanguage() === 'fr' ? 'Échec de découverte — dernière liste conservée ; actualisez plus tard. Les opérations de dépôt sont suspendues.' : 'Discovery failed — last known picker retained; refresh later. Repository operations are paused.')
+      : (!view.visibleCount ? (getLanguage() === 'fr' ? 'Aucun dépôt visible pour ce jeton.' : 'No repositories visible to this token.') : (getLanguage() === 'fr' ? 'Seuls les dépôts visibles par le jeton sont listés.' : 'Only repositories visible to the bot token are listed.'));
     $('refresh-policy').textContent = 'Discovery cached for ' + (view.freshnessMs / 1000) +
       's. Manual refresh only; combined requests use 3 workers, at most 10 pages per repository and at most 500 issues in total. Hidden private repositories cannot be enumerated.';
   }
@@ -5070,9 +5070,9 @@
 
     filtered.forEach(function (repo) {
       var tags = [];
-      if (repo.archived) tags.push('archived');
-      if (!repo.available) tags.push('unavailable');
-      if (!repo.hasIssues) tags.push('issues disabled');
+      if (repo.archived) tags.push(getLanguage() === 'fr' ? 'archivé' : 'archived');
+      if (!repo.available) tags.push(getLanguage() === 'fr' ? 'indisponible' : 'unavailable');
+      if (!repo.hasIssues) tags.push(getLanguage() === 'fr' ? 'tickets désactivés' : 'issues disabled');
 
       var item = el('button', {
         class: 'repo-option' + (state.selected === repo.full ? ' selected' : '') + (repo.hasIssues === false ? ' is-disabled' : ''),
@@ -5198,7 +5198,7 @@
         var failCount = board.failures.length;
         var loadedCount = board.repositoriesLoaded || 0;
         var totalReq = board.repositoriesRequested || (loadedCount + failCount);
-        setNotice('Partial board: ' + failCount + ' of ' + totalReq + ' repositories could not be reached. Showing ' + loadedCount + ' repositories.', true);
+        setNotice(getLanguage() === 'fr' ? 'Tableau partiel : ' + failCount + ' sur ' + totalReq + ' dépôts injoignables. Affichage de ' + loadedCount + ' dépôts.' : 'Partial board: ' + failCount + ' of ' + totalReq + ' repositories could not be reached. Showing ' + loadedCount + ' repositories.', true);
       } else if (board && board.dependenciesDegraded) {
         var dict = I18N[getLanguage()] || I18N.en;
         setNotice(dict.notice_dependencies_degraded || 'Dependency wires unavailable (GitHub GraphQL error). Showing board without wires.', true);
@@ -5211,7 +5211,7 @@
       if (state.board && previousScope === (state.selected === 'all' ? 'All repositories' : state.selected)) {
         state.stale = true;
         renderFreshness();
-        setNotice('Could not refresh (' + (error.message || 'network error') + '). Showing the last board loaded in this browser.', true);
+        setNotice(getLanguage() === 'fr' ? 'Actualisation impossible (' + (error.message || 'erreur réseau') + '). Affichage du dernier tableau chargé.' : 'Could not refresh (' + (error.message || 'network error') + '). Showing the last board loaded in this browser.', true);
       } else {
         state.board = null;
         $('task-list').textContent = '';
@@ -5241,6 +5241,64 @@
       (issue.subtasks && issue.subtasks.length));
   }
 
+  function localizedChoice(kind, key) {
+    if (getLanguage() === 'fr') {
+      var choices = {
+        view: { simple: 'Liste simple', cards: 'Cartes', kanban: 'Tableau kanban', graph: 'Graphe', pending: 'Éléments en attente' },
+        sort: { priority: 'Priorité', updated: 'Modifications récentes', created: 'Créations récentes', manual: 'Ordre manuel' },
+        filter: { 'needs-me': 'Mon attention', human: 'Actions humaines', questions: 'Questions' }
+      };
+      if (choices[kind] && choices[kind][key]) return choices[kind][key];
+    }
+    return (kind === 'view' ? VIEW_LABELS : kind === 'sort' ? SORT_LABELS : KIND_LABELS)[key];
+  }
+
+  function localizeChrome(lang) {
+    var fr = lang === 'fr';
+    var dict = I18N[lang] || I18N.en;
+    var labels = {
+      'sidebar-toggle-btn-compact': fr ? 'Ouvrir la navigation' : 'Toggle navigation',
+      'sidebar-toggle-btn': fr ? 'Réduire la navigation' : 'Collapse sidebar',
+      'refresh-btn': fr ? 'Actualiser' : 'Refresh',
+      'settings-btn': fr ? 'Paramètres' : 'Settings',
+      'lang-switch-btn': fr ? 'Changer de langue' : 'Switch language',
+      'signout-btn': fr ? 'Se déconnecter' : 'Sign out',
+      'repo-popover': fr ? 'Choisir un projet' : 'Select project',
+      'canvas-viewport': fr ? 'Canevas des tâches' : 'Task Canvas',
+      'canvas-controls': fr ? 'Commandes du canevas' : 'Canvas controls',
+      'canvas-notes': fr ? 'Notes du canevas' : 'Canvas notes',
+      'canvas-cards': fr ? 'Cartes des tâches' : 'Task cards',
+      'canvas-arrange-dialog': dict.arrange_dialog_title,
+      'back-btn': fr ? 'Fermer' : 'Close',
+      'composer-close': fr ? 'Fermer' : 'Close',
+      'quick-add-project': fr ? 'Projet de la nouvelle tâche' : 'Project for new task',
+      'task-list': fr ? 'Tâches' : 'Tasks',
+      'filter-chips': fr ? 'Filtres actifs' : 'Active filters',
+      'canvas-wire-confirm': fr ? 'Confirmer le retrait de la dépendance' : 'Confirm dependency removal',
+      'add-blocker-suggestions': fr ? 'Suggestions de blocage' : 'Blocker suggestions'
+    };
+    Object.keys(labels).forEach(function (id) {
+      var node = $(id);
+      if (node) { node.setAttribute('aria-label', labels[id]); if (node.title) node.title = labels[id]; }
+    });
+    ['canvas', 'list', 'decisions', 'blocked', 'operations', 'archive', 'client'].forEach(function (name) {
+      var node = $('nav-' + name);
+      var key = name === 'canvas' ? 'nav_canvas' : name === 'list' ? 'nav_list' : name + '_title';
+      if (node && dict[key]) node.title = dict[key];
+    });
+    var search = $('repo-search-input');
+    if (search) { search.placeholder = fr ? 'Rechercher des projets…' : 'Search projects…'; search.setAttribute('aria-label', search.placeholder); }
+    if (document.querySelectorAll) {
+      [['#login-title, #login-btn', fr ? 'Se connecter' : 'Sign in'], ['#login-view > p', fr ? 'Ce tableau est privé. Saisissez le mot de passe pour continuer.' : 'This board is private. Enter the board password to continue.'], ['label[for="password"]', fr ? 'Mot de passe' : 'Password'], ['label[for="username"]', fr ? 'Identifiant' : 'Username'], ['.skip-link', fr ? 'Aller au contenu' : 'Skip to content']].forEach(function (entry) {
+        document.querySelectorAll(entry[0]).forEach(function (node) { node.textContent = entry[1]; });
+      });
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(function (node) { var key = node.getAttribute('data-i18n-placeholder'); if (dict[key]) node.placeholder = dict[key]; });
+      document.querySelectorAll('[aria-label="Primary navigation"], [aria-label="Navigation principale"]').forEach(function (node) { node.setAttribute('aria-label', fr ? 'Navigation principale' : 'Primary navigation'); });
+    }
+    var addNote = $('drawer-add-note-btn');
+    if (addNote) addNote.title = dict.drawer_add_note;
+  }
+
   function detailBadges(issue) {
     var container = $('detail-meta');
     container.textContent = '';
@@ -5267,7 +5325,7 @@
           target: '_blank',
           rel: 'noopener noreferrer',
           text: '#' + issue.number + (getLanguage() === 'fr' ? ' sur GitHub' : ' on GitHub'),
-          'aria-label': 'Open issue #' + issue.number + ' on GitHub',
+          'aria-label': (getLanguage() === 'fr' ? 'Ouvrir le ticket #' : 'Open issue #') + issue.number + (getLanguage() === 'fr' ? ' sur GitHub' : ' on GitHub'),
         }));
       } else {
         container.appendChild(badge('#' + issue.number));
@@ -5294,11 +5352,11 @@
         ];
         if (answerMatch) {
           questionSpans.push(el('span', { text: answerMatch[1] }));
-          questionSpans.push(el('span', { class: 'answer-text', text: '— Answer: ' + answerMatch[2] }));
+          questionSpans.push(el('span', { class: 'answer-text', text: (getLanguage() === 'fr' ? '— Réponse : ' : '— Answer: ') + answerMatch[2] }));
         } else {
           questionSpans.push(el('span', { text: text }));
         }
-        questionSpans.push(el('span', { class: 'muted small', text: '(answered)' }));
+        questionSpans.push(el('span', { class: 'muted small', text: getLanguage() === 'fr' ? '(répondu)' : '(answered)' }));
         list.appendChild(
           el('li', { class: 'question-answered' }, questionSpans),
         );
@@ -5308,19 +5366,19 @@
       var input = el('input', {
         type: 'text',
         id: 'answer-' + question.answerIndex,
-        placeholder: 'Answer this question',
+        placeholder: getLanguage() === 'fr' ? 'Répondre à cette question…' : 'Answer this question…',
       });
       var button = el('button', {
         class: 'button primary',
         type: 'button',
-        text: 'Answer',
+        text: getLanguage() === 'fr' ? 'Répondre' : 'Answer',
         onclick: function () {
           saveAnswer(question.answerIndex, input, issue);
         },
       });
       var options = parseQuestionOptions(question.text);
       var actionsEl = el('div', { class: 'question-actions' }, [
-        el('label', { class: 'sr-only', for: 'answer-' + question.answerIndex, text: 'Answer: ' + question.text }),
+        el('label', { class: 'sr-only', for: 'answer-' + question.answerIndex, text: (getLanguage() === 'fr' ? 'Réponse : ' : 'Answer: ') + question.text }),
         input,
         button,
       ]);
@@ -5710,7 +5768,7 @@
               }
             }));
           } else {
-            chipChildren.push(el('span', { class: 'badge badge-success', text: 'Converted' }));
+            chipChildren.push(el('span', { class: 'badge badge-success', text: getLanguage() === 'fr' ? 'Converti' : 'Converted' }));
           }
           var chip = el('div', { class: 'dependency-chip text-dep-chip' }, chipChildren);
           textContainer.appendChild(chip);
@@ -5741,7 +5799,6 @@
     detailBadges(issue);
     var repoFull = issue.repository && issue.repository.full || '';
     if ($('detail-identity')) $('detail-identity').textContent = shortName(repoFull) + ' #' + issue.number;
-    if ($('detail-github')) $('detail-github').href = issue.htmlUrl;
     var priority = $('priority-control');
     if (priority) {
       priority.href = issue.htmlUrl;
@@ -5971,7 +6028,7 @@
     var sectionId = sections.length > 0 ? sections[0].id : 'overview';
     state.busy = true;
     $('save-overview').disabled = true;
-    $('save-status').textContent = 'Saving…';
+    $('save-status').textContent = getLanguage() === 'fr' ? 'Enregistrement…' : 'Saving…';
     try {
       var response = await api(issuePath(issue) + '/section', {
         expected: issue,
@@ -5985,7 +6042,7 @@
         });
       }
       if (!publishMutation(response, issue, generation, 'section')) return;
-      $('save-status').textContent = 'Saved just now.';
+      $('save-status').textContent = getLanguage() === 'fr' ? 'Enregistré à l’instant.' : 'Saved just now.';
       announce('Overview saved.');
     } catch (error) {
       invalidateDetailForWrite(issue);
@@ -5994,9 +6051,9 @@
       if (error.status === 401 || !state.detail || !sameIdentity(state.detail, issue)) return;
       if (error.status === 409) {
         handleConflict(error, issue, generation);
-        $('save-status').textContent = 'Not saved: conflict.';
+        $('save-status').textContent = getLanguage() === 'fr' ? 'Non enregistré : conflit.' : 'Not saved: conflict.';
       } else if (error.status === 429) {
-        $('save-status').textContent = 'Too many attempts. Wait and try again.';
+        $('save-status').textContent = getLanguage() === 'fr' ? 'Trop de tentatives. Patientez puis réessayez.' : 'Too many attempts. Wait and try again.';
       } else if (error.code === 'write_outcome_unknown' || (error.message && error.message.toLowerCase().includes('outcome unknown'))) {
         var msg = error.message || 'Outcome unknown \u2014 refresh to check GitHub state';
         if (!msg.toLowerCase().includes('refresh')) {
@@ -6853,7 +6910,7 @@
           });
           renderArchiveBackburner();
           await loadBoard();
-          setNotice('Removed from backburner.');
+          setNotice(getLanguage() === 'fr' ? 'Retiré de l’attente.' : 'Removed from backburner.');
         } catch (err) {
           removeBtn.disabled = false;
           setNotice(err.message || 'Could not remove backburner label', true);
@@ -6922,7 +6979,7 @@
           });
           renderArchiveClosed();
           await loadBoard();
-          setNotice('Issue reopened.');
+          setNotice(getLanguage() === 'fr' ? 'Ticket rouvert.' : 'Issue reopened.');
         } catch (err) {
           reopenBtn.disabled = false;
           setNotice(err.message || 'Could not reopen issue', true);
@@ -7129,9 +7186,9 @@
             ((requestError.payload && requestError.payload.retryAfterSeconds) || 30) +
             ' seconds.';
         } else if (requestError.status === 401) {
-          error.textContent = 'That password is not correct.';
+          error.textContent = getLanguage() === 'fr' ? 'Ce mot de passe est incorrect.' : 'That password is not correct.';
         } else {
-          error.textContent = 'The board could not sign you in. Try again.';
+          error.textContent = getLanguage() === 'fr' ? 'Connexion impossible. Réessayez.' : 'The board could not sign you in. Try again.';
         }
         error.hidden = false;
         $('password').focus();
@@ -7145,13 +7202,13 @@
       var input = $('quick-add-input'), description = $('quick-add-description');
       var title = input.value.trim(), target = $('quick-add-project').value;
       if (!title || input.disabled) return;
-      if (!target) { setNotice('Select a writable project before adding a draft.', true); return; }
+      if (!target) { setNotice(getLanguage() === 'fr' ? 'Sélectionnez un projet accessible en écriture avant d’ajouter un brouillon.' : 'Select a writable project before adding a draft.', true); return; }
       var all = (state.board ? state.board.issues : []).concat(offlineRows());
       var max = all.reduce(function (current, issue) { return Number.isFinite(issue.order) ? Math.max(current, issue.order) : current; }, 0);
       var order = max + 1000;
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         saveToOfflineQueue(title, target, description.value, order); input.value = ''; description.value = '';
-        setNotice('Offline: draft saved locally. It will sync when connected.'); input.focus(); return;
+        setNotice(getLanguage() === 'fr' ? 'Hors ligne : brouillon enregistré localement. Il sera synchronisé à la reconnexion.' : 'Offline: draft saved locally. It will sync when connected.'); input.focus(); return;
       }
       input.disabled = true;
       try {
@@ -7201,7 +7258,7 @@
             }
             return;
           }
-          showLogin('The board could not be reached. Reload to try again.');
+          showLogin(getLanguage() === 'fr' ? 'Le tableau est injoignable. Rechargez la page pour réessayer.' : 'The board could not be reached. Reload to try again.');
           return;
         }
         showLogin();
@@ -7425,7 +7482,7 @@
       }
       try {
         if (sessionStorage.getItem('sw_reloaded')) {
-          setNotice('Updated - reload');
+          if (getLanguage() === 'fr') setNotice('Mise à jour disponible — rechargez'); else setNotice('Updated - reload');
           return;
         }
         sessionStorage.setItem('sw_reloaded', '1');
@@ -7536,13 +7593,13 @@
       if (cached || state.board) {
         state.stale = true;
         renderFreshness();
-        setNotice('Could not reach the server. Showing the last board loaded in this browser.', true);
+        setNotice(getLanguage() === 'fr' ? 'Serveur injoignable. Affichage du dernier tableau chargé dans ce navigateur.' : 'Could not reach the server. Showing the last board loaded in this browser.', true);
         showView('board');
         if ($('board-toolbar')) $('board-toolbar').hidden = false;
         return;
       }
       clearAuthHint();
-      showLogin('The board could not be reached. Reload to try again.');
+      showLogin(getLanguage() === 'fr' ? 'Le tableau est injoignable. Rechargez la page pour réessayer.' : 'The board could not be reached. Reload to try again.');
       return;
     } finally {
       state.sessionPromise = null;

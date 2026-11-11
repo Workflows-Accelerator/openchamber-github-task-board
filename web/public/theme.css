@@ -1619,7 +1619,9 @@ input[type="text"].search-input:focus,
   width: 100%;
   height: 100%;
   min-height: 480px;
-  overflow: hidden;
+  /* Canvas pans via its transform, never the browser's focus/scrollIntoView.
+     Hidden creates a programmatically scrollable box and drags the HUD with it. */
+  overflow: clip;
   user-select: none;
   touch-action: none;
   outline: none;
@@ -3353,6 +3355,7 @@ main { display: flex; flex-direction: column; min-height: 0; padding: 0; overflo
 .canvas-floating-controls .canvas-control-sep { display: none; }
 .canvas-floating-controls .canvas-control-btn { flex: 0 0 auto; min-width: 36px; height: 44px; min-height: 44px; padding: 0 6px; font-size: 12px; white-space: nowrap; }
 .canvas-floating-controls .readout-btn { min-width: 46px; }
+.canvas-control-symbol { display: none; }
 .canvas-card { background: var(--surf); border-radius: 12px; }
 .canvas-card-meta { flex-wrap: wrap; }
 .canvas-card-repo, .canvas-card-number, .canvas-card-badge { font-family: var(--font-sans); }
@@ -3376,13 +3379,18 @@ main { display: flex; flex-direction: column; min-height: 0; padding: 0; overflo
 .composer-head { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; }
 #empty-state .empty-actions { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
 .repo-popover { position: fixed; top: 72px; left: 244px; width: min(400px, calc(100vw - 24px)); max-height: calc(100dvh - 100px); z-index: 1010; }
-.repo-option { grid-template-columns: minmax(0, 1fr) auto; }
-.repo-option-full { grid-column: 1; }
+.repo-option { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; min-height: 52px; }
+.repo-option-name, .repo-option-full { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.repo-option-name { grid-column: 1; grid-row: 1; }
+.repo-option-full { grid-column: 1; grid-row: 2; }
+.repo-option > .badge { grid-column: 2; justify-self: end; }
+.repo-option > .repo-issue-count { grid-row: 1; }
 .repo-option.is-disabled { opacity: .55; }
 .repo-footer { padding: 12px; border-top: 1px solid var(--border); color: var(--fg-muted); font-size: 12px; }
 .drawer-identity { position: sticky; top: -16px; z-index: 20; display: flex; align-items: center; gap: 10px; background: var(--surf); border-bottom: 1px solid var(--border); padding: 8px 0; margin-bottom: 20px; }
 .drawer-identity .button.back { min-width: 44px; min-height: 44px; margin: 0 !important; margin-left: auto !important; }
-.drawer-identity a { color: var(--fg-muted); font-size: 12px; }
+#detail-meta .github-link { display: inline-flex; align-items: center; min-height: 44px; }
+body:has(#client-view:not([hidden])) #client-presentation-banner { display: none; }
 #detail-view #detail-title { font-size: 24px; line-height: 1.25; text-wrap: balance; }
 #detail-view .panel { background: transparent; border: 0; padding: 12px 0; }
 #detail-view .panel.drawer-controls { padding: 4px 0 12px; margin: 4px 0 12px; border-bottom: 1px solid var(--border); }
@@ -3410,9 +3418,9 @@ main { display: flex; flex-direction: column; min-height: 0; padding: 0; overflo
   .search-wrap { width: 100%; }
   .status-strip-freshness, #view-hint, #capture-hint { display: none; }
   .canvas-floating-controls { gap: 2px; padding: 3px; max-width: calc(100% - 12px); height: 50px; }
-  .canvas-floating-controls .canvas-control-btn { min-width: 32px; height: 44px; min-height: 44px; padding: 0 5px; font-size: 11px; }
-  .canvas-floating-controls .text-btn { min-width: 36px; padding: 0 5px; }
-  .canvas-floating-controls .readout-btn { min-width: 40px; padding: 0 4px; }
+  .canvas-floating-controls .canvas-control-btn { min-width: 44px; width: 44px; height: 44px; min-height: 44px; padding: 0 2px; font-size: 11px; }
+  .canvas-control-symbol { display: block; width: 18px; height: 18px; margin: auto; }
+  .canvas-control-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
   .drawer-controls select, .drawer-controls button, .drawer-controls a { min-height: 44px; }
   .simple-row { padding: 12px; align-items: flex-start; }
   .simple-row-meta { max-width: 105px; gap: 4px; }
@@ -3427,4 +3435,37 @@ main { display: flex; flex-direction: column; min-height: 0; padding: 0; overflo
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; scroll-behavior: auto !important; }
+}
+
+/* Narrow task cards: content above one compact metadata row, never a badge tower. */
+@media (max-width: 640px) {
+  .simple-row.task-row { position: relative; display: grid; grid-template-columns: 8px minmax(0, 1fr); align-items: start; gap: 6px 10px; }
+  .simple-row > .simple-dot { margin-top: 6px; }
+  .simple-row-main { grid-column: 2; padding-right: 32px; }
+  .simple-row-title { white-space: normal; overflow-wrap: anywhere; }
+  .simple-row-desc { margin-top: 3px; }
+  .simple-row-meta { grid-column: 2; max-width: none; width: 100%; margin-left: 0; justify-content: flex-start; gap: 4px; }
+  .simple-row-number { position: absolute; top: 14px; right: 10px; }
+  .detail-head-title-row { display: block; }
+  #detail-view #detail-title { width: 100%; overflow-wrap: anywhere; text-wrap: pretty; }
+  .drawer-add-note-btn { min-height: 44px; }
+  .client-presentation-banner { flex-wrap: wrap; }
+  .repo-search-input { min-height: 44px; }
+}
+
+@media (max-width: 768px) {
+  .sidebar button, .sidebar-toggle-btn, .client-disclaimer-banner .button { min-height: 44px; min-width: 44px; }
+  .section-card-title { display: flex; align-items: center; min-height: 44px; white-space: normal; overflow-wrap: anywhere; }
+  .section-card-title-row { flex-wrap: wrap; }
+  .section-card-title-row .section-card-title { flex-basis: 100%; }
+}
+
+/* Drawer actions and checklist hit boxes remain usable at every narrow width. */
+@media (max-width: 768px) {
+  #detail-view .button, #detail-view input:not([type="checkbox"]), #detail-view select, .repo-search-input { min-height: 44px; }
+  #detail-view .button.back { min-width: 44px; min-height: 44px; }
+  #detail-view input[type="checkbox"]:not(:disabled) { appearance: none; display: inline-grid; place-items: center; width: 44px; min-width: 44px; height: 44px; margin: 0; padding: 0; border: 0; background: transparent; vertical-align: middle; cursor: pointer; }
+  #detail-view input[type="checkbox"]:not(:disabled)::before { content: ''; box-sizing: border-box; width: 16px; height: 16px; border: 1px solid var(--fg-muted); border-radius: 3px; background: var(--surf); }
+  #detail-view input[type="checkbox"]:checked:not(:disabled)::before { border-color: var(--prim); background: var(--prim); box-shadow: inset 0 0 0 3px var(--surf); }
+  .checklist-label { display: flex; align-items: center; gap: 4px; }
 }

@@ -199,7 +199,8 @@ export async function startFakeGitHub(options = {}) {
 
   const server = http.createServer(async (req, res) => {
     const url = new URL(req.url, 'http://127.0.0.1');
-    state.requests.push({ method: req.method, path: url.pathname, query: url.search });
+    const loggedRequest = { method: req.method, path: url.pathname, query: url.search, ifNoneMatch: req.headers['if-none-match'] || null, responseStatus: null };
+    state.requests.push(loggedRequest);
     res.setHeader('content-type', 'application/json; charset=utf-8');
 
     const send = (status, payload, headers = {}) => {
@@ -214,6 +215,7 @@ export async function startFakeGitHub(options = {}) {
       }
       for (const [name, value] of Object.entries(headers)) res.setHeader(name, value);
       res.statusCode = status;
+      loggedRequest.responseStatus = status;
       res.end(payload === undefined ? '' : JSON.stringify(payload));
     };
 

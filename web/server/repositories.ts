@@ -74,9 +74,8 @@ export class RepositoryRegistry {
         this.failed = false;
         return this.snapshot();
       }
-      if (listed.etag) {
-        this.cachedEtag = listed.etag;
-      }
+      // A page-1 ETag only proves page 1 is unchanged; trust it for single-page lists only.
+      this.cachedEtag = listed.pages === 1 && !listed.truncated ? (listed.etag || null) : null;
       const next = new Map<string, RepositoryEntry>();
       for (const repository of listed.repositories) {
         next.set(repository.full, { ...repository, available: !repository.disabled, lastSeenAt: new Date(at).toISOString() });

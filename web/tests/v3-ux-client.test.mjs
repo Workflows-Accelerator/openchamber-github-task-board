@@ -285,3 +285,38 @@ test('V3-2 client: conditional ETag / 304 memory revalidation, ?refresh=1 bypass
   intervals.forEach((fn) => fn());
   assert.notEqual(get('freshness').textContent, 'sentinel');
 });
+
+test('V3-3: unsuccessful mutation clears conditional memory before a possible unknown outcome', async () => {
+  const { app, calls, setResponder } = browser();
+  app.state.csrf = 'test';
+  setResponder(async (_url, options) => options.method !== 'GET'
+    ? { ok: false, status: 502, headers: new Map(), text: async () => JSON.stringify({ error: 'write_outcome_unknown', message: 'Refresh' }) }
+    : { ok: true, status: 200, headers: new Map([['etag', 'W/"before"']]), text: async () => JSON.stringify({ issues: [] }) });
+  await app.api('/api/combined/board');
+  await app.api('/api/combined/board');
+  assert.equal(calls.at(-1).options.headers['If-None-Match'], 'W/"before"');
+  await assert.rejects(app.api('/api/issues/1', { method: 'PATCH', body: {} }));
+  await app.api('/api/combined/board');
+  assert.equal(calls.at(-1).options.headers['If-None-Match'], undefined);
+});
+
+test('V3-3: Canvas cannot be scrolled by focus, narrow cards use full-width metadata, drawer and picker avoid duplicate hierarchy', () => {
+  const css = fs.readFileSync('web/public/theme.css', 'utf8');
+  const html = fs.readFileSync('web/public/index.html', 'utf8');
+  assert.match(css, /\.canvas-viewport\s*\{[^}]*overflow:\s*clip/s);
+  assert.match(css, /\.simple-row\.task-row\s*\{[^}]*display:\s*grid/s);
+  assert.match(css, /\.simple-row-meta\s*\{[^}]*grid-column:\s*2;[^}]*max-width:\s*none/s);
+  assert.match(css, /\.repo-option\s*\{[^}]*display:\s*grid/s);
+  assert.match(css, /body:has\(#client-view:not\(\[hidden\]\)\) #client-presentation-banner/);
+  assert.doesNotMatch(html, /id="detail-github"/);
+  assert.match(html, /class="row">[\s\S]*id="drawer-add-note-btn"/);
+  assert.match(css, /\.canvas-floating-controls \.canvas-control-btn\s*\{[^}]*min-width:\s*44px/);
+});
+
+
+test('V3-3: drawer actions, editable checkboxes and picker search retain 44px narrow hit boxes', () => {
+  const css = fs.readFileSync('web/public/theme.css', 'utf8');
+  assert.match(css, /#detail-view \.button\.back\s*\{[^}]*min-width:\s*44px;[^}]*min-height:\s*44px/s);
+  assert.match(css, /#detail-view input\[type="checkbox"\]:not\(:disabled\)\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s);
+  assert.match(css, /#detail-view \.button, #detail-view input[^}]*\.repo-search-input\s*\{[^}]*min-height:\s*44px/s);
+});

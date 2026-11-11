@@ -373,10 +373,10 @@
             <button id="canvas-zoom-in" class="canvas-control-btn" type="button" title="Zoom in" aria-label="Zoom in" data-i18n-title="canvas_zoom_in">+</button>
             <span class="canvas-control-sep" aria-hidden="true">|</span>
             <button id="canvas-fit-all" class="canvas-control-btn text-btn" type="button" title="Fit all" aria-label="Fit all" data-i18n-title="canvas_fit_all" data-i18n="canvas_fit_all">Fit</button>
-            <button id="canvas-reset-view" class="canvas-control-btn text-btn" type="button" title="Reset view" aria-label="Reset view" data-i18n-title="canvas_reset_view" data-i18n="canvas_reset_view">Reset</button>
+            <button id="canvas-reset-view" class="canvas-control-btn text-btn" type="button" title="Reset view" aria-label="Reset view" data-i18n-title="canvas_reset_view"><svg class="canvas-control-symbol" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="canvas-control-label" data-i18n="canvas_reset_view">Reset</span></button>
             <span class="canvas-control-sep" aria-hidden="true">|</span>
-            <button id="canvas-arrange" class="canvas-control-btn text-btn" type="button" title="Auto-arrange cards by dependency" aria-label="Auto-arrange cards" data-i18n-title="canvas_arrange" data-i18n="canvas_arrange">Arrange</button>
-            <button id="canvas-arrange-undo" class="canvas-control-btn text-btn" type="button" title="Undo last arrange" aria-label="Undo last arrange" data-i18n-title="canvas_arrange_undo" data-i18n="canvas_arrange_undo" hidden>Undo</button>
+            <button id="canvas-arrange" class="canvas-control-btn text-btn" type="button" title="Auto-arrange cards by dependency" aria-label="Auto-arrange cards" data-i18n-title="canvas_arrange"><svg class="canvas-control-symbol" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="canvas-control-label" data-i18n="canvas_arrange">Arrange</span></button>
+            <button id="canvas-arrange-undo" class="canvas-control-btn text-btn" type="button" title="Undo last arrange" aria-label="Undo last arrange" data-i18n-title="canvas_arrange_undo" hidden><svg class="canvas-control-symbol" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 10l6 6M3 10h11a6 6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="canvas-control-label" data-i18n="canvas_arrange_undo">Undo</span></button>
           </div>
           <div id="canvas-plane" class="canvas-plane">
             <svg id="canvas-wires" class="canvas-layer canvas-layer-wires" width="14" height="14" aria-hidden="true">
@@ -466,12 +466,11 @@
       <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
 
       <section id="detail-view" class="view task-drawer" aria-labelledby="detail-title" hidden>
-        <div class="drawer-identity"><span id="detail-identity"></span><a id="detail-github" target="_blank" rel="noopener noreferrer" data-i18n="open_github">Open in GitHub</a><button id="back-btn" class="button back" type="button" aria-label="Close">×</button></div>
+        <div class="drawer-identity"><span id="detail-identity"></span><button id="back-btn" class="button back" type="button" aria-label="Close">×</button></div>
 
         <div class="detail-head">
           <div class="detail-head-title-row">
             <h1 id="detail-title" tabindex="-1"></h1>
-            <button id="drawer-add-note-btn" class="button small drawer-add-note-btn" type="button" data-i18n="drawer_add_note" title="Add note on canvas">Add note</button>
           </div>
           <p id="detail-subtitle" class="task-subtitle muted small" hidden></p>
           <div id="detail-meta" class="badges"></div>
@@ -485,6 +484,7 @@
             <select id="status-select"></select>
             <button id="apply-status" class="button primary" type="button" data-i18n="drawer_apply_status">Apply status</button>
             <a id="priority-control" class="button" target="_blank" rel="noopener noreferrer">Priority</a>
+            <button id="drawer-add-note-btn" class="button small drawer-add-note-btn" type="button" data-i18n="drawer_add_note" title="Add note on canvas">Add note</button>
             <button id="mark-done-btn" class="button" type="button" data-i18n="drawer_mark_done">Mark Done</button>
           </div>
         </section>
