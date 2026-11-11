@@ -1,0 +1,107 @@
+{
+  "rows": [
+    {
+      "upstream": "400 conditional header",
+      "serverStatus": 400,
+      "serverError": "write_rejected",
+      "serverMessage": "GitHub rejected the write; nothing was saved (Conditional request headers are not allowed in unsafe requests unless supported by the endpoint)",
+      "clientCode": "write_rejected"
+    },
+    {
+      "upstream": "400 bad label",
+      "serverStatus": 400,
+      "serverError": "write_rejected",
+      "serverMessage": "GitHub rejected the write; nothing was saved (Invalid label name)",
+      "clientCode": "write_rejected"
+    },
+    {
+      "upstream": "400 HTML (no JSON)",
+      "serverStatus": 400,
+      "serverError": "write_rejected",
+      "serverMessage": "GitHub rejected the write; nothing was saved (GitHub rejected the write)",
+      "clientCode": "write_rejected"
+    },
+    {
+      "upstream": "401 token rejected",
+      "serverStatus": 502,
+      "serverError": "github_unauthorized",
+      "serverMessage": "GitHub rejected credentials or token expired",
+      "clientCode": "write_outcome_unknown"
+    },
+    {
+      "upstream": "403 forbidden",
+      "serverStatus": 502,
+      "serverError": "github_forbidden",
+      "serverMessage": "GitHub refused access to the repository",
+      "clientCode": "github_forbidden"
+    },
+    {
+      "upstream": "403 rate limit",
+      "serverStatus": 503,
+      "serverError": "github_rate_limited",
+      "serverMessage": "GitHub is rate limiting the board; try again later",
+      "clientCode": "write_outcome_unknown"
+    },
+    {
+      "upstream": "404 vanished",
+      "serverStatus": 404,
+      "serverError": "not_found",
+      "serverMessage": "That issue was not found in the configured repository",
+      "clientCode": "not_found"
+    },
+    {
+      "upstream": "409 locked/conflict",
+      "serverStatus": 502,
+      "serverError": "write_outcome_unknown",
+      "serverMessage": "Outcome unknown — check the issue on GitHub",
+      "clientCode": "write_outcome_unknown"
+    },
+    {
+      "upstream": "412 precondition",
+      "serverStatus": 409,
+      "serverError": "conflict",
+      "serverMessage": "This task changed on GitHub while saving; nothing was written",
+      "clientCode": "conflict"
+    },
+    {
+      "upstream": "422 validation",
+      "serverStatus": 400,
+      "serverError": "invalid_request",
+      "serverMessage": "The issue reference is not valid",
+      "clientCode": "invalid_request"
+    },
+    {
+      "upstream": "422 gateway-ish",
+      "serverStatus": 502,
+      "serverError": "write_outcome_unknown",
+      "serverMessage": "Outcome unknown — check the issue on GitHub",
+      "clientCode": "write_outcome_unknown"
+    },
+    {
+      "upstream": "429 rate limited",
+      "serverStatus": 503,
+      "serverError": "github_rate_limited",
+      "serverMessage": "GitHub is rate limiting the board; try again later",
+      "clientCode": "write_outcome_unknown"
+    },
+    {
+      "upstream": "500 server",
+      "serverStatus": 502,
+      "serverError": "write_outcome_unknown",
+      "serverMessage": "Outcome unknown — check the issue on GitHub",
+      "clientCode": "write_outcome_unknown"
+    },
+    {
+      "upstream": "502 gateway html",
+      "serverStatus": 502,
+      "serverError": "write_outcome_unknown",
+      "serverMessage": "Outcome unknown — check the issue on GitHub",
+      "clientCode": "write_outcome_unknown"
+    }
+  ],
+  "note422": {
+    "status": 400,
+    "error": "invalid_request",
+    "message": "The issue reference is not valid"
+  }
+}

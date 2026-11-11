@@ -1,0 +1,41 @@
+{
+  "twoTabs": {
+    "statuses": [
+      200,
+      409
+    ],
+    "errors": [
+      "conflict"
+    ],
+    "patches": 1,
+    "finalBody": "Alpha body\n\n<!-- board-order: 1000 -->\n\n<!-- board-canvas: {\"x\":100,\"y\":100} ;sep=2 -->"
+  },
+  "dragVsStatus": {
+    "drag": 200,
+    "status": 409,
+    "errors": [
+      "conflict"
+    ],
+    "patches": 1,
+    "finalLabels": [
+      "status:in-progress"
+    ],
+    "finalBody": "Beta body\n\n<!-- board-order: 2000 -->\n\n<!-- board-canvas: {\"x\":50,\"y\":60} ;sep=2 -->",
+    "consistent": true
+  },
+  "sectionVsNote": {
+    "clear": 200,
+    "note": 409,
+    "errors": [
+      "conflict"
+    ],
+    "patches": 1,
+    "finalBody": "<!-- board-order: 3000 -->"
+  },
+  "externalWriterWindow": {
+    "status": 200,
+    "patches": 1,
+    "finalBody": "Delta body\n\n<!-- board-order: 4000 -->\n\n<!-- board-canvas: {\"x\":5,\"y\":5} ;sep=2 -->",
+    "externalEditSurvived": false
+  }
+}

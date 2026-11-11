@@ -1,0 +1,267 @@
+{
+  "realDrag": {
+    "viewport": "390x844",
+    "before": {
+      "left": "60px",
+      "top": "60px",
+      "key": "owner/alpha#4"
+    },
+    "afterDrop": {
+      "left": "161px",
+      "top": "116px",
+      "notice": ""
+    },
+    "afterReload": {
+      "left": "161px",
+      "top": "116px",
+      "notice": ""
+    },
+    "persisted": [
+      {
+        "n": 1,
+        "canvas": null
+      },
+      {
+        "n": 2,
+        "canvas": null
+      },
+      {
+        "n": 3,
+        "canvas": null
+      },
+      {
+        "n": 4,
+        "canvas": {
+          "x": 161,
+          "y": 116
+        }
+      }
+    ],
+    "persistedMarker": "board-canvas: {\"x\":161,\"y\":116} ;sep=2 -->",
+    "matches": true
+  },
+  "messages": {
+    "en": [
+      {
+        "upstream": "400 write_rejected",
+        "thrown": {
+          "code": "write_rejected",
+          "status": 400,
+          "message": "GitHub rejected the write; nothing was saved (Invalid label name)"
+        },
+        "notice": "Canvas position not saved: GitHub rejected the write (400). The card stayed where it was.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "403 forbidden",
+        "thrown": {
+          "code": "github_forbidden",
+          "status": 502,
+          "message": "GitHub refused access to the repository"
+        },
+        "notice": "Canvas position not saved: this board may not write to that repository. Check the token permissions, then drag again.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "401 token",
+        "thrown": {
+          "code": "write_outcome_unknown",
+          "status": 502,
+          "message": "Outcome unknown — refresh to check GitHub state"
+        },
+        "notice": "Canvas position not saved: the outcome is unknown. Refresh before dragging again.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "404 vanished",
+        "thrown": {
+          "code": "not_found",
+          "status": 404,
+          "message": "That issue was not found in the configured repository"
+        },
+        "notice": "Canvas position not saved: GitHub rejected the write (404). The card stayed where it was.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "409 conflict",
+        "thrown": {
+          "code": "write_outcome_unknown",
+          "status": 502,
+          "message": "Outcome unknown — check the issue on GitHub"
+        },
+        "notice": "Canvas position not saved: the outcome is unknown. Refresh before dragging again.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "412 precondition",
+        "thrown": {
+          "code": "conflict",
+          "status": 409,
+          "message": "This task changed on GitHub while saving; nothing was written"
+        },
+        "notice": "Canvas position not saved: this task changed on GitHub first, so nothing was written (409). Refresh, then drag again.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "422 validation",
+        "thrown": {
+          "code": "invalid_request",
+          "status": 400,
+          "message": "The issue reference is not valid"
+        },
+        "notice": "Canvas position not saved: GitHub rejected the write (400). The card stayed where it was.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "429 rate limit",
+        "thrown": {
+          "code": "write_outcome_unknown",
+          "status": 503,
+          "message": "Outcome unknown — refresh to check GitHub state"
+        },
+        "notice": "Canvas position not saved: the outcome is unknown. Refresh before dragging again.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "500 server",
+        "thrown": {
+          "code": "write_outcome_unknown",
+          "status": 502,
+          "message": "Outcome unknown — check the issue on GitHub"
+        },
+        "notice": "Canvas position not saved: the outcome is unknown. Refresh before dragging again.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      }
+    ],
+    "fr": [
+      {
+        "upstream": "400 write_rejected",
+        "thrown": {
+          "code": "write_rejected",
+          "status": 400,
+          "message": "GitHub rejected the write; nothing was saved (Invalid label name)"
+        },
+        "notice": "Position non enregistrée : GitHub a refusé l’écriture (400). La carte est restée à sa place.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "403 forbidden",
+        "thrown": {
+          "code": "github_forbidden",
+          "status": 502,
+          "message": "GitHub refused access to the repository"
+        },
+        "notice": "Position non enregistrée : ce tableau n’a pas le droit d’écrire dans ce dépôt. Vérifiez les permissions du jeton, puis déplacez à nouveau.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "401 token",
+        "thrown": {
+          "code": "write_outcome_unknown",
+          "status": 502,
+          "message": "Outcome unknown — refresh to check GitHub state"
+        },
+        "notice": "Position non enregistrée : le résultat est inconnu. Actualisez avant de déplacer à nouveau.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "404 vanished",
+        "thrown": {
+          "code": "not_found",
+          "status": 404,
+          "message": "That issue was not found in the configured repository"
+        },
+        "notice": "Position non enregistrée : GitHub a refusé l’écriture (404). La carte est restée à sa place.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "409 conflict",
+        "thrown": {
+          "code": "write_outcome_unknown",
+          "status": 502,
+          "message": "Outcome unknown — check the issue on GitHub"
+        },
+        "notice": "Position non enregistrée : le résultat est inconnu. Actualisez avant de déplacer à nouveau.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "412 precondition",
+        "thrown": {
+          "code": "conflict",
+          "status": 409,
+          "message": "This task changed on GitHub while saving; nothing was written"
+        },
+        "notice": "Position non enregistrée : cette tâche a changé sur GitHub entre-temps, rien n’a été écrit (409). Actualisez, puis déplacez à nouveau.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "422 validation",
+        "thrown": {
+          "code": "invalid_request",
+          "status": 400,
+          "message": "The issue reference is not valid"
+        },
+        "notice": "Position non enregistrée : GitHub a refusé l’écriture (400). La carte est restée à sa place.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "429 rate limit",
+        "thrown": {
+          "code": "write_outcome_unknown",
+          "status": 503,
+          "message": "Outcome unknown — refresh to check GitHub state"
+        },
+        "notice": "Position non enregistrée : le résultat est inconnu. Actualisez avant de déplacer à nouveau.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      },
+      {
+        "upstream": "500 server",
+        "thrown": {
+          "code": "write_outcome_unknown",
+          "status": 502,
+          "message": "Outcome unknown — check the issue on GitHub"
+        },
+        "notice": "Position non enregistrée : le résultat est inconnu. Actualisez avant de déplacer à nouveau.",
+        "cardSnappedBack": true,
+        "issueCanvas": null
+      }
+    ]
+  },
+  "consoleErrors": [
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 409 (Conflict)",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)",
+    "Failed to load resource: the server responded with a status of 409 (Conflict)",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "Failed to load resource: the server responded with a status of 503 (Service Unavailable)",
+    "Failed to load resource: the server responded with a status of 502 (Bad Gateway)"
+  ]
+}

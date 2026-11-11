@@ -1,0 +1,2136 @@
+{
+  "root": "/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3",
+  "patchCalls": 8,
+  "results": [
+    {
+      "path": "create task",
+      "method": "POST",
+      "url": "/api/issues",
+      "status": 201,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "ok": true,
+        "issue": {
+          "id": 100004,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "new body",
+          "order": null,
+          "canvas": null,
+          "fingerprint": "df63495c2f92e18824a561ab6341d220b49d954004e190fd3c43cea2c5eef874",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 4,
+          "key": "owner/alpha#4",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Created task",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/4",
+          "labels": [
+            "status:draft"
+          ],
+          "statusLabel": "status:draft",
+          "effectiveStage": "draft",
+          "isExplicitDraft": true,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-10-20T10:00:00Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [],
+          "overview": "new body"
+        }
+      }
+    },
+    {
+      "path": "status change",
+      "method": "POST",
+      "url": "/api/issues/2/status",
+      "status": 200,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "issue": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": null,
+          "fingerprint": "2e64476a4d21673888cb89eaa69195445d219f17a68d7022d450346c0263fd2f",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "body": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task\n\n",
+          "bodyMarkdown": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task\n\n",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.286Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "Body text."
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 6
+            }
+          ],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "listItem": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": null,
+          "fingerprint": "2e64476a4d21673888cb89eaa69195445d219f17a68d7022d450346c0263fd2f",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.286Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 1,
+              "done": 0,
+              "open": 1
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 6
+            }
+          ],
+          "overview": "Body text."
+        },
+        "savedAt": "2026-11-11T20:49:00.290Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      }
+    },
+    {
+      "path": "draft edit",
+      "method": "PUT",
+      "url": "/api/issues/1/draft",
+      "status": 200,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "issue": {
+          "id": 100001,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "Edited inspiration",
+          "order": 1000,
+          "canvas": null,
+          "fingerprint": "5c697e2f693406e2d624e6cfc9fd148378604fe73b4c10878956ae22cfb622d3",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 1,
+          "key": "owner/alpha#1",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Draft edited",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/1",
+          "body": "Edited inspiration\n\n",
+          "bodyMarkdown": "Edited inspiration\n\n",
+          "labels": [
+            "status:draft"
+          ],
+          "statusLabel": "status:draft",
+          "effectiveStage": "draft",
+          "isExplicitDraft": true,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-11-11T20:49:00.311Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "(overview)",
+              "text": "Edited inspiration"
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "listItem": {
+          "id": 100001,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "Edited inspiration",
+          "order": 1000,
+          "canvas": null,
+          "fingerprint": "5c697e2f693406e2d624e6cfc9fd148378604fe73b4c10878956ae22cfb622d3",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 1,
+          "key": "owner/alpha#1",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Draft edited",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/1",
+          "labels": [
+            "status:draft"
+          ],
+          "statusLabel": "status:draft",
+          "effectiveStage": "draft",
+          "isExplicitDraft": true,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-11-11T20:49:00.311Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [],
+          "overview": "Edited inspiration"
+        },
+        "savedAt": "2026-11-11T20:49:00.322Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      }
+    },
+    {
+      "path": "draft order",
+      "method": "PUT",
+      "url": "/api/issues/1/order",
+      "status": 200,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "issue": {
+          "id": 100001,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "Edited inspiration",
+          "order": 1500,
+          "canvas": null,
+          "fingerprint": "2980bac6130ce78242bd089f51240e604af764a1069314845883280c22b7b1f7",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 1,
+          "key": "owner/alpha#1",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Draft edited",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/1",
+          "body": "Edited inspiration\n\n",
+          "bodyMarkdown": "Edited inspiration\n\n",
+          "labels": [
+            "status:draft"
+          ],
+          "statusLabel": "status:draft",
+          "effectiveStage": "draft",
+          "isExplicitDraft": true,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-11-11T20:49:00.344Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "(overview)",
+              "text": "Edited inspiration"
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "listItem": {
+          "id": 100001,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "Edited inspiration",
+          "order": 1500,
+          "canvas": null,
+          "fingerprint": "2980bac6130ce78242bd089f51240e604af764a1069314845883280c22b7b1f7",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 1,
+          "key": "owner/alpha#1",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Draft edited",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/1",
+          "labels": [
+            "status:draft"
+          ],
+          "statusLabel": "status:draft",
+          "effectiveStage": "draft",
+          "isExplicitDraft": true,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-11-11T20:49:00.344Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [],
+          "overview": "Edited inspiration"
+        },
+        "savedAt": "2026-11-11T20:49:00.347Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      }
+    },
+    {
+      "path": "dependency add",
+      "method": "POST",
+      "url": "/api/issues/2/dependencies/blocked_by",
+      "status": 201,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "success": true,
+        "issue": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": null,
+          "fingerprint": "2e64476a4d21673888cb89eaa69195445d219f17a68d7022d450346c0263fd2f",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [
+            {
+              "number": 1,
+              "node_id": "I_kwDO_owner_alpha_1_1",
+              "title": "Draft edited",
+              "body": "Edited inspiration\n\n<!-- board-order: 1500 -->",
+              "state": "open",
+              "labels": [
+                {
+                  "name": "status:draft",
+                  "color": "ededed"
+                }
+              ],
+              "user": {
+                "login": "board-owner",
+                "avatar_url": ""
+              },
+              "assignees": [],
+              "comments": 0,
+              "created_at": "2026-10-01T09:00:00Z",
+              "updated_at": "2026-11-11T20:49:00.344Z",
+              "closed_at": null,
+              "html_url": "https://github.com/owner/alpha/issues/1",
+              "id": 100001,
+              "repository": {
+                "full_name": "owner/alpha",
+                "name": "alpha"
+              }
+            }
+          ],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "body": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task\n\n",
+          "bodyMarkdown": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task\n\n",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.286Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "Body text."
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 6
+            }
+          ],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "listItem": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": null,
+          "fingerprint": "2e64476a4d21673888cb89eaa69195445d219f17a68d7022d450346c0263fd2f",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [
+            {
+              "number": 1,
+              "node_id": "I_kwDO_owner_alpha_1_1",
+              "title": "Draft edited",
+              "body": "Edited inspiration\n\n<!-- board-order: 1500 -->",
+              "state": "open",
+              "labels": [
+                {
+                  "name": "status:draft",
+                  "color": "ededed"
+                }
+              ],
+              "user": {
+                "login": "board-owner",
+                "avatar_url": ""
+              },
+              "assignees": [],
+              "comments": 0,
+              "created_at": "2026-10-01T09:00:00Z",
+              "updated_at": "2026-11-11T20:49:00.344Z",
+              "closed_at": null,
+              "html_url": "https://github.com/owner/alpha/issues/1",
+              "id": 100001,
+              "repository": {
+                "full_name": "owner/alpha",
+                "name": "alpha"
+              }
+            }
+          ],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.286Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 1,
+              "done": 0,
+              "open": 1
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 6
+            }
+          ],
+          "overview": "Body text."
+        },
+        "blockedBy": [
+          {
+            "number": 1,
+            "node_id": "I_kwDO_owner_alpha_1_1",
+            "title": "Draft edited",
+            "body": "Edited inspiration\n\n<!-- board-order: 1500 -->",
+            "state": "open",
+            "labels": [
+              {
+                "name": "status:draft",
+                "color": "ededed"
+              }
+            ],
+            "user": {
+              "login": "board-owner",
+              "avatar_url": ""
+            },
+            "assignees": [],
+            "comments": 0,
+            "created_at": "2026-10-01T09:00:00Z",
+            "updated_at": "2026-11-11T20:49:00.344Z",
+            "closed_at": null,
+            "html_url": "https://github.com/owner/alpha/issues/1",
+            "id": 100001,
+            "repository": {
+              "full_name": "owner/alpha",
+              "name": "alpha"
+            }
+          }
+        ],
+        "blocking": [],
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ],
+        "blockedNumber": 2,
+        "blockerNumber": 1,
+        "blockerId": 100001,
+        "blockerRepo": "owner/alpha"
+      }
+    },
+    {
+      "path": "dependency remove",
+      "method": "DELETE",
+      "url": "/api/issues/2/dependencies/blocked_by/100001",
+      "status": 200,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "success": true,
+        "issue": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": null,
+          "fingerprint": "2e64476a4d21673888cb89eaa69195445d219f17a68d7022d450346c0263fd2f",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "body": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task\n\n",
+          "bodyMarkdown": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task\n\n",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.286Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "Body text."
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 6
+            }
+          ],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "listItem": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": null,
+          "fingerprint": "2e64476a4d21673888cb89eaa69195445d219f17a68d7022d450346c0263fd2f",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.286Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 1,
+              "done": 0,
+              "open": 1
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 6
+            }
+          ],
+          "overview": "Body text."
+        },
+        "blockedBy": [],
+        "blocking": [],
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ],
+        "number": 2,
+        "removedId": 100001
+      }
+    },
+    {
+      "path": "canvas drag",
+      "method": "PUT",
+      "url": "/api/issues/2/canvas",
+      "status": 200,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "issue": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "fingerprint": "21ccbd26855c3b2cfe72d6e708f757089882b5fbce08a1207f8c97cc6fa63ad9",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "body": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task\n",
+          "bodyMarkdown": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task\n",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.403Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "Body text."
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 6
+            }
+          ],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "listItem": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": {
+            "x": 400,
+            "y": 300
+          },
+          "fingerprint": "21ccbd26855c3b2cfe72d6e708f757089882b5fbce08a1207f8c97cc6fa63ad9",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.403Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 1,
+              "done": 0,
+              "open": 1
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 6
+            }
+          ],
+          "overview": "Body text."
+        },
+        "savedAt": "2026-11-11T20:49:00.406Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      }
+    },
+    {
+      "path": "note edit",
+      "method": "PUT",
+      "url": "/api/issues/2/canvas",
+      "status": 200,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "issue": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": {
+            "x": 400,
+            "y": 300,
+            "notes": [
+              {
+                "id": "n1",
+                "x": 420,
+                "y": 340,
+                "w": 240,
+                "h": 135,
+                "text": "Reviewed note",
+                "color": "yellow"
+              }
+            ]
+          },
+          "fingerprint": "14aa2e1b1d066323a616235a398a421c2b28fcc74e963050507f25a5e49f13b4",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "body": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task\n",
+          "bodyMarkdown": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task\n",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.417Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "Body text."
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 6
+            }
+          ],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "listItem": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nBody text.\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": {
+            "x": 400,
+            "y": 300,
+            "notes": [
+              {
+                "id": "n1",
+                "x": 420,
+                "y": 340,
+                "w": 240,
+                "h": 135,
+                "text": "Reviewed note",
+                "color": "yellow"
+              }
+            ]
+          },
+          "fingerprint": "14aa2e1b1d066323a616235a398a421c2b28fcc74e963050507f25a5e49f13b4",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.417Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 1,
+              "done": 0,
+              "open": 1
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 6
+            }
+          ],
+          "overview": "Body text."
+        },
+        "savedAt": "2026-11-11T20:49:00.420Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      }
+    },
+    {
+      "path": "section edit",
+      "method": "PUT",
+      "url": "/api/issues/2/section",
+      "status": 200,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "issue": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\nBody edited by board\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": {
+            "x": 400,
+            "y": 300,
+            "notes": [
+              {
+                "id": "n1",
+                "x": 420,
+                "y": 340,
+                "w": 240,
+                "h": 135,
+                "text": "Reviewed note",
+                "color": "yellow"
+              }
+            ]
+          },
+          "fingerprint": "71af4782dec14bb75d5b23882be613201076c4bc7923d1fdb95f406aa3656498",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "body": "## Overview\nBody edited by board\n\n## Human tasks\n\n- [ ] first task\n\n",
+          "bodyMarkdown": "## Overview\nBody edited by board\n\n## Human tasks\n\n- [ ] first task\n\n",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.449Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "Body edited by board"
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 5
+            }
+          ],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "listItem": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\nBody edited by board\n\n## Human tasks\n\n- [ ] first task",
+          "order": 2000,
+          "canvas": {
+            "x": 400,
+            "y": 300,
+            "notes": [
+              {
+                "id": "n1",
+                "x": 420,
+                "y": 340,
+                "w": 240,
+                "h": 135,
+                "text": "Reviewed note",
+                "color": "yellow"
+              }
+            ]
+          },
+          "fingerprint": "71af4782dec14bb75d5b23882be613201076c4bc7923d1fdb95f406aa3656498",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": false
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.449Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 1,
+              "done": 0,
+              "open": 1
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": false,
+              "lineIndex": 5
+            }
+          ],
+          "overview": "Body edited by board"
+        },
+        "savedAt": "2026-11-11T20:49:00.454Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      }
+    },
+    {
+      "path": "human task toggle",
+      "method": "POST",
+      "url": "/api/issues/2/human-tasks/0/toggle",
+      "status": 200,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "issue": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\nBody edited by board\n\n## Human tasks\n\n- [x] first task",
+          "order": 2000,
+          "canvas": {
+            "x": 400,
+            "y": 300,
+            "notes": [
+              {
+                "id": "n1",
+                "x": 420,
+                "y": 340,
+                "w": 240,
+                "h": 135,
+                "text": "Reviewed note",
+                "color": "yellow"
+              }
+            ]
+          },
+          "fingerprint": "a95df71fb49aaea730229b1c5297ad935020a4d86b2173163acbf0bf1eb9be79",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": true
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "body": "## Overview\nBody edited by board\n\n## Human tasks\n\n- [x] first task\n\n",
+          "bodyMarkdown": "## Overview\nBody edited by board\n\n## Human tasks\n\n- [x] first task\n\n",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.467Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "Body edited by board"
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": true,
+              "lineIndex": 5
+            }
+          ],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "listItem": {
+          "id": 100002,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\nBody edited by board\n\n## Human tasks\n\n- [x] first task",
+          "order": 2000,
+          "canvas": {
+            "x": 400,
+            "y": 300,
+            "notes": [
+              {
+                "id": "n1",
+                "x": 420,
+                "y": 340,
+                "w": 240,
+                "h": 135,
+                "text": "Reviewed note",
+                "color": "yellow"
+              }
+            ]
+          },
+          "fingerprint": "a95df71fb49aaea730229b1c5297ad935020a4d86b2173163acbf0bf1eb9be79",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [
+            {
+              "text": "first task",
+              "completed": true
+            }
+          ],
+          "number": 2,
+          "key": "owner/alpha#2",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Work item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/2",
+          "labels": [
+            "status:done"
+          ],
+          "statusLabel": "status:done",
+          "effectiveStage": "done",
+          "isExplicitDraft": false,
+          "phase": "done",
+          "attention": "none",
+          "column": "done",
+          "updatedAt": "2026-11-11T20:49:00.467Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 1,
+              "done": 1,
+              "open": 0
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [
+            {
+              "index": 0,
+              "text": "first task",
+              "completed": true,
+              "lineIndex": 5
+            }
+          ],
+          "overview": "Body edited by board"
+        },
+        "savedAt": "2026-11-11T20:49:00.470Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      }
+    },
+    {
+      "path": "reopen",
+      "method": "POST",
+      "url": "/api/issues/3/reopen",
+      "status": 200,
+      "ok": true,
+      "detail": "persisted",
+      "body": {
+        "issue": {
+          "id": 100003,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nClosed body.",
+          "order": 3000,
+          "canvas": null,
+          "fingerprint": "9cf04217cb58953e4f0ae482464693998cc0be085b59f839cd84b00796250bc8",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 3,
+          "key": "owner/alpha#3",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Done item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/3",
+          "body": "## Overview\n\nClosed body.\n\n",
+          "bodyMarkdown": "## Overview\n\nClosed body.\n\n",
+          "labels": [
+            "status:backlog"
+          ],
+          "statusLabel": "status:backlog",
+          "effectiveStage": "backlog",
+          "isExplicitDraft": false,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-11-11T20:49:00.479Z",
+          "editableSections": [
+            {
+              "id": "overview",
+              "title": "Overview",
+              "text": "Closed body."
+            }
+          ],
+          "openQuestions": [],
+          "humanTasks": [],
+          "acceptanceCriteria": [],
+          "subtasks": [],
+          "testPlan": {
+            "issue": [],
+            "batch": []
+          }
+        },
+        "listItem": {
+          "id": 100003,
+          "createdAt": "2026-10-01T09:00:00Z",
+          "closedAt": null,
+          "description": "## Overview\n\nClosed body.",
+          "order": 3000,
+          "canvas": null,
+          "fingerprint": "9cf04217cb58953e4f0ae482464693998cc0be085b59f839cd84b00796250bc8",
+          "dependencies": [],
+          "textDependencies": [],
+          "blockedBy": [],
+          "blocking": [],
+          "pendingItems": [],
+          "number": 3,
+          "key": "owner/alpha#3",
+          "repository": {
+            "id": 1,
+            "owner": "owner",
+            "name": "alpha",
+            "full": "owner/alpha",
+            "archived": false,
+            "hasIssues": true,
+            "disabled": false,
+            "private": false,
+            "openIssuesCount": 2,
+            "pushedAt": "2026-10-20T10:00:00Z",
+            "available": true,
+            "lastSeenAt": "2026-11-11T20:49:00.128Z"
+          },
+          "title": "Done item",
+          "friendlyTitle": null,
+          "state": "open",
+          "htmlUrl": "https://github.com/owner/alpha/issues/3",
+          "labels": [
+            "status:backlog"
+          ],
+          "statusLabel": "status:backlog",
+          "effectiveStage": "backlog",
+          "isExplicitDraft": false,
+          "phase": "draft",
+          "attention": "none",
+          "column": "draft",
+          "updatedAt": "2026-11-11T20:49:00.479Z",
+          "counts": {
+            "subtasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "openQuestions": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            },
+            "humanTasks": {
+              "total": 0,
+              "done": 0,
+              "open": 0
+            }
+          },
+          "openQuestions": [],
+          "humanTasks": [],
+          "overview": "Closed body."
+        },
+        "savedAt": "2026-11-11T20:49:00.481Z",
+        "statusOptions": [
+          {
+            "value": "status:draft",
+            "label": "Draft"
+          },
+          {
+            "value": "status:backlog",
+            "label": "Backlog"
+          },
+          {
+            "value": "status:todo",
+            "label": "To Do"
+          },
+          {
+            "value": "status:planned",
+            "label": "Planned"
+          },
+          {
+            "value": "status:in-progress",
+            "label": "In Progress"
+          },
+          {
+            "value": "status:needs-human",
+            "label": "Needs Human"
+          },
+          {
+            "value": "status:in-review",
+            "label": "In Review"
+          },
+          {
+            "value": "status:done",
+            "label": "Done"
+          }
+        ]
+      }
+    }
+  ]
+}

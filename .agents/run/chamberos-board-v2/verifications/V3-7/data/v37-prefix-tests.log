@@ -1,0 +1,139 @@
+TAP version 13
+# Subtest: V3-6 canvas drag: write persists the dropped position and a re-read returns it
+not ok 1 - V3-6 canvas drag: write persists the dropped position and a re-read returns it
+  ---
+  duration_ms: 400.518343
+  type: 'test'
+  location: '/tmp/opencode/v37-prefix/web/tests/v3-6-canvas-persistence.test.mjs:53:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    {"error":"write_outcome_unknown","message":"Outcome unknown — check the issue on GitHub"}
+    
+    502 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 502
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/v37-prefix/web/tests/v3-6-canvas-persistence.test.mjs:61:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async startSubtestAfterBootstrap (node:internal/test_runner/harness:296:3)
+  ...
+# Subtest: V3-6 canvas drag: a write issued right after a conditional 304 GET still persists
+not ok 2 - V3-6 canvas drag: a write issued right after a conditional 304 GET still persists
+  ---
+  duration_ms: 306.971976
+  type: 'test'
+  location: '/tmp/opencode/v37-prefix/web/tests/v3-6-canvas-persistence.test.mjs:78:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    {"error":"write_outcome_unknown","message":"Outcome unknown — check the issue on GitHub"}
+    
+    502 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 502
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/v37-prefix/web/tests/v3-6-canvas-persistence.test.mjs:94:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: V3-6 canvas drag: a second drag of the same card updates the marker once and stays byte-stable
+not ok 3 - V3-6 canvas drag: a second drag of the same card updates the marker once and stays byte-stable
+  ---
+  duration_ms: 256.688198
+  type: 'test'
+  location: '/tmp/opencode/v37-prefix/web/tests/v3-6-canvas-persistence.test.mjs:106:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    {"error":"write_outcome_unknown","message":"Outcome unknown — check the issue on GitHub"}
+    
+    502 !== 200
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 200
+  actual: 502
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/v37-prefix/web/tests/v3-6-canvas-persistence.test.mjs:114:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: V3-6 canvas drag: a stale fingerprint is a precise 409 and never a silent move
+ok 4 - V3-6 canvas drag: a stale fingerprint is a precise 409 and never a silent move
+  ---
+  duration_ms: 239.591545
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas drag: a GitHub refusal is reported as a definite 400, not an unknown outcome
+not ok 5 - V3-6 canvas drag: a GitHub refusal is reported as a definite 400, not an unknown outcome
+  ---
+  duration_ms: 221.761918
+  type: 'test'
+  location: '/tmp/opencode/v37-prefix/web/tests/v3-6-canvas-persistence.test.mjs:150:1'
+  failureType: 'testCodeFailure'
+  error: |-
+    {"error":"write_outcome_unknown","message":"Outcome unknown — check the issue on GitHub"}
+    
+    502 !== 400
+    
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: 400
+  actual: 502
+  operator: 'strictEqual'
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/v37-prefix/web/tests/v3-6-canvas-persistence.test.mjs:168:10)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: V3-6 canvas drag: a genuinely unknown upstream outcome keeps write_outcome_unknown
+ok 6 - V3-6 canvas drag: a genuinely unknown upstream outcome keeps write_outcome_unknown
+  ---
+  duration_ms: 212.225013
+  type: 'test'
+  ...
+# Subtest: V3-6 fake GitHub: unsafe requests carrying If-Match are refused exactly like GitHub
+ok 7 - V3-6 fake GitHub: unsafe requests carrying If-Match are refused exactly like GitHub
+  ---
+  duration_ms: 6.382834
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas client: known failures name the cause in EN and FR, unknown stays unknown
+not ok 8 - V3-6 canvas client: known failures name the cause in EN and FR, unknown stays unknown
+  ---
+  duration_ms: 3.59988
+  type: 'test'
+  location: '/tmp/opencode/v37-prefix/web/tests/v3-6-canvas-persistence.test.mjs:212:1'
+  failureType: 'testCodeFailure'
+  error: 'canvas_save_rejected must exist in both language dictionaries'
+  code: 'ERR_ASSERTION'
+  name: 'AssertionError'
+  expected: true
+  actual: false
+  operator: '=='
+  stack: |-
+    TestContext.<anonymous> (file:///tmp/opencode/v37-prefix/web/tests/v3-6-canvas-persistence.test.mjs:229:12)
+    process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    async Test.run (node:internal/test_runner/test:1054:7)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+1..8
+# tests 8
+# suites 0
+# pass 3
+# fail 5
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2088.193392

@@ -1,0 +1,768 @@
+[
+  {
+    "case": "signed-out 360x800 dark",
+    "signedOut": {
+      "viewport": "360x800",
+      "theme": "dark",
+      "loginVisible": true,
+      "dock": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "header": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "card": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 328,
+        "h": 252,
+        "x": 16,
+        "y": 274
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 278,
+        "h": 44,
+        "x": 41,
+        "y": 405
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 83,
+        "h": 44,
+        "x": 41,
+        "y": 457
+      },
+      "centering": {
+        "hDiff": 0,
+        "vDiff": 0,
+        "overflowX": false,
+        "overflowY": false
+      }
+    },
+    "signedIn": {
+      "viewport": "360x800",
+      "theme": "dark",
+      "loginVisible": false,
+      "dock": {
+        "display": "grid",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 360,
+        "h": 57,
+        "x": 0,
+        "y": 743
+      },
+      "header": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 360,
+        "h": 52,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 280,
+        "h": 800,
+        "x": -280,
+        "y": 0
+      },
+      "card": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "centering": {
+        "hDiff": 180,
+        "vDiff": 400,
+        "overflowX": false,
+        "overflowY": false
+      }
+    },
+    "afterLateLogin": {
+      "loginVisible": true,
+      "dockDisplay": "none",
+      "dockHeight": 0,
+      "restoredDockDisplay": "grid",
+      "restoredDockHeight": 57
+    },
+    "consoleErrors": []
+  },
+  {
+    "case": "signed-out 360x800 light",
+    "signedOut": {
+      "viewport": "360x800",
+      "theme": "light",
+      "loginVisible": true,
+      "dock": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "header": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "card": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 328,
+        "h": 252,
+        "x": 16,
+        "y": 274
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 278,
+        "h": 44,
+        "x": 41,
+        "y": 405
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 83,
+        "h": 44,
+        "x": 41,
+        "y": 457
+      },
+      "centering": {
+        "hDiff": 0,
+        "vDiff": 0,
+        "overflowX": false,
+        "overflowY": false
+      }
+    },
+    "signedIn": {
+      "viewport": "360x800",
+      "theme": "light",
+      "loginVisible": false,
+      "dock": {
+        "display": "grid",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 360,
+        "h": 57,
+        "x": 0,
+        "y": 743
+      },
+      "header": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 360,
+        "h": 52,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 280,
+        "h": 800,
+        "x": -280,
+        "y": 0
+      },
+      "card": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "centering": {
+        "hDiff": 180,
+        "vDiff": 400,
+        "overflowX": false,
+        "overflowY": false
+      }
+    },
+    "afterLateLogin": {
+      "loginVisible": true,
+      "dockDisplay": "none",
+      "dockHeight": 0,
+      "restoredDockDisplay": "grid",
+      "restoredDockHeight": 57
+    },
+    "consoleErrors": []
+  },
+  {
+    "case": "signed-out 1280x900 dark",
+    "signedOut": {
+      "viewport": "1280x900",
+      "theme": "dark",
+      "loginVisible": true,
+      "dock": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "header": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "card": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 420,
+        "h": 252,
+        "x": 430,
+        "y": 324
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 370,
+        "h": 44,
+        "x": 455,
+        "y": 455
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 83,
+        "h": 44,
+        "x": 455,
+        "y": 507
+      },
+      "centering": {
+        "hDiff": 0,
+        "vDiff": 0,
+        "overflowX": false,
+        "overflowY": false
+      }
+    },
+    "signedIn": {
+      "viewport": "1280x900",
+      "theme": "dark",
+      "loginVisible": false,
+      "dock": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "header": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 230,
+        "h": 900,
+        "x": 0,
+        "y": 0
+      },
+      "card": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "centering": {
+        "hDiff": 640,
+        "vDiff": 450,
+        "overflowX": false,
+        "overflowY": false
+      }
+    },
+    "afterLateLogin": {
+      "loginVisible": true,
+      "dockDisplay": "none",
+      "dockHeight": 0,
+      "restoredDockDisplay": "none",
+      "restoredDockHeight": 0
+    },
+    "consoleErrors": []
+  },
+  {
+    "case": "signed-out 1280x900 light",
+    "signedOut": {
+      "viewport": "1280x900",
+      "theme": "light",
+      "loginVisible": true,
+      "dock": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "header": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "card": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 420,
+        "h": 252,
+        "x": 430,
+        "y": 324
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 370,
+        "h": 44,
+        "x": 455,
+        "y": 455
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 83,
+        "h": 44,
+        "x": 455,
+        "y": 507
+      },
+      "centering": {
+        "hDiff": 0,
+        "vDiff": 0,
+        "overflowX": false,
+        "overflowY": false
+      }
+    },
+    "signedIn": {
+      "viewport": "1280x900",
+      "theme": "light",
+      "loginVisible": false,
+      "dock": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "header": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 230,
+        "h": 900,
+        "x": 0,
+        "y": 0
+      },
+      "card": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "centering": {
+        "hDiff": 640,
+        "vDiff": 450,
+        "overflowX": false,
+        "overflowY": false
+      }
+    },
+    "afterLateLogin": {
+      "loginVisible": true,
+      "dockDisplay": "none",
+      "dockHeight": 0,
+      "restoredDockDisplay": "none",
+      "restoredDockHeight": 0
+    },
+    "consoleErrors": []
+  },
+  {
+    "case": "slow /api/board while signed in",
+    "during": {
+      "viewport": "360x800",
+      "theme": "auto",
+      "loginVisible": false,
+      "dock": {
+        "display": "grid",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 360,
+        "h": 57,
+        "x": 0,
+        "y": 743
+      },
+      "header": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 360,
+        "h": 52,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 280,
+        "h": 800,
+        "x": -280,
+        "y": 0
+      },
+      "card": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "centering": {
+        "hDiff": 180,
+        "vDiff": 400,
+        "overflowX": false,
+        "overflowY": false
+      }
+    },
+    "after": {
+      "viewport": "360x800",
+      "theme": "auto",
+      "loginVisible": false,
+      "dock": {
+        "display": "grid",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 360,
+        "h": 57,
+        "x": 0,
+        "y": 743
+      },
+      "header": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 360,
+        "h": 52,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 280,
+        "h": 800,
+        "x": -280,
+        "y": 0
+      },
+      "card": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "centering": {
+        "hDiff": 180,
+        "vDiff": 400,
+        "overflowX": false,
+        "overflowY": false
+      }
+    }
+  },
+  {
+    "case": "failed /api/board, no cache",
+    "failed": {
+      "viewport": "360x800",
+      "theme": "auto",
+      "loginVisible": false,
+      "dock": {
+        "display": "grid",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 360,
+        "h": 57,
+        "x": 0,
+        "y": 743
+      },
+      "header": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 360,
+        "h": 52,
+        "x": 0,
+        "y": 0
+      },
+      "sidebar": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 280,
+        "h": 800,
+        "x": -280,
+        "y": 0
+      },
+      "card": {
+        "display": "none",
+        "visibility": "visible",
+        "hidden": true,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "password": {
+        "display": "block",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "submit": {
+        "display": "flex",
+        "visibility": "visible",
+        "hidden": false,
+        "w": 0,
+        "h": 0,
+        "x": 0,
+        "y": 0
+      },
+      "centering": {
+        "hDiff": 180,
+        "vDiff": 400,
+        "overflowX": false,
+        "overflowY": false
+      }
+    },
+    "notice": ""
+  }
+]

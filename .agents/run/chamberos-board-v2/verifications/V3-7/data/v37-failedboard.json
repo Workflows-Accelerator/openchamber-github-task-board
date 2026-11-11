@@ -1,0 +1,19 @@
+{
+  "after500": {
+    "loginVisible": false,
+    "boardVisible": true,
+    "dock": "grid",
+    "sidebar": "flex",
+    "notice": "",
+    "loginError": ""
+  },
+  "slowEarly": {
+    "loginVisible": false,
+    "dock": "grid"
+  },
+  "slowLate": {
+    "loginVisible": false,
+    "boardVisible": true,
+    "dock": "grid"
+  }
+}
