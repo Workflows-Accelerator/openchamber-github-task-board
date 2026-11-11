@@ -192,6 +192,46 @@ test('V3-6 canvas drag: a genuinely unknown upstream outcome keeps write_outcome
   assert.equal(unknown.json.error, 'write_outcome_unknown');
 });
 
+test('V3-6 canvas drag: a rate-limited write keeps its cause instead of becoming unknown', async (t) => {
+  const { fake, session } = await boot(t);
+  const item = await boardItem(session);
+  const before = fake.findIssue(42).body;
+
+  fake.setPatchHook(() => ({
+    status: 429,
+    payload: { message: 'Too Many Requests' },
+    headers: { 'x-ratelimit-remaining': '0' },
+  }));
+
+  const limited = await session.request('/api/issues/42/canvas', {
+    method: 'PUT',
+    body: { x: 1, y: 2, fingerprint: item.fingerprint },
+  });
+  // GitHub answered before applying anything, so the board must forward the
+  // cause (503 github_rate_limited) and never the UNKNOWN outcome the client
+  // would turn into "refresh, then drag again".
+  assert.equal(limited.status, 503, limited.text);
+  assert.equal(limited.json.error, 'github_rate_limited');
+  assert.equal(fake.findIssue(42).body, before, 'a rate-limited write wrote nothing');
+});
+
+test('V3-6 canvas drag: a rejected token keeps its cause instead of becoming unknown', async (t) => {
+  const { fake, session } = await boot(t);
+  const item = await boardItem(session);
+  const before = fake.findIssue(42).body;
+
+  fake.setPatchHook(() => ({ status: 401, payload: { message: 'Bad credentials' } }));
+
+  const rejected = await session.request('/api/issues/42/canvas', {
+    method: 'PUT',
+    body: { x: 1, y: 2, fingerprint: item.fingerprint },
+  });
+  assert.equal(rejected.status, 502, rejected.text);
+  assert.equal(rejected.json.error, 'github_unauthorized');
+  assert.match(rejected.json.message, /token|credentials/i);
+  assert.equal(fake.findIssue(42).body, before, 'a rejected token wrote nothing');
+});
+
 test('V3-6 fake GitHub: unsafe requests carrying If-Match are refused exactly like GitHub', async () => {
   const fake = await startFakeGitHub({ repo: REPO, issues: [fixture()] });
   try {
@@ -232,6 +272,18 @@ test('V3-6 canvas client: known failures name the cause in EN and FR, unknown st
   assert.match(js, /function canvasMoveFailureMessage\(/, 'card-move failures route through one named-cause helper');
   assert.match(js, /code === 'write_outcome_unknown'/, 'unknown outcomes keep their own message');
   assert.match(js, /status >= 400 && status < 500/, 'definite refusals report their HTTP status');
+  // The server maps a rejected token to 502 and a rate limit to 503; both are
+  // decided before the GitHub write, so api() must resolve them before its
+  // generic 5xx "write_outcome_unknown" branch or the named messages above can
+  // never be reached.
+  const unauthorizedIdx = js.indexOf("payload.error === 'github_unauthorized'");
+  const rateLimitIdx = js.indexOf("payload.error === 'github_rate_limited'");
+  const generic5xxIdx = js.indexOf('if (response.status >= 500)');
+  assert.ok(unauthorizedIdx !== -1 && rateLimitIdx !== -1, 'api() keeps the GitHub 401 and 429 causes');
+  assert.ok(
+    unauthorizedIdx < generic5xxIdx && rateLimitIdx < generic5xxIdx,
+    'the precise causes are resolved before the generic 5xx outcome',
+  );
   assert.doesNotMatch(
     js,
     /} else if \(err && err\.message && l === 'en'\) \{/,

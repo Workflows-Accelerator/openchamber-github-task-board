@@ -411,6 +411,14 @@
         });
       }
 
+      // The server answers a rejected GitHub token (401) with 502 and a rate
+      // limit (403/429) with 503, but both are definite refusals decided before
+      // the write. Keep the cause instead of collapsing it into "outcome
+      // unknown", which would tell the user to refresh and retry blindly.
+      if (payload && (payload.error === 'github_unauthorized' || payload.error === 'github_rate_limited')) {
+        throw new ApiError(payload.error, response.status, payload);
+      }
+
       if (response.status >= 500) {
         var msg500 = (payload && payload.message) || 'Outcome unknown \u2014 refresh to check GitHub state';
         if (!msg500.toLowerCase().includes('outcome unknown')) {
