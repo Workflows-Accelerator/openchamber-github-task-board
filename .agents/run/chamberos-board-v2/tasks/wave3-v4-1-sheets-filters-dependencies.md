@@ -2,7 +2,7 @@
 Repo: /workspace/code/openchamber-github-task-board
 Worktree: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3
 Branch: feat/board-v3
-Base commit: [FILL_BASE_SHA] (clean; contains V3-6 canvas-drag fix)
+Base commit: 28af19b (clean; contains the L4-approved write fix now live as `7339629-20261111`)
 Root checkout: /workspace/code/openchamber-github-task-board on branch ops/task-board-activation (DO NOT modify or switch branches in root checkout)
 Real Chromium launcher: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/A-delivery/hostile2/scripts/chromium-env.sh
 Test commands (RUN SEQUENTIALLY, never in parallel — parallel CPU contention flakes test/stage1-dual-mode-and-scoping.test.js):
@@ -76,7 +76,7 @@ web/tests/**
 6. Zero `"mobile"`, zero `"n8n"`, zero emojis, no button with both a `+` icon and `"+"` text; views still named `Canvas`/`Canevas` and `List`/`Liste`; sidebar navigation intact; `#nav-discussions` still hidden.
 7. `npm test` 618/618, all `web/tests/*.test.mjs`, `npm run typecheck`, esbuild, and `scripts/generate-delivery-smoke.mjs` pass, run sequentially. New tests cover the sheet system, the applied-filter bar, and dependency focus.
 8. Real Chromium screenshots for filters sheet, settings sheet, applied-filter bar on Canvas, dependency focus, and the renamed brand, at `360x800`, `390x844`, `1280x900`, Light and Dark, EN and FR, under `.agents/run/chamberos-board-v2/verifications/V4-1/screenshots/`. Inspect your own PNGs with the Squint Test before committing.
-9. `git diff [FILL_BASE_SHA]..HEAD -- panel service` is empty. Commit on `feat/board-v3`; do not push; do not deploy.
+9. `git diff 28af19b..HEAD -- panel service` is empty. Commit on `feat/board-v3`; do not push; do not deploy.
 </criteria>
 
 <output>
