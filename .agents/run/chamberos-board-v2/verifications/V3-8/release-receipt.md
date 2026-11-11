@@ -6,7 +6,7 @@
 - **Release Directory:** `/workspace/releases/board/7339629-20261111`
 - **Active Symlink:** `/workspace/releases/board/current` -> `/workspace/releases/board/7339629-20261111`
 - **Live HTTPS URL:** `https://board.workflows.ac` (internal loopback: `http://127.0.0.1:8787`)
-- **Supervisor Process:** `/workspace/code/openchamber-config/tools/board/supervisor.sh` (PID `1873809`, child `node web/dist/server.mjs` PID `1873851`)
+- **Supervisor Process:** `/workspace/code/openchamber-config/tools/board/supervisor.sh` (PID `1876359`, child `node web/dist/server.mjs` PID `1876401`; initial cutover PID `1873809` / child `1873851`)
 
 ---
 
@@ -29,11 +29,12 @@
 
 ### Post-Cutover
 - Symlink: `/workspace/releases/board/current` -> `/workspace/releases/board/7339629-20261111`
-- Supervisor PID: `1873809`
-- Child PID: `1873851`
+- Supervisor PID: `1876359` (initial cutover PID `1873809`)
+- Child PID: `1876401` (initial cutover PID `1873851`)
 - Health Check:
-  - `http://127.0.0.1:8787/health` -> HTTP 200 OK `{"status":"ok","version":"1.2.1","uptime":9}`
-  - `https://board.workflows.ac/health` -> HTTP 200 OK `{"status":"ok","version":"1.2.1","uptime":9}`
+  - `http://127.0.0.1:8787/health` -> HTTP 200 OK `{"status":"ok","version":"1.2.1","uptime":406}`
+  - `https://board.workflows.ac/health` -> HTTP 200 OK `{"status":"ok","version":"1.2.1","uptime":406}`
+- Sustained Health: Reset backoff and verified across supervisor process restart.
 
 ---
 
@@ -62,7 +63,7 @@ All served assets over live HTTPS (`https://board.workflows.ac`) match the stage
 - **Live Server Bundle (`/workspace/releases/board/7339629-20261111/web/dist/server.mjs`):**
   - Case-insensitive `if-match` occurrences: **0**
   - Line 5525: `throw new HttpError(400, "write_rejected", `GitHub rejected the write; nothing was saved (${upstream})`);`
-  - Child process verification: PID `1873851` cwd confirmed as `/workspace/releases/board/7339629-20261111`.
+  - Child process verification: PID `1876401` (and initial cutover PID `1873851`) cwd confirmed as `/workspace/releases/board/7339629-20261111`.
 - **Live Client `app.js` (fetched over HTTPS from `https://board.workflows.ac/app.js`):**
   - Line 418: `if (payload && (payload.error === 'github_unauthorized' || payload.error === 'github_rate_limited'))`
   - Line 693: `canvas_save_rejected: 'Canvas position not saved: GitHub rejected the write ({status}). The card stayed where it was.'`
