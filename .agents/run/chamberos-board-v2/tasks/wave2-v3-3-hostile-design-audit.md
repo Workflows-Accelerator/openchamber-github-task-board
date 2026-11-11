@@ -27,6 +27,15 @@ scripts/generate-delivery-smoke.mjs
 <depends_on>
 wave2-v3-2-ux-ui-overhaul
 </depends_on>
+<v3_1_server_audit_points>
+The manager could not read V3-1 server diffs line by line (commit 0aebf65). Independently attack these and report each as CONFIRMED-OK or DEFECT with evidence:
+1. A repository with `has_issues: false` triggers zero issue-list and zero GraphQL calls (run the V3-2 test and read the code path).
+2. `/api/repos` repo-list revalidation really sends `If-None-Match` upstream and serves a 304 without re-spending rate limit.
+3. The `state=` pagination change around web/server/github.ts:414 does not drop or duplicate issues across pages.
+4. Staleness after mutations: after create/edit/status change/dependency change, the next GET must NOT return a stale 304 (server cache and client ETag store both invalidated).
+5. Singleflight: a rejected in-flight request is removed from the map (no poisoned promise reused forever); concurrent callers each get the error, and the next call retries.
+6. Weak ETag excludes only volatile fields (`rateLimit`, `fetchedAt`); confirm no user-visible field is excluded, and that ETags are scoped per user/session so one user cannot get another's 304.
+</v3_1_server_audit_points>
 <steps>
 <step>1. Conduct a hostile review of all edits in `git diff 4e92c01..HEAD -- web scripts` assuming nothing works as claimed:
 - Audit GitHub API efficiency edge cases: Could `If-None-Match` (`304`) serve stale data after a local mutation (`createIssue`, `updateIssue`, `status`, `canvas`, `dependencies`, `reopen`)? Verify every mutation invalidates `repoBoardCache` and `repoClosedCache` (including stored ETags if needed, or verify GitHub ETag changes on write and local cache invalidation clears stale entries). Could multi-page repos (`pages > 1`) falsely skip page 2 on `304`? Verify `If-None-Match` is ONLY trusted when previous load had `pages === 1` and `!truncated`! Could singleflight cache a rejected promise permanently if `.finally()` cleanup is missing?

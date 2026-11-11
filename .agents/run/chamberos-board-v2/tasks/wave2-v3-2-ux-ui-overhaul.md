@@ -2,7 +2,7 @@
 Repo: /workspace/code/openchamber-github-task-board
 Worktree: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3
 Branch: feat/board-v3
-Base commit: [FILL_V3_1_SHA] (clean; V3-1 server API efficiency, Any-Repo fields `effectiveStage` / `isExplicitDraft` / `bodyMarkdown` / `rateLimit`, and 4 ChamberOS-adapted design skills committed)
+Base commit: 0aebf65 (clean; V3-1 server API efficiency, Any-Repo fields `effectiveStage` / `isExplicitDraft` / `bodyMarkdown` / `rateLimit`, and 4 ChamberOS-adapted design skills committed)
 Real Chromium launcher: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/A-delivery/hostile2/scripts/chromium-env.sh
 Key files: web/public/index.html, web/public/theme.css, web/public/app.js, web/public/sw.js, scripts/generate-delivery-smoke.mjs, web/tests/*
 Test commands: npm test && node --test --test-timeout=30000 web/tests/*.test.mjs && npm run typecheck && npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/tmp/antigravity/v3-server-check.mjs
@@ -32,6 +32,16 @@ web/tests/**
 <depends_on>
 wave2-v3-1-skills-api-anyrepo
 </depends_on>
+<test_policy>
+Existing tests that hard-assert the V1 look WILL fail under this redesign. You are explicitly authorised to UPDATE (never delete, never weaken to a no-op) these assertions to the new V3 values:
+- web/tests/issue-53-openchamber-look.test.mjs:365 (480px drawer width) -> assert the new V3 drawer width range.
+- web/tests/issue-53-openchamber-look.test.mjs:376-389 (V1 palette tokens #151412, #1d1b18, #262320, #f4f1ea, #f6f4ee, #fcfbf8, #efece4, #181613, #7c1d2e) -> assert the new V3 Light/Dark tokens from step 1, and add a negative assertion that #f6f4ee and #151412 are gone.
+- web/tests/issue-53-openchamber-look.test.mjs:506-516 (`<meta name="theme-color" content="#151412">`) -> assert the new V3 theme-color(s).
+- web/tests/canvas.test.mjs:364 (250px V1 cards) -> assert the new V3 card width.
+Any other pre-existing assertion that fails must be reported in proof.md with the reason it changed; an updated assertion must stay at least as strict as the original. Record a before/after table of every changed assertion in proof.md.
+Also add ONE test in web/tests/v3-api-anyrepo.test.mjs proving that a repository with `has_issues: false` makes ZERO issue-list and ZERO GraphQL calls to the fake GitHub (V3-1 proof did not evidence this). If that test exposes a server bug, you may make the minimal fix in web/server/** and say so explicitly in proof.md; otherwise do not touch web/server/**.
+Run the test suites SEQUENTIALLY (running them in parallel causes timing flakes in test/stage1-dual-mode-and-scoping.test.js).
+</test_policy>
 <steps>
 <step>1. Author a concise 2-pass design plan in `.agents/run/chamberos-board-v2/verifications/V3-2/design-plan.md` following `frontend-design` + `ui-skills`:
 - Architectural studio palette: replace V1's muddy `#f6f4ee` cream / `#151412` brown-black and maroon defaults with a refined architectural neutral palette:
