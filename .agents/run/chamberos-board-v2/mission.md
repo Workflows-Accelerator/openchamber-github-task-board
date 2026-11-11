@@ -1,13 +1,14 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `executing` D33 (Wave 1 live cutover of L4-approved `4e92c01`/`59e5d05` to `master` + `board.workflows.ac` in parallel with Wave 2 V3 UX/UI + Any-Repo + GitHub API overhaul in `.worktrees/team-dev-board-v3`; all issues #53-#71 remain open)
-- **Alignment:** `CONFIRMED` (rounds 1-3, see decisions.md)
-- **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-chamberos-board-v2`
-- **Branch:** `feat/chamberos-board-v2`
-- **Base Commit:** `a8ccc7a`
+- **State:** `building` V4-1 (D35/D36 feedback wave); write fix L4-approved, live `7339629-20261111`, origin/master `28af19b`. All issues #53–#71 remain open. Current dispatch/evidence: resume-2026-11-11-v4.md and tasks.md; historical entries below retained.
+- **Alignment:** `CONFIRMED` (D33–D36, see decisions.md)
+- **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3`
+- **Branch:** `feat/board-v3`
+- **Base Commit:** `28af19b` (V4-1 start)
 - **Plan:** PLAN.md (batches A-D, strictly sequential steps, one worktree)
 - **Dispatched Sessions:**
+  - `ses_c643c131b5afe41a0f030ac5` V4-1 sheets/filters/dependencies/branding — RUNNING, sole worker in feat/board-v3. `9router/genius` verified once by assistant session record. Await completion wake; do not poll.
   - `ses_c34aadb9f369c94af523dadb` task-001 setup + discovery — COMPLETED
 - **GitHub issues (all status:planned, created 2026-11-03):** parent #55; A1 #56, A2 #57, A3 #58, A4 #59, A5 #60; B1 #61, B2 #62, B3 #63, B4 #64; C1 #65, C2 #66, C3 #67, C4 #68; D1 #69, D2 #70, D3 #71. Chain: each step "Blocked by" the previous one (text line; native dependencies not yet set).
 - **Evidence:** explore/discovery.md
