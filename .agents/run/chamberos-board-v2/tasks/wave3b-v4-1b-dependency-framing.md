@@ -2,7 +2,7 @@
 Repo: /workspace/code/openchamber-github-task-board
 Worktree: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3
 Branch: feat/board-v3
-Base commit: [FILL_BASE_SHA] (clean; contains V4-1 build commits 011e297, 46a4ba8, 5e283b7 after the hostile self-review)
+Base commit: 5e283b7 (clean; contains V4-1 build commits 011e297, 46a4ba8, 5e283b7 after the hostile self-review)
 Root checkout: /workspace/code/openchamber-github-task-board on branch ops/task-board-activation (DO NOT modify or switch branches in root checkout)
 Real Chromium launcher: .agents/run/chamberos-board-v2/verifications/A-delivery/hostile2/scripts/chromium-env.sh
 Test commands (RUN SEQUENTIALLY, never in parallel — parallel CPU contention flakes stage1-dual-mode-and-scoping.test.js):
@@ -47,5 +47,5 @@ Real Chromium screenshots under .agents/run/chamberos-board-v2/verifications/V4-
 Sequential suites with final counts: npm test, node --test web/tests/*.test.mjs, npm run typecheck, esbuild, generate-delivery-smoke.mjs. Add regression tests for the fit computation and for label clamping in web/tests/v3-ux-client.test.mjs (pure functions, no DOM timers).
 </verification>
 <output>
-STATUS: PASS | FAIL. COMMITS: SHAs on feat/board-v3 from [FILL_BASE_SHA]. DELIVERED: what changed per finding with file:line. MEASUREMENTS: the table above. INVARIANTS: proof each still holds (git diff of the dot-grid function empty, zero "mobile"/"n8n"/emoji, no inline style). TEST_COUNTS. SCREENSHOTS: paths. NOT_VERIFIED: honestly.
+STATUS: PASS | FAIL. COMMITS: SHAs on feat/board-v3 from 5e283b7. DELIVERED: what changed per finding with file:line. MEASUREMENTS: the table above. INVARIANTS: proof each still holds (git diff of the dot-grid function empty, zero "mobile"/"n8n"/emoji, no inline style). TEST_COUNTS. SCREENSHOTS: paths. NOT_VERIFIED: honestly.
 </output>
