@@ -2,7 +2,7 @@
 Repo: /workspace/code/openchamber-github-task-board
 Worktree: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3
 Branch: feat/board-v3
-Base commit: [FILL_BASE_SHA] (clean; live V3 already deployed as 5bf1c62-20261111; the sign-in hotfix V3-5 is committed on top)
+Base commit: 5b46807 (clean; live V3 already deployed as 0e6d237-20261111, which contains the V3-5 sign-in hotfix)
 Root checkout: /workspace/code/openchamber-github-task-board on branch ops/task-board-activation (DO NOT modify or switch branches in root checkout)
 Test commands (RUN SEQUENTIALLY, never in parallel — parallel CPU contention flakes test/stage1-dual-mode-and-scoping.test.js):
   npm test
@@ -47,10 +47,10 @@ Reported on the live deployment (`https://board.workflows.ac`, release `5bf1c62-
 
 <criteria>
 1. A real Chromium drag of a canvas card persists: after a full page reload, the card is rendered at the dropped position, and the issue body marker contains the new coordinates. Proven with screenshots plus the persisted marker bytes.
-2. The exact root cause is named with file:line and the specific failing condition, and the regression tests fail on `[FILL_BASE_SHA]` and pass on the fix.
+2. The exact root cause is named with file:line and the specific failing condition, and the regression tests fail on `5b46807` and pass on the fix.
 3. No generic "Outcome unknown" remains on the canvas path for known failure causes; EN and FR both give a precise message.
 4. Zero regression: `npm test` 618/618, all `web/tests/*.test.mjs` pass, `npm run typecheck` exit 0, esbuild bundle exit 0, `scripts/generate-delivery-smoke.mjs` all sections pass — all sequential.
-5. `git diff [FILL_BASE_SHA]..HEAD -- panel service` is empty; dot-grid formula at `web/public/app.js:2268` unchanged; no real GitHub repository mutated; no secret printed.
+5. `git diff 5b46807..HEAD -- panel service` is empty; dot-grid formula at `web/public/app.js:2268` unchanged; no real GitHub repository mutated; no secret printed.
 </criteria>
 
 <output>
