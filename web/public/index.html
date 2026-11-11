@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="dark light">
-  <meta name="theme-color" content="#151412">
+  <meta name="theme-color" content="#0B0D11">
   <title>Atelier — Task Board</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
@@ -20,12 +20,16 @@
     <button id="sidebar-toggle-btn-compact" class="sidebar-toggle-btn compact-toggle" type="button" aria-label="Toggle navigation" title="Toggle navigation">
       <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
     </button>
-    <div class="compact-brand">
-      <span class="compact-logo" aria-hidden="true">
-        <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg>
-      </span>
-      <span class="compact-title">Atelier</span>
-    </div>
+    <button id="compact-project" type="button" aria-haspopup="dialog"><span id="compact-project-name">All Projects</span><span id="compact-count">0</span></button>
+    <button id="compact-search" type="button" aria-label="Search" data-i18n-title="search_placeholder">
+      <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M18.031 16.617l4.283 4.282-1.415 1.415-4.282-4.283A8.96 8.96 0 0 1 11 20c-4.968 0-9-4.032-9-9s4.032-9 9-9 9 4.032 9 9a8.96 8.96 0 0 1-1.969 5.617zm-2.006-.742A6.977 6.977 0 0 0 18 11c0-3.868-3.133-7-7-7-3.868 0-7 3.132-7 7 0 3.867 3.132 7 7 7a6.977 6.977 0 0 0 4.875-1.975l.15-.15z"/></svg>
+    </button>
+    <button id="compact-filter" type="button" aria-label="Filter" data-i18n-title="btn_filter">
+      <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/></svg>
+    </button>
+    <button id="compact-new" type="button" aria-label="New task" data-i18n-title="new_task">
+      <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+    </button>
   </div>
 
   <div class="app-layout">
@@ -72,7 +76,7 @@
         </button>
 
         <!-- 5. Discussions -->
-        <button id="nav-discussions" class="sidebar-item" type="button" data-view="discussions" title="Discussions">
+        <button id="nav-discussions" hidden class="sidebar-item" type="button" data-view="discussions" title="Discussions">
           <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20 2H4c-1.1 0-1.99.9-1.99 2L2 22l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zM6 9h12v2H6V9zm8 5H6v-2h8v2zm4-6H6V6h12v2z"/></svg>
           <span class="sidebar-label" data-i18n="nav_discussions">Discussions</span>
         </button>
@@ -107,12 +111,7 @@
               <span id="repo-select-btn-text" class="sr-only">All Projects</span>
               <span class="repo-select-chevron" aria-hidden="true">&#x25BE;</span>
             </button>
-            <div id="repo-popover" class="repo-popover" role="dialog" aria-modal="true" aria-label="Select Project" hidden>
-              <div class="repo-popover-header">
-                <input id="repo-search-input" class="repo-search-input" type="search" placeholder="Search projects..." autocomplete="off" />
-              </div>
-              <div id="repo-options-list" class="repo-options-list" role="listbox"></div>
-            </div>
+
           </div>
           <p id="discovery-status" class="muted small" hidden></p>
           <p id="refresh-policy" class="muted small" hidden></p>
@@ -272,9 +271,9 @@
                       <th data-i18n="status_backlog">Backlog</th>
                       <th data-i18n="status_todo">Todo</th>
                       <th data-i18n="status_planned">Planned</th>
-                      <th data-i18n="status_in_progress">In Progress</th>
-                      <th data-i18n="status_needs_human">Needs Human</th>
-                      <th data-i18n="status_in_review">In Review</th>
+                      <th data-i18n="status_in_progress">In progress</th>
+                      <th data-i18n="status_needs_human">Needs human</th>
+                      <th data-i18n="status_in_review">In review</th>
                       <th data-i18n="status_done">Done</th>
                     </tr>
                   </thead>
@@ -359,11 +358,10 @@
 
         <div class="status-strip" id="status-strip">
           <span class="status-strip-brand" data-i18n="brand_title">Task Board</span>
-          <span class="status-strip-sep" aria-hidden="true">·</span>
           <span id="scope-status" role="status" class="status-strip-scope"></span>
-          <span class="status-strip-sep" aria-hidden="true">·</span>
           <span id="board-count" class="status-strip-count"></span>
-          <span class="status-strip-sep" aria-hidden="true">·</span>
+          <button id="list-group-toggle" class="button small" type="button" data-i18n="flat_list">Flat list</button>
+          <button id="new-task-btn" class="button primary small" type="button" data-i18n="new_task">New task</button>
           <span id="freshness" class="freshness status-strip-freshness"></span>
         </div>
 
@@ -374,11 +372,11 @@
             <button id="canvas-zoom-readout" class="canvas-control-btn readout-btn" type="button" title="Reset zoom (100%)" aria-label="Reset zoom (100%)" data-i18n-title="canvas_zoom_reset">100%</button>
             <button id="canvas-zoom-in" class="canvas-control-btn" type="button" title="Zoom in" aria-label="Zoom in" data-i18n-title="canvas_zoom_in">+</button>
             <span class="canvas-control-sep" aria-hidden="true">|</span>
-            <button id="canvas-fit-all" class="canvas-control-btn text-btn" type="button" title="Fit all" aria-label="Fit all" data-i18n-title="canvas_fit_all" data-i18n="canvas_fit_all">Fit all</button>
+            <button id="canvas-fit-all" class="canvas-control-btn text-btn" type="button" title="Fit all" aria-label="Fit all" data-i18n-title="canvas_fit_all" data-i18n="canvas_fit_all">Fit</button>
             <button id="canvas-reset-view" class="canvas-control-btn text-btn" type="button" title="Reset view" aria-label="Reset view" data-i18n-title="canvas_reset_view" data-i18n="canvas_reset_view">Reset</button>
             <span class="canvas-control-sep" aria-hidden="true">|</span>
             <button id="canvas-arrange" class="canvas-control-btn text-btn" type="button" title="Auto-arrange cards by dependency" aria-label="Auto-arrange cards" data-i18n-title="canvas_arrange" data-i18n="canvas_arrange">Arrange</button>
-            <button id="canvas-arrange-undo" class="canvas-control-btn text-btn" type="button" title="Undo last arrange" aria-label="Undo last arrange" data-i18n-title="canvas_arrange_undo" data-i18n="canvas_arrange_undo" hidden>Undo arrange</button>
+            <button id="canvas-arrange-undo" class="canvas-control-btn text-btn" type="button" title="Undo last arrange" aria-label="Undo last arrange" data-i18n-title="canvas_arrange_undo" data-i18n="canvas_arrange_undo" hidden>Undo</button>
           </div>
           <div id="canvas-plane" class="canvas-plane">
             <svg id="canvas-wires" class="canvas-layer canvas-layer-wires" width="14" height="14" aria-hidden="true">
@@ -445,14 +443,16 @@
         <p id="capture-hint" class="muted small" hidden>Capture ideas here. Enter adds a draft, never starts an agent.</p>
         <div id="empty-state" class="empty" hidden>
           <p>No tasks in this repository.</p>
-          <p class="muted">Open issues appear here when they are created on GitHub.</p>
+          <p class="muted" data-i18n="empty_description">Capture your next step or choose another project.</p>
+          <div class="empty-actions"><button id="empty-create" class="button primary" type="button" data-i18n="create_task">Create a task</button><button id="empty-switch" class="button" type="button" data-i18n="switch_project">Switch project</button></div>
         </div>
         <ul id="task-list" class="task-list" aria-label="Tasks"></ul>
         <form id="quick-add-form" class="quick-add-bar capture-row" hidden>
+          <div class="composer-head"><strong data-i18n="new_task">New task</strong><button id="composer-close" class="button" type="button" aria-label="Close">×</button></div>
           <label for="quick-add-input" class="sr-only">New draft title</label>
-          <input id="quick-add-input" class="quick-add-input" type="text" maxlength="256" placeholder="Add a draft…" data-i18n-placeholder="draft_placeholder" autocomplete="off" required />
+          <input id="quick-add-input" class="quick-add-input" type="text" maxlength="256" placeholder="Add a draft…" data-i18n-placeholder="quick_add_title_placeholder" autocomplete="off" required />
           <label for="quick-add-description" class="sr-only">Optional description</label>
-          <input id="quick-add-description" type="text" placeholder="Optional description or inspiration" autocomplete="off" />
+          <input id="quick-add-description" type="text" placeholder="Optional description or inspiration" data-i18n-placeholder="quick_add_desc_placeholder" autocomplete="off" />
           <label for="quick-add-project" class="sr-only">Project for new draft</label>
           <select id="quick-add-project" aria-label="Project for new draft"></select>
           <button class="button primary" type="submit" data-i18n="quick_add_btn">Add draft</button>
@@ -466,7 +466,7 @@
       <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
 
       <section id="detail-view" class="view task-drawer" aria-labelledby="detail-title" hidden>
-        <button id="back-btn" class="button back" type="button" data-i18n="drawer_back">Back to board</button>
+        <div class="drawer-identity"><span id="detail-identity"></span><a id="detail-github" target="_blank" rel="noopener noreferrer" data-i18n="open_github">Open in GitHub</a><button id="back-btn" class="button back" type="button" aria-label="Close">×</button></div>
 
         <div class="detail-head">
           <div class="detail-head-title-row">
@@ -477,6 +477,17 @@
           <div id="detail-meta" class="badges"></div>
           <p id="detail-freshness" class="muted small"></p>
         </div>
+
+        <section class="panel drawer-controls" aria-labelledby="status-title">
+          <h2 id="status-title" class="sr-only" data-i18n="drawer_status_title">Status</h2>
+          <div class="row">
+            <label for="status-select" class="sr-only" data-i18n="drawer_status_label">Status label</label>
+            <select id="status-select"></select>
+            <button id="apply-status" class="button primary" type="button" data-i18n="drawer_apply_status">Apply status</button>
+            <a id="priority-control" class="button" target="_blank" rel="noopener noreferrer">Priority</a>
+            <button id="mark-done-btn" class="button" type="button" data-i18n="drawer_mark_done">Mark Done</button>
+          </div>
+        </section>
 
         <p id="drawer-notice" class="notice" role="status" aria-live="polite" hidden></p>
 
@@ -519,15 +530,7 @@
           <ul id="question-list" class="question-list"></ul>
         </section>
 
-        <section class="panel" aria-labelledby="status-title">
-          <h2 id="status-title" data-i18n="drawer_status_title">Status</h2>
-          <div class="row">
-            <label for="status-select" data-i18n="drawer_status_label">Status label</label>
-            <select id="status-select"></select>
-            <button id="apply-status" class="button primary" type="button" data-i18n="drawer_apply_status">Apply status</button>
-            <button id="mark-done-btn" class="button" type="button" data-i18n="drawer_mark_done">Mark Done</button>
-          </div>
-        </section>
+
 
         <section class="panel" aria-labelledby="human-title">
           <h2 id="human-title" data-i18n="drawer_human_title">Human tasks</h2>
@@ -569,6 +572,18 @@
   </div>
 
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
+            <div id="repo-popover" class="repo-popover" role="dialog" aria-modal="true" aria-label="Select Project" hidden>
+              <div class="repo-popover-header">
+                <input id="repo-search-input" class="repo-search-input" type="search" placeholder="Search projects..." autocomplete="off" />
+              </div>
+              <div id="repo-options-list" class="repo-options-list" role="listbox"></div><footer id="repo-api-footer" class="repo-footer"></footer>
+            </div>
+  <nav id="compact-nav-dock" aria-label="Primary navigation">
+    <button id="dock-canvas" type="button" data-i18n="nav_canvas">Canvas</button>
+    <button id="dock-list" type="button" data-i18n="nav_list">List</button>
+    <button id="dock-decisions" type="button"><span data-i18n="nav_decisions">Decisions</span><span id="dock-decisions-count" class="badge" hidden>0</span></button>
+    <button id="dock-blocked" type="button"><span data-i18n="nav_blocked">Blocked</span><span id="dock-blocked-count" class="badge" hidden>0</span></button>
+  </nav>
   <script type="module" src="/markdown.js"></script>
   <script type="module" src="/arrange.js"></script>
   <script src="/app.js" defer></script>

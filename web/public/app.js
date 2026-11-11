@@ -302,8 +302,12 @@
   async function api(path, options) {
     options = options || {};
     var method = options.method || 'GET';
+    var cacheKey = path.replace(/([?&])refresh=1(?:&|$)/, '$1').replace(/[?&]$/, '');
+    var cacheable = method === 'GET' && /^\/api\/(?:repos(?:$|\/[^/]+\/[^/]+\/board$)|board$|combined\/board$)/.test(cacheKey);
+    var cached = cacheable ? getResponses.get(cacheKey) : null;
     var headers = {};
     if (options.body !== undefined) headers['content-type'] = 'application/json';
+    if (cached && !/[?&]refresh=1/.test(path)) headers['If-None-Match'] = cached.etag;
     var isMutation = method !== 'GET' && !path.startsWith('/api/session');
     if (isMutation && !state.csrf && state.sessionPromise) {
       try {
@@ -355,6 +359,8 @@
       if (timeoutTimer) clearTimeout(timeoutTimer);
     }
 
+    if (response.status === 304 && cached) return JSON.parse(cached.text);
+    if (isMutation && response.ok) getResponses.clear();
     var payload = null;
     var jsonParsed = false;
     if (text) {
@@ -432,10 +438,18 @@
       }
       throw new ApiError((payload && payload.error) || 'request_failed', response.status, payload);
     }
+    if (cacheable && jsonParsed && response.headers && response.headers.get) {
+      var etag = response.headers.get('etag');
+      if (etag) {
+        getResponses.set(cacheKey, { etag: etag, text: text });
+        if (getResponses.size > 40) getResponses.delete(getResponses.keys().next().value);
+      }
+    }
     return payload;
   }
 
   function clearRenderedData() {
+    getResponses.clear();
     ['task-list', 'detail-meta', 'question-list', 'human-list', 'ac-list', 'subtasks-list', 'filter-chips', 'repo-options-list'].forEach(function (id) {
       var node = document.getElementById(id);
       if (node) node.textContent = '';
@@ -607,6 +621,7 @@
 
   var I18N = {
     en: {
+      new_task: 'New task', flat_list: 'Flat list', grouped_list: 'Stage groups', open_github: 'Open in GitHub', create_task: 'Create a task', switch_project: 'Switch project', empty_description: 'Capture your next step or choose another project.',
       section_views: 'Views',
       section_system: 'System',
       nav_canvas: 'Canvas',
@@ -664,8 +679,8 @@
       canvas_zoom_in: 'Zoom in',
       canvas_zoom_out: 'Zoom out',
       canvas_zoom_reset: 'Reset zoom (100%)',
-      canvas_fit_all: 'Fit all',
-      canvas_reset_view: 'Reset view',
+      canvas_fit_all: 'Fit',
+      canvas_reset_view: 'Reset',
       canvas_save_error: 'Could not save card position.',
       canvas_drag_to_block: 'Drag to block another task',
       canvas_wire_blocks: 'Blocks #{n}',
@@ -692,7 +707,7 @@
       canvas_wire_cancel_btn: 'Cancel',
       dep_blocked_by_n: 'blocked by {n}',
       canvas_arrange: 'Arrange',
-      canvas_arrange_undo: 'Undo arrange',
+      canvas_arrange_undo: 'Undo',
       arrange_dialog_title: 'Arrange cards',
       arrange_scope_unplaced: 'Only cards without a saved place',
       arrange_scope_all: 'All cards (cards you placed by hand will also move)',
@@ -771,9 +786,9 @@
       status_backlog: 'Backlog',
       status_todo: 'Todo',
       status_planned: 'Planned',
-      status_in_progress: 'In Progress',
-      status_needs_human: 'Needs Human',
-      status_in_review: 'In Review',
+      status_in_progress: 'In progress',
+      status_needs_human: 'Needs human',
+      status_in_review: 'In review',
       status_done: 'Done',
       operations_load_error: 'Could not load operations data',
       archive_load_error: 'Could not load archive',
@@ -782,6 +797,7 @@
       note_save_error: 'Could not save note.',
     },
     fr: {
+      new_task: 'Nouvelle tâche', flat_list: 'Liste à plat', grouped_list: 'Groupes de statuts', open_github: 'Ouvrir sur GitHub', create_task: 'Créer une tâche', switch_project: 'Changer de projet', empty_description: 'Notez votre prochaine étape ou choisissez un autre projet.',
       section_views: 'Vues',
       section_system: 'Système',
       nav_canvas: 'Canevas',
@@ -839,8 +855,8 @@
       canvas_zoom_in: 'Zoom avant',
       canvas_zoom_out: 'Zoom arrière',
       canvas_zoom_reset: 'Réinitialiser le zoom (100%)',
-      canvas_fit_all: 'Ajuster tout',
-      canvas_reset_view: 'Réinitialiser la vue',
+      canvas_fit_all: 'Tout',
+      canvas_reset_view: 'Réinit.',
       canvas_save_error: 'Impossible d’enregistrer la position de la carte.',
       canvas_drag_to_block: 'Glisser pour bloquer une autre tâche',
       canvas_wire_blocks: 'Bloque #{n}',
@@ -867,7 +883,7 @@
       canvas_wire_cancel_btn: 'Annuler',
       dep_blocked_by_n: 'bloqué par {n}',
       canvas_arrange: 'Organiser',
-      canvas_arrange_undo: 'Annuler l’organisation',
+      canvas_arrange_undo: 'Annuler',
       arrange_dialog_title: 'Organiser les cartes',
       arrange_scope_unplaced: 'Uniquement les cartes non positionnées',
       arrange_scope_all: 'Toutes les cartes (les cartes déplacées manuellement bougeront aussi)',
@@ -947,7 +963,7 @@
       status_todo: 'À faire',
       status_planned: 'Planifié',
       status_in_progress: 'En cours',
-      status_needs_human: 'Action humaine',
+      status_needs_human: 'Validation',
       status_in_review: 'En revue',
       status_done: 'Terminé',
       operations_load_error: 'Impossible de charger les données opérationnelles',
@@ -977,6 +993,9 @@
     var l = lang || getLanguage();
     var dict = I18N[l] || I18N.en;
     if (typeof document !== 'undefined') {
+      if (document.documentElement) document.documentElement.lang = l;
+      if (state.detail) renderDetail(false);
+      if (state.repositories) renderPicker();
       var elements = document.querySelectorAll ? document.querySelectorAll('[data-i18n]') : [];
       if (elements && elements.forEach) {
         elements.forEach(function (element) {
@@ -1012,7 +1031,7 @@
       if (langLabel) {
         langLabel.textContent = l === 'en' ? 'FR' : 'EN';
       }
-      applyClientPresentationMode();
+      applyClientPresentationMode(); if (state.detail && $('detail-view') && !$('detail-view').hidden) renderDetail(false);
       if (state.board) {
         renderBoard();
       }
@@ -1526,7 +1545,6 @@
       state.busy = false;
     }
   }
-
   async function toggleMarkDone() {
     if (!state.detail || state.busy || state.uncertain.has(identity(state.detail))) return;
     var issue = state.detail;
@@ -1539,7 +1557,6 @@
     state.busy = true;
     var generation = ++state.readGeneration;
     invalidateBoardForWrite(issue);
-
     try {
       var response = await api(issuePath(issue), {
         expected: issue,
@@ -1572,7 +1589,6 @@
       if (btn) btn.disabled = false;
     }
   }
-
   function showView(name) {
     var allViews = ['login', 'board', 'detail', 'placeholder', 'decisions', 'blocked', 'operations', 'archive', 'client'];
     if (name === 'detail') {
@@ -1601,7 +1617,6 @@
       }
     }
   }
-
   function relative(iso, lang) {
     if (!iso) return 'unknown time';
     var then = Date.parse(iso);
@@ -1617,15 +1632,14 @@
     var days = Math.floor(hours / 24);
     return l === 'fr' ? 'il y a ' + days + dict.ago_days : days + dict.ago_days;
   }
-
   function badge(text, kind) {
     return el('span', { class: 'badge ' + (kind || ''), text: text });
   }
-
   function statusText(label) {
-    return label ? label.replace(/^status:/i, '').replace(/-/g, ' ') : 'no status';
+    var key = (label || 'todo').replace(/^status:/i, '');
+    var labels = getLanguage() === 'fr' ? { todo: 'À faire', 'in-progress': 'En cours', 'needs-human': 'Validation', 'in-review': 'En revue', planned: 'Planifié', backlog: 'Backlog', draft: 'Brouillon', done: 'Terminé', cancelled: 'Annulé' } : { todo: 'Todo', 'in-progress': 'In progress', 'needs-human': 'Needs human', 'in-review': 'In review', planned: 'Planned', backlog: 'Backlog', draft: 'Draft', done: 'Done', cancelled: 'Cancelled' };
+    return labels[key] || key.replace(/-/g, ' ');
   }
-
   function priorityOf(issue) {
     var labels = Array.isArray(issue.labels) ? issue.labels : [];
     for (var i = 0; i < labels.length; i++) {
@@ -1637,7 +1651,6 @@
     }
     return null;
   }
-
   function renderFreshness() {
     var node = $('freshness');
     if (!node) return;
@@ -1653,7 +1666,6 @@
     node.className = 'freshness';
     node.textContent = state.loadedAt ? (dict.loaded_prefix || 'Loaded ') + relative(new Date(state.loadedAt).toISOString(), l) : '';
   }
-
   var VIEW_LABELS = { simple: 'Simple list', cards: 'Cards', kanban: 'Kanban board', graph: 'Graph', pending: 'Pending items' };
   var SORT_LABELS = { priority: 'Priority', updated: 'Recently updated', created: 'Recently created', manual: 'Manual order' };
   var STAGES = ['draft', 'backlog', 'todo', 'planned', 'in-progress', 'needs-human', 'in-review', 'done'];
@@ -1690,7 +1702,7 @@
   function projectBadge(repository) {
     return el('span', { class: 'badge repo-badge', text: shortName(repository.full), title: repository.full, tabindex: '0' });
   }
-  function stageOf(issue) { return issue.state === 'closed' ? 'done' : (issue.statusLabel || '').replace(/^status:/, '') || issue.column || 'draft'; }
+  function stageOf(issue) { return issue.effectiveStage || (issue.state === 'closed' ? 'done' : (issue.statusLabel || '').replace(/^status:/, '') || issue.column || 'todo'); }
   function countOf(issue, kind, total) { return issue.counts && issue.counts[kind] ? issue.counts[kind][total ? 'total' : 'open'] || 0 : 0; }
   function needsMe(issue) {
     return stageOf(issue) !== 'done' && (stageOf(issue) === 'needs-human' ||
@@ -2031,7 +2043,7 @@
       'aria-label': 'Drag to reorder ' + issue.title, title: 'Drag to reorder; or use Move up / Move down' });
     var row = el('li', { class: 'draft-row' + (issue.offline ? ' draft-row-offline' : ''), 'data-draft-key': issue.offline ? issue.id : issue.key }, [handle, form]);
     var meta = el('div', { class: 'draft-meta' }, [
-      issue.offline ? badge(issue.uncertain ? '(offline · outcome unknown)' : '(offline)', 'badge-offline') : null,
+      issue.offline ? badge(issue.uncertain ? '(offline — outcome unknown)' : '(offline)', 'badge-offline') : null,
     ]);
     if (issue.offline && issue.uncertain) {
       meta.appendChild(el('button', { type: 'button', class: 'button', text: 'Retry sync', onclick: function () {
@@ -2107,7 +2119,6 @@
     'in-review': '#3fb950',
     'done': '#238636'
   };
-
   function cleanPreviewText(raw) {
     if (!raw || typeof raw !== 'string') return '';
     var cleaned = raw
@@ -2126,7 +2137,6 @@
     }
     return '';
   }
-
   function simpleTaskRow(issue) {
     var friendly = resolveFriendlyTitle(issue);
     var stage = stageOf(issue);
@@ -2139,22 +2149,22 @@
     var mainColChildren = [titleEl];
     var overviewSource = typeof issue.overview === 'string'
       ? issue.overview
-      : (state.clientPresentationMode ? '' : (issue.description || issue.body || ''));
+      : (state.clientPresentationMode ? '' : (issue.bodyMarkdown || issue.description || issue.body || ''));
     var descText = friendly.subtitle || cleanPreviewText(overviewSource);
     if (descText && descText !== friendly.title) {
       mainColChildren.push(el('span', { class: 'simple-row-desc task-subtitle muted small', text: descText }));
     }
     var content = el('div', { class: 'simple-row-main' }, mainColChildren);
-
-    var metaChildren = [];
+    var metaChildren = [badge(statusText('status:' + stage), 'status')];
+    if (priorityOf(issue)) metaChildren.push(badge(priorityText(priorityOf(issue)), 'badge-priority'));
     if (issue.repository && (!state.selected || state.selected === 'all')) {
       metaChildren.push(el('span', { class: 'badge repo-badge', text: shortName(issue.repository.full), title: issue.repository.full }));
     }
     if (countOf(issue, 'openQuestions')) {
-      metaChildren.push(el('span', { class: 'badge attention', text: countOf(issue, 'openQuestions') + ' questions' }));
+      var qn = countOf(issue, 'openQuestions'); metaChildren.push(el('span', { class: 'badge attention', text: qn + (qn === 1 ? ' question' : ' questions') }));
     }
     if (countOf(issue, 'humanTasks')) {
-      metaChildren.push(el('span', { class: 'badge attention', text: countOf(issue, 'humanTasks') + ' human' }));
+      var hn = countOf(issue, 'humanTasks'); metaChildren.push(el('span', { class: 'badge attention', text: getLanguage() === 'fr' ? (hn + (hn === 1 ? ' action' : ' actions')) : (hn + ' human') }));
     }
     var blockedCount = Array.isArray(issue.blockedBy) ? issue.blockedBy.length : 0;
     if (blockedCount > 0) {
@@ -2164,7 +2174,6 @@
     }
     metaChildren.push(el('span', { class: 'task-number simple-row-number muted', text: issue.offline ? '(offline)' : '#' + issue.number }));
     var meta = el('div', { class: 'simple-row-meta' }, metaChildren);
-
     return el('button', {
       type: 'button',
       class: 'task-row simple-row',
@@ -2176,7 +2185,6 @@
       }
     }, [dot, content, meta]);
   }
-
   function taskCard(issue, compact) {
     if (compact) return simpleTaskRow(issue);
     var friendly = resolveFriendlyTitle(issue);
@@ -2190,7 +2198,7 @@
       blockedBadge = badge(label, 'badge-blocked');
     }
     children.push(el('div', { class: 'badges' }, [issue.repository ? projectBadge(issue.repository) : null,
-      badge(statusText('status:' + stageOf(issue)), 'status'), priorityOf(issue) ? badge(priorityOf(issue), 'badge-priority') : null,
+      badge(statusText('status:' + stageOf(issue)), 'status'), priorityOf(issue) ? badge(priorityText(priorityOf(issue)), 'badge-priority') : null,
       issue.offline ? badge('(offline)', 'badge-offline') : null,
       blockedBadge,
       countOf(issue, 'openQuestions') ? badge(countOf(issue, 'openQuestions') + ' questions', 'attention') : null,
@@ -2200,12 +2208,10 @@
       if (issue.offline) { setNotice('Saved offline. Use Simple list + Draft filter to edit.'); return; } openIssueView(issue, false);
     } }, children);
   }
-
   /* ==========================================================================
      Canvas View Engine
      ========================================================================== */
   var CANVAS_VIEW_STATE_KEY = 'tb_canvas_view_state';
-
   function saveCanvasViewState() {
     try {
       localStorage.setItem(CANVAS_VIEW_STATE_KEY, JSON.stringify({
@@ -2215,7 +2221,6 @@
       }));
     } catch (_) {}
   }
-
   function restoreCanvasViewState() {
     try {
       var raw = localStorage.getItem(CANVAS_VIEW_STATE_KEY);
@@ -2241,19 +2246,15 @@
     } catch (_) {}
     return false;
   }
-
   function updateCanvasTransform() {
     var plane = $('canvas-plane');
     var readout = $('canvas-zoom-readout');
     var viewport = $('canvas-viewport');
     if (!viewport || !plane) return;
-
     plane.style.transform = 'translate(' + Math.round(state.canvasPanX) + 'px, ' + Math.round(state.canvasPanY) + 'px) scale(' + state.canvasScale.toFixed(3) + ')';
-
     if (readout) {
       readout.textContent = Math.round(state.canvasScale * 100) + '%';
     }
-
     var baseStep = 24;
     var worldStep = baseStep;
     if (state.canvasScale < 0.35) {
@@ -2264,12 +2265,49 @@
     var gridStep = worldStep * state.canvasScale;
     var dotRadius = Math.max(0.75, Math.min(2.0, 0.85 + 0.4 * state.canvasScale));
     var alpha = Math.max(0.10, Math.min(0.18, 0.10 + 0.06 * state.canvasScale)).toFixed(4);
-
     viewport.style.backgroundImage = 'radial-gradient(rgba(var(--canvas-dot-rgb, 24, 22, 19), ' + alpha + ') ' + dotRadius.toFixed(2) + 'px, transparent ' + dotRadius.toFixed(2) + 'px)';
     viewport.style.backgroundSize = gridStep.toFixed(2) + 'px ' + gridStep.toFixed(2) + 'px';
     viewport.style.backgroundPosition = state.canvasPanX.toFixed(2) + 'px ' + state.canvasPanY.toFixed(2) + 'px';
 
     saveCanvasViewState();
+  }
+
+  var getResponses = new Map();
+  var collapsedStages = new Set();
+  function priorityText(value) {
+    var labels = getLanguage() === 'fr' ? { urgent: 'Urgente', high: 'Haute', medium: 'Moyenne', normal: 'Moyenne', low: 'Basse' } : { urgent: 'Urgent', high: 'High', medium: 'Medium', normal: 'Medium', low: 'Low' };
+    return labels[value] || value;
+  }
+  function apiHealthText() {
+    var view = state.repositories || {};
+    var rate = view.rateLimit || (state.board && state.board.rateLimit);
+    return (rate ? 'GitHub API ' + rate.remaining + ' / ' + rate.limit + ' — ' : '') + (getLanguage() === 'fr' ? 'Cache : ' : 'Cache: ') + (view.freshnessMs ? Math.round(view.freshnessMs / 1000) + 's' : '—');
+  }
+  function updateDock() {
+    ['canvas', 'list', 'decisions', 'blocked'].forEach(function (name) {
+      var button = $('dock-' + name);
+      if (button) button.setAttribute('aria-current', (state.activeSectionView || state.activeViewMode) === name ? 'page' : 'false');
+    });
+  }
+  function openComposer() {
+    if (state.detail) closeDrawer();
+    switchView('list');
+    var form = $('quick-add-form');
+    if (form && form.classList) form.classList.add('composer-open');
+    if (form) form.hidden = false;
+    $('quick-add-input').focus();
+  }
+  function bindWorkspaceControls() {
+    function on(id, callback) { var node = $(id); if (node) node.addEventListener('click', callback); }
+    ['new-task-btn', 'compact-new', 'empty-create'].forEach(function (id) { on(id, openComposer); });
+    ['compact-project', 'empty-switch'].forEach(function (id) { on(id, function () { toggleRepoPopover(); }); });
+    on('composer-close', function () { $('quick-add-form').classList.remove('composer-open'); });
+    on('compact-filter', function () { openSheet('filter', $('compact-filter')); });
+    on('compact-search', function () { document.body.classList.toggle('search-open'); $('board-search').focus(); });
+    on('list-group-toggle', function () { state.flatList = !state.flatList; renderBoard(); });
+    ['canvas', 'list', 'decisions', 'blocked'].forEach(function (name) {
+      on('dock-' + name, function () { if (name === 'canvas' || name === 'list') switchView(name); else openSectionView(name); updateDock(); });
+    });
   }
 
   function zoomToPoint(clientX, clientY, targetScale) {
@@ -2333,7 +2371,7 @@
     nodes.forEach(function (node) {
       var x = parseFloat(node.style.left) || 0;
       var y = parseFloat(node.style.top) || 0;
-      var w = node.offsetWidth || 250;
+      var w = node.offsetWidth || 280;
       var h = node.offsetHeight || 130;
       if (x < minX) minX = x;
       if (x + w > maxX) maxX = x + w;
@@ -2413,7 +2451,7 @@
       startY = Math.max(40, minY);
     }
 
-    var colWidth = 290;
+    var colWidth = 320;
     var rowHeight = 160;
     var rowsPerCol = 4;
 
@@ -2432,7 +2470,7 @@
     var friendly = resolveFriendlyTitle(issue);
     var stage = stageOf(issue);
     var repoName = issue.repository ? shortName(issue.repository.full) : '';
-    var repoDisplay = repoName ? repoName + ' · #' + (issue.offline ? 'offline' : issue.number) : '#' + (issue.offline ? 'offline' : issue.number);
+    var repoDisplay = repoName ? repoName + ' #' + (issue.offline ? 'offline' : issue.number) : '#' + (issue.offline ? 'offline' : issue.number);
 
     var repoDot = el('span', { class: 'canvas-card-repo-dot' });
     var repoLabel = el('span', { class: 'canvas-card-repo-name', text: repoDisplay });
@@ -2453,13 +2491,13 @@
     }
 
     var prio = priorityOf(issue);
-    var prioEl = prio ? el('span', { class: 'canvas-card-prio prio-' + prio, text: prio }) : null;
+    var prioEl = prio ? el('span', { class: 'canvas-card-prio prio-' + prio, text: priorityText(prio) }) : null;
 
     var humanCount = countOf(issue, 'humanTasks', true);
     var questionCount = countOf(issue, 'openQuestions', true);
     var metaChildren = [];
     if (prioEl) metaChildren.push(prioEl);
-    if (humanCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: humanCount + ' human' }));
+    if (humanCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: getLanguage() === 'fr' ? (humanCount + (humanCount === 1 ? ' action' : ' actions')) : (humanCount + ' human') }));
     if (questionCount > 0) metaChildren.push(el('span', { class: 'canvas-card-badge', text: questionCount + ' q' }));
 
     var dict = I18N[getLanguage()] || I18N.en;
@@ -3118,7 +3156,7 @@
     var body = el('div', { class: 'canvas-note-body' });
     function renderBodyHtml() {
       if (!note.text || !note.text.trim()) {
-        body.innerHTML = '<span class="muted" style="opacity:0.6;font-style:italic;">' + (dict.note_empty || '(Empty note - double-click to edit)') + '</span>';
+        body.innerHTML = '<span class="muted note-empty">' + (dict.note_empty || '(Empty note - double-click to edit)') + '</span>';
       } else {
         body.innerHTML = safeRenderMarkdown(note.text);
       }
@@ -3502,7 +3540,7 @@
       var cardEl = cardsLayer ? cardsLayer.querySelector('[data-issue-key="' + identity(issue) + '"]') : null;
       var cardX = (issue.canvas && typeof issue.canvas.x === 'number') ? issue.canvas.x : (cardEl ? cardEl.offsetLeft : 100);
       var cardY = (issue.canvas && typeof issue.canvas.y === 'number') ? issue.canvas.y : (cardEl ? cardEl.offsetTop : 100);
-      var cardW = cardEl ? (cardEl.offsetWidth || 250) : 250;
+      var cardW = cardEl ? (cardEl.offsetWidth || 280) : 280;
       var cardH = cardEl ? (cardEl.offsetHeight || 130) : 130;
 
       rawNotes.forEach(function (note, idx) {
@@ -3647,7 +3685,7 @@
         placed.forEach(function (c) {
           var cardX = c.canvas.x;
           var cardY = c.canvas.y;
-          var cardW = 250;
+          var cardW = 280;
           var cardRight = cardX + cardW;
           if (Array.isArray(c.canvas.notes)) {
             c.canvas.notes.forEach(function (n) {
@@ -3678,7 +3716,7 @@
         });
       }
       var cardEl = cardsLayer ? cardsLayer.querySelector('[data-issue-key="' + identity(c) + '"]') : null;
-      var w = cardEl ? (cardEl.offsetWidth || 250) : 250;
+      var w = cardEl ? (cardEl.offsetWidth || 280) : 280;
       var h = cardEl ? (cardEl.offsetHeight || 150) : 150;
       return {
         id: identity(c),
@@ -4082,7 +4120,7 @@
         element: card,
         x: card.offsetLeft,
         y: card.offsetTop,
-        w: card.offsetWidth || 250,
+        w: card.offsetWidth || 280,
         h: card.offsetHeight || 110,
       };
       cardMap.set(num, pos);
@@ -4296,7 +4334,7 @@
       var scale = state.canvasScale || 1;
       var cardX = cardEl.offsetLeft;
       var cardY = cardEl.offsetTop;
-      var cardW = cardEl.offsetWidth || 250;
+      var cardW = cardEl.offsetWidth || 280;
       var cardH = cardEl.offsetHeight || 110;
       var isLeft = portEl.classList.contains('port-left');
       var sourceX = isLeft ? cardX : (cardX + cardW);
@@ -4577,6 +4615,15 @@
     if (!state.canvasHasSavedState && issues.length > 0) {
       state.canvasHasSavedState = true;
       fitAllCanvasNodes();
+      var viewport = $('canvas-viewport');
+      if (viewport && viewport.clientWidth <= 640 && state.canvasScale < 0.55) {
+        state.canvasScale = 0.55;
+        var positions = computeCanvasCardPositions(issues);
+        var first = Array.from(positions.values()).sort(function (a, b) { return a.x - b.x || a.y - b.y; })[0];
+        state.canvasPanX = 20 - (first ? first.x : 0) * state.canvasScale;
+        state.canvasPanY = 24 - (first ? first.y : 0) * state.canvasScale;
+        updateCanvasTransform();
+      }
     } else {
       updateCanvasTransform();
     }
@@ -4837,7 +4884,12 @@
     var name = board.repository ? shortName(board.repository.full) : (dict.all_projects || 'All Projects');
     $('repo-label').textContent = name;
     $('repo-label').setAttribute('title', board.repo);
-    document.title = (dict.brand_title || 'Task Board') + ' · ' + name;
+    document.title = name + ' — ' + (dict.brand_title || 'Task Board');
+    if ($('compact-project-name')) $('compact-project-name').textContent = name;
+    if ($('compact-count')) $('compact-count').textContent = String((board.issues || []).length);
+    if ($('compact-filter')) $('compact-filter').setAttribute('data-active', String(state.viewState.filters.length > 0));
+    if ($('list-group-toggle')) $('list-group-toggle').textContent = state.flatList ? dict.grouped_list : dict.flat_list;
+    updateDock();
     renderControls(); renderFreshness(); updateSidebarBadges();
     if (state.activeSectionView === 'decisions') renderDecisionsView();
     else if (state.activeSectionView === 'blocked') renderBlockedView();
@@ -4868,6 +4920,7 @@
       scopeStatus.className = board.partial ? 'notice error status-strip-scope' : 'status-strip-scope';
     }
 
+    if ($('list-group-toggle')) $('list-group-toggle').hidden = state.activeViewMode === 'canvas';
     if (state.activeViewMode === 'canvas') {
       renderCanvasIssues(issues);
       return;
@@ -4875,17 +4928,18 @@
 
     var list = $('task-list'); list.textContent = ''; list.className = 'task-list view-' + state.viewState.view;
     var empty = $('empty-state'); empty.hidden = issues.length !== 0;
+    if ($('empty-create')) $('empty-create').disabled = !availableProjects().length;
     var emptyText = empty.querySelector && empty.querySelector('p');
     if (emptyText) emptyText.textContent = board.partial ? 'No tasks loaded. Refresh incomplete, not an empty project.' : pending ? 'Nothing is waiting on you.' :
-      state.viewState.filters.length ? 'No tasks match these filters.' : 'No tasks yet in ' + name + '.';
-    var hint = $('view-hint'); hint.textContent = state.viewState.view === 'graph' ? 'Dependency list-tree · “Depends on”, “Blocked by” and “Requires” issue links. Cycles and missing issues stay visible.' :
+      state.viewState.filters.length ? (l === 'fr' ? 'Aucune tâche ne correspond aux filtres.' : 'No tasks match these filters.') : (l === 'fr' ? 'Aucune tâche dans ' : 'No tasks yet in ') + name + '.';
+    var hint = $('view-hint'); hint.textContent = state.viewState.view === 'graph' ? 'Dependency list-tree — “Depends on”, “Blocked by” and “Requires” issue links. Cycles and missing issues stay visible.' :
       quickCapture() && state.viewState.sort !== 'manual' ? 'Choose Sort: Manual order to rearrange drafts.' : '';
     if (state.viewState.view === 'kanban') {
       STAGES.forEach(function (stage) {
         var group = issues.filter(function (issue) { return stageOf(issue) === stage; });
         var column = el('ul', { class: 'kanban-tasks', 'aria-label': statusText(stage) });
         group.forEach(function (issue) { column.appendChild(el('li', {}, [taskCard(issue, false)])); });
-        list.appendChild(el('li', { class: 'kanban-column' }, [el('h2', { text: statusText(stage) + ' · ' + group.length }), column,
+        list.appendChild(el('li', { class: 'kanban-column' }, [el('h2', { text: statusText(stage) + ' — ' + group.length }), column,
           !group.length ? el('p', { class: 'muted small', text: 'No tasks' }) : null]));
       });
     } else if (state.viewState.view === 'graph') {
@@ -4915,6 +4969,19 @@
           list.appendChild(el('li', { class: 'pending-task' }, [taskCard(issue, true), todos]));
         });
       });
+    } else if (state.viewState.view === 'simple' && !state.flatList && !quickCapture()) {
+      ['needs-human', 'in-progress', 'in-review', 'todo', 'planned', 'backlog', 'draft', 'done'].forEach(function (stage) {
+        var group = issues.filter(function (issue) { return stageOf(issue) === stage; });
+        if (!group.length) return;
+        var collapsed = collapsedStages.has(stage);
+        var heading = el('button', { type: 'button', 'aria-expanded': String(!collapsed), onclick: function () {
+          if (collapsedStages.has(stage)) collapsedStages.delete(stage); else collapsedStages.add(stage);
+          renderBoard();
+        } }, [el('span', { class: 'stage-chevron', 'aria-hidden': 'true' }), el('span', { class: 'stage-title', text: statusText(stage) }), badge(String(group.length))]);
+        var items = el('ul', { class: 'stage-items' });
+        if (!collapsed) group.forEach(function (issue) { items.appendChild(el('li', {}, [taskCard(issue, true)])); });
+        list.appendChild(el('li', { class: 'stage-group', 'data-stage': stage }, [heading, items]));
+      });
     } else {
       issues.forEach(function (issue, index) {
         list.appendChild(quickCapture() && stageOf(issue) === 'draft' ? draftRow(issue, issues, index) : el('li', {}, [taskCard(issue, state.viewState.view === 'simple')]));
@@ -4933,8 +5000,8 @@
       select.appendChild(el('option', { value: 'all', text: 'All Projects' }));
       view.repositories.forEach(function (repository) {
         select.appendChild(el('option', { value: repository.full, title: repository.full, text: shortName(repository.full) +
-          (repository.archived ? ' · archived' : '') + (!repository.available ? ' · unavailable' : '') +
-          (!repository.hasIssues ? ' · issues disabled' : '') }));
+          (repository.archived ? ' — archived' : '') + (!repository.available ? ' — unavailable' : '') +
+          (!repository.hasIssues ? ' — issues disabled' : '') }));
       });
       select.value = state.selected;
     }
@@ -4943,7 +5010,7 @@
     var repoLabel = $('repo-label');
     var btn = $('repo-select-btn');
     var cur = state.selected === 'all' ? null : view.repositories.find(function (r) { return r.full === state.selected; });
-    var pickerText = state.selected === 'all' ? 'All Projects' : shortName(cur ? cur.full : state.selected);
+    var pickerText = state.selected === 'all' ? (getLanguage() === 'fr' ? 'Tous les projets' : 'All Projects') : shortName(cur ? cur.full : state.selected);
     var pickerTitle = state.selected === 'all' ? 'All Projects' : state.selected;
     if (btnText) {
       btnText.textContent = pickerText;
@@ -4958,6 +5025,7 @@
     }
 
     renderRepoOptions();
+    if ($('repo-api-footer')) $('repo-api-footer').textContent = apiHealthText();
 
     $('repository-picker').hidden = false;
     $('discovery-status').textContent = view.discoveryFailed
@@ -4977,8 +5045,8 @@
     var searchInput = $('repo-search-input');
     var query = (searchInput && searchInput.value ? searchInput.value : '').trim().toLowerCase();
 
-    // Pinned All Projects option
-    if (!query || 'all projects'.includes(query) || 'combined'.includes(query)) {
+    // Pinned scope is always available, even while searching.
+    if (true) {
       var allCount = view.visibleCount || view.repositories.length;
       var allItem = el('button', {
         class: 'repo-option' + (state.selected === 'all' ? ' selected' : ''),
@@ -4989,7 +5057,7 @@
           selectProject('all');
         }
       }, [
-        el('span', { class: 'repo-option-name', text: 'All Projects' }),
+        el('span', { class: 'repo-option-name', text: getLanguage() === 'fr' ? 'Tous les projets' : 'All Projects' }),
         el('span', { class: 'badge', text: allCount + (allCount === 1 ? ' repo' : ' repos') })
       ]);
       list.appendChild(allItem);
@@ -5007,7 +5075,7 @@
       if (!repo.hasIssues) tags.push('issues disabled');
 
       var item = el('button', {
-        class: 'repo-option' + (state.selected === repo.full ? ' selected' : ''),
+        class: 'repo-option' + (state.selected === repo.full ? ' selected' : '') + (repo.hasIssues === false ? ' is-disabled' : ''),
         type: 'button',
         role: 'option',
         'aria-selected': state.selected === repo.full ? 'true' : 'false',
@@ -5017,7 +5085,8 @@
       }, [
         el('span', { class: 'repo-option-name', text: shortName(repo.full), title: repo.full }),
         el('span', { class: 'repo-option-full muted small', text: repo.full }),
-        tags.length ? el('span', { class: 'badge', text: tags.join(' · ') }) : null
+        el('span', { class: 'badge repo-issue-count', text: String(repo.openIssuesCount || 0) }),
+        tags.length ? el('span', { class: 'badge', text: tags.join(', ') }) : null
       ]);
       list.appendChild(item);
     });
@@ -5076,7 +5145,7 @@
     var digest = await window.crypto.subtle.digest('SHA-256', bytes);
     return Array.from(new Uint8Array(digest)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
   }
-  async function loadBoard() {
+  async function loadBoard(forceRefresh) {
     rememberDraft();
     state.readGeneration++;
     state.detail = null;
@@ -5094,7 +5163,8 @@
       renderSkeleton();
     }
     try {
-      var view = await api('/api/repos');
+      var suffix = forceRefresh ? '?refresh=1' : '';
+      var view = await api('/api/repos' + suffix);
       if (generation !== state.boardGeneration) return;
       state.repositories = view;
       if (view.projectNames) state.projectNames = view.projectNames;
@@ -5116,7 +5186,7 @@
         return;
       }
       var path = selected ? '/api/repos/' + encodeURIComponent(selected.owner) + '/' + encodeURIComponent(selected.name) + '/board' : '/api/combined/board';
-      var board = await api(path);
+      var board = await api(path + suffix);
       if (generation !== state.boardGeneration) return;
       state.board = board;
       saveCachedBoard(board);
@@ -5160,17 +5230,31 @@
     }
   }
 
+  function isVanillaMarkdownIssue(issue) {
+    if (!issue || issue.statusLabel) return false;
+    var secs = Array.isArray(issue.editableSections) ? issue.editableSections : [];
+    var ov = secs.length > 0 ? secs[0] : null;
+    if (ov && ov.title && ov.title !== '(overview)') return false;
+    return !((issue.openQuestions && issue.openQuestions.length) ||
+      (issue.humanTasks && issue.humanTasks.length) ||
+      (issue.acceptanceCriteria && issue.acceptanceCriteria.length) ||
+      (issue.subtasks && issue.subtasks.length));
+  }
+
   function detailBadges(issue) {
     var container = $('detail-meta');
     container.textContent = '';
-    container.appendChild(badge(issue.state === 'closed' ? 'closed' : 'open', 'state-' + (issue.state === 'closed' ? 'closed' : 'open')));
-    container.appendChild(badge(statusText(issue.statusLabel), 'status'));
+    var closedLabel = getLanguage() === 'fr' ? 'fermé' : 'closed';
+    var openLabel = getLanguage() === 'fr' ? 'ouvert' : 'open';
+    container.appendChild(badge(issue.state === 'closed' ? closedLabel : openLabel, 'state-' + (issue.state === 'closed' ? 'closed' : 'open')));
+    container.appendChild(badge(statusText('status:' + stageOf(issue)), 'status'));
+    if (priorityOf(issue)) container.appendChild(badge(priorityText(priorityOf(issue)), 'badge-priority'));
     if (issue.repository) {
       container.appendChild(projectBadge(issue.repository));
       if (issue.repository.archived) container.appendChild(badge('archived'));
     }
     if (!state.clientPresentationMode) {
-      if (issue.phase) container.appendChild(badge('phase: ' + String(issue.phase).replace(/_/g, ' '), 'phase'));
+      if (issue.phase && !isVanillaMarkdownIssue(issue)) container.appendChild(badge('phase: ' + String(issue.phase).replace(/_/g, ' '), 'phase'));
       if (issue.attention && issue.attention !== 'none') {
         container.appendChild(badge('needs ' + String(issue.attention).replace('needs-', ''), 'attention'));
       }
@@ -5182,7 +5266,7 @@
           href: issue.htmlUrl,
           target: '_blank',
           rel: 'noopener noreferrer',
-          text: '#' + issue.number + ' on GitHub \u2197',
+          text: '#' + issue.number + (getLanguage() === 'fr' ? ' sur GitHub' : ' on GitHub'),
           'aria-label': 'Open issue #' + issue.number + ' on GitHub',
         }));
       } else {
@@ -5268,11 +5352,11 @@
   function renderStatus(issue) {
     var select = $('status-select');
     select.textContent = '';
-    var placeholder = el('option', { value: '', text: 'Select a status' });
+    var placeholder = el('option', { value: '', text: getLanguage() === 'fr' ? 'Choisir un statut' : 'Select a status' });
     select.appendChild(placeholder);
     var opts = Array.isArray(state.statusOptions) ? state.statusOptions : [];
     opts.forEach(function (option) {
-      var node = el('option', { value: option.value, text: option.label });
+      var node = el('option', { value: option.value, text: statusText(option.value) });
       if (issue.statusLabel === option.value) node.selected = true;
       select.appendChild(node);
     });
@@ -5281,7 +5365,7 @@
     var markDoneBtn = $('mark-done-btn');
     if (markDoneBtn) {
       var isDone = issue.state === 'closed' || (issue.statusLabel && issue.statusLabel.toLowerCase() === 'status:done');
-      markDoneBtn.textContent = isDone ? 'Reopen Issue' : 'Mark Done';
+      markDoneBtn.textContent = getLanguage() === 'fr' ? (isDone ? 'Rouvrir' : 'Terminer') : (isDone ? 'Reopen issue' : 'Mark done');
     }
   }
 
@@ -5655,7 +5739,16 @@
     }
 
     detailBadges(issue);
-    $('detail-freshness').textContent = 'Updated on GitHub ' + relative(issue.updatedAt);
+    var repoFull = issue.repository && issue.repository.full || '';
+    if ($('detail-identity')) $('detail-identity').textContent = shortName(repoFull) + ' #' + issue.number;
+    if ($('detail-github')) $('detail-github').href = issue.htmlUrl;
+    var priority = $('priority-control');
+    if (priority) {
+      priority.href = issue.htmlUrl;
+      priority.textContent = (getLanguage() === 'fr' ? 'Priorité : ' : 'Priority: ') + (priorityOf(issue) ? priorityText(priorityOf(issue)) : (getLanguage() === 'fr' ? 'Définir sur GitHub' : 'Set on GitHub'));
+      priority.title = getLanguage() === 'fr' ? 'Modifier les étiquettes sur GitHub' : 'Edit labels on GitHub';
+    }
+    $('detail-freshness').textContent = (getLanguage() === 'fr' ? 'Mis à jour sur GitHub ' : 'Updated on GitHub ') + relative(issue.updatedAt);
 
     var banner = $('conflict-banner');
     banner.hidden = !state.conflict;
@@ -5760,6 +5853,30 @@
       }
     }
 
+    var isVanilla = isVanillaMarkdownIssue(issue);
+    var dict = I18N[getLanguage()] || I18N.en;
+    if ($('overview-title')) {
+      $('overview-title').textContent = isVanilla ? 'Description' : (dict.drawer_overview_title || 'Overview');
+    }
+    if (typeof issue.bodyMarkdown === 'string' && (!overview || isVanilla)) {
+      textarea.hidden = true;
+      textarea.disabled = true;
+      save.hidden = true;
+      if ($('edit-warning')) $('edit-warning').hidden = true;
+      if (overviewPreview) {
+        var nativeBody = state.clientPresentationMode ? cleanOverviewPreview(issue) : issue.bodyMarkdown;
+        overviewPreview.innerHTML = safeRenderMarkdown(nativeBody);
+        overviewPreview.hidden = !nativeBody.trim();
+      }
+      $('overview-empty').hidden = Boolean(issue.bodyMarkdown.trim());
+    }
+    [['ac-section', issue.acceptanceCriteria], ['subtasks-section', issue.subtasks]].forEach(function (entry) {
+      if ($(entry[0])) $(entry[0]).hidden = !(entry[1] && entry[1].length);
+    });
+    [['question-list', issue.openQuestions], ['human-list', issue.humanTasks]].forEach(function (entry) {
+      var list = $(entry[0]);
+      if (list && list.parentElement) list.parentElement.hidden = state.clientPresentationMode || !(entry[1] && entry[1].length);
+    });
     if (focusHeading) {
       window.setTimeout(function () {
         $('detail-title').focus();
@@ -6011,8 +6128,8 @@
 
   function isDraftIssue(issue) {
     if (!issue) return false;
-    return stageOf(issue) === 'draft' ||
-      issue.statusLabel === 'status:draft' ||
+    return issue.isExplicitDraft === true ||
+      (issue.isExplicitDraft === undefined && issue.statusLabel === 'status:draft') ||
       issue.statusLabel === 'status:cancelled' ||
       Boolean(issue.offline);
   }
@@ -6061,6 +6178,12 @@
       bBadge.hidden = blockedCount === 0;
     }
 
+    ['decisions', 'blocked'].forEach(function (name) {
+      var dockBadge = $('dock-' + name + '-count');
+      var count = name === 'decisions' ? decisionsCount : blockedCount;
+      if (dockBadge) { dockBadge.textContent = String(count); dockBadge.hidden = count === 0; }
+    });
+    updateDock();
     var dCountBadge = $('decisions-count-badge');
     if (dCountBadge) dCountBadge.textContent = String(decisionsCount);
 
@@ -6212,7 +6335,8 @@
       header.appendChild(titleRow);
 
       var meta = el('div', { class: 'section-card-meta' });
-      meta.appendChild(badge(statusText(issue.statusLabel), 'status'));
+      meta.appendChild(badge(statusText('status:' + stageOf(issue)), 'status'));
+      if (priorityOf(issue)) meta.appendChild(badge(priorityText(priorityOf(issue)), 'badge-priority'));
       if (issue.updatedAt) {
         meta.appendChild(el('span', { class: 'muted' }, relative(issue.updatedAt)));
       }
@@ -6304,7 +6428,8 @@
     header.appendChild(titleRow);
 
     var meta = el('div', { class: 'section-card-meta' });
-    meta.appendChild(badge(statusText(issue.statusLabel), 'status'));
+    meta.appendChild(badge(statusText('status:' + stageOf(issue)), 'status'));
+    if (priorityOf(issue)) meta.appendChild(badge(priorityText(priorityOf(issue)), 'badge-priority'));
     if (issue.updatedAt) {
       meta.appendChild(el('span', { class: 'muted' }, relative(issue.updatedAt)));
     }
@@ -6569,7 +6694,7 @@
           oldestTitleEl.textContent = '#' + data.oldestOpenInProgress.number + ' ' + data.oldestOpenInProgress.title;
         }
         if (oldestMetaEl) {
-          oldestMetaEl.textContent = data.oldestOpenInProgress.repository + ' · ' + relative(data.oldestOpenInProgress.createdAt);
+          oldestMetaEl.textContent = data.oldestOpenInProgress.repository + ' — ' + relative(data.oldestOpenInProgress.createdAt);
         }
       } else {
         if (oldestTitleEl) oldestTitleEl.textContent = '—';
@@ -6708,6 +6833,8 @@
       header.appendChild(titleRow);
 
       var actions = el('div', { class: 'section-card-meta' });
+      actions.appendChild(badge(statusText('status:' + stageOf(issue)), 'status'));
+      if (priorityOf(issue)) actions.appendChild(badge(priorityText(priorityOf(issue)), 'badge-priority'));
       var removeBtn = el('button', {
         class: 'button secondary small',
         type: 'button',
@@ -6775,6 +6902,8 @@
       header.appendChild(titleRow);
 
       var actions = el('div', { class: 'section-card-meta' });
+      actions.appendChild(badge(statusText('status:' + stageOf(issue)), 'status'));
+      if (priorityOf(issue)) actions.appendChild(badge(priorityText(priorityOf(issue)), 'badge-priority'));
       var reopenBtn = el('button', {
         class: 'button secondary small',
         type: 'button',
@@ -6953,13 +7082,14 @@
       header.appendChild(titleRow);
 
       var meta = el('div', { class: 'section-card-meta' });
-      meta.appendChild(badge(statusText(issue.statusLabel), 'status'));
+      meta.appendChild(badge(statusText('status:' + stageOf(issue)), 'status'));
+      if (priorityOf(issue)) meta.appendChild(badge(priorityText(priorityOf(issue)), 'badge-priority'));
       header.appendChild(meta);
       card.appendChild(header);
 
       var previewText = cleanOverviewPreview(issue);
       if (previewText) {
-        var descP = el('p', { class: 'small muted', style: 'margin: 0; line-height: 1.4;' }, previewText);
+        var descP = el('p', { class: 'small muted client-preview' }, previewText);
         card.appendChild(descP);
       }
 
@@ -6970,6 +7100,7 @@
   function bind() {
     if (state.bound) return;
     state.bound = true;
+    bindWorkspaceControls();
     $('login-form').addEventListener('submit', async function (event) {
       event.preventDefault();
       var button = $('login-btn');
@@ -7059,7 +7190,7 @@
             setAuthHint();
             state.csrf = session.csrfToken;
             showView('board');
-            await loadBoard();
+            await loadBoard(true);
             syncOfflineDrafts();
             return;
           }
@@ -7079,7 +7210,7 @@
       if (state.detail && /^#\/issue\//.test(window.location.hash)) {
         openIssue(state.detail);
       } else {
-        loadBoard();
+        await loadBoard(true);
         if (state.activeSectionView === 'operations') loadAndRenderOperationsView();
         else if (state.activeSectionView === 'archive') loadAndRenderArchiveView();
       }
@@ -7122,14 +7253,21 @@
         var popover = $('repo-popover');
         var btn = $('repo-select-btn');
         if (popover && !popover.hidden) {
-          if (!popover.contains(e.target) && (!btn || !btn.contains(e.target))) {
+          if (!popover.contains(e.target) && (!btn || !btn.contains(e.target)) && !($('compact-project') && $('compact-project').contains(e.target))) {
             toggleRepoPopover(false);
           }
         }
       });
 
       document.addEventListener('keydown', function (e) {
+        var typing = e.target && (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable);
+        if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === '/')) {
+          e.preventDefault();
+          if (e.key === 'n') openComposer(); else { document.body.classList.add('search-open'); $('board-search').focus(); }
+        }
         if (e.key === 'Escape') {
+          if ($('quick-add-form')) $('quick-add-form').classList.remove('composer-open');
+          if (document.body) document.body.classList.remove('search-open');
           var popover = $('repo-popover');
           if (popover && !popover.hidden) {
             toggleRepoPopover(false);
@@ -7272,7 +7410,7 @@
       window.addEventListener('hashchange', route);
     }
     if (typeof window !== 'undefined' && typeof window.setInterval === 'function') {
-      window.setInterval(renderFreshness, 30 * 1000);
+      window.setInterval(function () { if (document.visibilityState !== 'hidden') renderFreshness(); }, 30 * 1000);
     }
   }
 

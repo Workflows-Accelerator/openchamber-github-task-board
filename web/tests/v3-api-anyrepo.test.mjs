@@ -373,3 +373,41 @@ test('graceful 403 and 422 label fallback on issue creation', async () => {
     await close();
   }
 });
+
+test('repository with has_issues: false makes zero issue-list and zero GraphQL calls', async () => {
+  const { fake, board, close } = await fixture({
+    repositories: [
+      repoFixture(
+        'test-owner/no-issues-repo',
+        [makeIssue({ number: 1, title: 'Ignored', state: 'open', repo: 'test-owner/no-issues-repo' })],
+        { id: 301, hasIssues: false },
+      ),
+      repoFixture(
+        'test-owner/active-repo',
+        [makeIssue({ number: 2, title: 'Visible', state: 'open', repo: 'test-owner/active-repo' })],
+        { id: 302, hasIssues: true },
+      ),
+    ],
+  });
+  try {
+    const client = await signedIn(board.url);
+
+    const scopedRes = await client.request('/api/repos/test-owner/no-issues-repo/board');
+    assert.equal(scopedRes.status, 200);
+    assert.equal(scopedRes.json.issues.length, 0);
+
+    const combinedRes = await client.request('/api/combined/board');
+    assert.equal(combinedRes.status, 200);
+    assert.equal(combinedRes.json.issues.length, 1);
+    assert.equal(combinedRes.json.issues[0].repository.full, 'test-owner/active-repo');
+
+    const issueListCalls = fake.requests.filter((r) => r.path === '/repos/test-owner/no-issues-repo/issues');
+    const graphqlCalls = fake.state.graphqlCalls.filter((c) =>
+      c.variables?.owner === 'test-owner' && c.variables?.name === 'no-issues-repo',
+    );
+    assert.equal(issueListCalls.length, 0, 'Expected zero issue-list requests for has_issues:false repository');
+    assert.equal(graphqlCalls.length, 0, 'Expected zero GraphQL requests for has_issues:false repository');
+  } finally {
+    await close();
+  }
+});

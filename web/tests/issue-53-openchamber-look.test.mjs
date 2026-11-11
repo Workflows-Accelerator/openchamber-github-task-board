@@ -11,6 +11,17 @@ const INDEX_HTML_PATH = path.join(ROOT_DIR, 'web/public/index.html');
 const THEME_CSS_PATH = path.join(ROOT_DIR, 'web/public/theme.css');
 const APP_JS_PATH = path.join(ROOT_DIR, 'web/public/app.js');
 
+function findTaskRows(root) {
+  const rows = [];
+  const walk = (node) => {
+    if (!node) return;
+    if (node.classList && node.classList.contains('task-row')) rows.push(node);
+    if (Array.isArray(node.children)) node.children.forEach(walk);
+  };
+  walk(root);
+  return rows;
+}
+
 function createMockBrowser(storage = {}) {
   const nodes = new Map();
   const store = new Map(Object.entries(storage));
@@ -281,14 +292,17 @@ test('2.b D63.2 Search input filters task list dynamically', () => {
   app.state.viewState = { view: 'simple', filters: [], sort: 'priority' };
 
   app.renderBoard();
-  const initialCount = get('task-list').children.length;
-  assert.equal(initialCount, 2, 'Initial list renders both tasks');
+  const initialRows = findTaskRows(get('task-list'));
+  assert.equal(initialRows.length, 2, 'Initial list renders both tasks');
+  assert.equal(get('task-list').children.length, 2, 'Initial list renders 2 non-empty stage groups');
 
   // Set search query and re-render
   app.setSearchQuery('Beta');
-  assert.equal(get('task-list').children.length, 1, 'Search for Beta leaves 1 item');
+  assert.equal(findTaskRows(get('task-list')).length, 1, 'Search for Beta leaves 1 item');
+  assert.equal(get('task-list').children.length, 1, 'Search for Beta leaves 1 stage group');
   app.setSearchQuery('');
-  assert.equal(get('task-list').children.length, 2, 'Clearing search restores 2 items');
+  assert.equal(findTaskRows(get('task-list')).length, 2, 'Clearing search restores 2 items');
+  assert.equal(get('task-list').children.length, 2, 'Clearing search restores 2 stage groups');
 });
 
 // ============================================================================
@@ -307,9 +321,11 @@ test('3.a D63.3 Simple list rows render in compact Linear style with status dot,
 
   app.renderBoard();
   const list = get('task-list');
+  const rows = findTaskRows(list);
+  assert.equal(rows.length, 2);
   assert.equal(list.children.length, 2);
 
-  const row0 = list.children[0].children[0] || list.children[0];
+  const row0 = rows[0];
   assert.ok(
     row0.classList.contains('simple-row') && row0.classList.contains('task-row'),
     'Row element must carry both .simple-row and .task-row classes for compatibility'
@@ -362,31 +378,42 @@ test('4.a D63.4 Opening task detail keeps #board-view visible underneath and mar
   assert.equal(bodyEl.classList.contains('drawer-open'), false, 'body must remove .drawer-open');
 });
 
-test('4.b D63.4 theme.css styles slide-over drawer with 480px width on desktop', () => {
+test('4.b D63.4 theme.css styles slide-over drawer with 480-540px width on desktop', () => {
   const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
-  assert.ok(
-    /min\(480px,\s*100(?:vw|%)\)|(?:width|max-width):\s*480px/.test(css),
-    'theme.css must style slide-over drawer width to 480px / min(480px, 100vw)'
-  );
+  const match = /\.task-drawer\s*\{[^}]*width:\s*min\((\d+)px,\s*100(?:vw|%)\)/s.exec(css);
+  assert.ok(match, 'theme.css must declare .task-drawer { width: min(<px>, 100vw) }');
+  const width = Number(match[1]);
+  assert.ok(width >= 480 && width <= 540, `drawer width ${width}px must stay within 480-540px`);
 });
 
 // ============================================================================
 // 5. OpenChamber Color Tokens & Theme Mode Auto / Dark / Light (D64)
 // ============================================================================
-test('5.a D64 theme.css defines ChamberOS warm paper dark and light color tokens', () => {
+test('5.a D64 theme.css defines V3 architectural studio dark and light color tokens and removes V1 muddy tokens', () => {
   const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
   // Dark tokens
-  assert.ok(css.includes('#151412'), 'theme.css must declare dark --bg #151412');
-  assert.ok(css.includes('#1d1b18'), 'theme.css must declare dark --surf #1d1b18');
-  assert.ok(css.includes('#262320'), 'theme.css must declare dark --surf-muted #262320');
-  assert.ok(css.includes('#f4f1ea'), 'theme.css must declare dark --fg #f4f1ea');
+  assert.ok(css.includes('#0B0D11'), 'theme.css must declare dark --bg #0B0D11');
+  assert.ok(css.includes('#101318'), 'theme.css must declare dark chrome #101318');
+  assert.ok(css.includes('#161A22'), 'theme.css must declare dark card --surf #161A22');
+  assert.ok(css.includes('#1E2430'), 'theme.css must declare dark raised #1E2430');
+  assert.ok(css.includes('#F1F5F9'), 'theme.css must declare dark --fg #F1F5F9');
+  assert.ok(css.includes('#94A3B8'), 'theme.css must declare dark secondary #94A3B8');
+  assert.ok(css.includes('rgba(255, 255, 255, 0.08)'), 'theme.css must declare dark hairline rgba(255, 255, 255, 0.08)');
 
   // Light tokens
-  assert.ok(css.includes('#f6f4ee'), 'theme.css must declare light --bg #f6f4ee');
-  assert.ok(css.includes('#fcfbf8'), 'theme.css must declare light --surf #fcfbf8');
-  assert.ok(css.includes('#efece4'), 'theme.css must declare light --surf-muted #efece4');
-  assert.ok(css.includes('#181613'), 'theme.css must declare light --fg #181613');
-  assert.ok(css.includes('#7c1d2e'), 'theme.css must declare light --prim #7c1d2e');
+  assert.ok(css.includes('#F7F8FA'), 'theme.css must declare light --bg #F7F8FA');
+  assert.ok(css.includes('#FFFFFF'), 'theme.css must declare light card --surf #FFFFFF');
+  assert.ok(css.includes('#F1F3F6'), 'theme.css must declare light chrome #F1F3F6');
+  assert.ok(css.includes('#0F172A'), 'theme.css must declare light --fg #0F172A');
+  assert.ok(css.includes('#475569'), 'theme.css must declare light secondary #475569');
+  assert.ok(css.includes('#64748B'), 'theme.css must declare muted #64748B');
+  assert.ok(css.includes('#1E293B'), 'theme.css must declare light --prim #1E293B');
+  assert.ok(css.includes('#2563EB'), 'theme.css must declare accent #2563EB');
+  assert.ok(css.includes('rgba(15, 23, 42, 0.08)'), 'theme.css must declare light hairline rgba(15, 23, 42, 0.08)');
+
+  // Legacy V1 tokens removed
+  assert.ok(!css.toLowerCase().includes('#f6f4ee'), 'theme.css must remove V1 cream #f6f4ee');
+  assert.ok(!css.toLowerCase().includes('#151412'), 'theme.css must remove V1 brown-black #151412');
 });
 
 test('5.b D64 app.js supports Theme mode Auto / Dark / Light persisted to localStorage tb_theme_mode', () => {
@@ -485,7 +512,7 @@ test('6.b Blocker 2: Simple list row strips markdown headings/checklists from de
   app.state.viewState = { view: 'simple', filters: [], sort: 'priority' };
 
   app.renderBoard();
-  const row = get('task-list').children[0].children[0];
+  const row = findTaskRows(get('task-list'))[0];
   const mainCol = row.children.find((c) => c.classList.contains('simple-row-main'));
   assert.ok(mainCol, 'Row must contain .simple-row-main');
   const descEl = mainCol.children.find((c) => c.classList.contains('simple-row-desc'));
@@ -503,7 +530,7 @@ test('6.c Blocker 3: theme.css enforces display: none !important on closed dialo
   );
 });
 
-test('6.d Blocker 4: theme.css places explicit [data-theme="dark"] and [data-theme="light"] rules AFTER @media (prefers-color-scheme: light) and index.html sets theme-color #151412', () => {
+test('6.d Blocker 4: theme.css places explicit [data-theme="dark"] and [data-theme="light"] rules AFTER @media (prefers-color-scheme: light) and index.html sets V3 theme-color #0B0D11', () => {
   const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
   const mediaIdx = css.indexOf('@media (prefers-color-scheme: light)');
   const darkIdx = css.indexOf(':root[data-theme="dark"]');
@@ -513,7 +540,7 @@ test('6.d Blocker 4: theme.css places explicit [data-theme="dark"] and [data-the
   assert.ok(lightIdx > mediaIdx, ':root[data-theme="light"] must appear AFTER @media (prefers-color-scheme: light)');
 
   const html = fs.readFileSync(INDEX_HTML_PATH, 'utf8');
-  assert.match(html, /<meta name="theme-color" content="#151412">/, 'index.html must set theme-color to #151412');
+  assert.match(html, /<meta name="theme-color" content="#0B0D11">/, 'index.html must set theme-color to #0B0D11');
 });
 
 test('6.e Blocker 5: theme.css positions #drawer-backdrop at z-index 900 and #detail-view at z-index 1000 and constrains body.drawer-open #board-view', () => {

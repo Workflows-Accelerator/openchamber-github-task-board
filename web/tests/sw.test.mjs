@@ -35,16 +35,21 @@ test('app.js registers service worker with updateViaCache: none, update triggers
   assert.match(APP_SOURCE, /setNotice\(['"]Updated - reload['"]\)/);
 });
 
-test('sw.js defines versioned cache name, network-first shell, cache-first icons, and api bypass', () => {
+test('sw.js defines versioned cache name 2.0.0, network-first shell (including markdown.js and arrange.js), cache-first icons, and api bypass', () => {
+  assert.match(SW_SOURCE, /var CACHE_VERSION = '2\.0\.0';/);
   assert.match(SW_SOURCE, /var CACHE_NAME = 'workflows-board-' \+ CACHE_VERSION/);
   assert.match(SW_SOURCE, /isShellRequest/);
   assert.match(SW_SOURCE, /isIconRequest/);
 
-  // Shell assets array
+  // Shell assets array & shell request matcher
   assert.ok(SW_SOURCE.includes("'/index.html'"));
   assert.ok(SW_SOURCE.includes("'/app.js'"));
+  assert.ok(SW_SOURCE.includes("'/markdown.js'"));
+  assert.ok(SW_SOURCE.includes("'/arrange.js'"));
   assert.ok(SW_SOURCE.includes("'/theme.css'"));
   assert.ok(SW_SOURCE.includes("'/manifest.json'"));
+  assert.match(SW_SOURCE, /pathname === '\/markdown\.js'/);
+  assert.match(SW_SOURCE, /pathname === '\/arrange\.js'/);
 });
 
 class MockResponse {

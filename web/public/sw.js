@@ -4,7 +4,7 @@
 // Icons use cache-first with network fallback.
 // /api/* and non-GET requests bypass the cache.
 
-var CACHE_VERSION = '1.2.2';
+var CACHE_VERSION = '2.0.0';
 var CACHE_NAME = 'workflows-board-' + CACHE_VERSION;
 var SHELL_ASSETS = [
   '/',
@@ -53,6 +53,8 @@ function isShellRequest(request, url) {
     pathname === '/' ||
     pathname === '/index.html' ||
     pathname === '/app.js' ||
+    pathname === '/markdown.js' ||
+    pathname === '/arrange.js' ||
     pathname === '/theme.css' ||
     pathname === '/manifest.json'
   );

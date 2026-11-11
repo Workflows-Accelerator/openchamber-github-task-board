@@ -361,7 +361,7 @@ test('canvas client: index.html defines viewport, plane, controls and 4 distinct
   assert.ok(overlayPos > cardsPos, 'overlay layer comes after cards');
 });
 
-test('canvas client: theme.css enforces z-indices, 250px V1 cards, and unbounded plane', () => {
+test('canvas client: theme.css enforces z-indices, 280px V3 cards, and unbounded plane', () => {
   const css = fs.readFileSync(THEME_CSS_PATH, 'utf8');
 
   // 4 layers z-indices
@@ -374,13 +374,13 @@ test('canvas client: theme.css enforces z-indices, 250px V1 cards, and unbounded
   // Unbounded plane: width 0, height 0, position absolute
   assert.match(css, /\.canvas-plane\s*\{[^}]*width:\s*0;[^}]*height:\s*0;/s, 'canvas plane has width 0, height 0');
 
-  // 250px V1 card style
-  assert.match(css, /\.canvas-card\s*\{[^}]*width:\s*250px;/s, 'card has 250px fixed width');
+  // 280px V3 card style
+  assert.match(css, /\.canvas-card\s*\{[^}]*width:\s*280px;/s, 'card has 280px fixed width');
   assert.match(css, /\.canvas-card\s*\{[^}]*position:\s*absolute;/s, 'card is positioned absolutely');
 
-  // Dot color token
-  assert.match(css, /--canvas-dot-rgb:\s*244,\s*241,\s*234;/, 'dark dot token defined');
-  assert.match(css, /--canvas-dot-rgb:\s*24,\s*22,\s*19;/, 'light dot token defined');
+  // Dot color token (V3 architectural studio #F1F5F9 dark / #0F172A light)
+  assert.match(css, /--canvas-dot-rgb:\s*241,\s*245,\s*249;/, 'dark dot token defined');
+  assert.match(css, /--canvas-dot-rgb:\s*15,\s*23,\s*42;/, 'light dot token defined');
 });
 
 test('canvas client: zero occurrences of "n8n" or "mobile" in web/public source files', () => {
