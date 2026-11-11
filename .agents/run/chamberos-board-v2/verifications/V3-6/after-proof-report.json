@@ -1,0 +1,101 @@
+{
+  "label": "after",
+  "root": "/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3",
+  "steps": [
+    {
+      "viewport": "desktop-1280x900",
+      "card": 5,
+      "before": {
+        "left": "380px",
+        "top": "520px"
+      },
+      "markerBefore": null
+    },
+    {
+      "viewport": "desktop-1280x900",
+      "phase": "after-drag",
+      "dropped": {},
+      "stateAfter": {
+        "left": "470px",
+        "top": "590px",
+        "notice": ""
+      },
+      "markerAfter": "<!-- board-canvas: {\"x\":470,\"y\":590} ;sep=2 -->",
+      "canvasResponses": [
+        {
+          "status": 200,
+          "body": "{\"issue\":{\"id\":100005,\"createdAt\":\"2026-10-01T09:00:00Z\",\"closedAt\":null,\"description\":\"## Overview\\nNo marker yet.\\n\\n## Acceptance Criteria\\n- [ ] Card persists after drag\",\"order\":null,\"canvas\":{\"x\":470,\"y\":590},\"fingerprint\":\"0e4f7b1a02"
+        }
+      ]
+    },
+    {
+      "viewport": "desktop-1280x900",
+      "phase": "after-reload",
+      "afterReload": {
+        "left": "470px",
+        "top": "590px",
+        "notice": ""
+      },
+      "markerPersisted": "<!-- board-canvas: {\"x\":470,\"y\":590} ;sep=2 -->",
+      "assertions": {
+        "domMatchesDrop": true,
+        "cardActuallyMoved": true,
+        "markerMatchesDom": true,
+        "noNotice": true
+      }
+    },
+    {
+      "viewport": "phone-390x844",
+      "card": 4,
+      "before": {
+        "left": "60px",
+        "top": "520px"
+      },
+      "markerBefore": "<!-- board-canvas: {\"x\":60,\"y\":520,\"notes\":[{\"id\":\"n1\",\"x\":80,\"y\":700,\"w\":240,\"h\":135,\"text\":\"Sticky note\",\"color\":\"yellow\"}]} -->"
+    },
+    {
+      "viewport": "phone-390x844",
+      "phase": "after-drag",
+      "dropped": {},
+      "stateAfter": {
+        "left": "116px",
+        "top": "560px",
+        "notice": ""
+      },
+      "markerAfter": "<!-- board-canvas: {\"x\":116,\"y\":560,\"notes\":[{\"id\":\"n1\",\"x\":136,\"y\":740,\"w\":240,\"h\":135,\"text\":\"Sticky note\",\"color\":\"yellow\"}]} -->",
+      "canvasResponses": [
+        {
+          "status": 200,
+          "body": "{\"issue\":{\"id\":100004,\"createdAt\":\"2026-10-01T09:00:00Z\",\"closedAt\":null,\"description\":\"## Overview\\nCard that already owns a marker and a note.\\n\\n## Acceptance Criteria\\n- [ ] Card persists after drag\",\"order\":null,\"canvas\":{\"x\":116,\"y\":5"
+        }
+      ]
+    },
+    {
+      "viewport": "phone-390x844",
+      "phase": "after-reload",
+      "afterReload": {
+        "left": "116px",
+        "top": "560px",
+        "notice": ""
+      },
+      "markerPersisted": "<!-- board-canvas: {\"x\":116,\"y\":560,\"notes\":[{\"id\":\"n1\",\"x\":136,\"y\":740,\"w\":240,\"h\":135,\"text\":\"Sticky note\",\"color\":\"yellow\"}]} -->",
+      "assertions": {
+        "domMatchesDrop": true,
+        "cardActuallyMoved": true,
+        "markerMatchesDom": true,
+        "noNotice": true
+      }
+    }
+  ],
+  "consoleErrors": [],
+  "shots": [
+    "/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V3-6/screenshots/after-desktop-1280x900-1-before-drag.png",
+    "/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V3-6/screenshots/after-desktop-1280x900-2-after-drag.png",
+    "/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V3-6/screenshots/after-desktop-1280x900-3-after-reload.png",
+    "/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V3-6/screenshots/after-phone-390x844-1-before-drag.png",
+    "/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V3-6/screenshots/after-phone-390x844-2-after-drag.png",
+    "/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V3-6/screenshots/after-phone-390x844-3-after-reload.png"
+  ],
+  "failures": [],
+  "pass": true
+}
