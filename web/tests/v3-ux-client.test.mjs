@@ -37,7 +37,8 @@ function browser(storage = {}) {
       setAttribute(k, v) { attrs[k] = String(v); this[k] = String(v); },
       getAttribute(k) { return attrs[k] ?? null; },
       removeAttribute(k) { delete attrs[k]; delete this[k]; },
-      appendChild(child) { this.children.push(child); return child; },
+      appendChild(child) { this.children.push(child); child.parentNode = this; return child; },
+      remove() { if (this.parentNode) this.parentNode.children = this.parentNode.children.filter(child => child !== this); },
       addEventListener(name, fn) { this.listeners[name] = fn; },
       contains(other) { return other === this || this.children.some((c) => c && c.contains && c.contains(other)); },
       focus() { doc.activeElement = this; },
@@ -319,4 +320,75 @@ test('V3-3: drawer actions, editable checkboxes and picker search retain 44px na
   assert.match(css, /#detail-view \.button\.back\s*\{[^}]*min-width:\s*44px;[^}]*min-height:\s*44px/s);
   assert.match(css, /#detail-view input\[type="checkbox"\]:not\(:disabled\)\s*\{[^}]*width:\s*44px;[^}]*height:\s*44px/s);
   assert.match(css, /#detail-view \.button, #detail-view input[^}]*\.repo-search-input\s*\{[^}]*min-height:\s*44px/s);
+});
+
+test('V4-1: grouped filters combine stages, priorities, dependencies and real review links', () => {
+  const { app } = browser();
+  const repository = { full: 'acme/core' };
+  const issues = [
+    { number: 1, repository, effectiveStage: 'todo', labels: ['priority:high'], pendingItems: [{ text: 'Review [preview](https://example.com)', completed: false }] },
+    { number: 2, repository, effectiveStage: 'todo', labels: ['priority:low'], blockedBy: [{ number: 1 }] },
+    { number: 3, repository, effectiveStage: 'done', labels: ['priority:high'], htmlUrl: 'https://github.com/acme/core/issues/3' },
+  ];
+  app.state.board = { issues };
+  const filtered = filters => Array.from(app.filterSort(issues, { filters, sort: 'priority' }), i => i.number);
+  assert.deepEqual(filtered(['stage:todo', 'priority:high']), [1]);
+  assert.deepEqual(filtered(['priority:low', 'priority:high', 'stage:todo']), [1, 2]);
+  assert.deepEqual(filtered(['artifact']), [1], 'Issue URL alone is not an artifact');
+  assert.deepEqual(filtered(['blocked']), [2]);
+  assert.deepEqual(filtered(['has-dependents']), [1]);
+  assert.equal(app.filterGroups().length, 5);
+});
+
+test('V4-1: dependency focus uses qualified identities and distinguishes both directions', () => {
+  const { app } = browser();
+  const repository = { full: 'acme/core' };
+  const upstream = { number: 1, repository };
+  const selected = { number: 2, repository, blockedBy: [{ number: 1 }] };
+  const downstream = { number: 3, repository, textDependencies: [2] };
+  const sameNumberElsewhere = { number: 1, repository: { full: 'acme/other' } };
+  const issues = [upstream, selected, downstream, sameNumberElsewhere];
+  assert.equal(app.dependencyRole('acme/core#2', selected, issues), 'selected');
+  assert.equal(app.dependencyRole('acme/core#1', selected, issues), 'blocker');
+  assert.equal(app.dependencyRole('acme/core#3', selected, issues), 'dependent');
+  assert.equal(app.dependencyRole('acme/other#1', selected, issues), 'unrelated');
+  app.setDependenciesVisible(false);
+  assert.equal(app.dependenciesVisible(), false);
+  app.setDependenciesVisible(true);
+  assert.equal(app.dependenciesVisible(), true);
+});
+
+test('V4-1: every transient task surface shares native dialog and sheet lifecycle, applied rail precedes Canvas', () => {
+  const html = fs.readFileSync('web/public/index.html', 'utf8');
+  const js = fs.readFileSync('web/public/app.js', 'utf8');
+  const css = fs.readFileSync('web/public/theme.css', 'utf8');
+  for (const id of ['board-sheet', 'repo-popover', 'canvas-arrange-dialog', 'canvas-wire-confirm', 'composer-dialog']) {
+    assert.match(html, new RegExp('<dialog id="' + id + '" class="board-sheet'));
+  }
+  assert.ok(html.indexOf('id="applied-filter-bar"') < html.indexOf('id="canvas-viewport"'));
+  assert.match(js, /dialog\.addEventListener\('cancel'/);
+  assert.match(js, /dialog\.addEventListener\('close'/);
+  assert.match(js, /event\.shiftKey && document\.activeElement === first/);
+  assert.match(css, /max-height: 85dvh/);
+  assert.match(css, /overscroll-behavior: contain/);
+  assert.match(css, /prefers-reduced-motion/);
+  assert.doesNotMatch(html, /\sstyle=/i);
+});
+
+test('V4-1: applied chip removal immediately re-renders List without opening filters', () => {
+  const { app, get } = browser();
+  const repository = { full: 'acme/core' };
+  app.state.board = { repo: 'acme/core', repository, issues: [
+    { number: 1, title: 'High task', repository, state: 'open', labels: ['priority:high'], effectiveStage: 'todo', counts: {} },
+    { number: 2, title: 'Low task', repository, state: 'open', labels: ['priority:low'], effectiveStage: 'todo', counts: {} },
+  ] };
+  app.state.viewState.filters = ['priority:high'];
+  app.renderBoard();
+  assert.equal(get('filter-chips').children[0].getAttribute('aria-label'), 'Remove filter High');
+  assert.equal(get('applied-filter-btn').getAttribute('data-active'), 'true');
+  assert.equal(get('task-list').children[0].children[1].children.length, 1);
+  get('filter-chips').children[0].listeners.click();
+  assert.equal(get('filter-chips').children.length, 0);
+  assert.equal(get('applied-filter-btn').getAttribute('data-active'), 'false');
+  assert.equal(get('task-list').children[0].children[1].children.length, 2);
 });

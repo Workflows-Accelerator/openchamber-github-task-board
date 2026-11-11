@@ -15,7 +15,7 @@ const { chromium } = pkg.default || pkg;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const ROOT_DIR = path.resolve(__dirname, '..');
-const DELIVERY_DIR = process.env.DELIVERY_DIR || path.resolve(ROOT_DIR, '.agents/run/chamberos-board-v2/verifications/V3-3');
+const DELIVERY_DIR = process.env.DELIVERY_DIR || path.resolve(ROOT_DIR, '.agents/run/chamberos-board-v2/verifications/V4-1');
 const SCREENSHOTS_DIR = path.resolve(DELIVERY_DIR, 'screenshots');
 const DEFAULT_PORT = 4041;
 const CHROME_PATH = process.env.H2_CHROME || '/workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell';
@@ -47,7 +47,7 @@ async function createSyntheticPreview() {
     '- [ ] Approve regional failover topology? (Active-active | Primary-standby)',
     '',
     '## Human Tasks',
-    '- [ ] Rotate production signing key in secret store',
+    '- [ ] Review [ingress preview](https://example.com/preview)',
   ].join('\n');
 
   const fake = await startFakeGitHub({
@@ -493,8 +493,8 @@ async function run() {
 
       const vp = metrics.vpRect;
       const nonVacuousButtons = !metrics.canvasViewNotShown && vp.width > 0 && vp.height > 0 && (mCase.expectUndo
-        ? metrics.buttons.length === 7 && metrics.buttons.some((b) => b.id === 'canvas-arrange-undo' && b.width > 0 && b.height > 0)
-        : metrics.buttons.length >= 6 && metrics.buttons.every((b) => b.width > 0 && b.height > 0));
+        ? metrics.buttons.length === 8 && metrics.buttons.some((b) => b.id === 'canvas-arrange-undo' && b.width > 0 && b.height > 0)
+        : metrics.buttons.length >= 7 && metrics.buttons.every((b) => b.width > 0 && b.height > 0));
       const bottomGap = vp.bottom - metrics.hudRect.bottom;
       const hudBottomDocked = bottomGap >= 4 && bottomGap <= 36;
       const touchTargetsPass = mCase.width > 768 || metrics.buttons.every(b => b.width >= 44 && b.height >= 44);
@@ -674,6 +674,7 @@ async function run() {
       await setLang('en');
       await page.click('#compact-project');
       await waitFor('!document.getElementById("repo-popover")?.hidden', 'project popover');
+      await sleep(350);
       switcherPass = await page.evaluate(() => {
         const options = Array.from(document.querySelectorAll('#repo-options-list .repo-option'));
         const hasDisabled = options.some((o) => o.classList.contains('is-disabled'));
@@ -707,7 +708,7 @@ async function run() {
       await page.click('#compact-new');
       await sleep(200);
       extraShots.push(await captureShot('15-composer-390-dark-fr.png'));
-      await page.click('#composer-close');
+      await page.click('#composer-dialog .sheet-dismiss');
       await sleep(150);
     }
 
@@ -819,6 +820,112 @@ async function run() {
     }
     fs.writeFileSync(path.join(DELIVERY_DIR, 'surface-measurements.json'), JSON.stringify(surfaceMeasurements, null, 2) + '\n');
 
+    // V4-1: all native sheets share geometry, focus trap, three close paths and scroll isolation.
+    await setClientMode(false);
+    await selectScope('all');
+    const sheetMeasurements = [], dependencyMeasurements = [], filterMeasurements = [];
+    for (const mCase of baseMatrix) {
+      await setViewport(mCase.width, mCase.height);
+      await setTheme(mCase.theme); await setLang(mCase.lang); await switchView('canvas');
+      await page.evaluate(() => { window.__taskBoard.state.viewState.filters = []; window.__taskBoard.renderBoard(); });
+      const openers = [
+        ['filter', 'board-sheet', async () => page.click('#applied-filter-btn')],
+        ['settings', 'board-sheet', async () => page.evaluate(() => window.__taskBoard.openSheet('settings', document.getElementById('applied-filter-btn')))],
+        ['sort', 'board-sheet', async () => page.evaluate(() => window.__taskBoard.openSheet('sort', document.getElementById('applied-filter-btn')))],
+        ['arrange', 'canvas-arrange-dialog', async () => page.click('#canvas-arrange')],
+        ['project', 'repo-popover', async () => page.evaluate(() => { const b = innerWidth > 768 ? document.getElementById('repo-select-btn') : document.getElementById('compact-project'); b.focus(); b.click(); })],
+        ['composer', 'composer-dialog', async () => page.evaluate(() => { const b = innerWidth > 768 ? document.getElementById('new-task-btn') : document.getElementById('compact-new'); b.focus(); b.click(); })],
+        ['relationship', 'canvas-wire-confirm', async () => page.evaluate(() => { document.getElementById('canvas-arrange').focus(); document.querySelector('.canvas-wire-hit').dispatchEvent(new MouseEvent('click', { bubbles: true })); })],
+      ];
+      for (const [kind, id, open] of openers) {
+        await switchView('canvas');
+        const before = await page.evaluate(() => { const r = document.getElementById('canvas-viewport').getBoundingClientRect(); return { x: r.x, width: r.width, scroll: scrollY }; });
+        await open(); await sleep(200);
+        const geometry = await page.evaluate(id => {
+          const d = document.getElementById(id), r = d.getBoundingClientRect(), body = d.querySelector('.sheet-content'), foot = d.querySelector('.sheet-footer').getBoundingClientRect();
+          const controls = Array.from(d.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')).filter(n => !n.disabled && n.getClientRects().length);
+          const first = controls[0], last = controls.at(-1);
+          last.focus(); last.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+          const forward = document.activeElement === first;
+          first.focus(); first.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true, cancelable: true }));
+          const backward = document.activeElement === last;
+          const hitBoxes = controls.map(n => { const r = n.getBoundingClientRect(); return { width: r.width, height: r.height, tag: n.tagName }; });
+          const vp = document.getElementById('canvas-viewport').getBoundingClientRect();
+          return { open: d.open, x: r.x, y: r.y, width: r.width, height: r.height, right: r.right, bottom: r.bottom, footerBottom: foot.bottom, footerHeight: foot.height, bodyOverflow: getComputedStyle(body).overflowY, overscroll: getComputedStyle(body).overscrollBehaviorY, forward, backward, focusInside: d.contains(document.activeElement), hitBoxes, viewportX: vp.x, viewportWidth: vp.width, documentWidth: document.documentElement.scrollWidth, scroll: scrollY, maxHeight: getComputedStyle(d).maxHeight };
+        }, id);
+        await page.locator('#' + id + ' .sheet-content').evaluate(n => { n.scrollTop = n.scrollHeight; });
+        await page.mouse.wheel(0, 600); await sleep(50);
+        const noBleed = await page.evaluate(() => scrollY === 0);
+        await page.locator('#' + id + ' .sheet-content').evaluate(n => { n.scrollTop = 0; });
+        if (kind === 'filter' || kind === 'settings') await captureShot(`${kind}-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
+        const closeSelector = id === 'board-sheet' ? '#sheet-close' : '#' + id + ' .sheet-dismiss';
+        await page.click(closeSelector); await sleep(50);
+        const closedByButton = await page.evaluate(id => !document.getElementById(id).open, id);
+        const restored = await page.evaluate(id => { const d = document.getElementById(id), o = d._sheetOpener; return !o || !o.getClientRects().length || document.activeElement === o; }, id);
+        await open(); await sleep(180); await page.keyboard.press('Escape'); await sleep(50);
+        const closedByEscape = await page.evaluate(id => !document.getElementById(id).open, id);
+        await open(); await sleep(180);
+        await page.mouse.click(2, 2); await sleep(50);
+        const closedByBackdrop = await page.evaluate(id => !document.getElementById(id).open, id);
+        const pass = geometry.open && geometry.focusInside && geometry.forward && geometry.backward && geometry.x >= -0.5 && geometry.right <= mCase.width + .5 && geometry.bottom <= mCase.height + .5 && geometry.footerHeight >= 44 && geometry.footerBottom <= geometry.bottom + .5 && (mCase.width > 768 || geometry.height <= mCase.height * .85 + 1) && geometry.documentWidth <= mCase.width && before.x === geometry.viewportX && before.width === geometry.viewportWidth && noBleed && closedByButton && closedByEscape && closedByBackdrop && restored;
+        sheetMeasurements.push({ testCase: mCase, kind, geometry, closedByButton, closedByEscape, closedByBackdrop, restored, noBleed, pass });
+        if (!pass) throw new Error('Sheet check failed: ' + JSON.stringify(sheetMeasurements.at(-1)));
+      }
+      await switchView('canvas');
+      await page.click('#applied-filter-btn');
+      await page.click('[data-filter="priority:high"]');
+      const live = await page.locator('#sheet-apply').textContent();
+      await page.click('#sheet-apply');
+      const applied = await page.evaluate(() => ({ count: window.__taskBoard.state.currentCanvasIssues.length, visible: document.querySelector('#filter-chips .filter-chip')?.getBoundingClientRect().height >= 44, barTop: document.getElementById('applied-filter-bar').getBoundingClientRect().top, canvasTop: document.getElementById('canvas-viewport').getBoundingClientRect().top }));
+      await captureShot(`applied-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
+      await page.click('#filter-chips .filter-chip');
+      const removed = await page.evaluate(() => window.__taskBoard.state.currentCanvasIssues.length);
+      await page.click('#applied-filter-btn'); await page.click('[data-filter="priority:urgent"]'); await page.click('#sheet-reset');
+      const reset = await page.evaluate(() => window.__taskBoard.state.viewState.filters.length === 0 && document.getElementById('sheet-reset').disabled);
+      await page.click('#sheet-apply');
+      filterMeasurements.push({ testCase: mCase, live, applied, removed, reset, pass: applied.visible && applied.barTop < applied.canvasTop && removed > applied.count && reset });
+      // Focus a middle task: one blocker, several dependents and unrelated tasks.
+      await page.evaluate(() => {
+        const a = window.__taskBoard;
+        const issue = a.state.board.issues.find(i => i.repository.full === 'chamberos/platform' && i.number === 2);
+        a.selectDependencyCard(issue);
+        const r = document.getElementById('canvas-viewport').getBoundingClientRect();
+        a.state.canvasScale = innerWidth <= 768 ? .8 : 1;
+        a.state.canvasPanX = innerWidth <= 768 ? 16 - issue.canvas.x * .8 : r.width / 2 - issue.canvas.x;
+        a.state.canvasPanY = 240 - issue.canvas.y * a.state.canvasScale;
+        a.updateCanvasTransform();
+      });
+      await sleep(320);
+      const focus = await page.evaluate(() => ({ selected: document.querySelectorAll('.dependency-selected').length, blockers: document.querySelectorAll('.dependency-blocker').length, dependents: document.querySelectorAll('.dependency-dependent').length, unrelated: document.querySelectorAll('.dependency-unrelated').length, dim: getComputedStyle(document.querySelector('.dependency-unrelated')).opacity, edgeDim: getComputedStyle(document.querySelector('.dependency-wire-muted')).opacity, labels: document.querySelectorAll('.dependency-wire-label').length, labelTexts: Array.from(document.querySelectorAll('.dependency-wire-label')).map(n => n.textContent), legendWidth: document.getElementById('dependency-legend').getBoundingClientRect().width }));
+      await captureShot(`dependency-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
+      await page.click('#canvas-dependencies');
+      const hidden = await page.evaluate(() => document.querySelectorAll('.canvas-wire-group').length === 0 && document.querySelectorAll('.dependency-wire-label').length === 0 && getComputedStyle(document.getElementById('canvas-wires')).visibility === 'hidden');
+      await page.click('#canvas-dependencies');
+      const restored = await page.evaluate(() => document.querySelectorAll('.canvas-wire-group').length >= 4);
+      dependencyMeasurements.push({ testCase: mCase, ...focus, hidden, restored, pass: focus.selected === 1 && focus.blockers >= 1 && focus.dependents >= 1 && focus.unrelated >= 1 && focus.dim === '0.22' && focus.labels >= 2 && hidden && restored });
+      await page.evaluate(() => { window.__taskBoard.state.dependencyFocus = null; window.__taskBoard.renderCanvasWires(); });
+      if (mCase.width <= 768) {
+        await page.evaluate(() => {
+          document.body.classList.remove('sidebar-collapsed');
+          document.body.classList.add('sidebar-open');
+          document.getElementById('sidebar-backdrop').hidden = false;
+        });
+        await sleep(350);
+      }
+      await captureShot(`brand-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
+      if (mCase.width <= 768) await page.evaluate(() => { document.body.classList.remove('sidebar-open'); document.getElementById('sidebar-backdrop').hidden = true; });
+    }
+    // Real sheet controls persist theme and language across reload.
+    await page.click('#applied-filter-btn'); await page.click('#sheet-close');
+    await page.evaluate(() => window.__taskBoard.openSheet('settings', document.getElementById('applied-filter-btn')));
+    await page.click('[data-setting="light"]'); await page.click('[data-setting="fr"]'); await page.click('#sheet-apply');
+    await page.reload(); await waitFor('Boolean(window.__taskBoard?.state?.board?.issues?.length)', 'persistent settings reload');
+    const settingsPersist = await page.evaluate(() => document.documentElement.lang === 'fr' && document.documentElement.getAttribute('data-theme') === 'light' && localStorage.getItem('tb_lang') === 'fr' && localStorage.getItem('tb_theme_mode') === 'light');
+    const brand = await page.evaluate(async () => { const m = await fetch('/manifest.json').then(r => r.json()); return document.title.includes('Workflows Board') && document.querySelector('.sidebar-brand-title').textContent === 'Workflows Board' && m.name === 'Workflows Board' && m.short_name === 'Workflows Board'; });
+    fs.writeFileSync(path.join(DELIVERY_DIR, 'sheet-measurements.json'), JSON.stringify(sheetMeasurements, null, 2) + '\n');
+    fs.writeFileSync(path.join(DELIVERY_DIR, 'dependency-measurements.json'), JSON.stringify(dependencyMeasurements, null, 2) + '\n');
+    fs.writeFileSync(path.join(DELIVERY_DIR, 'filter-measurements.json'), JSON.stringify(filterMeasurements, null, 2) + '\n');
+
     const pageCsp = await page.evaluate(() => window.__cspViolations || []).catch(() => []);
     for (const c of pageCsp) {
       if (!cspViolations.includes(c)) cspViolations.push(c);
@@ -828,6 +935,10 @@ async function run() {
     browser = null;
 
     const smokeData = [
+      { name: 'V4-1 shared sheets: seven surfaces, sixteen theme/language/viewport cases', verdict: sheetMeasurements.every(m => m.pass) ? 'PASS' : 'FAIL', cases: sheetMeasurements.length },
+      { name: 'V4-1 applied filters, live count, removal and reset', verdict: filterMeasurements.every(m => m.pass) ? 'PASS' : 'FAIL', cases: filterMeasurements.length },
+      { name: 'V4-1 dependency focus, directional accents, labels and persistent edge toggle', verdict: dependencyMeasurements.every(m => m.pass) ? 'PASS' : 'FAIL', cases: dependencyMeasurements.length },
+      { name: 'V4-1 theme/language reload and product identity', verdict: settingsPersist && brand ? 'PASS' : 'FAIL', settingsPersist, brand },
       { name: 'Hostile list/drawer/picker/client geometry and narrow touch targets, complete 16-case matrix', verdict: surfaceMeasurements.every(m => m.pass) ? 'PASS' : 'FAIL', cases: surfaceMeasurements.length, failures: surfaceMeasurements.filter(m => !m.pass) },
       {
         name: 'health',

@@ -1,0 +1,3948 @@
+{
+  "timestamp": "2026-11-11T22:28:42.531Z",
+  "previewUrl": "http://127.0.0.1:40201",
+  "initialNarrowScale": 0.55,
+  "explicitFitScale": 0.2,
+  "wireCount": 4,
+  "cardCount": 10,
+  "noteCount": 1,
+  "canvasMeasurementsPass": true,
+  "measurements": [
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 360,
+        "windowHeight": 800,
+        "scrollWidth": 360,
+        "scrollHeight": 800,
+        "hudRect": {
+          "left": 26,
+          "right": 334,
+          "top": 683,
+          "bottom": 731,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "top": 112,
+          "bottom": 743,
+          "width": 360,
+          "height": 631
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 26,
+            "right": 70,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 70,
+            "right": 114,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 114,
+            "right": 158,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 158,
+            "right": 202,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 202,
+            "right": 246,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 246,
+            "right": 290,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 290,
+            "right": 334,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 360,
+        "windowHeight": 800,
+        "scrollWidth": 360,
+        "scrollHeight": 800,
+        "hudRect": {
+          "left": 26,
+          "right": 334,
+          "top": 683,
+          "bottom": 731,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "top": 112,
+          "bottom": 743,
+          "width": 360,
+          "height": 631
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 26,
+            "right": 70,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 70,
+            "right": 114,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 114,
+            "right": 158,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 158,
+            "right": 202,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 202,
+            "right": 246,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 246,
+            "right": 290,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 290,
+            "right": 334,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 360,
+        "windowHeight": 800,
+        "scrollWidth": 360,
+        "scrollHeight": 800,
+        "hudRect": {
+          "left": 26,
+          "right": 334,
+          "top": 683,
+          "bottom": 731,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "top": 112,
+          "bottom": 743,
+          "width": 360,
+          "height": 631
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 26,
+            "right": 70,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 70,
+            "right": 114,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 114,
+            "right": 158,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 158,
+            "right": 202,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 202,
+            "right": 246,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 246,
+            "right": 290,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 290,
+            "right": 334,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 360,
+        "windowHeight": 800,
+        "scrollWidth": 360,
+        "scrollHeight": 800,
+        "hudRect": {
+          "left": 26,
+          "right": 334,
+          "top": 683,
+          "bottom": 731,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "top": 112,
+          "bottom": 743,
+          "width": 360,
+          "height": 631
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 26,
+            "right": 70,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 70,
+            "right": 114,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 114,
+            "right": 158,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 158,
+            "right": 202,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 202,
+            "right": 246,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 246,
+            "right": 290,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 290,
+            "right": 334,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 390,
+        "height": 844,
+        "theme": "light",
+        "lang": "en",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 390,
+        "windowHeight": 844,
+        "scrollWidth": 390,
+        "scrollHeight": 844,
+        "hudRect": {
+          "left": 41,
+          "right": 349,
+          "top": 727,
+          "bottom": 775,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 390,
+          "top": 112,
+          "bottom": 787,
+          "width": 390,
+          "height": 675
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 41,
+            "right": 85,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 85,
+            "right": 129,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 129,
+            "right": 173,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 173,
+            "right": 217,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 217,
+            "right": 261,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 261,
+            "right": 305,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 305,
+            "right": 349,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 390,
+        "height": 844,
+        "theme": "light",
+        "lang": "fr",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 390,
+        "windowHeight": 844,
+        "scrollWidth": 390,
+        "scrollHeight": 844,
+        "hudRect": {
+          "left": 41,
+          "right": 349,
+          "top": 727,
+          "bottom": 775,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 390,
+          "top": 112,
+          "bottom": 787,
+          "width": 390,
+          "height": 675
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 41,
+            "right": 85,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 85,
+            "right": 129,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 129,
+            "right": 173,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 173,
+            "right": 217,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 217,
+            "right": 261,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 261,
+            "right": 305,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 305,
+            "right": 349,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "lang": "en",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 390,
+        "windowHeight": 844,
+        "scrollWidth": 390,
+        "scrollHeight": 844,
+        "hudRect": {
+          "left": 41,
+          "right": 349,
+          "top": 727,
+          "bottom": 775,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 390,
+          "top": 112,
+          "bottom": 787,
+          "width": 390,
+          "height": 675
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 41,
+            "right": 85,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 85,
+            "right": 129,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 129,
+            "right": 173,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 173,
+            "right": 217,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 217,
+            "right": 261,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 261,
+            "right": 305,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 305,
+            "right": 349,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "lang": "fr",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 390,
+        "windowHeight": 844,
+        "scrollWidth": 390,
+        "scrollHeight": 844,
+        "hudRect": {
+          "left": 41,
+          "right": 349,
+          "top": 727,
+          "bottom": 775,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 390,
+          "top": 112,
+          "bottom": 787,
+          "width": 390,
+          "height": 675
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 41,
+            "right": 85,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 85,
+            "right": 129,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 129,
+            "right": 173,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 173,
+            "right": 217,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 217,
+            "right": 261,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 261,
+            "right": 305,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 305,
+            "right": 349,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 768,
+        "windowHeight": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 230,
+          "right": 538,
+          "top": 783,
+          "bottom": 831,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "top": 112,
+          "bottom": 843,
+          "width": 768,
+          "height": 731
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 230,
+            "right": 274,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 274,
+            "right": 318,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 318,
+            "right": 362,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 362,
+            "right": 406,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 406,
+            "right": 450,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 450,
+            "right": 494,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 494,
+            "right": 538,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 768,
+        "windowHeight": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 230,
+          "right": 538,
+          "top": 783,
+          "bottom": 831,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "top": 112,
+          "bottom": 843,
+          "width": 768,
+          "height": 731
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 230,
+            "right": 274,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 274,
+            "right": 318,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 318,
+            "right": 362,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 362,
+            "right": 406,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 406,
+            "right": 450,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 450,
+            "right": 494,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 494,
+            "right": 538,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 768,
+        "windowHeight": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 230,
+          "right": 538,
+          "top": 783,
+          "bottom": 831,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "top": 112,
+          "bottom": 843,
+          "width": 768,
+          "height": 731
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 230,
+            "right": 274,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 274,
+            "right": 318,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 318,
+            "right": 362,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 362,
+            "right": 406,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 406,
+            "right": 450,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 450,
+            "right": 494,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 494,
+            "right": 538,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 768,
+        "windowHeight": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 230,
+          "right": 538,
+          "top": 783,
+          "bottom": 831,
+          "width": 308,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "top": 112,
+          "bottom": 843,
+          "width": 768,
+          "height": 731
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 230,
+            "right": 274,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 274,
+            "right": 318,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 318,
+            "right": 362,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 362,
+            "right": 406,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 406,
+            "right": 450,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 450,
+            "right": 494,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 494,
+            "right": 538,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 1280,
+        "windowHeight": 900,
+        "scrollWidth": 1280,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 597,
+          "right": 913,
+          "top": 836,
+          "bottom": 888,
+          "width": 316,
+          "height": 52
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "top": 160,
+          "bottom": 900,
+          "width": 1050,
+          "height": 740
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 602,
+            "right": 638,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 640,
+            "right": 686,
+            "top": 840,
+            "bottom": 884,
+            "width": 46,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 688,
+            "right": 724,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 726,
+            "right": 762,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 764,
+            "right": 808,
+            "top": 840,
+            "bottom": 884,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 810,
+            "right": 870,
+            "top": 840,
+            "bottom": 884,
+            "width": 60,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 872,
+            "right": 908,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 1280,
+        "windowHeight": 900,
+        "scrollWidth": 1280,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 589,
+          "right": 921,
+          "top": 836,
+          "bottom": 888,
+          "width": 332,
+          "height": 52
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "top": 160,
+          "bottom": 900,
+          "width": 1050,
+          "height": 740
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 594,
+            "right": 630,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 632,
+            "right": 678,
+            "top": 840,
+            "bottom": 884,
+            "width": 46,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 680,
+            "right": 716,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 718,
+            "right": 755,
+            "top": 840,
+            "bottom": 884,
+            "width": 37,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 757,
+            "right": 806,
+            "top": 840,
+            "bottom": 884,
+            "width": 49,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 808,
+            "right": 878,
+            "top": 840,
+            "bottom": 884,
+            "width": 70,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 880,
+            "right": 916,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 1280,
+        "windowHeight": 900,
+        "scrollWidth": 1280,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 597,
+          "right": 913,
+          "top": 836,
+          "bottom": 888,
+          "width": 316,
+          "height": 52
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "top": 160,
+          "bottom": 900,
+          "width": 1050,
+          "height": 740
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 602,
+            "right": 638,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 640,
+            "right": 686,
+            "top": 840,
+            "bottom": 884,
+            "width": 46,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 688,
+            "right": 724,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 726,
+            "right": 762,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 764,
+            "right": 808,
+            "top": 840,
+            "bottom": 884,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 810,
+            "right": 870,
+            "top": 840,
+            "bottom": 884,
+            "width": 60,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 872,
+            "right": 908,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr",
+        "expectUndo": false
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 1280,
+        "windowHeight": 900,
+        "scrollWidth": 1280,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 589,
+          "right": 921,
+          "top": 836,
+          "bottom": 888,
+          "width": 332,
+          "height": 52
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "top": 160,
+          "bottom": 900,
+          "width": 1050,
+          "height": 740
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 594,
+            "right": 630,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 632,
+            "right": 678,
+            "top": 840,
+            "bottom": 884,
+            "width": 46,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 680,
+            "right": 716,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 718,
+            "right": 755,
+            "top": 840,
+            "bottom": 884,
+            "width": 37,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 757,
+            "right": 806,
+            "top": 840,
+            "bottom": 884,
+            "width": 49,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 808,
+            "right": 878,
+            "top": 840,
+            "bottom": 884,
+            "width": 70,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 880,
+            "right": 916,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "en",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 360,
+        "windowHeight": 800,
+        "scrollWidth": 360,
+        "scrollHeight": 800,
+        "hudRect": {
+          "left": 4,
+          "right": 356,
+          "top": 683,
+          "bottom": 731,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "top": 112,
+          "bottom": 743,
+          "width": 360,
+          "height": 631
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 4,
+            "right": 48,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 48,
+            "right": 92,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 92,
+            "right": 136,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 136,
+            "right": 180,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 180,
+            "right": 224,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 224,
+            "right": 268,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 268,
+            "right": 312,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo",
+            "left": 312,
+            "right": 356,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "light",
+        "lang": "fr",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 360,
+        "windowHeight": 800,
+        "scrollWidth": 360,
+        "scrollHeight": 800,
+        "hudRect": {
+          "left": 4,
+          "right": 356,
+          "top": 683,
+          "bottom": 731,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "top": 112,
+          "bottom": 743,
+          "width": 360,
+          "height": 631
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 4,
+            "right": 48,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 48,
+            "right": 92,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 92,
+            "right": 136,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 136,
+            "right": 180,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 180,
+            "right": 224,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 224,
+            "right": 268,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 268,
+            "right": 312,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler",
+            "left": 312,
+            "right": 356,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "en",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 360,
+        "windowHeight": 800,
+        "scrollWidth": 360,
+        "scrollHeight": 800,
+        "hudRect": {
+          "left": 4,
+          "right": 356,
+          "top": 683,
+          "bottom": 731,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "top": 112,
+          "bottom": 743,
+          "width": 360,
+          "height": 631
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 4,
+            "right": 48,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 48,
+            "right": 92,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 92,
+            "right": 136,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 136,
+            "right": 180,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 180,
+            "right": 224,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 224,
+            "right": 268,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 268,
+            "right": 312,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo",
+            "left": 312,
+            "right": 356,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 360,
+        "height": 800,
+        "theme": "dark",
+        "lang": "fr",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 360,
+        "windowHeight": 800,
+        "scrollWidth": 360,
+        "scrollHeight": 800,
+        "hudRect": {
+          "left": 4,
+          "right": 356,
+          "top": 683,
+          "bottom": 731,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 360,
+          "top": 112,
+          "bottom": 743,
+          "width": 360,
+          "height": 631
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 4,
+            "right": 48,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 48,
+            "right": 92,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 92,
+            "right": 136,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 136,
+            "right": 180,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 180,
+            "right": 224,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 224,
+            "right": 268,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 268,
+            "right": 312,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler",
+            "left": 312,
+            "right": 356,
+            "top": 685,
+            "bottom": 729,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 390,
+        "height": 844,
+        "theme": "light",
+        "lang": "en",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 390,
+        "windowHeight": 844,
+        "scrollWidth": 390,
+        "scrollHeight": 844,
+        "hudRect": {
+          "left": 19,
+          "right": 371,
+          "top": 727,
+          "bottom": 775,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 390,
+          "top": 112,
+          "bottom": 787,
+          "width": 390,
+          "height": 675
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 19,
+            "right": 63,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 63,
+            "right": 107,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 107,
+            "right": 151,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 151,
+            "right": 195,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 195,
+            "right": 239,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 239,
+            "right": 283,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 283,
+            "right": 327,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo",
+            "left": 327,
+            "right": 371,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 390,
+        "height": 844,
+        "theme": "light",
+        "lang": "fr",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 390,
+        "windowHeight": 844,
+        "scrollWidth": 390,
+        "scrollHeight": 844,
+        "hudRect": {
+          "left": 19,
+          "right": 371,
+          "top": 727,
+          "bottom": 775,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 390,
+          "top": 112,
+          "bottom": 787,
+          "width": 390,
+          "height": 675
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 19,
+            "right": 63,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 63,
+            "right": 107,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 107,
+            "right": 151,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 151,
+            "right": 195,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 195,
+            "right": 239,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 239,
+            "right": 283,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 283,
+            "right": 327,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler",
+            "left": 327,
+            "right": 371,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "lang": "en",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 390,
+        "windowHeight": 844,
+        "scrollWidth": 390,
+        "scrollHeight": 844,
+        "hudRect": {
+          "left": 19,
+          "right": 371,
+          "top": 727,
+          "bottom": 775,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 390,
+          "top": 112,
+          "bottom": 787,
+          "width": 390,
+          "height": 675
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 19,
+            "right": 63,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 63,
+            "right": 107,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 107,
+            "right": 151,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 151,
+            "right": 195,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 195,
+            "right": 239,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 239,
+            "right": 283,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 283,
+            "right": 327,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo",
+            "left": 327,
+            "right": 371,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 390,
+        "height": 844,
+        "theme": "dark",
+        "lang": "fr",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 390,
+        "windowHeight": 844,
+        "scrollWidth": 390,
+        "scrollHeight": 844,
+        "hudRect": {
+          "left": 19,
+          "right": 371,
+          "top": 727,
+          "bottom": 775,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 390,
+          "top": 112,
+          "bottom": 787,
+          "width": 390,
+          "height": 675
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 19,
+            "right": 63,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 63,
+            "right": 107,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 107,
+            "right": 151,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 151,
+            "right": 195,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 195,
+            "right": 239,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 239,
+            "right": 283,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 283,
+            "right": 327,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler",
+            "left": 327,
+            "right": 371,
+            "top": 729,
+            "bottom": 773,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "en",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 768,
+        "windowHeight": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 208,
+          "right": 560,
+          "top": 783,
+          "bottom": 831,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "top": 112,
+          "bottom": 843,
+          "width": 768,
+          "height": 731
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 208,
+            "right": 252,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 252,
+            "right": 296,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 296,
+            "right": 340,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 340,
+            "right": 384,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 384,
+            "right": 428,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 428,
+            "right": 472,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 472,
+            "right": 516,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo",
+            "left": 516,
+            "right": 560,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 768,
+        "windowHeight": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 208,
+          "right": 560,
+          "top": 783,
+          "bottom": 831,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "top": 112,
+          "bottom": 843,
+          "width": 768,
+          "height": 731
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 208,
+            "right": 252,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 252,
+            "right": 296,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 296,
+            "right": 340,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 340,
+            "right": 384,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 384,
+            "right": 428,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 428,
+            "right": 472,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 472,
+            "right": 516,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler",
+            "left": 516,
+            "right": 560,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 768,
+        "windowHeight": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 208,
+          "right": 560,
+          "top": 783,
+          "bottom": 831,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "top": 112,
+          "bottom": 843,
+          "width": 768,
+          "height": 731
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 208,
+            "right": 252,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 252,
+            "right": 296,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 296,
+            "right": 340,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 340,
+            "right": 384,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 384,
+            "right": 428,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 428,
+            "right": 472,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 472,
+            "right": 516,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo",
+            "left": 516,
+            "right": 560,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 768,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 768,
+        "windowHeight": 900,
+        "scrollWidth": 768,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 208,
+          "right": 560,
+          "top": 783,
+          "bottom": 831,
+          "width": 352,
+          "height": 48
+        },
+        "vpRect": {
+          "left": 0,
+          "right": 768,
+          "top": 112,
+          "bottom": 843,
+          "width": 768,
+          "height": 731
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 208,
+            "right": 252,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 252,
+            "right": 296,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 296,
+            "right": 340,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 340,
+            "right": 384,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 384,
+            "right": 428,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 428,
+            "right": 472,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 472,
+            "right": 516,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler",
+            "left": 516,
+            "right": 560,
+            "top": 785,
+            "bottom": 829,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "en",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 1280,
+        "windowHeight": 900,
+        "scrollWidth": 1280,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 574,
+          "right": 936,
+          "top": 836,
+          "bottom": 888,
+          "width": 362,
+          "height": 52
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "top": 160,
+          "bottom": 900,
+          "width": 1050,
+          "height": 740
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 579,
+            "right": 615,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 617,
+            "right": 663,
+            "top": 840,
+            "bottom": 884,
+            "width": 46,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 665,
+            "right": 701,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 703,
+            "right": 739,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 741,
+            "right": 785,
+            "top": 840,
+            "bottom": 884,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 787,
+            "right": 847,
+            "top": 840,
+            "bottom": 884,
+            "width": 60,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 849,
+            "right": 885,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo",
+            "left": 887,
+            "right": 931,
+            "top": 840,
+            "bottom": 884,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "light",
+        "lang": "fr",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 1280,
+        "windowHeight": 900,
+        "scrollWidth": 1280,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 558.5,
+          "right": 951.5,
+          "top": 836,
+          "bottom": 888,
+          "width": 393,
+          "height": 52
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "top": 160,
+          "bottom": 900,
+          "width": 1050,
+          "height": 740
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 563.5,
+            "right": 599.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 601.5,
+            "right": 647.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 46,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 649.5,
+            "right": 685.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 687.5,
+            "right": 724.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 37,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 726.5,
+            "right": 775.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 49,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 777.5,
+            "right": 847.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 70,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 849.5,
+            "right": 885.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler",
+            "left": 887.5,
+            "right": 946.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 59,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(15, 23, 42, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "en",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "en",
+        "windowWidth": 1280,
+        "windowHeight": 900,
+        "scrollWidth": 1280,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 574,
+          "right": 936,
+          "top": 836,
+          "bottom": 888,
+          "width": 362,
+          "height": 52
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "top": 160,
+          "bottom": 900,
+          "width": 1050,
+          "height": 740
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 579,
+            "right": 615,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 617,
+            "right": 663,
+            "top": 840,
+            "bottom": 884,
+            "width": 46,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 665,
+            "right": 701,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Fit",
+            "left": 703,
+            "right": 739,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Reset",
+            "left": 741,
+            "right": 785,
+            "top": 840,
+            "bottom": 884,
+            "width": 44,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Arrange",
+            "left": 787,
+            "right": 847,
+            "top": 840,
+            "bottom": 884,
+            "width": 60,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 849,
+            "right": 885,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Undo",
+            "left": 887,
+            "right": 931,
+            "top": 840,
+            "bottom": 884,
+            "width": 44,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    },
+    {
+      "testCase": {
+        "width": 1280,
+        "height": 900,
+        "theme": "dark",
+        "lang": "fr",
+        "expectUndo": true
+      },
+      "hudMetrics": {
+        "canvasViewNotShown": false,
+        "viewportScrollTop": 0,
+        "htmlLang": "fr",
+        "windowWidth": 1280,
+        "windowHeight": 900,
+        "scrollWidth": 1280,
+        "scrollHeight": 900,
+        "hudRect": {
+          "left": 558.5,
+          "right": 951.5,
+          "top": 836,
+          "bottom": 888,
+          "width": 393,
+          "height": 52
+        },
+        "vpRect": {
+          "left": 230,
+          "right": 1280,
+          "top": 160,
+          "bottom": 900,
+          "width": 1050,
+          "height": 740
+        },
+        "buttons": [
+          {
+            "id": "canvas-zoom-out",
+            "text": "-",
+            "left": 563.5,
+            "right": 599.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-readout",
+            "text": "43%",
+            "left": 601.5,
+            "right": 647.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 46,
+            "height": 44
+          },
+          {
+            "id": "canvas-zoom-in",
+            "text": "+",
+            "left": 649.5,
+            "right": 685.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-fit-all",
+            "text": "Tout",
+            "left": 687.5,
+            "right": 724.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 37,
+            "height": 44
+          },
+          {
+            "id": "canvas-reset-view",
+            "text": "Réinit.",
+            "left": 726.5,
+            "right": 775.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 49,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange",
+            "text": "Organiser",
+            "left": 777.5,
+            "right": 847.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 70,
+            "height": 44
+          },
+          {
+            "id": "canvas-dependencies",
+            "text": "",
+            "left": 849.5,
+            "right": 885.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 36,
+            "height": 44
+          },
+          {
+            "id": "canvas-arrange-undo",
+            "text": "Annuler",
+            "left": 887.5,
+            "right": 946.5,
+            "top": 840,
+            "bottom": 884,
+            "width": 59,
+            "height": 44
+          }
+        ],
+        "backgroundImage": "radial-gradient(rgba(241, 245, 249, 0.125) 1.02px, rgba(0, 0, 0, 0) 1.02px)"
+      },
+      "nonVacuousButtons": true,
+      "bottomGap": 12,
+      "hudBottomDocked": true,
+      "touchTargetsPass": true,
+      "compactHudHeight": true,
+      "langMatches": true,
+      "zeroViewportBottomOverhang": true,
+      "zeroDocumentOverflow": true,
+      "buttonOverlaps": [],
+      "buttonsOutsideViewport": [],
+      "pass": true
+    }
+  ]
+}

@@ -1083,8 +1083,8 @@ test('PWA manifest.json is served with 200 and valid JSON', async () => {
     assert.equal(res.status, 200);
     assert.match(res.headers.get('content-type') ?? '', /application\/manifest\+json/);
     const json = await res.json();
-    assert.equal(json.name, 'Workflows Task Board');
-    assert.equal(json.short_name, 'Task Board');
+    assert.equal(json.name, 'Workflows Board');
+    assert.equal(json.short_name, 'Workflows Board');
     assert.equal(json.start_url, '/');
     assert.equal(json.display, 'standalone');
     assert.equal(json.background_color, '#09090b');

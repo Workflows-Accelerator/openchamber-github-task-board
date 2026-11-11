@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="color-scheme" content="dark light">
   <meta name="theme-color" content="#0B0D11">
-  <title>Atelier — Task Board</title>
+  <title>Workflows Board</title>
   <link rel="manifest" href="/manifest.json">
   <link rel="icon" type="image/svg+xml" href="/icon.svg">
   <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
@@ -39,7 +39,7 @@
           <div class="sidebar-logo" aria-hidden="true">
             <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zm-9 9h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg>
           </div>
-          <span class="sidebar-brand-title">Atelier</span>
+          <span class="sidebar-brand-title">Workflows Board</span>
         </div>
         <button id="sidebar-toggle-btn" class="sidebar-toggle-btn" type="button" aria-label="Collapse sidebar" title="Collapse sidebar">
           <svg class="icon" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
@@ -357,12 +357,17 @@
         </div>
 
         <div class="status-strip" id="status-strip">
-          <span class="status-strip-brand" data-i18n="brand_title">Task Board</span>
+          <span class="status-strip-brand" data-i18n="brand_title">Workflows Board</span>
           <span id="scope-status" role="status" class="status-strip-scope"></span>
           <span id="board-count" class="status-strip-count"></span>
           <button id="list-group-toggle" class="button small" type="button" data-i18n="flat_list">Flat list</button>
           <button id="new-task-btn" class="button primary small" type="button" data-i18n="new_task">New task</button>
           <span id="freshness" class="freshness status-strip-freshness"></span>
+        </div>
+
+        <div id="applied-filter-bar" class="applied-filter-bar" aria-label="Applied filters">
+          <button id="applied-filter-btn" class="button" type="button" aria-haspopup="dialog">Filters</button>
+          <div id="filter-chips" class="filter-chips" aria-label="Active filters"></div>
         </div>
 
         <!-- Canvas Viewport -->
@@ -376,8 +381,11 @@
             <button id="canvas-reset-view" class="canvas-control-btn text-btn" type="button" title="Reset view" aria-label="Reset view" data-i18n-title="canvas_reset_view"><svg class="canvas-control-symbol" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2.6 7M3 4v7h7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="canvas-control-label" data-i18n="canvas_reset_view">Reset</span></button>
             <span class="canvas-control-sep" aria-hidden="true">|</span>
             <button id="canvas-arrange" class="canvas-control-btn text-btn" type="button" title="Auto-arrange cards by dependency" aria-label="Auto-arrange cards" data-i18n-title="canvas_arrange"><svg class="canvas-control-symbol" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="canvas-control-label" data-i18n="canvas_arrange">Arrange</span></button>
+            <button id="canvas-dependencies" class="canvas-control-btn" type="button" aria-label="Dependencies" title="Dependencies" aria-pressed="true"><svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h6v6H3zM15 12h6v6h-6zM9 9h4v6h2" fill="none" stroke="currentColor" stroke-width="1.8"/></svg></button>
             <button id="canvas-arrange-undo" class="canvas-control-btn text-btn" type="button" title="Undo last arrange" aria-label="Undo last arrange" data-i18n-title="canvas_arrange_undo" hidden><svg class="canvas-control-symbol" width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4 3 10l6 6M3 10h11a6 6 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span class="canvas-control-label" data-i18n="canvas_arrange_undo">Undo</span></button>
           </div>
+          <div id="dependency-legend" class="dependency-legend" role="status" hidden></div>
+          <div id="canvas-filter-empty" class="canvas-filter-empty" hidden></div>
           <div id="canvas-plane" class="canvas-plane">
             <svg id="canvas-wires" class="canvas-layer canvas-layer-wires" width="14" height="14" aria-hidden="true">
               <defs>
@@ -400,67 +408,22 @@
             </svg>
             <div id="canvas-notes" class="canvas-layer canvas-layer-notes" role="region" aria-label="Canvas notes"></div>
             <div id="canvas-cards" class="canvas-layer canvas-layer-cards" role="region" aria-label="Task cards"></div>
+            <svg id="canvas-wire-labels" class="canvas-layer canvas-layer-wire-labels" width="14" height="14" aria-hidden="true"></svg>
             <div id="canvas-overlay" class="canvas-layer canvas-layer-overlay" aria-hidden="true"></div>
           </div>
           <div id="canvas-wire-tooltip" class="canvas-wire-tooltip" aria-hidden="true" hidden></div>
-          <div id="canvas-wire-confirm" class="canvas-wire-confirm" role="dialog" aria-modal="true" aria-label="Confirm dependency removal" hidden>
-            <span class="wire-confirm-title" id="wire-confirm-title">Remove link?</span>
-            <div class="wire-confirm-actions">
-              <button type="button" id="wire-confirm-btn" class="button danger small">Remove</button>
-              <button type="button" id="wire-cancel-btn" class="button small">Cancel</button>
-            </div>
-          </div>
-          <div id="canvas-arrange-dialog" class="canvas-arrange-dialog" role="dialog" aria-modal="true" aria-label="Arrange cards" hidden>
-            <div class="canvas-arrange-dialog-content">
-              <span class="canvas-arrange-dialog-title" id="arrange-dialog-title">Arrange cards</span>
-              <p class="canvas-arrange-dialog-message" id="arrange-dialog-message">Arrange cards by dependency? Cards you placed by hand will also move if you choose all cards.</p>
-              <div class="canvas-arrange-options">
-                <label class="canvas-arrange-option">
-                  <input type="radio" name="arrange-scope" value="unplaced" id="arrange-scope-unplaced" checked>
-                  <span data-i18n="arrange_scope_unplaced">Only cards without a saved place</span>
-                </label>
-                <label class="canvas-arrange-option">
-                  <input type="radio" name="arrange-scope" value="all" id="arrange-scope-all">
-                  <span data-i18n="arrange_scope_all">All cards (cards you placed by hand will also move)</span>
-                </label>
-              </div>
-              <div id="arrange-progress-container" class="arrange-progress-container" hidden>
-                <div id="arrange-progress-bar" class="arrange-progress-bar"></div>
-                <span id="arrange-progress-text" class="arrange-progress-text small muted"></span>
-              </div>
-              <div id="arrange-summary" class="arrange-summary small" hidden></div>
-              <div class="canvas-arrange-actions">
-                <button type="button" id="arrange-confirm-btn" class="button primary small" data-i18n="arrange_confirm">Arrange</button>
-                <button type="button" id="arrange-cancel-btn" class="button small" data-i18n="arrange_cancel">Cancel</button>
-              </div>
-            </div>
-          </div>
         </div>
 
         <h1 id="board-title" class="sr-only" tabindex="-1">Tasks</h1>
-        <div id="filter-chips" class="filter-chips" aria-label="Active filters"></div>
         <p id="view-hint" class="muted small"></p>
         <p id="capture-hint" class="muted small" hidden>Capture ideas here. Enter adds a draft, never starts an agent.</p>
         <div id="empty-state" class="empty" hidden>
           <p>No tasks in this repository.</p>
           <p class="muted" data-i18n="empty_description">Capture your next step or choose another project.</p>
+          <button id="empty-reset" class="button" type="button" hidden>Clear all</button>
           <div class="empty-actions"><button id="empty-create" class="button primary" type="button" data-i18n="create_task">Create a task</button><button id="empty-switch" class="button" type="button" data-i18n="switch_project">Switch project</button></div>
         </div>
         <ul id="task-list" class="task-list" aria-label="Tasks"></ul>
-        <form id="quick-add-form" class="quick-add-bar capture-row" hidden>
-          <div class="composer-head"><strong data-i18n="new_task">New task</strong><button id="composer-close" class="button" type="button" aria-label="Close">×</button></div>
-          <label for="quick-add-input" class="sr-only">New draft title</label>
-          <input id="quick-add-input" class="quick-add-input" type="text" maxlength="256" placeholder="Add a draft…" data-i18n-placeholder="quick_add_title_placeholder" autocomplete="off" required />
-          <label for="quick-add-description" class="sr-only">Optional description</label>
-          <input id="quick-add-description" type="text" placeholder="Optional description or inspiration" data-i18n-placeholder="quick_add_desc_placeholder" autocomplete="off" />
-          <label for="quick-add-project" class="sr-only">Project for new draft</label>
-          <select id="quick-add-project" aria-label="Project for new draft"></select>
-          <button class="button primary" type="submit" data-i18n="quick_add_btn">Add draft</button>
-        </form>
-        <dialog id="board-sheet" class="board-sheet" aria-labelledby="sheet-title">
-          <div class="sheet-head"><h2 id="sheet-title"></h2><button id="sheet-close" class="button" type="button">Done</button></div>
-          <div id="sheet-content" class="sheet-content"></div>
-        </dialog>
       </section>
 
       <div id="drawer-backdrop" class="drawer-backdrop" hidden></div>
@@ -572,12 +535,62 @@
   </div>
 
   <div id="announcer" class="sr-only" role="status" aria-live="polite"></div>
-            <div id="repo-popover" class="repo-popover" role="dialog" aria-modal="true" aria-label="Select Project" hidden>
-              <div class="repo-popover-header">
-                <input id="repo-search-input" class="repo-search-input" type="search" placeholder="Search projects..." autocomplete="off" />
-              </div>
-              <div id="repo-options-list" class="repo-options-list" role="listbox"></div><footer id="repo-api-footer" class="repo-footer"></footer>
-            </div>
+  <dialog id="board-sheet" class="board-sheet" aria-labelledby="sheet-title">
+    <div class="sheet-handle" aria-hidden="true"></div>
+    <header class="sheet-head"><h2 id="sheet-title"></h2><button id="sheet-close" class="button" type="button" aria-label="Close">×</button></header>
+    <div id="sheet-content" class="sheet-content"></div>
+    <footer id="sheet-footer" class="sheet-footer"></footer>
+  </dialog>
+  <dialog id="canvas-wire-confirm" class="board-sheet canvas-wire-confirm" role="dialog" aria-modal="true" aria-label="Confirm dependency removal" hidden>
+    <span class="wire-confirm-title" id="wire-confirm-title">Remove link?</span>
+    <div class="wire-confirm-actions">
+      <button type="button" id="wire-confirm-btn" class="button danger small">Remove</button>
+      <button type="button" id="wire-cancel-btn" class="button small">Cancel</button>
+    </div>
+  </dialog>
+  <dialog id="canvas-arrange-dialog" class="board-sheet canvas-arrange-dialog" role="dialog" aria-modal="true" aria-label="Arrange cards" hidden>
+    <div class="canvas-arrange-dialog-content">
+      <span class="canvas-arrange-dialog-title" id="arrange-dialog-title">Arrange cards</span>
+      <p class="canvas-arrange-dialog-message" id="arrange-dialog-message">Arrange cards by dependency? Cards you placed by hand will also move if you choose all cards.</p>
+      <div class="canvas-arrange-options">
+        <label class="canvas-arrange-option">
+          <input type="radio" name="arrange-scope" value="unplaced" id="arrange-scope-unplaced" checked>
+          <span data-i18n="arrange_scope_unplaced">Only cards without a saved place</span>
+        </label>
+        <label class="canvas-arrange-option">
+          <input type="radio" name="arrange-scope" value="all" id="arrange-scope-all">
+          <span data-i18n="arrange_scope_all">All cards (cards you placed by hand will also move)</span>
+        </label>
+      </div>
+      <div id="arrange-progress-container" class="arrange-progress-container" hidden>
+        <div id="arrange-progress-bar" class="arrange-progress-bar"></div>
+        <span id="arrange-progress-text" class="arrange-progress-text small muted"></span>
+      </div>
+      <div id="arrange-summary" class="arrange-summary small" hidden></div>
+      <div class="canvas-arrange-actions">
+        <button type="button" id="arrange-confirm-btn" class="button primary small" data-i18n="arrange_confirm">Arrange</button>
+        <button type="button" id="arrange-cancel-btn" class="button small" data-i18n="arrange_cancel">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="composer-dialog" class="board-sheet" aria-label="New task">
+    <form id="quick-add-form" class="quick-add-bar capture-row" hidden>
+      <div class="composer-head"><strong data-i18n="new_task">New task</strong><button id="composer-close" class="button" type="button" aria-label="Close">×</button></div>
+      <label for="quick-add-input" class="sr-only">New draft title</label>
+      <input id="quick-add-input" class="quick-add-input" type="text" maxlength="256" placeholder="Add a draft…" data-i18n-placeholder="quick_add_title_placeholder" autocomplete="off" required />
+      <label for="quick-add-description" class="sr-only">Optional description</label>
+      <input id="quick-add-description" type="text" placeholder="Optional description or inspiration" data-i18n-placeholder="quick_add_desc_placeholder" autocomplete="off" />
+      <label for="quick-add-project" class="sr-only">Project for new draft</label>
+      <select id="quick-add-project" aria-label="Project for new draft"></select>
+      <button class="button primary" type="submit" data-i18n="quick_add_btn">Add draft</button>
+    </form>
+  </dialog>
+  <dialog id="repo-popover" class="board-sheet repo-popover" role="dialog" aria-modal="true" aria-label="Select Project" hidden>
+    <div class="repo-popover-header">
+      <input id="repo-search-input" class="repo-search-input" type="search" placeholder="Search projects..." autocomplete="off" />
+    </div>
+    <div id="repo-options-list" class="repo-options-list" role="listbox"></div><footer id="repo-api-footer" class="repo-footer"></footer>
+  </dialog>
   <nav id="compact-nav-dock" aria-label="Primary navigation">
     <button id="dock-canvas" type="button" data-i18n="nav_canvas">Canvas</button>
     <button id="dock-list" type="button" data-i18n="nav_list">List</button>

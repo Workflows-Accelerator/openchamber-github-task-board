@@ -646,7 +646,7 @@
       placeholder_title_canvas: 'Canvas',
       placeholder_notice: 'This view is currently in development. List view is active and connected to GitHub.',
       placeholder_back: 'Back to List',
-      brand_title: 'Task Board',
+      brand_title: 'Workflows Board',
       search_placeholder: 'Search...',
       btn_filter: 'Filter',
       btn_sort: 'Sort',
@@ -829,7 +829,7 @@
       placeholder_title_canvas: 'Canevas',
       placeholder_notice: 'Cette vue est en cours de développement. La vue Liste est active et connectée à GitHub.',
       placeholder_back: 'Retour à la vue Liste',
-      brand_title: 'Tableau des tâches',
+      brand_title: 'Workflows Board',
       search_placeholder: 'Rechercher...',
       btn_filter: 'Filtrer',
       btn_sort: 'Tri',
@@ -1692,6 +1692,7 @@
   var SORT_LABELS = { priority: 'Priority', updated: 'Recently updated', created: 'Recently created', manual: 'Manual order' };
   var STAGES = ['draft', 'backlog', 'todo', 'planned', 'in-progress', 'needs-human', 'in-review', 'done'];
   var KIND_LABELS = { 'needs-me': 'Needs me', human: 'Human tasks', questions: 'Questions' };
+  var EXTRA_FILTERS = { blocked: ['Blocked', 'Bloquées'], 'has-dependents': ['Blocks another task', 'Bloque une autre tâche'], artifact: ['Reviewable link', 'Lien à consulter'] };
   var VIEW_STATE_KEY = 'openchamber_web_view_state';
   state.viewState = readViewState();
   function readViewState() {
@@ -1702,6 +1703,7 @@
       if (saved && Object.prototype.hasOwnProperty.call(SORT_LABELS, saved.sort)) result.sort = saved.sort;
       if (saved && Array.isArray(saved.filters)) result.filters = saved.filters.filter(function (token, index, all) {
         return typeof token === 'string' && all.indexOf(token) === index && (KIND_LABELS[token] ||
+          EXTRA_FILTERS[token] || /^priority:(urgent|high|medium|low)$/.test(token) ||
           (token.startsWith('stage:') && STAGES.includes(token.slice(6))) || /^project:[a-z0-9_.-]+\/[a-z0-9_.-]+$/i.test(token));
       });
     } catch (error) { /* Private browsing may deny storage. Memory state remains usable. */ }
@@ -1742,11 +1744,15 @@
     var kinds = selection.filters.filter(function (f) { return KIND_LABELS[f]; });
     var stages = selection.filters.filter(function (f) { return f.startsWith('stage:'); }).map(function (f) { return f.slice(6); });
     var projects = selection.filters.filter(function (f) { return f.startsWith('project:'); }).map(function (f) { return f.slice(8).toLowerCase(); });
+    var priorities = selection.filters.filter(function (f) { return f.startsWith('priority:'); }).map(function (f) { return f.slice(9); });
+    var attention = kinds.concat(selection.filters.filter(function (f) { return f === 'blocked' || f === 'has-dependents'; }));
     var weight = { critical: 4, urgent: 4, important: 3, high: 3, useful: 2, medium: 2, optional: 1, low: 1 };
     return items.filter(function (issue) {
-      return (!stages.length || stages.includes(stageOf(issue))) &&
-        (!projects.length || (issue.repository && projects.includes(issue.repository.full.toLowerCase()))) &&
-        (!kinds.length || kinds.some(function (kind) { return kind === 'needs-me' ? needsMe(issue) : countOf(issue, kind === 'human' ? 'humanTasks' : 'openQuestions') > 0; }));
+      return (!priorities.length || priorities.includes(normalizedPriority(issue))) &&
+        (!attention.length || attention.some(function (token) { return token === 'blocked' || token === 'has-dependents' ? matchesExtraFilter(issue, token) : token === 'needs-me' ? needsMe(issue) : countOf(issue, token === 'human' ? 'humanTasks' : 'openQuestions') > 0; })) &&
+        (!selection.filters.includes('artifact') || matchesExtraFilter(issue, 'artifact')) &&
+        (!stages.length || stages.includes(stageOf(issue))) &&
+        (!projects.length || (issue.repository && projects.includes(issue.repository.full.toLowerCase())));
     }).sort(function (a, b) {
       if (selection.sort === 'manual') return manualCompare(a, b);
       var diff = selection.sort === 'updated' ? (Date.parse(b.updatedAt) || 0) - (Date.parse(a.updatedAt) || 0) :
@@ -1756,9 +1762,37 @@
     });
   }
   function quickCapture() { return state.viewState.view === 'simple' && state.viewState.filters.includes('stage:draft'); }
+  function normalizedPriority(issue) {
+    var value = priorityOf(issue);
+    return ({ critical: 'urgent', important: 'high', useful: 'medium', normal: 'medium', optional: 'low' })[value] || value || 'medium';
+  }
+  function blockerKeys(issue) {
+    var repo = issue.repository ? (issue.repository.full || issue.repository) : '';
+    var keys = (issue.blockedBy || []).map(function (b) {
+      var r = b.repository ? (b.repository.full || b.repository.full_name || b.repository.nameWithOwner || b.repository) : repo;
+      return String(r + '#' + b.number).toLowerCase();
+    });
+    (issue.textDependencies || []).forEach(function (n) { var k = (repo + '#' + n).toLowerCase(); if (!keys.includes(k)) keys.push(k); });
+    return keys;
+  }
+  function matchesExtraFilter(issue, token) {
+    if (token === 'blocked') return blockerKeys(issue).length > 0;
+    if (token === 'has-dependents') return ((state.board && state.board.issues) || []).some(function (other) { return blockerKeys(other).includes(identity(issue).toLowerCase()); });
+    // Review links must come from human work or questions, never the issue's own GitHub URL.
+    var text = (issue.pendingItems || []).filter(function (item) { return !item.completed; }).map(function (item) { return item.text; }).join('\n');
+    return /https?:\/\/[^\s<>]+/i.test(text);
+  }
   function filterLabel(token) {
+    if (EXTRA_FILTERS[token]) return EXTRA_FILTERS[token][getLanguage() === 'fr' ? 1 : 0];
+    if (token.startsWith('priority:')) return priorityText(token.slice(9));
     return (KIND_LABELS[token] && localizedChoice('filter', token)) || (token.startsWith('stage:') ? statusText(token.slice(6)) : shortName(token.slice(8)));
   }
+  function filterRows() {
+    return ((state.board && state.board.issues) || []).concat(offlineRows()).filter(function (issue) {
+      return (!state.clientPresentationMode || !isDraftIssue(issue)) && (!state.searchQuery || matchesSearch(issue, state.searchQuery));
+    });
+  }
+  function clearFilters() { state.viewState.filters = []; state.searchQuery = ''; if ($('board-search')) $('board-search').value = ''; rememberView(); updateFilterSheet(); }
   function renderControls() {
     var l = getLanguage();
     var dict = I18N[l] || I18N.en;
@@ -1768,6 +1802,10 @@
     var sortLabel = (l === 'fr' ? dict['sort_' + state.viewState.sort] : null) || SORT_LABELS[state.viewState.sort];
     var sortSep = l === 'fr' ? ' : ' : ': ';
     if ($('sort-btn')) $('sort-btn').textContent = (dict.btn_sort || 'Sort') + sortSep + sortLabel;
+    if ($('applied-filter-btn')) {
+      $('applied-filter-btn').textContent = (l === 'fr' ? 'Filtres' : 'Filters') + (state.viewState.filters.length ? ' (' + state.viewState.filters.length + ')' : '');
+      $('applied-filter-btn').setAttribute('data-active', String(state.viewState.filters.length > 0));
+    }
     var chips = $('filter-chips');
     chips.textContent = '';
     state.viewState.filters.forEach(function (token) {
@@ -1776,9 +1814,6 @@
           state.viewState.filters = state.viewState.filters.filter(function (f) { return f !== token; }); rememberView();
         } }));
     });
-    if (state.viewState.filters.length) chips.appendChild(el('button', { type: 'button', class: 'button', text: getLanguage() === 'fr' ? 'Effacer' : 'Clear', onclick: function () {
-      state.viewState.filters = []; rememberView();
-    } }));
     $('capture-hint').hidden = !quickCapture();
     $('quick-add-form').hidden = state.viewState.view !== 'simple';
     var target = $('quick-add-project');
@@ -1788,65 +1823,153 @@
     var available = availableProjects();
     target.value = state.selected && state.selected !== 'all' ? state.selected : available.some(function (r) { return r.full === previous; }) ? previous : (available[0] || {}).full || '';
     target.hidden = state.selected !== 'all';
+    updateFilterSheet();
   }
   function availableProjects() {
     return state.repositories ? state.repositories.repositories.filter(function (r) { return r.available && !r.archived && r.hasIssues; }) : [];
   }
   var sheetOpener = null;
-  function closeSheet() {
-    $('board-sheet').close();
-    if (sheetOpener) sheetOpener.focus();
+  var sheetKind = null;
+  var managedSheets = new Map();
+  function finishSheet(dialog) {
+    document.body.classList.remove('sheet-open');
+    var opener = dialog._sheetOpener;
+    if (opener && opener.focus && opener.isConnected !== false) opener.focus();
+    if (dialog.id === 'repo-popover') { dialog.hidden = true; $('repo-select-btn').setAttribute('aria-expanded', 'false'); }
+    if (dialog.id === 'canvas-arrange-dialog' || dialog.id === 'canvas-wire-confirm') dialog.hidden = true;
+  }
+  function prepareSheet(dialog) {
+    if (managedSheets.has(dialog.id)) return;
+    managedSheets.set(dialog.id, dialog);
+    if (dialog.id !== 'board-sheet') {
+      var titleId = { 'canvas-arrange-dialog': 'arrange-dialog-title', 'canvas-wire-confirm': 'wire-confirm-title' }[dialog.id];
+      var title = titleId ? $(titleId) : el('h2');
+      title.classList.add('sheet-title');
+      var close = el('button', { type: 'button', class: 'button sheet-dismiss', text: '×', 'aria-label': getLanguage() === 'fr' ? 'Fermer' : 'Close', onclick: function () { dismissSheet(dialog); } });
+      var body = el('div', { class: 'sheet-content' });
+      while (dialog.firstChild) body.appendChild(dialog.firstChild);
+      dialog.appendChild(el('div', { class: 'sheet-handle', 'aria-hidden': 'true' }));
+      dialog.appendChild(el('header', { class: 'sheet-head' }, [title, close]));
+      dialog.appendChild(body);
+      var actions = body.querySelector('.canvas-arrange-actions, .wire-confirm-actions');
+      var footer = el('footer', { class: 'sheet-footer' });
+      if (actions) footer.appendChild(actions);
+      else if (dialog.id === 'repo-popover') {
+        footer.appendChild($('repo-api-footer'));
+        footer.appendChild(el('button', { type: 'button', class: 'button primary sheet-project-done', text: getLanguage() === 'fr' ? 'Terminé' : 'Done', onclick: function () { dismissSheet(dialog); } }));
+      }
+      else if (dialog.id === 'composer-dialog') {
+        var submit = body.querySelector('button[type="submit"]');
+        if (submit) { submit.setAttribute('form', 'quick-add-form'); footer.appendChild(submit); }
+      }
+      dialog.appendChild(footer);
+    }
+    dialog.addEventListener('cancel', function (event) { event.preventDefault(); dismissSheet(dialog); });
+    dialog.addEventListener('close', function () { finishSheet(dialog); });
+    dialog.addEventListener('click', function (event) {
+      if (event.target !== dialog) return;
+      var r = dialog.getBoundingClientRect();
+      if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dismissSheet(dialog);
+    });
+    dialog.addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); dismissSheet(dialog); return; }
+      if (event.key !== 'Tab') return;
+      var nodes = Array.from(dialog.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')).filter(function (n) { return !n.disabled && n.getClientRects().length; });
+      var first = nodes[0], last = nodes[nodes.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    });
+  }
+  function dismissSheet(dialog) {
+    if (dialog.open) dialog.close();
+    if (dialog.id === 'board-sheet') sheetKind = null;
+  }
+  function showManagedSheet(dialog, opener) {
+    prepareSheet(dialog);
+    dialog._sheetOpener = opener || document.activeElement;
+    dialog.hidden = false;
+    var fr = getLanguage() === 'fr';
+    var title = dialog.querySelector('.sheet-title');
+    if (title && !title.id) title.textContent = dialog.id === 'repo-popover' ? (fr ? 'Choisir un projet' : 'Choose project') : (fr ? 'Nouvelle tâche' : 'New task');
+    var close = dialog.querySelector('.sheet-dismiss');
+    if (close) close.setAttribute('aria-label', fr ? 'Fermer' : 'Close');
+    var done = dialog.querySelector('.sheet-project-done');
+    if (done) done.textContent = fr ? 'Terminé' : 'Done';
+    document.body.classList.add('sheet-open');
+    if (!dialog.open) dialog.showModal();
+    var target = dialog.querySelector('.sheet-dismiss') || $('sheet-close');
+    if (target) target.focus();
+  }
+  function closeSheet() { dismissSheet($('board-sheet')); }
+  function filterGroups() {
+    var fr = getLanguage() === 'fr';
+    return [
+      [fr ? 'Statut' : 'Stage', STAGES.map(function (x) { return 'stage:' + x; })],
+      [fr ? 'Priorité' : 'Priority', ['urgent', 'high', 'medium', 'low'].map(function (x) { return 'priority:' + x; })],
+      [fr ? 'Projet' : 'Project', ((state.repositories && state.repositories.repositories) || []).map(function (r) { return 'project:' + r.full; })],
+      [fr ? 'Dépendances et attention' : 'Dependencies and attention', ['blocked', 'has-dependents', 'needs-me', 'human', 'questions']],
+      [fr ? 'À consulter' : 'For your review', ['artifact']]
+    ];
+  }
+  function updateFilterSheet() {
+    if (sheetKind !== 'filter') return;
+    var rows = filterRows(), filters = state.viewState.filters;
+    $('sheet-content').querySelectorAll('[data-filter]').forEach(function (button) {
+      var token = button.getAttribute('data-filter');
+      button.setAttribute('aria-pressed', String(filters.includes(token)));
+      var group = filterGroups().find(function (g) { return g[1].includes(token); });
+      var candidates = filters.filter(function (f) { return !group || !group[1].includes(f); }).concat(token);
+      var count = filterSort(rows, { filters: candidates, sort: state.viewState.sort }).length;
+      button.querySelector('.filter-count').textContent = String(count);
+    });
+    var count = filterSort(rows, state.viewState).length;
+    $('sheet-apply').textContent = getLanguage() === 'fr' ? 'Afficher ' + count + ' tâche' + (count === 1 ? '' : 's') : 'Show ' + count + ' task' + (count === 1 ? '' : 's');
+    $('sheet-reset').disabled = !filters.length && !state.searchQuery;
   }
   function openSheet(kind, opener) {
     sheetOpener = opener;
-    var dialog = $('board-sheet'), content = $('sheet-content');
-    content.textContent = '';
-    $('sheet-title').textContent = getLanguage() === 'fr' ? (kind === 'settings' ? 'Paramètres' : kind === 'filter' ? 'Filtrer les tâches' : kind === 'sort' ? 'Trier les tâches' : 'Choisir une vue') : (kind === 'settings' ? 'Settings' : kind === 'filter' ? 'Filter tasks' : kind === 'sort' ? 'Sort tasks' : 'Choose view');
+    sheetKind = kind;
+    var dialog = $('board-sheet'), content = $('sheet-content'), footer = $('sheet-footer'), fr = getLanguage() === 'fr';
+    content.textContent = ''; footer.textContent = '';
+    $('sheet-title').textContent = fr ? (kind === 'settings' ? 'Paramètres' : kind === 'filter' ? 'Filtrer les tâches' : kind === 'sort' ? 'Trier les tâches' : 'Choisir une vue') : (kind === 'settings' ? 'Settings' : kind === 'filter' ? 'Filter tasks' : kind === 'sort' ? 'Sort tasks' : 'Choose view');
+    $('sheet-close').setAttribute('aria-label', fr ? 'Fermer' : 'Close');
+    footer.appendChild(el('button', { id: 'sheet-apply', type: 'button', class: 'button primary', text: fr ? 'Terminé' : 'Done', onclick: closeSheet }));
     if (kind === 'view' || kind === 'sort') {
       var labels = kind === 'view' ? VIEW_LABELS : SORT_LABELS;
       Object.keys(labels).forEach(function (key) {
-        content.appendChild(el('button', { type: 'button', class: 'sheet-option', text: localizedChoice(kind, key), 'aria-label': localizedChoice(kind, key),
-          'aria-pressed': String(state.viewState[kind] === key), onclick: function () {
-            state.viewState[kind] = key; rememberView(); closeSheet();
-          } }));
+        content.appendChild(el('button', { type: 'button', class: 'sheet-option', text: localizedChoice(kind, key), 'aria-pressed': String(state.viewState[kind] === key), onclick: function () { state.viewState[kind] = key; rememberView(); closeSheet(); } }));
       });
     } else if (kind === 'filter') {
-      var options = Object.keys(KIND_LABELS).concat(STAGES.map(function (stage) { return 'stage:' + stage; }))
-        .concat((state.repositories ? state.repositories.repositories : []).map(function (r) { return 'project:' + r.full; }));
-      (getLanguage() === 'fr' ? ['Attention', 'Statut', 'Projet'] : ['Attention', 'Stage', 'Project']).forEach(function (title, group) {
-        content.appendChild(el('h3', { text: title }));
-        options.filter(function (token) { return group === 0 ? Boolean(KIND_LABELS[token]) : token.startsWith(group === 1 ? 'stage:' : 'project:'); }).forEach(function (token) {
-          var button = el('button', { type: 'button', class: 'sheet-option', text: filterLabel(token), 'aria-label': filterLabel(token),
-            title: token.startsWith('project:') ? token.slice(8) : '', 'aria-pressed': String(state.viewState.filters.includes(token)), onclick: function () {
-              var filters = state.viewState.filters;
-              state.viewState.filters = filters.includes(token) ? filters.filter(function (f) { return f !== token; }) : filters.concat(token);
-              button.setAttribute('aria-pressed', String(state.viewState.filters.includes(token))); rememberView();
-            } });
-          content.appendChild(button);
+      content.appendChild(el('p', { class: 'muted sheet-intro', text: fr ? 'Options d’un même groupe : au choix. Groupes différents : cumulés.' : 'Match any option in a group. Match every selected group.' }));
+      filterGroups().forEach(function (group) {
+        var options = el('div', { class: 'filter-options' });
+        group[1].forEach(function (token) {
+          var button = el('button', { type: 'button', class: 'filter-option', 'data-filter': token, 'aria-pressed': String(state.viewState.filters.includes(token)), onclick: function () {
+            var filters = state.viewState.filters;
+            state.viewState.filters = filters.includes(token) ? filters.filter(function (f) { return f !== token; }) : filters.concat(token);
+            rememberView(); updateFilterSheet();
+          } }, [el('span', { text: filterLabel(token) }), el('span', { class: 'filter-count', 'aria-hidden': 'true' })]);
+          options.appendChild(button);
         });
+        content.appendChild(el('fieldset', { class: 'sheet-group' }, [el('legend', { text: group[0] }), options]));
       });
-      content.appendChild(el('p', { class: 'muted small', text: getLanguage() === 'fr' ? 'Une option par groupe suffit ; tous les groupes sélectionnés doivent correspondre.' : 'Any selected option within a group; all selected groups must match.' }));
+      footer.insertBefore(el('button', { id: 'sheet-reset', type: 'button', class: 'button', text: fr ? 'Tout effacer' : 'Clear all', onclick: clearFilters }), footer.firstChild);
+      updateFilterSheet();
     } else {
-      content.appendChild(el('h3', { text: getLanguage() === 'fr' ? 'Thème' : 'Theme' }));
-      var currentTheme = getThemeMode();
-      var themeModes = [
-        { id: 'auto', label: getLanguage() === 'fr' ? 'Auto (thème de l’appareil)' : 'Auto (device theme)' },
-        { id: 'dark', label: getLanguage() === 'fr' ? 'Sombre' : 'Dark' },
-        { id: 'light', label: getLanguage() === 'fr' ? 'Clair' : 'Light' }
-      ];
-      themeModes.forEach(function (tm) {
-        content.appendChild(el('button', {
-          type: 'button',
-          class: 'sheet-option theme-option',
-          text: tm.label,
-          'aria-label': (getLanguage() === 'fr' ? 'Thème : ' : 'Theme: ') + tm.label,
-          'aria-pressed': String(currentTheme === tm.id),
-          onclick: function () {
-            setThemeMode(tm.id);
-            closeSheet();
-          }
-        }));
-      });
+      function choices(title, values, current, change) {
+        var options = el('div', { class: 'filter-options' });
+        values.forEach(function (v) { options.appendChild(el('button', { type: 'button', class: 'filter-option', text: v[1], 'data-setting': v[0], 'aria-pressed': String(current === v[0]), onclick: function () {
+          change(v[0]);
+          options.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', String(b.getAttribute('data-setting') === v[0])); });
+        } })); });
+        content.appendChild(el('fieldset', { class: 'sheet-group' }, [el('legend', { text: title }), options]));
+      }
+      choices(fr ? 'Apparence' : 'Appearance', [['auto', fr ? 'Appareil' : 'Device'], ['light', fr ? 'Clair' : 'Light'], ['dark', fr ? 'Sombre' : 'Dark']], getThemeMode(), setThemeMode);
+      choices(fr ? 'Langue' : 'Language', [['en', 'English'], ['fr', 'Français']], getLanguage(), function (value) { setLanguage(value); openSheet('settings', opener); });
+      choices(fr ? 'Canevas : dépendances' : 'Canvas: dependencies', [['show', fr ? 'Afficher les liens' : 'Show edges'], ['hide', fr ? 'Masquer les liens' : 'Hide edges']], dependenciesVisible() ? 'show' : 'hide', function (v) { setDependenciesVisible(v === 'show'); });
+      content.appendChild(el('h3', { text: fr ? 'Données et API' : 'Data and API' }));
+      content.appendChild(el('p', { class: 'settings-health', text: apiHealthText() }));
+      content.appendChild(el('p', { class: 'muted', text: fr ? 'Les données sont relues à chaque actualisation. Les modifications sont enregistrées sur GitHub.' : 'Refresh revalidates cached data. Changes are saved to GitHub.' }));
       content.appendChild(el('h3', { text: getLanguage() === 'fr' ? 'Noms des projets' : 'Project names' }));
       content.appendChild(el('p', { class: 'muted', text: getLanguage() === 'fr' ? 'Les noms sont partagés entre appareils. Un champ vide rétablit le nom automatique.' : 'Names are shared across devices. Empty resets the automatic short name.' }));
       (state.repositories ? state.repositories.repositories : []).forEach(function (repo) {
@@ -1864,8 +1987,13 @@
         });
         content.appendChild(form);
       });
+
+      content.appendChild(el('h3', { text: fr ? 'À propos' : 'About' }));
+      var version = el('p', { class: 'settings-version', text: 'Workflows Board' });
+      content.appendChild(version);
+      api('/health').then(function (health) { version.textContent = 'Workflows Board — ' + (fr ? 'Version ' : 'Version ') + health.version; }).catch(function () { version.textContent = 'Workflows Board — ' + (fr ? 'Version indisponible hors ligne' : 'Version unavailable offline'); });
     }
-    if (!dialog.open) dialog.showModal();
+    showManagedSheet(dialog, opener);
   }
   function offlineRows() {
     return getOfflineDrafts().filter(function (draft) { return !state.selected || state.selected === 'all' || draft.repo === state.selected; }).map(function (draft) {
@@ -2313,17 +2441,20 @@
   }
   function openComposer() {
     if (state.detail) closeDrawer();
-    switchView('list');
     var form = $('quick-add-form');
     if (form && form.classList) form.classList.add('composer-open');
     if (form) form.hidden = false;
+    showManagedSheet($('composer-dialog'), document.activeElement);
     $('quick-add-input').focus();
   }
   function bindWorkspaceControls() {
     function on(id, callback) { var node = $(id); if (node) node.addEventListener('click', callback); }
     ['new-task-btn', 'compact-new', 'empty-create'].forEach(function (id) { on(id, openComposer); });
     ['compact-project', 'empty-switch'].forEach(function (id) { on(id, function () { toggleRepoPopover(); }); });
-    on('composer-close', function () { $('quick-add-form').classList.remove('composer-open'); });
+    on('composer-close', function () { $('quick-add-form').classList.remove('composer-open'); dismissSheet($('composer-dialog')); });
+    on('canvas-dependencies', function () { setDependenciesVisible(!dependenciesVisible()); });
+    on('empty-reset', clearFilters);
+    on('applied-filter-btn', function () { openSheet('filter', $('applied-filter-btn')); });
     on('compact-filter', function () { openSheet('filter', $('compact-filter')); });
     on('compact-search', function () { document.body.classList.toggle('search-open'); $('board-search').focus(); });
     on('list-group-toggle', function () { state.flatList = !state.flatList; renderBoard(); });
@@ -2488,6 +2619,73 @@
     return positions;
   }
 
+  function dependenciesVisible() {
+    try { return localStorage.getItem('tb_dependencies') !== 'hidden'; } catch (_) { return true; }
+  }
+  function setDependenciesVisible(value) {
+    try { localStorage.setItem('tb_dependencies', value ? 'shown' : 'hidden'); } catch (_) {}
+    renderCanvasWires();
+  }
+  function selectDependencyCard(issue) {
+    state.dependencyFocus = state.dependencyFocus === identity(issue) ? null : identity(issue);
+    renderCanvasWires();
+  }
+  function dependencyRole(key, focused, issues) {
+    if (!focused) return '';
+    if (key.toLowerCase() === identity(focused).toLowerCase()) return 'selected';
+    if (blockerKeys(focused).includes(key.toLowerCase())) return 'blocker';
+    var candidate = issues.find(function (i) { return identity(i).toLowerCase() === key.toLowerCase(); });
+    if (candidate && blockerKeys(candidate).includes(identity(focused).toLowerCase())) return 'dependent';
+    return 'unrelated';
+  }
+  function applyDependencyFocus() {
+    var issues = state.currentCanvasIssues || [];
+    var focused = issues.find(function (i) { return identity(i) === state.dependencyFocus; });
+    var layer = $('canvas-cards');
+    if (layer) layer.querySelectorAll('.canvas-card').forEach(function (card) {
+      var role = dependencyRole(card.getAttribute('data-issue-key'), focused, issues);
+      ['selected', 'blocker', 'dependent', 'unrelated'].forEach(function (r) { card.classList.remove('dependency-' + r); });
+      if (role) card.classList.add('dependency-' + role);
+      var button = card.querySelector('.card-dependency-focus');
+      if (button) button.setAttribute('aria-pressed', String(role === 'selected'));
+    });
+    var legend = $('dependency-legend'), fr = getLanguage() === 'fr';
+    if (!legend) return;
+    legend.hidden = !focused;
+    legend.textContent = '';
+    if (!focused) return;
+    legend.appendChild(el('div', { class: 'legend-head' }, [
+      el('strong', { text: '#' + focused.number + ' ' + (fr ? 'Dépendances' : 'Dependencies') }),
+      el('button', { type: 'button', class: 'button', text: fr ? 'Quitter' : 'Clear', 'aria-label': fr ? 'Quitter la sélection' : 'Clear dependency selection', onclick: function () { state.dependencyFocus = null; renderCanvasWires(); } }),
+    ]));
+    legend.appendChild(el('div', { class: 'legend-keys' }, [
+      el('span', { class: 'legend-blocker', text: fr ? 'Bloque cette tâche' : 'Blocks this task' }),
+      el('span', { class: 'legend-dependent', text: fr ? 'Attend cette tâche' : 'Waits on this task' }),
+    ]));
+    legend.appendChild(el('span', { class: 'legend-direction', text: fr ? 'La flèche pointe vers la tâche bloquée.' : 'Arrow points to the blocked task.' }));
+  }
+  function labelDependencyWire(group, curve, blockerKey, targetKey, blockerNumber, targetNumber) {
+    var focused = state.dependencyFocus;
+    var related = focused && (focused.toLowerCase() === blockerKey.toLowerCase() || focused.toLowerCase() === targetKey.toLowerCase());
+    if (related) {
+      group.classList.add('dependency-wire-focused');
+      if (focused.toLowerCase() === targetKey.toLowerCase()) group.classList.add('dependency-wire-blocker');
+    }
+    else if (focused) group.classList.add('dependency-wire-muted');
+    group.setAttribute('data-blocker-key', blockerKey);
+    group.setAttribute('data-target-key', targetKey);
+    if (!related) return;
+    // Labels live above the cards so a card can never cover the relationship it explains.
+    var labelsLayer = $('canvas-wire-labels');
+    if (!labelsLayer) return;
+    var label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('class', 'dependency-wire-label');
+    label.setAttribute('x', String(curve.midX)); label.setAttribute('y', String(curve.midY - 16));
+    label.setAttribute('text-anchor', 'middle');
+    label.textContent = '#' + blockerNumber + (getLanguage() === 'fr' ? ' bloque #' : ' blocks #') + targetNumber;
+    labelsLayer.appendChild(label);
+  }
+
   function createIssueCanvasCard(issue, pos) {
     var friendly = resolveFriendlyTitle(issue);
     var stage = stageOf(issue);
@@ -2565,6 +2763,10 @@
       createNoteForIssue(issue);
     });
     children.push(addNoteBtn);
+    var focusBtn = el('button', { type: 'button', class: 'card-dependency-focus', text: getLanguage() === 'fr' ? 'Dépendances' : 'Dependencies', 'aria-label': (getLanguage() === 'fr' ? 'Dépendances de la tâche ' : 'Dependencies of task ') + issue.number, 'aria-pressed': String(state.dependencyFocus === identity(issue)) });
+    focusBtn.addEventListener('pointerdown', function (event) { event.stopPropagation(); });
+    focusBtn.addEventListener('click', function (event) { event.stopPropagation(); selectDependencyCard(issue); });
+    children.push(focusBtn);
 
     var card = el('div', {
       class: 'canvas-card',
@@ -2594,7 +2796,7 @@
 
     function onPointerDown(e) {
       if (e.button !== undefined && e.button !== 0) return;
-      if (e.target && e.target.closest && (e.target.closest('.canvas-card-port') || e.target.closest('.card-action-add-note'))) return;
+      if (e.target && e.target.closest && (e.target.closest('.canvas-card-port') || e.target.closest('.card-action-add-note') || e.target.closest('.card-dependency-focus'))) return;
       e.stopPropagation();
 
       startClientX = e.clientX;
@@ -2667,7 +2869,7 @@
     cardEl.addEventListener('pointerdown', onPointerDown);
 
     cardEl.addEventListener('click', function (e) {
-      if (e.target && e.target.closest && (e.target.closest('.canvas-card-port') || e.target.closest('.card-action-add-note'))) return;
+      if (e.target && e.target.closest && (e.target.closest('.canvas-card-port') || e.target.closest('.card-action-add-note') || e.target.closest('.card-dependency-focus'))) return;
       if (suppressClick) {
         e.preventDefault();
         e.stopPropagation();
@@ -2681,8 +2883,9 @@
     });
 
     cardEl.addEventListener('keydown', function (e) {
-      if (e.target && e.target.closest && e.target.closest('.canvas-card-port')) return;
-      if (e.key === 'Enter' || e.key === ' ') {
+      if (e.target !== cardEl) return;
+      if (e.key === ' ') { e.preventDefault(); selectDependencyCard(issue); return; }
+      if (e.key === 'Enter') {
         e.preventDefault();
         if (issue.offline) {
           setNotice(getLanguage() === 'fr' ? 'Enregistré hors ligne. Utilisez Liste simple + filtre Brouillon pour modifier.' : 'Saved offline. Use Simple list + Draft filter to edit.');
@@ -3674,12 +3877,12 @@
     if (confirmBtn) confirmBtn.disabled = false;
     if (cancelBtn) cancelBtn.disabled = false;
     if (unplacedRadio) unplacedRadio.checked = true;
-    dlg.hidden = false;
+    showManagedSheet(dlg, $('canvas-arrange'));
   }
 
   function closeArrangeDialog() {
     var dlg = $('canvas-arrange-dialog');
-    if (dlg) dlg.hidden = true;
+    if (dlg) dismissSheet(dlg);
   }
 
   async function executeArrange() {
@@ -4102,6 +4305,14 @@
     wiresLayer.style.width = width + 'px';
     wiresLayer.style.height = height + 'px';
     wiresLayer.setAttribute('viewBox', left + ' ' + top + ' ' + width + ' ' + height);
+    var labelsLayer = $('canvas-wire-labels');
+    if (labelsLayer) {
+      labelsLayer.style.left = left + 'px';
+      labelsLayer.style.top = top + 'px';
+      labelsLayer.style.width = width + 'px';
+      labelsLayer.style.height = height + 'px';
+      labelsLayer.setAttribute('viewBox', left + ' ' + top + ' ' + width + ' ' + height);
+    }
   }
 
   var activeWireConfirmData = null;
@@ -4127,14 +4338,7 @@
       cancelBtn.textContent = dict.canvas_wire_cancel_btn || 'Cancel';
     }
 
-    var scale = state.canvasScale || 1;
-    var screenX = Math.round(wireData.midX * scale + state.canvasPanX);
-    var screenY = Math.round(wireData.midY * scale + state.canvasPanY);
-
-    confirmEl.style.left = screenX + 'px';
-    confirmEl.style.top = screenY + 'px';
-    confirmEl.classList.toggle('flip-below', screenY < 80);
-    confirmEl.hidden = false;
+    showManagedSheet(confirmEl, document.activeElement);
 
     if (!wireData.isText) {
       removeBtn.focus();
@@ -4146,7 +4350,7 @@
   function hideWireDeleteConfirm() {
     activeWireConfirmData = null;
     var confirmEl = $('canvas-wire-confirm');
-    if (confirmEl) confirmEl.hidden = true;
+    if (confirmEl) dismissSheet(confirmEl);
   }
 
   function renderCanvasWires() {
@@ -4156,7 +4360,18 @@
 
     var existingGroups = wiresLayer.querySelectorAll('.canvas-wire-group');
     existingGroups.forEach(function (g) { if (g.parentNode) g.parentNode.removeChild(g); });
+    var labelsLayer = $('canvas-wire-labels');
+    if (labelsLayer) labelsLayer.textContent = '';
 
+    applyDependencyFocus();
+    var visible = dependenciesVisible(), toggle = $('canvas-dependencies'), fr = getLanguage() === 'fr';
+    wiresLayer.classList.toggle('edges-hidden', !visible);
+    if (toggle) {
+      toggle.setAttribute('aria-pressed', String(visible));
+      toggle.setAttribute('aria-label', fr ? 'Dépendances' : 'Dependencies');
+      toggle.setAttribute('title', fr ? 'Dépendances' : 'Dependencies');
+    }
+    if (!visible) return;
     var cardElements = cardsLayer.querySelectorAll('.canvas-card');
     if (cardElements.length === 0) return;
 
@@ -4288,6 +4503,7 @@
         group.appendChild(hitPath);
         group.appendChild(visualPath);
         group.appendChild(delBtn);
+        labelDependencyWire(group, curve, blockerKey || identity(fullBlocker), targetKey, blocker.number, targetIssue.number);
         wiresLayer.appendChild(group);
       });
 
@@ -4358,6 +4574,7 @@
         group.appendChild(hitPath);
         group.appendChild(visualPath);
         group.appendChild(delBtn);
+        labelDependencyWire(group, curve, sameRepoKey, targetKey, depNum, targetIssue.number);
         wiresLayer.appendChild(group);
       });
     });
@@ -4935,7 +5152,7 @@
     var name = board.repository ? shortName(board.repository.full) : (dict.all_projects || 'All Projects');
     $('repo-label').textContent = name;
     $('repo-label').setAttribute('title', board.repo);
-    document.title = name + ' — ' + (dict.brand_title || 'Task Board');
+    document.title = name + ' — ' + (dict.brand_title || 'Workflows Board');
     if ($('compact-project-name')) $('compact-project-name').textContent = name;
     if ($('compact-count')) $('compact-count').textContent = String((board.issues || []).length);
     if ($('compact-filter')) $('compact-filter').setAttribute('data-active', String(state.viewState.filters.length > 0));
@@ -4971,6 +5188,14 @@
       scopeStatus.className = board.partial ? 'notice error status-strip-scope' : 'status-strip-scope';
     }
 
+    var canvasEmpty = $('canvas-filter-empty');
+    if (canvasEmpty) {
+      var narrowed = state.viewState.filters.length > 0 || Boolean(state.searchQuery);
+      canvasEmpty.hidden = issues.length !== 0;
+      canvasEmpty.textContent = '';
+      canvasEmpty.appendChild(el('p', { text: narrowed ? (l === 'fr' ? 'Aucune tâche ne correspond aux filtres. Retirez un filtre ou élargissez la recherche.' : 'No tasks match these filters. Remove a filter or broaden your search.') : (l === 'fr' ? 'Aucune tâche dans ' : 'No tasks yet in ') + name + '.' }));
+      if (narrowed) canvasEmpty.appendChild(el('button', { type: 'button', class: 'button', text: l === 'fr' ? 'Tout effacer' : 'Clear all', onclick: clearFilters }));
+    }
     if ($('list-group-toggle')) $('list-group-toggle').hidden = state.activeViewMode === 'canvas';
     if (state.activeViewMode === 'canvas') {
       renderCanvasIssues(issues);
@@ -4982,7 +5207,12 @@
     if ($('empty-create')) $('empty-create').disabled = !availableProjects().length;
     var emptyText = empty.querySelector && empty.querySelector('p');
     if (emptyText) emptyText.textContent = board.partial ? (l === 'fr' ? 'Aucune tâche chargée. Actualisation incomplète, projet non vide.' : 'No tasks loaded. Refresh incomplete, not an empty project.') : pending ? (l === 'fr' ? 'Rien n’attend votre action.' : 'Nothing is waiting on you.') :
-      state.viewState.filters.length ? (l === 'fr' ? 'Aucune tâche ne correspond aux filtres.' : 'No tasks match these filters.') : (l === 'fr' ? 'Aucune tâche dans ' : 'No tasks yet in ') + name + '.';
+      (state.viewState.filters.length || state.searchQuery) ? (l === 'fr' ? 'Aucune tâche ne correspond aux filtres. Retirez un filtre ou élargissez la recherche.' : 'No tasks match these filters. Remove a filter or broaden your search.') : (l === 'fr' ? 'Aucune tâche dans ' : 'No tasks yet in ') + name + '.';
+    var emptyReset = $('empty-reset');
+    if (emptyReset) {
+      emptyReset.hidden = issues.length !== 0 || !(state.viewState.filters.length || state.searchQuery);
+      emptyReset.textContent = l === 'fr' ? 'Tout effacer' : 'Clear all';
+    }
     var hint = $('view-hint'); hint.textContent = state.viewState.view === 'graph' ? (l === 'fr' ? 'Arbre de dépendances — liens « Dépend de », « Bloqué par » et « Requiert ». Les cycles et tickets manquants restent visibles.' : 'Dependency list-tree — “Depends on”, “Blocked by” and “Requires” issue links. Cycles and missing issues stay visible.') :
       quickCapture() && state.viewState.sort !== 'manual' ? (l === 'fr' ? 'Choisissez Trier : Ordre manuel pour réorganiser les brouillons.' : 'Choose Sort: Manual order to rearrange drafts.') : '';
     if (state.viewState.view === 'kanban') {
@@ -5148,7 +5378,8 @@
     var btn = $('repo-select-btn');
     if (!popover || !btn) return;
     var shouldOpen = typeof open === 'boolean' ? open : popover.hidden;
-    popover.hidden = !shouldOpen;
+    if (shouldOpen) showManagedSheet(popover, document.activeElement);
+    else dismissSheet(popover);
     btn.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
     if (shouldOpen) {
       var searchInput = $('repo-search-input');
@@ -7284,7 +7515,7 @@
       if (button) button.addEventListener('click', function () { openSheet(kind, button); });
     });
     if ($('sheet-close')) $('sheet-close').addEventListener('click', closeSheet);
-    if ($('board-sheet')) $('board-sheet').addEventListener('cancel', function () { if (sheetOpener) sheetOpener.focus(); });
+
 
     $('refresh-btn').addEventListener('click', async function () {
       if (!state.csrf) {
@@ -7368,6 +7599,7 @@
       });
 
       document.addEventListener('keydown', function (e) {
+        if (document.querySelector('dialog[open]')) return;
         var typing = e.target && (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable);
         if (!typing && !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === 'n' || e.key === '/')) {
           e.preventDefault();
@@ -7662,6 +7894,15 @@
       api: api,
       publishMutation: publishMutation,
       state: state,
+    openSheet: openSheet,
+    closeSheet: closeSheet,
+    setLanguage: setLanguage,
+    selectDependencyCard: selectDependencyCard,
+    dependencyRole: dependencyRole,
+    blockerKeys: blockerKeys,
+    setDependenciesVisible: setDependenciesVisible,
+    dependenciesVisible: dependenciesVisible,
+    filterGroups: filterGroups,
       boot: boot,
       showLogin: showLogin,
       signOut: signOut,

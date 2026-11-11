@@ -1,10 +1,10 @@
-// Service worker for Workflows Task Board PWA.
+// Service worker for Workflows Board PWA.
 // Caches application shell assets.
 // App shell uses network-first with cache fallback when offline.
 // Icons use cache-first with network fallback.
 // /api/* and non-GET requests bypass the cache.
 
-var CACHE_VERSION = '2.0.0';
+var CACHE_VERSION = '2.1.0';
 var CACHE_NAME = 'workflows-board-' + CACHE_VERSION;
 var SHELL_ASSETS = [
   '/',
