@@ -84,3 +84,15 @@ alignment: CONFIRMED (2026-11-03, rounds 1-3)
   7. **F8/F9:** Decisions questions must render Markdown (described as "impératif") and must offer preset answer options with expandable details instead of a bare free-text answer.
   8. **F10:** OpenChamber interactive question → board issue transcription is a research draft only, explicitly optional ("ce n'est pas forcément quelque chose qu'on est obligé de développer").
   9. Issue policy unchanged: #53–#71 stay open until the user closes them.
+- D35 User answered the four-card decision block on 2026-11-11:
+  1. **Brand name = "Workflows Board"** ("Atelier" must disappear from title, sidebar, manifest, PWA install name).
+  2. **Human validation = strict rule + reclassify the existing issues.** A human gate requires a click-through artifact (screenshot, short video, link) with a one-line instruction. Issues currently waiting without an artifact are reclassified deterministically, with a per-issue comment and a reverse mapping.
+  3. **Quick note destination = GitHub comment.** Must be visible to the agent working the issue; canvas sticky notes stay a separate object.
+  4. **OpenChamber questions = research + prototype.** Research document, converted prototype behind a dry-run default, and a draft issue filed by the manager after review — not an automatic product commitment.
+- D36 Wave plan after D35 (strictly sequential in `.worktrees/team-dev-board-v3`, one worker at a time because every wave touches `web/public/app.js`):
+  1. V3-6 P0 canvas-drag fix (running) — blocks everything else.
+  2. V4-1 sheets + filters + Canvas dependency legibility + rename to "Workflows Board" + spacing pass (`tasks/wave3-v4-1-sheets-filters-dependencies.md`).
+  3. V4-2 quick note by GitHub comment + Decisions Markdown + preset options with expandable details (`tasks/wave4-v4-2-notes-and-decisions.md`).
+  4. V4-3 human-validation policy + deterministic reclassification of existing issues (`tasks/wave4-v4-3-human-validation-policy.md`).
+  5. R1 OpenChamber question transcription research + prototype (`tasks/wave5-r1-openchamber-questions.md`).
+  Each wave gets an independent hostile review before its commit reaches `master`; live deployment is a separate reviewed step.
