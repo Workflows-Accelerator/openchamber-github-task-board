@@ -268,9 +268,10 @@ V3-7 adds tests and removes none; the web suite grows 609 → 611.
 
 ---
 
-## 10. Final checks (sequential, final tree)
+## 10. Final checks (sequential, clean tree)
 
-Fix commit: `f4beb1c` on `feat/board-v3`.
+Fix commit: `f4beb1c` on `feat/board-v3`. The four checks below were run on the clean tree at
+`7339629` (no uncommitted changes, `git status` empty), in this order, one after the other.
 
 | Command | Result | Log |
 |---|---|---|
@@ -280,13 +281,15 @@ Fix commit: `f4beb1c` on `feat/board-v3`.
 | `npx esbuild web/server.ts … --outfile=/tmp/opencode/v3-review.mjs` | exit 0, 224.6 kb, **0 occurrences of `if-match`** | `data/esbuild.log` |
 | Real Chromium: guard matrix, drag+reload, 9-status message matrix, EN+FR | pass | `data/v37-guard.json`, `data/v37-canvas-after.json` |
 
-Host contention was real (load average 4.7–12 on 4 cores from other sessions). Honest run history on
-the final tree: `npm test` gave 615/618, 616/618, 617/618, then **618/618**; the failures were the
-wall-clock assertions ("500-node graph <100ms" measured 128.88ms, "1,000 items <60ms" measured
-94.56ms, "5,000 checkboxes <50ms") and one panel test whose 40ms wait expired — each failing file
-passes alone (`scale-and-adversarial.test.js` 33/33, `stage1-dual-mode-and-scoping.test.js` 26/26,
-`panel-simple-views.test.js` 16/16). The web suite timed out `app.test.mjs` at 30s twice under load
-12 before passing 611/611 at load 4.7. No assertion was weakened or skipped to get these numbers.
+Host contention was real (load average 4.7–12 on 4 cores from other sessions). Earlier run history on
+the same content, before the clean-tree run: `npm test` gave 615/618, 616/618, 617/618, then 618/618;
+the failures were the wall-clock assertions ("500-node graph <100ms" measured 128.88ms, "1,000 items
+<60ms" measured 94.56ms, "5,000 checkboxes <50ms") and one panel test whose 40ms wait expired — each
+failing file passes alone (`scale-and-adversarial.test.js` 33/33,
+`stage1-dual-mode-and-scoping.test.js` 26/26, `panel-simple-views.test.js` 16/16). The web suite timed
+out `app.test.mjs` at 30s twice under load 12. The four logs in `data/` are the clean-tree run at
+`7339629`, all green first attempt (load 4.89). No assertion was weakened or skipped to get these
+numbers.
 
 ---
 
