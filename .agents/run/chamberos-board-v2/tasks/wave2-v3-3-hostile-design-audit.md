@@ -4,7 +4,7 @@ Worktree: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-boar
 Branch: feat/board-v3
 Base commit: [FILL_V3_2_SHA] (clean; V3-1 API/Any-Repo + V3-2 UX/UI redesign committed)
 Real Chromium launcher: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/A-delivery/hostile2/scripts/chromium-env.sh
-Test commands: npm test && node --test --test-timeout=30000 web/tests/*.test.mjs && npm run typecheck && npm run web:build
+Test commands: npm test && node --test --test-timeout=30000 web/tests/*.test.mjs && npm run typecheck && npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/tmp/antigravity/v3-server-audit.mjs
 Do not touch: panel/**, service/**, dot-grid math at web/public/app.js:2268, /workspace/code/openchamber-config/**, /workspace/releases/**, GitHub issue closures
 Preflight facts are true and authoritative at dispatch: do not run initial discovery commands (git status, pwd, ls) to re-ground on startup. Re-inspect targeted state only for mutations/pre-commit verification, compaction/resume with stale facts, branch/location changes, or action failure.
 </env_preflight>
@@ -40,10 +40,10 @@ wave2-v3-2-ux-ui-overhaul
 <criteria>
 1. Spec Compliance Verdict = PASS and Code & Design Quality Verdict = APPROVED, with Nielsen usability score `>= 36/40` and zero open P0/P1/P2 defects.
 2. `git diff 4e92c01..HEAD -- panel service` is empty; `app.js:2268` dot-grid formula untouched; zero `"mobile"`, zero `"n8n"`, zero emojis, zero CSP errors.
-3. `npm test` (618/618), all `web/tests/*.test.mjs`, `npm run typecheck`, `npm run web:build`, and `scripts/generate-delivery-smoke.mjs` (plus negative fault injections) pass independently on clean tree.
+3. `npm test` (618/618), all `web/tests/*.test.mjs`, `npm run typecheck`, `esbuild` bundle build, and `scripts/generate-delivery-smoke.mjs` (plus negative fault injections) pass independently on clean tree.
 </criteria>
 <verification>
-npm test && node --test --test-timeout=30000 web/tests/*.test.mjs && npm run typecheck && npm run web:build
+npm test && node --test --test-timeout=30000 web/tests/*.test.mjs && npm run typecheck
 </verification>
 <output>
 Respond in concise structured Markdown with:

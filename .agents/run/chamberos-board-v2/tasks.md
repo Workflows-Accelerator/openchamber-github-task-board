@@ -29,7 +29,7 @@ URGENT DELIVERY: user selected A1-A5 foundation first on 2026-11-06 (D30/D31), s
 | B1-B4 | #61-64 | Batch B per PLAN.md | engineer | PENDING | PLAN.md |
 | C1-C4 | #65-68 | Batch C; C4 staging only | engineer | PENDING | PLAN.md |
 | D1-D3 | #69-71 | Worktree management | engineer | PENDING | tasks/task-D-worktrees.md |
-| A delivery | #55, #68 subset | Wave 1 live release of L4-approved 4e92c01/59e5d05 | engineer | RUNNING (`ses_ca64c8402f9aefb16aa0fd63`) | tasks/wave1-foundation-live-release.md; keeps 98261a8-20261103 rollback; zero issue closures |
+| A delivery | #55, #68 subset | Wave 1 live release of L4-approved 4e92c01/59e5d05 | engineer | COMPLETED (`ses_ca64c8402f9aefb16aa0fd63`) | LIVE on `board.workflows.ac` (`59e5d05-20261111`, 13/13 SHA-256); `origin/master` pushed to `4e92c01`; rollback `98261a8-20261103` intact; receipt `131d761` |
 | V3-1 API + Any-Repo + Skills | #55-60, #68 | Local design skills + GitHub ETag/304/GraphQL efficiency + vanilla repo usability | engineer | RUNNING (`ses_113b4f68980943a27d7b6c4b`) | tasks/wave2-v3-1-skills-api-anyrepo.md in .worktrees/team-dev-board-v3 |
 | V3-2 UX/UI Overhaul | #55-60 | Full phone (360-430) + PC (1280+) redesign (Light/Dark, EN/FR) | genius | QUEUED after V3-1 | .worktrees/team-dev-board-v3 |
 | V3-3 Hostile + Design Audit | #55-60, #68 | Independent L4 hostile + impeccable-critique + Chromium smoke | genius | QUEUED after V3-2 | .worktrees/team-dev-board-v3 |

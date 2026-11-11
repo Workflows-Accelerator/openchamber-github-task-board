@@ -5,7 +5,7 @@ Branch: feat/board-v3
 Base commit: [FILL_V3_1_SHA] (clean; V3-1 server API efficiency, Any-Repo fields `effectiveStage` / `isExplicitDraft` / `bodyMarkdown` / `rateLimit`, and 4 ChamberOS-adapted design skills committed)
 Real Chromium launcher: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/A-delivery/hostile2/scripts/chromium-env.sh
 Key files: web/public/index.html, web/public/theme.css, web/public/app.js, web/public/sw.js, scripts/generate-delivery-smoke.mjs, web/tests/*
-Test commands: npm test && node --test --test-timeout=30000 web/tests/*.test.mjs && npm run typecheck && npm run web:build
+Test commands: npm test && node --test --test-timeout=30000 web/tests/*.test.mjs && npm run typecheck && npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/tmp/antigravity/v3-server-check.mjs
 Do not touch: panel/**, service/**, web/public/arrange.js (unless purely additive non-breaking helper needed), dot-grid math at web/public/app.js:2268 (two-stop radial-gradient verified in real Chromium — NEVER alter), /workspace/code/openchamber-config/**, /workspace/releases/**, GitHub issue closures
 Preflight facts are true and authoritative at dispatch: do not run initial discovery commands (git status, pwd, ls) to re-ground on startup. Re-inspect targeted state only for mutations/pre-commit verification, compaction/resume with stale facts, branch/location changes, or action failure.
 </env_preflight>
@@ -73,7 +73,7 @@ wave2-v3-1-skills-api-anyrepo
 - Fix `hostile4`'s non-blocking vacuity gap in `scripts/generate-delivery-smoke.mjs`: assert `buttons.length >= 6` (and `=== 7` when Undo is visible) so HUD containment can never pass vacuously, AND assert `document.documentElement.lang === lang` and `0px` `#canvas-viewport` bottom overhang (`viewportRect.bottom <= windowHeight + 0.5`).
 - Launch a synthetic fixture server (including both a ChamberOS repo AND a vanilla GitHub repo with unlabeled Markdown issues + a 0-issue repo!) and drive real Chromium via `hostile2/scripts/chromium-env.sh` to capture screenshots across `360x800` (phone), `390x844` (iPhone), `768x900`, and `1280x900` (desktop) in Light & Dark, EN & FR (Canvas, List, Detail Drawer on vanilla repo, Project Switcher, Decisions, Operations, Client view) under `.agents/run/chamberos-board-v2/verifications/V3-2/screenshots/`.
 - Visually inspect your own captured PNGs and apply `impeccable-critique` Squint Test + 5-Stage Polish Triage to fix any clipping, crowding, contrast, or alignment flaws before committing!
-- Run `npm test`, `node --test --test-timeout=30000 web/tests/*.test.mjs`, `npm run typecheck`, `npm run web:build`, and `scripts/generate-delivery-smoke.mjs`. Confirm zero console errors and zero CSP violations (`style-src 'self'` — never emit HTML `style="..."` attributes!). Write `.agents/run/chamberos-board-v2/verifications/V3-2/proof.md` and commit cleanly on `feat/board-v3`.</step>
+- Run `npm test`, `node --test --test-timeout=30000 web/tests/*.test.mjs`, `npm run typecheck`, `npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/tmp/antigravity/v3-server-check.mjs`, and `scripts/generate-delivery-smoke.mjs`. Confirm zero console errors and zero CSP violations (`style-src 'self'` — never emit HTML `style="..."` attributes!). Write `.agents/run/chamberos-board-v2/verifications/V3-2/proof.md` and commit cleanly on `feat/board-v3`.</step>
 </steps>
 <criteria>
 1. Phone (`360x800`, `390x844`) and Desktop (`1280x900`) Light/Dark EN/FR layouts pass real Chromium inspection with `0px` viewport overhang (`100dvh`), single-row `52px` compact top bar + thumb-zone bottom dock on `<=768px`, compact `#canvas-controls` strictly contained inside `#canvas-viewport` (with non-vacuous `>=6` visible controls check), and readable initial Canvas card scale on narrow viewports.
@@ -83,7 +83,7 @@ wave2-v3-1-skills-api-anyrepo
 5. `sw.js` `CACHE_VERSION = '2.0.0'` covers `/markdown.js` and `/arrange.js`; client sends `If-None-Match` (`304`) and pauses refresh when hidden; `npm test` (618/618), all `web/tests/*.test.mjs`, `npm run typecheck`, and `scripts/generate-delivery-smoke.mjs` exit 0.
 </criteria>
 <verification>
-npm test && node --test --test-timeout=30000 web/tests/*.test.mjs && npm run typecheck && npm run web:build
+npm test && node --test --test-timeout=30000 web/tests/*.test.mjs && npm run typecheck
 </verification>
 <output>
 Respond in concise structured Markdown with:
