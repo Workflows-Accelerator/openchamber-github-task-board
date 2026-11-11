@@ -59,16 +59,20 @@ test('getIssue returns the item and its ETag', async () => {
   });
 });
 
-test('updateIssue sends a conditional PATCH with the token only in the header', async () => {
+test('updateIssue sends an unconditional PATCH with the token only in the header', async () => {
   const issue = makeIssue({ number: 9, body: 'Before' });
   await withFake({ issues: [issue] }, async (fake) => {
     const client = clientFor(fake);
     const read = await client.getIssue(9);
-    const written = await client.updateIssue(9, { body: 'After' }, { etag: read.etag });
+    const written = await client.updateIssue(9, { body: 'After' });
     assert.equal(written.item.body, 'After');
     assert.equal(fake.patchCalls.length, 1);
     assert.equal(fake.patchCalls[0].payload.body, 'After');
-    assert.equal(fake.patchCalls[0].ifMatch, read.etag);
+    // GitHub refuses any unsafe request that carries If-Match (400 "Conditional
+    // request headers are not allowed in unsafe requests"), so the write must
+    // never send the ETag even though the read returned one.
+    assert.ok(read.etag, 'the read still returns an ETag');
+    assert.equal(fake.patchCalls[0].ifMatch, undefined);
     assert.equal(
       fake.requests.every((request) => !request.query.includes(TOKEN) && !request.path.includes(TOKEN)),
       true,

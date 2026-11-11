@@ -2263,7 +2263,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
                 }
                 const itemClient = clientFor(item.repo);
                 try {
-                  await itemClient.updateIssue(item.number, { body: nextBody }, { etag: item.read.etag });
+                  await itemClient.updateIssue(item.number, { body: nextBody });
                 } catch (error) {
                   if (error instanceof GitHubError && error.status === 412) {
                     if (writesCompleted > 0) {
@@ -2431,7 +2431,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
                 const trailingRead = await github.getIssue(trailing.item.number).catch(mapGitHubError);
                 const rebalancedBody = setOrderMarker(trailingRead.item.body ?? '', baseOrder + step * 1000);
                 step += 1;
-                await github.updateIssue(trailing.item.number, { body: rebalancedBody }, { etag: trailingRead.etag }).catch(mapGitHubError);
+                await github.updateIssue(trailing.item.number, { body: rebalancedBody }).catch(mapGitHubError);
               }
             }
             patch = { body: setOrderMarker(fresh.item.body ?? '', order) };
@@ -2603,7 +2603,7 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
       }
 
       try {
-        await github.updateIssue(number, patch, { etag: fresh.etag });
+        await github.updateIssue(number, patch);
       } catch (error) {
         if (error instanceof GitHubError && error.status === 412) {
           const reread = await github.getIssue(number).catch(mapGitHubError);
@@ -2611,6 +2611,19 @@ export async function createBoardServer(options: BoardServerOptions): Promise<Bo
             issue: buildIssueDetail(reread.item, repository),
             statusOptions: statusOptions(),
           });
+        }
+        if (error instanceof GitHubError && error.status === 400) {
+          // GitHub refused the request before applying it: a definite refusal,
+          // not an unknown outcome. GitHub puts the actionable reason in
+          // errors[] ("Conditional request headers are not allowed…") and only
+          // "Bad Request" in message, so errors[] wins when present.
+          const upstreamErrors = Array.isArray(error.data?.errors) ? error.data.errors : [];
+          const upstreamError = upstreamErrors.find(
+            (entry: any) => typeof entry === 'string' && entry.trim(),
+          );
+          const upstreamMessage = typeof error.data?.message === 'string' ? error.data.message.trim() : '';
+          const upstream = upstreamError || upstreamMessage || 'GitHub rejected the write';
+          throw new HttpError(400, 'write_rejected', `GitHub rejected the write; nothing was saved (${upstream})`);
         }
         if (error instanceof GitHubError && (error.kind === 'network' || error.kind === 'server')) {
           throw new HttpError(502, 'write_outcome_unknown', 'Outcome unknown \u2014 check the issue on GitHub');

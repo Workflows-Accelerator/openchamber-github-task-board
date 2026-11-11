@@ -200,7 +200,6 @@ test('PUT /api/issues/:n/canvas: saves canvas position, preserves order, enforce
   const fake = await startFakeGitHub({
     repo: 'Workflows-Accelerator/openchamber-github-task-board',
     issues: [issue],
-    honorIfMatch: true,
   });
   const board = await startBoard(fake);
   t.after(async () => {
@@ -311,7 +310,6 @@ test('PUT /api/issues/:n/canvas: handles upstream GitHub failure path', async (t
   const fake = await startFakeGitHub({
     repo: 'Workflows-Accelerator/openchamber-github-task-board',
     issues: [issue],
-    honorIfMatch: true,
   });
   const board = await startBoard(fake);
   t.after(async () => {
@@ -768,7 +766,6 @@ test('PUT /api/issues/:n/canvas: Arrange undo payload clears position of a previ
   const fake = await startFakeGitHub({
     repo,
     issues: [makeIssue({ number: 30, title: 'Unplaced', body: original, labels: ['status:todo'], repo })],
-    honorIfMatch: true,
   });
   const board = await startBoard(fake);
   t.after(async () => {

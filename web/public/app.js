@@ -682,6 +682,13 @@
       canvas_fit_all: 'Fit',
       canvas_reset_view: 'Reset',
       canvas_save_error: 'Could not save card position.',
+      canvas_save_rejected: 'Canvas position not saved: GitHub rejected the write ({status}). The card stayed where it was.',
+      canvas_save_conflict: 'Canvas position not saved: this task changed on GitHub first, so nothing was written ({status}). Refresh, then drag again.',
+      canvas_save_forbidden: 'Canvas position not saved: this board may not write to that repository. Check the token permissions, then drag again.',
+      canvas_save_rate_limited: 'Canvas position not saved: GitHub is rate limiting the board. Try again in a minute.',
+      canvas_save_signed_out: 'Canvas position not saved: your session expired. Sign in again, then drag again.',
+      canvas_save_unknown: 'Canvas position not saved: the outcome is unknown. Refresh before dragging again.',
+      canvas_save_timeout: 'Canvas position not saved: the board did not answer in time. Try again.',
       canvas_drag_to_block: 'Drag to block another task',
       canvas_wire_blocks: 'Blocks #{n}',
       canvas_wire_self_link: 'Cannot block itself',
@@ -858,6 +865,13 @@
       canvas_fit_all: 'Tout',
       canvas_reset_view: 'Réinit.',
       canvas_save_error: 'Impossible d’enregistrer la position de la carte.',
+      canvas_save_rejected: 'Position non enregistrée : GitHub a refusé l’écriture ({status}). La carte est restée à sa place.',
+      canvas_save_conflict: 'Position non enregistrée : cette tâche a changé sur GitHub entre-temps, rien n’a été écrit ({status}). Actualisez, puis déplacez à nouveau.',
+      canvas_save_forbidden: 'Position non enregistrée : ce tableau n’a pas le droit d’écrire dans ce dépôt. Vérifiez les permissions du jeton, puis déplacez à nouveau.',
+      canvas_save_rate_limited: 'Position non enregistrée : GitHub limite le débit du tableau. Réessayez dans une minute.',
+      canvas_save_signed_out: 'Position non enregistrée : votre session a expiré. Reconnectez-vous, puis déplacez à nouveau.',
+      canvas_save_unknown: 'Position non enregistrée : le résultat est inconnu. Actualisez avant de déplacer à nouveau.',
+      canvas_save_timeout: 'Position non enregistrée : le tableau n’a pas répondu à temps. Réessayez.',
       canvas_drag_to_block: 'Glisser pour bloquer une autre tâche',
       canvas_wire_blocks: 'Bloque #{n}',
       canvas_wire_self_link: 'Ne peut pas se bloquer elle-même',
@@ -2746,6 +2760,37 @@
     });
   }
 
+  // A failed card move must say what actually failed. "Outcome unknown" stays
+  // reserved for outcomes the board genuinely cannot know (lost response,
+  // upstream 5xx); every definite refusal names its cause and status so the
+  // user can act instead of guessing.
+  function canvasMoveFailureMessage(err, dict) {
+    var code = (err && err.code) ? String(err.code) : '';
+    var status = (err && typeof err.status === 'number') ? err.status : 0;
+    if (code === 'write_outcome_unknown') {
+      return dict.canvas_save_unknown || 'Canvas position not saved: the outcome is unknown. Refresh before dragging again.';
+    }
+    if (code === 'conflict') {
+      return (dict.canvas_save_conflict || 'Canvas position not saved: this task changed on GitHub first, so nothing was written ({status}). Refresh, then drag again.').replace('{status}', String(status || 409));
+    }
+    if (code === 'unauthenticated' || status === 401) {
+      return dict.canvas_save_signed_out || 'Canvas position not saved: your session expired. Sign in again, then drag again.';
+    }
+    if (code === 'network_timeout') {
+      return dict.canvas_save_timeout || 'Canvas position not saved: the board did not answer in time. Try again.';
+    }
+    if (code === 'github_forbidden' || code === 'github_unauthorized' || status === 403) {
+      return dict.canvas_save_forbidden || 'Canvas position not saved: this board may not write to that repository. Check the token permissions, then drag again.';
+    }
+    if (code === 'github_rate_limited' || status === 429) {
+      return dict.canvas_save_rate_limited || 'Canvas position not saved: GitHub is rate limiting the board. Try again in a minute.';
+    }
+    if (status >= 400 && status < 500) {
+      return (dict.canvas_save_rejected || 'Canvas position not saved: GitHub rejected the write ({status}). The card stayed where it was.').replace('{status}', String(status));
+    }
+    return dict.canvas_save_error || 'Could not save card position.';
+  }
+
   async function executeSaveIssueCanvas(issue, canvasUpdates, options) {
     options = options || {};
     var currentIssue = (state.board && Array.isArray(state.board.issues))
@@ -2823,10 +2868,8 @@
         msg = dict.note_body_limit_exceeded || 'Issue body limit reached (65,536 characters). Cannot save note.';
       } else if (!options.isCardMove) {
         msg = (l === 'fr' || !err || !err.message) ? (dict.note_save_error || 'Could not save note.') : err.message;
-      } else if (err && err.message && l === 'en') {
-        msg = err.message;
       } else {
-        msg = dict.canvas_save_error || 'Could not save card position.';
+        msg = canvasMoveFailureMessage(err, dict);
       }
       var cleanMsg = msg.replace(/\.+$/, '');
       setNotice(cleanMsg + '.', true);

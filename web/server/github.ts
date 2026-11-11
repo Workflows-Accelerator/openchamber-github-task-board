@@ -141,6 +141,11 @@ function kindForStatus(
     return 'forbidden';
   }
   if (status === 404) return 'not_found';
+  // GitHub answers a malformed or precondition-carrying request with 400 before
+  // it applies anything, so this is a definite refusal, never an unknown write
+  // outcome. Reporting it as 'server' turned every rejected write into a 502
+  // "Outcome unknown" that hid the real cause from the user.
+  if (status === 400) return 'invalid';
   if (status === 422) {
     if (method === 'GET' && typeof data.message === 'string' && data.message.toLowerCase() === 'validation failed') {
       return 'invalid';
@@ -236,7 +241,6 @@ export class GitHubClient {
     options: {
       method?: string;
       body?: unknown;
-      etag?: string | null;
       ifNoneMatch?: string | null;
       accept?: string;
     } = {},
@@ -250,9 +254,12 @@ export class GitHubClient {
     if (options.body !== undefined) {
       headers['content-type'] = 'application/json';
     }
-    if (options.etag) {
-      headers['if-match'] = options.etag;
-    }
+    // GitHub rejects unsafe requests that carry conditional headers with
+    // 400 "Conditional request headers are not allowed in unsafe requests
+    // unless supported by the endpoint", and issue updates do not support
+    // them. If-Match must never be sent here: it aborts every write before
+    // GitHub applies it. Conditional reads below use If-None-Match, which is
+    // supported.
     if (options.ifNoneMatch) {
       headers['if-none-match'] = options.ifNoneMatch;
     }
@@ -536,7 +543,6 @@ export class GitHubClient {
   async updateIssue(
     number: unknown,
     patch: Record<string, unknown>,
-    options: { etag?: string | null } = {},
   ): Promise<IssueRead> {
     const safeNumber = parseIssueNumber(number);
     const allowed = new Set(['title', 'body', 'labels', 'state']);
@@ -548,7 +554,6 @@ export class GitHubClient {
     const { data, headers } = await this.request(`${this.issuesBase()}/issues/${safeNumber}`, {
       method: 'PATCH',
       body: patch,
-      etag: options.etag,
     });
     if (!data || typeof data.number !== 'number') {
       throw new GitHubError('server', 200, 'GitHub issue response was malformed');

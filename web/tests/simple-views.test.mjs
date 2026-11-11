@@ -79,7 +79,7 @@ async function fixture(t, options = {}) {
   const fake = await startFakeGitHub({ repositories: [
     { repo: 'owner/alpha', issues: [makeIssue({ number: 1, title: 'Idea', body: 'Inspiration\n\n<!-- board-order: 1000 -->', labels: ['status:draft', 'priority:high'], repo: 'owner/alpha' })] },
     { repo: 'owner/beta', issues: [] },
-  ], honorIfMatch: true, ...options });
+  ], ...options });
   let board = await startBoard(fake, { sessionFilePath: path.join(directory, 'sessions.json') });
   const client = new HttpSession(board.url);
   t.after(async () => { await board.app.close(); await fake.close(); await fs.rm(directory, { recursive: true, force: true }); });
@@ -103,7 +103,9 @@ test('draft create, inline edit and marker-only reorder routes use fingerprint +
   assert.equal(edit.status, 200, edit.text);
   assert.equal(fake.findIssue(1).title, 'Edited');
   assert.equal(fake.findIssue(1).body, 'Keep this inspiration\n\n<!-- board-order: 1000 -->');
-  assert.ok(fake.patchCalls[0].ifMatch);
+  // Stale-write protection is the fingerprint pre-check (409 below), not a
+  // conditional header: GitHub rejects If-Match on unsafe requests with 400.
+  assert.equal(fake.patchCalls[0].ifMatch, undefined);
   assert.equal((await client.request(endpoint + '/order', { method: 'PUT', body: { fingerprint: old, previous: null, next: 1000 } })).status, 409);
   const order = await client.request(endpoint + '/order', { method: 'PUT', body: { fingerprint: await fingerprint(client), previous: 1000, next: 2000 } });
   assert.equal(order.status, 200, order.text);

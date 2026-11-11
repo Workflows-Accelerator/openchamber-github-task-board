@@ -500,6 +500,18 @@ export async function startFakeGitHub(options = {}) {
 
         if (req.method === 'PATCH') {
           const ifMatch = req.headers['if-match'];
+          // Real GitHub refuses conditional headers on unsafe requests for every
+          // endpoint that does not support them (issue update included):
+          //   400 {"errors":["Conditional request headers are not allowed in
+          //   unsafe requests unless supported by the endpoint"]}
+          // The request is rejected before anything is applied. honorIfMatch
+          // models a gateway that does support preconditions instead.
+          if (ifMatch && !state.honorIfMatch) {
+            return send(400, {
+              message: 'Bad Request',
+              errors: ['Conditional request headers are not allowed in unsafe requests unless supported by the endpoint'],
+            });
+          }
           if (state.honorIfMatch && ifMatch && ifMatch !== etagFor(issue)) {
             return send(412, { message: 'Precondition Failed' });
           }

@@ -15,7 +15,7 @@ const directory = await mkdtemp('/tmp/antigravity/issue48-browser-');
 const primary = 'Workflows-Accelerator/openchamber-github-task-board';
 const second = 'owner/a-very-long-project-name-that-will-not-fit-in-one-line-on-a-small-phone';
 const synthetic = (number, title, stage, body = '', priority = 'useful') => makeIssue({ number, title, labels: ['status:' + stage, 'priority:' + priority], body, repo: primary });
-const fake = await startFakeGitHub({ honorIfMatch: true, repositories: [
+const fake = await startFakeGitHub({ repositories: [
   { repo: primary, issues: [
     synthetic(1, 'Capture ideas without starting an agent', 'draft', 'A plain list of inspiration for later.\n\n<!-- board-order: 1000 -->'),
     synthetic(2, 'Make project switching effortless', 'draft', 'Keep context visible on small screens.\n\n<!-- board-order: 2000 -->'),
