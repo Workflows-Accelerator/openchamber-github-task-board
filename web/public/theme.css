@@ -511,12 +511,21 @@ main {
 }
 
 #login-view {
-  max-width: 440px;
-  margin: 40px auto;
+  width: min(420px, calc(100vw - 32px));
+  max-width: 420px;
+  margin: auto;
   padding: 24px;
   background: var(--surf);
   border: 1px solid var(--border);
   border-radius: var(--rad-lg);
+}
+
+body:has(#login-view:not([hidden])) #app-sidebar {
+  display: none;
+}
+
+body:has(#login-view:not([hidden])) main {
+  overflow-y: auto;
 }
 
 main:focus {
@@ -617,12 +626,24 @@ label {
 .login-form {
   display: grid;
   gap: 8px;
-  max-width: 360px;
+  width: 100%;
   margin-top: 16px;
+}
+
+.login-form input[type="password"] {
+  width: 100%;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 10px 12px;
+  font-size: 14px;
 }
 
 .login-form .button {
   justify-self: start;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 16px;
+  font-size: 13px;
 }
 
 .form-error {
@@ -3408,6 +3429,10 @@ body:has(#client-view:not([hidden])) #client-presentation-banner { display: none
   #compact-new { background: var(--prim); color: var(--prim-fg); }
   #compact-filter[data-active="true"] { color: var(--prim-hover); box-shadow: inset 0 -3px var(--prim-hover); }
   #compact-nav-dock { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 2px; flex: 0 0 auto; padding: 4px 4px calc(4px + env(safe-area-inset-bottom, 0px)); background: var(--surf-muted); border-top: 1px solid var(--border); }
+  body:has(#login-view:not([hidden])) #compact-nav-dock { display: none; }
+  body:has(#login-view:not([hidden])) .compact-header { display: none; }
+  body:has(#login-view:not([hidden])) #app-sidebar { display: none; }
+  body:has(#login-view:not([hidden])) .sidebar-backdrop { display: none !important; }
   #compact-nav-dock button { display: flex; justify-content: center; align-items: center; gap: 3px; min-height: 48px; min-width: 44px; font-size: 11.5px; font-weight: 500; white-space: nowrap; padding: 4px 2px; border: 0; border-radius: 8px; background: transparent; color: var(--fg-muted); }
   #compact-nav-dock .badge { padding: 1px 5px; font-size: 10.5px; line-height: 1.2; flex-shrink: 0; }
   #compact-nav-dock button[aria-current="page"] { color: var(--fg); background: var(--surf); }
