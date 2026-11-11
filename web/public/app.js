@@ -1815,7 +1815,8 @@
         } }));
     });
     $('capture-hint').hidden = !quickCapture();
-    $('quick-add-form').hidden = state.viewState.view !== 'simple';
+    var composerDialog = $('composer-dialog');
+    $('quick-add-form').hidden = state.viewState.view !== 'simple' && !(composerDialog && composerDialog.open);
     var target = $('quick-add-project');
     var previous = target.value;
     target.textContent = '';
@@ -1832,7 +1833,10 @@
   var sheetKind = null;
   var managedSheets = new Map();
   function finishSheet(dialog) {
-    document.body.classList.remove('sheet-open');
+    // A sheet can be opened from inside another one. Release the scroll lock
+    // only when the last open sheet closes, or the page scrolls behind it.
+    if (!document.querySelector('dialog[open]')) document.body.classList.remove('sheet-open');
+    if (dialog.id === 'composer-dialog' && $('quick-add-form')) $('quick-add-form').classList.remove('composer-open');
     var opener = dialog._sheetOpener;
     if (opener && opener.focus && opener.isConnected !== false) opener.focus();
     if (dialog.id === 'repo-popover') { dialog.hidden = true; $('repo-select-btn').setAttribute('aria-expanded', 'false'); }
@@ -2884,8 +2888,7 @@
 
     cardEl.addEventListener('keydown', function (e) {
       if (e.target !== cardEl) return;
-      if (e.key === ' ') { e.preventDefault(); selectDependencyCard(issue); return; }
-      if (e.key === 'Enter') {
+      if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
         if (issue.offline) {
           setNotice(getLanguage() === 'fr' ? 'Enregistré hors ligne. Utilisez Liste simple + filtre Brouillon pour modifier.' : 'Saved offline. Use Simple list + Draft filter to edit.');
@@ -5246,7 +5249,7 @@
         list.appendChild(el('li', { class: 'pending-heading' }, [el('h2', { text: open ? 'Waiting on you' : 'All completed' })]));
         group.forEach(function (issue) {
           var todos = el('ul', { class: 'pending-todos' });
-          (issue.pendingItems || []).filter(function (item) { return item.completed !== open; }).forEach(function (item) { todos.appendChild(el('li', { text: (item.completed ? '✓ ' : '○ ') + item.text })); });
+          (issue.pendingItems || []).filter(function (item) { return item.completed !== open; }).forEach(function (item) { todos.appendChild(el('li', { class: item.completed ? 'pending-todo is-done' : 'pending-todo', text: item.text })); });
           list.appendChild(el('li', { class: 'pending-task' }, [taskCard(issue, true), todos]));
         });
       });
@@ -5629,9 +5632,7 @@
       if (question.answerIndex === null || question.answerIndex === undefined) {
         var text = question.text || '';
         var answerMatch = /^(.*?)\s*\*\s*\(Answer:\s*([\s\S]*?)\)\s*\*$/i.exec(text);
-        var questionSpans = [
-          el('span', { text: '✓', 'aria-hidden': 'true' }),
-        ];
+        var questionSpans = [];
         if (answerMatch) {
           questionSpans.push(el('span', { text: answerMatch[1] }));
           questionSpans.push(el('span', { class: 'answer-text', text: (getLanguage() === 'fr' ? '— Réponse : ' : '— Answer: ') + answerMatch[2] }));

@@ -341,35 +341,41 @@ p {
   user-select: none;
 }
 
-body.sidebar-collapsed .sidebar {
-  width: 56px;
-  min-width: 56px;
-}
+/* The collapsed rail is a desktop concept. On phone widths the sidebar is an
+   off-canvas drawer opened by the compact header button, and applying the
+   rail there shrinks the drawer to 56px and hides the only control that can
+   open it (the compact toggle also carries .sidebar-toggle-btn). */
+@media (min-width: 769px) {
+  body.sidebar-collapsed .sidebar {
+    width: 56px;
+    min-width: 56px;
+  }
 
-body.sidebar-collapsed .sidebar-label,
-body.sidebar-collapsed .sidebar-brand-title,
-body.sidebar-collapsed .sidebar-section-label,
-body.sidebar-collapsed .repo-select-chevron,
-body.sidebar-collapsed .sidebar-badge {
-  display: none !important;
-}
+  body.sidebar-collapsed .sidebar-label,
+  body.sidebar-collapsed .sidebar-brand-title,
+  body.sidebar-collapsed .sidebar-section-label,
+  body.sidebar-collapsed .repo-select-chevron,
+  body.sidebar-collapsed .sidebar-badge {
+    display: none !important;
+  }
 
-body.sidebar-collapsed .sidebar-item {
-  justify-content: center;
-  padding: 8px 0;
-}
+  body.sidebar-collapsed .sidebar-item {
+    justify-content: center;
+    padding: 8px 0;
+  }
 
-body.sidebar-collapsed .sidebar-brand {
-  justify-content: center;
-}
+  body.sidebar-collapsed .sidebar-brand {
+    justify-content: center;
+  }
 
-body.sidebar-collapsed .sidebar-header {
-  padding: 12px 8px;
-  justify-content: center;
-}
+  body.sidebar-collapsed .sidebar-header {
+    padding: 12px 8px;
+    justify-content: center;
+  }
 
-body.sidebar-collapsed .sidebar-toggle-btn {
-  display: none;
+  body.sidebar-collapsed .sidebar .sidebar-toggle-btn {
+    display: none;
+  }
 }
 
 .sidebar-header {
@@ -3613,6 +3619,12 @@ body.sheet-open { overflow: hidden; }
 .board-sheet .canvas-arrange-option input::before { content: ''; width: 18px; height: 18px; border: 1px solid var(--fg-muted); border-radius: 50%; background: var(--surf); }
 .board-sheet .canvas-arrange-option input:checked::before { border-color: var(--prim-hover); background: var(--prim-hover); box-shadow: inset 0 0 0 4px var(--surf); }
 .board-sheet .canvas-arrange-option { align-items: center; font-size: 15px; }
+
+/* Pending checklist rows carry their state in a drawn box instead of a glyph,
+   so the zero-emoji rule holds without losing the done/open distinction. */
+.pending-todos .pending-todo { position: relative; padding-left: 22px; }
+.pending-todos .pending-todo::before { content: ''; position: absolute; left: 0; top: .45em; width: 10px; height: 10px; border: 1px solid var(--fg-muted); border-radius: 3px; background: var(--surf); }
+.pending-todos .pending-todo.is-done::before { border-color: var(--prim); background: var(--prim); }
 
 /* Dependency labels sit above cards and never disappear behind their content. */
 .canvas-layer-wire-labels { z-index: 35; overflow: visible; pointer-events: none; }

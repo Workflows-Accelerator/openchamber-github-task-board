@@ -392,3 +392,67 @@ test('V4-1: applied chip removal immediately re-renders List without opening fil
   assert.equal(get('applied-filter-btn').getAttribute('data-active'), 'false');
   assert.equal(get('task-list').children[0].children[1].children.length, 2);
 });
+
+test('V4-1: an open composer keeps its form visible when the list view is not simple', () => {
+  const { app, get } = browser();
+  const repository = { full: 'acme/core' };
+  app.state.board = { repo: 'acme/core', repository, issues: [
+    { number: 1, title: 'Task', repository, state: 'open', labels: ['priority:high'], effectiveStage: 'todo', counts: {} },
+  ] };
+  const composer = get('composer-dialog');
+  const form = get('quick-add-form');
+
+  // A refresh or a finished draft re-renders the board under the open dialog.
+  app.state.viewState = { view: 'kanban', filters: [], sort: 'priority' };
+  composer.open = true;
+  form.hidden = true;
+  app.renderBoard();
+  assert.equal(form.hidden, false, 'the composer form must survive a re-render while the sheet is open');
+
+  // Closed composer still follows the existing simple-view rule.
+  composer.open = false;
+  app.renderBoard();
+  assert.equal(form.hidden, true, 'non-simple views hide the inline composer when the sheet is closed');
+
+  app.state.viewState = { view: 'simple', filters: [], sort: 'priority' };
+  app.renderBoard();
+  assert.equal(form.hidden, false);
+});
+
+test('V4-1: closing a nested sheet keeps the page lock and clears the composer state', () => {
+  const js = fs.readFileSync('web/public/app.js', 'utf8');
+  assert.match(js, /if \(!document\.querySelector\('dialog\[open\]'\)\) document\.body\.classList\.remove\('sheet-open'\)/);
+  assert.match(js, /dialog\.id === 'composer-dialog'[^\n]*classList\.remove\('composer-open'\)/);
+  const finish = js.slice(js.indexOf('function finishSheet('), js.indexOf('function prepareSheet('));
+  assert.ok(
+    finish.indexOf("querySelector('dialog[open]')") < finish.indexOf("classList.remove('sheet-open')"),
+    'the scroll lock must be released only after checking for another open dialog',
+  );
+});
+
+test('V4-1: phone sidebar keeps its drawer behaviour when the desktop rail was collapsed', () => {
+  const css = fs.readFileSync('web/public/theme.css', 'utf8');
+  const desktopOnly = /@media \(min-width: 769px\) \{[\s\S]*?body\.sidebar-collapsed \.sidebar \{[\s\S]*?\n\}/.test(css);
+  assert.ok(desktopOnly, 'the collapsed rail must not shrink the off-canvas phone drawer');
+  assert.match(css, /body\.sidebar-collapsed \.sidebar \.sidebar-toggle-btn \{/);
+  assert.doesNotMatch(css, /\nbody\.sidebar-collapsed \.sidebar-toggle-btn \{/, 'the compact header toggle must never be hidden by the rail');
+});
+
+test('V4-1: pending checklist state is drawn, never a pictographic glyph', () => {
+  const { app, get } = browser();
+  const repository = { full: 'acme/core' };
+  app.state.board = { repo: 'acme/core', repository, issues: [
+    { number: 1, title: 'Review', repository, state: 'open', labels: ['status:needs-human'], effectiveStage: 'needs-human', statusLabel: 'status:needs-human', counts: {},
+      pendingItems: [{ text: 'Approve release', completed: false }] },
+  ] };
+  app.state.viewState = { view: 'pending', filters: [], sort: 'priority' };
+  app.renderBoard();
+  const todos = get('task-list').children[1].children[1].children;
+  assert.equal(todos.length, 1);
+  assert.equal(todos[0].textContent, 'Approve release');
+  assert.equal(todos[0].className, 'pending-todo');
+  const glyphs = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u;
+  for (const file of ['web/public/app.js', 'web/public/index.html', 'web/public/theme.css']) {
+    assert.doesNotMatch(fs.readFileSync(file, 'utf8'), glyphs, file + ' must stay free of pictographic glyphs');
+  }
+});
