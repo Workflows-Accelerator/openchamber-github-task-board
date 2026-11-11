@@ -5,6 +5,11 @@
     "cases": 112
   },
   {
+    "name": "V4-1 phone sidebar: opens from the compact control and closes from the backdrop",
+    "verdict": "PASS",
+    "cases": 12
+  },
+  {
     "name": "V4-1 applied filters, live count, removal and reset",
     "verdict": "PASS",
     "cases": 16

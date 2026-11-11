@@ -823,7 +823,7 @@ async function run() {
     // V4-1: all native sheets share geometry, focus trap, three close paths and scroll isolation.
     await setClientMode(false);
     await selectScope('all');
-    const sheetMeasurements = [], dependencyMeasurements = [], filterMeasurements = [];
+    const sheetMeasurements = [], dependencyMeasurements = [], filterMeasurements = [], sidebarMeasurements = [];
     for (const mCase of baseMatrix) {
       await setViewport(mCase.width, mCase.height);
       await setTheme(mCase.theme); await setLang(mCase.lang); await switchView('canvas');
@@ -905,15 +905,20 @@ async function run() {
       dependencyMeasurements.push({ testCase: mCase, ...focus, hidden, restored, pass: focus.selected === 1 && focus.blockers >= 1 && focus.dependents >= 1 && focus.unrelated >= 1 && focus.dim === '0.22' && focus.labels >= 2 && hidden && restored });
       await page.evaluate(() => { window.__taskBoard.state.dependencyFocus = null; window.__taskBoard.renderCanvasWires(); });
       if (mCase.width <= 768) {
-        await page.evaluate(() => {
-          document.body.classList.remove('sidebar-collapsed');
-          document.body.classList.add('sidebar-open');
-          document.getElementById('sidebar-backdrop').hidden = false;
-        });
+        // Real clicks on the control the phone actually shows, so the smoke
+        // cannot pass while the drawer is unreachable.
+        await page.click('#sidebar-toggle-btn-compact');
         await sleep(350);
       }
       await captureShot(`brand-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
-      if (mCase.width <= 768) await page.evaluate(() => { document.body.classList.remove('sidebar-open'); document.getElementById('sidebar-backdrop').hidden = true; });
+      if (mCase.width <= 768) {
+        const sidebarOpen = await page.evaluate(() => document.body.classList.contains('sidebar-open') && !document.getElementById('sidebar-backdrop').hidden);
+        await page.mouse.click(mCase.width - 20, Math.round(mCase.height / 2));
+        await sleep(350);
+        const sidebarClosed = await page.evaluate(() => !document.body.classList.contains('sidebar-open') && document.getElementById('sidebar-backdrop').hidden);
+        sidebarMeasurements.push({ testCase: mCase, sidebarOpen, sidebarClosed, pass: sidebarOpen && sidebarClosed });
+        if (!sidebarOpen || !sidebarClosed) throw new Error('Phone sidebar check failed: ' + JSON.stringify(sidebarMeasurements.at(-1)));
+      }
     }
     // Real sheet controls persist theme and language across reload.
     await page.click('#applied-filter-btn'); await page.click('#sheet-close');
@@ -925,6 +930,7 @@ async function run() {
     fs.writeFileSync(path.join(DELIVERY_DIR, 'sheet-measurements.json'), JSON.stringify(sheetMeasurements, null, 2) + '\n');
     fs.writeFileSync(path.join(DELIVERY_DIR, 'dependency-measurements.json'), JSON.stringify(dependencyMeasurements, null, 2) + '\n');
     fs.writeFileSync(path.join(DELIVERY_DIR, 'filter-measurements.json'), JSON.stringify(filterMeasurements, null, 2) + '\n');
+    fs.writeFileSync(path.join(DELIVERY_DIR, 'sidebar-measurements.json'), JSON.stringify(sidebarMeasurements, null, 2) + '\n');
 
     const pageCsp = await page.evaluate(() => window.__cspViolations || []).catch(() => []);
     for (const c of pageCsp) {
@@ -936,6 +942,7 @@ async function run() {
 
     const smokeData = [
       { name: 'V4-1 shared sheets: seven surfaces, sixteen theme/language/viewport cases', verdict: sheetMeasurements.every(m => m.pass) ? 'PASS' : 'FAIL', cases: sheetMeasurements.length },
+      { name: 'V4-1 phone sidebar: opens from the compact control and closes from the backdrop', verdict: sidebarMeasurements.every(m => m.pass) ? 'PASS' : 'FAIL', cases: sidebarMeasurements.length },
       { name: 'V4-1 applied filters, live count, removal and reset', verdict: filterMeasurements.every(m => m.pass) ? 'PASS' : 'FAIL', cases: filterMeasurements.length },
       { name: 'V4-1 dependency focus, directional accents, labels and persistent edge toggle', verdict: dependencyMeasurements.every(m => m.pass) ? 'PASS' : 'FAIL', cases: dependencyMeasurements.length },
       { name: 'V4-1 theme/language reload and product identity', verdict: settingsPersist && brand ? 'PASS' : 'FAIL', settingsPersist, brand },
