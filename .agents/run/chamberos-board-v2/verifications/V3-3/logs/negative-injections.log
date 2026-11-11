@@ -1,0 +1,740 @@
+=== 0. BASELINE ===
+Checking preview health on http://127.0.0.1:36549/health (synthetic=true)...
+Launching real Chromium from /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell...
+Navigating to preview at 390x844...
+Captured 04-canvas-390-dark-en.png (39779 bytes)
+Captured 01-list-1280-light-en.png (115290 bytes)
+Captured 02-canvas-notes-wires-1280-light-en.png (107683 bytes)
+Captured 03-canvas-notes-wires-1280-dark-en.png (104613 bytes)
+Captured matrix-canvas-360-light-en.png (40731 bytes)
+Captured matrix-canvas-360-light-fr.png (40930 bytes)
+Captured matrix-canvas-360-dark-en.png (39525 bytes)
+Captured matrix-canvas-360-dark-fr.png (39778 bytes)
+Captured matrix-canvas-390-light-en.png (44299 bytes)
+Captured matrix-canvas-390-light-fr.png (44491 bytes)
+Captured matrix-canvas-390-dark-en.png (43161 bytes)
+Captured matrix-canvas-390-dark-fr.png (43418 bytes)
+Captured matrix-canvas-768-light-en.png (75830 bytes)
+Captured matrix-canvas-768-light-fr.png (76009 bytes)
+Captured matrix-canvas-768-dark-en.png (73477 bytes)
+Captured matrix-canvas-768-dark-fr.png (73619 bytes)
+Captured matrix-canvas-1280-light-en.png (107695 bytes)
+Captured matrix-canvas-1280-light-fr.png (108553 bytes)
+Captured matrix-canvas-1280-dark-en.png (104613 bytes)
+Captured matrix-canvas-1280-dark-fr.png (105486 bytes)
+Captured matrix-undo-360-light-en.png (47001 bytes)
+Captured matrix-undo-360-light-fr.png (47346 bytes)
+Captured 05-canvas-undo-360-light-fr.png (47346 bytes)
+Captured matrix-undo-360-dark-en.png (45773 bytes)
+Captured matrix-undo-360-dark-fr.png (45922 bytes)
+Captured matrix-undo-390-light-en.png (53323 bytes)
+Captured matrix-undo-390-light-fr.png (53664 bytes)
+Captured matrix-undo-390-dark-en.png (52166 bytes)
+Captured matrix-undo-390-dark-fr.png (52318 bytes)
+Captured matrix-undo-768-light-en.png (79651 bytes)
+Captured matrix-undo-768-light-fr.png (80128 bytes)
+Captured matrix-undo-768-dark-en.png (76917 bytes)
+Captured matrix-undo-768-dark-fr.png (77208 bytes)
+Captured matrix-undo-1280-light-en.png (108936 bytes)
+Captured matrix-undo-1280-light-fr.png (109508 bytes)
+Captured matrix-undo-1280-dark-en.png (105375 bytes)
+Captured matrix-undo-1280-dark-fr.png (106079 bytes)
+Captured 06-list-vanilla-390-light-fr.png (30819 bytes)
+Captured 07-drawer-vanilla-1280-dark-en.png (143774 bytes)
+Captured 08-drawer-vanilla-360-light-fr.png (42671 bytes)
+Captured 09-project-switcher-390-dark-en.png (27574 bytes)
+Captured 10-empty-repo-360-light-en.png (16616 bytes)
+Captured 15-composer-390-dark-fr.png (45713 bytes)
+Captured 11-decisions-768-light-fr.png (28953 bytes)
+Captured 12-blocked-360-dark-en.png (40398 bytes)
+Captured 13-operations-1280-light-fr.png (53465 bytes)
+Captured 14-client-view-1280-dark-en.png (99900 bytes)
+Captured matrix-list-360-light-en.png (47235 bytes)
+Captured matrix-drawer-360-light-en.png (35222 bytes)
+Captured matrix-picker-360-light-en.png (47124 bytes)
+Captured matrix-client-360-light-en.png (37579 bytes)
+Captured matrix-list-360-light-fr.png (47072 bytes)
+Captured matrix-drawer-360-light-fr.png (35600 bytes)
+Captured matrix-picker-360-light-fr.png (47477 bytes)
+Captured matrix-client-360-light-fr.png (37390 bytes)
+Captured matrix-list-360-dark-en.png (47457 bytes)
+Captured matrix-drawer-360-dark-en.png (35670 bytes)
+Captured matrix-picker-360-dark-en.png (46150 bytes)
+Captured matrix-client-360-dark-en.png (37986 bytes)
+Captured matrix-list-360-dark-fr.png (47323 bytes)
+Captured matrix-drawer-360-dark-fr.png (36028 bytes)
+Captured matrix-picker-360-dark-fr.png (46543 bytes)
+Captured matrix-client-360-dark-fr.png (37788 bytes)
+Captured matrix-list-390-light-en.png (55051 bytes)
+Captured matrix-drawer-390-light-en.png (37398 bytes)
+Captured matrix-picker-390-light-en.png (56495 bytes)
+Captured matrix-client-390-light-en.png (41830 bytes)
+Captured matrix-list-390-light-fr.png (54958 bytes)
+Captured matrix-drawer-390-light-fr.png (37173 bytes)
+Captured matrix-picker-390-light-fr.png (57023 bytes)
+Captured matrix-client-390-light-fr.png (40104 bytes)
+Captured matrix-list-390-dark-en.png (55792 bytes)
+Captured matrix-drawer-390-dark-en.png (37999 bytes)
+Captured matrix-picker-390-dark-en.png (56354 bytes)
+Captured matrix-client-390-dark-en.png (42598 bytes)
+Captured matrix-list-390-dark-fr.png (55721 bytes)
+Captured matrix-drawer-390-dark-fr.png (37954 bytes)
+Captured matrix-picker-390-dark-fr.png (56912 bytes)
+Captured matrix-client-390-dark-fr.png (40555 bytes)
+Captured matrix-list-768-light-en.png (74238 bytes)
+Captured matrix-drawer-768-light-en.png (47521 bytes)
+Captured matrix-picker-768-light-en.png (84086 bytes)
+Captured matrix-client-768-light-en.png (54918 bytes)
+Captured matrix-list-768-light-fr.png (74909 bytes)
+Captured matrix-drawer-768-light-fr.png (48028 bytes)
+Captured matrix-picker-768-light-fr.png (85207 bytes)
+Captured matrix-client-768-light-fr.png (56461 bytes)
+Captured matrix-list-768-dark-en.png (75389 bytes)
+Captured matrix-drawer-768-dark-en.png (48138 bytes)
+Captured matrix-picker-768-dark-en.png (83901 bytes)
+Captured matrix-client-768-dark-en.png (55655 bytes)
+Captured matrix-list-768-dark-fr.png (76061 bytes)
+Captured matrix-drawer-768-dark-fr.png (48883 bytes)
+Captured matrix-picker-768-dark-fr.png (85021 bytes)
+Captured matrix-client-768-dark-fr.png (57149 bytes)
+Captured matrix-list-1280-light-en.png (115329 bytes)
+Captured matrix-drawer-1280-light-en.png (216827 bytes)
+Captured matrix-picker-1280-light-en.png (122105 bytes)
+Captured matrix-client-1280-light-en.png (98841 bytes)
+Captured matrix-list-1280-light-fr.png (117454 bytes)
+Captured matrix-drawer-1280-light-fr.png (219854 bytes)
+Captured matrix-picker-1280-light-fr.png (124924 bytes)
+Captured matrix-client-1280-light-fr.png (100911 bytes)
+Captured matrix-list-1280-dark-en.png (116809 bytes)
+Captured matrix-drawer-1280-dark-en.png (211139 bytes)
+Captured matrix-picker-1280-dark-en.png (121165 bytes)
+Captured matrix-client-1280-dark-en.png (100022 bytes)
+Captured matrix-list-1280-dark-fr.png (118616 bytes)
+Captured matrix-drawer-1280-dark-fr.png (214106 bytes)
+Captured matrix-picker-1280-dark-fr.png (124328 bytes)
+Captured matrix-client-1280-dark-fr.png (101854 bytes)
+Saved /tmp/opencode/v3-smoke-check/out-base/smoke.json
+BASELINE_EXIT=0
+=== 1. OFFSCREEN X/Y HUD CONTROL ===
+Checking preview health on http://127.0.0.1:35257/health (synthetic=true)...
+Launching real Chromium from /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell...
+Navigating to preview at 390x844...
+Captured 04-canvas-390-dark-en.png (38132 bytes)
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+page.click: Target page, context or browser has been closed
+Call log:
+[2m  - waiting for locator('#canvas-fit-all')[22m
+[2m    - locator resolved to <button title="Fit" type="button" aria-label="Fit" id="canvas-fit-all" data-i18n="canvas_fit_all" data-i18n-title="canvas_fit_all" class="canvas-control-btn text-btn">Fit</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - element is outside of the viewport[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - element is outside of the viewport[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    54 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - element is outside of the viewport[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+    at run (/tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:396:16)
+    at async file:///tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:918:1 {
+  log: [
+    "  - waiting for locator('#canvas-fit-all')",
+    '    - locator resolved to <button title="Fit" type="button" aria-label="Fit" id="canvas-fit-all" data-i18n="canvas_fit_all" data-i18n-title="canvas_fit_all" class="canvas-control-btn text-btn">Fit</button>',
+    '  - attempting click action',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is visible, enabled and stable',
+    '      - scrolling into view if needed',
+    '      - done scrolling',
+    '      - element is outside of the viewport',
+    '    - retrying click action',
+    '    - waiting 20ms',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is visible, enabled and stable',
+    '      - scrolling into view if needed',
+    '      - done scrolling',
+    '      - element is outside of the viewport',
+    '    - retrying click action',
+    '      - waiting 100ms',
+    '    54 × waiting for element to be visible, enabled and stable',
+    '       - element is visible, enabled and stable',
+    '       - scrolling into view if needed',
+    '       - done scrolling',
+    '       - element is outside of the viewport',
+    '     - retrying click action',
+    '       - waiting 500ms'
+  ]
+}
+
+Node.js v22.23.4
+=== 1. OFFSCREEN X/Y HUD CONTROL ===
+Checking preview health on http://127.0.0.1:38967/health (synthetic=true)...
+Launching real Chromium from /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell...
+Navigating to preview at 390x844...
+Captured 04-canvas-390-dark-en.png (38132 bytes)
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+page.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#canvas-fit-all')[22m
+[2m    - locator resolved to <button title="Fit" type="button" aria-label="Fit" id="canvas-fit-all" data-i18n="canvas_fit_all" data-i18n-title="canvas_fit_all" class="canvas-control-btn text-btn">Fit</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - element is outside of the viewport[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is visible, enabled and stable[22m
+[2m      - scrolling into view if needed[22m
+[2m      - done scrolling[22m
+[2m      - element is outside of the viewport[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    57 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is visible, enabled and stable[22m
+[2m       - scrolling into view if needed[22m
+[2m       - done scrolling[22m
+[2m       - element is outside of the viewport[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+    at run (/tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:396:16)
+    at async file:///tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:918:1 {
+  log: [
+    "  - waiting for locator('#canvas-fit-all')",
+    '    - locator resolved to <button title="Fit" type="button" aria-label="Fit" id="canvas-fit-all" data-i18n="canvas_fit_all" data-i18n-title="canvas_fit_all" class="canvas-control-btn text-btn">Fit</button>',
+    '  - attempting click action',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is visible, enabled and stable',
+    '      - scrolling into view if needed',
+    '      - done scrolling',
+    '      - element is outside of the viewport',
+    '    - retrying click action',
+    '    - waiting 20ms',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is visible, enabled and stable',
+    '      - scrolling into view if needed',
+    '      - done scrolling',
+    '      - element is outside of the viewport',
+    '    - retrying click action',
+    '      - waiting 100ms',
+    '    57 × waiting for element to be visible, enabled and stable',
+    '       - element is visible, enabled and stable',
+    '       - scrolling into view if needed',
+    '       - done scrolling',
+    '       - element is outside of the viewport',
+    '     - retrying click action',
+    '       - waiting 500ms'
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v22.23.4
+FAULT1_OFFSCREEN_HUD_EXIT=1
+=== 2. CANVAS_VIEW_NOT_SHOWN VACUITY ===
+Checking preview health on http://127.0.0.1:35445/health (synthetic=true)...
+Launching real Chromium from /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell...
+Navigating to preview at 390x844...
+Captured 04-canvas-390-dark-en.png (39779 bytes)
+Captured 01-list-1280-light-en.png (115290 bytes)
+Captured 02-canvas-notes-wires-1280-light-en.png (107683 bytes)
+Captured 03-canvas-notes-wires-1280-dark-en.png (104613 bytes)
+Containment/invariant violation at 360x800 light en (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"en","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-360-light-en.png (8235 bytes)
+Containment/invariant violation at 360x800 light fr (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"fr","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-360-light-fr.png (8263 bytes)
+Containment/invariant violation at 360x800 dark en (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"en","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-360-dark-en.png (8354 bytes)
+Containment/invariant violation at 360x800 dark fr (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"fr","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-360-dark-fr.png (8365 bytes)
+Containment/invariant violation at 390x844 light en (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"en","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-390-light-en.png (8607 bytes)
+Containment/invariant violation at 390x844 light fr (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"fr","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-390-light-fr.png (8622 bytes)
+Containment/invariant violation at 390x844 dark en (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"en","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-390-dark-en.png (8705 bytes)
+Containment/invariant violation at 390x844 dark fr (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"fr","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-390-dark-fr.png (8707 bytes)
+Containment/invariant violation at 768x900 light en (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"en","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-768-light-en.png (9858 bytes)
+Containment/invariant violation at 768x900 light fr (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"fr","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-768-light-fr.png (9893 bytes)
+Containment/invariant violation at 768x900 dark en (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"en","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-768-dark-en.png (9951 bytes)
+Containment/invariant violation at 768x900 dark fr (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":false,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"fr","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-768-dark-fr.png (9976 bytes)
+Containment/invariant violation at 1280x900 light en (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"en","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-1280-light-en.png (30983 bytes)
+Containment/invariant violation at 1280x900 light fr (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"fr","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-1280-light-fr.png (31252 bytes)
+Containment/invariant violation at 1280x900 dark en (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"en","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-1280-dark-en.png (31132 bytes)
+Containment/invariant violation at 1280x900 dark fr (undo=false): {"nonVacuousButtons":false,"bottomGap":0,"hudBottomDocked":false,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":false,"hudHeight":0,"langMatches":true,"htmlLang":"fr","zeroViewportBottomOverhang":true,"vpBottom":0,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-1280-dark-fr.png (31364 bytes)
+node:internal/modules/run_main:123
+    triggerUncaughtException(
+    ^
+
+page.click: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('#canvas-arrange')[22m
+[2m    - locator resolved to <button type="button" title="Organiser" id="canvas-arrange" aria-label="Organiser" data-i18n-title="canvas_arrange" class="canvas-control-btn text-btn">…</button>[22m
+[2m  - attempting click action[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not visible[22m
+[2m    - retrying click action[22m
+[2m    - waiting 20ms[22m
+[2m    2 × waiting for element to be visible, enabled and stable[22m
+[2m      - element is not visible[22m
+[2m    - retrying click action[22m
+[2m      - waiting 100ms[22m
+[2m    58 × waiting for element to be visible, enabled and stable[22m
+[2m       - element is not visible[22m
+[2m     - retrying click action[22m
+[2m       - waiting 500ms[22m
+
+    at run (/tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:584:16)
+    at async file:///tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:918:1 {
+  log: [
+    "  - waiting for locator('#canvas-arrange')",
+    '    - locator resolved to <button type="button" title="Organiser" id="canvas-arrange" aria-label="Organiser" data-i18n-title="canvas_arrange" class="canvas-control-btn text-btn">…</button>',
+    '  - attempting click action',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is not visible',
+    '    - retrying click action',
+    '    - waiting 20ms',
+    '    2 × waiting for element to be visible, enabled and stable',
+    '      - element is not visible',
+    '    - retrying click action',
+    '      - waiting 100ms',
+    '    58 × waiting for element to be visible, enabled and stable',
+    '       - element is not visible',
+    '     - retrying click action',
+    '       - waiting 500ms'
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v22.23.4
+FAULT2_VACUITY_EXIT=1
+=== 3. WRONG <html lang> ===
+Checking preview health on http://127.0.0.1:37501/health (synthetic=true)...
+Launching real Chromium from /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell...
+Navigating to preview at 390x844...
+Captured 04-canvas-390-dark-en.png (39779 bytes)
+Captured 01-list-1280-light-en.png (115290 bytes)
+Captured 02-canvas-notes-wires-1280-light-en.png (107683 bytes)
+Captured 03-canvas-notes-wires-1280-dark-en.png (104613 bytes)
+Captured matrix-canvas-360-light-en.png (40731 bytes)
+Captured matrix-canvas-360-light-fr.png (40930 bytes)
+Captured matrix-canvas-360-dark-en.png (39525 bytes)
+Captured matrix-canvas-360-dark-fr.png (39778 bytes)
+Captured matrix-canvas-390-light-en.png (44299 bytes)
+Captured matrix-canvas-390-light-fr.png (44491 bytes)
+Captured matrix-canvas-390-dark-en.png (43161 bytes)
+Captured matrix-canvas-390-dark-fr.png (43418 bytes)
+Captured matrix-canvas-768-light-en.png (75830 bytes)
+Captured matrix-canvas-768-light-fr.png (76009 bytes)
+Captured matrix-canvas-768-dark-en.png (73477 bytes)
+Captured matrix-canvas-768-dark-fr.png (73619 bytes)
+Captured matrix-canvas-1280-light-en.png (107695 bytes)
+Captured matrix-canvas-1280-light-fr.png (108553 bytes)
+Captured matrix-canvas-1280-dark-en.png (104613 bytes)
+Captured matrix-canvas-1280-dark-fr.png (105486 bytes)
+Captured matrix-undo-360-light-en.png (47001 bytes)
+Captured matrix-undo-360-light-fr.png (47346 bytes)
+Captured 05-canvas-undo-360-light-fr.png (47346 bytes)
+Captured matrix-undo-360-dark-en.png (45773 bytes)
+Captured matrix-undo-360-dark-fr.png (45922 bytes)
+Captured matrix-undo-390-light-en.png (53323 bytes)
+Captured matrix-undo-390-light-fr.png (53664 bytes)
+Captured matrix-undo-390-dark-en.png (52166 bytes)
+Captured matrix-undo-390-dark-fr.png (52318 bytes)
+Captured matrix-undo-768-light-en.png (79651 bytes)
+Captured matrix-undo-768-light-fr.png (80128 bytes)
+Captured matrix-undo-768-dark-en.png (76917 bytes)
+Captured matrix-undo-768-dark-fr.png (77208 bytes)
+Captured matrix-undo-1280-light-en.png (108930 bytes)
+Captured matrix-undo-1280-light-fr.png (109508 bytes)
+Captured matrix-undo-1280-dark-en.png (105375 bytes)
+Captured matrix-undo-1280-dark-fr.png (106079 bytes)
+Captured 06-list-vanilla-390-light-fr.png (30819 bytes)
+Captured 07-drawer-vanilla-1280-dark-en.png (143774 bytes)
+Captured 08-drawer-vanilla-360-light-fr.png (42671 bytes)
+Captured 09-project-switcher-390-dark-en.png (27574 bytes)
+Captured 10-empty-repo-360-light-en.png (16616 bytes)
+Captured 15-composer-390-dark-fr.png (45713 bytes)
+Captured 11-decisions-768-light-fr.png (28953 bytes)
+Captured 12-blocked-360-dark-en.png (40398 bytes)
+Captured 13-operations-1280-light-fr.png (53304 bytes)
+Captured 14-client-view-1280-dark-en.png (99900 bytes)
+Captured matrix-list-360-light-en.png (47235 bytes)
+Captured matrix-drawer-360-light-en.png (35222 bytes)
+Captured matrix-picker-360-light-en.png (47124 bytes)
+Captured matrix-client-360-light-en.png (37579 bytes)
+Captured matrix-list-360-light-fr.png (47072 bytes)
+Captured matrix-drawer-360-light-fr.png (35600 bytes)
+Captured matrix-picker-360-light-fr.png (47477 bytes)
+Captured matrix-client-360-light-fr.png (37390 bytes)
+Captured matrix-list-360-dark-en.png (47457 bytes)
+Captured matrix-drawer-360-dark-en.png (35670 bytes)
+Captured matrix-picker-360-dark-en.png (46150 bytes)
+Captured matrix-client-360-dark-en.png (37993 bytes)
+Captured matrix-list-360-dark-fr.png (47323 bytes)
+Captured matrix-drawer-360-dark-fr.png (36028 bytes)
+Captured matrix-picker-360-dark-fr.png (46543 bytes)
+Captured matrix-client-360-dark-fr.png (37788 bytes)
+Captured matrix-list-390-light-en.png (55051 bytes)
+Captured matrix-drawer-390-light-en.png (37398 bytes)
+Captured matrix-picker-390-light-en.png (56495 bytes)
+Captured matrix-client-390-light-en.png (41830 bytes)
+Captured matrix-list-390-light-fr.png (54958 bytes)
+Captured matrix-drawer-390-light-fr.png (37173 bytes)
+Captured matrix-picker-390-light-fr.png (57023 bytes)
+Captured matrix-client-390-light-fr.png (40104 bytes)
+Captured matrix-list-390-dark-en.png (55792 bytes)
+Captured matrix-drawer-390-dark-en.png (37999 bytes)
+Captured matrix-picker-390-dark-en.png (56354 bytes)
+Captured matrix-client-390-dark-en.png (42598 bytes)
+Captured matrix-list-390-dark-fr.png (55721 bytes)
+Captured matrix-drawer-390-dark-fr.png (37954 bytes)
+Captured matrix-picker-390-dark-fr.png (56912 bytes)
+Captured matrix-client-390-dark-fr.png (40555 bytes)
+Captured matrix-list-768-light-en.png (74238 bytes)
+Captured matrix-drawer-768-light-en.png (47521 bytes)
+Captured matrix-picker-768-light-en.png (84086 bytes)
+Captured matrix-client-768-light-en.png (54918 bytes)
+Captured matrix-list-768-light-fr.png (74909 bytes)
+Captured matrix-drawer-768-light-fr.png (48028 bytes)
+Captured matrix-picker-768-light-fr.png (85207 bytes)
+Captured matrix-client-768-light-fr.png (56461 bytes)
+Captured matrix-list-768-dark-en.png (75389 bytes)
+Captured matrix-drawer-768-dark-en.png (48138 bytes)
+Captured matrix-picker-768-dark-en.png (83901 bytes)
+Captured matrix-client-768-dark-en.png (55655 bytes)
+Captured matrix-list-768-dark-fr.png (76061 bytes)
+Captured matrix-drawer-768-dark-fr.png (48883 bytes)
+Captured matrix-picker-768-dark-fr.png (85021 bytes)
+Captured matrix-client-768-dark-fr.png (57149 bytes)
+Captured matrix-list-1280-light-en.png (115329 bytes)
+Captured matrix-drawer-1280-light-en.png (216827 bytes)
+Captured matrix-picker-1280-light-en.png (122105 bytes)
+Captured matrix-client-1280-light-en.png (98841 bytes)
+Captured matrix-list-1280-light-fr.png (117454 bytes)
+Captured matrix-drawer-1280-light-fr.png (219854 bytes)
+Captured matrix-picker-1280-light-fr.png (124924 bytes)
+Captured matrix-client-1280-light-fr.png (100911 bytes)
+Captured matrix-list-1280-dark-en.png (116809 bytes)
+Captured matrix-drawer-1280-dark-en.png (211139 bytes)
+Captured matrix-picker-1280-dark-en.png (121165 bytes)
+Captured matrix-client-1280-dark-en.png (100022 bytes)
+Captured matrix-list-1280-dark-fr.png (118616 bytes)
+Captured matrix-drawer-1280-dark-fr.png (214106 bytes)
+Captured matrix-picker-1280-dark-fr.png (124328 bytes)
+Captured matrix-client-1280-dark-fr.png (101854 bytes)
+Saved /tmp/opencode/v3-smoke-check/out-f3/smoke.json
+FAULT3_WRONG_HTML_LANG_EXIT=0
+=== 4. CSP INLINE-STYLE VIOLATION ===
+Checking preview health on http://127.0.0.1:39767/health (synthetic=true)...
+Launching real Chromium from /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell...
+Navigating to preview at 390x844...
+Captured 04-canvas-390-dark-en.png (39779 bytes)
+Captured 01-list-1280-light-en.png (115290 bytes)
+Captured 02-canvas-notes-wires-1280-light-en.png (107683 bytes)
+Captured 03-canvas-notes-wires-1280-dark-en.png (104613 bytes)
+Captured matrix-canvas-360-light-en.png (40731 bytes)
+Captured matrix-canvas-360-light-fr.png (40930 bytes)
+Captured matrix-canvas-360-dark-en.png (39525 bytes)
+Captured matrix-canvas-360-dark-fr.png (39778 bytes)
+Captured matrix-canvas-390-light-en.png (44299 bytes)
+Captured matrix-canvas-390-light-fr.png (44491 bytes)
+Captured matrix-canvas-390-dark-en.png (43161 bytes)
+Captured matrix-canvas-390-dark-fr.png (43418 bytes)
+Captured matrix-canvas-768-light-en.png (75830 bytes)
+Captured matrix-canvas-768-light-fr.png (76009 bytes)
+Captured matrix-canvas-768-dark-en.png (73477 bytes)
+Captured matrix-canvas-768-dark-fr.png (73619 bytes)
+Captured matrix-canvas-1280-light-en.png (107695 bytes)
+Captured matrix-canvas-1280-light-fr.png (108553 bytes)
+Captured matrix-canvas-1280-dark-en.png (104613 bytes)
+Captured matrix-canvas-1280-dark-fr.png (105486 bytes)
+Captured matrix-undo-360-light-en.png (47001 bytes)
+Captured matrix-undo-360-light-fr.png (47346 bytes)
+Captured 05-canvas-undo-360-light-fr.png (47346 bytes)
+Captured matrix-undo-360-dark-en.png (45773 bytes)
+Captured matrix-undo-360-dark-fr.png (45922 bytes)
+Captured matrix-undo-390-light-en.png (53323 bytes)
+Captured matrix-undo-390-light-fr.png (53664 bytes)
+Captured matrix-undo-390-dark-en.png (52166 bytes)
+Captured matrix-undo-390-dark-fr.png (52318 bytes)
+Captured matrix-undo-768-light-en.png (79651 bytes)
+Captured matrix-undo-768-light-fr.png (80128 bytes)
+Captured matrix-undo-768-dark-en.png (76917 bytes)
+Captured matrix-undo-768-dark-fr.png (77208 bytes)
+Captured matrix-undo-1280-light-en.png (108936 bytes)
+Captured matrix-undo-1280-light-fr.png (109508 bytes)
+Captured matrix-undo-1280-dark-en.png (105375 bytes)
+Captured matrix-undo-1280-dark-fr.png (106079 bytes)
+Captured 06-list-vanilla-390-light-fr.png (30819 bytes)
+Captured 07-drawer-vanilla-1280-dark-en.png (143774 bytes)
+Captured 08-drawer-vanilla-360-light-fr.png (42671 bytes)
+Captured 09-project-switcher-390-dark-en.png (27613 bytes)
+Captured 10-empty-repo-360-light-en.png (16616 bytes)
+Captured 15-composer-390-dark-fr.png (45713 bytes)
+Captured 11-decisions-768-light-fr.png (28953 bytes)
+Captured 12-blocked-360-dark-en.png (40398 bytes)
+Captured 13-operations-1280-light-fr.png (53544 bytes)
+Captured 14-client-view-1280-dark-en.png (99900 bytes)
+Captured matrix-list-360-light-en.png (47235 bytes)
+Captured matrix-drawer-360-light-en.png (35222 bytes)
+Captured matrix-picker-360-light-en.png (47124 bytes)
+Captured matrix-client-360-light-en.png (37579 bytes)
+Captured matrix-list-360-light-fr.png (47072 bytes)
+Captured matrix-drawer-360-light-fr.png (35600 bytes)
+Captured matrix-picker-360-light-fr.png (47477 bytes)
+Captured matrix-client-360-light-fr.png (37390 bytes)
+Captured matrix-list-360-dark-en.png (47457 bytes)
+Captured matrix-drawer-360-dark-en.png (35670 bytes)
+Captured matrix-picker-360-dark-en.png (46150 bytes)
+Captured matrix-client-360-dark-en.png (37993 bytes)
+Captured matrix-list-360-dark-fr.png (47323 bytes)
+Captured matrix-drawer-360-dark-fr.png (36028 bytes)
+Captured matrix-picker-360-dark-fr.png (46543 bytes)
+Captured matrix-client-360-dark-fr.png (37788 bytes)
+Captured matrix-list-390-light-en.png (55051 bytes)
+Captured matrix-drawer-390-light-en.png (37398 bytes)
+Captured matrix-picker-390-light-en.png (56495 bytes)
+Captured matrix-client-390-light-en.png (41830 bytes)
+Captured matrix-list-390-light-fr.png (54958 bytes)
+Captured matrix-drawer-390-light-fr.png (37173 bytes)
+Captured matrix-picker-390-light-fr.png (57023 bytes)
+Captured matrix-client-390-light-fr.png (40104 bytes)
+Captured matrix-list-390-dark-en.png (55792 bytes)
+Captured matrix-drawer-390-dark-en.png (37999 bytes)
+Captured matrix-picker-390-dark-en.png (56354 bytes)
+Captured matrix-client-390-dark-en.png (42598 bytes)
+Captured matrix-list-390-dark-fr.png (55721 bytes)
+Captured matrix-drawer-390-dark-fr.png (37954 bytes)
+Captured matrix-picker-390-dark-fr.png (56912 bytes)
+Captured matrix-client-390-dark-fr.png (40555 bytes)
+Captured matrix-list-768-light-en.png (74238 bytes)
+Captured matrix-drawer-768-light-en.png (47521 bytes)
+Captured matrix-picker-768-light-en.png (84086 bytes)
+Captured matrix-client-768-light-en.png (54918 bytes)
+Captured matrix-list-768-light-fr.png (74909 bytes)
+Captured matrix-drawer-768-light-fr.png (48028 bytes)
+Captured matrix-picker-768-light-fr.png (85207 bytes)
+Captured matrix-client-768-light-fr.png (56461 bytes)
+Captured matrix-list-768-dark-en.png (75389 bytes)
+Captured matrix-drawer-768-dark-en.png (48138 bytes)
+Captured matrix-picker-768-dark-en.png (83901 bytes)
+Captured matrix-client-768-dark-en.png (55655 bytes)
+Captured matrix-list-768-dark-fr.png (76061 bytes)
+Captured matrix-drawer-768-dark-fr.png (48883 bytes)
+Captured matrix-picker-768-dark-fr.png (85021 bytes)
+Captured matrix-client-768-dark-fr.png (57149 bytes)
+Captured matrix-list-1280-light-en.png (115329 bytes)
+Captured matrix-drawer-1280-light-en.png (216827 bytes)
+Captured matrix-picker-1280-light-en.png (122105 bytes)
+Captured matrix-client-1280-light-en.png (98841 bytes)
+Captured matrix-list-1280-light-fr.png (117454 bytes)
+Captured matrix-drawer-1280-light-fr.png (219854 bytes)
+Captured matrix-picker-1280-light-fr.png (124924 bytes)
+Captured matrix-client-1280-light-fr.png (100911 bytes)
+Captured matrix-list-1280-dark-en.png (116809 bytes)
+Captured matrix-drawer-1280-dark-en.png (211139 bytes)
+Captured matrix-picker-1280-dark-en.png (121165 bytes)
+Captured matrix-client-1280-dark-en.png (100022 bytes)
+Captured matrix-list-1280-dark-fr.png (118616 bytes)
+Captured matrix-drawer-1280-dark-fr.png (214106 bytes)
+Captured matrix-picker-1280-dark-fr.png (124328 bytes)
+Captured matrix-client-1280-dark-fr.png (101854 bytes)
+Saved /tmp/opencode/v3-smoke-check/out-f4/smoke.json
+file:///tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:910
+      throw new Error(`Smoke check failed with ${failures.length} failing check(s): ${failures.map((f) => f.name).join(', ')}`);
+            ^
+
+Error: Smoke check failed with 1 failing check(s): browser diagnostics (zero exceptions, zero console errors, zero CSP violations)
+    at run (file:///tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:910:13)
+    at async file:///tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:918:1
+
+Node.js v22.23.4
+FAULT4_CSP_INLINE_STYLE_EXIT=1
+=== 3. WRONG <html lang> (RE-RUN) ===
+Checking preview health on http://127.0.0.1:46045/health (synthetic=true)...
+Launching real Chromium from /workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell...
+Navigating to preview at 390x844...
+Captured 04-canvas-390-dark-en.png (39779 bytes)
+Captured 01-list-1280-light-en.png (115290 bytes)
+Captured 02-canvas-notes-wires-1280-light-en.png (107683 bytes)
+Captured 03-canvas-notes-wires-1280-dark-en.png (104613 bytes)
+Containment/invariant violation at 360x800 light en (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":743,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-360-light-en.png (40731 bytes)
+Containment/invariant violation at 360x800 light fr (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":743,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-360-light-fr.png (40930 bytes)
+Containment/invariant violation at 360x800 dark en (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":743,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-360-dark-en.png (39525 bytes)
+Containment/invariant violation at 360x800 dark fr (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":743,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-360-dark-fr.png (39778 bytes)
+Containment/invariant violation at 390x844 light en (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":787,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-390-light-en.png (44299 bytes)
+Containment/invariant violation at 390x844 light fr (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":787,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-390-light-fr.png (44491 bytes)
+Containment/invariant violation at 390x844 dark en (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":787,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-390-dark-en.png (43161 bytes)
+Containment/invariant violation at 390x844 dark fr (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":787,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-390-dark-fr.png (43418 bytes)
+Containment/invariant violation at 768x900 light en (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":843,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-768-light-en.png (75830 bytes)
+Containment/invariant violation at 768x900 light fr (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":843,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-768-light-fr.png (76009 bytes)
+Containment/invariant violation at 768x900 dark en (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":843,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-768-dark-en.png (73477 bytes)
+Containment/invariant violation at 768x900 dark fr (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":843,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-768-dark-fr.png (73619 bytes)
+Containment/invariant violation at 1280x900 light en (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":52,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":900,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-1280-light-en.png (107705 bytes)
+Containment/invariant violation at 1280x900 light fr (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":52,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":900,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-1280-light-fr.png (108570 bytes)
+Containment/invariant violation at 1280x900 dark en (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":52,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":900,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-1280-dark-en.png (104620 bytes)
+Containment/invariant violation at 1280x900 dark fr (undo=false): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":6,"compactHudHeight":true,"hudHeight":52,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":900,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-canvas-1280-dark-fr.png (105491 bytes)
+Containment/invariant violation at 360x800 light en (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":743,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-360-light-en.png (47001 bytes)
+Containment/invariant violation at 360x800 light fr (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":743,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-360-light-fr.png (47346 bytes)
+Captured 05-canvas-undo-360-light-fr.png (47346 bytes)
+Containment/invariant violation at 360x800 dark en (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":743,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-360-dark-en.png (45773 bytes)
+Containment/invariant violation at 360x800 dark fr (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":743,"windowHeight":800,"zeroDocumentOverflow":true,"scrollWidth":360,"scrollHeight":800,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-360-dark-fr.png (45922 bytes)
+Containment/invariant violation at 390x844 light en (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":787,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-390-light-en.png (53323 bytes)
+Containment/invariant violation at 390x844 light fr (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":787,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-390-light-fr.png (53662 bytes)
+Containment/invariant violation at 390x844 dark en (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":787,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-390-dark-en.png (52166 bytes)
+Containment/invariant violation at 390x844 dark fr (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":787,"windowHeight":844,"zeroDocumentOverflow":true,"scrollWidth":390,"scrollHeight":844,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-390-dark-fr.png (52321 bytes)
+Containment/invariant violation at 768x900 light en (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":843,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-768-light-en.png (79651 bytes)
+Containment/invariant violation at 768x900 light fr (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":843,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-768-light-fr.png (80126 bytes)
+Containment/invariant violation at 768x900 dark en (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":843,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-768-dark-en.png (76917 bytes)
+Containment/invariant violation at 768x900 dark fr (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":50,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":843,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":768,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-768-dark-fr.png (77212 bytes)
+Containment/invariant violation at 1280x900 light en (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":52,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":900,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-1280-light-en.png (108948 bytes)
+Containment/invariant violation at 1280x900 light fr (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":52,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":900,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-1280-light-fr.png (109529 bytes)
+Containment/invariant violation at 1280x900 dark en (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":52,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":900,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-1280-dark-en.png (105388 bytes)
+Containment/invariant violation at 1280x900 dark fr (undo=true): {"nonVacuousButtons":true,"bottomGap":12,"hudBottomDocked":true,"touchTargetsPass":true,"buttonCount":7,"compactHudHeight":true,"hudHeight":52,"langMatches":false,"htmlLang":"de","zeroViewportBottomOverhang":true,"vpBottom":900,"windowHeight":900,"zeroDocumentOverflow":true,"scrollWidth":1280,"scrollHeight":900,"hudInsideViewport":true,"outsideViewport":[],"overlaps":[]}
+Captured matrix-undo-1280-dark-fr.png (106096 bytes)
+Captured 06-list-vanilla-390-light-fr.png (30819 bytes)
+Captured 07-drawer-vanilla-1280-dark-en.png (143774 bytes)
+Captured 08-drawer-vanilla-360-light-fr.png (42671 bytes)
+Captured 09-project-switcher-390-dark-en.png (27608 bytes)
+Captured 10-empty-repo-360-light-en.png (16616 bytes)
+Captured 15-composer-390-dark-fr.png (45713 bytes)
+Captured 11-decisions-768-light-fr.png (28953 bytes)
+Captured 12-blocked-360-dark-en.png (40398 bytes)
+Captured 13-operations-1280-light-fr.png (53385 bytes)
+Captured 14-client-view-1280-dark-en.png (99900 bytes)
+Captured matrix-list-360-light-en.png (47235 bytes)
+Captured matrix-drawer-360-light-en.png (35222 bytes)
+Captured matrix-picker-360-light-en.png (47124 bytes)
+Captured matrix-client-360-light-en.png (37579 bytes)
+Captured matrix-list-360-light-fr.png (47072 bytes)
+Captured matrix-drawer-360-light-fr.png (35600 bytes)
+Captured matrix-picker-360-light-fr.png (47477 bytes)
+Captured matrix-client-360-light-fr.png (37390 bytes)
+Captured matrix-list-360-dark-en.png (47457 bytes)
+Captured matrix-drawer-360-dark-en.png (35670 bytes)
+Captured matrix-picker-360-dark-en.png (46150 bytes)
+Captured matrix-client-360-dark-en.png (37993 bytes)
+Captured matrix-list-360-dark-fr.png (47323 bytes)
+Captured matrix-drawer-360-dark-fr.png (36028 bytes)
+Captured matrix-picker-360-dark-fr.png (46543 bytes)
+Captured matrix-client-360-dark-fr.png (37788 bytes)
+Captured matrix-list-390-light-en.png (55051 bytes)
+Captured matrix-drawer-390-light-en.png (37398 bytes)
+Captured matrix-picker-390-light-en.png (56495 bytes)
+Captured matrix-client-390-light-en.png (41830 bytes)
+Captured matrix-list-390-light-fr.png (54958 bytes)
+Captured matrix-drawer-390-light-fr.png (37173 bytes)
+Captured matrix-picker-390-light-fr.png (57023 bytes)
+Captured matrix-client-390-light-fr.png (40104 bytes)
+Captured matrix-list-390-dark-en.png (55792 bytes)
+Captured matrix-drawer-390-dark-en.png (37999 bytes)
+Captured matrix-picker-390-dark-en.png (56354 bytes)
+Captured matrix-client-390-dark-en.png (42598 bytes)
+Captured matrix-list-390-dark-fr.png (55721 bytes)
+Captured matrix-drawer-390-dark-fr.png (37954 bytes)
+Captured matrix-picker-390-dark-fr.png (56912 bytes)
+Captured matrix-client-390-dark-fr.png (40555 bytes)
+Captured matrix-list-768-light-en.png (74238 bytes)
+Captured matrix-drawer-768-light-en.png (47521 bytes)
+Captured matrix-picker-768-light-en.png (84086 bytes)
+Captured matrix-client-768-light-en.png (54918 bytes)
+Captured matrix-list-768-light-fr.png (74909 bytes)
+Captured matrix-drawer-768-light-fr.png (48028 bytes)
+Captured matrix-picker-768-light-fr.png (85207 bytes)
+Captured matrix-client-768-light-fr.png (56461 bytes)
+Captured matrix-list-768-dark-en.png (75389 bytes)
+Captured matrix-drawer-768-dark-en.png (48138 bytes)
+Captured matrix-picker-768-dark-en.png (83901 bytes)
+Captured matrix-client-768-dark-en.png (55655 bytes)
+Captured matrix-list-768-dark-fr.png (76061 bytes)
+Captured matrix-drawer-768-dark-fr.png (48883 bytes)
+Captured matrix-picker-768-dark-fr.png (85021 bytes)
+Captured matrix-client-768-dark-fr.png (57149 bytes)
+Captured matrix-list-1280-light-en.png (115329 bytes)
+Captured matrix-drawer-1280-light-en.png (216827 bytes)
+Captured matrix-picker-1280-light-en.png (122105 bytes)
+Captured matrix-client-1280-light-en.png (98841 bytes)
+Captured matrix-list-1280-light-fr.png (117454 bytes)
+Captured matrix-drawer-1280-light-fr.png (219854 bytes)
+Captured matrix-picker-1280-light-fr.png (124924 bytes)
+Captured matrix-client-1280-light-fr.png (100911 bytes)
+Captured matrix-list-1280-dark-en.png (116809 bytes)
+Captured matrix-drawer-1280-dark-en.png (211139 bytes)
+Captured matrix-picker-1280-dark-en.png (121279 bytes)
+Captured matrix-client-1280-dark-en.png (100022 bytes)
+Captured matrix-list-1280-dark-fr.png (118616 bytes)
+Captured matrix-drawer-1280-dark-fr.png (214106 bytes)
+Captured matrix-picker-1280-dark-fr.png (124328 bytes)
+Captured matrix-client-1280-dark-fr.png (101854 bytes)
+Saved /tmp/opencode/v3-smoke-check/out-f3/smoke.json
+file:///tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:910
+      throw new Error(`Smoke check failed with ${failures.length} failing check(s): ${failures.map((f) => f.name).join(', ')}`);
+            ^
+
+Error: Smoke check failed with 2 failing check(s): Hostile list/drawer/picker/client geometry and narrow touch targets, complete 16-case matrix, Canvas controls non-vacuous containment, <html lang>, and 0px overhang (360/390/768/1280, EN/FR, light/dark, Undo 7-button)
+    at run (file:///tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:910:13)
+    at async file:///tmp/opencode/v3-smoke-check/scripts/generate-delivery-smoke.mjs:918:1
+
+Node.js v22.23.4
+FAULT3_WRONG_HTML_LANG_EXIT=1
