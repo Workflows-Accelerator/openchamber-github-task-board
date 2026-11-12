@@ -1,7 +1,7 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `releasing` — V4 LIVE as release `26fbc00-20261112`; origin/master at `d1eef33`. V4-2 (agent notes as GitHub comments, Markdown Decisions with preset options) is built at `1d9f237` and passed two independent reviews (`verifications/V4-2-L4/`, `V4-2-L4-delta/`): SPEC PASS, QUALITY APPROVED, PUBLISH YES. A release worker is publishing it now from `e604b9e`. All #53–#71 open, user closes. Current: tasks.md and resume-2026-11-12-v4-2-running.md.
+- **State:** `awaiting_human` — V4-2 LIVE as release `e604b9e-20261112` (app `1d9f237`), current repointed from `26fbc00-20261112`; `origin/master` = `a6f61f3`. Two independent reviews passed (`verifications/V4-2-L4/`, `V4-2-L4-delta/`); receipt #issuecomment-6837970237. Waiting on the owner's phone click-through of V4 + V4-2, then the queued V4-3 (validation policy + reclassification) and R1 (OpenChamber questions). All #53–#71 open, user closes. Current: tasks.md and resume-2026-11-12-v4-2-live.md.
 - **Alignment:** D33–D39 CONFIRMED by user, including D37 readability-first, D38 visible desktop rail toggle and D39 bounded R1/R2 correction. Real-phone drag persistence confirmed by the user on the previous live release. V4 released after independent L4 PASS/APPROVED. Next decision point: the user's live phone review of V4.
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3`
 - **Branch:** `feat/board-v3`
