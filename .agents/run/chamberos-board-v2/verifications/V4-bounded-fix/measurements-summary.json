@@ -1,0 +1,2063 @@
+{
+  "browser": "156.0.8078.4",
+  "r1": {
+    "cases": [
+      {
+        "fixture": "normal",
+        "width": 360,
+        "lang": "fr",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.315,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.315,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 360,
+        "lang": "fr",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.315,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.315,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 360,
+        "lang": "en",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.315,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.315,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 360,
+        "lang": "en",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.315,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.315,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 390,
+        "lang": "fr",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.344,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.344,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 390,
+        "lang": "fr",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.344,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.344,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 390,
+        "lang": "en",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.344,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.344,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 390,
+        "lang": "en",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.344,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.344,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 768,
+        "lang": "fr",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.708,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 11.3,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        },
+        "after": {
+          "automaticScale": 0.708,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 11.3,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 768,
+        "lang": "fr",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.708,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 11.3,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        },
+        "after": {
+          "automaticScale": 0.708,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 11.3,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 768,
+        "lang": "en",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.708,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 11.3,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        },
+        "after": {
+          "automaticScale": 0.708,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 11.3,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 768,
+        "lang": "en",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.708,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 11.3,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        },
+        "after": {
+          "automaticScale": 0.708,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 11.3,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 1280,
+        "lang": "fr",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.785,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 12.6,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        },
+        "after": {
+          "automaticScale": 0.785,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 12.6,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 1280,
+        "lang": "fr",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.785,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 12.6,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        },
+        "after": {
+          "automaticScale": 0.785,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 12.6,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 1280,
+        "lang": "en",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.785,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 12.6,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        },
+        "after": {
+          "automaticScale": 0.785,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 12.6,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        }
+      },
+      {
+        "fixture": "normal",
+        "width": 1280,
+        "lang": "en",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.785,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 12.6,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        },
+        "after": {
+          "automaticScale": 0.785,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 12.6,
+          "explicitScale": null,
+          "explicitMissing": [],
+          "explicitWarning": null,
+          "explicitShowAll": null,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": null
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 360,
+        "lang": "fr",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [
+            "#2 bloque #3",
+            "#1 bloque #2",
+            "#2 bloque #4"
+          ],
+          "legacyAllContained": false
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": true,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": false
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 360,
+        "lang": "fr",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [
+            "#2 bloque #3",
+            "#1 bloque #2",
+            "#2 bloque #4"
+          ],
+          "legacyAllContained": false
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": true,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": false
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 360,
+        "lang": "en",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [
+            "#2 blocks #3",
+            "#1 blocks #2",
+            "#2 blocks #4"
+          ],
+          "legacyAllContained": false
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": true,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": false
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 360,
+        "lang": "en",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [
+            "#2 blocks #3",
+            "#1 blocks #2",
+            "#2 blocks #4"
+          ],
+          "legacyAllContained": false
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": true,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": false
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 390,
+        "lang": "fr",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [
+            "#2 bloque #3",
+            "#1 bloque #2",
+            "#2 bloque #4"
+          ],
+          "legacyAllContained": false
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": true,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": false
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 390,
+        "lang": "fr",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [
+            "#2 bloque #3",
+            "#1 bloque #2",
+            "#2 bloque #4"
+          ],
+          "legacyAllContained": false
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": true,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": false
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 390,
+        "lang": "en",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [
+            "#2 blocks #3",
+            "#1 blocks #2",
+            "#2 blocks #4"
+          ],
+          "legacyAllContained": false
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": true,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": false
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 390,
+        "lang": "en",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [
+            "#2 blocks #3",
+            "#1 blocks #2",
+            "#2 blocks #4"
+          ],
+          "legacyAllContained": false
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.2,
+          "explicitMissing": [
+            "chamberos/platform#1",
+            "chamberos/platform#3",
+            "chamberos/platform#4"
+          ],
+          "explicitWarning": true,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": false
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 768,
+        "lang": "fr",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.245,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.245,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 768,
+        "lang": "fr",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.245,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.245,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 768,
+        "lang": "en",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.245,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.245,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 768,
+        "lang": "en",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.245,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.245,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 1280,
+        "lang": "fr",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.263,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.263,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 1280,
+        "lang": "fr",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.263,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.263,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 1280,
+        "lang": "en",
+        "theme": "light",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.263,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.263,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      },
+      {
+        "fixture": "spread",
+        "width": 1280,
+        "lang": "en",
+        "theme": "dark",
+        "before": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.263,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        },
+        "after": {
+          "automaticScale": 0.55,
+          "selectedInside": true,
+          "minimumSelectedTitlePx": 8.8,
+          "explicitScale": 0.263,
+          "explicitMissing": [],
+          "explicitWarning": false,
+          "explicitShowAll": false,
+          "explicitMisleadingLabels": [],
+          "legacyAllContained": true
+        }
+      }
+    ],
+    "caseCount": 32,
+    "afterFailures": [],
+    "legacyAllContainedFalseCases": [
+      {
+        "fixture": "spread",
+        "width": 360,
+        "lang": "fr",
+        "theme": "light"
+      },
+      {
+        "fixture": "spread",
+        "width": 360,
+        "lang": "fr",
+        "theme": "dark"
+      },
+      {
+        "fixture": "spread",
+        "width": 360,
+        "lang": "en",
+        "theme": "light"
+      },
+      {
+        "fixture": "spread",
+        "width": 360,
+        "lang": "en",
+        "theme": "dark"
+      },
+      {
+        "fixture": "spread",
+        "width": 390,
+        "lang": "fr",
+        "theme": "light"
+      },
+      {
+        "fixture": "spread",
+        "width": 390,
+        "lang": "fr",
+        "theme": "dark"
+      },
+      {
+        "fixture": "spread",
+        "width": 390,
+        "lang": "en",
+        "theme": "light"
+      },
+      {
+        "fixture": "spread",
+        "width": 390,
+        "lang": "en",
+        "theme": "dark"
+      }
+    ],
+    "legacyDisposition": "D39 accepts incomplete at 0.2 only with truthful visible zoom-limit feedback and hidden absent-endpoint labels. legacyAllContained=false is NOT geometric PASS."
+  },
+  "r2": {
+    "before": {
+      "original": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "filterView": null,
+        "stored": null,
+        "pending": false,
+        "focus": null,
+        "returnView": null
+      },
+      "filtered": {
+        "panX": -451.94345718901457,
+        "panY": -22.074313408723754,
+        "scale": 0.9563812600969306,
+        "filterView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+        "pending": false,
+        "focus": null,
+        "returnView": null
+      },
+      "cleared": {
+        "panX": -296.5,
+        "panY": 188.5,
+        "scale": 1,
+        "filterView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+        "pending": false,
+        "focus": "chamberos/platform#2",
+        "returnView": {
+          "panX": -451.94345718901457,
+          "panY": -22.074313408723754,
+          "scale": 0.9563812600969306
+        }
+      },
+      "closed": {
+        "panX": -451.94345718901457,
+        "panY": -22.074313408723754,
+        "scale": 0.9563812600969306,
+        "filterView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+        "pending": false,
+        "focus": null,
+        "returnView": null
+      },
+      "secondStart": {
+        "panX": -201.625,
+        "panY": 93.375,
+        "scale": 1.237,
+        "filterView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+        "pending": false,
+        "focus": null,
+        "returnView": null
+      },
+      "secondEnd": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "filterView": null,
+        "stored": null,
+        "pending": false,
+        "focus": null,
+        "returnView": null
+      }
+    },
+    "after": {
+      "original": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "filterView": null,
+        "stored": null,
+        "pending": false,
+        "focus": null,
+        "returnView": null
+      },
+      "filtered": {
+        "panX": -451.94345718901457,
+        "panY": -22.074313408723754,
+        "scale": 0.9563812600969306,
+        "filterView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+        "pending": false,
+        "focus": null,
+        "returnView": null
+      },
+      "cleared": {
+        "panX": -296.5,
+        "panY": 188.5,
+        "scale": 1,
+        "filterView": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873
+        },
+        "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+        "pending": true,
+        "focus": "chamberos/platform#2",
+        "returnView": {
+          "panX": -451.94345718901457,
+          "panY": -22.074313408723754,
+          "scale": 0.9563812600969306
+        }
+      },
+      "closed": {
+        "panX": 123.125,
+        "panY": -47.875,
+        "scale": 0.873,
+        "filterView": null,
+        "stored": null,
+        "pending": false,
+        "focus": null,
+        "returnView": null
+      },
+      "secondStart": {
+        "panX": -201.625,
+        "panY": 93.375,
+        "scale": 1.237,
+        "filterView": null,
+        "stored": null,
+        "pending": false,
+        "focus": null,
+        "returnView": null
+      },
+      "secondEnd": {
+        "panX": -201.625,
+        "panY": 93.375,
+        "scale": 1.237,
+        "filterView": null,
+        "stored": null,
+        "pending": false,
+        "focus": null,
+        "returnView": null
+      }
+    },
+    "targetedCases": [
+      {
+        "width": 360,
+        "scenario": "clear-focus-second-cycle",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "filtered": {
+          "panX": -364.5,
+          "panY": 83.77499999999998,
+          "scale": 0.55,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "returnView": null,
+          "filters": [
+            "priority:high"
+          ],
+          "search": ""
+        },
+        "during": {
+          "panX": -150,
+          "panY": 281.75,
+          "scale": 0.55,
+          "pending": true,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -440,
+            "panY": -60,
+            "scale": 1
+          },
+          "filters": [],
+          "search": ""
+        },
+        "end": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "secondEnd": {
+          "panX": -201.625,
+          "panY": 93.375,
+          "scale": 1.237,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 360,
+        "scenario": "change-remaining",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "filtered": {
+          "panX": -364.5,
+          "panY": 83.77499999999998,
+          "scale": 0.55,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "returnView": null,
+          "filters": [
+            "priority:high"
+          ],
+          "search": ""
+        },
+        "during": {
+          "panX": -150,
+          "panY": 281.75,
+          "scale": 0.55,
+          "pending": true,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -440,
+            "panY": -60,
+            "scale": 1
+          },
+          "filters": [
+            "stage:in-progress"
+          ],
+          "search": ""
+        },
+        "afterClose": {
+          "panX": -420,
+          "panY": 118.5,
+          "scale": 1,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "focus": null,
+          "returnView": null,
+          "filters": [
+            "stage:in-progress"
+          ],
+          "search": ""
+        },
+        "end": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 360,
+        "scenario": "list-reload",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "filtered": {
+          "panX": -364.5,
+          "panY": 83.77499999999998,
+          "scale": 0.55,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "returnView": null,
+          "filters": [
+            "priority:high"
+          ],
+          "search": ""
+        },
+        "during": {
+          "panX": -150,
+          "panY": 281.75,
+          "scale": 0.55,
+          "pending": true,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -440,
+            "panY": -60,
+            "scale": 1
+          },
+          "filters": [],
+          "search": ""
+        },
+        "end": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 360,
+        "scenario": "search",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "filtered": {
+          "panX": -364.5,
+          "panY": 83.77499999999998,
+          "scale": 0.55,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "returnView": null,
+          "filters": [
+            "priority:high"
+          ],
+          "search": ""
+        },
+        "searching": {
+          "panX": -420,
+          "panY": 118.5,
+          "scale": 1,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": "Wire"
+        },
+        "end": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 360,
+        "scenario": "dependency-only",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "end": {
+          "panX": -440,
+          "panY": -60,
+          "scale": 1,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 360,
+        "scenario": "filter-during-focus",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "during": {
+          "panX": -150,
+          "panY": 281.75,
+          "scale": 0.55,
+          "pending": true,
+          "filterView": {
+            "panX": -440,
+            "panY": -60,
+            "scale": 1
+          },
+          "stored": "{\"panX\":-440,\"panY\":-60,\"scale\":1}",
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -440,
+            "panY": -60,
+            "scale": 1
+          },
+          "filters": [
+            "priority:high"
+          ],
+          "search": ""
+        },
+        "end": {
+          "panX": -440,
+          "panY": -60,
+          "scale": 1,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 1280,
+        "scenario": "clear-focus-second-cycle",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "filtered": {
+          "panX": -380.9433962264151,
+          "panY": -5.580188679245282,
+          "scale": 0.9150943396226415,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "returnView": null,
+          "filters": [
+            "priority:high"
+          ],
+          "search": ""
+        },
+        "during": {
+          "panX": -265,
+          "panY": 212,
+          "scale": 1,
+          "pending": true,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -440,
+            "panY": -60,
+            "scale": 1
+          },
+          "filters": [],
+          "search": ""
+        },
+        "end": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "secondEnd": {
+          "panX": -201.625,
+          "panY": 93.375,
+          "scale": 1.237,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 1280,
+        "scenario": "change-remaining",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "filtered": {
+          "panX": -380.9433962264151,
+          "panY": -5.580188679245282,
+          "scale": 0.9150943396226415,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "returnView": null,
+          "filters": [
+            "priority:high"
+          ],
+          "search": ""
+        },
+        "during": {
+          "panX": -265,
+          "panY": 212,
+          "scale": 1,
+          "pending": true,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -440,
+            "panY": -60,
+            "scale": 1
+          },
+          "filters": [
+            "stage:in-progress"
+          ],
+          "search": ""
+        },
+        "afterClose": {
+          "panX": -75,
+          "panY": 175,
+          "scale": 1,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "focus": null,
+          "returnView": null,
+          "filters": [
+            "stage:in-progress"
+          ],
+          "search": ""
+        },
+        "end": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 1280,
+        "scenario": "list-reload",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "filtered": {
+          "panX": -380.9433962264151,
+          "panY": -5.580188679245282,
+          "scale": 0.9150943396226415,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "returnView": null,
+          "filters": [
+            "priority:high"
+          ],
+          "search": ""
+        },
+        "during": {
+          "panX": -265,
+          "panY": 212,
+          "scale": 1,
+          "pending": true,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -440,
+            "panY": -60,
+            "scale": 1
+          },
+          "filters": [],
+          "search": ""
+        },
+        "end": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 1280,
+        "scenario": "search",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "filtered": {
+          "panX": -380.9433962264151,
+          "panY": -5.580188679245282,
+          "scale": 0.9150943396226415,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "returnView": null,
+          "filters": [
+            "priority:high"
+          ],
+          "search": ""
+        },
+        "searching": {
+          "panX": -75,
+          "panY": 175,
+          "scale": 1,
+          "pending": false,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": "Wire"
+        },
+        "end": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 1280,
+        "scenario": "dependency-only",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "end": {
+          "panX": -440,
+          "panY": -60,
+          "scale": 1,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      },
+      {
+        "width": 1280,
+        "scenario": "filter-during-focus",
+        "start": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        },
+        "during": {
+          "panX": 54.09090909090912,
+          "panY": 67.36363636363637,
+          "scale": 0.7848484848484848,
+          "pending": true,
+          "filterView": {
+            "panX": -440,
+            "panY": -60,
+            "scale": 1
+          },
+          "stored": "{\"panX\":-440,\"panY\":-60,\"scale\":1}",
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -440,
+            "panY": -60,
+            "scale": 1
+          },
+          "filters": [
+            "priority:high"
+          ],
+          "search": ""
+        },
+        "end": {
+          "panX": -440,
+          "panY": -60,
+          "scale": 1,
+          "pending": false,
+          "filterView": null,
+          "stored": null,
+          "focus": null,
+          "returnView": null,
+          "filters": [],
+          "search": ""
+        }
+      }
+    ],
+    "caseCount": 12,
+    "completionFailures": []
+  },
+  "geometry": {
+    "caseCount": 32,
+    "failures": []
+  },
+  "suites": {
+    "smoke": [
+      {
+        "name": "V4-1 shared sheets: seven surfaces, sixteen theme/language/viewport cases",
+        "verdict": "PASS",
+        "cases": 112
+      },
+      {
+        "name": "V4-1 phone sidebar: opens from the compact control and closes from the backdrop",
+        "verdict": "PASS",
+        "cases": 12
+      },
+      {
+        "name": "V4-1 applied filters, live count, removal and reset",
+        "verdict": "PASS",
+        "cases": 16
+      },
+      {
+        "name": "V4-1 dependency focus, directional accents, labels and persistent edge toggle",
+        "verdict": "PASS",
+        "cases": 16
+      },
+      {
+        "name": "V4-1 theme/language reload and product identity",
+        "verdict": "PASS",
+        "settingsPersist": true,
+        "brand": true
+      },
+      {
+        "name": "Hostile list/drawer/picker/client geometry and narrow touch targets, complete 16-case matrix",
+        "verdict": "PASS",
+        "cases": 16,
+        "failures": []
+      },
+      {
+        "name": "health",
+        "verdict": "PASS",
+        "status": 200,
+        "payload": {
+          "status": "ok",
+          "version": "1.2.1",
+          "uptime": 1
+        }
+      },
+      {
+        "name": "sign-in & grouped List view (1280 light EN)",
+        "verdict": "PASS",
+        "rows": 10,
+        "screenshot": ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/01-list-1280-light-en.png"
+      },
+      {
+        "name": "Canvas view with markdown note, dependency wires, and narrow smart-fit",
+        "verdict": "PASS",
+        "cards": 10,
+        "notes": 1,
+        "wires": 4,
+        "initialNarrowScale": 0.55,
+        "explicitFitScale": 0.2,
+        "screenshots": [
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/02-canvas-notes-wires-1280-light-en.png",
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/03-canvas-notes-wires-1280-dark-en.png",
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/04-canvas-390-dark-en.png"
+        ]
+      },
+      {
+        "name": "Canvas controls non-vacuous containment, <html lang>, and 0px overhang (360/390/768/1280, EN/FR, light/dark, Undo 7-button)",
+        "verdict": "PASS",
+        "casesTested": 32,
+        "violations": [],
+        "artifact": ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/canvas-measurements.json"
+      },
+      {
+        "name": "Any-Repo vanilla list, Markdown drawer, project switcher, and empty repo state",
+        "verdict": "PASS",
+        "vanillaGroupCheckPass": true,
+        "vanillaDrawerPass": true,
+        "emptyRepoPass": true,
+        "switcherPass": true,
+        "screenshots": [
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/06-list-vanilla-390-light-fr.png",
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/07-drawer-vanilla-1280-dark-en.png",
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/08-drawer-vanilla-360-light-fr.png",
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/09-project-switcher-390-dark-en.png",
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/10-empty-repo-360-light-en.png",
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/15-composer-390-dark-fr.png"
+        ]
+      },
+      {
+        "name": "Decisions & Blocked views (768 FR / 360 EN)",
+        "verdict": "PASS",
+        "decisionsCards": 1,
+        "blockedCards": 5,
+        "screenshots": [
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/11-decisions-768-light-fr.png",
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/12-blocked-360-dark-en.png"
+        ]
+      },
+      {
+        "name": "Operations, Archive, and Client Presentation Mode",
+        "verdict": "PASS",
+        "operationsStageParity": true,
+        "operationsStatCards": 6,
+        "archiveCards": 1,
+        "clientCards": 9,
+        "clientIncludesVanilla": true,
+        "screenshots": [
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/13-operations-1280-light-fr.png",
+          ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke/screenshots/14-client-view-1280-dark-en.png"
+        ]
+      },
+      {
+        "name": "browser diagnostics (zero exceptions, zero console errors, zero CSP violations)",
+        "verdict": "PASS",
+        "exceptions": [],
+        "consoleErrors": [],
+        "cspViolations": []
+      }
+    ]
+  },
+  "source": {
+    "base": "0cef002f5401d54483c2c037fea998702fc5da08",
+    "source_sha256": {
+      "web/public/app.js": "7aa364f76e146a13102d4a47dda187a26b0febe20b99c58e5d7f9921dbe96ad4",
+      "web/tests/v3-ux-client.test.mjs": "752a86376728fad6ddc5034474393a7c3c69166c95d84fa20a0bf1d5ae8a359b",
+      "scripts/generate-delivery-smoke.mjs": "f0900c9105d0971faefb1349ebc13e087448fc85cc6f0955376ade18dca87729"
+    }
+  }
+}

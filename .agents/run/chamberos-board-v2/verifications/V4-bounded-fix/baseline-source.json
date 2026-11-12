@@ -1,0 +1,5 @@
+{
+  "web/public/app.js": "500c8b0f663135f0d1ac3dba84947081f0d2c2f14a2134747aa1ac6dabd97c74",
+  "web/tests/v3-ux-client.test.mjs": "1d798924ca8ea55fef14ebf61992e32cdb32ffd8f21af8eb3fd4c85541b0dcc9",
+  "scripts/generate-delivery-smoke.mjs": "f0900c9105d0971faefb1349ebc13e087448fc85cc6f0955376ade18dca87729"
+}

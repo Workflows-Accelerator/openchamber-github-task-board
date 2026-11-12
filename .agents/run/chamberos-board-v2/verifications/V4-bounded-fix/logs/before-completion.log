@@ -1,0 +1,174 @@
+{
+  "failures": [
+    {
+      "label": "clear during focus returns original and consumes saved view",
+      "details": {
+        "original": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filterView": null,
+          "stored": null,
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "filtered": {
+          "panX": -451.94345718901457,
+          "panY": -22.074313408723754,
+          "scale": 0.9563812600969306,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "cleared": {
+          "panX": -296.5,
+          "panY": 188.5,
+          "scale": 1,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -451.94345718901457,
+            "panY": -22.074313408723754,
+            "scale": 0.9563812600969306
+          }
+        },
+        "closed": {
+          "panX": -451.94345718901457,
+          "panY": -22.074313408723754,
+          "scale": 0.9563812600969306,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "secondStart": {
+          "panX": -201.625,
+          "panY": 93.375,
+          "scale": 1.237,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "secondEnd": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filterView": null,
+          "stored": null,
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        }
+      }
+    },
+    {
+      "label": "second cycle after interleaving uses fresh return viewport",
+      "details": {
+        "original": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filterView": null,
+          "stored": null,
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "filtered": {
+          "panX": -451.94345718901457,
+          "panY": -22.074313408723754,
+          "scale": 0.9563812600969306,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "cleared": {
+          "panX": -296.5,
+          "panY": 188.5,
+          "scale": 1,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": "chamberos/platform#2",
+          "returnView": {
+            "panX": -451.94345718901457,
+            "panY": -22.074313408723754,
+            "scale": 0.9563812600969306
+          }
+        },
+        "closed": {
+          "panX": -451.94345718901457,
+          "panY": -22.074313408723754,
+          "scale": 0.9563812600969306,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "secondStart": {
+          "panX": -201.625,
+          "panY": 93.375,
+          "scale": 1.237,
+          "filterView": {
+            "panX": 123.125,
+            "panY": -47.875,
+            "scale": 0.873
+          },
+          "stored": "{\"panX\":123.125,\"panY\":-47.875,\"scale\":0.873}",
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        },
+        "secondEnd": {
+          "panX": 123.125,
+          "panY": -47.875,
+          "scale": 0.873,
+          "filterView": null,
+          "stored": null,
+          "pending": false,
+          "focus": null,
+          "returnView": null
+        }
+      }
+    }
+  ]
+}

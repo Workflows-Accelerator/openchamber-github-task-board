@@ -1,0 +1,27 @@
+{
+  "base": "0cef002f5401d54483c2c037fea998702fc5da08",
+  "effective_head": "0cef002f5401d54483c2c037fea998702fc5da08",
+  "checks": {
+    "branch_unchanged": true,
+    "only_owned_paths": true,
+    "previous_evidence_exact": false,
+    "V4_1_L4_untracked": true,
+    "server_panel_service_packages_unchanged": true,
+    "smoke_unchanged": true,
+    "dot_grid_segment_byte_identical": true,
+    "markdown_arrange_css_html_unchanged": true,
+    "Canvas_List_sidebar_preserved": true,
+    "zoom_bounds_and_floor_preserved": true,
+    "no_banned_words": true,
+    "no_pictographs": true,
+    "no_HTML_inline_style": true,
+    "no_JS_generated_HTML_inline_style": true,
+    "D38_unchanged": true
+  },
+  "grid_sha256": "160742fe4f202ecb026aef42f552f8ec3e2cd29be5e84108311cebb4ac29b458",
+  "changed": [
+    "web/public/app.js",
+    "web/tests/v3-ux-client.test.mjs"
+  ],
+  "source_sha256": "05f1edea5facd3609c0c3eb04f573c357fc5a96422292b8c3d5a7afae400f7ee"
+}

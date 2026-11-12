@@ -1,0 +1,244 @@
+diff --git a/web/public/app.js b/web/public/app.js
+index ab47205..f85233d 100644
+--- a/web/public/app.js
++++ b/web/public/app.js
+@@ -43,11 +43,13 @@
+     // whole group smaller. These flags drive the explicit "Show all" action.
+     canvasFitFloored: false,
+     canvasFitCount: 0,
++    canvasFitLimited: false,
+     // The viewport the user had before the first narrowing filter, so clearing
+     // the last filter can put them back instead of re-framing.
+     filterView: null,
+     dependencyFocusFloored: false,
+     dependencyFocusCount: 0,
++    dependencyFocusLimited: false,
+     dependencyFocusReturn: null,
+     activeSectionView: null,
+     archive: { backburner: [], closed: [], totalClosed: 0, hasMore: false, offset: 0, limit: 50, activeTab: 'backburner' },
+@@ -1788,7 +1790,7 @@
+     // Only a filter frames the canvas; a search alone never moves it, so it
+     // must not capture a return view that a later filter would then keep.
+     if (state.viewState.filters.length > 0 && !state.filterView) {
+-      state.filterView = { panX: state.canvasPanX, panY: state.canvasPanY, scale: state.canvasScale };
++      state.filterView = state.dependencyFocusReturn || { panX: state.canvasPanX, panY: state.canvasPanY, scale: state.canvasScale };
+       saveFilterView();
+     }
+     try { localStorage.setItem(VIEW_STATE_KEY, JSON.stringify(state.viewState)); } catch (error) {}
+@@ -2991,6 +2993,25 @@
+     return width > 0 && height > 0 ? { width: width, height: height } : null;
+   }
+ 
++  // Test the final clamped transform, not the requested scale. Padding reserves
++  // the measured legend and zoom controls as well as the viewport edges.
++  function canvasFitContains(rects, target, viewport, options) {
++    var box = canvasFitBox(viewport, options);
++    if (!box || !target) return false;
++    return rects.every(function (rect) {
++      return rect.x * target.scale + target.panX >= box.left - 0.5 &&
++        (rect.x + rect.w) * target.scale + target.panX <= box.left + box.availW + 0.5 &&
++        rect.y * target.scale + target.panY >= box.top - 0.5 &&
++        (rect.y + rect.h) * target.scale + target.panY <= box.top + box.availH + 0.5;
++    });
++  }
++
++  function canvasZoomLimitText(linked) {
++    return getLanguage() === 'fr'
++      ? 'Limite de zoom atteinte. Des tâches' + (linked ? ' liées' : '') + ' restent hors de cette vue. Déplacez le canevas pour les voir.'
++      : 'Zoom limit reached. Some' + (linked ? ' linked' : '') + ' tasks remain outside this view. Pan the canvas to see them.';
++  }
++
+   // The full fit, allowed below the readable floor because the user asked for
+   // it ("Show all"). This is the only path that may frame an unreadable group.
+   function fitCanvasRects(rects, options) {
+@@ -3000,7 +3021,7 @@
+     var target = computeFitView(bounds, size, options);
+     if (!target) return null;
+     animateCanvasView(target);
+-    return { scale: target.scale, panX: target.panX, panY: target.panY, floored: false, count: rects.length };
++    return { scale: target.scale, panX: target.panX, panY: target.panY, floored: false, incomplete: !canvasFitContains(rects, target, size, options), count: rects.length };
+   }
+ 
+   function frameCanvasRects(rects, options) {
+@@ -3038,9 +3059,20 @@
+ 
+     if (opts.showAll) {
+       state.dependencyFocusFloored = false;
+-      state.dependencyFocusCount = 0;
++      state.dependencyFocusLimited = false;
++      state.dependencyFocusCount = rects.length;
++      applyDependencyFocus();
++      updateCanvasShowAll();
++      size = canvasViewportSize();
++      var fullOptions = { padding: padding() };
++      var target = computeFitView(unionBounds(rects), size, fullOptions);
++      state.dependencyFocusLimited = !canvasFitContains(rects, target, size, fullOptions);
++      // The limit message changes the legend height. Reserve its real bounds
++      // before the final fit, rather than covering a card with the explanation.
+       applyDependencyFocus();
+       var full = fitCanvasRects(rects, { padding: padding() });
++      state.dependencyFocusLimited = Boolean(full && full.incomplete);
++      updateCanvasShowAll();
+       positionDependencyWireLabels();
+       return full;
+     }
+@@ -3048,6 +3080,7 @@
+     // Decide the floor from a measured fit, then let the legend announce the
+     // floored state before the padding is measured again: the legend is what
+     // explains the missing neighbours and carries the "Show all" action.
++    state.dependencyFocusLimited = false;
+     var estimate = computeFitView(unionBounds(rects), size, { padding: padding() });
+     state.dependencyFocusFloored = Boolean(estimate) && estimate.scale < CANVAS_READABLE_MIN_SCALE - 0.0005;
+     state.dependencyFocusCount = state.dependencyFocusFloored ? rects.length : 0;
+@@ -3076,10 +3109,21 @@
+     var pad = canvasFitPadding({ hudHeight: canvasHudHeight(), narrow: Boolean(size && size.width <= 768) });
+     if (opts.showAll) {
+       state.canvasFitFloored = false;
+-      state.canvasFitCount = 0;
++      state.canvasFitLimited = false;
++      state.canvasFitCount = rects.length;
+       updateCanvasShowAll();
+-      return fitCanvasRects(rects, { padding: pad });
++      var full = fitCanvasRects(rects, { padding: pad });
++      state.canvasFitLimited = Boolean(full && full.incomplete);
++      updateCanvasShowAll();
++      if (state.canvasFitLimited) {
++        // The existing filter rail now carries feedback; account for its height.
++        size = canvasViewportSize();
++        pad = canvasFitPadding({ hudHeight: canvasHudHeight(), narrow: Boolean(size && size.width <= 768) });
++        full = fitCanvasRects(rects, { padding: pad });
++      }
++      return full;
+     }
++    state.canvasFitLimited = false;
+     var framed = frameCanvasRects(rects, { padding: pad });
+     state.canvasFitFloored = Boolean(framed && framed.floored);
+     state.canvasFitCount = framed && framed.floored ? framed.count : 0;
+@@ -3095,8 +3139,17 @@
+     var fr = getLanguage() === 'fr';
+     var count = 0;
+     var kind = '';
+-    if (state.dependencyFocus && state.dependencyFocusFloored) { count = state.dependencyFocusCount; kind = 'focus'; }
+-    else if (state.canvasFitFloored && state.viewState.filters.length) { count = state.canvasFitCount; kind = 'filter'; }
++    if (state.dependencyFocus) {
++      if (state.dependencyFocusFloored) { count = state.dependencyFocusCount; kind = 'focus'; }
++    } else if (state.canvasFitFloored && state.viewState.filters.length) { count = state.canvasFitCount; kind = 'filter'; }
++    var limited = !state.dependencyFocus && state.canvasFitLimited && state.viewState.filters.length > 0 &&
++      state.activeViewMode === 'canvas' && !state.activeSectionView;
++    var warning = $('canvas-fit-limit');
++    if (!warning && limited && $('applied-filter-bar')) {
++      warning = el('p', { id: 'canvas-fit-limit', class: 'legend-offscreen', role: 'status' });
++      $('applied-filter-bar').appendChild(warning);
++    }
++    if (warning) { warning.hidden = !limited; warning.textContent = limited ? canvasZoomLimitText(false) : ''; }
+     var visible = count > 0 && state.activeViewMode === 'canvas' && !state.activeSectionView;
+     button.hidden = !visible;
+     button.setAttribute('data-show-all', kind);
+@@ -3107,8 +3160,9 @@
+   }
+ 
+   function showAllCanvas() {
+-    if (state.dependencyFocus && state.dependencyFocusFloored) frameDependencyFocus({ showAll: true });
+-    else frameFilteredCanvas({ showAll: true });
++    if (state.dependencyFocus) {
++      if (!state.dependencyFocusLimited) frameDependencyFocus({ showAll: true });
++    } else if (!state.canvasFitLimited) frameFilteredCanvas({ showAll: true });
+     updateCanvasShowAll();
+   }
+ 
+@@ -3119,16 +3173,21 @@
+     state.dependencyFocusReturn = null;
+     state.dependencyFocusFloored = false;
+     state.dependencyFocusCount = 0;
++    state.dependencyFocusLimited = false;
+     renderCanvasWires();
+     updateCanvasShowAll();
+-    if (saved) animateCanvasView(saved);
++    // A deferred filter request owns the handoff, not the old filtered view
++    // captured on entry to focus. In List it still waits for the next canvas.
++    if (state.canvasFitPending && state.activeViewMode === 'canvas') renderBoard();
++    else if (saved) animateCanvasView(saved);
+   }
+ 
+   function selectDependencyCard(issue) {
+     var key = identity(issue);
+     if (state.dependencyFocus === key) { clearDependencyFocus(); return; }
+-    state.dependencyFocusReturn = { panX: state.canvasPanX, panY: state.canvasPanY, scale: state.canvasScale };
++    if (!state.dependencyFocus) state.dependencyFocusReturn = { panX: state.canvasPanX, panY: state.canvasPanY, scale: state.canvasScale };
+     state.dependencyFocus = key;
++    state.dependencyFocusLimited = false;
+     state.dependencyFocusFloored = false;
+     state.dependencyFocusCount = 0;
+     renderCanvasWires();
+@@ -3151,6 +3210,7 @@
+       state.dependencyFocusReturn = null;
+       state.dependencyFocusFloored = false;
+       state.dependencyFocusCount = 0;
++      state.dependencyFocusLimited = false;
+     }
+     var layer = $('canvas-cards');
+     if (layer) layer.querySelectorAll('.canvas-card').forEach(function (card) {
+@@ -3173,7 +3233,9 @@
+       el('span', { class: 'legend-blocker', text: fr ? 'Bloque cette tâche' : 'Blocks this task' }),
+       el('span', { class: 'legend-dependent', text: fr ? 'Attend cette tâche' : 'Waits on this task' }),
+     ]));
+-    if (state.dependencyFocusFloored) {
++    if (state.dependencyFocusLimited) {
++      legend.appendChild(el('p', { class: 'legend-offscreen', text: canvasZoomLimitText(true) }));
++    } else if (state.dependencyFocusFloored) {
+       // The floor keeps the selected card readable, so the neighbours are off
+       // screen. Say so, and offer the full fit as the explicit alternative.
+       var dict = I18N[getLanguage()] || I18N.en;
+@@ -3212,8 +3274,8 @@
+   }
+ 
+   /* Keeps every edge label at a constant screen size and inside the visible
+-     canvas, whichever way the user pans or zooms. While the dependency view
+-     stays at the readable floor its neighbours are off screen; a label that
++     canvas, whichever way the user pans or zooms. Whenever an endpoint is
++     off screen, at any scale, a label that
+      would be clamped next to cards it does not belong to is hidden instead of
+      pretending those cards are in view. */
+   function positionDependencyWireLabels() {
+@@ -3225,7 +3287,6 @@
+     var scale = state.canvasScale > 0 ? state.canvasScale : 1;
+     var viewport = { width: size.width, height: size.height, panX: state.canvasPanX, panY: state.canvasPanY };
+     var obstacles = canvasCardRects().slice();
+-    var flooredFocus = Boolean(state.dependencyFocus && state.dependencyFocusFloored);
+     var visibleWorld = {
+       left: -state.canvasPanX / scale,
+       top: -state.canvasPanY / scale,
+@@ -3241,7 +3302,7 @@
+         card.y < visibleWorld.bottom && card.y + card.h > visibleWorld.top;
+     }
+     labels.forEach(function (label) {
+-      if (flooredFocus) {
++      if (state.dependencyFocus) {
+         var bothInView = endpointInView(label.getAttribute('data-blocker-key')) && endpointInView(label.getAttribute('data-target-key'));
+         if (!bothInView) {
+           label.setAttribute('visibility', 'hidden');
+@@ -5800,7 +5861,7 @@
+       renderCanvasIssues(issues);
+       // A pending return view waits for cards: consuming it on an empty render
+       // (board still loading) would leave a stale view for the next filter.
+-      if (state.canvasFitPending && !(issues.length === 0 && !boardIsNarrowed() && state.filterView)) {
++      if (state.canvasFitPending && !state.dependencyFocus && !(issues.length === 0 && !boardIsNarrowed() && state.filterView)) {
+         state.canvasFitPending = false;
+         // A filter is a frame request, never a reason to hide cards that were
+         // already on the canvas. Focus keeps its own framing when both apply.
+@@ -5815,6 +5876,7 @@
+             saveFilterView();
+             state.canvasFitFloored = false;
+             state.canvasFitCount = 0;
++            state.canvasFitLimited = false;
+             applyCanvasView(returnView);
+             updateCanvasShowAll();
+           } else {
+@@ -8575,6 +8637,7 @@
+       fitAllCanvasNodes: fitAllCanvasNodes,
+       unionBounds: unionBounds,
+       computeFitView: computeFitView,
++      canvasFitContains: canvasFitContains,
+       computeCentredView: computeCentredView,
+       computeFraming: computeFraming,
+       canvasFitPadding: canvasFitPadding,

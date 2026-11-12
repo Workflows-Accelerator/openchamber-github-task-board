@@ -1,0 +1,22 @@
+{
+  "workingDirectory": "/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3",
+  "prefix": ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix",
+  "commands": {
+    "before-independent": "PROOF_PHASE=before node .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/independent-browser.mjs",
+    "before-completion": "PROOF_PHASE=before node .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/completion-browser-corrected.mjs",
+    "after-independent": "PROOF_PHASE=after node .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/independent-browser.mjs",
+    "after-completion": "PROOF_PHASE=after node .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/completion-browser-corrected.mjs",
+    "after-final-independent": "PROOF_PHASE=after-final node .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/independent-browser.mjs",
+    "after-final-completion": "PROOF_PHASE=after-final node .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/completion-browser-corrected.mjs",
+    "targeted-initial-timeout": "node .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/targeted.mjs",
+    "targeted-long": "node .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/targeted.mjs",
+    "targeted-final": "node .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/targeted.mjs",
+    "focused-tests": "node --test web/tests/v3-ux-client.test.mjs",
+    "focused-tests-corrected": "node --test web/tests/v3-ux-client.test.mjs",
+    "focused-tests-final": "node --test web/tests/v3-ux-client.test.mjs",
+    "invariants-precommit": "python3 .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/invariants.py",
+    "invariants-corrected": "python3 .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/invariants.py",
+    "diff-check": "git diff --check"
+  },
+  "beforeHarnessNote": "before-independent ran scripts/independent-browser-before-harness.txt content at the .mjs path; final script differs only by correcting its status observer from PATCH to actual POST /issues/2/status. All before failures and interruption retained."
+}

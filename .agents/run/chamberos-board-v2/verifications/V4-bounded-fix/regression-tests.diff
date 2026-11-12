@@ -1,0 +1,157 @@
+diff --git a/web/tests/v3-ux-client.test.mjs b/web/tests/v3-ux-client.test.mjs
+index 08299c7..b2864ca 100644
+--- a/web/tests/v3-ux-client.test.mjs
++++ b/web/tests/v3-ux-client.test.mjs
+@@ -34,10 +34,11 @@ function browser(storage = {}) {
+       set className(v) { classes.clear(); String(v).split(/\s+/).filter(Boolean).forEach((c) => classes.add(c)); },
+       get textContent() { return text; },
+       set textContent(v) { text = String(v); if (!text) this.children = []; },
+-      setAttribute(k, v) { attrs[k] = String(v); this[k] = String(v); },
++      setAttribute(k, v) { attrs[k] = String(v); if (k === 'class') this.className = String(v); else this[k] = String(v); },
+       getAttribute(k) { return attrs[k] ?? null; },
+       removeAttribute(k) { delete attrs[k]; delete this[k]; },
+       appendChild(child) { this.children.push(child); child.parentNode = this; return child; },
++      removeChild(child) { this.children = this.children.filter(n => n !== child); child.parentNode = null; return child; },
+       remove() { if (this.parentNode) this.parentNode.children = this.parentNode.children.filter(child => child !== this); },
+       addEventListener(name, fn) { this.listeners[name] = fn; },
+       contains(other) { return other === this || this.children.some((c) => c && c.contains && c.contains(other)); },
+@@ -71,6 +72,7 @@ function browser(storage = {}) {
+     get visibilityState() { return visibility; },
+     getElementById: get,
+     createElement: (tag) => node(tag),
++    createElementNS: (_, tag) => node(tag),
+     querySelector: () => null,
+     querySelectorAll: () => [],
+     addEventListener(name, fn) { docListeners[name] = fn; },
+@@ -108,6 +110,7 @@ function browser(storage = {}) {
+     docListeners,
+     calls,
+     intervals,
++    readStorage(key) { return store.get(key) ?? null; },
+     setVisibility(v) { visibility = v; },
+     setResponder(fn) { responder = fn; },
+   };
+@@ -640,7 +643,7 @@ test('V4-1c: a neighbourhood that cannot fit at the floor is named, never silent
+ 
+   const labels = js.slice(js.indexOf('function positionDependencyWireLabels('), js.indexOf('function createIssueCanvasCard('));
+   assert.ok(labels.includes("setAttribute('visibility', 'hidden')"), 'a label with an endpoint out of view is hidden instead of clamped next to unrelated cards');
+-  assert.ok(labels.includes('dependencyFocusFloored'), 'only the floored focus suppresses labels');
++  assert.ok(!labels.includes('dependencyFocusFloored'), 'endpoint absence suppresses labels at every scale, not only the readable floor');
+ 
+   const showAll = js.slice(js.indexOf('function showAllCanvas('), js.indexOf('function clearDependencyFocus('));
+   assert.ok(showAll.includes('frameDependencyFocus({ showAll: true })'), 'the action fits the whole neighbourhood');
+@@ -750,3 +753,114 @@ test('V4-1d: the return view survives a reload with filters active and is never
+   app.rememberView();
+   assert.equal(app.state.filterView, null, 'a search alone never frames the canvas, so it captures no return view');
+ });
++
++test('D39 R1: explicit clamped fits report real containment with reserved legend and HUD', () => {
++  const { app, get } = browser();
++  const rects = [
++    { key: 'acme/core#1', x: 80, y: 120, w: 280, h: 200 },
++    { key: 'acme/core#2', x: 1450, y: 900, w: 280, h: 200 },
++    { key: 'acme/core#3', x: 2800, y: 120, w: 280, h: 200 },
++    { key: 'acme/core#4', x: 120, y: 1900, w: 280, h: 200 },
++  ];
++  const padding = { left: 16, right: 16, top: 180, bottom: 80 };
++  for (const width of [360, 390, 768, 1280]) {
++    const size = { width, height: 900 };
++    const target = app.computeFitView(app.unionBounds(rects), size, { padding });
++    assert.equal(app.canvasFitContains(rects, target, size, { padding }), width >= 768);
++    if (width < 768) assert.equal(target.scale, 0.2);
++  }
++  assert.equal(app.canvasFitContains([{ x: 0, y: 0, w: 20, h: 20 }], { panX: 20, panY: 20, scale: 1 }, { width: 360, height: 600 }, { padding }), false, 'inside viewport but under legend is not contained');
++
++  get('canvas-viewport').clientWidth = 360;
++  get('canvas-viewport').clientHeight = 600;
++  get('canvas-controls').hidden = true;
++  get('canvas-cards').querySelectorAll = () => rects.map(rect => ({
++    offsetLeft: rect.x, offsetTop: rect.y, offsetWidth: rect.w, offsetHeight: rect.h,
++    getAttribute: () => rect.key,
++  }));
++  app.state.activeViewMode = 'canvas';
++  app.state.viewState.filters = ['priority:high'];
++  const fit = app.frameFilteredCanvas({ showAll: true });
++  assert.equal(fit.incomplete, true);
++  assert.equal(fit.count, 4, 'missing cards stay in the count');
++  assert.equal(app.state.canvasFitLimited, true);
++  assert.equal(get('canvas-show-all').hidden, true, 'no repeated useless fit at the same bound');
++  const before = JSON.stringify([app.state.canvasPanX, app.state.canvasPanY, app.state.canvasScale]);
++  app.showAllCanvas();
++  assert.equal(JSON.stringify([app.state.canvasPanX, app.state.canvasPanY, app.state.canvasScale]), before);
++});
++
++test('D39 R1: labels hide absent endpoints after full fit and reappear after panning', () => {
++  const { app, get, doc } = browser();
++  get('canvas-viewport').clientWidth = 360;
++  get('canvas-viewport').clientHeight = 600;
++  doc.createElementNS = (_, tag) => doc.createElement(tag);
++  const issues = [
++    { number: 1, repository: { full: 'acme/core' }, blockedBy: [] },
++    { number: 2, repository: { full: 'acme/core' }, blockedBy: [{ number: 1, repository: { full: 'acme/core' } }] },
++  ];
++  const cards = issues.map((issue, index) => {
++    const card = doc.createElement('div');
++    card.className = 'canvas-card';
++    card.setAttribute('data-issue-key', `acme/core#${issue.number}`);
++    card.setAttribute('data-issue-number', issue.number);
++    card.offsetLeft = index * 2000; card.offsetTop = 250; card.offsetWidth = 280; card.offsetHeight = 150;
++    get('canvas-cards').appendChild(card);
++    return card;
++  });
++  app.state.currentCanvasIssues = issues;
++  app.state.dependencyFocus = 'acme/core#2';
++  app.state.dependencyFocusFloored = false;
++  app.state.dependencyFocusLimited = true;
++  app.state.canvasScale = 0.2;
++  app.state.canvasPanX = -300;
++  app.state.canvasPanY = 0;
++  app.renderCanvasWires();
++  const label = get('canvas-wire-labels').querySelector('.dependency-wire-label');
++  assert.ok(label);
++  assert.equal(label.getAttribute('visibility'), 'hidden', 'fully absent blocker stays hidden even below the readable floor');
++  cards[1].offsetLeft = 1000;
++  app.state.canvasPanX = 0;
++  app.renderCanvasWires();
++  assert.equal(get('canvas-wire-labels').querySelector('.dependency-wire-label').getAttribute('visibility'), null, 'pan revealing both endpoints restores label');
++});
++
++test('D39 R2: focus defers filter return, consumes storage and captures the next distinct cycle', () => {
++  const { app, get, readStorage } = browser({ tb_dependencies: 'hidden' });
++  const repository = { full: 'acme/core', owner: 'acme', name: 'core', hasIssues: true };
++  const issue = { number: 2, repository, state: 'open', title: 'Focused task', labels: ['priority:high'], canvas: { x: 460, y: 90 }, counts: {}, blockedBy: [] };
++  app.state.board = { repo: 'acme/core', repository, issues: [issue] };
++  app.state.selected = 'acme/core';
++  app.state.repositories = { repositories: [repository] };
++  app.state.activeViewMode = 'canvas';
++  app.state.canvasHasSavedState = true;
++  const view = () => JSON.parse(JSON.stringify({ panX: app.state.canvasPanX, panY: app.state.canvasPanY, scale: app.state.canvasScale }));
++  const set = v => { app.state.canvasPanX = v.panX; app.state.canvasPanY = v.panY; app.state.canvasScale = v.scale; };
++  const first = { panX: 123.125, panY: -47.875, scale: 0.873 };
++  set(first);
++  app.state.viewState.filters = ['priority:high']; app.rememberView();
++  set({ panX: -451, panY: -22, scale: 0.956 });
++  app.selectDependencyCard(issue);
++  app.state.viewState.filters = []; app.state.canvasFitPending = true; app.rememberView();
++  assert.equal(app.state.canvasFitPending, true, 'render cannot consume the filter request while focus owns the view');
++  app.clearDependencyFocus();
++  assert.deepEqual(view(), first);
++  assert.equal(app.state.filterView, null);
++  assert.equal(app.state.canvasFitPending, false);
++  assert.equal(readStorage('tb_canvas_filter_view'), null, 'consumed return is removed from persistent storage');
++  app.state.board = null;
++  const second = { panX: -201.625, panY: 93.375, scale: 1.237 };
++  set(second); app.state.viewState.filters = ['priority:high']; app.rememberView();
++  assert.deepEqual(JSON.parse(JSON.stringify(app.state.filterView)), second);
++  app.state.board = { repo: 'acme/core', repository, issues: [issue] };
++  app.state.viewState.filters = []; app.state.canvasFitPending = true; app.renderBoard();
++  assert.deepEqual(view(), second);
++  assert.equal(app.state.filterView, null);
++  assert.equal(get('canvas-show-all').hidden, true);
++
++  set(first); app.state.board = null;
++  app.selectDependencyCard(issue);
++  set({ panX: 0, panY: 0, scale: 0.55 });
++  app.state.viewState.filters = ['priority:high']; app.rememberView();
++  assert.deepEqual(JSON.parse(JSON.stringify(app.state.filterView)), first, 'first filter applied during focus captures the pre-focus return, not its temporary viewport');
++});

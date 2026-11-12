@@ -1,0 +1,8 @@
+{
+  "base": "0cef002f5401d54483c2c037fea998702fc5da08",
+  "source_sha256": {
+    "web/public/app.js": "7aa364f76e146a13102d4a47dda187a26b0febe20b99c58e5d7f9921dbe96ad4",
+    "web/tests/v3-ux-client.test.mjs": "752a86376728fad6ddc5034474393a7c3c69166c95d84fa20a0bf1d5ae8a359b",
+    "scripts/generate-delivery-smoke.mjs": "f0900c9105d0971faefb1349ebc13e087448fc85cc6f0955376ade18dca87729"
+  }
+}

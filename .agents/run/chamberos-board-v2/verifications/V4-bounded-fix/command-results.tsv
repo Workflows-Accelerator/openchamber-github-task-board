@@ -1,0 +1,23 @@
+before-independent	1
+before-completion	1
+focused-tests	1
+focused-tests-corrected	1
+focused-tests-final	0
+after-independent	0
+after-completion	0
+invariants-precommit	1
+invariants-corrected	0
+diff-check	0
+targeted-long	0
+after-final-independent	0
+after-final-completion	0
+targeted-initial-timeout	143	tool timeout 120000ms (SIGTERM); rerun with 600000ms
+targeted-final	0
+npm-test	0	2026-11-12T11:42:21Z	2026-11-12T11:42:36Z	npm test
+web-tests	0	2026-11-12T11:42:36Z	2026-11-12T11:43:08Z	node --test --test-timeout=30000 web/tests/*.test.mjs
+typecheck	0	2026-11-12T11:43:08Z	2026-11-12T11:43:09Z	npm run typecheck
+server-bundle	0	2026-11-12T11:43:09Z	2026-11-12T11:43:10Z	npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/tmp/opencode/v4-bounded-fix-server.mjs
+smoke-port-safety	0	2026-11-12T11:43:10Z	2026-11-12T11:43:10Z	node --input-type=module -e "import net from 'node:net';const s=net.createServer();s.once('error',e=>{console.error(e.code);process.exitCode=1});s.listen(4041,'127.0.0.1',()=>s.close());"
+delivery-smoke	0	2026-11-12T11:43:10Z	2026-11-12T11:48:04Z	DELIVERY_DIR=.agents/run/chamberos-board-v2/verifications/V4-bounded-fix/smoke node scripts/generate-delivery-smoke.mjs
+invariants-final	0	python3 .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/invariants.py
+summarize	0	python3 .agents/run/chamberos-board-v2/verifications/V4-bounded-fix/scripts/summarize.py

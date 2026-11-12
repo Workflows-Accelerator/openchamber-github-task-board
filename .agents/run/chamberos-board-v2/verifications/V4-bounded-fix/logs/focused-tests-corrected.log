@@ -1,0 +1,182 @@
+TAP version 13
+# Subtest: V3-2 client: effectiveStage maps vanilla issues to Todo, shows non-draft vanilla issues in Client mode, and collapses empty stage groups
+ok 1 - V3-2 client: effectiveStage maps vanilla issues to Todo, shows non-draft vanilla issues in Client mode, and collapses empty stage groups
+  ---
+  duration_ms: 25.178067
+  type: 'test'
+  ...
+# Subtest: V3-2 client: Detail Drawer renders native bodyMarkdown, hides empty ChamberOS sections, and localizes <html lang> plus FR status/priority
+ok 2 - V3-2 client: Detail Drawer renders native bodyMarkdown, hides empty ChamberOS sections, and localizes <html lang> plus FR status/priority
+  ---
+  duration_ms: 13.286943
+  type: 'test'
+  ...
+# Subtest: V3-2 client: conditional ETag / 304 memory revalidation, ?refresh=1 bypass, and hidden-tab interval guard
+ok 3 - V3-2 client: conditional ETag / 304 memory revalidation, ?refresh=1 bypass, and hidden-tab interval guard
+  ---
+  duration_ms: 15.803416
+  type: 'test'
+  ...
+# Subtest: V3-3: unsuccessful mutation clears conditional memory before a possible unknown outcome
+ok 4 - V3-3: unsuccessful mutation clears conditional memory before a possible unknown outcome
+  ---
+  duration_ms: 9.599294
+  type: 'test'
+  ...
+# Subtest: V3-3: Canvas cannot be scrolled by focus, narrow cards use full-width metadata, drawer and picker avoid duplicate hierarchy
+ok 5 - V3-3: Canvas cannot be scrolled by focus, narrow cards use full-width metadata, drawer and picker avoid duplicate hierarchy
+  ---
+  duration_ms: 1.470917
+  type: 'test'
+  ...
+# Subtest: V3-3: drawer actions, editable checkboxes and picker search retain 44px narrow hit boxes
+ok 6 - V3-3: drawer actions, editable checkboxes and picker search retain 44px narrow hit boxes
+  ---
+  duration_ms: 0.791618
+  type: 'test'
+  ...
+# Subtest: V4-1: grouped filters combine stages, priorities, dependencies and real review links
+ok 7 - V4-1: grouped filters combine stages, priorities, dependencies and real review links
+  ---
+  duration_ms: 9.552634
+  type: 'test'
+  ...
+# Subtest: V4-1: dependency focus uses qualified identities and distinguishes both directions
+ok 8 - V4-1: dependency focus uses qualified identities and distinguishes both directions
+  ---
+  duration_ms: 6.655554
+  type: 'test'
+  ...
+# Subtest: V4-1: every transient task surface shares native dialog and sheet lifecycle, applied rail precedes Canvas
+ok 9 - V4-1: every transient task surface shares native dialog and sheet lifecycle, applied rail precedes Canvas
+  ---
+  duration_ms: 4.975022
+  type: 'test'
+  ...
+# Subtest: V4-1: applied chip removal immediately re-renders List without opening filters
+ok 10 - V4-1: applied chip removal immediately re-renders List without opening filters
+  ---
+  duration_ms: 7.717879
+  type: 'test'
+  ...
+# Subtest: V4-1: an open composer keeps its form visible when the list view is not simple
+ok 11 - V4-1: an open composer keeps its form visible when the list view is not simple
+  ---
+  duration_ms: 7.211605
+  type: 'test'
+  ...
+# Subtest: V4-1: closing a nested sheet keeps the page lock and clears the composer state
+ok 12 - V4-1: closing a nested sheet keeps the page lock and clears the composer state
+  ---
+  duration_ms: 3.517604
+  type: 'test'
+  ...
+# Subtest: V4-1: phone sidebar keeps its drawer behaviour when the desktop rail was collapsed
+ok 13 - V4-1: phone sidebar keeps its drawer behaviour when the desktop rail was collapsed
+  ---
+  duration_ms: 0.611517
+  type: 'test'
+  ...
+# Subtest: V4-1: pending checklist state is drawn, never a pictographic glyph
+ok 14 - V4-1: pending checklist state is drawn, never a pictographic glyph
+  ---
+  duration_ms: 11.9252
+  type: 'test'
+  ...
+# Subtest: V4-1b: dependency focus frames selected plus direct blockers and dependents, and never leaves the canvas
+ok 15 - V4-1b: dependency focus frames selected plus direct blockers and dependents, and never leaves the canvas
+  ---
+  duration_ms: 11.295396
+  type: 'test'
+  ...
+# Subtest: V4-1b: edge labels clamp inside the visible canvas and off every card body
+ok 16 - V4-1b: edge labels clamp inside the visible canvas and off every card body
+  ---
+  duration_ms: 5.95706
+  type: 'test'
+  ...
+# Subtest: V4-1b: focus exit wording, single phone filter entry point and framing hooks
+ok 17 - V4-1b: focus exit wording, single phone filter entry point and framing hooks
+  ---
+  duration_ms: 4.383789
+  type: 'test'
+  ...
+# Subtest: V4-1c: a neighbourhood that cannot fit at the floor is named, never silently shrunk
+ok 18 - V4-1c: a neighbourhood that cannot fit at the floor is named, never silently shrunk
+  ---
+  duration_ms: 3.276267
+  type: 'test'
+  ...
+# Subtest: V4-1c: clearing the last filter restores the viewport the user had before it
+ok 19 - V4-1c: clearing the last filter restores the viewport the user had before it
+  ---
+  duration_ms: 9.20505
+  type: 'test'
+  ...
+# Subtest: V4-1c: a rejected drag save is handled instead of escaping the pointer handler
+ok 20 - V4-1c: a rejected drag save is handled instead of escaping the pointer handler
+  ---
+  duration_ms: 2.830915
+  type: 'test'
+  ...
+# Subtest: V4-1c: sort options and the rename action share the 44px control treatment
+ok 21 - V4-1c: sort options and the rename action share the 44px control treatment
+  ---
+  duration_ms: 3.698366
+  type: 'test'
+  ...
+# Subtest: V4-1d: the collapsed desktop rail keeps a labelled toggle that reopens it
+ok 22 - V4-1d: the collapsed desktop rail keeps a labelled toggle that reopens it
+  ---
+  duration_ms: 6.577226
+  type: 'test'
+  ...
+# Subtest: V4-1d: the return view survives a reload with filters active and is never captured by search alone
+ok 23 - V4-1d: the return view survives a reload with filters active and is never captured by search alone
+  ---
+  duration_ms: 22.732663
+  type: 'test'
+  ...
+# Subtest: D39 R1: explicit clamped fits report real containment with reserved legend and HUD
+ok 24 - D39 R1: explicit clamped fits report real containment with reserved legend and HUD
+  ---
+  duration_ms: 8.00206
+  type: 'test'
+  ...
+# Subtest: D39 R1: labels hide absent endpoints after full fit and reappear after panning
+not ok 25 - D39 R1: labels hide absent endpoints after full fit and reappear after panning
+  ---
+  duration_ms: 8.37135
+  type: 'test'
+  location: '/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/web/tests/v3-ux-client.test.mjs:791:1'
+  failureType: 'testCodeFailure'
+  error: 'g.parentNode.removeChild is not a function'
+  code: 'ERR_TEST_FAILURE'
+  name: 'TypeError'
+  stack: |-
+    evalmachine.<anonymous>:5015:74
+    Array.forEach (<anonymous>)
+    Object.renderCanvasWires (evalmachine.<anonymous>:5015:20)
+    TestContext.<anonymous> (file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/web/tests/v3-ux-client.test.mjs:822:7)
+    Test.runInAsyncScope (node:async_hooks:214:14)
+    Test.run (node:internal/test_runner/test:1047:25)
+    Test.processPendingSubtests (node:internal/test_runner/test:744:18)
+    Test.postRun (node:internal/test_runner/test:1173:19)
+    Test.run (node:internal/test_runner/test:1101:12)
+    async Test.processPendingSubtests (node:internal/test_runner/test:744:7)
+  ...
+# Subtest: D39 R2: focus defers filter return, consumes storage and captures the next distinct cycle
+ok 26 - D39 R2: focus defers filter return, consumes storage and captures the next distinct cycle
+  ---
+  duration_ms: 11.896929
+  type: 'test'
+  ...
+1..26
+# tests 26
+# suites 0
+# pass 25
+# fail 1
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 402.387158

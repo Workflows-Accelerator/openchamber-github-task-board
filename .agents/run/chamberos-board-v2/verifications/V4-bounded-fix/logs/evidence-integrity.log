@@ -1,0 +1,31 @@
+{
+  "head": "a1225f023a736da70f6b06798c16a91b655cf01d",
+  "checks": {
+    "branch": true,
+    "source_matches_tested": true,
+    "only_proof_staged": true,
+    "only_proof_uncommitted_tracked": true,
+    "old_evidence_and_untracked_fixture_preserved": true,
+    "V4_1_L4_not_staged_or_tracked": true,
+    "application_patch_exact": true,
+    "regressions_patch_exact": true,
+    "staged_whitespace_except_exact_raw": true
+  },
+  "raw_whitespace_exceptions": [
+    ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/application-fix.diff",
+    ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/logs/focused-tests.log",
+    ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/logs/npm-test.log",
+    ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/logs/typecheck.log",
+    ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/regression-tests.diff"
+  ],
+  "raw_sha256": {
+    ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/application-fix.diff": "213a3d4f3806d1ce0fb6e34a377b33451876d0d1d25782dfc865d1c09f5d2995",
+    ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/logs/focused-tests.log": "249678a1299f31a994fd40ae653ccd0521dc4d5a36523ee16b513a5ab51b8d02",
+    ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/logs/npm-test.log": "44e7db27a79528a2a5a5300e2a17f37d0634ee21f3c8ed12c2f9ebd0a6581c49",
+    ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/logs/typecheck.log": "87e893f7ce7c223477c7f6f0803880736ce687204e91f7f2c39155d39d2ad90d",
+    ".agents/run/chamberos-board-v2/verifications/V4-bounded-fix/regression-tests.diff": "0c93e05d6fac8a9dd1801356bb64414d2ec70e7beb54812936899bbc29900599"
+  },
+  "whitespace_stdout": "",
+  "whitespace_stderr": "",
+  "whitespace_exit": 0
+}

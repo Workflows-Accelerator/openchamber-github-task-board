@@ -1,0 +1,11 @@
+{
+  "r1Cases": 32,
+  "r1LegacyGeometricFalse": 8,
+  "targetedR1": 32,
+  "targetedR2": 12,
+  "afterIndependentFailures": 0,
+  "afterCompletionFailures": 0,
+  "targetedFailures": 0,
+  "smokeSections": 14,
+  "smokeFailures": 0
+}
