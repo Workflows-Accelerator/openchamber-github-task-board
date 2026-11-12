@@ -1,7 +1,7 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `shipping` — independent targeted L4 SPEC PASS / QUALITY APPROVED (evidence `26fbc00`, app `a1225f0`). D33 authorises master + live after passing L4; releasing now. Live still `7339629-20261111`, origin/master still `28af19b` until this release. All #53–#71 open, user closes. Current: tasks.md and resume-2026-11-12-v4-release.md.
+- **State:** `awaiting_human` — V4 LIVE as release `26fbc00-20261112`; origin/master pushed and verified at `d1eef33`. Independent L4 PASS/APPROVED. Waiting on the user's live phone review (L5) before any further wave. All #53–#71 open, user closes. Current: tasks.md and resume-2026-11-12-v4-release.md.
 - **Alignment:** D33–D38 CONFIRMED by user. D37 readability-first and D38 visible desktop rail toggle approved via render form. Real-phone drag persistence on previous live release confirmed by user. No fresh review verdict yet; no V4 publication.
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3`
 - **Branch:** `feat/board-v3`
