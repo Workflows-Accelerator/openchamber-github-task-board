@@ -167,7 +167,7 @@ Logs: `logs/npm-test-head.log`, `npm-test-head-run2.log`, `npm-test-base.log`, `
 | 12 | Info, verified OK | Decisions parser backward compatibility and Markdown XSS. | Legacy free text saves; preset selection saves; `javascript:` links and `<script>` do not render; raw markers absent; malformed option lines degrade. | No change. |
 | 13 | Info, partly verified | Radiogroup keyboard behaviour. | Options are native radios sharing one `name` inside `role="radiogroup"`, so arrow keys are the browser's native behaviour; the browser probe asserted the group exists, not arrow-key movement. | No change; no separate arrow-key automation was run. |
 
-
+## Not verified
 
 - Production, real GitHub, or any live or deployed instance.
 - Safari, Firefox, a physical phone, or a screen reader.
