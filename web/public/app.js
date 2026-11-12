@@ -39,6 +39,15 @@
     canvasHasSavedState: false,
     canvasAnimating: false,
     canvasFitPending: false,
+    // Framing stops at the readable floor and asks the user before showing the
+    // whole group smaller. These flags drive the explicit "Show all" action.
+    canvasFitFloored: false,
+    canvasFitCount: 0,
+    // The viewport the user had before the first narrowing filter, so clearing
+    // the last filter can put them back instead of re-framing.
+    filterView: null,
+    dependencyFocusFloored: false,
+    dependencyFocusCount: 0,
     dependencyFocusReturn: null,
     activeSectionView: null,
     archive: { backburner: [], closed: [], totalClosed: 0, hasMore: false, offset: 0, limit: 50, activeTab: 'backburner' },
@@ -691,6 +700,8 @@
       canvas_zoom_out: 'Zoom out',
       canvas_zoom_reset: 'Reset zoom (100%)',
       canvas_fit_all: 'Fit',
+      canvas_show_all: 'Show all ({n})',
+      legend_offscreen: 'Connected tasks are outside this view.',
       canvas_reset_view: 'Reset',
       canvas_save_error: 'Could not save card position.',
       canvas_save_rejected: 'Canvas position not saved: GitHub rejected the write ({status}). The card stayed where it was.',
@@ -874,6 +885,8 @@
       canvas_zoom_out: 'Zoom arrière',
       canvas_zoom_reset: 'Réinitialiser le zoom (100%)',
       canvas_fit_all: 'Tout',
+      canvas_show_all: 'Tout afficher ({n})',
+      legend_offscreen: 'Des tâches liées sont hors de cette vue.',
       canvas_reset_view: 'Réinit.',
       canvas_save_error: 'Impossible d’enregistrer la position de la carte.',
       canvas_save_rejected: 'Position non enregistrée : GitHub a refusé l’écriture ({status}). La carte est restée à sa place.',
@@ -1712,7 +1725,15 @@
     } catch (error) { /* Private browsing may deny storage. Memory state remains usable. */ }
     return result;
   }
+  // A filter narrows the canvas, so the first one applied remembers the viewport
+  // the user was looking at. Clearing the last one restores it.
+  function boardIsNarrowed() {
+    return state.viewState.filters.length > 0 || Boolean(state.searchQuery);
+  }
   function rememberView() {
+    if (boardIsNarrowed() && !state.filterView) {
+      state.filterView = { panX: state.canvasPanX, panY: state.canvasPanY, scale: state.canvasScale };
+    }
     try { localStorage.setItem(VIEW_STATE_KEY, JSON.stringify(state.viewState)); } catch (error) {}
     renderBoard();
   }
@@ -1829,6 +1850,7 @@
     target.value = state.selected && state.selected !== 'all' ? state.selected : available.some(function (r) { return r.full === previous; }) ? previous : (available[0] || {}).full || '';
     target.hidden = state.selected !== 'all';
     updateFilterSheet();
+    updateCanvasShowAll();
   }
   function availableProjects() {
     return state.repositories ? state.repositories.repositories.filter(function (r) { return r.available && !r.archived && r.hasIssues; }) : [];
@@ -2510,6 +2532,9 @@
     on('canvas-dependencies', function () { setDependenciesVisible(!dependenciesVisible()); });
     on('empty-reset', clearFilters);
     on('applied-filter-btn', function () { openSheet('filter', $('applied-filter-btn')); });
+    // The bar carries the "Show all" action when a filtered frame had to stop at
+    // the readable floor; the legend carries the same action during focus.
+    on('canvas-show-all', showAllCanvas);
     on('compact-search', function () { document.body.classList.toggle('search-open'); $('board-search').focus(); });
     on('list-group-toggle', function () { state.flatList = !state.flatList; renderBoard(); });
     ['canvas', 'list', 'decisions', 'blocked'].forEach(function (name) {
@@ -2690,6 +2715,10 @@
   var CANVAS_MIN_SCALE = 0.2;
   var CANVAS_MAX_SCALE = 2.5;
   var CANVAS_FIT_MAX_SCALE = 1;
+  // Below this scale the card titles stop being readable, so framing never
+  // chooses it on its own. Showing a wider group smaller is an explicit user
+  // action ("Show all"), never a silent consequence of framing.
+  var CANVAS_READABLE_MIN_SCALE = 0.55;
   var WIRE_LABEL_SCREEN_HEIGHT = 18;
   var WIRE_LABEL_PADDING = 8;
   var WIRE_LABEL_CARD_GAP = 10;
@@ -2727,17 +2756,29 @@
     };
   }
 
-  function computeFitView(bounds, viewport, options) {
-    if (!bounds || !viewport) return null;
+  function canvasFitBox(viewport, options) {
     var opts = options || {};
     var pad = opts.padding || {};
-    var width = Number(viewport.width) || 0;
-    var height = Number(viewport.height) || 0;
+    var width = Number(viewport && viewport.width) || 0;
+    var height = Number(viewport && viewport.height) || 0;
     if (width <= 0 || height <= 0) return null;
     var left = typeof pad.left === 'number' ? pad.left : 32;
     var right = typeof pad.right === 'number' ? pad.right : 32;
     var top = typeof pad.top === 'number' ? pad.top : 32;
     var bottom = typeof pad.bottom === 'number' ? pad.bottom : 32;
+    return {
+      left: left,
+      top: top,
+      availW: Math.max(1, width - left - right),
+      availH: Math.max(1, height - top - bottom),
+    };
+  }
+
+  function computeFitView(bounds, viewport, options) {
+    if (!bounds || !viewport) return null;
+    var opts = options || {};
+    var box = canvasFitBox(viewport, opts);
+    if (!box) return null;
     var minScale = typeof opts.minScale === 'number' ? opts.minScale : CANVAS_MIN_SCALE;
     var maxScale = typeof opts.maxScale === 'number' ? opts.maxScale : CANVAS_FIT_MAX_SCALE;
     // A fit never asks for a scale the canvas itself would refuse.
@@ -2747,16 +2788,53 @@
     var minY = Number(bounds.minY) || 0;
     var contentW = Math.max(1, (Number(bounds.maxX) || 0) - minX);
     var contentH = Math.max(1, (Number(bounds.maxY) || 0) - minY);
-    var availW = Math.max(1, width - left - right);
-    var availH = Math.max(1, height - top - bottom);
-    var scale = Math.min(availW / contentW, availH / contentH);
+    var scale = Math.min(box.availW / contentW, box.availH / contentH);
     if (!isFinite(scale) || scale <= 0) scale = maxScale;
     scale = Math.min(maxScale, Math.max(minScale, scale));
     return {
       scale: scale,
-      panX: left + (availW - contentW * scale) / 2 - minX * scale,
-      panY: top + (availH - contentH * scale) / 2 - minY * scale,
+      panX: box.left + (box.availW - contentW * scale) / 2 - minX * scale,
+      panY: box.top + (box.availH - contentH * scale) / 2 - minY * scale,
     };
+  }
+
+  // Centres the bounds in the padded viewport at a chosen scale. Used when a
+  // group cannot be shown whole at a readable size: the selected card (or the
+  // group's centre) is shown at the readable floor instead.
+  function computeCentredView(bounds, viewport, options) {
+    if (!bounds || !viewport) return null;
+    var opts = options || {};
+    var box = canvasFitBox(viewport, opts);
+    if (!box) return null;
+    var requested = typeof opts.scale === 'number' ? opts.scale : CANVAS_READABLE_MIN_SCALE;
+    var scale = Math.min(CANVAS_MAX_SCALE, Math.max(CANVAS_MIN_SCALE, requested));
+    var minX = Number(bounds.minX) || 0;
+    var minY = Number(bounds.minY) || 0;
+    var contentW = Math.max(1, (Number(bounds.maxX) || 0) - minX);
+    var contentH = Math.max(1, (Number(bounds.maxY) || 0) - minY);
+    return {
+      scale: scale,
+      panX: box.left + box.availW / 2 - (minX + contentW / 2) * scale,
+      panY: box.top + box.availH / 2 - (minY + contentH / 2) * scale,
+    };
+  }
+
+  /* One framing decision, used by dependency focus and by applied filters.
+     A group that fits at or above the readable floor is framed whole. A group
+     that does not is replaced by the selected card (or its own centre) at the
+     floor, and the caller offers the explicit "Show all" fit below it. */
+  function computeFraming(bounds, viewport, options) {
+    var full = computeFitView(bounds, viewport, options);
+    if (!full) return null;
+    var opts = options || {};
+    if (full.scale >= CANVAS_READABLE_MIN_SCALE - 0.0005) {
+      return { scale: full.scale, panX: full.panX, panY: full.panY, floored: false, fullScale: full.scale };
+    }
+    var centred = computeCentredView(unionBounds(opts.focusBounds) || bounds, viewport, opts);
+    if (!centred) {
+      return { scale: full.scale, panX: full.panX, panY: full.panY, floored: false, fullScale: full.scale };
+    }
+    return { scale: centred.scale, panX: centred.panX, panY: centred.panY, floored: true, fullScale: full.scale };
   }
 
   // Selected task plus its direct blockers and direct dependents, as identities.
@@ -2856,32 +2934,73 @@
     return width > 0 && height > 0 ? { width: width, height: height } : null;
   }
 
+  // The full fit, allowed below the readable floor because the user asked for
+  // it ("Show all"). This is the only path that may frame an unreadable group.
+  function fitCanvasRects(rects, options) {
+    var size = canvasViewportSize();
+    var bounds = unionBounds(rects);
+    if (!size || !bounds) return null;
+    var target = computeFitView(bounds, size, options);
+    if (!target) return null;
+    animateCanvasView(target);
+    return { scale: target.scale, panX: target.panX, panY: target.panY, floored: false, count: rects.length };
+  }
+
   function frameCanvasRects(rects, options) {
     var size = canvasViewportSize();
     var bounds = unionBounds(rects);
-    if (!size || !bounds) return false;
-    var target = computeFitView(bounds, size, options);
-    if (!target) return false;
+    if (!size || !bounds) return null;
+    var target = computeFraming(bounds, size, options);
+    if (!target) return null;
     animateCanvasView(target);
-    return true;
+    return { scale: target.scale, panX: target.panX, panY: target.panY, floored: target.floored, count: rects.length };
   }
 
-  function frameDependencyFocus() {
+  function frameDependencyFocus(options) {
+    var opts = options || {};
     var keys = dependencyNeighbourhoodKeys(state.dependencyFocus, state.currentCanvasIssues || []);
-    if (!keys.length) return false;
-    var rects = canvasCardRects().filter(function (rect) {
+    if (!keys.length) return null;
+    var allRects = canvasCardRects();
+    var rects = allRects.filter(function (rect) {
       return rect.key && keys.indexOf(rect.key.toLowerCase()) !== -1;
     });
-    var legend = $('dependency-legend');
-    var legendHeight = legend && !legend.hidden && legend.getBoundingClientRect ? legend.getBoundingClientRect().height : 0;
     var size = canvasViewportSize();
-    return frameCanvasRects(rects, {
-      padding: canvasFitPadding({
+    if (!rects.length || !size) return null;
+    var focusedKey = String(state.dependencyFocus).toLowerCase();
+    var focusedRects = allRects.filter(function (rect) { return rect.key && rect.key.toLowerCase() === focusedKey; });
+
+    function padding() {
+      var legend = $('dependency-legend');
+      var legendHeight = legend && !legend.hidden && legend.getBoundingClientRect ? legend.getBoundingClientRect().height : 0;
+      return canvasFitPadding({
         legendHeight: legendHeight,
         hudHeight: canvasHudHeight(),
         narrow: Boolean(size && size.width <= 768),
-      }),
+      });
+    }
+
+    if (opts.showAll) {
+      state.dependencyFocusFloored = false;
+      state.dependencyFocusCount = 0;
+      applyDependencyFocus();
+      var full = fitCanvasRects(rects, { padding: padding() });
+      positionDependencyWireLabels();
+      return full;
+    }
+
+    // Decide the floor from a measured fit, then let the legend announce the
+    // floored state before the padding is measured again: the legend is what
+    // explains the missing neighbours and carries the "Show all" action.
+    var estimate = computeFitView(unionBounds(rects), size, { padding: padding() });
+    state.dependencyFocusFloored = Boolean(estimate) && estimate.scale < CANVAS_READABLE_MIN_SCALE - 0.0005;
+    state.dependencyFocusCount = state.dependencyFocusFloored ? rects.length : 0;
+    applyDependencyFocus();
+    var framed = frameCanvasRects(rects, {
+      padding: padding(),
+      focusBounds: focusedRects.length ? focusedRects : rects,
     });
+    positionDependencyWireLabels();
+    return framed;
   }
 
   // The floating zoom bar is pinned to the bottom of the viewport; a framed
@@ -2893,12 +3012,47 @@
     return rect.height > 0 ? rect.height + 12 : 0;
   }
 
-  function frameFilteredCanvas() {
+  function frameFilteredCanvas(options) {
+    var opts = options || {};
     var size = canvasViewportSize();
     var rects = canvasCardRects().filter(function (rect) { return rect.w > 0 && rect.h > 0; });
-    return frameCanvasRects(rects, {
-      padding: canvasFitPadding({ hudHeight: canvasHudHeight(), narrow: Boolean(size && size.width <= 768) }),
-    });
+    var pad = canvasFitPadding({ hudHeight: canvasHudHeight(), narrow: Boolean(size && size.width <= 768) });
+    if (opts.showAll) {
+      state.canvasFitFloored = false;
+      state.canvasFitCount = 0;
+      updateCanvasShowAll();
+      return fitCanvasRects(rects, { padding: pad });
+    }
+    var framed = frameCanvasRects(rects, { padding: pad });
+    state.canvasFitFloored = Boolean(framed && framed.floored);
+    state.canvasFitCount = framed && framed.floored ? framed.count : 0;
+    updateCanvasShowAll();
+    return framed;
+  }
+
+  // The explicit action that allows the readable floor to be crossed for the
+  // group the user is looking at. It is the only control that does so.
+  function updateCanvasShowAll() {
+    var button = $('canvas-show-all');
+    if (!button) return;
+    var fr = getLanguage() === 'fr';
+    var count = 0;
+    var kind = '';
+    if (state.dependencyFocus && state.dependencyFocusFloored) { count = state.dependencyFocusCount; kind = 'focus'; }
+    else if (state.canvasFitFloored && state.viewState.filters.length) { count = state.canvasFitCount; kind = 'filter'; }
+    var visible = count > 0 && state.activeViewMode === 'canvas' && !state.activeSectionView;
+    button.hidden = !visible;
+    button.setAttribute('data-show-all', kind);
+    if (visible) {
+      var dict = I18N[getLanguage()] || I18N.en;
+      button.textContent = (dict.canvas_show_all || 'Show all ({n})').replace('{n}', count);
+    }
+  }
+
+  function showAllCanvas() {
+    if (state.dependencyFocus && state.dependencyFocusFloored) frameDependencyFocus({ showAll: true });
+    else frameFilteredCanvas({ showAll: true });
+    updateCanvasShowAll();
   }
 
   function clearDependencyFocus() {
@@ -2906,7 +3060,10 @@
     var saved = state.dependencyFocusReturn;
     state.dependencyFocus = null;
     state.dependencyFocusReturn = null;
+    state.dependencyFocusFloored = false;
+    state.dependencyFocusCount = 0;
     renderCanvasWires();
+    updateCanvasShowAll();
     if (saved) animateCanvasView(saved);
   }
 
@@ -2915,8 +3072,11 @@
     if (state.dependencyFocus === key) { clearDependencyFocus(); return; }
     state.dependencyFocusReturn = { panX: state.canvasPanX, panY: state.canvasPanY, scale: state.canvasScale };
     state.dependencyFocus = key;
+    state.dependencyFocusFloored = false;
+    state.dependencyFocusCount = 0;
     renderCanvasWires();
     frameDependencyFocus();
+    updateCanvasShowAll();
   }
   function dependencyRole(key, focused, issues) {
     if (!focused) return '';
@@ -2932,6 +3092,8 @@
     if (state.dependencyFocus && !focused) {
       state.dependencyFocus = null;
       state.dependencyFocusReturn = null;
+      state.dependencyFocusFloored = false;
+      state.dependencyFocusCount = 0;
     }
     var layer = $('canvas-cards');
     if (layer) layer.querySelectorAll('.canvas-card').forEach(function (card) {
@@ -2954,6 +3116,17 @@
       el('span', { class: 'legend-blocker', text: fr ? 'Bloque cette tâche' : 'Blocks this task' }),
       el('span', { class: 'legend-dependent', text: fr ? 'Attend cette tâche' : 'Waits on this task' }),
     ]));
+    if (state.dependencyFocusFloored) {
+      // The floor keeps the selected card readable, so the neighbours are off
+      // screen. Say so, and offer the full fit as the explicit alternative.
+      var dict = I18N[getLanguage()] || I18N.en;
+      legend.appendChild(el('p', { class: 'legend-offscreen', text: dict.legend_offscreen }));
+      legend.appendChild(el('button', {
+        type: 'button', class: 'button legend-show-all',
+        text: (dict.canvas_show_all || 'Show all ({n})').replace('{n}', state.dependencyFocusCount),
+        onclick: showAllCanvas,
+      }));
+    }
     legend.appendChild(el('span', { class: 'legend-direction', text: fr ? 'La flèche pointe vers la tâche bloquée.' : 'Arrow points to the blocked task.' }));
   }
   function labelDependencyWire(group, curve, blockerKey, targetKey, blockerNumber, targetNumber) {
@@ -2975,13 +3148,17 @@
     label.setAttribute('x', '0'); label.setAttribute('y', '0');
     label.setAttribute('text-anchor', 'middle');
     label.setAttribute('data-mid-x', String(curve.midX)); label.setAttribute('data-mid-y', String(curve.midY));
+    label.setAttribute('data-blocker-key', blockerKey); label.setAttribute('data-target-key', targetKey);
     label.textContent = '#' + blockerNumber + (getLanguage() === 'fr' ? ' bloque #' : ' blocks #') + targetNumber;
     labelsLayer.appendChild(label);
     positionDependencyWireLabels();
   }
 
   /* Keeps every edge label at a constant screen size and inside the visible
-     canvas, whichever way the user pans or zooms. */
+     canvas, whichever way the user pans or zooms. While the dependency view
+     stays at the readable floor its neighbours are off screen; a label that
+     would be clamped next to cards it does not belong to is hidden instead of
+     pretending those cards are in view. */
   function positionDependencyWireLabels() {
     var labelsLayer = $('canvas-wire-labels');
     var size = canvasViewportSize();
@@ -2991,7 +3168,30 @@
     var scale = state.canvasScale > 0 ? state.canvasScale : 1;
     var viewport = { width: size.width, height: size.height, panX: state.canvasPanX, panY: state.canvasPanY };
     var obstacles = canvasCardRects().slice();
+    var flooredFocus = Boolean(state.dependencyFocus && state.dependencyFocusFloored);
+    var visibleWorld = {
+      left: -state.canvasPanX / scale,
+      top: -state.canvasPanY / scale,
+      right: (size.width - state.canvasPanX) / scale,
+      bottom: (size.height - state.canvasPanY) / scale,
+    };
+    function endpointInView(key) {
+      if (!key) return false;
+      var wanted = key.toLowerCase();
+      var card = obstacles.find(function (rect) { return rect.key && rect.key.toLowerCase() === wanted; });
+      if (!card) return false;
+      return card.x < visibleWorld.right && card.x + card.w > visibleWorld.left &&
+        card.y < visibleWorld.bottom && card.y + card.h > visibleWorld.top;
+    }
     labels.forEach(function (label) {
+      if (flooredFocus) {
+        var bothInView = endpointInView(label.getAttribute('data-blocker-key')) && endpointInView(label.getAttribute('data-target-key'));
+        if (!bothInView) {
+          label.setAttribute('visibility', 'hidden');
+          return;
+        }
+      }
+      label.removeAttribute('visibility');
       var width = Number(label.getAttribute('data-screen-width')) || 0;
       if (!width) {
         try { width = label.getComputedTextLength(); } catch (_) { width = 0; }
@@ -3180,7 +3380,12 @@
         setTimeout(function () { suppressClick = false; }, 120);
         var oldPos = { x: cardStartX, y: cardStartY };
         if (currentCardX !== cardStartX || currentCardY !== cardStartY) {
-          await saveCardPosition(issue, currentCardX, currentCardY, oldPos, cardEl);
+          try {
+            await saveCardPosition(issue, currentCardX, currentCardY, oldPos, cardEl);
+          } catch (error) {
+            // The save path already told the user what happened in the notice
+            // strip; a rejected save must not also raise an unhandled rejection.
+          }
         }
       }
     }
@@ -5540,8 +5745,24 @@
         state.canvasFitPending = false;
         // A filter is a frame request, never a reason to hide cards that were
         // already on the canvas. Focus keeps its own framing when both apply.
-        if (issues.length > 0 && !state.dependencyFocus) frameFilteredCanvas();
+        if (issues.length > 0 && !state.dependencyFocus) {
+          if (boardIsNarrowed()) {
+            frameFilteredCanvas();
+          } else if (state.filterView) {
+            // Clearing the last filter returns the user to the viewport they
+            // had before the first one, instead of framing the whole board.
+            var returnView = state.filterView;
+            state.filterView = null;
+            state.canvasFitFloored = false;
+            state.canvasFitCount = 0;
+            applyCanvasView(returnView);
+            updateCanvasShowAll();
+          } else {
+            frameFilteredCanvas();
+          }
+        }
       }
+      updateCanvasShowAll();
       return;
     }
 
@@ -8290,8 +8511,14 @@
       fitAllCanvasNodes: fitAllCanvasNodes,
       unionBounds: unionBounds,
       computeFitView: computeFitView,
+      computeCentredView: computeCentredView,
+      computeFraming: computeFraming,
       canvasFitPadding: canvasFitPadding,
       computeWireLabelPosition: computeWireLabelPosition,
+      rememberView: rememberView,
+      updateCanvasShowAll: updateCanvasShowAll,
+      showAllCanvas: showAllCanvas,
+      clearFilters: clearFilters,
       dependencyNeighbourhoodKeys: dependencyNeighbourhoodKeys,
       clearDependencyFocus: clearDependencyFocus,
       frameDependencyFocus: frameDependencyFocus,

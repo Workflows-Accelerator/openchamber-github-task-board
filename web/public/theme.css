@@ -1860,7 +1860,9 @@ input[type="text"].search-input:focus,
 }
 
 .canvas-card-title {
-  font-size: 13px;
+  /* The framing floor (0.55) keeps a 280px card readable on a phone: 16px at
+     55% is still ~9px of title, so the fitted view is never a blur. */
+  font-size: 16px;
   font-weight: 600;
   line-height: 1.35;
   color: var(--fg);
@@ -3529,6 +3531,11 @@ body.sheet-open { overflow: hidden; }
 .filter-options { display: flex; flex-wrap: wrap; gap: 8px; }
 .filter-option { display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; max-width: 100%; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surf-muted); color: var(--fg); text-align: left; font: inherit; cursor: pointer; overflow-wrap: anywhere; }
 .filter-option[aria-pressed="true"] { border-color: var(--prim-hover); background: var(--prim-subtle); box-shadow: inset 3px 0 var(--prim-hover); }
+/* Sort and View options are the same control as a filter option: same height,
+   border, radius, pressed state and inherited font, never a raw UA button. */
+.sheet-option { display: flex; width: 100%; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; margin: 0 0 8px; padding: 8px 12px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--surf-muted); color: var(--fg); text-align: left; font: inherit; cursor: pointer; overflow-wrap: anywhere; }
+.sheet-option:last-child { margin-bottom: 0; }
+.sheet-option[aria-pressed="true"] { border-color: var(--prim-hover); background: var(--prim-subtle); box-shadow: inset 3px 0 var(--prim-hover); }
 .filter-count { font-variant-numeric: tabular-nums; color: var(--fg-muted); }
 .sheet-footer { display: flex; flex: 0 0 auto; gap: 12px; align-items: center; justify-content: flex-end; padding: 16px 20px max(16px, env(safe-area-inset-bottom)); background: var(--surf); border-top: 1px solid var(--border); }
 .sheet-footer .button { min-height: 44px; padding: 8px 12px; }
@@ -3545,11 +3552,12 @@ body.sheet-open { overflow: hidden; }
 .board-sheet .repo-option { padding: 12px; }
 .board-sheet .rename-project { display: grid; gap: 8px; margin-bottom: 16px; }
 .board-sheet .rename-project label { display: grid; gap: 8px; overflow-wrap: anywhere; }
+.board-sheet .rename-project .button { min-height: 44px; }
 .board-sheet input, .board-sheet select { min-height: 44px; max-width: 100%; }
 .board-sheet .quick-add-bar.capture-row { display: grid; padding: 0; border: 0; grid-template-columns: minmax(0, 1fr); gap: 12px; }
 #composer-dialog .composer-head { display: none; }
 .settings-health, .settings-version { font-variant-numeric: tabular-nums; }
-.applied-filter-bar { display: flex; flex: 0 0 auto; gap: 8px; align-items: flex-start; padding: 8px 20px; background: var(--surf-muted); }
+.applied-filter-bar { display: flex; flex-wrap: wrap; flex: 0 0 auto; gap: 8px; align-items: flex-start; padding: 8px 20px; background: var(--surf-muted); }
 .applied-filter-bar > .button { flex: 0 0 auto; min-height: 44px; }
 #applied-filter-btn[data-active="true"] { border-color: var(--prim-hover); background: var(--prim-subtle); }
 #board-view .filter-chips { display: flex; flex-wrap: wrap; gap: 8px; min-width: 0; padding: 0; margin: 0; }
@@ -3633,3 +3641,5 @@ body.sheet-open { overflow: hidden; }
 .legend-head .button { flex: 0 0 auto; min-height: 44px; padding: 8px 12px; }
 .legend-keys { display: flex; flex-wrap: wrap; gap: 6px 16px; }
 .legend-direction { display: block; flex: none; }
+.legend-offscreen { flex: 0 0 100%; margin: 0; color: var(--fg-muted); }
+.legend-show-all { width: 100%; }

@@ -283,6 +283,20 @@ async function run() {
       throw new Error(`Timeout waiting for ${label}`);
     };
 
+    // Measurements must not race a CSS transition: sheet entry (160ms) and the
+    // canvas card dim (160ms) were both sampled mid-animation by earlier runs.
+    const settleAnimations = async (timeout = 2000) => {
+      await page.evaluate(async (limit) => {
+        const deadline = performance.now() + limit;
+        while (performance.now() < deadline) {
+          const running = document.getAnimations({ subtree: true }).filter((animation) => animation.playState === 'running');
+          if (!running.length) return true;
+          await new Promise((resolve) => requestAnimationFrame(resolve));
+        }
+        return false;
+      }, timeout);
+    };
+
     const setViewport = async (w, h) => {
       await page.setViewportSize({ width: w, height: h });
       await sleep(150);
@@ -840,7 +854,7 @@ async function run() {
       for (const [kind, id, open] of openers) {
         await switchView('canvas');
         const before = await page.evaluate(() => { const r = document.getElementById('canvas-viewport').getBoundingClientRect(); return { x: r.x, width: r.width, scroll: scrollY }; });
-        await open(); await sleep(200);
+        await open(); await sleep(200); await settleAnimations();
         const geometry = await page.evaluate(id => {
           const d = document.getElementById(id), r = d.getBoundingClientRect(), body = d.querySelector('.sheet-content'), foot = d.querySelector('.sheet-footer').getBoundingClientRect();
           const controls = Array.from(d.querySelectorAll('button, input, select, textarea, a[href], [tabindex="0"]')).filter(n => !n.disabled && n.getClientRects().length);
@@ -896,13 +910,14 @@ async function run() {
         a.updateCanvasTransform();
       });
       await sleep(320);
+      await settleAnimations();
       const focus = await page.evaluate(() => ({ selected: document.querySelectorAll('.dependency-selected').length, blockers: document.querySelectorAll('.dependency-blocker').length, dependents: document.querySelectorAll('.dependency-dependent').length, unrelated: document.querySelectorAll('.dependency-unrelated').length, dim: getComputedStyle(document.querySelector('.dependency-unrelated')).opacity, edgeDim: getComputedStyle(document.querySelector('.dependency-wire-muted')).opacity, labels: document.querySelectorAll('.dependency-wire-label').length, labelTexts: Array.from(document.querySelectorAll('.dependency-wire-label')).map(n => n.textContent), legendWidth: document.getElementById('dependency-legend').getBoundingClientRect().width }));
       await captureShot(`dependency-${mCase.width}-${mCase.theme}-${mCase.lang}.png`);
       await page.click('#canvas-dependencies');
       const hidden = await page.evaluate(() => document.querySelectorAll('.canvas-wire-group').length === 0 && document.querySelectorAll('.dependency-wire-label').length === 0 && getComputedStyle(document.getElementById('canvas-wires')).visibility === 'hidden');
       await page.click('#canvas-dependencies');
       const restored = await page.evaluate(() => document.querySelectorAll('.canvas-wire-group').length >= 4);
-      dependencyMeasurements.push({ testCase: mCase, ...focus, hidden, restored, pass: focus.selected === 1 && focus.blockers >= 1 && focus.dependents >= 1 && focus.unrelated >= 1 && focus.dim === '0.22' && focus.labels >= 2 && hidden && restored });
+      dependencyMeasurements.push({ testCase: mCase, ...focus, hidden, restored, pass: focus.selected === 1 && focus.blockers >= 1 && focus.dependents >= 1 && focus.unrelated >= 1 && Math.abs(parseFloat(focus.dim) - 0.22) <= 0.02 && focus.labels >= 2 && hidden && restored });
       await page.evaluate(() => { window.__taskBoard.state.dependencyFocus = null; window.__taskBoard.renderCanvasWires(); });
       if (mCase.width <= 768) {
         // Real clicks on the control the phone actually shows, so the smoke

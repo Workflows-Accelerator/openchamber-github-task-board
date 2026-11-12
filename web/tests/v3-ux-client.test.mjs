@@ -489,8 +489,38 @@ test('V4-1b: dependency focus frames selected plus direct blockers and dependent
   const padding = app.canvasFitPadding({ narrow: true, legendHeight: 120, hudHeight: 64 });
   assert.equal(padding.top, 140, 'the fit starts below the legend it must not hide behind');
   assert.equal(padding.bottom, 84, 'the fit ends above the floating zoom bar');
+
+  // This neighbourhood is wider than a phone. Framing must not shrink it below
+  // the readable floor: it shows the selected card at 0.55 and leaves the full
+  // fit to the explicit "Show all" action.
+  const framing = app.computeFraming(bounds, viewport, { padding, focusBounds: cards[1] });
+  assert.equal(framing.floored, true, 'a group that cannot fit at the readable floor is not framed below it');
+  assert.equal(framing.scale, 0.55, 'the fallback sits exactly on the readable floor');
+  assert.ok(framing.fullScale < 0.55, 'the fit it replaces would have been unreadable');
+  const selectedCard = cards[1];
+  const selectedBox = {
+    left: selectedCard.x * framing.scale + framing.panX,
+    right: (selectedCard.x + selectedCard.w) * framing.scale + framing.panX,
+    top: selectedCard.y * framing.scale + framing.panY,
+    bottom: (selectedCard.y + selectedCard.h) * framing.scale + framing.panY,
+  };
+  assert.ok(selectedBox.left >= padding.left - 0.001, 'the selected card starts inside the left margin');
+  assert.ok(selectedBox.right <= viewport.width - padding.right + 0.001, 'the selected card ends inside the right margin');
+  assert.ok(selectedBox.top >= padding.top - 0.001, 'the selected card starts below the legend');
+  assert.ok(selectedBox.bottom <= viewport.height - padding.bottom + 0.001, 'the selected card ends above the bottom margin');
+  const wholeNeighbourhoodVisible = neighbourhood.every((card) => {
+    const left = card.x * framing.scale + framing.panX;
+    const right = (card.x + card.w) * framing.scale + framing.panX;
+    const top = card.y * framing.scale + framing.panY;
+    const bottom = (card.y + card.h) * framing.scale + framing.panY;
+    return left >= padding.left - 0.001 && right <= viewport.width - padding.right + 0.001 &&
+      top >= padding.top - 0.001 && bottom <= viewport.height - padding.bottom + 0.001;
+  });
+  assert.equal(wholeNeighbourhoodVisible, false, 'not every neighbour is in view, which is why the action exists');
+
+  // The full fit is still reachable, as the explicit user action, at >= 0.2.
   const fit = app.computeFitView(bounds, viewport, { padding });
-  assert.ok(fit.scale >= 0.2 && fit.scale <= 1, 'fit scale stays inside the canvas zoom range');
+  assert.ok(fit.scale >= 0.2 && fit.scale < 0.55, 'the full fit stays inside the canvas zoom range');
   for (const card of neighbourhood) {
     const left = card.x * fit.scale + fit.panX;
     const right = (card.x + card.w) * fit.scale + fit.panX;
@@ -504,6 +534,27 @@ test('V4-1b: dependency focus frames selected plus direct blockers and dependent
   const stranger = cards[4];
   const strangerRight = (stranger.x + stranger.w) * fit.scale + fit.panX;
   assert.ok(strangerRight > viewport.width, 'framing the neighbourhood is not the same as fitting the whole canvas');
+
+  // A group that fits at a readable size is framed whole, with no fallback.
+  const wide = { width: 1280, height: 900 };
+  const widePadding = app.canvasFitPadding({});
+  const roomy = app.computeFraming(bounds, wide, { padding: widePadding, focusBounds: cards[1] });
+  assert.equal(roomy.floored, false, 'a readable fit needs no fallback');
+  assert.ok(roomy.scale >= 0.55);
+  for (const card of neighbourhood) {
+    const left = card.x * roomy.scale + roomy.panX;
+    const right = (card.x + card.w) * roomy.scale + roomy.panX;
+    const top = card.y * roomy.scale + roomy.panY;
+    const bottom = (card.y + card.h) * roomy.scale + roomy.panY;
+    assert.ok(left >= widePadding.left - 0.001 && right <= wide.width - widePadding.right + 0.001, card.key + ' is horizontally inside the wide frame');
+    assert.ok(top >= widePadding.top - 0.001 && bottom <= wide.height - widePadding.bottom + 0.001, card.key + ' is vertically inside the wide frame');
+  }
+
+  // The readable floor is a constant the framing code shares with the canvas.
+  const source = fs.readFileSync('web/public/app.js', 'utf8');
+  assert.match(source, /var CANVAS_READABLE_MIN_SCALE = 0\.55;/);
+  const frameBody = source.slice(source.indexOf('function frameCanvasRects('), source.indexOf('function frameDependencyFocus('));
+  assert.ok(frameBody.includes('computeFraming('), 'framing goes through the readability floor, never a raw fit');
 
   // Zoom limits: a fit never magnifies past 100% and never goes under the canvas minimum.
   assert.equal(app.computeFitView({ minX: 0, minY: 0, maxX: 40, maxY: 40 }, { width: 1280, height: 900 }, {}).scale, 1);
@@ -572,4 +623,80 @@ test('V4-1b: focus exit wording, single phone filter entry point and framing hoo
   assert.ok(transform.includes('positionDependencyWireLabels()'), 'labels are re-clamped on every pan and zoom');
   const position = js.slice(js.indexOf('function positionDependencyWireLabels('), js.indexOf('function createIssueCanvasCard('));
   assert.ok(position.includes('scale(') && position.includes('1 / scale'), 'labels keep a constant screen size at every zoom');
+});
+
+test('V4-1c: a neighbourhood that cannot fit at the floor is named, never silently shrunk', () => {
+  const js = fs.readFileSync('web/public/app.js', 'utf8');
+  assert.match(js, /canvas_show_all: 'Show all \(\{n\}\)'/);
+  assert.match(js, /canvas_show_all: 'Tout afficher \(\{n\}\)'/);
+  assert.match(js, /legend_offscreen: 'Connected tasks are outside this view\.'/);
+  assert.match(js, /legend_offscreen: 'Des tâches liées sont hors de cette vue\.'/);
+
+  const legend = js.slice(js.indexOf('function applyDependencyFocus('), js.indexOf('function labelDependencyWire('));
+  assert.ok(legend.includes('state.dependencyFocusFloored'), 'the legend knows when the view is floored');
+  assert.ok(legend.includes('legend-offscreen') && legend.includes('legend-show-all'), 'the floored legend states the neighbours are out of view and offers the full fit');
+
+  const labels = js.slice(js.indexOf('function positionDependencyWireLabels('), js.indexOf('function createIssueCanvasCard('));
+  assert.ok(labels.includes("setAttribute('visibility', 'hidden')"), 'a label with an endpoint out of view is hidden instead of clamped next to unrelated cards');
+  assert.ok(labels.includes('dependencyFocusFloored'), 'only the floored focus suppresses labels');
+
+  const showAll = js.slice(js.indexOf('function showAllCanvas('), js.indexOf('function clearDependencyFocus('));
+  assert.ok(showAll.includes('frameDependencyFocus({ showAll: true })'), 'the action fits the whole neighbourhood');
+  assert.ok(showAll.includes('frameFilteredCanvas({ showAll: true })'), 'the action fits every filtered card');
+  assert.match(js, /on\('canvas-show-all', showAllCanvas\);/, 'the bar button is wired to the action it names');
+});
+
+test('V4-1c: clearing the last filter restores the viewport the user had before it', () => {
+  const { app } = browser();
+  app.state.board = null;
+  app.state.viewState = { view: 'simple', filters: [], sort: 'priority' };
+  app.state.canvasPanX = 42;
+  app.state.canvasPanY = 24;
+  app.state.canvasScale = 0.9;
+  app.state.filterView = null;
+
+  app.rememberView();
+  assert.equal(app.state.filterView, null, 'a board with no filter remembers nothing');
+
+  app.state.viewState.filters = ['priority:high'];
+  app.rememberView();
+  assert.deepEqual(JSON.parse(JSON.stringify(app.state.filterView)), { panX: 42, panY: 24, scale: 0.9 }, 'the first filter remembers the viewport it narrowed');
+
+  app.state.canvasPanX = -318;
+  app.state.canvasPanY = 88;
+  app.state.canvasScale = 0.55;
+  app.state.viewState.filters = ['priority:high', 'blocked'];
+  app.rememberView();
+  assert.deepEqual(JSON.parse(JSON.stringify(app.state.filterView)), { panX: 42, panY: 24, scale: 0.9 }, 'adding more filters keeps the first remembered viewport');
+
+  const js = fs.readFileSync('web/public/app.js', 'utf8');
+  const board = js.slice(js.indexOf('function renderBoard('), js.indexOf('function renderPicker('));
+  assert.ok(board.includes('boardIsNarrowed()'), 'the canvas render knows when the filter set became empty');
+  const restore = board.indexOf('applyCanvasView(returnView)');
+  assert.ok(restore !== -1, 'an empty filter set restores the remembered viewport instead of re-framing');
+  assert.ok(restore > board.indexOf('boardIsNarrowed()'), 'the restore is the empty-filter branch');
+  assert.ok(board.includes('state.filterView = null'), 'the remembered viewport is consumed once');
+});
+
+test('V4-1c: a rejected drag save is handled instead of escaping the pointer handler', () => {
+  const js = fs.readFileSync('web/public/app.js', 'utf8');
+  const up = js.slice(js.indexOf('async function onPointerUp('), js.indexOf('function onPointerCancel('));
+  const awaited = up.indexOf('await saveCardPosition(');
+  assert.ok(awaited !== -1, 'the drag save is awaited');
+  const guarded = up.indexOf('try {');
+  assert.ok(guarded !== -1 && guarded < awaited, 'the awaited save sits inside a try block');
+  assert.ok(up.indexOf('} catch (error)') > awaited, 'the rejected save is caught, so no unhandled rejection escapes');
+});
+
+test('V4-1c: sort options and the rename action share the 44px control treatment', () => {
+  const css = fs.readFileSync('web/public/theme.css', 'utf8');
+  assert.match(css, /\.sheet-option \{[^}]*min-height: 44px;/, 'sort and view options are not raw UA buttons');
+  assert.match(css, /\.sheet-option \{[^}]*border: 1px solid var\(--border-strong\);[^}]*border-radius: 8px;/);
+  assert.match(css, /\.sheet-option \{[^}]*font: inherit;/);
+  assert.match(css, /\.sheet-option\[aria-pressed="true"\]/, 'the chosen sort or view has a visible pressed state');
+  assert.match(css, /\.board-sheet \.rename-project \.button \{ min-height: 44px; \}/, 'the rename action meets the touch target');
+  assert.match(css, /\.canvas-card-title \{[^}]*font-size: 16px;/);
+  assert.ok(Math.round(16 * 0.55) >= 9, 'the card title stays readable at the framing floor');
+  const js = fs.readFileSync('web/public/app.js', 'utf8');
+  assert.match(js, /class: 'sheet-option'/, 'the sort and view sheet renders the styled option');
 });
