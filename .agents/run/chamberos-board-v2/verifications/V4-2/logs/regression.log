@@ -1,0 +1,48 @@
+Synthetic preview ready at http://127.0.0.1:37245
+Signing in...
+Case 360-light-en
+  case 360-light-en FAILED: {"neighbourhoodComplete":true,"blockerCount":1,"dependentCount":2,"neighbourhoodInside":false,"neighbourhoodOutsideBeforeFit":["chamberos/platform#1","chamberos/platform#3","chamberos/platform#2","acme/vanilla-sdk#11"],"labelsInside":true,"labelCount":3,"zoomBefore":1,"zoomAfterFit":0.55,"zoomRestored":1,"restoredMatchesStart":true,"filteredMatches":3,"filteredAllInside":false,"appliedFilters":["priority:high"],"matchingCardsFramed":3,"visibleFilterEntries":["applied-filter-btn"],"compactFilterPresent":false,"cardsUnderHud":["acme/vanilla-sdk#11"],"filteredUnderHud":[],"hudHeight":48,"focusExitWording":{"text":"Close","ariaLabel":"Close the dependency view"}}
+Case 360-light-fr
+  case 360-light-fr FAILED: {"neighbourhoodComplete":true,"blockerCount":1,"dependentCount":2,"neighbourhoodInside":false,"neighbourhoodOutsideBeforeFit":["chamberos/platform#1","chamberos/platform#3","chamberos/platform#2","acme/vanilla-sdk#11"],"labelsInside":true,"labelCount":3,"zoomBefore":1,"zoomAfterFit":0.55,"zoomRestored":1,"restoredMatchesStart":true,"filteredMatches":3,"filteredAllInside":false,"appliedFilters":["priority:high"],"matchingCardsFramed":3,"visibleFilterEntries":["applied-filter-btn"],"compactFilterPresent":false,"cardsUnderHud":["acme/vanilla-sdk#11"],"filteredUnderHud":[],"hudHeight":48,"focusExitWording":{"text":"Fermer","ariaLabel":"Fermer la vue des dépendances"}}
+Case 360-dark-en
+  case 360-dark-en FAILED: {"neighbourhoodComplete":true,"blockerCount":1,"dependentCount":2,"neighbourhoodInside":false,"neighbourhoodOutsideBeforeFit":["chamberos/platform#1","chamberos/platform#3","chamberos/platform#2","acme/vanilla-sdk#11"],"labelsInside":true,"labelCount":3,"zoomBefore":1,"zoomAfterFit":0.55,"zoomRestored":1,"restoredMatchesStart":true,"filteredMatches":3,"filteredAllInside":false,"appliedFilters":["priority:high"],"matchingCardsFramed":3,"visibleFilterEntries":["applied-filter-btn"],"compactFilterPresent":false,"cardsUnderHud":["acme/vanilla-sdk#11"],"filteredUnderHud":[],"hudHeight":48,"focusExitWording":{"text":"Close","ariaLabel":"Close the dependency view"}}
+Case 360-dark-fr
+  case 360-dark-fr FAILED: {"neighbourhoodComplete":true,"blockerCount":1,"dependentCount":2,"neighbourhoodInside":false,"neighbourhoodOutsideBeforeFit":["chamberos/platform#1","chamberos/platform#3","chamberos/platform#2","acme/vanilla-sdk#11"],"labelsInside":true,"labelCount":3,"zoomBefore":1,"zoomAfterFit":0.55,"zoomRestored":1,"restoredMatchesStart":true,"filteredMatches":3,"filteredAllInside":false,"appliedFilters":["priority:high"],"matchingCardsFramed":3,"visibleFilterEntries":["applied-filter-btn"],"compactFilterPresent":false,"cardsUnderHud":["acme/vanilla-sdk#11"],"filteredUnderHud":[],"hudHeight":48,"focusExitWording":{"text":"Fermer","ariaLabel":"Fermer la vue des dépendances"}}
+Case 390-light-en
+  case 390-light-en FAILED: {"neighbourhoodComplete":true,"blockerCount":1,"dependentCount":2,"neighbourhoodInside":false,"neighbourhoodOutsideBeforeFit":["chamberos/platform#1","chamberos/platform#3","chamberos/platform#2","acme/vanilla-sdk#11"],"labelsInside":true,"labelCount":3,"zoomBefore":1,"zoomAfterFit":0.55,"zoomRestored":1,"restoredMatchesStart":true,"filteredMatches":3,"filteredAllInside":false,"appliedFilters":["priority:high"],"matchingCardsFramed":3,"visibleFilterEntries":["applied-filter-btn"],"compactFilterPresent":false,"cardsUnderHud":["acme/vanilla-sdk#11"],"filteredUnderHud":[],"hudHeight":48,"focusExitWording":{"text":"Close","ariaLabel":"Close the dependency view"}}
+Case 390-light-fr
+  case 390-light-fr FAILED: {"neighbourhoodComplete":true,"blockerCount":1,"dependentCount":2,"neighbourhoodInside":false,"neighbourhoodOutsideBeforeFit":["chamberos/platform#1","chamberos/platform#3","chamberos/platform#2","acme/vanilla-sdk#11"],"labelsInside":true,"labelCount":3,"zoomBefore":1,"zoomAfterFit":0.55,"zoomRestored":1,"restoredMatchesStart":true,"filteredMatches":3,"filteredAllInside":false,"appliedFilters":["priority:high"],"matchingCardsFramed":3,"visibleFilterEntries":["applied-filter-btn"],"compactFilterPresent":false,"cardsUnderHud":["acme/vanilla-sdk#11"],"filteredUnderHud":[],"hudHeight":48,"focusExitWording":{"text":"Fermer","ariaLabel":"Fermer la vue des dépendances"}}
+Case 390-dark-en
+  case 390-dark-en FAILED: {"neighbourhoodComplete":true,"blockerCount":1,"dependentCount":2,"neighbourhoodInside":false,"neighbourhoodOutsideBeforeFit":["chamberos/platform#1","chamberos/platform#3","chamberos/platform#2","acme/vanilla-sdk#11"],"labelsInside":true,"labelCount":3,"zoomBefore":1,"zoomAfterFit":0.55,"zoomRestored":1,"restoredMatchesStart":true,"filteredMatches":3,"filteredAllInside":false,"appliedFilters":["priority:high"],"matchingCardsFramed":3,"visibleFilterEntries":["applied-filter-btn"],"compactFilterPresent":false,"cardsUnderHud":["acme/vanilla-sdk#11"],"filteredUnderHud":[],"hudHeight":48,"focusExitWording":{"text":"Close","ariaLabel":"Close the dependency view"}}
+Case 390-dark-fr
+  case 390-dark-fr FAILED: {"neighbourhoodComplete":true,"blockerCount":1,"dependentCount":2,"neighbourhoodInside":false,"neighbourhoodOutsideBeforeFit":["chamberos/platform#1","chamberos/platform#3","chamberos/platform#2","acme/vanilla-sdk#11"],"labelsInside":true,"labelCount":3,"zoomBefore":1,"zoomAfterFit":0.55,"zoomRestored":1,"restoredMatchesStart":true,"filteredMatches":3,"filteredAllInside":false,"appliedFilters":["priority:high"],"matchingCardsFramed":3,"visibleFilterEntries":["applied-filter-btn"],"compactFilterPresent":false,"cardsUnderHud":["acme/vanilla-sdk#11"],"filteredUnderHud":[],"hudHeight":48,"focusExitWording":{"text":"Fermer","ariaLabel":"Fermer la vue des dépendances"}}
+Case 768-light-en
+Case 768-light-fr
+Case 768-dark-en
+Case 768-dark-fr
+Case 1280-light-en
+Case 1280-light-fr
+Case 1280-dark-en
+Case 1280-dark-fr
+Reduced motion 360 light en
+Reduced motion 360 light fr
+{
+  "generatedAt": "2026-11-12T19:33:44.565Z",
+  "chrome": "/workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell",
+  "previewUrl": "http://127.0.0.1:37245",
+  "cases": 16,
+  "casesPassed": 8,
+  "reducedMotionPassed": 0,
+  "cspViolations": [],
+  "cssomStyledElements": 11,
+  "sourceInlineStyles": [],
+  "bannedWords": {
+    "mobile": false,
+    "n8n": false
+  },
+  "consoleProblems": []
+}
+Error: Only 8/16 cases passed
+    at run (file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/scripts/generate-v4-1b-verification.mjs:508:54)
+
+EXIT_CODE=1

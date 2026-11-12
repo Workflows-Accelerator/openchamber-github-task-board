@@ -1,0 +1,23 @@
+{
+  "syntheticOnly": true,
+  "matrix": [],
+  "probes": {
+    "note": {
+      "reload": true,
+      "author": "board-owner",
+      "createdAt": "2026-10-20T10:00:03.000Z",
+      "noteCount": 2,
+      "comments": 2,
+      "appendOnly": true,
+      "marker": "<!-- board-note: 1 -->",
+      "escapeFocus": true,
+      "shortcutSend": true
+    }
+  },
+  "pageErrors": [],
+  "consoleErrors": [],
+  "expectedHttpErrors": [],
+  "csp": [],
+  "pass": false,
+  "error": "AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:\n\n0 !== 1\n\n    at file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-2/scripts/browser.mjs:71:10"
+}

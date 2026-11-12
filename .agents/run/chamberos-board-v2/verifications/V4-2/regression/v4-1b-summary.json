@@ -1,0 +1,16 @@
+{
+  "generatedAt": "2026-11-12T19:33:44.565Z",
+  "chrome": "/workspace/.cache/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-linux64/chrome-headless-shell",
+  "previewUrl": "http://127.0.0.1:37245",
+  "cases": 16,
+  "casesPassed": 8,
+  "reducedMotionPassed": 0,
+  "cspViolations": [],
+  "cssomStyledElements": 11,
+  "sourceInlineStyles": [],
+  "bannedWords": {
+    "mobile": false,
+    "n8n": false
+  },
+  "consoleProblems": []
+}

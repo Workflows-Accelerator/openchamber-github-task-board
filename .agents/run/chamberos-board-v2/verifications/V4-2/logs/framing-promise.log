@@ -1,0 +1,15 @@
+360-light-en PASS zoom=0.55 outside=3 showAll=true showAllZoom=0.315 filterZoom=0.55
+360-light-fr PASS zoom=0.55 outside=3 showAll=true showAllZoom=0.315 filterZoom=0.55
+360-dark-en PASS zoom=0.55 outside=3 showAll=true showAllZoom=0.315 filterZoom=0.55
+360-dark-fr PASS zoom=0.55 outside=3 showAll=true showAllZoom=0.315 filterZoom=0.55
+390-light-en PASS zoom=0.55 outside=3 showAll=true showAllZoom=0.344 filterZoom=0.55
+390-light-fr PASS zoom=0.55 outside=3 showAll=true showAllZoom=0.344 filterZoom=0.55
+390-dark-en PASS zoom=0.55 outside=3 showAll=true showAllZoom=0.344 filterZoom=0.55
+390-dark-fr PASS zoom=0.55 outside=3 showAll=true showAllZoom=0.344 filterZoom=0.55
+1280-light-en PASS zoom=0.785 outside=0 showAll=false showAllZoom=n/a filterZoom=0.915
+1280-light-fr PASS zoom=0.785 outside=0 showAll=false showAllZoom=n/a filterZoom=0.915
+1280-dark-en PASS zoom=0.785 outside=0 showAll=false showAllZoom=n/a filterZoom=0.915
+1280-dark-fr PASS zoom=0.785 outside=0 showAll=false showAllZoom=n/a filterZoom=0.915
+{"cases":12,"passed":12,"csp":0,"console":0}
+framing-promise complete
+EXIT_CODE=0

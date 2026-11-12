@@ -1,0 +1,5 @@
+
+> openchamber-github-task-board@1.2.1 typecheck
+> tsc --noEmit
+
+EXIT_CODE=0

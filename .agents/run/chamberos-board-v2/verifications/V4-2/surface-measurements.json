@@ -1,0 +1,914 @@
+[
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 256,
+      "rowWidth": 328,
+      "metaTop": 241.5,
+      "mainBottom": 235.5
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 327,
+      "headWidth": 327
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 256,
+      "rowWidth": 328,
+      "metaTop": 241.5,
+      "mainBottom": 235.5
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 327,
+      "headWidth": 327
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 256,
+      "rowWidth": 328,
+      "metaTop": 241.5,
+      "mainBottom": 235.5
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 327,
+      "headWidth": 327
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 360,
+      "height": 800,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 256,
+      "rowWidth": 328,
+      "metaTop": 241.5,
+      "mainBottom": 235.5
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 327,
+      "headWidth": 327
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 286,
+      "rowWidth": 358,
+      "metaTop": 221.25,
+      "mainBottom": 215.25
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 357,
+      "headWidth": 357
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 286,
+      "rowWidth": 358,
+      "metaTop": 221.25,
+      "mainBottom": 215.25
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 357,
+      "headWidth": 357
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 286,
+      "rowWidth": 358,
+      "metaTop": 221.25,
+      "mainBottom": 215.25
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 357,
+      "headWidth": 357
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 390,
+      "height": 844,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 286,
+      "rowWidth": 358,
+      "metaTop": 221.25,
+      "mainBottom": 215.25
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 357,
+      "headWidth": 357
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 577,
+      "rowWidth": 736,
+      "metaTop": 173,
+      "mainBottom": 236.125
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 477,
+      "headWidth": 735
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 577,
+      "rowWidth": 736,
+      "metaTop": 173,
+      "mainBottom": 236.125
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 477,
+      "headWidth": 735
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 577,
+      "rowWidth": 736,
+      "metaTop": 173,
+      "mainBottom": 236.125
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 477,
+      "headWidth": 735
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 768,
+      "height": 900,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 577,
+      "rowWidth": 736,
+      "metaTop": 173,
+      "mainBottom": 236.125
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 477,
+      "headWidth": 735
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "light",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 557,
+      "rowWidth": 1018,
+      "metaTop": 239.875,
+      "mainBottom": 269.25
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 345,
+      "headWidth": 487
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "light",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 578,
+      "rowWidth": 1018,
+      "metaTop": 239.875,
+      "mainBottom": 269.25
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 350,
+      "headWidth": 487
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "dark",
+      "lang": "en",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 557,
+      "rowWidth": 1018,
+      "metaTop": 239.875,
+      "mainBottom": 269.25
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 345,
+      "headWidth": 487
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "en"
+    },
+    "pass": true
+  },
+  {
+    "testCase": {
+      "width": 1280,
+      "height": 900,
+      "theme": "dark",
+      "lang": "fr",
+      "expectUndo": false
+    },
+    "list": {
+      "pass": true,
+      "titleWidth": 578,
+      "rowWidth": 1018,
+      "metaTop": 239.875,
+      "mainBottom": 269.25
+    },
+    "drawer": {
+      "pass": true,
+      "titleWidth": 350,
+      "headWidth": 487
+    },
+    "picker": {
+      "pass": true,
+      "options": 5
+    },
+    "client": {
+      "pass": true
+    },
+    "listSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "drawerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pickerSurface": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "common": {
+      "pass": true,
+      "undersized": [],
+      "inlineStyles": 11,
+      "banned": false,
+      "lang": "fr"
+    },
+    "pass": true
+  }
+]

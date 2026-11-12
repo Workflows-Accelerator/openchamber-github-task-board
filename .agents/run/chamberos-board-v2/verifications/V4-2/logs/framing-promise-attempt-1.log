@@ -1,0 +1,16 @@
+360-light-en FAIL zoom=0.55 outside=3 showAll=true showAllZoom=0.315 filterZoom=0.55
+360-light-fr FAIL zoom=0.55 outside=3 showAll=true showAllZoom=0.315 filterZoom=0.55
+360-dark-en FAIL zoom=0.55 outside=3 showAll=true showAllZoom=0.315 filterZoom=0.55
+360-dark-fr FAIL zoom=0.55 outside=3 showAll=true showAllZoom=0.315 filterZoom=0.55
+390-light-en FAIL zoom=0.55 outside=3 showAll=true showAllZoom=0.344 filterZoom=0.55
+390-light-fr FAIL zoom=0.55 outside=3 showAll=true showAllZoom=0.344 filterZoom=0.55
+390-dark-en FAIL zoom=0.55 outside=3 showAll=true showAllZoom=0.344 filterZoom=0.55
+390-dark-fr FAIL zoom=0.55 outside=3 showAll=true showAllZoom=0.344 filterZoom=0.55
+1280-light-en PASS zoom=0.785 outside=0 showAll=false showAllZoom=n/a filterZoom=0.915
+1280-light-fr PASS zoom=0.785 outside=0 showAll=false showAllZoom=n/a filterZoom=0.915
+1280-dark-en PASS zoom=0.785 outside=0 showAll=false showAllZoom=n/a filterZoom=0.915
+1280-dark-fr PASS zoom=0.785 outside=0 showAll=false showAllZoom=n/a filterZoom=0.915
+{"cases":12,"passed":4,"csp":0,"console":0}
+Error: 8 framing-promise case(s) failed
+    at run (file:///workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3/.agents/run/chamberos-board-v2/verifications/V4-2/scripts/framing-promise.mjs:310:54)
+EXIT_CODE=1
