@@ -1,14 +1,15 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `building` — user D39 approved bounded R1/R2 correction after failed independent review. Sole active worker `ses_9e90b026f1e3847965793d7f` at base 0cef002; no new navigation/zoom-range changes. Independent targeted review required afterward; if failed again, stop and ask. Live still `7339629-20261111` last confirmed; origin/master `28af19b`. All #53–#71 open. Current: tasks.md and resume-2026-11-12-v4-review-blocked.md.
+- **State:** `proving` — D39 bounded fix committed `a1225f0`/evidence `b07dd94`; sole active worker `ses_a5380706cd701b2303be374f` is the fresh independent targeted review. If it fails, stop and ask the user (no new automatic loop). Live still `7339629-20261111` last confirmed; origin/master `28af19b`. All #53–#71 open. Current: tasks.md and resume-2026-11-12-v4-review-blocked.md.
 - **Alignment:** D33–D38 CONFIRMED by user. D37 readability-first and D38 visible desktop rail toggle approved via render form. Real-phone drag persistence on previous live release confirmed by user. No fresh review verdict yet; no V4 publication.
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3`
 - **Branch:** `feat/board-v3`
 - **Base Commit:** `28af19b` (V4-1 start)
 - **Plan:** PLAN.md (batches A-D, strictly sequential steps, one worktree)
 - **Dispatched Sessions:**
-  - `ses_9e90b026f1e3847965793d7f` D39 bounded R1/R2 fix — RUNNING, genius requested, real model verify at completion. One worker, no poll; no publication until independent approval.
+  - `ses_9e90b026f1e3847965793d7f` D39 bounded R1/R2 fix — COMPLETED a1225f0 + b07dd94 evidence; model verification pending at review finish (bounded, no polling).
+  - `ses_a5380706cd701b2303be374f` targeted independent review — RUNNING sole worker; if FAIL, stop and ask.
   - `ses_e85281d189897ffd77c9fc47` V4 final independent L4 — COMPLETED 0cef002 (evidence only), 9router/genius verified, SPEC FAIL/QUALITY CHANGES REQUESTED; R1/R2 open, no active workers.
   - `ses_07ed8c7e94adb5f03e3f9ddf` V4-1d interrupted-pass recovery — COMPLETED cd64af1 (fix 40cb1d8); 9router/genius verified at completion; manager inspected actual diff and README. Fresh independent verdict pending.
   - `ses_08535601c18ea3729d5baced` V4-1c — COMPLETED 594cb21 after fixes; subsequent hostile/D38 follow-up INTERRUPTED with dirty app.js/theme.css. Confirmed idle and recovered by V4-1d (not duplicated). 9router/genius verified during failure diagnosis.
