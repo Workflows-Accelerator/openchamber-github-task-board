@@ -40,7 +40,7 @@ Restricted server/panel/service paths, Markdown renderer, Arrange implementation
 
 ## Screenshots
 
-159 PNG files in `screenshots/`, including:
+151 PNG files in `screenshots/` (V4-1d removed 8 stale suffix-less `d2-spread-*` files the script no longer writes), including:
 
 - `d1-filter-applied-360-light-en.png`
 - `d2-focus-360-light-en.png`

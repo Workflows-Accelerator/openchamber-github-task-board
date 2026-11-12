@@ -1,0 +1,30 @@
+{
+  "base": "594cb21",
+  "checks": {
+    "branch_is_feat_board_v3": true,
+    "restricted_paths_unchanged": true,
+    "dot_grid_byte_identical_to_base": true,
+    "dot_grid_byte_identical_to_hostile_review_base": true,
+    "D37_floor_unchanged": true,
+    "D37_english_action_unchanged": true,
+    "D37_french_action_unchanged": true,
+    "D37_framing_functions_unchanged": true,
+    "only_approved_production_paths": true,
+    "stale_suffixless_screenshots_removed": true,
+    "V4_1c_has_151_png_files": true,
+    "V4_1d_has_45_png_files": true,
+    ".sheet-content h3_unchanged": true,
+    ".sheet-intro_unchanged": true,
+    ".sheet-group_unchanged": true,
+    ":root_unchanged": true,
+    ":root[data-theme=\"light\"]_unchanged": true,
+    ".canvas-card-title_unchanged": true
+  },
+  "allPass": true,
+  "dotGridSha256": "692903b749bcd9e2dcd07a48d91574522c81d52b513eea8a6abff7ea92aec274",
+  "changedProductionPaths": [
+    "web/public/app.js",
+    "web/public/theme.css",
+    "web/tests/v3-ux-client.test.mjs"
+  ]
+}

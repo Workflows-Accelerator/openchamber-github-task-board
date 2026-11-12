@@ -1,0 +1,3793 @@
+TAP version 13
+# {"route":"/api/issues/1/questions/0/answer","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/questions/0/answer","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/questions/0/answer","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 answer: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 1 - audit A5 answer: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 472.729535
+  type: 'test'
+  ...
+# {"route":"/api/issues/1/human-tasks/0/toggle","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/human-tasks/0/toggle","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/human-tasks/0/toggle","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 human task: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 2 - audit A5 human task: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 342.341709
+  type: 'test'
+  ...
+# {"route":"/api/issues/2/reopen","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/2/reopen","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/2/reopen","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 reopen: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 3 - audit A5 reopen: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 304.430029
+  type: 'test'
+  ...
+# {"route":"/api/issues/1/labels/remove","method":"POST","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/labels/remove","method":"POST","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/labels/remove","method":"POST","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 remove label POST: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 4 - audit A5 remove label POST: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 426.953571
+  type: 'test'
+  ...
+# {"route":"/api/issues/1/labels/backburner","method":"DELETE","scenario":"missing","status":400,"PATCH":0}
+# {"route":"/api/issues/1/labels/backburner","method":"DELETE","scenario":"stale","status":409,"PATCH":0}
+# {"route":"/api/issues/1/labels/backburner","method":"DELETE","scenario":"malformed JSON","status":400,"PATCH":0}
+# Subtest: audit A5 remove label DELETE: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+ok 5 - audit A5 remove label DELETE: missing/stale fingerprints and malformed JSON refuse with zero PATCH
+  ---
+  duration_ms: 334.401482
+  type: 'test'
+  ...
+# Subtest: audit A5 human task: BOM, LF, CRLF, fences, indented code, duplicate text and two-space nested list preserve exact bytes
+ok 6 - audit A5 human task: BOM, LF, CRLF, fences, indented code, duplicate text and two-space nested list preserve exact bytes
+  ---
+  duration_ms: 14.829627
+  type: 'test'
+  ...
+# Subtest: audit A5 operations: old closure edited today excluded; unlabelled/planned/review issues counted once; repository-qualified identity
+ok 7 - audit A5 operations: old closure edited today excluded; unlabelled/planned/review issues counted once; repository-qualified identity
+  ---
+  duration_ms: 275.449566
+  type: 'test'
+  ...
+# Subtest: audit A5 label removal preserves unrelated labels and refuses absent assignment with zero PATCH
+ok 8 - audit A5 label removal preserves unrelated labels and refuses absent assignment with zero PATCH
+  ---
+  duration_ms: 251.509436
+  type: 'test'
+  ...
+# Subtest: audit A5 archive pagination: non-finite limit and offset normalize to finite numbers
+ok 9 - audit A5 archive pagination: non-finite limit and offset normalize to finite numbers
+  ---
+  duration_ms: 234.543865
+  type: 'test'
+  ...
+# Subtest: audit A5 combined operations: cached fetchedAt matches oldest cached repository timestamp
+ok 10 - audit A5 combined operations: cached fetchedAt matches oldest cached repository timestamp
+  ---
+  duration_ms: 237.260719
+  type: 'test'
+  ...
+# Subtest: audit A5 archive: dedicated bounded closed fetch reaches closed issues beyond all-issues page cap
+ok 11 - audit A5 archive: dedicated bounded closed fetch reaches closed issues beyond all-issues page cap
+  ---
+  duration_ms: 413.095833
+  type: 'test'
+  ...
+# Subtest: audit A5 presentation en: saved toggle restores global body mode and filters draft rows without altering board data
+ok 12 - audit A5 presentation en: saved toggle restores global body mode and filters draft rows without altering board data
+  ---
+  duration_ms: 36.247519
+  type: 'test'
+  ...
+# Subtest: audit A5 presentation fr: saved toggle restores global body mode and filters draft rows without altering board data
+ok 13 - audit A5 presentation fr: saved toggle restores global body mode and filters draft rows without altering board data
+  ---
+  duration_ms: 10.031646
+  type: 'test'
+  ...
+# Subtest: audit A5 blocked/decisions predicate: excludes closed issues and separates question-only items
+ok 14 - audit A5 blocked/decisions predicate: excludes closed issues and separates question-only items
+  ---
+  duration_ms: 9.355055
+  type: 'test'
+  ...
+# Subtest: audit A5 human task rapid toggle: queues toggles and adopts updated fingerprint without 409
+ok 15 - audit A5 human task rapid toggle: queues toggles and adopts updated fingerprint without 409
+  ---
+  duration_ms: 72.850147
+  type: 'test'
+  ...
+# Subtest: audit A5 note 409 conflict recovery: extracts fingerprint from error payload and prompts on remote change
+ok 16 - audit A5 note 409 conflict recovery: extracts fingerprint from error payload and prompts on remote change
+  ---
+  duration_ms: 148.892637
+  type: 'test'
+  ...
+# Subtest: audit A5 presentation mode: hides all questions and human tasks in Decisions and Blocked without leaking text
+ok 17 - audit A5 presentation mode: hides all questions and human tasks in Decisions and Blocked without leaking text
+  ---
+  duration_ms: 13.431901
+  type: 'test'
+  ...
+# Subtest: audit A5 note overwrite preserves remote card geometry and concurrent changes to other notes
+ok 18 - audit A5 note overwrite preserves remote card geometry and concurrent changes to other notes
+  ---
+  duration_ms: 131.686714
+  type: 'test'
+  ...
+# Subtest: audit A5 note 409 safe retry: adopts remote fingerprint without conflict prompt when target note was not modified remotely
+ok 19 - audit A5 note 409 safe retry: adopts remote fingerprint without conflict prompt when target note was not modified remotely
+  ---
+  duration_ms: 132.998838
+  type: 'test'
+  ...
+# Subtest: audit A5 presentation draft filtering: non-draft status issues without priority label stay visible when column is draft
+ok 20 - audit A5 presentation draft filtering: non-draft status issues without priority label stay visible when column is draft
+  ---
+  duration_ms: 9.902163
+  type: 'test'
+  ...
+# Subtest: audit A5 note 409 conflict across refresh: ordinary Retry after board refresh does not overwrite remote note without explicit Overwrite
+ok 21 - audit A5 note 409 conflict across refresh: ordinary Retry after board refresh does not overwrite remote note without explicit Overwrite
+  ---
+  duration_ms: 189.98832
+  type: 'test'
+  ...
+# Subtest: audit A5 combined-mode openIssue: resolves repository argument for section cards and cross-repo dependencies
+ok 22 - audit A5 combined-mode openIssue: resolves repository argument for section cards and cross-repo dependencies
+  ---
+  duration_ms: 18.197353
+  type: 'test'
+  ...
+# Subtest: audit A4 note poll/refresh: blur on detached note element does not trigger premature save
+ok 23 - audit A4 note poll/refresh: blur on detached note element does not trigger premature save
+  ---
+  duration_ms: 168.915765
+  type: 'test'
+  ...
+# Subtest: parseWebHumanTasks extracts checkboxes under Human Tasks and computes accurate character offsets
+ok 24 - parseWebHumanTasks extracts checkboxes under Human Tasks and computes accurate character offsets
+  ---
+  duration_ms: 3.518855
+  type: 'test'
+  ...
+# Subtest: toggleHumanTaskInMarkdown preserves markdown byte-for-byte except for the single checkbox character
+ok 25 - toggleHumanTaskInMarkdown preserves markdown byte-for-byte except for the single checkbox character
+  ---
+  duration_ms: 1.067506
+  type: 'test'
+  ...
+# Subtest: toggleHumanTaskInMarkdown preserves CRLF line endings byte-for-byte
+ok 26 - toggleHumanTaskInMarkdown preserves CRLF line endings byte-for-byte
+  ---
+  duration_ms: 0.504423
+  type: 'test'
+  ...
+# Subtest: parseWebHumanTasks ignores code fences and indented code
+ok 27 - parseWebHumanTasks ignores code fences and indented code
+  ---
+  duration_ms: 0.482824
+  type: 'test'
+  ...
+# Subtest: POST /api/issues/:n/human-tasks/:index/toggle toggles checkbox, enforces fingerprints, and validates boolean completed
+ok 28 - POST /api/issues/:n/human-tasks/:index/toggle toggles checkbox, enforces fingerprints, and validates boolean completed
+  ---
+  duration_ms: 530.289076
+  type: 'test'
+  ...
+# Subtest: POST /api/issues/:n/reopen enforces fingerprints, sets state:open, assigns status:backlog, and refuses open issues
+ok 29 - POST /api/issues/:n/reopen enforces fingerprints, sets state:open, assigns status:backlog, and refuses open issues
+  ---
+  duration_ms: 450.973234
+  type: 'test'
+  ...
+# Subtest: POST /api/issues/:n/labels/remove and DELETE /api/issues/:n/labels/:label enforce mandatory fingerprints, reject malformed JSON, and require label presence
+ok 30 - POST /api/issues/:n/labels/remove and DELETE /api/issues/:n/labels/:label enforce mandatory fingerprints, reject malformed JSON, and require label presence
+  ---
+  duration_ms: 431.123359
+  type: 'test'
+  ...
+# Subtest: GET /api/archive returns backburner and closed issues with bounded pagination, stable sort, and preserved metadata
+ok 31 - GET /api/archive returns backburner and closed issues with bounded pagination, stable sort, and preserved metadata
+  ---
+  duration_ms: 242.842204
+  type: 'test'
+  ...
+# Subtest: GET /api/operations returns real counts, 8 standard status columns, and accurate closed7Days using closedAt
+ok 32 - GET /api/operations returns real counts, 8 standard status columns, and accurate closed7Days using closedAt
+  ---
+  duration_ms: 305.610195
+  type: 'test'
+  ...
+# Subtest: multi-repo All Projects Operations aggregates multiple repositories and handles discovery failure
+ok 33 - multi-repo All Projects Operations aggregates multiple repositories and handles discovery failure
+  ---
+  duration_ms: 239.637269
+  type: 'test'
+  ...
+# Subtest: multi-repo Operations and Archive failure modes: total outage, partial per-repo failure, and cached fallback
+ok 34 - multi-repo Operations and Archive failure modes: total outage, partial per-repo failure, and cached fallback
+  ---
+  duration_ms: 1384.463986
+  type: 'test'
+  ...
+# Subtest: the server entry refuses a missing configuration and names the variable
+ok 35 - the server entry refuses a missing configuration and names the variable
+  ---
+  duration_ms: 534.325919
+  type: 'test'
+  ...
+# Subtest: the server entry refuses an invalid repository without echoing secrets
+ok 36 - the server entry refuses an invalid repository without echoing secrets
+  ---
+  duration_ms: 483.052104
+  type: 'test'
+  ...
+# Subtest: startup is refused when the token belongs to another account
+ok 37 - startup is refused when the token belongs to another account
+  ---
+  duration_ms: 229.913112
+  type: 'test'
+  ...
+# Subtest: inaccessible BOARD_REPO does not gate startup and is not authorized
+ok 38 - inaccessible BOARD_REPO does not gate startup and is not authorized
+  ---
+  duration_ms: 308.196586
+  type: 'test'
+  ...
+# Subtest: every API route denies data without a session
+ok 39 - every API route denies data without a session
+  ---
+  duration_ms: 206.7647
+  type: 'test'
+  ...
+# Subtest: the shell page loads without a session and exposes no data or agent controls
+ok 40 - the shell page loads without a session and exposes no data or agent controls
+  ---
+  duration_ms: 159.55666
+  type: 'test'
+  ...
+# Subtest: a wrong password is rejected and rate limiting blocks early on cooldown
+ok 41 - a wrong password is rejected and rate limiting blocks early on cooldown
+  ---
+  duration_ms: 601.567294
+  type: 'test'
+  ...
+# Subtest: a successful login issues a hardened cookie and a bound CSRF token
+ok 42 - a successful login issues a hardened cookie and a bound CSRF token
+  ---
+  duration_ms: 272.718822
+  type: 'test'
+  ...
+# Subtest: state-changing requests are rejected without a valid CSRF token
+ok 43 - state-changing requests are rejected without a valid CSRF token
+  ---
+  duration_ms: 284.711946
+  type: 'test'
+  ...
+# Subtest: the board lists pages, excludes pull requests and reports freshness fields
+ok 44 - the board lists pages, excludes pull requests and reports freshness fields
+  ---
+  duration_ms: 274.157442
+  type: 'test'
+  ...
+# Subtest: issue detail exposes a fingerprint, the overview and answerable questions
+ok 45 - issue detail exposes a fingerprint, the overview and answerable questions
+  ---
+  duration_ms: 317.330129
+  type: 'test'
+  ...
+# Subtest: a conditional section write succeeds and preserves every other section
+ok 46 - a conditional section write succeeds and preserves every other section
+  ---
+  duration_ms: 298.886347
+  type: 'test'
+  ...
+# Subtest: end-to-end CRLF section write succeeds and is verified on readback (R7)
+ok 47 - end-to-end CRLF section write succeeds and is verified on readback (R7)
+  ---
+  duration_ms: 261.61948
+  type: 'test'
+  ...
+# Subtest: a concurrent edit conflicts instead of overwriting
+ok 48 - a concurrent edit conflicts instead of overwriting
+  ---
+  duration_ms: 242.383557
+  type: 'test'
+  ...
+# Subtest: an inline open-question answer is written without touching other sections
+ok 49 - an inline open-question answer is written without touching other sections
+  ---
+  duration_ms: 301.355046
+  type: 'test'
+  ...
+# Subtest: a status change rewrites only the agreed status labels
+ok 50 - a status change rewrites only the agreed status labels
+  ---
+  duration_ms: 238.573236
+  type: 'test'
+  ...
+# Subtest: protected sections and oversized writes are refused without a PATCH
+ok 51 - protected sections and oversized writes are refused without a PATCH
+  ---
+  duration_ms: 237.401951
+  type: 'test'
+  ...
+# Subtest: the client cannot name another repository
+ok 52 - the client cannot name another repository
+  ---
+  duration_ms: 248.034964
+  type: 'test'
+  ...
+# Subtest: sessions expire and are cleared from the store
+ok 53 - sessions expire and are cleared from the store
+  ---
+  duration_ms: 286.806323
+  type: 'test'
+  ...
+# Subtest: signing out destroys the session and clears the cookie
+ok 54 - signing out destroys the session and clears the cookie
+  ---
+  duration_ms: 242.849316
+  type: 'test'
+  ...
+# Subtest: neither the token nor the password reaches HTML, JS, API responses or logs
+ok 55 - neither the token nor the password reaches HTML, JS, API responses or logs
+  ---
+  duration_ms: 321.758543
+  type: 'test'
+  ...
+# Subtest: the API answers unknown routes and methods plainly
+ok 56 - the API answers unknown routes and methods plainly
+  ---
+  duration_ms: 260.062203
+  type: 'test'
+  ...
+# Subtest: GitHub error mapping distinguishes 401, 403 rate limit, 403 forbidden, 422, and 5xx
+ok 57 - GitHub error mapping distinguishes 401, 403 rate limit, 403 forbidden, 422, and 5xx
+  ---
+  duration_ms: 304.874336
+  type: 'test'
+  ...
+# Subtest: parallel login flood does not block the process and finishes quickly
+ok 58 - parallel login flood does not block the process and finishes quickly
+  ---
+  duration_ms: 325.444487
+  type: 'test'
+  ...
+# Subtest: forwarded headers are ignored and cannot bypass rate limiting (direct socket peer is always used) (R3)
+ok 59 - forwarded headers are ignored and cannot bypass rate limiting (direct socket peer is always used) (R3)
+  ---
+  duration_ms: 516.103032
+  type: 'test'
+  ...
+# Subtest: Origin and Referer validation rejects cross-origin writes when BOARD_BASE_URL is set
+ok 60 - Origin and Referer validation rejects cross-origin writes when BOARD_BASE_URL is set
+  ---
+  duration_ms: 264.545436
+  type: 'test'
+  ...
+# Subtest: existing authenticated sessions remain usable during rate limit cooldown
+ok 61 - existing authenticated sessions remain usable during rate limit cooldown
+  ---
+  duration_ms: 665.157806
+  type: 'test'
+  ...
+# Subtest: an ambiguous write outcome (readback mismatch) returns 502 write_outcome_unknown and makes zero retries
+ok 62 - an ambiguous write outcome (readback mismatch) returns 502 write_outcome_unknown and makes zero retries
+  ---
+  duration_ms: 239.740156
+  type: 'test'
+  ...
+# Subtest: an ambiguous write outcome on upstream server error returns 502 write_outcome_unknown and makes zero retries
+ok 63 - an ambiguous write outcome on upstream server error returns 502 write_outcome_unknown and makes zero retries
+  ---
+  duration_ms: 219.321197
+  type: 'test'
+  ...
+# Subtest: an ambiguous write outcome on truncated upstream response returns 502 write_outcome_unknown and makes zero retries (R1)
+ok 64 - an ambiguous write outcome on truncated upstream response returns 502 write_outcome_unknown and makes zero retries (R1)
+  ---
+  duration_ms: 383.027295
+  type: 'test'
+  ...
+# Subtest: warning regarding simultaneous overwrite is present in page and README
+ok 65 - warning regarding simultaneous overwrite is present in page and README
+  ---
+  duration_ms: 15.370534
+  type: 'test'
+  ...
+# Subtest: slow-body login request releases per-address occupancy within deadline while authenticated routes remain 200 (R2)
+ok 66 - slow-body login request releases per-address occupancy within deadline while authenticated routes remain 200 (R2)
+  ---
+  duration_ms: 2577.525088
+  type: 'test'
+  ...
+# Subtest: aborted login attempt releases in-flight slot immediately (R2)
+ok 67 - aborted login attempt releases in-flight slot immediately (R2)
+  ---
+  duration_ms: 491.33668
+  type: 'test'
+  ...
+# Subtest: concurrent login flood across distinct addresses is bounded with 429 retry guidance while authenticated routes stay 200 (R2)
+ok 68 - concurrent login flood across distinct addresses is bounded with 429 retry guidance while authenticated routes stay 200 (R2)
+  ---
+  duration_ms: 573.986967
+  type: 'test'
+  ...
+# Subtest: quick-add POST /api/repos/:owner/:name/issues creates draft issue with 201
+ok 69 - quick-add POST /api/repos/:owner/:name/issues creates draft issue with 201
+  ---
+  duration_ms: 259.015748
+  type: 'test'
+  ...
+# Subtest: F10: extension-only batch-align route is unavailable on standalone web API with zero GitHub writes
+ok 70 - F10: extension-only batch-align route is unavailable on standalone web API with zero GitHub writes
+  ---
+  duration_ms: 349.583023
+  type: 'test'
+  ...
+# Subtest: PWA manifest.json is served with 200 and valid JSON
+ok 71 - PWA manifest.json is served with 200 and valid JSON
+  ---
+  duration_ms: 191.041579
+  type: 'test'
+  ...
+# Subtest: sw.js is served with 200, application/javascript, cache-control: no-cache, and Service-Worker-Allowed header
+ok 72 - sw.js is served with 200, application/javascript, cache-control: no-cache, and Service-Worker-Allowed header
+  ---
+  duration_ms: 180.460564
+  type: 'test'
+  ...
+# Subtest: GET /api/combined/board returns 200 for authenticated user
+ok 73 - GET /api/combined/board returns 200 for authenticated user
+  ---
+  duration_ms: 335.957942
+  type: 'test'
+  ...
+# Subtest: login form has username and current-password autocomplete and method=post semantics
+ok 74 - login form has username and current-password autocomplete and method=post semantics
+  ---
+  duration_ms: 154.71379
+  type: 'test'
+  ...
+# Subtest: login response sets 30-day session cookie Max-Age with secure attributes
+ok 75 - login response sets 30-day session cookie Max-Age with secure attributes
+  ---
+  duration_ms: 264.461346
+  type: 'test'
+  ...
+# Subtest: sessions persist across server restarts and survive constructing a new server from the same session file
+ok 76 - sessions persist across server restarts and survive constructing a new server from the same session file
+  ---
+  duration_ms: 447.541952
+  type: 'test'
+  ...
+# Subtest: arrangeCards: empty and invalid inputs return empty result
+ok 77 - arrangeCards: empty and invalid inputs return empty result
+  ---
+  duration_ms: 4.819739
+  type: 'test'
+  ...
+# Subtest: arrangeCards: linear chain of cards (A -> B -> C -> D) ranks horizontally left to right
+ok 78 - arrangeCards: linear chain of cards (A -> B -> C -> D) ranks horizontally left to right
+  ---
+  duration_ms: 31.605262
+  type: 'test'
+  ...
+# Subtest: arrangeCards: diamond dependency DAG (A -> B, A -> C, B -> D, C -> D)
+ok 79 - arrangeCards: diamond dependency DAG (A -> B, A -> C, B -> D, C -> D)
+  ---
+  duration_ms: 1.483476
+  type: 'test'
+  ...
+# Subtest: arrangeCards: cycles are broken deterministically without infinite loop or overlap
+ok 80 - arrangeCards: cycles are broken deterministically without infinite loop or overlap
+  ---
+  duration_ms: 1.071361
+  type: 'test'
+  ...
+# Subtest: arrangeCards: isolated cards stack in column 0 without overlap
+ok 81 - arrangeCards: isolated cards stack in column 0 without overlap
+  ---
+  duration_ms: 0.651203
+  type: 'test'
+  ...
+# Subtest: arrangeCards: multi-project bands stacked vertically with band metadata
+ok 82 - arrangeCards: multi-project bands stacked vertically with band metadata
+  ---
+  duration_ms: 0.814445
+  type: 'test'
+  ...
+# Subtest: arrangeCards: determinism check across repeated runs and shuffled input
+ok 83 - arrangeCards: determinism check across repeated runs and shuffled input
+  ---
+  duration_ms: 1.841853
+  type: 'test'
+  ...
+# Subtest: arrangeCards: 300 cards across multiple projects executes in <50ms with zero overlaps
+ok 84 - arrangeCards: 300 cards across multiple projects executes in <50ms with zero overlaps
+  ---
+  duration_ms: 36.05977
+  type: 'test'
+  ...
+# Subtest: hostile arrange: variable card dimensions and attached note extents prevent overlap
+ok 85 - hostile arrange: variable card dimensions and attached note extents prevent overlap
+  ---
+  duration_ms: 4.366904
+  type: 'test'
+  ...
+# Subtest: hostile arrange: duplicate issue numbers in different repos resolve scoped to project band
+ok 86 - hostile arrange: duplicate issue numbers in different repos resolve scoped to project band
+  ---
+  duration_ms: 4.645357
+  type: 'test'
+  ...
+# Subtest: hostile arrange: cross-project dependencies do not distort intra-project ranks
+ok 87 - hostile arrange: cross-project dependencies do not distort intra-project ranks
+  ---
+  duration_ms: 0.881303
+  type: 'test'
+  ...
+# Subtest: hostile arrange: shuffled inputs yield byte-for-byte identical coordinate mapping
+ok 88 - hostile arrange: shuffled inputs yield byte-for-byte identical coordinate mapping
+  ---
+  duration_ms: 1.218012
+  type: 'test'
+  ...
+# Subtest: session cookie is HttpOnly, Secure, SameSite=Strict and path scoped
+ok 89 - session cookie is HttpOnly, Secure, SameSite=Strict and path scoped
+  ---
+  duration_ms: 3.219877
+  type: 'test'
+  ...
+# Subtest: clear cookie expires the session cookie
+ok 90 - clear cookie expires the session cookie
+  ---
+  duration_ms: 0.464949
+  type: 'test'
+  ...
+# Subtest: parseCookieHeader handles multiple cookies and encoding
+ok 91 - parseCookieHeader handles multiple cookies and encoding
+  ---
+  duration_ms: 1.029554
+  type: 'test'
+  ...
+# Subtest: sessions are created, signed, validated and destroyed
+ok 92 - sessions are created, signed, validated and destroyed
+  ---
+  duration_ms: 2.789169
+  type: 'test'
+  ...
+# Subtest: sessions reject forged and unsigned cookie values
+ok 93 - sessions reject forged and unsigned cookie values
+  ---
+  duration_ms: 0.407439
+  type: 'test'
+  ...
+# Subtest: sessions expire on absolute and idle timeouts
+ok 94 - sessions expire on absolute and idle timeouts
+  ---
+  duration_ms: 0.809109
+  type: 'test'
+  ...
+# Subtest: csrfMatches compares exact tokens
+ok 95 - csrfMatches compares exact tokens
+  ---
+  duration_ms: 0.363505
+  type: 'test'
+  ...
+# Subtest: login limiter blocks repeated failures, then recovers after the window
+ok 96 - login limiter blocks repeated failures, then recovers after the window
+  ---
+  duration_ms: 0.5407
+  type: 'test'
+  ...
+# Subtest: login limiter enforces bounded cooldown of at most 60 seconds with no accumulating lockout
+ok 97 - login limiter enforces bounded cooldown of at most 60 seconds with no accumulating lockout
+  ---
+  duration_ms: 0.680405
+  type: 'test'
+  ...
+# Subtest: session store caps stored sessions and evicts least recently used when full
+ok 98 - session store caps stored sessions and evicts least recently used when full
+  ---
+  duration_ms: 1.416986
+  type: 'test'
+  ...
+# Subtest: login limiter bounds failure map size and does not grow without bound on 5000 failures
+ok 99 - login limiter bounds failure map size and does not grow without bound on 5000 failures
+  ---
+  duration_ms: 6.409564
+  type: 'test'
+  ...
+# Subtest: session store defaults to 30-day absolute and idle TTL, and 30-day cookie Max-Age
+ok 100 - session store defaults to 30-day absolute and idle TTL, and 30-day cookie Max-Age
+  ---
+  duration_ms: 0.533517
+  type: 'test'
+  ...
+# Subtest: sessions survive constructing a new SessionStore from the same file
+ok 101 - sessions survive constructing a new SessionStore from the same file
+  ---
+  duration_ms: 2.353725
+  type: 'test'
+  ...
+# Subtest: persisted session file contains only SHA-256 hashes and no raw secrets or cookie values
+ok 102 - persisted session file contains only SHA-256 hashes and no raw secrets or cookie values
+  ---
+  duration_ms: 1.570721
+  type: 'test'
+  ...
+# Subtest: expired sessions on disk are rejected and pruned on store initialization
+ok 103 - expired sessions on disk are rejected and pruned on store initialization
+  ---
+  duration_ms: 1.98944
+  type: 'test'
+  ...
+# Subtest: sign-out removes the record from memory and persists immediately to disk
+ok 104 - sign-out removes the record from memory and persists immediately to disk
+  ---
+  duration_ms: 2.274923
+  type: 'test'
+  ...
+# Subtest: corrupted session file is tolerated without crashing and starts empty
+ok 105 - corrupted session file is tolerated without crashing and starts empty
+  ---
+  duration_ms: 6.746628
+  type: 'test'
+  ...
+# Subtest: throttles lastSeen writes to disk during session activity
+ok 106 - throttles lastSeen writes to disk during session activity
+  ---
+  duration_ms: 6.235555
+  type: 'test'
+  ...
+# Subtest: finding B: sessions.json never persists plaintext CSRF token, and derived CSRF token is verified
+ok 107 - finding B: sessions.json never persists plaintext CSRF token, and derived CSRF token is verified
+  ---
+  duration_ms: 5.200607
+  type: 'test'
+  ...
+# Subtest: finding C: changing password invalidates existing sessions across restart
+ok 108 - finding C: changing password invalidates existing sessions across restart
+  ---
+  duration_ms: 2.697804
+  type: 'test'
+  ...
+# Subtest: old af9b39c session format is tolerated without crashing and dropped on upgrade
+ok 109 - old af9b39c session format is tolerated without crashing and dropped on upgrade
+  ---
+  duration_ms: 9.678378
+  type: 'test'
+  ...
+# Subtest: buildBoardList normalizes issues and drops pull requests
+ok 110 - buildBoardList normalizes issues and drops pull requests
+  ---
+  duration_ms: 17.180671
+  type: 'test'
+  ...
+# Subtest: issueFingerprint binds body, labels and state, not timestamps
+ok 111 - issueFingerprint binds body, labels and state, not timestamps
+  ---
+  duration_ms: 1.091053
+  type: 'test'
+  ...
+# Subtest: buildIssueDetail exposes the editable overview and answerable questions
+ok 112 - buildIssueDetail exposes the editable overview and answerable questions
+  ---
+  duration_ms: 4.612561
+  type: 'test'
+  ...
+# Subtest: buildIssueDetail refuses pull requests
+ok 113 - buildIssueDetail refuses pull requests
+  ---
+  duration_ms: 1.111457
+  type: 'test'
+  ...
+# Subtest: applySectionEdit only rewrites the overview
+ok 114 - applySectionEdit only rewrites the overview
+  ---
+  duration_ms: 1.256854
+  type: 'test'
+  ...
+# Subtest: applySectionEdit refuses protected sections
+ok 115 - applySectionEdit refuses protected sections
+  ---
+  duration_ms: 0.618227
+  type: 'test'
+  ...
+# Subtest: applyQuestionAnswer marks the question and preserves all other bytes
+ok 116 - applyQuestionAnswer marks the question and preserves all other bytes
+  ---
+  duration_ms: 1.61351
+  type: 'test'
+  ...
+# Subtest: applyQuestionAnswer refuses an out-of-range or empty answer
+ok 117 - applyQuestionAnswer refuses an out-of-range or empty answer
+  ---
+  duration_ms: 0.512393
+  type: 'test'
+  ...
+# Subtest: applyStatusChange preserves non-status labels
+ok 118 - applyStatusChange preserves non-status labels
+  ---
+  duration_ms: 0.931021
+  type: 'test'
+  ...
+# Subtest: applyStatusChange refuses labels outside the agreed set
+ok 119 - applyStatusChange refuses labels outside the agreed set
+  ---
+  duration_ms: 0.928017
+  type: 'test'
+  ...
+# Subtest: buildBoardList projects unprioritized issues to draft and prioritized issues to target columns
+ok 120 - buildBoardList projects unprioritized issues to draft and prioritized issues to target columns
+  ---
+  duration_ms: 14.465855
+  type: 'test'
+  ...
+# Subtest: canvas marker parse: parses valid JSON, handles floats and negative numbers
+ok 121 - canvas marker parse: parses valid JSON, handles floats and negative numbers
+  ---
+  duration_ms: 4.521243
+  type: 'test'
+  ...
+# Subtest: canvas marker parse: preserves unknown keys for future expansion (e.g. notes)
+ok 122 - canvas marker parse: preserves unknown keys for future expansion (e.g. notes)
+  ---
+  duration_ms: 0.477598
+  type: 'test'
+  ...
+# Subtest: canvas marker parse: ignores fenced and indented code blocks
+ok 123 - canvas marker parse: ignores fenced and indented code blocks
+  ---
+  duration_ms: 0.77457
+  type: 'test'
+  ...
+# Subtest: canvas marker parse: safely skips malformed JSON or non-object payloads
+ok 124 - canvas marker parse: safely skips malformed JSON or non-object payloads
+  ---
+  duration_ms: 0.467948
+  type: 'test'
+  ...
+# Subtest: canvas marker strip: removes unfenced markers and preceding blank line separator
+ok 125 - canvas marker strip: removes unfenced markers and preceding blank line separator
+  ---
+  duration_ms: 1.542477
+  type: 'test'
+  ...
+# Subtest: canvas marker set+strip: preserves original body byte-for-byte
+ok 126 - canvas marker set+strip: preserves original body byte-for-byte
+  ---
+  duration_ms: 5.19209
+  type: 'test'
+  ...
+# Subtest: setCanvasMarker: preserves CRLF, code fences, board-order, and merges unknown keys
+ok 127 - setCanvasMarker: preserves CRLF, code fences, board-order, and merges unknown keys
+  ---
+  duration_ms: 26.145494
+  type: 'test'
+  ...
+# Subtest: PUT /api/issues/:n/canvas: saves canvas position, preserves order, enforces CSRF and concurrency
+ok 128 - PUT /api/issues/:n/canvas: saves canvas position, preserves order, enforces CSRF and concurrency
+  ---
+  duration_ms: 477.145557
+  type: 'test'
+  ...
+# Subtest: PUT /api/issues/:n/canvas: handles upstream GitHub failure path
+ok 129 - PUT /api/issues/:n/canvas: handles upstream GitHub failure path
+  ---
+  duration_ms: 231.962803
+  type: 'test'
+  ...
+# Subtest: canvas client: index.html defines viewport, plane, controls and 4 distinct layers
+ok 130 - canvas client: index.html defines viewport, plane, controls and 4 distinct layers
+  ---
+  duration_ms: 1.726657
+  type: 'test'
+  ...
+# Subtest: canvas client: theme.css enforces z-indices, 280px V3 cards, and unbounded plane
+ok 131 - canvas client: theme.css enforces z-indices, 280px V3 cards, and unbounded plane
+  ---
+  duration_ms: 0.965776
+  type: 'test'
+  ...
+# Subtest: canvas client: zero occurrences of "n8n" or "mobile" in web/public source files
+ok 132 - canvas client: zero occurrences of "n8n" or "mobile" in web/public source files
+  ---
+  duration_ms: 3.66795
+  type: 'test'
+  ...
+# Subtest: canvas client: English and French localization for all new Canvas UI elements
+ok 133 - canvas client: English and French localization for all new Canvas UI elements
+  ---
+  duration_ms: 2.335933
+  type: 'test'
+  ...
+# Subtest: canvas client: non-clustering dot grid mathematics scale dot radius and keep dots visible at low zoom
+ok 134 - canvas client: non-clustering dot grid mathematics scale dot radius and keep dots visible at low zoom
+  ---
+  duration_ms: 2.8681
+  type: 'test'
+  ...
+# Subtest: canvas persistence: fake GitHub body contains exactly ONE marker after two drops and is otherwise byte-identical
+ok 135 - canvas persistence: fake GitHub body contains exactly ONE marker after two drops and is otherwise byte-identical
+  ---
+  duration_ms: 287.749714
+  type: 'test'
+  ...
+# Subtest: canvas client: unpositioned cards are never written without a drop (zero PUT requests on load, fit all, reset, and zoom)
+ok 136 - canvas client: unpositioned cards are never written without a drop (zero PUT requests on load, fit all, reset, and zoom)
+  ---
+  duration_ms: 250.71695
+  type: 'test'
+  ...
+# Subtest: canvas client: save failure reverts card to previous position and sets plain error message without double punctuation
+ok 137 - canvas client: save failure reverts card to previous position and sets plain error message without double punctuation
+  ---
+  duration_ms: 3.218113
+  type: 'test'
+  ...
+# Subtest: canvas client: rapid successive drops on the same card queue per-issue and adopt the updated fingerprint without false 409 conflict
+ok 138 - canvas client: rapid successive drops on the same card queue per-issue and adopt the updated fingerprint without false 409 conflict
+  ---
+  duration_ms: 247.341295
+  type: 'test'
+  ...
+# Subtest: canvas client: card drop queue recovers from failure without deadlocking subsequent drops
+ok 139 - canvas client: card drop queue recovers from failure without deadlocking subsequent drops
+  ---
+  duration_ms: 255.501466
+  type: 'test'
+  ...
+# Subtest: canvas client: HTML and CSS define Arrange controls, modal dialog, and sticky note palette
+ok 140 - canvas client: HTML and CSS define Arrange controls, modal dialog, and sticky note palette
+  ---
+  duration_ms: 1.055008
+  type: 'test'
+  ...
+# Subtest: canvas server: stores and updates notes in canvas marker and preserves x, y, and notes
+ok 141 - canvas server: stores and updates notes in canvas marker and preserves x, y, and notes
+  ---
+  duration_ms: 241.244135
+  type: 'test'
+  ...
+# Subtest: canvas server: rejects note exceeding 4000 characters with 400 note_too_long
+ok 142 - canvas server: rejects note exceeding 4000 characters with 400 note_too_long
+  ---
+  duration_ms: 243.170546
+  type: 'test'
+  ...
+# Subtest: PUT /api/issues/:n/canvas: Arrange undo payload clears position of a previously unplaced card
+ok 143 - PUT /api/issues/:n/canvas: Arrange undo payload clears position of a previously unplaced card
+  ---
+  duration_ms: 385.949176
+  type: 'test'
+  ...
+# Subtest: canvas client: note connector svg has a paintable box and note Edit label is localized
+ok 144 - canvas client: note connector svg has a paintable box and note Edit label is localized
+  ---
+  duration_ms: 3.962719
+  type: 'test'
+  ...
+# Subtest: canvas client: note save failure retains draft with localized retry and shields draft from poll overwrite
+ok 145 - canvas client: note save failure retains draft with localized retry and shields draft from poll overwrite
+  ---
+  duration_ms: 4.900327
+  type: 'test'
+  ...
+# Subtest: loadConfig accepts a complete environment
+ok 146 - loadConfig accepts a complete environment
+  ---
+  duration_ms: 275.314107
+  type: 'test'
+  ...
+# Subtest: loadConfig prefers an explicit BOARD_PASSWORD_HASH over BOARD_PASSWORD
+ok 147 - loadConfig prefers an explicit BOARD_PASSWORD_HASH over BOARD_PASSWORD
+  ---
+  duration_ms: 263.783724
+  type: 'test'
+  ...
+# Subtest: loadConfig reports each missing core variable by name
+ok 148 - loadConfig reports each missing core variable by name
+  ---
+  duration_ms: 3.621853
+  type: 'test'
+  ...
+# Subtest: loadConfig rejects invalid values and names the variable
+ok 149 - loadConfig rejects invalid values and names the variable
+  ---
+  duration_ms: 1693.372063
+  type: 'test'
+  ...
+# Subtest: loadConfig accepts a valid base URL and port
+ok 150 - loadConfig accepts a valid base URL and port
+  ---
+  duration_ms: 128.740305
+  type: 'test'
+  ...
+# Subtest: config errors never contain secret values
+ok 151 - config errors never contain secret values
+  ---
+  duration_ms: 367.746918
+  type: 'test'
+  ...
+# Subtest: describeConfig exposes no secrets
+ok 152 - describeConfig exposes no secrets
+  ---
+  duration_ms: 170.215366
+  type: 'test'
+  ...
+# Subtest: hashPassword round-trips and salts every call
+ok 153 - hashPassword round-trips and salts every call
+  ---
+  duration_ms: 438.432301
+  type: 'test'
+  ...
+# Subtest: verifyPassword returns false for malformed stored hashes
+ok 154 - verifyPassword returns false for malformed stored hashes
+  ---
+  duration_ms: 0.873601
+  type: 'test'
+  ...
+# Subtest: BOARD_TRUST_PROXY is removed and forwarded headers are untrusted (R3)
+ok 155 - BOARD_TRUST_PROXY is removed and forwarded headers are untrusted (R3)
+  ---
+  duration_ms: 179.503086
+  type: 'test'
+  ...
+# Subtest: hash-password CLI tool runs on Node 22 via stdin pipe (R5)
+ok 156 - hash-password CLI tool runs on Node 22 via stdin pipe (R5)
+  ---
+  duration_ms: 408.571053
+  type: 'test'
+  ...
+# Subtest: verifyPasswordAsync matches valid password and rejects invalid
+ok 157 - verifyPasswordAsync matches valid password and rejects invalid
+  ---
+  duration_ms: 269.383837
+  type: 'test'
+  ...
+# Subtest: BOARD_REPO is optional for token-wide discovery; supplied invalid values still refuse
+ok 158 - BOARD_REPO is optional for token-wide discovery; supplied invalid values still refuse
+  ---
+  duration_ms: 149.258931
+  type: 'test'
+  ...
+# Subtest: resolveSessionFilePath resolves explicit, env-based, and default paths
+ok 159 - resolveSessionFilePath resolves explicit, env-based, and default paths
+  ---
+  duration_ms: 142.59699
+  type: 'test'
+  ...
+# Subtest: D66 resilience: one failing repo among 26 does not fail the board, returns partial results
+ok 160 - D66 resilience: one failing repo among 26 does not fail the board, returns partial results
+  ---
+  duration_ms: 607.786273
+  type: 'test'
+  ...
+# Subtest: D66 resilience: slow repos do not exceed the time bound; partial results are flagged
+ok 161 - D66 resilience: slow repos do not exceed the time bound; partial results are flagged
+  ---
+  duration_ms: 1277.333636
+  type: 'test'
+  ...
+# Subtest: D66 resilience: in-memory board cache accelerates subsequent refreshes and serves fallback on failure
+ok 162 - D66 resilience: in-memory board cache accelerates subsequent refreshes and serves fallback on failure
+  ---
+  duration_ms: 451.402403
+  type: 'test'
+  ...
+# Subtest: dependencies API: list, add, remove, duplicate, cycle refusal, and error paths
+ok 163 - dependencies API: list, add, remove, duplicate, cycle refusal, and error paths
+  ---
+  duration_ms: 635.74891
+  type: 'test'
+  ...
+# Subtest: cross-repo dependencies: add, list on both boards, and delete across repository boundaries
+ok 164 - cross-repo dependencies: add, list on both boards, and delete across repository boundaries
+  ---
+  duration_ms: 289.989717
+  type: 'test'
+  ...
+# Subtest: GraphQL degradation: board loads issues cleanly with degraded status when dependencies query fails
+ok 165 - GraphQL degradation: board loads issues cleanly with degraded status when dependencies query fails
+  ---
+  duration_ms: 259.859373
+  type: 'test'
+  ...
+# Subtest: multi-repo board batching: 26 repositories load with exactly 1 REST and 1 GraphQL query each (52 total)
+ok 166 - multi-repo board batching: 26 repositories load with exactly 1 REST and 1 GraphQL query each (52 total)
+  ---
+  duration_ms: 453.349668
+  type: 'test'
+  ...
+# Subtest: listIssues follows pagination and returns every raw item
+ok 167 - listIssues follows pagination and returns every raw item
+  ---
+  duration_ms: 69.708531
+  type: 'test'
+  ...
+# Subtest: listIssues stops at the page cap and reports truncation
+ok 168 - listIssues stops at the page cap and reports truncation
+  ---
+  duration_ms: 27.910813
+  type: 'test'
+  ...
+# Subtest: getIssue returns the item and its ETag
+ok 169 - getIssue returns the item and its ETag
+  ---
+  duration_ms: 11.11863
+  type: 'test'
+  ...
+# Subtest: updateIssue sends an unconditional PATCH with the token only in the header
+ok 170 - updateIssue sends an unconditional PATCH with the token only in the header
+  ---
+  duration_ms: 18.914146
+  type: 'test'
+  ...
+# Subtest: getIssue refuses non-numeric issue references
+ok 171 - getIssue refuses non-numeric issue references
+  ---
+  duration_ms: 2.60961
+  type: 'test'
+  ...
+# Subtest: an inaccessible repository is reported as not_found
+ok 172 - an inaccessible repository is reported as not_found
+  ---
+  duration_ms: 8.883935
+  type: 'test'
+  ...
+# Subtest: a rejected token is reported as unauthorized and never echoed
+ok 173 - a rejected token is reported as unauthorized and never echoed
+  ---
+  duration_ms: 8.833064
+  type: 'test'
+  ...
+# Subtest: unknown repository paths are never requested
+ok 174 - unknown repository paths are never requested
+  ---
+  duration_ms: 26.572913
+  type: 'test'
+  ...
+# Subtest: listIssues rejects a malicious origin in the Link header
+ok 175 - listIssues rejects a malicious origin in the Link header
+  ---
+  duration_ms: 6.198047
+  type: 'test'
+  ...
+# Subtest: listIssues rejects a Link header naming a different repository path (R8)
+ok 176 - listIssues rejects a Link header naming a different repository path (R8)
+  ---
+  duration_ms: 2.404907
+  type: 'test'
+  ...
+# Subtest: listIssues accepts a numeric /repositories/:id/issues Link header matching repo.id
+ok 177 - listIssues accepts a numeric /repositories/:id/issues Link header matching repo.id
+  ---
+  duration_ms: 1.737771
+  type: 'test'
+  ...
+# Subtest: listIssues rejects a numeric /repositories/:id/issues Link header when id does not match repo.id
+ok 178 - listIssues rejects a numeric /repositories/:id/issues Link header when id does not match repo.id
+  ---
+  duration_ms: 1.282415
+  type: 'test'
+  ...
+# Subtest: listIssues dedupes issues and stops when a page adds nothing new
+ok 179 - listIssues dedupes issues and stops when a page adds nothing new
+  ---
+  duration_ms: 1.62822
+  type: 'test'
+  ...
+# Subtest: error kinds distinguish 401, 403 rate-limit, 403 forbidden, 422 invalid, 500 server
+ok 180 - error kinds distinguish 401, 403 rate-limit, 403 forbidden, 422 invalid, 500 server
+  ---
+  duration_ms: 7.811888
+  type: 'test'
+  ...
+# Subtest: default bind host is loopback (127.0.0.1)
+ok 181 - default bind host is loopback (127.0.0.1)
+  ---
+  duration_ms: 256.359506
+  type: 'test'
+  ...
+# Subtest: a configured host is honoured (0.0.0.0)
+ok 182 - a configured host is honoured (0.0.0.0)
+  ---
+  duration_ms: 168.105618
+  type: 'test'
+  ...
+# Subtest: an invalid host fails startup with a non-zero exit and one actionable message
+ok 183 - an invalid host fails startup with a non-zero exit and one actionable message
+  ---
+  duration_ms: 3348.884191
+  type: 'test'
+  ...
+# Subtest: /health returns 200 with the expected keys (status, version, uptime)
+ok 184 - /health returns 200 with the expected keys (status, version, uptime)
+  ---
+  duration_ms: 246.444876
+  type: 'test'
+  ...
+# Subtest: /health requires no credentials and rejects non-GET methods with 405
+ok 185 - /health requires no credentials and rejects non-GET methods with 405
+  ---
+  duration_ms: 231.813993
+  type: 'test'
+  ...
+# Subtest: /health returns version "unknown" when package.json cannot be read
+ok 186 - /health returns version "unknown" when package.json cannot be read
+  ---
+  duration_ms: 163.094693
+  type: 'test'
+  ...
+# Subtest: BOARD_GITHUB_API_BASE in environment is ignored and upstream defaults to api.github.com
+ok 187 - BOARD_GITHUB_API_BASE in environment is ignored and upstream defaults to api.github.com
+  ---
+  duration_ms: 151.030591
+  type: 'test'
+  ...
+# Subtest: /health leaks no secret or repository value even when those variables are set
+ok 188 - /health leaks no secret or repository value even when those variables are set
+  ---
+  duration_ms: 203.427042
+  type: 'test'
+  ...
+# Subtest: existing authenticated routes still require the password
+ok 189 - existing authenticated routes still require the password
+  ---
+  duration_ms: 371.88055
+  type: 'test'
+  ...
+# Subtest: the start command serves /health
+ok 190 - the start command serves /health
+  ---
+  duration_ms: 451.729601
+  type: 'test'
+  ...
+# Subtest: npm run start:web package script serves /health
+ok 191 - npm run start:web package script serves /health
+  ---
+  duration_ms: 789.773141
+  type: 'test'
+  ...
+# Subtest: finding E behavioural regression: hosting server constructor isolates session store from default path
+ok 192 - finding E behavioural regression: hosting server constructor isolates session store from default path
+  ---
+  duration_ms: 511.810354
+  type: 'test'
+  ...
+# Subtest: 1.a D63.1 theme.css removes 860px max-width on main/shell for full-width layout
+ok 193 - 1.a D63.1 theme.css removes 860px max-width on main/shell for full-width layout
+  ---
+  duration_ms: 2.70786
+  type: 'test'
+  ...
+# Subtest: 1.b D63.1 index.html hides verbose diagnostic nodes by default
+ok 194 - 1.b D63.1 index.html hides verbose diagnostic nodes by default
+  ---
+  duration_ms: 0.86225
+  type: 'test'
+  ...
+# Subtest: 2.a D63.2 index.html markup contains unified toolbar elements and sub-header status strip
+ok 195 - 2.a D63.2 index.html markup contains unified toolbar elements and sub-header status strip
+  ---
+  duration_ms: 0.701654
+  type: 'test'
+  ...
+# Subtest: 2.b D63.2 Search input filters task list dynamically
+ok 196 - 2.b D63.2 Search input filters task list dynamically
+  ---
+  duration_ms: 39.695004
+  type: 'test'
+  ...
+# Subtest: 3.a D63.3 Simple list rows render in compact Linear style with status dot, title, and description preview
+ok 197 - 3.a D63.3 Simple list rows render in compact Linear style with status dot, title, and description preview
+  ---
+  duration_ms: 7.73547
+  type: 'test'
+  ...
+# Subtest: 4.a D63.4 Opening task detail keeps \#board-view visible underneath and marks body.drawer-open
+ok 198 - 4.a D63.4 Opening task detail keeps \#board-view visible underneath and marks body.drawer-open
+  ---
+  duration_ms: 8.903122
+  type: 'test'
+  ...
+# Subtest: 4.b D63.4 theme.css styles slide-over drawer with 480-540px width on desktop
+ok 199 - 4.b D63.4 theme.css styles slide-over drawer with 480-540px width on desktop
+  ---
+  duration_ms: 0.836181
+  type: 'test'
+  ...
+# Subtest: 5.a D64 theme.css defines V3 architectural studio dark and light color tokens and removes V1 muddy tokens
+ok 200 - 5.a D64 theme.css defines V3 architectural studio dark and light color tokens and removes V1 muddy tokens
+  ---
+  duration_ms: 0.871325
+  type: 'test'
+  ...
+# Subtest: 5.b D64 app.js supports Theme mode Auto / Dark / Light persisted to localStorage tb_theme_mode
+ok 201 - 5.b D64 app.js supports Theme mode Auto / Dark / Light persisted to localStorage tb_theme_mode
+  ---
+  duration_ms: 8.657174
+  type: 'test'
+  ...
+# Subtest: 6.a Blocker 1: all inline SVGs in index.html have explicit width="14" height="14" and theme.css constrains svg/.icon/.icon-sm to 14px
+ok 202 - 6.a Blocker 1: all inline SVGs in index.html have explicit width="14" height="14" and theme.css constrains svg/.icon/.icon-sm to 14px
+  ---
+  duration_ms: 12.418728
+  type: 'test'
+  ...
+# Subtest: 6.b Blocker 2: Simple list row strips markdown headings/checklists from description preview and theme.css sets flex-direction: row on .simple-row
+ok 203 - 6.b Blocker 2: Simple list row strips markdown headings/checklists from description preview and theme.css sets flex-direction: row on .simple-row
+  ---
+  duration_ms: 7.616803
+  type: 'test'
+  ...
+# Subtest: 6.c Blocker 3: theme.css enforces display: none !important on closed dialog:not([open]), .board-sheet:not([open]), .view[hidden], and [hidden]
+ok 204 - 6.c Blocker 3: theme.css enforces display: none !important on closed dialog:not([open]), .board-sheet:not([open]), .view[hidden], and [hidden]
+  ---
+  duration_ms: 0.641307
+  type: 'test'
+  ...
+# Subtest: 6.d Blocker 4: theme.css places explicit [data-theme="dark"] and [data-theme="light"] rules AFTER @media (prefers-color-scheme: light) and index.html sets V3 theme-color \#0B0D11
+ok 205 - 6.d Blocker 4: theme.css places explicit [data-theme="dark"] and [data-theme="light"] rules AFTER @media (prefers-color-scheme: light) and index.html sets V3 theme-color \#0B0D11
+  ---
+  duration_ms: 0.458034
+  type: 'test'
+  ...
+# Subtest: 6.e Blocker 5: theme.css positions \#drawer-backdrop at z-index 900 and \#detail-view at z-index 1000 and constrains body.drawer-open \#board-view
+ok 206 - 6.e Blocker 5: theme.css positions \#drawer-backdrop at z-index 900 and \#detail-view at z-index 1000 and constrains body.drawer-open \#board-view
+  ---
+  duration_ms: 0.725817
+  type: 'test'
+  ...
+# Subtest: 6.f Blocker 6: \#quick-add-form is visible in Simple list view even without stage:draft filter, and hidden in non-simple views
+ok 207 - 6.f Blocker 6: \#quick-add-form is visible in Simple list view even without stage:draft filter, and hidden in non-simple views
+  ---
+  duration_ms: 12.698409
+  type: 'test'
+  ...
+# Subtest: 1.a Static web/public/index.html markup: \#login-view has hidden by default, \#board-view does not
+ok 208 - 1.a Static web/public/index.html markup: \#login-view has hidden by default, \#board-view does not
+  ---
+  duration_ms: 5.154984
+  type: 'test'
+  ...
+# Subtest: 1.b In boot() when GET /api/session resolves authenticated:true while /api/repos and /api/combined/board are pending, \#login-view remains hidden and \#board-view is visible immediately
+ok 209 - 1.b In boot() when GET /api/session resolves authenticated:true while /api/repos and /api/combined/board are pending, \#login-view remains hidden and \#board-view is visible immediately
+  ---
+  duration_ms: 52.582145
+  type: 'test'
+  ...
+# Subtest: 1.c Non-secret client auth hint (localStorage key tb_auth_hint = 1): set on authenticated GET/POST session, cleared on showLogin/unauthenticated/401/signout
+ok 210 - 1.c Non-secret client auth hint (localStorage key tb_auth_hint = 1): set on authenticated GET/POST session, cleared on showLogin/unauthenticated/401/signout
+  ---
+  duration_ms: 44.647442
+  type: 'test'
+  ...
+# Subtest: 1.d When tb_auth_hint === 1 and cached board data exists in localStorage, boot() renders cached board shell/tasks immediately before network calls finish
+ok 211 - 1.d When tb_auth_hint === 1 and cached board data exists in localStorage, boot() renders cached board shell/tasks immediately before network calls finish
+  ---
+  duration_ms: 17.12555
+  type: 'test'
+  ...
+# Subtest: 1.e When GET /api/session returns authenticated: false, boot() reveals \#login-view, hides \#board-view, and clears tb_auth_hint
+ok 212 - 1.e When GET /api/session returns authenticated: false, boot() reveals \#login-view, hides \#board-view, and clears tb_auth_hint
+  ---
+  duration_ms: 9.744242
+  type: 'test'
+  ...
+# Subtest: 1.f When GET /api/session fails with network error and no cached board exists, showLogin reveals \#login-view with message; if cached board exists, offline board view remains visible
+ok 213 - 1.f When GET /api/session fails with network error and no cached board exists, showLogin reveals \#login-view with message; if cached board exists, offline board view remains visible
+  ---
+  duration_ms: 36.188008
+  type: 'test'
+  ...
+# Subtest: 2.a Hostile 1: Static HTML noscript fallback reveals \#login-view, and \#board-toolbar is hidden until auth confirms
+ok 214 - 2.a Hostile 1: Static HTML noscript fallback reveals \#login-view, and \#board-toolbar is hidden until auth confirms
+  ---
+  duration_ms: 28.707436
+  type: 'test'
+  ...
+# Subtest: 2.b Hostile 2: Security & Privacy: showLogin() thoroughly scrubs sensitive task data from all DOM nodes
+ok 215 - 2.b Hostile 2: Security & Privacy: showLogin() thoroughly scrubs sensitive task data from all DOM nodes
+  ---
+  duration_ms: 6.107578
+  type: 'test'
+  ...
+# Subtest: 2.c Hostile 3: Concurrency & CSRF: mutations fired while cached board is rendered await in-flight /api/session check
+ok 216 - 2.c Hostile 3: Concurrency & CSRF: mutations fired while cached board is rendered await in-flight /api/session check
+  ---
+  duration_ms: 26.047674
+  type: 'test'
+  ...
+# Subtest: 2.d Hostile 4: Corrupted cache resilience: malformed / non-object entries in tb_cached_board do not crash boot()
+ok 217 - 2.d Hostile 4: Corrupted cache resilience: malformed / non-object entries in tb_cached_board do not crash boot()
+  ---
+  duration_ms: 24.716449
+  type: 'test'
+  ...
+# Subtest: 2.e Hostile 5: Cache freshness on mutations: publishMutation updates tb_cached_board immediately
+ok 218 - 2.e Hostile 5: Cache freshness on mutations: publishMutation updates tb_cached_board immediately
+  ---
+  duration_ms: 22.232411
+  type: 'test'
+  ...
+# Subtest: R1 section: null option is UNKNOWN before assignment and preserves both drafts
+ok 219 - R1 section: null option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 56.511681
+  type: 'test'
+  ...
+# Subtest: R1 section: partial option is UNKNOWN before assignment and preserves both drafts
+ok 220 - R1 section: partial option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 22.033141
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string option value is UNKNOWN before assignment and preserves both drafts
+ok 221 - R1 section: non-string option value is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.055724
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string option label is UNKNOWN before assignment and preserves both drafts
+ok 222 - R1 section: non-string option label is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.102477
+  type: 'test'
+  ...
+# Subtest: R1 section: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+ok 223 - R1 section: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.943585
+  type: 'test'
+  ...
+# Subtest: R1 section: null section is UNKNOWN before assignment and preserves both drafts
+ok 224 - R1 section: null section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.648147
+  type: 'test'
+  ...
+# Subtest: R1 section: partial section is UNKNOWN before assignment and preserves both drafts
+ok 225 - R1 section: partial section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 8.129576
+  type: 'test'
+  ...
+# Subtest: R1 section: missing section id is UNKNOWN before assignment and preserves both drafts
+ok 226 - R1 section: missing section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.766697
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string section id is UNKNOWN before assignment and preserves both drafts
+ok 227 - R1 section: non-string section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 8.674969
+  type: 'test'
+  ...
+# Subtest: R1 section: missing section title is UNKNOWN before assignment and preserves both drafts
+ok 228 - R1 section: missing section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 13.571553
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string section title is UNKNOWN before assignment and preserves both drafts
+ok 229 - R1 section: non-string section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.836695
+  type: 'test'
+  ...
+# Subtest: R1 section: missing section text is UNKNOWN before assignment and preserves both drafts
+ok 230 - R1 section: missing section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 9.961602
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string section text is UNKNOWN before assignment and preserves both drafts
+ok 231 - R1 section: non-string section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.866577
+  type: 'test'
+  ...
+# Subtest: R1 section: null question is UNKNOWN before assignment and preserves both drafts
+ok 232 - R1 section: null question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 10.241489
+  type: 'test'
+  ...
+# Subtest: R1 section: scalar question is UNKNOWN before assignment and preserves both drafts
+ok 233 - R1 section: scalar question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.403098
+  type: 'test'
+  ...
+# Subtest: R1 section: partial question is UNKNOWN before assignment and preserves both drafts
+ok 234 - R1 section: partial question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.034077
+  type: 'test'
+  ...
+# Subtest: R1 section: missing question index is UNKNOWN before assignment and preserves both drafts
+ok 235 - R1 section: missing question index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.400859
+  type: 'test'
+  ...
+# Subtest: R1 section: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+ok 236 - R1 section: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.042515
+  type: 'test'
+  ...
+# Subtest: R1 section: missing question text is UNKNOWN before assignment and preserves both drafts
+ok 237 - R1 section: missing question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.960917
+  type: 'test'
+  ...
+# Subtest: R1 section: missing question completed is UNKNOWN before assignment and preserves both drafts
+ok 238 - R1 section: missing question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.873313
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string question text is UNKNOWN before assignment and preserves both drafts
+ok 239 - R1 section: non-string question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 9.334351
+  type: 'test'
+  ...
+# Subtest: R1 section: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+ok 240 - R1 section: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 10.570317
+  type: 'test'
+  ...
+# Subtest: R1 section: fractional answer index is UNKNOWN before assignment and preserves both drafts
+ok 241 - R1 section: fractional answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.844267
+  type: 'test'
+  ...
+# Subtest: R1 section: negative answer index is UNKNOWN before assignment and preserves both drafts
+ok 242 - R1 section: negative answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.567157
+  type: 'test'
+  ...
+# Subtest: R1 section: string answer index is UNKNOWN before assignment and preserves both drafts
+ok 243 - R1 section: string answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 8.295472
+  type: 'test'
+  ...
+# Subtest: R1 section: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+ok 244 - R1 section: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.139289
+  type: 'test'
+  ...
+# Subtest: R1 section: completed answer index is UNKNOWN before assignment and preserves both drafts
+ok 245 - R1 section: completed answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.901955
+  type: 'test'
+  ...
+# Subtest: R1 section: unresolved null index is UNKNOWN before assignment and preserves both drafts
+ok 246 - R1 section: unresolved null index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.944261
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong source index is UNKNOWN before assignment and preserves both drafts
+ok 247 - R1 section: wrong source index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.056787
+  type: 'test'
+  ...
+# Subtest: R1 section: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 248 - R1 section: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.920107
+  type: 'test'
+  ...
+# Subtest: R1 section: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 249 - R1 section: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.037106
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+ok 250 - R1 section: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.116888
+  type: 'test'
+  ...
+# Subtest: R1 section: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+ok 251 - R1 section: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.583129
+  type: 'test'
+  ...
+# Subtest: R1 section: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 252 - R1 section: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.081295
+  type: 'test'
+  ...
+# Subtest: R1 section: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 253 - R1 section: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.258422
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+ok 254 - R1 section: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.790044
+  type: 'test'
+  ...
+# Subtest: R1 section: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+ok 255 - R1 section: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.739556
+  type: 'test'
+  ...
+# Subtest: R1 section: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 256 - R1 section: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.150501
+  type: 'test'
+  ...
+# Subtest: R1 section: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 257 - R1 section: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.166943
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+ok 258 - R1 section: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.048072
+  type: 'test'
+  ...
+# Subtest: R1 section: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+ok 259 - R1 section: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.781761
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong identity is UNKNOWN before assignment and preserves both drafts
+ok 260 - R1 section: wrong identity is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 8.540505
+  type: 'test'
+  ...
+# Subtest: R1 section: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 261 - R1 section: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.48251
+  type: 'test'
+  ...
+# Subtest: R1 section: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 262 - R1 section: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.396682
+  type: 'test'
+  ...
+# Subtest: R1 section: missing title is UNKNOWN before assignment and preserves both drafts
+ok 263 - R1 section: missing title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.306449
+  type: 'test'
+  ...
+# Subtest: R1 section: non-string title is UNKNOWN before assignment and preserves both drafts
+ok 264 - R1 section: non-string title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.405022
+  type: 'test'
+  ...
+# Subtest: R1 section: missing state is UNKNOWN before assignment and preserves both drafts
+ok 265 - R1 section: missing state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.597275
+  type: 'test'
+  ...
+# Subtest: R1 section: invalid state is UNKNOWN before assignment and preserves both drafts
+ok 266 - R1 section: invalid state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.985537
+  type: 'test'
+  ...
+# Subtest: R1 section: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 267 - R1 section: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.004189
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 268 - R1 section: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.016872
+  type: 'test'
+  ...
+# Subtest: R1 section: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 269 - R1 section: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.818212
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 270 - R1 section: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.91234
+  type: 'test'
+  ...
+# Subtest: R1 section: missing phase is UNKNOWN before assignment and preserves both drafts
+ok 271 - R1 section: missing phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.735805
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong phase is UNKNOWN before assignment and preserves both drafts
+ok 272 - R1 section: wrong phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.417753
+  type: 'test'
+  ...
+# Subtest: R1 section: missing attention is UNKNOWN before assignment and preserves both drafts
+ok 273 - R1 section: missing attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.840103
+  type: 'test'
+  ...
+# Subtest: R1 section: wrong attention is UNKNOWN before assignment and preserves both drafts
+ok 274 - R1 section: wrong attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.650307
+  type: 'test'
+  ...
+# Subtest: R1 section: valid populated detail succeeds
+ok 275 - R1 section: valid populated detail succeeds
+  ---
+  duration_ms: 12.167935
+  type: 'test'
+  ...
+# Subtest: R1 section: valid null/empty detail succeeds
+ok 276 - R1 section: valid null/empty detail succeeds
+  ---
+  duration_ms: 5.375191
+  type: 'test'
+  ...
+# Subtest: R1 question: null option is UNKNOWN before assignment and preserves both drafts
+ok 277 - R1 question: null option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.169145
+  type: 'test'
+  ...
+# Subtest: R1 question: partial option is UNKNOWN before assignment and preserves both drafts
+ok 278 - R1 question: partial option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.958472
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string option value is UNKNOWN before assignment and preserves both drafts
+ok 279 - R1 question: non-string option value is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.520242
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string option label is UNKNOWN before assignment and preserves both drafts
+ok 280 - R1 question: non-string option label is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.821184
+  type: 'test'
+  ...
+# Subtest: R1 question: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+ok 281 - R1 question: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.262317
+  type: 'test'
+  ...
+# Subtest: R1 question: null section is UNKNOWN before assignment and preserves both drafts
+ok 282 - R1 question: null section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.226362
+  type: 'test'
+  ...
+# Subtest: R1 question: partial section is UNKNOWN before assignment and preserves both drafts
+ok 283 - R1 question: partial section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.844705
+  type: 'test'
+  ...
+# Subtest: R1 question: missing section id is UNKNOWN before assignment and preserves both drafts
+ok 284 - R1 question: missing section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.519322
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string section id is UNKNOWN before assignment and preserves both drafts
+ok 285 - R1 question: non-string section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.484434
+  type: 'test'
+  ...
+# Subtest: R1 question: missing section title is UNKNOWN before assignment and preserves both drafts
+ok 286 - R1 question: missing section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.587208
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string section title is UNKNOWN before assignment and preserves both drafts
+ok 287 - R1 question: non-string section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.900592
+  type: 'test'
+  ...
+# Subtest: R1 question: missing section text is UNKNOWN before assignment and preserves both drafts
+ok 288 - R1 question: missing section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.620104
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string section text is UNKNOWN before assignment and preserves both drafts
+ok 289 - R1 question: non-string section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.705288
+  type: 'test'
+  ...
+# Subtest: R1 question: null question is UNKNOWN before assignment and preserves both drafts
+ok 290 - R1 question: null question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.186889
+  type: 'test'
+  ...
+# Subtest: R1 question: scalar question is UNKNOWN before assignment and preserves both drafts
+ok 291 - R1 question: scalar question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 12.096585
+  type: 'test'
+  ...
+# Subtest: R1 question: partial question is UNKNOWN before assignment and preserves both drafts
+ok 292 - R1 question: partial question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.936798
+  type: 'test'
+  ...
+# Subtest: R1 question: missing question index is UNKNOWN before assignment and preserves both drafts
+ok 293 - R1 question: missing question index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.74401
+  type: 'test'
+  ...
+# Subtest: R1 question: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+ok 294 - R1 question: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.838166
+  type: 'test'
+  ...
+# Subtest: R1 question: missing question text is UNKNOWN before assignment and preserves both drafts
+ok 295 - R1 question: missing question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.842072
+  type: 'test'
+  ...
+# Subtest: R1 question: missing question completed is UNKNOWN before assignment and preserves both drafts
+ok 296 - R1 question: missing question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.167294
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string question text is UNKNOWN before assignment and preserves both drafts
+ok 297 - R1 question: non-string question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.001264
+  type: 'test'
+  ...
+# Subtest: R1 question: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+ok 298 - R1 question: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.024677
+  type: 'test'
+  ...
+# Subtest: R1 question: fractional answer index is UNKNOWN before assignment and preserves both drafts
+ok 299 - R1 question: fractional answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.97311
+  type: 'test'
+  ...
+# Subtest: R1 question: negative answer index is UNKNOWN before assignment and preserves both drafts
+ok 300 - R1 question: negative answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.990407
+  type: 'test'
+  ...
+# Subtest: R1 question: string answer index is UNKNOWN before assignment and preserves both drafts
+ok 301 - R1 question: string answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.177778
+  type: 'test'
+  ...
+# Subtest: R1 question: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+ok 302 - R1 question: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.871904
+  type: 'test'
+  ...
+# Subtest: R1 question: completed answer index is UNKNOWN before assignment and preserves both drafts
+ok 303 - R1 question: completed answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.064892
+  type: 'test'
+  ...
+# Subtest: R1 question: unresolved null index is UNKNOWN before assignment and preserves both drafts
+ok 304 - R1 question: unresolved null index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.152486
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong source index is UNKNOWN before assignment and preserves both drafts
+ok 305 - R1 question: wrong source index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.796565
+  type: 'test'
+  ...
+# Subtest: R1 question: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 306 - R1 question: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.9643
+  type: 'test'
+  ...
+# Subtest: R1 question: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 307 - R1 question: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.873416
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+ok 308 - R1 question: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.49614
+  type: 'test'
+  ...
+# Subtest: R1 question: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+ok 309 - R1 question: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.881147
+  type: 'test'
+  ...
+# Subtest: R1 question: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 310 - R1 question: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.971231
+  type: 'test'
+  ...
+# Subtest: R1 question: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 311 - R1 question: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.478301
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+ok 312 - R1 question: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.668212
+  type: 'test'
+  ...
+# Subtest: R1 question: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+ok 313 - R1 question: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.603129
+  type: 'test'
+  ...
+# Subtest: R1 question: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 314 - R1 question: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.691939
+  type: 'test'
+  ...
+# Subtest: R1 question: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 315 - R1 question: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.720219
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+ok 316 - R1 question: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.116267
+  type: 'test'
+  ...
+# Subtest: R1 question: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+ok 317 - R1 question: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.568204
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong identity is UNKNOWN before assignment and preserves both drafts
+ok 318 - R1 question: wrong identity is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.254422
+  type: 'test'
+  ...
+# Subtest: R1 question: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 319 - R1 question: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.43767
+  type: 'test'
+  ...
+# Subtest: R1 question: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 320 - R1 question: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.460821
+  type: 'test'
+  ...
+# Subtest: R1 question: missing title is UNKNOWN before assignment and preserves both drafts
+ok 321 - R1 question: missing title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.641806
+  type: 'test'
+  ...
+# Subtest: R1 question: non-string title is UNKNOWN before assignment and preserves both drafts
+ok 322 - R1 question: non-string title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.86255
+  type: 'test'
+  ...
+# Subtest: R1 question: missing state is UNKNOWN before assignment and preserves both drafts
+ok 323 - R1 question: missing state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.919699
+  type: 'test'
+  ...
+# Subtest: R1 question: invalid state is UNKNOWN before assignment and preserves both drafts
+ok 324 - R1 question: invalid state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.97266
+  type: 'test'
+  ...
+# Subtest: R1 question: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 325 - R1 question: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.569731
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 326 - R1 question: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.289411
+  type: 'test'
+  ...
+# Subtest: R1 question: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 327 - R1 question: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.392788
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 328 - R1 question: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 29.549604
+  type: 'test'
+  ...
+# Subtest: R1 question: missing phase is UNKNOWN before assignment and preserves both drafts
+ok 329 - R1 question: missing phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 15.436239
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong phase is UNKNOWN before assignment and preserves both drafts
+ok 330 - R1 question: wrong phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.888624
+  type: 'test'
+  ...
+# Subtest: R1 question: missing attention is UNKNOWN before assignment and preserves both drafts
+ok 331 - R1 question: missing attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 7.939315
+  type: 'test'
+  ...
+# Subtest: R1 question: wrong attention is UNKNOWN before assignment and preserves both drafts
+ok 332 - R1 question: wrong attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 11.438266
+  type: 'test'
+  ...
+# Subtest: R1 question: valid populated detail succeeds
+ok 333 - R1 question: valid populated detail succeeds
+  ---
+  duration_ms: 12.758365
+  type: 'test'
+  ...
+# Subtest: R1 question: valid null/empty detail succeeds
+ok 334 - R1 question: valid null/empty detail succeeds
+  ---
+  duration_ms: 8.155739
+  type: 'test'
+  ...
+# Subtest: R1 status: null option is UNKNOWN before assignment and preserves both drafts
+ok 335 - R1 status: null option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 11.802362
+  type: 'test'
+  ...
+# Subtest: R1 status: partial option is UNKNOWN before assignment and preserves both drafts
+ok 336 - R1 status: partial option is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 10.661829
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string option value is UNKNOWN before assignment and preserves both drafts
+ok 337 - R1 status: non-string option value is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.964036
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string option label is UNKNOWN before assignment and preserves both drafts
+ok 338 - R1 status: non-string option label is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 10.612832
+  type: 'test'
+  ...
+# Subtest: R1 status: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+ok 339 - R1 status: missing top-level options despite nested fallback is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 9.421742
+  type: 'test'
+  ...
+# Subtest: R1 status: null section is UNKNOWN before assignment and preserves both drafts
+ok 340 - R1 status: null section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.846922
+  type: 'test'
+  ...
+# Subtest: R1 status: partial section is UNKNOWN before assignment and preserves both drafts
+ok 341 - R1 status: partial section is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 11.024468
+  type: 'test'
+  ...
+# Subtest: R1 status: missing section id is UNKNOWN before assignment and preserves both drafts
+ok 342 - R1 status: missing section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.964234
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string section id is UNKNOWN before assignment and preserves both drafts
+ok 343 - R1 status: non-string section id is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 9.861402
+  type: 'test'
+  ...
+# Subtest: R1 status: missing section title is UNKNOWN before assignment and preserves both drafts
+ok 344 - R1 status: missing section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 13.384014
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string section title is UNKNOWN before assignment and preserves both drafts
+ok 345 - R1 status: non-string section title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.624329
+  type: 'test'
+  ...
+# Subtest: R1 status: missing section text is UNKNOWN before assignment and preserves both drafts
+ok 346 - R1 status: missing section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.407197
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string section text is UNKNOWN before assignment and preserves both drafts
+ok 347 - R1 status: non-string section text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.529098
+  type: 'test'
+  ...
+# Subtest: R1 status: null question is UNKNOWN before assignment and preserves both drafts
+ok 348 - R1 status: null question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.403297
+  type: 'test'
+  ...
+# Subtest: R1 status: scalar question is UNKNOWN before assignment and preserves both drafts
+ok 349 - R1 status: scalar question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.409636
+  type: 'test'
+  ...
+# Subtest: R1 status: partial question is UNKNOWN before assignment and preserves both drafts
+ok 350 - R1 status: partial question is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 14.682102
+  type: 'test'
+  ...
+# Subtest: R1 status: missing question index is UNKNOWN before assignment and preserves both drafts
+ok 351 - R1 status: missing question index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.649869
+  type: 'test'
+  ...
+# Subtest: R1 status: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+ok 352 - R1 status: missing question answerIndex is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.832231
+  type: 'test'
+  ...
+# Subtest: R1 status: missing question text is UNKNOWN before assignment and preserves both drafts
+ok 353 - R1 status: missing question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 6.741361
+  type: 'test'
+  ...
+# Subtest: R1 status: missing question completed is UNKNOWN before assignment and preserves both drafts
+ok 354 - R1 status: missing question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.329218
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string question text is UNKNOWN before assignment and preserves both drafts
+ok 355 - R1 status: non-string question text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.406703
+  type: 'test'
+  ...
+# Subtest: R1 status: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+ok 356 - R1 status: non-boolean question completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.129061
+  type: 'test'
+  ...
+# Subtest: R1 status: fractional answer index is UNKNOWN before assignment and preserves both drafts
+ok 357 - R1 status: fractional answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 18.116032
+  type: 'test'
+  ...
+# Subtest: R1 status: negative answer index is UNKNOWN before assignment and preserves both drafts
+ok 358 - R1 status: negative answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.596776
+  type: 'test'
+  ...
+# Subtest: R1 status: string answer index is UNKNOWN before assignment and preserves both drafts
+ok 359 - R1 status: string answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.069343
+  type: 'test'
+  ...
+# Subtest: R1 status: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+ok 360 - R1 status: misrouted answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.646506
+  type: 'test'
+  ...
+# Subtest: R1 status: completed answer index is UNKNOWN before assignment and preserves both drafts
+ok 361 - R1 status: completed answer index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.172917
+  type: 'test'
+  ...
+# Subtest: R1 status: unresolved null index is UNKNOWN before assignment and preserves both drafts
+ok 362 - R1 status: unresolved null index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.472746
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong source index is UNKNOWN before assignment and preserves both drafts
+ok 363 - R1 status: wrong source index is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.605141
+  type: 'test'
+  ...
+# Subtest: R1 status: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 364 - R1 status: null humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.490765
+  type: 'test'
+  ...
+# Subtest: R1 status: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+ok 365 - R1 status: partial humanTasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.863728
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+ok 366 - R1 status: non-string humanTasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.264538
+  type: 'test'
+  ...
+# Subtest: R1 status: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+ok 367 - R1 status: non-boolean humanTasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.0762
+  type: 'test'
+  ...
+# Subtest: R1 status: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 368 - R1 status: null acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.820928
+  type: 'test'
+  ...
+# Subtest: R1 status: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+ok 369 - R1 status: partial acceptanceCriteria entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.144675
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+ok 370 - R1 status: non-string acceptanceCriteria text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.744085
+  type: 'test'
+  ...
+# Subtest: R1 status: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+ok 371 - R1 status: non-boolean acceptanceCriteria completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.248241
+  type: 'test'
+  ...
+# Subtest: R1 status: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 372 - R1 status: null subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 5.040579
+  type: 'test'
+  ...
+# Subtest: R1 status: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+ok 373 - R1 status: partial subtasks entry is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.26108
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+ok 374 - R1 status: non-string subtasks text is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.338881
+  type: 'test'
+  ...
+# Subtest: R1 status: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+ok 375 - R1 status: non-boolean subtasks completed is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.019367
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong identity is UNKNOWN before assignment and preserves both drafts
+ok 376 - R1 status: wrong identity is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.04246
+  type: 'test'
+  ...
+# Subtest: R1 status: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 377 - R1 status: missing fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.328715
+  type: 'test'
+  ...
+# Subtest: R1 status: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+ok 378 - R1 status: empty fingerprint is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 2.904565
+  type: 'test'
+  ...
+# Subtest: R1 status: missing title is UNKNOWN before assignment and preserves both drafts
+ok 379 - R1 status: missing title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.078786
+  type: 'test'
+  ...
+# Subtest: R1 status: non-string title is UNKNOWN before assignment and preserves both drafts
+ok 380 - R1 status: non-string title is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.736774
+  type: 'test'
+  ...
+# Subtest: R1 status: missing state is UNKNOWN before assignment and preserves both drafts
+ok 381 - R1 status: missing state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 4.650522
+  type: 'test'
+  ...
+# Subtest: R1 status: invalid state is UNKNOWN before assignment and preserves both drafts
+ok 382 - R1 status: invalid state is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.826359
+  type: 'test'
+  ...
+# Subtest: R1 status: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 383 - R1 status: missing statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.447308
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+ok 384 - R1 status: wrong statusLabel is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.106879
+  type: 'test'
+  ...
+# Subtest: R1 status: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 385 - R1 status: missing updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.0558
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+ok 386 - R1 status: wrong updatedAt is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.766817
+  type: 'test'
+  ...
+# Subtest: R1 status: missing phase is UNKNOWN before assignment and preserves both drafts
+ok 387 - R1 status: missing phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.291486
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong phase is UNKNOWN before assignment and preserves both drafts
+ok 388 - R1 status: wrong phase is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.087756
+  type: 'test'
+  ...
+# Subtest: R1 status: missing attention is UNKNOWN before assignment and preserves both drafts
+ok 389 - R1 status: missing attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 3.139704
+  type: 'test'
+  ...
+# Subtest: R1 status: wrong attention is UNKNOWN before assignment and preserves both drafts
+ok 390 - R1 status: wrong attention is UNKNOWN before assignment and preserves both drafts
+  ---
+  duration_ms: 14.615377
+  type: 'test'
+  ...
+# Subtest: R1 status: valid populated detail succeeds
+ok 391 - R1 status: valid populated detail succeeds
+  ---
+  duration_ms: 3.902855
+  type: 'test'
+  ...
+# Subtest: R1 status: valid null/empty detail succeeds
+ok 392 - R1 status: valid null/empty detail succeeds
+  ---
+  duration_ms: 8.593824
+  type: 'test'
+  ...
+# Subtest: issue \#49: login form semantic markup and autocomplete contracts are intact
+ok 393 - issue \#49: login form semantic markup and autocomplete contracts are intact
+  ---
+  duration_ms: 2.709422
+  type: 'test'
+  ...
+# Subtest: issue \#49: minimal off-layout CSS contract in theme.css
+ok 394 - issue \#49: minimal off-layout CSS contract in theme.css
+  ---
+  duration_ms: 1.22912
+  type: 'test'
+  ...
+# Subtest: issue \#49: other .sr-only accessibility elements remain intact
+ok 395 - issue \#49: other .sr-only accessibility elements remain intact
+  ---
+  duration_ms: 1.559993
+  type: 'test'
+  ...
+# Subtest: issue \#49: synthetic sign-in succeeds and returns HttpOnly Secure SameSite session cookie
+ok 396 - issue \#49: synthetic sign-in succeeds and returns HttpOnly Secure SameSite session cookie
+  ---
+  duration_ms: 573.186389
+  type: 'test'
+  ...
+# Subtest: escapeHtml escapes dangerous HTML characters
+ok 397 - escapeHtml escapes dangerous HTML characters
+  ---
+  duration_ms: 5.716181
+  type: 'test'
+  ...
+# Subtest: XSS payloads are strictly neutralized by renderMarkdown
+ok 398 - XSS payloads are strictly neutralized by renderMarkdown
+  ---
+  duration_ms: 4.011839
+  type: 'test'
+  ...
+# Subtest: Links with unsafe protocols are rejected (javascript:, data:, vbscript:)
+ok 399 - Links with unsafe protocols are rejected (javascript:, data:, vbscript:)
+  ---
+  duration_ms: 1.759692
+  type: 'test'
+  ...
+# Subtest: Safe links (https, http, mailto) open in new tab with rel=noopener
+ok 400 - Safe links (https, http, mailto) open in new tab with rel=noopener
+  ---
+  duration_ms: 1.048912
+  type: 'test'
+  ...
+# Subtest: Headings H1-H6 render properly
+ok 401 - Headings H1-H6 render properly
+  ---
+  duration_ms: 0.773172
+  type: 'test'
+  ...
+# Subtest: Emphasis: bold, italic, and nested combinations
+ok 402 - Emphasis: bold, italic, and nested combinations
+  ---
+  duration_ms: 0.779125
+  type: 'test'
+  ...
+# Subtest: Inline code and fenced code blocks with language tag
+ok 403 - Inline code and fenced code blocks with language tag
+  ---
+  duration_ms: 0.960768
+  type: 'test'
+  ...
+# Subtest: Unordered lists, ordered lists, and nested lists
+ok 404 - Unordered lists, ordered lists, and nested lists
+  ---
+  duration_ms: 1.161686
+  type: 'test'
+  ...
+# Subtest: Task list checkboxes render display-only inputs
+ok 405 - Task list checkboxes render display-only inputs
+  ---
+  duration_ms: 1.623566
+  type: 'test'
+  ...
+# Subtest: Large 4,000-character note payload executes cleanly without backtracking or delay
+ok 406 - Large 4,000-character note payload executes cleanly without backtracking or delay
+  ---
+  duration_ms: 10.132876
+  type: 'test'
+  ...
+# Subtest: hostile markdown: strictly rejects /, \#, and protocol-relative // URLs matching contract
+ok 407 - hostile markdown: strictly rejects /, \#, and protocol-relative // URLs matching contract
+  ---
+  duration_ms: 0.905068
+  type: 'test'
+  ...
+# Subtest: hostile markdown: attribute breakout in URLs is neutralized
+ok 408 - hostile markdown: attribute breakout in URLs is neutralized
+  ---
+  duration_ms: 0.707202
+  type: 'test'
+  ...
+# Subtest: hostile markdown: ampersands and quotes in URLs are escaped exactly once
+ok 409 - hostile markdown: ampersands and quotes in URLs are escaped exactly once
+  ---
+  duration_ms: 0.510685
+  type: 'test'
+  ...
+# Subtest: hostile markdown: multi-backtick code fences (>=4) and nested code syntax
+ok 410 - hostile markdown: multi-backtick code fences (>=4) and nested code syntax
+  ---
+  duration_ms: 0.323877
+  type: 'test'
+  ...
+# Subtest: hostile markdown: inline code preserves markdown syntax and prevents placeholder collisions
+ok 411 - hostile markdown: inline code preserves markdown syntax and prevents placeholder collisions
+  ---
+  duration_ms: 0.479655
+  type: 'test'
+  ...
+# Subtest: R3: 1 spaces plus tab is code in scanner, list and detail
+ok 412 - R3: 1 spaces plus tab is code in scanner, list and detail
+  ---
+  duration_ms: 22.435208
+  type: 'test'
+  ...
+# Subtest: R3: 1 spaces plus tab direct code target refuses before PATCH
+ok 413 - R3: 1 spaces plus tab direct code target refuses before PATCH
+  ---
+  duration_ms: 532.461513
+  type: 'test'
+  ...
+# Subtest: R3: 1 spaces plus tab stays byte-exact around real nested questions and CRLF
+ok 414 - R3: 1 spaces plus tab stays byte-exact around real nested questions and CRLF
+  ---
+  duration_ms: 308.708616
+  type: 'test'
+  ...
+# Subtest: R3: 2 spaces plus tab is code in scanner, list and detail
+ok 415 - R3: 2 spaces plus tab is code in scanner, list and detail
+  ---
+  duration_ms: 1.41901
+  type: 'test'
+  ...
+# Subtest: R3: 2 spaces plus tab direct code target refuses before PATCH
+ok 416 - R3: 2 spaces plus tab direct code target refuses before PATCH
+  ---
+  duration_ms: 297.713595
+  type: 'test'
+  ...
+# Subtest: R3: 2 spaces plus tab stays byte-exact around real nested questions and CRLF
+ok 417 - R3: 2 spaces plus tab stays byte-exact around real nested questions and CRLF
+  ---
+  duration_ms: 308.573788
+  type: 'test'
+  ...
+# Subtest: R3: 3 spaces plus tab is code in scanner, list and detail
+ok 418 - R3: 3 spaces plus tab is code in scanner, list and detail
+  ---
+  duration_ms: 1.415851
+  type: 'test'
+  ...
+# Subtest: R3: 3 spaces plus tab direct code target refuses before PATCH
+ok 419 - R3: 3 spaces plus tab direct code target refuses before PATCH
+  ---
+  duration_ms: 282.10903
+  type: 'test'
+  ...
+# Subtest: R3: 3 spaces plus tab stays byte-exact around real nested questions and CRLF
+ok 420 - R3: 3 spaces plus tab stays byte-exact around real nested questions and CRLF
+  ---
+  duration_ms: 303.19719
+  type: 'test'
+  ...
+# Subtest: qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+ok 421 - qualified section: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 54.245245
+  type: 'test'
+  ...
+# Subtest: qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+ok 422 - qualified question: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 15.223675
+  type: 'test'
+  ...
+# Subtest: qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+ok 423 - qualified status: same-number wrong-repository response is UNKNOWN and retains draft
+  ---
+  duration_ms: 13.728409
+  type: 'test'
+  ...
+# Subtest: qualified overview drafts survive navigation without crossing same-number repositories
+ok 424 - qualified overview drafts survive navigation without crossing same-number repositories
+  ---
+  duration_ms: 15.177836
+  type: 'test'
+  ...
+# Subtest: observed revision change never rebinds an old answer; original question draft is recoverable
+ok 425 - observed revision change never rebinds an old answer; original question draft is recoverable
+  ---
+  duration_ms: 16.794963
+  type: 'test'
+  ...
+# Subtest: same-number combined row update replaces only the written repository
+ok 426 - same-number combined row update replaces only the written repository
+  ---
+  duration_ms: 23.050875
+  type: 'test'
+  ...
+# Subtest: older detail read cannot replace a newer confirmed mutation
+ok 427 - older detail read cannot replace a newer confirmed mutation
+  ---
+  duration_ms: 11.178413
+  type: 'test'
+  ...
+# Subtest: a detail refresh started during a write cannot clear the later UNKNOWN outcome
+ok 428 - a detail refresh started during a write cannot clear the later UNKNOWN outcome
+  ---
+  duration_ms: 9.218651
+  type: 'test'
+  ...
+# Subtest: detached question input stays bound to its exact source repository and observed revision
+ok 429 - detached question input stays bound to its exact source repository and observed revision
+  ---
+  duration_ms: 12.399833
+  type: 'test'
+  ...
+# Subtest: answer confirms only the qualified combined row question count
+ok 430 - answer confirms only the qualified combined row question count
+  ---
+  duration_ms: 16.154155
+  type: 'test'
+  ...
+# Subtest: F2: a write for the previous repository cannot discard the newly selected repository board
+ok 431 - F2: a write for the previous repository cannot discard the newly selected repository board
+  ---
+  duration_ms: 22.821752
+  type: 'test'
+  ...
+# Subtest: F3: a pre-dispatch discovery refusal is definite and never marked UNKNOWN
+ok 432 - F3: a pre-dispatch discovery refusal is definite and never marked UNKNOWN
+  ---
+  duration_ms: 18.219464
+  type: 'test'
+  ...
+# Subtest: clearing a qualified draft does not resurrect an older typed value on return
+ok 433 - clearing a qualified draft does not resurrect an older typed value on return
+  ---
+  duration_ms: 11.438922
+  type: 'test'
+  ...
+# Subtest: repository discovery lists every token-visible repository with immutable identity, archived and issue capability
+ok 434 - repository discovery lists every token-visible repository with immutable identity, archived and issue capability
+  ---
+  duration_ms: 549.120411
+  type: 'test'
+  ...
+# Subtest: the token covering two repositories shows both and the combined view labels every row
+ok 435 - the token covering two repositories shows both and the combined view labels every row
+  ---
+  duration_ms: 461.257037
+  type: 'test'
+  ...
+# Subtest: cross-repository same-number rows stay separate and reads resolve the shown repository
+ok 436 - cross-repository same-number rows stay separate and reads resolve the shown repository
+  ---
+  duration_ms: 439.108967
+  type: 'test'
+  ...
+# Subtest: a write in the combined view lands only in the shown issue repository and same-number writes stay independent
+ok 437 - a write in the combined view lands only in the shown issue repository and same-number writes stay independent
+  ---
+  duration_ms: 431.409095
+  type: 'test'
+  ...
+# Subtest: fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+ok 438 - fabricated, unknown and case-variant repositories are refused before any GitHub call and never fall back to the default
+  ---
+  duration_ms: 298.575781
+  type: 'test'
+  ...
+# Subtest: discovery failure keeps the last known picker and marks it stale instead of presenting an empty list
+ok 439 - discovery failure keeps the last known picker and marks it stale instead of presenting an empty list
+  ---
+  duration_ms: 283.668836
+  type: 'test'
+  ...
+# Subtest: zero visible repositories is distinct from failed discovery
+ok 440 - zero visible repositories is distinct from failed discovery
+  ---
+  duration_ms: 227.038543
+  type: 'test'
+  ...
+# Subtest: archived and empty repositories stay selectable with correct board states
+ok 441 - archived and empty repositories stay selectable with correct board states
+  ---
+  duration_ms: 248.469602
+  type: 'test'
+  ...
+# Subtest: a known repository losing access is shown unavailable with its last identity and refuses reads and writes
+ok 442 - a known repository losing access is shown unavailable with its last identity and refuses reads and writes
+  ---
+  duration_ms: 260.997497
+  type: 'test'
+  ...
+# Subtest: aggregate refresh is bounded, one failure stays local and partial results are never marked complete
+ok 443 - aggregate refresh is bounded, one failure stays local and partial results are never marked complete
+  ---
+  duration_ms: 398.237708
+  type: 'test'
+  ...
+# Subtest: F4: the combined view caps total issues and marks the result truncated and partial
+ok 444 - F4: the combined view caps total issues and marks the result truncated and partial
+  ---
+  duration_ms: 489.484067
+  type: 'test'
+  ...
+# Subtest: repository discovery fails loudly on a malformed page and respects the page bound
+ok 445 - repository discovery fails loudly on a malformed page and respects the page bound
+  ---
+  duration_ms: 3.816555
+  type: 'test'
+  ...
+# Subtest: repository discovery follows bounded pagination and preserves identity fields
+ok 446 - repository discovery follows bounded pagination and preserves identity fields
+  ---
+  duration_ms: 1.067505
+  type: 'test'
+  ...
+# Subtest: discovery failure before any success is not an empty picker and does not prevent sign-in
+ok 447 - discovery failure before any success is not an empty picker and does not prevent sign-in
+  ---
+  duration_ms: 497.640645
+  type: 'test'
+  ...
+# Subtest: expired failed discovery retains display identities but cannot authorize a write
+ok 448 - expired failed discovery retains display identities but cannot authorize a write
+  ---
+  duration_ms: 245.130851
+  type: 'test'
+  ...
+# Subtest: F1: a write during a gated discovery refresh cannot use the pre-refresh allowlist
+ok 449 - F1: a write during a gated discovery refresh cannot use the pre-refresh allowlist
+  ---
+  duration_ms: 303.234699
+  type: 'test'
+  ...
+# Subtest: identical contents in same-number issues do not permit a cross-repository fingerprint replay on any write path
+ok 450 - identical contents in same-number issues do not permit a cross-repository fingerprint replay on any write path
+  ---
+  duration_ms: 367.979407
+  type: 'test'
+  ...
+# Subtest: discovery rejects malformed entries and conflicting duplicate immutable identities
+ok 451 - discovery rejects malformed entries and conflicting duplicate immutable identities
+  ---
+  duration_ms: 1.983747
+  type: 'test'
+  ...
+# Subtest: unknown repository after an expired failed discovery still causes zero upstream calls
+ok 452 - unknown repository after an expired failed discovery still causes zero upstream calls
+  ---
+  duration_ms: 353.99871
+  type: 'test'
+  ...
+# Subtest: no-issue capability, unavailable aggregate members and concurrent aggregate coalescing are disclosed
+ok 453 - no-issue capability, unavailable aggregate members and concurrent aggregate coalescing are disclosed
+  ---
+  duration_ms: 375.165178
+  type: 'test'
+  ...
+# Subtest: a malformed later discovery never publishes its first page as a complete allowlist
+ok 454 - a malformed later discovery never publishes its first page as a complete allowlist
+  ---
+  duration_ms: 1.958494
+  type: 'test'
+  ...
+# Subtest: N2: GitHubClient rejects 302 and 307 redirects before following (zero requests sent to destination)
+ok 455 - N2: GitHubClient rejects 302 and 307 redirects before following (zero requests sent to destination)
+  ---
+  duration_ms: 100.155631
+  type: 'test'
+  ...
+# Subtest: N1 (client): api() treats malformed success, 5xx, and untrusted responses on mutations as write_outcome_unknown
+ok 456 - N1 (client): api() treats malformed success, 5xx, and untrusted responses on mutations as write_outcome_unknown
+  ---
+  duration_ms: 61.790656
+  type: 'test'
+  ...
+# Subtest: N1: upstream malformed/HTML 422 after PATCH maps to 502 write_outcome_unknown
+ok 457 - N1: upstream malformed/HTML 422 after PATCH maps to 502 write_outcome_unknown
+  ---
+  duration_ms: 587.28799
+  type: 'test'
+  ...
+# Subtest: N3: indentation-only mismatch on readback maps to 502 write_outcome_unknown
+ok 458 - N3: indentation-only mismatch on readback maps to 502 write_outcome_unknown
+  ---
+  duration_ms: 382.167764
+  type: 'test'
+  ...
+# Subtest: N4: malformed fence does not expose code checkbox as open question in list or detail
+ok 459 - N4: malformed fence does not expose code checkbox as open question in list or detail
+  ---
+  duration_ms: 8.230829
+  type: 'test'
+  ...
+# Subtest: N4: fence variants (longer backticks, tildes) preserve fences and exclude code checkboxes
+ok 460 - N4: fence variants (longer backticks, tildes) preserve fences and exclude code checkboxes
+  ---
+  duration_ms: 3.595406
+  type: 'test'
+  ...
+# Subtest: N4: exact hostile review fixture (no questions outside fence) exposes 0 questions and refuses answer mutation via HTTP
+ok 461 - N4: exact hostile review fixture (no questions outside fence) exposes 0 questions and refuses answer mutation via HTTP
+  ---
+  duration_ms: 335.192145
+  type: 'test'
+  ...
+# Subtest: N4: real question after fenced code block can be answered via HTTP without touching code block
+ok 462 - N4: real question after fenced code block can be answered via HTTP without touching code block
+  ---
+  duration_ms: 317.438792
+  type: 'test'
+  ...
+# Subtest: F1 (client): nominal 200 with invalid detail shape throws write_outcome_unknown and does not corrupt detail
+ok 463 - F1 (client): nominal 200 with invalid detail shape throws write_outcome_unknown and does not corrupt detail
+  ---
+  duration_ms: 42.687121
+  type: 'test'
+  ...
+# Subtest: F2: upstream generic JSON 422 after PATCH maps to 502 write_outcome_unknown, while recognisable GitHub validation 422 maps to 400 invalid_request
+ok 464 - F2: upstream generic JSON 422 after PATCH maps to 502 write_outcome_unknown, while recognisable GitHub validation 422 maps to 400 invalid_request
+  ---
+  duration_ms: 313.387955
+  type: 'test'
+  ...
+# Subtest: F3: four-space/tab indented code checkbox is excluded from list, detail, and mutation targeting
+ok 465 - F3: four-space/tab indented code checkbox is excluded from list, detail, and mutation targeting
+  ---
+  duration_ms: 300.447014
+  type: 'test'
+  ...
+# Subtest: F3: issue with only indented code exposes 0 questions and refuses answer index 0
+ok 466 - F3: issue with only indented code exposes 0 questions and refuses answer index 0
+  ---
+  duration_ms: 285.791513
+  type: 'test'
+  ...
+# Subtest: findSections splits headings and keeps the preamble
+ok 467 - findSections splits headings and keeps the preamble
+  ---
+  duration_ms: 8.75691
+  type: 'test'
+  ...
+# Subtest: editableSections exposes the overview prose only
+ok 468 - editableSections exposes the overview prose only
+  ---
+  duration_ms: 2.241266
+  type: 'test'
+  ...
+# Subtest: editableSections falls back to an Overview heading when there is no preamble
+ok 469 - editableSections falls back to an Overview heading when there is no preamble
+  ---
+  duration_ms: 3.84087
+  type: 'test'
+  ...
+# Subtest: replaceSectionText preserves every other byte unchanged
+ok 470 - replaceSectionText preserves every other byte unchanged
+  ---
+  duration_ms: 1.125357
+  type: 'test'
+  ...
+# Subtest: replaceSectionText preserves CRLF line endings
+ok 471 - replaceSectionText preserves CRLF line endings
+  ---
+  duration_ms: 0.616706
+  type: 'test'
+  ...
+# Subtest: replaceSectionText can create content in an empty body
+ok 472 - replaceSectionText can create content in an empty body
+  ---
+  duration_ms: 5.347821
+  type: 'test'
+  ...
+# Subtest: replaceSectionText inserts an overview before a leading heading
+ok 473 - replaceSectionText inserts an overview before a leading heading
+  ---
+  duration_ms: 10.188557
+  type: 'test'
+  ...
+# Subtest: replaceSectionText refuses unknown or protected sections
+ok 474 - replaceSectionText refuses unknown or protected sections
+  ---
+  duration_ms: 6.214654
+  type: 'test'
+  ...
+# Subtest: replaceSectionText rejects non-string text
+ok 475 - replaceSectionText rejects non-string text
+  ---
+  duration_ms: 0.917035
+  type: 'test'
+  ...
+# Subtest: setStatusLabel replaces status labels, preserving every other label
+ok 476 - setStatusLabel replaces status labels, preserving every other label
+  ---
+  duration_ms: 4.074624
+  type: 'test'
+  ...
+# Subtest: setStatusLabel accepts every agreed status and rejects anything else
+ok 477 - setStatusLabel accepts every agreed status and rejects anything else
+  ---
+  duration_ms: 1.148007
+  type: 'test'
+  ...
+# Subtest: setStatusLabel can clear the status without touching other labels
+ok 478 - setStatusLabel can clear the status without touching other labels
+  ---
+  duration_ms: 0.185229
+  type: 'test'
+  ...
+# Subtest: findSections and replaceSectionText handle BOM correctly
+ok 479 - findSections and replaceSectionText handle BOM correctly
+  ---
+  duration_ms: 0.564741
+  type: 'test'
+  ...
+# Subtest: headings inside fenced code blocks are ignored
+ok 480 - headings inside fenced code blocks are ignored
+  ---
+  duration_ms: 0.566751
+  type: 'test'
+  ...
+# Subtest: ambiguous preamble containing a code fence is not offered as editable
+ok 481 - ambiguous preamble containing a code fence is not offered as editable
+  ---
+  duration_ms: 0.495783
+  type: 'test'
+  ...
+# Subtest: duplicate headings only allow the first matching overview to be editable
+ok 482 - duplicate headings only allow the first matching overview to be editable
+  ---
+  duration_ms: 0.331001
+  type: 'test'
+  ...
+# Subtest: closing fence must contain only marker characters and whitespace (R4)
+ok 483 - closing fence must contain only marker characters and whitespace (R4)
+  ---
+  duration_ms: 0.319332
+  type: 'test'
+  ...
+# Subtest: YAML front matter is excluded from overview section and preserved on edit
+ok 484 - YAML front matter is excluded from overview section and preserved on edit
+  ---
+  duration_ms: 0.312221
+  type: 'test'
+  ...
+# Subtest: V3-5: theme.css contains pure-CSS signed-out dock and header suppression rules
+ok 485 - V3-5: theme.css contains pure-CSS signed-out dock and header suppression rules
+  ---
+  duration_ms: 6.55047
+  type: 'test'
+  ...
+# Subtest: V3-5: index.html places \#compact-nav-dock outside <main> and \#login-view inside <main>
+ok 486 - V3-5: index.html places \#compact-nav-dock outside <main> and \#login-view inside <main>
+  ---
+  duration_ms: 1.38915
+  type: 'test'
+  ...
+# Subtest: V3-5: sign-in card layout polish — centered, responsive width, and >=44px hit boxes
+ok 487 - V3-5: sign-in card layout polish — centered, responsive width, and >=44px hit boxes
+  ---
+  duration_ms: 1.161562
+  type: 'test'
+  ...
+# Subtest: defaults, validation and remembered device state
+ok 488 - defaults, validation and remembered device state
+  ---
+  duration_ms: 73.77173
+  type: 'test'
+  ...
+# Subtest: client short names and overrides match shared contract
+ok 489 - client short names and overrides match shared contract
+  ---
+  duration_ms: 8.476477
+  type: 'test'
+  ...
+# Subtest: filter groups combine OR within groups and AND across groups with all sorts
+ok 490 - filter groups combine OR within groups and AND across groups with all sorts
+  ---
+  duration_ms: 9.786297
+  type: 'test'
+  ...
+# Subtest: offline drafts render in quick capture, preserve description and local reorder markers
+ok 491 - offline drafts render in quick capture, preserve description and local reorder markers
+  ---
+  duration_ms: 16.269811
+  type: 'test'
+  ...
+# Subtest: offline sync retains drafts on definite server refusal instead of deleting local work
+ok 492 - offline sync retains drafts on definite server refusal instead of deleting local work
+  ---
+  duration_ms: 10.39268
+  type: 'test'
+  ...
+# Subtest: existing GitHub drafts cannot silently queue reorder while offline
+ok 493 - existing GitHub drafts cannot silently queue reorder while offline
+  ---
+  duration_ms: 18.374927
+  type: 'test'
+  ...
+# Subtest: Align Drafts and old preset tabs absent; controls, native modal and bottom capture present
+ok 494 - Align Drafts and old preset tabs absent; controls, native modal and bottom capture present
+  ---
+  duration_ms: 1.183909
+  type: 'test'
+  ...
+# Subtest: F1 client: confirmed draft project move sends confirmed:true and validates transferred target repository payload
+ok 495 - F1 client: confirmed draft project move sends confirmed:true and validates transferred target repository payload
+  ---
+  duration_ms: 29.879184
+  type: 'test'
+  ...
+# Subtest: F2 client: offline queue preserves duplicate titles, holds uncertain creates without auto-resend, retains in-flight edits, and boots offline shell
+ok 496 - F2 client: offline queue preserves duplicate titles, holds uncertain creates without auto-resend, retains in-flight edits, and boots offline shell
+  ---
+  duration_ms: 41.089998
+  type: 'test'
+  ...
+# Subtest: F4 client: unchecked checkbox property, qualified Mark Done, unsaved overview across checkbox toggle, and inline draft buffer fingerprint binding
+ok 497 - F4 client: unchecked checkbox property, qualified Mark Done, unsaved overview across checkbox toggle, and inline draft buffer fingerprint binding
+  ---
+  duration_ms: 25.005584
+  type: 'test'
+  ...
+# Subtest: F5 client: downward reorder across unmarked, mixed, and equal-rank drafts initializes/rebalances instead of refusing
+ok 498 - F5 client: downward reorder across unmarked, mixed, and equal-rank drafts initializes/rebalances instead of refusing
+  ---
+  duration_ms: 10.81345
+  type: 'test'
+  ...
+# Subtest: F6 & F8 client: human tasks render completion checkboxes + GitHub source link, description auto-sizes, and drawer close restores focus
+ok 499 - F6 & F8 client: human tasks render completion checkboxes + GitHub source link, description auto-sizes, and drawer close restores focus
+  ---
+  duration_ms: 44.538839
+  type: 'test'
+  ...
+# Subtest: short name: Workflows-Accelerator/openchamber-github-task-board
+ok 500 - short name: Workflows-Accelerator/openchamber-github-task-board
+  ---
+  duration_ms: 2.795385
+  type: 'test'
+  ...
+# Subtest: short name: owner/GH_repo.github
+ok 501 - short name: owner/GH_repo.github
+  ---
+  duration_ms: 2.126672
+  type: 'test'
+  ...
+# Subtest: short name: owner/REPO.API_tools-v2
+ok 502 - short name: owner/REPO.API_tools-v2
+  ---
+  duration_ms: 0.287131
+  type: 'test'
+  ...
+# Subtest: short name: owner/coffee
+ok 503 - short name: owner/coffee
+  ---
+  duration_ms: 0.213936
+  type: 'test'
+  ...
+# Subtest: short name: owner/gh
+ok 504 - short name: owner/gh
+  ---
+  duration_ms: 0.477938
+  type: 'test'
+  ...
+# Subtest: short name override is case-insensitive and wins
+ok 505 - short name override is case-insensitive and wins
+  ---
+  duration_ms: 0.549513
+  type: 'test'
+  ...
+# Subtest: order marker parse, last marker, finite, stripping and midpoint contract
+ok 506 - order marker parse, last marker, finite, stripping and midpoint contract
+  ---
+  duration_ms: 2.985611
+  type: 'test'
+  ...
+# Subtest: F7: dependency parser supports checklist and numbered prefixes and ignores fenced/indented code
+ok 507 - F7: dependency parser supports checklist and numbered prefixes and ignores fenced/indented code
+  ---
+  duration_ms: 13.974073
+  type: 'test'
+  ...
+# Subtest: marker hidden from body, overview, description and pending items; raw fingerprint retained
+ok 508 - marker hidden from body, overview, description and pending items; raw fingerprint retained
+  ---
+  duration_ms: 9.530254
+  type: 'test'
+  ...
+# Subtest: draft create, inline edit and marker-only reorder routes use fingerprint + ETag
+ok 509 - draft create, inline edit and marker-only reorder routes use fingerprint + ETag
+  ---
+  duration_ms: 605.424143
+  type: 'test'
+  ...
+# Subtest: two devices cannot overwrite draft title or order with stale observed fingerprint
+ok 510 - two devices cannot overwrite draft title or order with stale observed fingerprint
+  ---
+  duration_ms: 314.375392
+  type: 'test'
+  ...
+# Subtest: draft routes validate inputs, sign-in, CSRF and draft-only state
+ok 511 - draft routes validate inputs, sign-in, CSRF and draft-only state
+  ---
+  duration_ms: 337.12526
+  type: 'test'
+  ...
+# Subtest: F1: move requires confirmation and transfers draft via native GraphQL transferIssue preserving history without copy or close
+ok 512 - F1: move requires confirmation and transfers draft via native GraphQL transferIssue preserving history without copy or close
+  ---
+  duration_ms: 328.012413
+  type: 'test'
+  ...
+# Subtest: F1: GraphQL permission refusal on transferIssue preserves source draft without copy/close fallback
+ok 513 - F1: GraphQL permission refusal on transferIssue preserves source draft without copy/close fallback
+  ---
+  duration_ms: 323.466707
+  type: 'test'
+  ...
+# Subtest: F1: ambiguous transferIssue outcome returns 502 write_outcome_unknown without blind retry or source close
+ok 514 - F1: ambiguous transferIssue outcome returns 502 write_outcome_unknown without blind retry or source close
+  ---
+  duration_ms: 350.677147
+  type: 'test'
+  ...
+# Subtest: drawer overview and checklist body saves retain hidden marker
+ok 515 - drawer overview and checklist body saves retain hidden marker
+  ---
+  duration_ms: 395.358269
+  type: 'test'
+  ...
+# Subtest: F3: section edit and reorder preserve fenced board-order markers, CRLF and hard-break spaces
+ok 516 - F3: section edit and reorder preserve fenced board-order markers, CRLF and hard-break spaces
+  ---
+  duration_ms: 305.545686
+  type: 'test'
+  ...
+# Subtest: project rename is signed-in, CSRF protected, validated, stored beside data, persistent and resettable
+ok 517 - project rename is signed-in, CSRF protected, validated, stored beside data, persistent and resettable
+  ---
+  duration_ms: 474.794493
+  type: 'test'
+  ...
+# Subtest: GitHub ETag rejection during reorder is a conflict, never a successful order
+ok 518 - GitHub ETag rejection during reorder is a conflict, never a successful order
+  ---
+  duration_ms: 242.878179
+  type: 'test'
+  ...
+# Subtest: F5: reorder rebalances automatically across 60 successive midpoint bisections without 409 precision failure
+ok 519 - F5: reorder rebalances automatically across 60 successive midpoint bisections without 409 precision failure
+  ---
+  duration_ms: 1728.289738
+  type: 'test'
+  ...
+# Subtest: F5: exhausted midpoint between two marked neighbours rebalances instead of returning 409
+ok 520 - F5: exhausted midpoint between two marked neighbours rebalances instead of returning 409
+  ---
+  duration_ms: 302.071845
+  type: 'test'
+  ...
+# Subtest: F5: reorder validates neighbour fingerprints, rejects stale/colliding boundaries, and handles multi-issue initialization and partial failure
+ok 521 - F5: reorder validates neighbour fingerprints, rejects stale/colliding boundaries, and handles multi-issue initialization and partial failure
+  ---
+  duration_ms: 492.081665
+  type: 'test'
+  ...
+# Subtest: an empty friendly-title heading cannot expose hidden order marker as title
+ok 522 - an empty friendly-title heading cannot expose hidden order marker as title
+  ---
+  duration_ms: 1.423207
+  type: 'test'
+  ...
+# Subtest: F9: default startBoard and browserConfig isolate project-names.json per fixture and clean up on close
+ok 523 - F9: default startBoard and browserConfig isolate project-names.json per fixture and clean up on close
+  ---
+  duration_ms: 530.920687
+  type: 'test'
+  ...
+# Subtest: getVersionStamp produces package-version prefixed build stamp from assets
+ok 524 - getVersionStamp produces package-version prefixed build stamp from assets
+  ---
+  duration_ms: 6.614261
+  type: 'test'
+  ...
+# Subtest: app.js registers service worker with updateViaCache: none, update triggers, and loop guard
+ok 525 - app.js registers service worker with updateViaCache: none, update triggers, and loop guard
+  ---
+  duration_ms: 6.703451
+  type: 'test'
+  ...
+# Subtest: sw.js defines versioned cache name 2.1.0, network-first shell (including markdown.js and arrange.js), cache-first icons, and api bypass
+ok 526 - sw.js defines versioned cache name 2.1.0, network-first shell (including markdown.js and arrange.js), cache-first icons, and api bypass
+  ---
+  duration_ms: 0.569234
+  type: 'test'
+  ...
+# Subtest: Service Worker install caches shell assets and calls skipWaiting
+ok 527 - Service Worker install caches shell assets and calls skipWaiting
+  ---
+  duration_ms: 2.632962
+  type: 'test'
+  ...
+# Subtest: Service Worker activate purges old caches including workflows-board-v1 and claims clients
+ok 528 - Service Worker activate purges old caches including workflows-board-v1 and claims clients
+  ---
+  duration_ms: 2.034359
+  type: 'test'
+  ...
+# Subtest: App shell requests are network-first with cache fallback only when offline
+ok 529 - App shell requests are network-first with cache fallback only when offline
+  ---
+  duration_ms: 2.120479
+  type: 'test'
+  ...
+# Subtest: Icon requests are cache-first with network fallback
+ok 530 - Icon requests are cache-first with network fallback
+  ---
+  duration_ms: 2.076877
+  type: 'test'
+  ...
+# Subtest: API and non-GET requests bypass the service worker cache entirely
+ok 531 - API and non-GET requests bypass the service worker cache entirely
+  ---
+  duration_ms: 1.585516
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas drag: write persists the dropped position and a re-read returns it
+ok 532 - V3-6 canvas drag: write persists the dropped position and a re-read returns it
+  ---
+  duration_ms: 575.971036
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas drag: a write issued right after a conditional 304 GET still persists
+ok 533 - V3-6 canvas drag: a write issued right after a conditional 304 GET still persists
+  ---
+  duration_ms: 319.857464
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas drag: a second drag of the same card updates the marker once and stays byte-stable
+ok 534 - V3-6 canvas drag: a second drag of the same card updates the marker once and stays byte-stable
+  ---
+  duration_ms: 324.090016
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas drag: a stale fingerprint is a precise 409 and never a silent move
+ok 535 - V3-6 canvas drag: a stale fingerprint is a precise 409 and never a silent move
+  ---
+  duration_ms: 328.877349
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas drag: a GitHub refusal is reported as a definite 400, not an unknown outcome
+ok 536 - V3-6 canvas drag: a GitHub refusal is reported as a definite 400, not an unknown outcome
+  ---
+  duration_ms: 306.358746
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas drag: a genuinely unknown upstream outcome keeps write_outcome_unknown
+ok 537 - V3-6 canvas drag: a genuinely unknown upstream outcome keeps write_outcome_unknown
+  ---
+  duration_ms: 251.575836
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas drag: a rate-limited write keeps its cause instead of becoming unknown
+ok 538 - V3-6 canvas drag: a rate-limited write keeps its cause instead of becoming unknown
+  ---
+  duration_ms: 258.483307
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas drag: a rejected token keeps its cause instead of becoming unknown
+ok 539 - V3-6 canvas drag: a rejected token keeps its cause instead of becoming unknown
+  ---
+  duration_ms: 359.311428
+  type: 'test'
+  ...
+# Subtest: V3-6 fake GitHub: unsafe requests carrying If-Match are refused exactly like GitHub
+ok 540 - V3-6 fake GitHub: unsafe requests carrying If-Match are refused exactly like GitHub
+  ---
+  duration_ms: 16.63659
+  type: 'test'
+  ...
+# Subtest: V3-6 canvas client: known failures name the cause in EN and FR, unknown stays unknown
+ok 541 - V3-6 canvas client: known failures name the cause in EN and FR, unknown stays unknown
+  ---
+  duration_ms: 5.342499
+  type: 'test'
+  ...
+# Subtest: conditional 304 and weak ETag revalidation for /api/repos, /api/board, and /api/combined/board
+ok 542 - conditional 304 and weak ETag revalidation for /api/repos, /api/board, and /api/combined/board
+  ---
+  duration_ms: 472.890736
+  type: 'test'
+  ...
+# Subtest: query parameter ?refresh=1 forces fresh fetch and bypasses ETag 304 match
+ok 543 - query parameter ?refresh=1 forces fresh fetch and bypasses ETag 304 match
+  ---
+  duration_ms: 323.813528
+  type: 'test'
+  ...
+# Subtest: zero-waste GraphQL dependency query skipping when repository has 0 open issues
+ok 544 - zero-waste GraphQL dependency query skipping when repository has 0 open issues
+  ---
+  duration_ms: 345.267227
+  type: 'test'
+  ...
+# Subtest: singleflight request coalescing ensures concurrent board requests share single GitHub fetch
+ok 545 - singleflight request coalescing ensures concurrent board requests share single GitHub fetch
+  ---
+  duration_ms: 338.362129
+  type: 'test'
+  ...
+# Subtest: rateLimit telemetry is exposed on repos, board, and combined endpoints without polluting ETags
+ok 546 - rateLimit telemetry is exposed on repos, board, and combined endpoints without polluting ETags
+  ---
+  duration_ms: 292.516751
+  type: 'test'
+  ...
+# Subtest: effectiveStage, isExplicitDraft, bodyMarkdown, and backward-compatible column projection
+ok 547 - effectiveStage, isExplicitDraft, bodyMarkdown, and backward-compatible column projection
+  ---
+  duration_ms: 225.060653
+  type: 'test'
+  ...
+# Subtest: graceful 403 and 422 label fallback on issue creation
+ok 548 - graceful 403 and 422 label fallback on issue creation
+  ---
+  duration_ms: 272.160126
+  type: 'test'
+  ...
+# Subtest: repository with has_issues: false makes zero issue-list and zero GraphQL calls
+ok 549 - repository with has_issues: false makes zero issue-list and zero GraphQL calls
+  ---
+  duration_ms: 231.726578
+  type: 'test'
+  ...
+# Subtest: V3-3: Operations buckets agree with effectiveStage for unlabeled open issues
+ok 550 - V3-3: Operations buckets agree with effectiveStage for unlabeled open issues
+  ---
+  duration_ms: 226.966225
+  type: 'test'
+  ...
+# Subtest: V3-3: conditional validators are private and session-bound for every board scope
+ok 551 - V3-3: conditional validators are private and session-bound for every board scope
+  ---
+  duration_ms: 323.312535
+  type: 'test'
+  ...
+# Subtest: V3-3: single-page discovery really revalidates upstream; rejected singleflight retries
+ok 552 - V3-3: single-page discovery really revalidates upstream; rejected singleflight retries
+  ---
+  duration_ms: 241.297609
+  type: 'test'
+  ...
+# Subtest: V3-3: page-1 validators never suppress later issue pages, closed pages or discovery pages
+ok 553 - V3-3: page-1 validators never suppress later issue pages, closed pages or discovery pages
+  ---
+  duration_ms: 358.009761
+  type: 'test'
+  ...
+# Subtest: V3-3: degraded dependencies retry instead of accepting a page-1 304 forever
+ok 554 - V3-3: degraded dependencies retry instead of accepting a page-1 304 forever
+  ---
+  duration_ms: 245.932314
+  type: 'test'
+  ...
+# Subtest: V3-3: cached boards and closed archives invalidate after patch, create, batch order and transfer
+ok 555 - V3-3: cached boards and closed archives invalidate after patch, create, batch order and transfer
+  ---
+  duration_ms: 320.241589
+  type: 'test'
+  ...
+# Subtest: V3-3: disabled repositories also skip issue lists in archives
+ok 556 - V3-3: disabled repositories also skip issue lists in archives
+  ---
+  duration_ms: 287.060307
+  type: 'test'
+  ...
+# Subtest: V3-3: dependency deletion invalidates board even when upstream outcome is unknown
+ok 557 - V3-3: dependency deletion invalidates board even when upstream outcome is unknown
+  ---
+  duration_ms: 242.687205
+  type: 'test'
+  ...
+# Subtest: V3-3: truncated ten-page issue snapshots cannot revalidate only page one
+ok 558 - V3-3: truncated ten-page issue snapshots cannot revalidate only page one
+  ---
+  duration_ms: 467.991795
+  type: 'test'
+  ...
+# Subtest: V3-2 client: effectiveStage maps vanilla issues to Todo, shows non-draft vanilla issues in Client mode, and collapses empty stage groups
+ok 559 - V3-2 client: effectiveStage maps vanilla issues to Todo, shows non-draft vanilla issues in Client mode, and collapses empty stage groups
+  ---
+  duration_ms: 38.902178
+  type: 'test'
+  ...
+# Subtest: V3-2 client: Detail Drawer renders native bodyMarkdown, hides empty ChamberOS sections, and localizes <html lang> plus FR status/priority
+ok 560 - V3-2 client: Detail Drawer renders native bodyMarkdown, hides empty ChamberOS sections, and localizes <html lang> plus FR status/priority
+  ---
+  duration_ms: 18.165914
+  type: 'test'
+  ...
+# Subtest: V3-2 client: conditional ETag / 304 memory revalidation, ?refresh=1 bypass, and hidden-tab interval guard
+ok 561 - V3-2 client: conditional ETag / 304 memory revalidation, ?refresh=1 bypass, and hidden-tab interval guard
+  ---
+  duration_ms: 22.129158
+  type: 'test'
+  ...
+# Subtest: V3-3: unsuccessful mutation clears conditional memory before a possible unknown outcome
+ok 562 - V3-3: unsuccessful mutation clears conditional memory before a possible unknown outcome
+  ---
+  duration_ms: 13.181873
+  type: 'test'
+  ...
+# Subtest: V3-3: Canvas cannot be scrolled by focus, narrow cards use full-width metadata, drawer and picker avoid duplicate hierarchy
+ok 563 - V3-3: Canvas cannot be scrolled by focus, narrow cards use full-width metadata, drawer and picker avoid duplicate hierarchy
+  ---
+  duration_ms: 2.06445
+  type: 'test'
+  ...
+# Subtest: V3-3: drawer actions, editable checkboxes and picker search retain 44px narrow hit boxes
+ok 564 - V3-3: drawer actions, editable checkboxes and picker search retain 44px narrow hit boxes
+  ---
+  duration_ms: 1.149461
+  type: 'test'
+  ...
+# Subtest: V4-1: grouped filters combine stages, priorities, dependencies and real review links
+ok 565 - V4-1: grouped filters combine stages, priorities, dependencies and real review links
+  ---
+  duration_ms: 16.283641
+  type: 'test'
+  ...
+# Subtest: V4-1: dependency focus uses qualified identities and distinguishes both directions
+ok 566 - V4-1: dependency focus uses qualified identities and distinguishes both directions
+  ---
+  duration_ms: 11.775293
+  type: 'test'
+  ...
+# Subtest: V4-1: every transient task surface shares native dialog and sheet lifecycle, applied rail precedes Canvas
+ok 567 - V4-1: every transient task surface shares native dialog and sheet lifecycle, applied rail precedes Canvas
+  ---
+  duration_ms: 5.59679
+  type: 'test'
+  ...
+# Subtest: V4-1: applied chip removal immediately re-renders List without opening filters
+ok 568 - V4-1: applied chip removal immediately re-renders List without opening filters
+  ---
+  duration_ms: 11.970114
+  type: 'test'
+  ...
+# Subtest: V4-1: an open composer keeps its form visible when the list view is not simple
+ok 569 - V4-1: an open composer keeps its form visible when the list view is not simple
+  ---
+  duration_ms: 12.828856
+  type: 'test'
+  ...
+# Subtest: V4-1: closing a nested sheet keeps the page lock and clears the composer state
+ok 570 - V4-1: closing a nested sheet keeps the page lock and clears the composer state
+  ---
+  duration_ms: 4.203958
+  type: 'test'
+  ...
+# Subtest: V4-1: phone sidebar keeps its drawer behaviour when the desktop rail was collapsed
+ok 571 - V4-1: phone sidebar keeps its drawer behaviour when the desktop rail was collapsed
+  ---
+  duration_ms: 0.759334
+  type: 'test'
+  ...
+# Subtest: V4-1: pending checklist state is drawn, never a pictographic glyph
+ok 572 - V4-1: pending checklist state is drawn, never a pictographic glyph
+  ---
+  duration_ms: 19.436216
+  type: 'test'
+  ...
+# Subtest: V4-1b: dependency focus frames selected plus direct blockers and dependents, and never leaves the canvas
+ok 573 - V4-1b: dependency focus frames selected plus direct blockers and dependents, and never leaves the canvas
+  ---
+  duration_ms: 17.831037
+  type: 'test'
+  ...
+# Subtest: V4-1b: edge labels clamp inside the visible canvas and off every card body
+ok 574 - V4-1b: edge labels clamp inside the visible canvas and off every card body
+  ---
+  duration_ms: 8.679624
+  type: 'test'
+  ...
+# Subtest: V4-1b: focus exit wording, single phone filter entry point and framing hooks
+ok 575 - V4-1b: focus exit wording, single phone filter entry point and framing hooks
+  ---
+  duration_ms: 4.904001
+  type: 'test'
+  ...
+# Subtest: V4-1c: a neighbourhood that cannot fit at the floor is named, never silently shrunk
+ok 576 - V4-1c: a neighbourhood that cannot fit at the floor is named, never silently shrunk
+  ---
+  duration_ms: 3.999265
+  type: 'test'
+  ...
+# Subtest: V4-1c: clearing the last filter restores the viewport the user had before it
+ok 577 - V4-1c: clearing the last filter restores the viewport the user had before it
+  ---
+  duration_ms: 12.456484
+  type: 'test'
+  ...
+# Subtest: V4-1c: a rejected drag save is handled instead of escaping the pointer handler
+ok 578 - V4-1c: a rejected drag save is handled instead of escaping the pointer handler
+  ---
+  duration_ms: 3.441379
+  type: 'test'
+  ...
+# Subtest: V4-1c: sort options and the rename action share the 44px control treatment
+ok 579 - V4-1c: sort options and the rename action share the 44px control treatment
+  ---
+  duration_ms: 5.152561
+  type: 'test'
+  ...
+# Subtest: V4-1d: the collapsed desktop rail keeps a labelled toggle that reopens it
+ok 580 - V4-1d: the collapsed desktop rail keeps a labelled toggle that reopens it
+  ---
+  duration_ms: 8.917043
+  type: 'test'
+  ...
+# Subtest: V4-1d: the return view survives a reload with filters active and is never captured by search alone
+ok 581 - V4-1d: the return view survives a reload with filters active and is never captured by search alone
+  ---
+  duration_ms: 32.898846
+  type: 'test'
+  ...
+# Subtest: R2 section: empty gateway errors is UNKNOWN after commit
+ok 582 - R2 section: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 511.489168
+  type: 'test'
+  ...
+# Subtest: R2 section: gateway string errors is UNKNOWN after commit
+ok 583 - R2 section: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 324.054701
+  type: 'test'
+  ...
+# Subtest: R2 section: gateway validation substring is UNKNOWN after commit
+ok 584 - R2 section: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 279.976932
+  type: 'test'
+  ...
+# Subtest: R2 section: gateway with shaped errors is UNKNOWN after commit
+ok 585 - R2 section: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 276.532676
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message alone is UNKNOWN after commit
+ok 586 - R2 section: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 245.719854
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message empty errors is UNKNOWN after commit
+ok 587 - R2 section: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 233.748112
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message scalar errors is UNKNOWN after commit
+ok 588 - R2 section: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 231.941631
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message null entry is UNKNOWN after commit
+ok 589 - R2 section: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 249.107604
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message partial entry is UNKNOWN after commit
+ok 590 - R2 section: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 253.162984
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message missing resource is UNKNOWN after commit
+ok 591 - R2 section: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 234.762858
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message wrong field is UNKNOWN after commit
+ok 592 - R2 section: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 287.812242
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message empty resource is UNKNOWN after commit
+ok 593 - R2 section: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 281.800465
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message transport code is UNKNOWN after commit
+ok 594 - R2 section: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 222.900028
+  type: 'test'
+  ...
+# Subtest: R2 section: exact message mixed errors is UNKNOWN after commit
+ok 595 - R2 section: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 233.059997
+  type: 'test'
+  ...
+# Subtest: R2 section: recognisable validation is definitive rejection
+ok 596 - R2 section: recognisable validation is definitive rejection
+  ---
+  duration_ms: 240.496627
+  type: 'test'
+  ...
+# Subtest: R2 question: empty gateway errors is UNKNOWN after commit
+ok 597 - R2 question: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 220.129992
+  type: 'test'
+  ...
+# Subtest: R2 question: gateway string errors is UNKNOWN after commit
+ok 598 - R2 question: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 230.865946
+  type: 'test'
+  ...
+# Subtest: R2 question: gateway validation substring is UNKNOWN after commit
+ok 599 - R2 question: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 233.820711
+  type: 'test'
+  ...
+# Subtest: R2 question: gateway with shaped errors is UNKNOWN after commit
+ok 600 - R2 question: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 222.934046
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message alone is UNKNOWN after commit
+ok 601 - R2 question: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 215.926432
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message empty errors is UNKNOWN after commit
+ok 602 - R2 question: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 240.28906
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message scalar errors is UNKNOWN after commit
+ok 603 - R2 question: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 239.219239
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message null entry is UNKNOWN after commit
+ok 604 - R2 question: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 262.548304
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message partial entry is UNKNOWN after commit
+ok 605 - R2 question: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 250.046473
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message missing resource is UNKNOWN after commit
+ok 606 - R2 question: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 226.487733
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message wrong field is UNKNOWN after commit
+ok 607 - R2 question: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 218.768775
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message empty resource is UNKNOWN after commit
+ok 608 - R2 question: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 214.063499
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message transport code is UNKNOWN after commit
+ok 609 - R2 question: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 207.60777
+  type: 'test'
+  ...
+# Subtest: R2 question: exact message mixed errors is UNKNOWN after commit
+ok 610 - R2 question: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 252.451204
+  type: 'test'
+  ...
+# Subtest: R2 question: recognisable validation is definitive rejection
+ok 611 - R2 question: recognisable validation is definitive rejection
+  ---
+  duration_ms: 216.173948
+  type: 'test'
+  ...
+# Subtest: R2 status: empty gateway errors is UNKNOWN after commit
+ok 612 - R2 status: empty gateway errors is UNKNOWN after commit
+  ---
+  duration_ms: 267.744098
+  type: 'test'
+  ...
+# Subtest: R2 status: gateway string errors is UNKNOWN after commit
+ok 613 - R2 status: gateway string errors is UNKNOWN after commit
+  ---
+  duration_ms: 291.620549
+  type: 'test'
+  ...
+# Subtest: R2 status: gateway validation substring is UNKNOWN after commit
+ok 614 - R2 status: gateway validation substring is UNKNOWN after commit
+  ---
+  duration_ms: 219.1829
+  type: 'test'
+  ...
+# Subtest: R2 status: gateway with shaped errors is UNKNOWN after commit
+ok 615 - R2 status: gateway with shaped errors is UNKNOWN after commit
+  ---
+  duration_ms: 217.86013
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message alone is UNKNOWN after commit
+ok 616 - R2 status: exact message alone is UNKNOWN after commit
+  ---
+  duration_ms: 218.511568
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message empty errors is UNKNOWN after commit
+ok 617 - R2 status: exact message empty errors is UNKNOWN after commit
+  ---
+  duration_ms: 232.410458
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message scalar errors is UNKNOWN after commit
+ok 618 - R2 status: exact message scalar errors is UNKNOWN after commit
+  ---
+  duration_ms: 250.300922
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message null entry is UNKNOWN after commit
+ok 619 - R2 status: exact message null entry is UNKNOWN after commit
+  ---
+  duration_ms: 230.344696
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message partial entry is UNKNOWN after commit
+ok 620 - R2 status: exact message partial entry is UNKNOWN after commit
+  ---
+  duration_ms: 204.357668
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message missing resource is UNKNOWN after commit
+ok 621 - R2 status: exact message missing resource is UNKNOWN after commit
+  ---
+  duration_ms: 206.747583
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message wrong field is UNKNOWN after commit
+ok 622 - R2 status: exact message wrong field is UNKNOWN after commit
+  ---
+  duration_ms: 238.557254
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message empty resource is UNKNOWN after commit
+ok 623 - R2 status: exact message empty resource is UNKNOWN after commit
+  ---
+  duration_ms: 249.55837
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message transport code is UNKNOWN after commit
+ok 624 - R2 status: exact message transport code is UNKNOWN after commit
+  ---
+  duration_ms: 239.237501
+  type: 'test'
+  ...
+# Subtest: R2 status: exact message mixed errors is UNKNOWN after commit
+ok 625 - R2 status: exact message mixed errors is UNKNOWN after commit
+  ---
+  duration_ms: 226.556597
+  type: 'test'
+  ...
+# Subtest: R2 status: recognisable validation is definitive rejection
+ok 626 - R2 status: recognisable validation is definitive rejection
+  ---
+  duration_ms: 223.044043
+  type: 'test'
+  ...
+# Subtest: R2: reads keep exact validation-message mapping without inferring a write outcome
+ok 627 - R2: reads keep exact validation-message mapping without inferring a write outcome
+  ---
+  duration_ms: 2.74899
+  type: 'test'
+  ...
+# Subtest: R2: GitHubError retains parsed response provenance for UNKNOWN and validation
+ok 628 - R2: GitHubError retains parsed response provenance for UNKNOWN and validation
+  ---
+  duration_ms: 6.668791
+  type: 'test'
+  ...
+1..628
+# tests 628
+# suites 0
+# pass 628
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 36860.430372
