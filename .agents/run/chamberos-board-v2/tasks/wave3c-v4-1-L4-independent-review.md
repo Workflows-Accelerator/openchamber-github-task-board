@@ -2,7 +2,7 @@
 Repo: /workspace/code/openchamber-github-task-board
 Worktree: /workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3
 Branch: feat/board-v3
-Base commit: [FILL_REVIEW_BASE] = merge-base to review from (28af19b, the last published commit). HEAD to be filled at dispatch: [FILL_HEAD_SHA]
+Base commit: 28af19b is the last published commit on master. Review range: 28af19b..6535937 on branch feat/board-v3 (V4-1 build, its self-review fixes, and V4-1b framing), tree clean at dispatch.
 Root checkout: /workspace/code/openchamber-github-task-board on ops/task-board-activation — read only, never commit there
 Real Chromium launcher: .agents/run/chamberos-board-v2/verifications/A-delivery/hostile2/scripts/chromium-env.sh
 Test commands (SEQUENTIAL, never parallel): npm test; node --test --test-timeout=30000 web/tests/*.test.mjs; npm run typecheck; npx esbuild web/server.ts --bundle --platform=node --format=esm --target=node20 --packages=external --outfile=/tmp/opencode/l4-server-check.mjs; node scripts/generate-delivery-smoke.mjs
@@ -38,6 +38,7 @@ Reproduce from a real browser at 360, 390, 768 and 1280, light and dark, fr and 
 5. Canvas invariants: drag persists after reload against the fake GitHub; status change persists; Arrange + Undo restores exact positions; sticky notes still render under the card; the dot grid is byte-identical to 28af19b.
 6. Wording: zero "Atelier", zero "n8n", zero "mobile", zero emoji-range code points (use the repo's own regexes), no button with both a + icon and "+" text, no inline style attribute, CSP not relaxed.
 7. Regression risk: refresh order, re-render while a dialog is open, keyboard only operation (Tab, Enter, Space, Escape), and a slow or failing GitHub response surfacing a definite error rather than a silent no-op.
+8. Legibility floor on the fit (manager observation, decide it explicitly). At 360 the filter fit lands at 31–34 % and card titles are about 5 px: the three matches are technically inside the viewport but unreadable, which does not solve F3/F5. Either introduce a readable minimum (roughly 0.55–0.6) and, below it, centre on the group with an explicit "Tout afficher (N)" action that does the full fit, or state with measurements why the current behaviour is better for the user. Same question for dependency focus on a board whose neighbours are far apart. Judging legibility, not just containment, is your job here.
 </attack_surface>
 <criteria>
 - Spec verdict: for each of F2 (sheets), F3 (Canvas dependency organisation), F4 (rename), F5 (spacing) say PASS or FAIL with the evidence that decided it. Quote the user's own words from the feedback file.
