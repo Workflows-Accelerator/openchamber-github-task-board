@@ -1,15 +1,16 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `awaiting_human` — V4 LIVE as release `26fbc00-20261112`; origin/master pushed and verified at `d1eef33`. Independent L4 PASS/APPROVED. Waiting on the user's live phone review (L5) before any further wave. All #53–#71 open, user closes. Current: tasks.md and resume-2026-11-12-v4-release.md.
-- **Alignment:** D33–D38 CONFIRMED by user. D37 readability-first and D38 visible desktop rail toggle approved via render form. Real-phone drag persistence on previous live release confirmed by user. No fresh review verdict yet; no V4 publication.
+- **State:** `building` — V4 LIVE as release `26fbc00-20261112`; origin/master verified at `d1eef33`. Independent L4 PASS/APPROVED. Awaiting the user's live phone review (L5) while the next approved increment V4-2 runs: quick note as GitHub comment, Decisions Markdown, preset options with expandable details (sole worker `ses_9e0d1c9ef4415dc77f472bbf`, base `d1eef33`). A live defect report preempts and stops that worker. All #53–#71 open, user closes. Current: tasks.md and resume-2026-11-12-v4-2-running.md.
+- **Alignment:** D33–D39 CONFIRMED by user, including D37 readability-first, D38 visible desktop rail toggle and D39 bounded R1/R2 correction. Real-phone drag persistence confirmed by the user on the previous live release. V4 released after independent L4 PASS/APPROVED. Next decision point: the user's live phone review of V4.
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3`
 - **Branch:** `feat/board-v3`
 - **Base Commit:** `28af19b` (V4-1 start)
 - **Plan:** PLAN.md (batches A-D, strictly sequential steps, one worktree)
 - **Dispatched Sessions:**
-  - `ses_9e90b026f1e3847965793d7f` D39 bounded R1/R2 fix — COMPLETED a1225f0 + b07dd94 evidence; model verification pending at review finish (bounded, no polling).
-  - `ses_a5380706cd701b2303be374f` targeted independent review — RUNNING sole worker; if FAIL, stop and ask.
+  - `ses_9e0d1c9ef4415dc77f472bbf` V4-2 quick note + Decisions Markdown/preset options — RUNNING sole worker from d1eef33, genius requested. First dispatch attempt aborted by an engine restart; no session, no commits, no dirty files, so it was re-dispatched rather than duplicated.
+  - `ses_f35e847135ddf8c8b3dd21b2` V4 release — COMPLETED, LIVE `26fbc00-20261112`, 11/11 assets byte-identical, health 200, rollbacks intact; manager pushed origin/master `28af19b..d1eef33`.
+  - `ses_a5380706cd701b2303be374f` targeted independent review — COMPLETED 26fbc00, SPEC PASS / QUALITY APPROVED within D39 scope (R1 20 complete/12 honest, R2 14/14).
   - `ses_e85281d189897ffd77c9fc47` V4 final independent L4 — COMPLETED 0cef002 (evidence only), 9router/genius verified, SPEC FAIL/QUALITY CHANGES REQUESTED; R1/R2 open, no active workers.
   - `ses_07ed8c7e94adb5f03e3f9ddf` V4-1d interrupted-pass recovery — COMPLETED cd64af1 (fix 40cb1d8); 9router/genius verified at completion; manager inspected actual diff and README. Fresh independent verdict pending.
   - `ses_08535601c18ea3729d5baced` V4-1c — COMPLETED 594cb21 after fixes; subsequent hostile/D38 follow-up INTERRUPTED with dirty app.js/theme.css. Confirmed idle and recovered by V4-1d (not duplicated). 9router/genius verified during failure diagnosis.
