@@ -1,14 +1,15 @@
 # Mission: ChamberOS Board V2 (V1 UX + V2 Features + Live Board Replacement)
 
 - **Session Slug:** `chamberos-board-v2`
-- **State:** `building` — V4 LIVE as release `26fbc00-20261112`; origin/master verified at `d1eef33`. Independent L4 PASS/APPROVED. Awaiting the user's live phone review (L5) while the next approved increment V4-2 runs: quick note as GitHub comment, Decisions Markdown, preset options with expandable details (sole worker `ses_9e0d1c9ef4415dc77f472bbf`, base `d1eef33`). A live defect report preempts and stops that worker. All #53–#71 open, user closes. Current: tasks.md and resume-2026-11-12-v4-2-running.md.
+- **State:** `building` — V4 LIVE as release `26fbc00-20261112`; origin/master verified at `d1eef33`. Awaiting the user's live phone review (L5). V4-2 (note + Decisions) was abandoned mid-verification with uncommitted work; a fresh worker `ses_8265220b99cc6ff4ee784a4c` is finishing it from that dirty state. Any live defect report preempts and stops that worker. All #53–#71 open, user closes. Current: tasks.md and resume-2026-11-12-v4-2-running.md.
 - **Alignment:** D33–D39 CONFIRMED by user, including D37 readability-first, D38 visible desktop rail toggle and D39 bounded R1/R2 correction. Real-phone drag persistence confirmed by the user on the previous live release. V4 released after independent L4 PASS/APPROVED. Next decision point: the user's live phone review of V4.
 - **Worktree:** `/workspace/code/openchamber-github-task-board/.worktrees/team-dev-board-v3`
 - **Branch:** `feat/board-v3`
 - **Base Commit:** `28af19b` (V4-1 start)
 - **Plan:** PLAN.md (batches A-D, strictly sequential steps, one worktree)
 - **Dispatched Sessions:**
-  - `ses_9e0d1c9ef4415dc77f472bbf` V4-2 quick note + Decisions Markdown/preset options — RUNNING sole worker from d1eef33, genius requested. First dispatch attempt aborted by an engine restart; no session, no commits, no dirty files, so it was re-dispatched rather than duplicated.
+  - `ses_8265220b99cc6ff4ee784a4c` V4-2b finish abandoned work — RUNNING sole worker, genius requested, brief tasks/wave4b-v4-2-finish-abandoned.md from dirty d1eef33.
+  - `ses_9e0d1c9ef4415dc77f472bbf` V4-2 first attempt — ABANDONED (idle, no commit): 7 modified files, 3 new tests, evidence dir; smoke run cut by a 240 s tool timeout; two 360 px framing probes failing. Not resumed (a finished session cannot be prompted); recovered, not duplicated.
   - `ses_f35e847135ddf8c8b3dd21b2` V4 release — COMPLETED, LIVE `26fbc00-20261112`, 11/11 assets byte-identical, health 200, rollbacks intact; manager pushed origin/master `28af19b..d1eef33`.
   - `ses_a5380706cd701b2303be374f` targeted independent review — COMPLETED 26fbc00, SPEC PASS / QUALITY APPROVED within D39 scope (R1 20 complete/12 honest, R2 14/14).
   - `ses_e85281d189897ffd77c9fc47` V4 final independent L4 — COMPLETED 0cef002 (evidence only), 9router/genius verified, SPEC FAIL/QUALITY CHANGES REQUESTED; R1/R2 open, no active workers.
