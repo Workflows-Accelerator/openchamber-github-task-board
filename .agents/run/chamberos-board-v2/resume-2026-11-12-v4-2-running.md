@@ -15,9 +15,16 @@
 - README verdicts: framing failures are a stale pre-D37 probe, proven by ancestry (`6535937` predates `38f6572`) and by a new promise probe (12/12, real clicks, D39 legend, Show all reaching 0.315/0.344 with 4/4 inside). `npm test` still not green: 617/618 then 615/618, panel-only, different failures, called flaky but unproven.
 - Worker found and fixed 4 real defects on its own hostile pass: locked-issue message, 403 collapsing to link-permission copy, `-  :: gist` turning the separator into a label, missing quoted-marker test.
 
+## V4-2c outcome (since 2026-11-12 evening)
+- `bc26145` evidence update, `3af3fe0` fix, `a7867e8` docs. HEAD = `a7867e8`, tracked tree clean.
+- Hostile pass found a genuine High: a GitHub 410 Gone on comment POST was reported as 502 `note_outcome_unknown` with `noteSent: true`. Now 404 `not_found`, with a regression test.
+- Still open and documented in the README: a non-standard 422 shape still maps to 502 (Medium); `issueNotesCache` unbounded (Low); note count chip is a floor above 100 comments (Low); generic 403 copy for CSRF refusals (Low); a human comment quoting the marker is shown as a note body, author shown and body escaped (Low).
+- `npm test` settled: 617/618 at HEAD and on the fix commit, 618/618 twice on base `d1eef33`, `panel/` and `test/` byte-identical to base by md5, failures only under load and never the same test. Pre-existing load-sensitive flake, not a V4-2 regression.
+- Post-fix counts: web 670/670, typecheck and esbuild clean, browser 12 cases/48 shots, framing 12/12, smoke 14/14 in 6m01s.
+
 ## Active
-- Sole worker `ses_01498c3c4f8c0d6245047a44` (V4-2c, brief `tasks/wave4c-v4-2-close-evidence-and-hostile.md`): proves or disproves the npm-test flakiness by running the panel suite at HEAD and on a detached `d1eef33` worktree, then runs a hostile review of 5430f36+b0718cc with fixes only where genuinely broken. Its brief was written before `aa9e1e3` existed, so it expects uncommitted evidence; it must not rewrite history or discard the committed evidence.
-- Next: independent L4 of `d1eef33..HEAD` with `tasks/wave4d-v4-2-independent-L4.md` (fill the HEAD SHA at dispatch), then release per `tasks/wave3e-v4-release.md`.
+- Sole worker `ses_c3fc27d78f4597b03976644c` (independent L4, brief `tasks/wave4d-v4-2-independent-L4.md`) reviewing `d1eef33..a7867e8`. It also rules, limitation by limitation, whether anything blocks publication.
+- Next: release per `tasks/wave4e-v4-2-release.md` (fill `[FILL_HEAD_SHA]` with the L4-approved HEAD and `[FILL_RELEASE_DIR]` with the new release dir) if L4 returns SPEC PASS / QUALITY APPROVED / PUBLISH YES. Then `git push origin master` (timeout 600000, retry once).
 - Its own numbers: web tests 666/666 pass; a 12-case browser probe pass with note marker `<!-- board-note: 1 -->`, append-only comments, reload survival, retry-on-failure keeping text, lost-response reconciliation, 18 conditional comment requests and no extra render requests; Decisions Markdown with no raw markers and legacy free text still saved.
 - Two unresolved 360 px probes FAILED with `zoomAfterFit:0.55`, `neighbourhoodInside:false`, `filteredAllInside:false`, `cardsUnderHud`. The pattern looks like an old probe asserting pre-D37 containment at the readable floor — plausible, not proven.
 - The final delivery smoke was killed by a 240 s tool timeout and left an empty log.
