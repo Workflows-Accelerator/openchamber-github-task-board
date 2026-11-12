@@ -1,0 +1,22 @@
+{
+ "langs": [
+  "en",
+  "fr"
+ ],
+ "enKeys": 213,
+ "frKeys": 213,
+ "missingInFr": [],
+ "extraInFr": [],
+ "emptyEn": 0,
+ "emptyFr": 0,
+ "changed": {
+  "agent_note_too_long": [
+   "The board limits notes to 4,000 characters. Shorten your text and retry.",
+   "Le tableau limite les notes à 4 000 caractères. Raccourcissez le texte puis réessayez."
+  ],
+  "agent_note_not_found": [
+   "The conversation for this issue is unavailable on GitHub (issues may be disabled, or the issue was deleted or transferred), so the note was not saved. Your text is kept. Reload the task to check.",
+   "La conversation de ce ticket est indisponible sur GitHub (tickets désactivés, ou ticket supprimé ou transféré) ; la note n’a pas été enregistrée. Votre texte est conservé. Rechargez la tâche pour vérifier."
+  ]
+ }
+}

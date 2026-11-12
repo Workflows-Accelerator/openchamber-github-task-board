@@ -1,0 +1,10 @@
+## Open Questions
+- [x] Which database should we use for the audit trail? *(Answer: PostgreSQL)*
+  - PostgreSQL :: Mature and familiar :: **Operations stay unchanged**; `pg_dump` already works.
+  - SQLite :: Zero operations :: A single file, but no concurrent writers.
+- [ ] Who approves?
+
+---
+options still parse: [{"text":"Which database should we use for the audit trail? *(Answer: PostgreSQL)*","completed":true,"options":2},{"text":"Who approves?","completed":false,"options":0}]
+option lines intact: true
+prose-stripped form: "Which database should we use for the audit trail? *(Answer: PostgreSQL)*"

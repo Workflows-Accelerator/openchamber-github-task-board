@@ -1,0 +1,156 @@
+{
+  "syntheticOnly": true,
+  "viewport": "360x800",
+  "textareaMaxLength": "4000",
+  "cases": [
+    {
+      "theme": "light",
+      "lang": "en",
+      "notFound": {
+        "text": "The conversation for this issue is unavailable on GitHub (issues may be disabled, or the issue was deleted or transferred), so the note was not saved. Your text is kept. Reload the task to check.",
+        "statusScrollWidth": 327,
+        "statusClientWidth": 327,
+        "overflowX": "visible",
+        "statusTop": 532,
+        "statusBottom": 610,
+        "statusHeight": 78,
+        "composerVisible": true,
+        "docScrollWidth": 360,
+        "innerWidth": 360,
+        "viewportHeight": 800,
+        "textInsideViewport": true,
+        "horizontalScrollInsideStatus": false
+      },
+      "tooLong": {
+        "text": "The board limits notes to 4,000 characters. Shorten your text and retry.",
+        "statusScrollWidth": 327,
+        "statusClientWidth": 327,
+        "overflowX": "visible",
+        "statusTop": 532,
+        "statusBottom": 571,
+        "statusHeight": 39,
+        "composerVisible": true,
+        "docScrollWidth": 360,
+        "innerWidth": 360,
+        "viewportHeight": 800,
+        "textInsideViewport": true,
+        "horizontalScrollInsideStatus": false
+      }
+    },
+    {
+      "theme": "light",
+      "lang": "fr",
+      "notFound": {
+        "text": "Envoi de la note…",
+        "statusScrollWidth": 327,
+        "statusClientWidth": 327,
+        "overflowX": "visible",
+        "statusTop": 532,
+        "statusBottom": 549,
+        "statusHeight": 17,
+        "composerVisible": true,
+        "docScrollWidth": 360,
+        "innerWidth": 360,
+        "viewportHeight": 800,
+        "textInsideViewport": true,
+        "horizontalScrollInsideStatus": false
+      },
+      "tooLong": {
+        "text": "Le tableau limite les notes à 4 000 caractères. Raccourcissez le texte puis réessayez.",
+        "statusScrollWidth": 327,
+        "statusClientWidth": 327,
+        "overflowX": "visible",
+        "statusTop": 532,
+        "statusBottom": 571,
+        "statusHeight": 39,
+        "composerVisible": true,
+        "docScrollWidth": 360,
+        "innerWidth": 360,
+        "viewportHeight": 800,
+        "textInsideViewport": true,
+        "horizontalScrollInsideStatus": false
+      }
+    },
+    {
+      "theme": "dark",
+      "lang": "en",
+      "notFound": {
+        "text": "Sending note…",
+        "statusScrollWidth": 327,
+        "statusClientWidth": 327,
+        "overflowX": "visible",
+        "statusTop": 532,
+        "statusBottom": 549,
+        "statusHeight": 17,
+        "composerVisible": true,
+        "docScrollWidth": 360,
+        "innerWidth": 360,
+        "viewportHeight": 800,
+        "textInsideViewport": true,
+        "horizontalScrollInsideStatus": false
+      },
+      "tooLong": {
+        "text": "The board limits notes to 4,000 characters. Shorten your text and retry.",
+        "statusScrollWidth": 327,
+        "statusClientWidth": 327,
+        "overflowX": "visible",
+        "statusTop": 532,
+        "statusBottom": 571,
+        "statusHeight": 39,
+        "composerVisible": true,
+        "docScrollWidth": 360,
+        "innerWidth": 360,
+        "viewportHeight": 800,
+        "textInsideViewport": true,
+        "horizontalScrollInsideStatus": false
+      }
+    },
+    {
+      "theme": "dark",
+      "lang": "fr",
+      "notFound": {
+        "text": "La conversation de ce ticket est indisponible sur GitHub (tickets désactivés, ou ticket supprimé ou transféré) ; la note n’a pas été enregistrée. Votre texte est conservé. Rechargez la tâche pour vérifier.",
+        "statusScrollWidth": 327,
+        "statusClientWidth": 327,
+        "overflowX": "visible",
+        "statusTop": 532,
+        "statusBottom": 630,
+        "statusHeight": 98,
+        "composerVisible": true,
+        "docScrollWidth": 360,
+        "innerWidth": 360,
+        "viewportHeight": 800,
+        "textInsideViewport": true,
+        "horizontalScrollInsideStatus": false
+      },
+      "tooLong": {
+        "text": "Le tableau limite les notes à 4 000 caractères. Raccourcissez le texte puis réessayez.",
+        "statusScrollWidth": 327,
+        "statusClientWidth": 327,
+        "overflowX": "visible",
+        "statusTop": 532,
+        "statusBottom": 571,
+        "statusHeight": 39,
+        "composerVisible": true,
+        "docScrollWidth": 360,
+        "innerWidth": 360,
+        "viewportHeight": 800,
+        "textInsideViewport": true,
+        "horizontalScrollInsideStatus": false
+      }
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": [],
+  "expectedHttpErrors": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 400 (Bad Request)"
+  ],
+  "pass": true
+}
